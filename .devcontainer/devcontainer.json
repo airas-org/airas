@@ -1,0 +1,27 @@
+{
+	"name": "airas",
+	"dockerComposeFile": "docker-compose.yaml",
+	"service": "airas",
+    // To run in a gpu environment, comment out the above code and use the code below
+    // "service": "airas-gpu",
+	"workspaceFolder": "/workspaces/airas",
+	"overrideCommand": true,
+	"customizations": {
+		"vscode": {
+			"extensions": [
+        "ms-python.python", // Python
+        "ms-python.debugpy", // Debugpy
+				"charliermarsh.ruff", // Ruff
+				"github.copilot", // GitHub Copilot
+        "eamodio.gitlens", // GitLens
+        "github.vscode-pull-request-github", // GitHub Pull Requests and Issues
+        "ms-python.vscode-pylance", // Pylance
+        "oderwat.indent-rainbow", // Indent Rainbow
+        "tomoki1207.pdf", // PDF viewer
+        "ms-ceintl.vscode-language-pack-ja", // Japanese Language Pack
+        "ms-python.mypy-type-checker" // Mypy
+			]
+		}
+	},
+	"postCreateCommand": "uv sync && uv run pre-commit install"
+}

@@ -1,0 +1,152 @@
+---
+sidebar_position: 4
+---
+
+# Markdownの機能
+
+Docusaurusは**[Markdown](https://daringfireball.net/projects/markdown/syntax)**と**いくつかの追加機能**をサポートしています。
+
+## フロントマター
+
+Markdownドキュメントには、[フロントマター](https://jekyllrb.com/docs/front-matter/)と呼ばれる上部にメタデータがあります：
+
+```text title="my-doc.md"
+// highlight-start
+---
+id: my-doc-id
+title: 私のドキュメントタイトル
+description: 私のドキュメントの説明
+slug: /my-custom-url
+---
+// highlight-end
+
+## Markdownの見出し
+
+[リンク](./hello.md)付きのMarkdownテキスト
+```
+
+## リンク
+
+URLパスや相対ファイルパスを使用する通常のMarkdownリンクがサポートされています。
+
+```md
+[ページの作成](/create-a-page)の方法を見てみましょう。
+```
+
+```md
+[ページの作成](./create-a-page.md)の方法を見てみましょう。
+```
+
+**結果：** [ページの作成](./create-a-page.md)の方法を見てみましょう。
+
+## 画像
+
+通常のMarkdown画像がサポートされています。
+
+静的ディレクトリ（`static/img/airas_logo.png`）の画像を参照するには絶対パスを使用できます：
+
+```md
+![Docusaurusロゴ](/img/airas_logo.png)
+```
+
+![Docusaurusロゴ](/img/airas_logo.png)
+
+現在のファイルからの相対パスで画像を参照することもできます。これは特に、画像をそれを使用するMarkdownファイルの近くに配置するのに便利です：
+
+```md
+![Docusaurusロゴ](./img/airas_logo.png)
+```
+
+## コードブロック
+
+シンタックスハイライト付きのMarkdownコードブロックがサポートされています。
+
+````md
+```jsx title="src/components/HelloDocusaurus.js"
+function HelloDocusaurus() {
+  return <h1>こんにちは、Docusaurus！</h1>;
+}
+```
+````
+
+```jsx title="src/components/HelloDocusaurus.js"
+function HelloDocusaurus() {
+  return <h1>こんにちは、Docusaurus！</h1>;
+}
+```
+
+## アドモニション
+
+Docusaurusには、アドモニション（注釈）と呼び出しを作成するための特別な構文があります：
+
+```md
+:::tip 私のヒント
+
+この素晴らしい機能オプションを使用してください
+
+:::
+
+:::danger 注意
+
+このアクションは危険です
+
+:::
+```
+
+:::tip 私のヒント
+
+この素晴らしい機能オプションを使用してください
+
+:::
+
+:::danger 注意
+
+このアクションは危険です
+
+:::
+
+## MDXとReactコンポーネント
+
+[MDX](https://mdxjs.com/)はドキュメントをより**インタラクティブ**にし、**Markdown内で任意のReactコンポーネントの使用**を可能にします：
+
+```jsx
+export const Highlight = ({children, color}) => (
+  <span
+    style={{
+      backgroundColor: color,
+      borderRadius: '20px',
+      color: '#fff',
+      padding: '10px',
+      cursor: 'pointer',
+    }}
+    onClick={() => {
+      alert(`あなたは${children}というラベルの${color}色をクリックしました`)
+    }}>
+    {children}
+  </span>
+);
+
+これは<Highlight color="#25c2a0">Docusaurusのグリーン</Highlight>です！
+
+これは<Highlight color="#1877F2">Facebookのブルー</Highlight>です！
+```
+
+export const Highlight = ({children, color}) => (
+  <span
+    style={{
+      backgroundColor: color,
+      borderRadius: '20px',
+      color: '#fff',
+      padding: '10px',
+      cursor: 'pointer',
+    }}
+    onClick={() => {
+      alert(`あなたは${children}というラベルの${color}色をクリックしました`);
+    }}>
+    {children}
+  </span>
+);
+
+これは<Highlight color="#25c2a0">Docusaurusのグリーン</Highlight>です！
+
+これは<Highlight color="#1877F2">Facebookのブルー</Highlight>です！

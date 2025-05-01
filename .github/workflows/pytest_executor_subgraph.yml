@@ -1,0 +1,65 @@
+name: ExecutorSubgraph
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths: [
+      'src/airas/execution/executor_subgraph/**', 
+      'tests/integration/execution/test_executor_subgraph.py',
+      'tests/unit/execution/executor_subgraph/**',
+      '.github/workflows/pytest_executor_subgraph.yml'
+      ]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test-executor-subgraph:
+    name: ExecutorSubgraph Components
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        include:
+          - test_name: generate_code_with_devin
+            test_file: tests/unit/execution/executor_subgraph/test_generate_code_with_devin.py
+          - test_name: check_devin_completion
+            test_file: tests/unit/execution/executor_subgraph/test_check_devin_completion.py
+          - test_name: execute_github_actions_workflow
+            test_file: tests/unit/execution/executor_subgraph/test_execute_github_actions_workflow.py
+          - test_name: fix_code_with_devin
+            test_file: tests/unit/execution/executor_subgraph/test_fix_code_with_devin.py
+          - test_name: llm_decide
+            test_file: tests/unit/execution/executor_subgraph/test_llm_decide.py
+          - test_name: retrieve_github_actions_artifact
+            test_file: tests/unit/execution/executor_subgraph/test_retrieve_github_actions_artifact.py
+          - test_name: integration_test_for_executor_subgraph
+            test_file: tests/integration/execution/test_executor_subgraph.py
+    env:
+      GITHUB_WORKSPACE: ${{ github.workspace }}
+      SAVE_DIR: ${{ github.workspace }}/save_dir
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
+          uv --version
+
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
+        
+      - name: Create Directory
+        run: mkdir -p $SAVE_DIR
+        
+      - name: Run pytest with coverage
+        run: uv run pytest --cov=airas.executor_subgraph --cov-branch --cov-report=term-missing -v ${{ matrix.test_file }}
+
+      - name: Ensure pip cache folder exists
+        run: mkdir -p /home/runner/.cache/pip  

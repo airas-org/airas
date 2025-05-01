@@ -1,0 +1,40 @@
+name: Run All Pytest
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/pytest_all.yml'
+      - 'pyproject.toml'
+      - 'uv.lock'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    name: Run all unit and integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GITHUB_WORKSPACE: ${{ github.workspace }}
+      SAVE_DIR: ${{ github.workspace }}/save_dir
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
+          uv --version
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
+      - name: Create Directory
+        run: mkdir -p $SAVE_DIR
+      - name: Run all pytest
+        run: uv run pytest --cov=src/airas --cov-branch --cov-report=term-missing -v tests/
+      - name: Ensure pip cache folder exists
+        run: mkdir -p /home/runner/.cache/pip

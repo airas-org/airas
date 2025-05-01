@@ -1,0 +1,30 @@
+services:
+  airas:
+    build:
+      context: ../
+      dockerfile: ./.devcontainer/dev.Dockerfile
+    env_file:
+      - ../.env
+    volumes:
+      - ..:/workspaces/airas:cached
+    environment:
+      - PYTHONPATH=/workspaces/airas/src
+#   airas-gpu:
+#     build:
+#       context: ../
+#       dockerfile: ./.devcontainer/dev-gpu.Dockerfile
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - driver: nvidia
+#               count: all
+#               capabilities: [gpu]
+#     env_file:
+#       - ../.env
+#     volumes:
+#       - ..:/workspaces/airas:cached
+#     environment:
+#       - PYTHONPATH=/workspaces/airas/src
+#       - NVIDIA_VISIBLE_DEVICES=all
+#       - NVIDIA_DRIVER_CAPABILITIES=compute,utility

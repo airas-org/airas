@@ -1,0 +1,58 @@
+name: HtmlSubgraph
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths: [
+      'src/airas/publication/html_subgraph/**', 
+      'tests/integration/publication/test_html_subgraph.py',
+      'tests/unit/publication/html_subgraph/**',
+      '.github/workflows/pytest_html_subgraph.yml'
+      ]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test-html-subgraph:
+    name: HtmlSubgraph Components
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        include:
+          - test_name: convert_to_html
+            test_file: tests/unit/publication/html_subgraph/test_convert_to_html.py
+          - test_name: render_html
+            test_file: tests/unit/publication/html_subgraph/test_render_html.py
+          - test_name: integration_test_for_html_subgraph
+            test_file: tests/integration/publication/test_html_subgraph.py
+            
+    env:
+      GITHUB_WORKSPACE: ${{ github.workspace }}
+      SAVE_DIR: ${{ github.workspace }}/save_dir
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4 
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
+          uv --version
+
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
+        
+      - name: Create Directory
+        run: mkdir -p $SAVE_DIR
+        
+      - name: Run pytest with coverage
+        run: uv run pytest --cov=airas.html_subgraph --cov-branch --cov-report=term-missing -v ${{ matrix.test_file }}
+
+      - name: Ensure pip cache folder exists
+        run: mkdir -p /home/runner/.cache/pip  
