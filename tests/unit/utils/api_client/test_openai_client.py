@@ -12,7 +12,7 @@ def test_real_generate_all_models(model_name):
         pytest.skip("OPENAI_API_KEY is not set. Skipping real API test.")
 
     client = OpenAIClient()
-    message = "こんにちは、自己紹介をしてください。"
+    message = "Hello, please introduce yourself."
 
     try:
         output, cost = client.generate(
@@ -40,9 +40,9 @@ def test_real_structured_outputs_all_models(model_name):
 
     client = OpenAIClient()
     message = (
-        "私の名前は田中です．エンジニアをしています．"
-        "次の形式で出力してください。"
-        "name: あなたの名前, description: あなたについて短く説明してください。"
+        "My name is Tanaka. I work as an engineer. "
+        "Please output in the following format: "
+        "name: your name, description: a brief description about yourself."
     )
 
     try:
