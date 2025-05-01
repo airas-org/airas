@@ -5,10 +5,10 @@
   <a href="https://pypi.org/project/airas/">
     <img src="https://img.shields.io/pypi/v/airas" alt="Documentation" />
   </a>
-  <a href="https://auto-res.github.io/airas/">
+  <a href="https://airas-org.github.io/airas/">
     <img src="https://img.shields.io/badge/Documentation-%F0%9F%93%95-blue" alt="Documentation" />
   </a>
-  <a href="https://github.com/auto-res/airas/blob/main/LICENSE">
+  <a href="https://github.com/airas-org/airas/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License" />
   </a>
   <a href="https://x.com/fuyu_quant">
@@ -99,6 +99,6 @@ If you use AIRAS in your research, please cite as follows:
   title = {AIRAS},
   year = {2025},
   publisher = {GitHub},
-  url = {https://github.com/auto-res/airas}
+  url = {https://github.com/airas-org/airas}
 }
 ```
