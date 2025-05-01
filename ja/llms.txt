@@ -1,0 +1,11 @@
+# AIRAS document
+
+## Section name
+- [Instruction](https://auto-res.github.io/airas/docs/introduction)：An explanation of AIRAS is provided.
+- [Quickstart](https://auto-res.github.io/airas/docs/quickstart)：A brief explanation of how to use AIRAS is provided.
+- [Generator](https://auto-res.github.io/airas/docs/component/generator)：Explanations on how to use “Generator” are provided.
+- [Executor](https://auto-res.github.io/airas/docs/component/executor)：Explanations on how to use “Executor” are provided.
+- [Retriever](https://auto-res.github.io/airas/docs/component/retriever)：Explanations on how to use “Retriever” are provided.
+- [Writer](https://auto-res.github.io/airas/docs/component/writer)：Explanations on how to use “Writer” are provided.
+- [Upload](https://auto-res.github.io/airas/docs/component/upload)：Explanations on how to use “Upload” are provided.
+- [ResearchGraph](https://auto-res.github.io/airas/docs/component/research_graph)：Explanations on how to use “ResearchGraph” are provided。

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><?xml-stylesheet type="text/xsl" href="atom.xsl"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://www.autores.one/airas/ja/blog</id>
+    <title>AIRAS Blog</title>
+    <updated>2025-05-01T15:27:41.000Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://www.autores.one/airas/ja/blog"/>
+    <subtitle>AIRAS Blog</subtitle>
+    <icon>https://www.autores.one/airas/ja/img/airas_logo.png</icon>
+    <entry>
+        <title type="html"><![CDATA[sample]]></title>
+        <id>https://www.autores.one/airas/ja/blog/sample</id>
+        <link href="https://www.autores.one/airas/ja/blog/sample"/>
+        <updated>2025-05-01T15:27:41.000Z</updated>
+    </entry>
+</feed>
