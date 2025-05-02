@@ -17,30 +17,25 @@ RETRY_EXC = (HTTPError, ConnectionError, Timeout, RequestException, Exception)
 MAX_RETRIES = 10
 WAIT_POLICY = wait_exponential(multiplier=1.0, max=180.0)
 
+ARXIV_RETRY = retry(
+    retry=retry_if_exception_type(RETRY_EXC),
+    stop=stop_after_attempt(MAX_RETRIES),
+    wait=WAIT_POLICY,
+    before=before_log(logger, logging.WARNING),
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+    reraise=True,
+)
+
 
 class ArxivClient(BaseHTTPClient):
     def __init__(
         self,
         base_url: str = "https://export.arxiv.org/api",
         default_headers: dict[str, str] | None = None,
-        # max_retries: int = 10,
-        # initial_wait: float = 1.0,
-        # max_wait: float = 180.0,
     ):
         super().__init__(base_url=base_url, default_headers=default_headers)
-        # self.max_retries=max_retries
-        # self.initial_wait=initial_wait
-        # self.max_wait=max_wait
 
-    # TODO: インスタンス変数を反映したい場合、`Retrying`を使う
-    @retry(
-        retry=retry_if_exception_type(RETRY_EXC),
-        stop=stop_after_attempt(MAX_RETRIES),
-        wait=WAIT_POLICY,
-        before=before_log(logger, logging.WARNING),
-        before_sleep=before_sleep_log(logger, logging.WARNING),
-        reraise=True,
-    )
+    @ARXIV_RETRY
     def search(
         self,
         *,
@@ -66,4 +61,4 @@ class ArxivClient(BaseHTTPClient):
             "sortBy": sort_by,
             "sortOrder": sort_order,
         }
-        return self.request("GET", "query", params=params, timeout=timeout)
+        return self.get(path="query", params=params, timeout=timeout)

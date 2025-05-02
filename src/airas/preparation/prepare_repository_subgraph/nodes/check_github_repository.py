@@ -21,5 +21,5 @@ if __name__ == "__main__":
     github_owner = "auto-res2"
     repository_name = "gpu-repository"
     github_owner = "auto-res"
-    repository_name = "cpu-repositor"
+    repository_name = "cpu-repository"
     check_github_repository(github_owner, repository_name)
