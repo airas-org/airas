@@ -2,7 +2,7 @@ import re
 import requests
 from jinja2 import Environment
 from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
-from airas.retrieve.retrieve_paper_subgraph.prompt.extract_github_url_node_prompt import (
+from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_github_url_node_prompt import (
     extract_github_url_node_prompt,
 )
 from pydantic import BaseModel
