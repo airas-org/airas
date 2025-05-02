@@ -32,12 +32,10 @@ def select_best_paper_node(
 
     env = Environment()
     template = env.from_string(prompt_template)
-    prompt = template.render(data)
-    output, cost = LLMFacadeClient(llm_name).structured_outputs(
-        message=prompt, data_model=LLMOutput
+    messages = template.render(data)
+    output, cost = LLMFacadeClient(llm_name=llm_name).structured_outputs(
+        message=messages, data_model=LLMOutput
     )
-    if output is None:
-        raise ValueError("Error: No response from the model in select_best_paper_node.")
     if "selected_arxiv_id" in output:
         arxiv_id_str = output["selected_arxiv_id"]
         arxiv_id_list = [

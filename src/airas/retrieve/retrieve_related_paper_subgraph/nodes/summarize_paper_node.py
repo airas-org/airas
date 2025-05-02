@@ -23,18 +23,19 @@ def summarize_paper_node(
     env = Environment()
     template = env.from_string(prompt_template)
     messages = template.render(data)
-
     output, cost = LLMFacadeClient(llm_name=llm_name).structured_outputs(
         message=messages, data_model=LLMOutput
     )
-
-    return (
-        output["main_contributions"],
-        output["methodology"],
-        output["experimental_setup"],
-        output["limitations"],
-        output["future_research_directions"],
-    )
+    if output is None:
+        raise ValueError("Error: No response from the model in summarize_paper_node.")
+    else:
+        return (
+            output["main_contributions"],
+            output["methodology"],
+            output["experimental_setup"],
+            output["limitations"],
+            output["future_research_directions"],
+        )
 
 
 summarize_paper_prompt_base = """

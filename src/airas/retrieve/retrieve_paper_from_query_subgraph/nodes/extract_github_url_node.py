@@ -47,24 +47,20 @@ class ExtractGithubUrlNode:
     def _extract_related_github_url(
         self, paper_summary: str, extract_github_url_list: list[str]
     ) -> int | None:
-        client = LLMFacadeClient(llm_name=self.llm_name)
-
         env = Environment()
         template = env.from_string(extract_github_url_node_prompt)
         data = {
             "paper_summary": paper_summary,
             "extract_github_url_list": extract_github_url_list,
         }
-        messages = template.render(data)
+        prompt = template.render(data)
 
-        output, cost = client.structured_outputs(
-            message=messages,
-            data_model=LLMOutput,
+        output, cost = LLMFacadeClient(llm_name=self.llm_name).structured_outputs(
+            message=prompt, data_model=LLMOutput
         )
         if output is None:
-            raise ValueError(
-                "Error: No response from the model in extract_github_url_node."
-            )
+            logger.warning("Error: No response from LLM.")
+            return None
         else:
             return output["index"]
 

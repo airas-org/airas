@@ -25,7 +25,6 @@ def extract_paper_title_node(
     for result in scraped_results:
         data = {"queries": queries, "result": result}
         messages = template.render(data)
-
         output, cost = LLMFacadeClient(llm_name=llm_name).structured_outputs(
             message=messages, data_model=LLMOutput
         )
