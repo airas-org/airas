@@ -36,27 +36,10 @@ from airas.retrieve.retrieve_paper_subgraph.nodes.retrieve_arxiv_text_node impor
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
+from airas.typing.paper import CandidatePaperInfo
+
 setup_logging()
 logger = logging.getLogger(__name__)
-
-
-class CandidatePaperInfo(TypedDict):
-    arxiv_id: str
-    arxiv_url: str
-    title: str
-    authors: list[str]
-    published_date: str
-    journal: str
-    doi: str
-    summary: str
-    # 途中で取得
-    github_url: str
-    # 最後のサマリーで取得
-    main_contributions: str
-    methodology: str
-    experimental_setup: str
-    limitations: str
-    future_research_directions: str
 
 
 class RetrievePaperInputState(TypedDict):
