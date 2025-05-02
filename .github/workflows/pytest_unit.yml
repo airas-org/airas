@@ -22,6 +22,7 @@ jobs:
       SAVE_DIR:         ${{ github.workspace }}/save_dir
 
     strategy:
+      fail-fast: false
       matrix:
         module:
           - analysis
