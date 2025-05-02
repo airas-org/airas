@@ -56,4 +56,7 @@ jobs:
         with:
           name: Unit Tests
           path: test-reports/unit.xml
-          reporter: junit
+          reporter: java-junit
+          use-actions-summary: true
+          list-suites: only-failed
+          list-tests: only-failed
