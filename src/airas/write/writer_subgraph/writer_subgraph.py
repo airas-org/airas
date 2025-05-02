@@ -4,16 +4,16 @@ from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
-from airas.utils.logging_utils import setup_logging
-
 from airas.write.writer_subgraph.nodes.generate_note import generate_note
 from airas.write.writer_subgraph.nodes.paper_writing import WritingNode
-
-from airas.utils.execution_timers import time_node, ExecutionTimeState
-from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 from airas.write.writer_subgraph.input_data import (
     writer_subgraph_input_data,
 )
+
+from airas.utils.check_api_key import check_api_key
+from airas.utils.logging_utils import setup_logging
+from airas.utils.execution_timers import time_node, ExecutionTimeState
+from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -58,6 +58,7 @@ class WriterSubgraph:
         self.refine_round = refine_round
         self.figures_dir = os.path.join(self.save_dir, "images")
         os.makedirs(self.figures_dir, exist_ok=True)
+        check_api_key(llm_api_key_check=True)
 
     @time_node("writer_subgraph", "_generate_note_node")
     def _generate_note_node(self, state: WriterSubgraphState) -> dict:

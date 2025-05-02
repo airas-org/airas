@@ -7,8 +7,6 @@ from typing import Annotated, TypedDict
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
-from airas.utils.logging_utils import setup_logging
-
 from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.web_scrape_node import (
     web_scrape_node,
 )  # NOTE: `firecrawl_client.py`
@@ -32,6 +30,9 @@ from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.summarize_paper_nod
 from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.retrieve_arxiv_text_node import (
     RetrievearXivTextNode,
 )
+
+from airas.utils.check_api_key import check_api_key
+from airas.utils.logging_utils import setup_logging
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
@@ -93,6 +94,10 @@ class RetrievePaperFromQuerySubgraph:
         self.selected_papers_dir = os.path.join(self.save_dir, "selected_papers")
         os.makedirs(self.papers_dir, exist_ok=True)
         os.makedirs(self.selected_papers_dir, exist_ok=True)
+        check_api_key(
+            llm_api_key_check=True,
+            fire_crawl_api_key_check=True,
+        )
 
     def _initialize_state(self, state: RetrievePaperFromQueryState) -> dict:
         return {

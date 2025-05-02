@@ -9,37 +9,38 @@ from pydantic import TypeAdapter
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
-from airas.utils.logging_utils import setup_logging
-
-from airas.retrieve.retrieve_paper_subgraph.nodes.web_scrape_node import (
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.web_scrape_node import (
     web_scrape_node,
 )  # NOTE: `firecrawl_client.py`を使用
-from airas.retrieve.retrieve_paper_subgraph.nodes.extract_paper_title_node import (
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_paper_title_node import (
     extract_paper_title_node,
 )
-from airas.retrieve.retrieve_related_paper_subgraph.nodes.arxiv_api_node import (
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.arxiv_api_node import (
     ArxivNode,
 )  # NOTE: `arxiv_client.py`を使用
-from airas.retrieve.retrieve_related_paper_subgraph.nodes.extract_github_url_node import (
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_github_url_node import (
     ExtractGithubUrlNode,
 )
-from airas.retrieve.retrieve_related_paper_subgraph.nodes.generate_queries_node import (
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.generate_queries_node import (
     generate_queries_node,
 )
 from airas.retrieve.retrieve_related_paper_subgraph.prompt.generate_queries_node_prompt import (
-    generate_queries_prompt_add,
+    generate_queries_prompt,
 )
-from airas.retrieve.retrieve_related_paper_subgraph.nodes.select_best_paper_node import (
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.select_best_paper_node import (
     select_best_paper_node,
     select_add_paper_prompt,
 )
-from airas.retrieve.retrieve_related_paper_subgraph.nodes.summarize_paper_node import (
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.summarize_paper_node import (
     summarize_paper_node,
     summarize_paper_prompt_base,
 )
-from airas.retrieve.retrieve_related_paper_subgraph.nodes.retrieve_arxiv_text_node import (
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.retrieve_arxiv_text_node import (
     RetrievearXivTextNode,
 )
+
+from airas.utils.logging_utils import setup_logging
+from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
@@ -110,6 +111,10 @@ class RetrieveRelatedPaperSubgraph:
         self.selected_papers_dir = os.path.join(self.save_dir, "selected_papers")
         os.makedirs(self.papers_dir, exist_ok=True)
         os.makedirs(self.selected_papers_dir, exist_ok=True)
+        check_api_key(
+            llm_api_key_check=True,
+            fire_crawl_api_key_check=True,
+        )
 
     def _initialize_state(self, state: RetrieveRelatedPaperState) -> dict:
         selected_base_paper_info = json.loads(state["base_method_text"])
@@ -129,7 +134,7 @@ class RetrieveRelatedPaperSubgraph:
         all_queries = state["base_queries"] + add_queries + state["generated_queries"]
         new_generated_queries = generate_queries_node(
             llm_name=self.llm_name,
-            prompt_template=generate_queries_prompt_add,
+            prompt_template=generate_queries_prompt,
             selected_base_paper_info=state["selected_base_paper_info"],
             queries=all_queries,
         )

@@ -19,6 +19,7 @@ from airas.create.create_experimental_design_subgraph.input_data import (
     create_experimental_design_subgraph_input_data,
 )
 
+from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
@@ -54,7 +55,7 @@ class CreateExperimentalDesignState(
 
 class CreateExperimentalDesignSubgraph:
     def __init__(self):
-        pass
+        check_api_key(llm_api_key_check=True)
 
     @time_node("create_experimental_subgraph", "_generate_advantage_criteria_node")
     def _generate_advantage_criteria_node(

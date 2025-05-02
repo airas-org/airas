@@ -1,4 +1,4 @@
-generate_queries_prompt_add = """\
+generate_queries_prompt = """\
 You are an expert research assistant tasked with generating search queries for finding relevant research papers.
 Your goal is to create a set of well-structured queries that can be used with a research paper search API 
 to retrieve papers that are conceptually or methodologically related to a given foundational paper (Research A).
