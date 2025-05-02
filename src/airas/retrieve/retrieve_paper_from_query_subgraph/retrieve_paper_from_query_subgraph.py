@@ -11,13 +11,13 @@ from airas.utils.logging_utils import setup_logging
 
 from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.web_scrape_node import (
     web_scrape_node,
-)  # NOTE: `firecrawl_client.py`を使用
+)  # NOTE: `firecrawl_client.py`
 from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_paper_title_node import (
     extract_paper_title_node,
 )
 from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.arxiv_api_node import (
     ArxivNode,
-)  # NOTE: `arxiv_client.py`を使用
+)  # NOTE: `arxiv_client.py`
 from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_github_url_node import (
     ExtractGithubUrlNode,
 )
