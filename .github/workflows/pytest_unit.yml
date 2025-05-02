@@ -46,7 +46,6 @@ jobs:
             --cov-branch \
             --cov-report=term-missing \
             --disable-warnings \
-            --maxfail=5 \
             --junitxml=test-reports/unit.xml \
             -v tests/unit/
 
@@ -54,9 +53,10 @@ jobs:
         if: always()
         uses: dorny/test-reporter@v1
         with:
-          name: Unit Tests
+          name: Unit Tests Summary Report
           path: test-reports/unit.xml
           reporter: java-junit
-          use-actions-summary: true
           list-suites: only-failed
           list-tests: only-failed
+          fail-on-error: false
+          only-summary: true
