@@ -36,6 +36,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Ensure pip cache dir exists
+        run: mkdir -p ~/.cache/pip
 
       - uses: actions/setup-python@v5
         with:
