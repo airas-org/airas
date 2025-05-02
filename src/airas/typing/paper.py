@@ -10,9 +10,7 @@ class CandidatePaperInfo(TypedDict):
     journal: str
     doi: str
     summary: str
-    # 途中で取得
     github_url: str
-    # 最後のサマリーで取得
     main_contributions: str
     methodology: str
     experimental_setup: str
