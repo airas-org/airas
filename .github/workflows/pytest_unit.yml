@@ -14,14 +14,28 @@ defaults:
 
 jobs:
   unit-tests:
-    name: Run All Unit Tests
+    name: ${{ matrix.module }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
-      SAVE_DIR:          ${{ github.workspace }}/save_dir
+      SAVE_DIR:         ${{ github.workspace }}/save_dir
+
+    strategy:
+      matrix:
+        module:
+          - analysis
+          - create
+          - execution
+          - preparation
+          - publication
+          - retrieve
+          - review
+          - write
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -35,26 +49,27 @@ jobs:
       - name: Set PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
 
-      - name: Create save directory
-        run: mkdir -p $SAVE_DIR
-
-      - name: Run pytest (unit)
+      - name: Create save and  report directory
         run: |
-          mkdir -p test-reports
+          mkdir -p $SAVE_DIR
+          mkdir -p test-reports/${{ matrix.module }}
+
+      - name: Run pytest for ${{ matrix.module }}
+        run: |
           uv run pytest \
-            --cov=airas \
+            --cov=airas.${{ matrix.module }} \
             --cov-branch \
             --cov-report=term-missing \
             --disable-warnings \
             --junitxml=test-reports/unit.xml \
             -v tests/unit/
 
-      - name: Upload test results summary
+      - name: Upload ${{ matrix.module }} results summary
         if: always()
         uses: dorny/test-reporter@v1
         with:
-          name: Unit Tests Summary Report
-          path: test-reports/unit.xml
+          name: ${{ matrix.module }} Summary Report
+          path: test-reports/${{ matrix.module }}/unit.xml
           reporter: java-junit
           list-suites: only-failed
           list-tests: only-failed
