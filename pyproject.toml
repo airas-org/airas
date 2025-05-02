@@ -23,6 +23,7 @@ dependencies = [
     "tenacity>=9.0.0",
     "feedparser>=6.0.11",
     "pytz>=2025.2",
+    "argparse>=1.4.0",
 ]
 
 [project.urls]

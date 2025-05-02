@@ -2,6 +2,7 @@ import os
 import json
 import shutil
 import operator
+import argparse
 import logging
 from typing import Annotated, TypedDict
 from pydantic import TypeAdapter
@@ -404,7 +405,8 @@ RetrieveRelatedPaper = create_wrapped_subgraph(
     RetrieveRelatedPaperOutputState,
 )
 
-if __name__ == "__main__":
+
+def main():
     scrape_urls = [
         "https://icml.cc/virtual/2024/papers.html?filter=title",
         # "https://iclr.cc/virtual/2024/papers.html?filter=title",
@@ -415,16 +417,22 @@ if __name__ == "__main__":
 
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/researchgraph/data"
-
-    github_repository = "auto-res2/experiment_script_matsuzawa"
-    branch_name = "base-branch"
     input = {
         "add_queries": ["vision"],
     }
 
+    parser = argparse.ArgumentParser(
+        description="execute retrieve_related_paper_subgraph"
+    )
+    parser.add_argument("github_repository", help="Your GitHub repository")
+    parser.add_argument(
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
+    args = parser.parse_args()
+
     add_paper_retriever = RetrieveRelatedPaper(
-        github_repository=github_repository,
-        branch_name=branch_name,
+        github_repository=args.github_repository,
+        branch_name=args.branch_name,
         llm_name=llm_name,
         save_dir=save_dir,
         scrape_urls=scrape_urls,
@@ -433,3 +441,12 @@ if __name__ == "__main__":
 
     result = add_paper_retriever.run(input)
     print(f"result: {result}")
+    return
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        raise
