@@ -1,11 +1,11 @@
 name: Deploy Docs to GitHub Pages
 
 on:
-  push:
-    branches:
-      - develop
+  pull_request:
+    branches: [develop]
     paths:
       - 'docs/**'
+      - '.github/workflows/upload_github_pages.yml'
 
 jobs:
   deploy-docs:
@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -30,12 +30,12 @@ jobs:
         run: yarn build
         working-directory: docs
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy using gh-pages
         env:
-          GIT_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: github.com/${{ github.repository }}
         run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
-          yarn deploy
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          yarn deploy --repo=https://x-access-token:${GITHUB_TOKEN}@${REPO}
         working-directory: docs
