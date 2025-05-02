@@ -61,8 +61,8 @@ jobs:
             --cov-branch \
             --cov-report=term-missing \
             --disable-warnings \
-            --junitxml=test-reports/unit.xml \
-            -v tests/unit/
+            --junitxml=test-reports/${{ matrix.module }}/unit.xml \
+            -v tests/unit/${{ matrix.module }} 
 
       - name: Upload ${{ matrix.module }} results summary
         if: always()
