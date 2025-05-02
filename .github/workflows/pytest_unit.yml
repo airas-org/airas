@@ -1,0 +1,59 @@
+name: Unit Tests 
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths: [
+      'src/airas/**',
+      'tests/unit/**',
+      '.github/workflows/pytest_unit.yml'
+    ]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  unit-tests:
+    name: Run All Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITHUB_WORKSPACE: ${{ github.workspace }}
+      SAVE_DIR:          ${{ github.workspace }}/save_dir
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
+          uv --version
+
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
+
+      - name: Create save directory
+        run: mkdir -p $SAVE_DIR
+
+      - name: Run pytest (unit)
+        run: |
+          mkdir -p test-reports
+          uv run pytest \
+            --cov=airas \
+            --cov-branch \
+            --cov-report=term-missing \
+            --disable-warnings \
+            --maxfail=5 \
+            --junitxml=test-reports/unit.xml \
+            -v tests/unit/
+
+      - name: Upload test results summary
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Unit Tests
+          path: test-reports/unit.xml
+          reporter: junit
