@@ -8,6 +8,11 @@ class DummyLLMFacadeClient:
     def __init__(self, llm_name: str):
         self.llm_name = llm_name
 
+    def generate(self, message: str) -> tuple[Any, float]:
+        if isinstance(self._next_return, tuple):
+            return self._next_return
+        return None, 0.0
+
     def structured_outputs(
         self, *, message, data_model
     ) -> tuple[dict[Any, Any] | None, float]:

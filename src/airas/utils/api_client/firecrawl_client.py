@@ -13,11 +13,19 @@ from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestExce
 from airas.utils.api_client.base_http_client import BaseHTTPClient
 
 logger = getLogger(__name__)
-FIRE_CRAWL_API_KEY = os.getenv("FIRE_CRAWL_API_KEY")
 
 RETRY_EXC = (HTTPError, ConnectionError, Timeout, RequestException, Exception)
 MAX_RETRIES = 10
 WAIT_POLICY = wait_exponential(multiplier=1.0, max=180.0)
+
+FIRECRAWL_RETRY = retry(
+    retry=retry_if_exception_type(RETRY_EXC),
+    stop=stop_after_attempt(MAX_RETRIES),
+    wait=WAIT_POLICY,
+    before=before_log(logger, logging.WARNING),
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+    reraise=True,
+)
 
 
 class FireCrawlClient(BaseHTTPClient):
@@ -26,10 +34,12 @@ class FireCrawlClient(BaseHTTPClient):
         base_url: str = "https://api.firecrawl.dev/v1",
         default_headers: dict[str, str] | None = None,
     ):
-        if not FIRE_CRAWL_API_KEY:
+        api_key = os.getenv("FIRE_CRAWL_API_KEY")
+        if not api_key:
             raise EnvironmentError("FIRE_CRAWL_API_KEY is not set")
+
         auth_headers = {
-            "Authorization": f"Bearer {FIRE_CRAWL_API_KEY}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
         super().__init__(
@@ -37,14 +47,7 @@ class FireCrawlClient(BaseHTTPClient):
             default_headers={**auth_headers, **(default_headers or {})},
         )
 
-    @retry(
-        retry=retry_if_exception_type(RETRY_EXC),
-        stop=stop_after_attempt(MAX_RETRIES),
-        wait=WAIT_POLICY,
-        before=before_log(logger, logging.WARNING),
-        before_sleep=before_sleep_log(logger, logging.WARNING),
-        reraise=True,
-    )
+    @FIRECRAWL_RETRY
     def scrape(
         self,
         url: str,
@@ -62,4 +65,4 @@ class FireCrawlClient(BaseHTTPClient):
             "waitFor": wait_for,
             "timeout": timeout_ms,
         }
-        return self.request("POST", "scrape", json=payload, timeout=timeout)
+        return self.post(path="scrape", json=payload, timeout=timeout)

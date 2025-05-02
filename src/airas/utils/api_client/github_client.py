@@ -10,6 +10,7 @@ from tenacity import (
     retry_if_exception_type,
     before_sleep_log,
 )
+from airas.utils.api_client.base_http_client import BaseHTTPClient
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -28,44 +29,20 @@ GITHUB_RETRY = retry(
 )
 
 
-class GithubClient:
-    def __init__(self) -> None:
-        self.logger = logging.getLogger(__name__)
-        self.base_url = "https://api.github.com"
-        self.default_headers = {
+class GithubClient(BaseHTTPClient):
+    def __init__(
+        self,
+        base_url: str = "https://api.github.com",
+        default_headers: dict[str, str] | None = None,
+    ) -> None:
+        auth_headers = {
             "Accept": "application/vnd.github.raw+json",
             "Authorization": f"Bearer {os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN')}",
             "X-GitHub-Api-Version": "2022-11-28",
         }
-
-    def _get(
-        self,
-        path: str,
-        *,
-        headers: dict[str, str] | None = None,
-        params: dict[str, str] | None = None,
-        timeout: float = 10.0,
-        stream: bool = False,
-    ) -> requests.Response:
-        url = f"{self.base_url}/{path.lstrip('/')}"
-        hdrs = {**self.default_headers, **(headers or {})}
-        return requests.get(
-            url=url, headers=hdrs, params=params, timeout=timeout, stream=stream
-        )
-
-    def _post(
-        self,
-        path: str,
-        *,
-        json: dict,
-        headers: dict[str, str] | None = None,
-        timeout: float = 10.0,
-        stream: bool = False,
-    ) -> requests.Response:
-        url = f"{self.base_url}/{path.lstrip('/')}"
-        hdrs = {**self.default_headers, **(headers or {})}
-        return requests.post(
-            url=url, headers=hdrs, json=json, timeout=timeout, stream=stream
+        super().__init__(
+            base_url=base_url,
+            default_headers={**auth_headers, **(default_headers or {})},
         )
 
     @GITHUB_RETRY
@@ -76,21 +53,21 @@ class GithubClient:
         # For public repositories, no access token is required.
         path = f"/repos/{repository_owner}/{repository_name}/contents/{file_path}"
 
-        response = self._get(path)
+        response = self.get(path=path, parse=False)
         match response.status_code:
             case 200:
                 return response.text
             case 302:
-                self.logger.warning("Resource not found (302).")
+                logger.warning("Resource not found (302).")
                 return None
             case 304:
-                self.logger.warning("Not Modified (304).")
+                logger.warning("Not Modified (304).")
                 return None
             case 403:
-                self.logger.warning("Forbidden (403).")
+                logger.warning("Forbidden (403).")
                 return None
             case 404:
-                self.logger.warning("Resource not found (404).")
+                logger.warning("Resource not found (404).")
                 return None
             case _:
                 raise RuntimeError(
@@ -105,18 +82,18 @@ class GithubClient:
         path = f"/repos/{repository_owner}/{repository_name}/git/trees/{tree_sha}"
         params = {"recursive": "true"}
 
-        response = self._get(path, params=params)
+        response = self.get(path=path, params=params, parse=False)
         match response.status_code:
             case 200:
                 return response.json()
             case 404:
-                self.logger.warning("Resource not found (404).")
+                logger.warning("Resource not found (404).")
                 return None
             case 409:
-                self.logger.warning("Conflict (409).")
+                logger.warning("Conflict (409).")
                 return None
             case 422:
-                self.logger.warning(
+                logger.warning(
                     "Validation failed, or the endpoint has been spammed (422)."
                 )
                 return None
@@ -139,15 +116,15 @@ class GithubClient:
         path = f"/repos/{repository_owner}/{repository_name}/branches/{branch_name}"
         headers = {"Accept": "application/vnd.github+json"}
 
-        response = self._get(path)
+        response = self.get(path=path, headers=headers, parse=False)
         match response.status_code:
             case 200:
-                self.logger.info("The specified branch exists (200).")
+                logger.info("The specified branch exists (200).")
                 response = response.json()
                 return response["commit"]["sha"]
             case 404:
                 msg = f"Branch not found: {path} (404)."
-                self.logger.info(msg)
+                logger.info(msg)
                 if raise_if_missing:
                     raise RuntimeError(msg)
                 return ""
@@ -167,13 +144,13 @@ class GithubClient:
         path = f"/repos/{repository_owner}/{repository_name}"
         headers = {"Accept": "application/vnd.github+json"}
 
-        response = self._get(path, headers=headers)
+        response = self.get(path=path, headers=headers, parse=False)
         match response.status_code:
             case 200:
-                self.logger.info("A research repository exists (200).")
+                logger.info("A research repository exists (200).")
                 return True
             case 404:
-                self.logger.info(f"Repository not found: {path} (404).")
+                logger.info(f"Repository not found: {path} (404).")
                 return False
             case 403:
                 raise RuntimeError(
@@ -202,10 +179,10 @@ class GithubClient:
         headers = {"Accept": "application/vnd.github+json"}
         payload = {"ref": f"refs/heads/{branch_name}", "sha": from_sha}
 
-        response = self._post(path, headers=headers, json=payload)
+        response = self.post(path=path, headers=headers, json=payload, parse=False)
         match response.status_code:
             case 201:
-                self.logger.info(f"Branch created (201): {branch_name}")
+                logger.info(f"Branch created (201): {branch_name}")
                 return True
             case 409:
                 raise RuntimeError(f"Conflict creating branch (409): {path}")
@@ -248,10 +225,10 @@ class GithubClient:
                 "default_branch_only": "true",
             }
 
-        response = self._post(path, headers=headers, json=json)
+        response = self.post(path=path, headers=headers, json=json, parse=False)
         match response.status_code:
             case 202:
-                self.logger.info("Fork of the repository was successful (202).")
+                logger.info("Fork of the repository was successful (202).")
                 return True
             case 400:
                 raise RuntimeError(f"Bad request (400): {path}")
