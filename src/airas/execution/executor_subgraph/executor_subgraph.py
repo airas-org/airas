@@ -4,8 +4,6 @@ from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
-from airas.utils.logging_utils import setup_logging
-
 from airas.execution.executor_subgraph.nodes.generate_code_with_devin import (
     generate_code_with_devin,
 )
@@ -26,13 +24,13 @@ from airas.execution.executor_subgraph.input_data import (
     executor_subgraph_input_data,
 )
 
+from airas.utils.check_api_key import check_api_key
+from airas.utils.logging_utils import setup_logging
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
-
-DEVIN_API_KEY = os.getenv("DEVIN_API_KEY")
 
 
 class ExecutorSubgraphInputState(TypedDict):
@@ -76,9 +74,14 @@ class ExecutorSubgraph:
         self.save_dir = save_dir
         self.max_code_fix_iteration = max_code_fix_iteration
         self.headers = {
-            "Authorization": f"Bearer {DEVIN_API_KEY}",
+            "Authorization": f"Bearer {os.getenv('DEVIN_API_KEY')}",
             "Content-Type": "application/json",
         }
+        check_api_key(
+            llm_api_key_check=True,
+            devin_api_key_check=True,
+            github_personal_access_token_check=True,
+        )
 
     @time_node("executor_subgraph", "_generate_code_with_devin_node")
     def _generate_code_with_devin_node(self, state: ExecutorSubgraphState) -> dict:

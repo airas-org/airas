@@ -5,10 +5,11 @@ from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
-from airas.utils.logging_utils import setup_logging
-
 from airas.publication.html_subgraph.nodes.convert_to_html import convert_to_html
 from airas.publication.html_subgraph.nodes.render_html import render_html
+
+from airas.utils.check_api_key import check_api_key
+from airas.utils.logging_utils import setup_logging
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
@@ -45,6 +46,7 @@ class HtmlSubgraph:
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
+        check_api_key(llm_api_key_check=True)
 
     @time_node("html_subgraph", "_convert_to_html_node")
     def _convert_to_html_node(self, state: HtmlSubgraphState) -> dict:

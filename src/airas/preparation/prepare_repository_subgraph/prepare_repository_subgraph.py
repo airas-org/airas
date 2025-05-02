@@ -21,8 +21,8 @@ from airas.preparation.prepare_repository_subgraph.nodes.retrieve_main_branch_sh
     retrieve_main_branch_sha,
 )
 
+from airas.utils.check_api_key import check_api_key
 from airas.utils.logging_utils import setup_logging
-
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 
 
@@ -61,6 +61,9 @@ class PrepareRepository:
     ):
         self.device_type = device_type
         self.organization = organization
+        check_api_key(
+            github_personal_access_token_check=True,
+        )
 
     def _init(self, state: dict) -> dict:
         github_repository = state["github_repository"]
