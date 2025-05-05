@@ -1,4 +1,5 @@
 import pytest
+
 import airas.analysis.analytic_subgraph.nodes.analytic_node as mod
 from airas.analysis.analytic_subgraph.nodes.analytic_node import analytic_node
 

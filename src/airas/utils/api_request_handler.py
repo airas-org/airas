@@ -1,7 +1,8 @@
 import time
-import requests
-from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
 from logging import getLogger
+
+import requests
+from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 
 logger = getLogger(__name__)
 

@@ -1,4 +1,5 @@
 import pytest
+
 import airas.create.create_experimental_design_subgraph.nodes.generate_advantage_criteria as mod
 from airas.create.create_experimental_design_subgraph.nodes.generate_advantage_criteria import (
     generate_advantage_criteria,

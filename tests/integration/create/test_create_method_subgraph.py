@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from airas.create.create_method_subgraph.create_method_subgraph import (
     CreateMethodSubgraph,
 )

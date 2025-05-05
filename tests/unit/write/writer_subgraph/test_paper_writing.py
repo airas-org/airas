@@ -1,5 +1,7 @@
 import json
+
 import pytest
+
 from airas.write.writer_subgraph.nodes.paper_writing import WritingNode
 
 

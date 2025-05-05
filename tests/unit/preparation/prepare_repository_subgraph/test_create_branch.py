@@ -1,6 +1,8 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 import requests
+
 from airas.preparation.prepare_repository_subgraph.nodes.create_branch import (
     create_branch,
 )

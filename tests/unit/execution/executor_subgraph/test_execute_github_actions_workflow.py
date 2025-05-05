@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from airas.execution.executor_subgraph.nodes.execute_github_actions_workflow import (
     execute_github_actions_workflow,
 )

@@ -1,10 +1,12 @@
+import ast
+import logging
 import os
 import re
-import ast
 from typing import Literal
-from pydantic import BaseModel
+
 from google import genai
-import logging
+from pydantic import BaseModel
+
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
@@ -54,7 +56,7 @@ class GoogelGenAIClient:
         total_tokens = self.client.models.count_tokens(
             model=model_name, contents=message
         ).total_tokens
-        max_tokens = VERTEXAI_MODEL_INFO[model_name].get("max_input_tokens", 4096)
+        max_tokens = int(VERTEXAI_MODEL_INFO[model_name].get("max_input_tokens", 4096))
 
         if total_tokens > max_tokens:
             self.logger.warning(

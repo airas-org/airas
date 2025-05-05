@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from airas.publication.latex_subgraph.nodes.convert_to_latex import convert_to_latex
 
 

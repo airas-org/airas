@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from airas.execution.executor_subgraph.nodes.check_devin_completion import (
     check_devin_completion,
 )

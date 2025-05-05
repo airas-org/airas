@@ -1,8 +1,9 @@
-from pydantic import BaseModel
-from jinja2 import Environment
-
-from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
 from logging import getLogger
+
+from jinja2 import Environment
+from pydantic import BaseModel
+
+from airas.utils.api_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
 
 logger = getLogger(__name__)
 
@@ -27,8 +28,11 @@ class WritingNode:
         llm_name: LLM_MODEL,
         refine_round: int = 2,
         refine_only: bool = False,
-        target_sections: list[str] = [],
+        target_sections: list[str] | None = None,
     ):
+        if target_sections is None:
+            target_sections = []
+
         self.llm_name = llm_name
         self.refine_round = refine_round
         self.refine_only = refine_only

@@ -1,4 +1,5 @@
 import pytest
+
 import airas.create.create_method_subgraph.nodes.generator_node as mod
 from airas.create.create_method_subgraph.nodes.generator_node import generator_node
 

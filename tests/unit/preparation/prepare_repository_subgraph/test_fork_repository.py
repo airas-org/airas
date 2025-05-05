@@ -1,6 +1,8 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
 import requests
+
 from airas.preparation.prepare_repository_subgraph.nodes.fork_repository import (
     fork_repository,
 )

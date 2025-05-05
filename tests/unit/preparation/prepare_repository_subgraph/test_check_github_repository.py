@@ -1,6 +1,8 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
 import requests
+
 from airas.preparation.prepare_repository_subgraph.nodes.check_github_repository import (
     check_github_repository,
 )

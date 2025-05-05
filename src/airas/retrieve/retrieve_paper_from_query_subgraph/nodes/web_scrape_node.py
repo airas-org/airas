@@ -1,6 +1,7 @@
 import os
 import urllib.parse
 from logging import getLogger
+
 from airas.utils.api_client.firecrawl_client import FireCrawlClient
 
 logger = getLogger(__name__)

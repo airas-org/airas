@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from airas.write.writer_subgraph.writer_subgraph import WriterSubgraph
 
 

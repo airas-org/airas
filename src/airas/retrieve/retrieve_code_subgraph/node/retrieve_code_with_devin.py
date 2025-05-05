@@ -1,9 +1,11 @@
+from logging import getLogger
+
 from jinja2 import Environment
-from airas.utils.api_request_handler import fetch_api_data, retry_request
+
 from airas.retrieve.retrieve_code_subgraph.prompt.retrieve_code_with_devin_prompt import (
     retrieve_code_with_devin_prompt,
 )
-from logging import getLogger
+from airas.utils.api_request_handler import fetch_api_data, retry_request
 
 logger = getLogger(__name__)
 

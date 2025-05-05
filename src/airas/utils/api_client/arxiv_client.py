@@ -1,14 +1,16 @@
 import logging
 from logging import getLogger
+
+from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 from tenacity import (
+    before_log,
+    before_sleep_log,
     retry,
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    before_log,
-    before_sleep_log,
 )
-from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
+
 from airas.utils.api_client.base_http_client import BaseHTTPClient
 
 logger = getLogger(__name__)

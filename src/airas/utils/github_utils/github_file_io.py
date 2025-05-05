@@ -1,8 +1,11 @@
-import os
 import base64
 import json
 import logging
-from typing import Any, TypedDict
+import os
+from typing import Any
+
+from typing_extensions import TypedDict
+
 from airas.utils.api_request_handler import (
     fetch_api_data,
     retry_request,

@@ -1,5 +1,7 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts import (
     retrieve_github_actions_artifacts,
 )

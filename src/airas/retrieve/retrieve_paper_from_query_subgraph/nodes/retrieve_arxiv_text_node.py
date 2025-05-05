@@ -1,10 +1,11 @@
 import os
 import re
 import shutil
-import requests
 from logging import getLogger
-from requests.exceptions import RequestException
+
+import requests
 from langchain_community.document_loaders import PyPDFLoader
+from requests.exceptions import RequestException
 
 logger = getLogger(__name__)
 

@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from airas.publication.readme_subgraph.nodes.readme_upload import readme_upload
 
 

@@ -1,30 +1,28 @@
 import logging
-from typing import TypedDict
 
-from langgraph.graph import START, END, StateGraph
+from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from typing_extensions import TypedDict
 
-from airas.preparation.prepare_repository_subgraph.nodes.fork_repository import (
-    fork_repository,
-    DEVICETYPE,
+from airas.preparation.prepare_repository_subgraph.nodes.check_branch_existence import (
+    check_branch_existence,
 )
 from airas.preparation.prepare_repository_subgraph.nodes.check_github_repository import (
     check_github_repository,
 )
-from airas.preparation.prepare_repository_subgraph.nodes.check_branch_existence import (
-    check_branch_existence,
-)
 from airas.preparation.prepare_repository_subgraph.nodes.create_branch import (
     create_branch,
+)
+from airas.preparation.prepare_repository_subgraph.nodes.fork_repository import (
+    DEVICETYPE,
+    fork_repository,
 )
 from airas.preparation.prepare_repository_subgraph.nodes.retrieve_main_branch_sha import (
     retrieve_main_branch_sha,
 )
-
 from airas.utils.check_api_key import check_api_key
+from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
-from airas.utils.execution_timers import time_node, ExecutionTimeState
-
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -65,7 +63,7 @@ class PrepareRepository:
             github_personal_access_token_check=True,
         )
 
-    def _init(self, state: dict) -> dict:
+    def _init(self, state: PrepareRepositoryState) -> dict:
         github_repository = state["github_repository"]
         if "/" in github_repository:
             github_owner, repository_name = github_repository.split("/", 1)

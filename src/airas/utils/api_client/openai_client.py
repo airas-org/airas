@@ -1,9 +1,10 @@
 import json
+import logging
+from typing import Literal
+
 import tiktoken
 from openai import OpenAI
 from pydantic import BaseModel
-from typing import Literal
-import logging
 
 from airas.utils.logging_utils import setup_logging
 

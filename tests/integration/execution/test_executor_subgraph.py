@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from airas.execution.executor_subgraph.executor_subgraph import ExecutorSubgraph
 
 

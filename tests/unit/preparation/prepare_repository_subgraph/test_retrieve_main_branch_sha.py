@@ -1,6 +1,8 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 import requests
+
 from airas.preparation.prepare_repository_subgraph.nodes.retrieve_main_branch_sha import (
     retrieve_main_branch_sha,
 )
