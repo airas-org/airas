@@ -23,15 +23,21 @@ def web_scrape_node(
 
             try:
                 response = client.scrape(full_url)
-                markdown = (
-                    (response.get("data") or {}).get("markdown") if response else None
-                )
-                if markdown:
-                    scraped_results.append(markdown)
-                else:
-                    logger.warning("'markdown' not found in response data")
             except Exception as e:
                 logger.error(f"Error with FireCrawl API: {e}")
+                raise RuntimeError(f"FireCrawl API error for URL: {full_url}") from e
+            data = response.get("data") if isinstance(response, dict) else None
+            if not data:
+                logger.warning(f"No data returned for URL: {full_url}")
+                continue
+            markdown = data.get("markdown")
+            if not markdown:
+                logger.warning(f"'markdown' missing in data for URL: {full_url}")
+                continue
+            scraped_results.append(markdown)
+
+    if not scraped_results:
+        raise RuntimeError("No markdown obtained for any URL")
     return scraped_results
 
 

@@ -1,5 +1,4 @@
 import os
-import json
 import shutil
 import operator
 import argparse
@@ -118,9 +117,9 @@ class RetrieveRelatedPaperSubgraph:
         )
 
     def _initialize_state(self, state: RetrieveRelatedPaperState) -> dict:
-        selected_base_paper_info = json.loads(state["base_method_text"])
+        # selected_base_paper_info = json.loads(state["base_method_text"])
         selected_base_paper_info = TypeAdapter(CandidatePaperInfo).validate_python(
-            selected_base_paper_info
+            state["base_method_text"]
         )
         return {
             "selected_base_paper_info": selected_base_paper_info,
@@ -271,7 +270,7 @@ class RetrieveRelatedPaperSubgraph:
     @time_node("retrieve_add_paper_subgraph", "_select_best_paper_node")
     def _select_best_paper_node(self, state: RetrieveRelatedPaperState) -> dict:
         candidate_papers_info_list = state["candidate_add_papers_info_list"]
-        base_arxiv_id = state["selected_base_paper_info"].arxiv_id
+        base_arxiv_id = state["selected_base_paper_info"]["arxiv_id"]
         filtered_candidates = [
             paper_info
             for paper_info in candidate_papers_info_list
@@ -290,7 +289,7 @@ class RetrieveRelatedPaperSubgraph:
         selected_paper_info_list = [
             paper_info
             for paper_info in candidate_papers_info_list
-            if paper_info.arxiv_id in selected_arxiv_ids
+            if paper_info["arxiv_id"] in selected_arxiv_ids
         ]
         # 選択された論文を別のディレクトリにコピーする
         for paper_info in selected_paper_info_list:
