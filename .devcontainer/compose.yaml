@@ -1,0 +1,11 @@
+services:
+  airas:
+    build:
+      context: ../
+      dockerfile: ./.devcontainer/dev.Dockerfile
+    env_file:
+      - ../.env
+    volumes:
+      - ..:/workspaces/airas:cached
+    environment:
+      - PYTHONPATH=/workspaces/airas/src

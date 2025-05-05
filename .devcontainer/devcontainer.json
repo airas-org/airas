@@ -1,27 +1,52 @@
 {
 	"name": "airas",
-	"dockerComposeFile": "docker-compose.yaml",
+	"dockerComposeFile": "compose.yaml",
 	"service": "airas",
-    // To run in a gpu environment, comment out the above code and use the code below
-    // "service": "airas-gpu",
 	"workspaceFolder": "/workspaces/airas",
-	"overrideCommand": true,
+  "overrideCommand": true,
 	"customizations": {
 		"vscode": {
 			"extensions": [
         "ms-python.python", // Python
-        "ms-python.debugpy", // Debugpy
-				"charliermarsh.ruff", // Ruff
-				"github.copilot", // GitHub Copilot
-        "eamodio.gitlens", // GitLens
-        "github.vscode-pull-request-github", // GitHub Pull Requests and Issues
         "ms-python.vscode-pylance", // Pylance
-        "oderwat.indent-rainbow", // Indent Rainbow
-        "tomoki1207.pdf", // PDF viewer
-        "ms-ceintl.vscode-language-pack-ja", // Japanese Language Pack
-        "ms-python.mypy-type-checker" // Mypy
+        "ms-python.debugpy", // Debugpy
+        "ms-python.mypy-type-checker", // Mypy
+				"charliermarsh.ruff", // Ruff
+        "tomoki1207.pdf" // PDF viewer
 			]
-		}
+		},
+    "settings" : {
+      "python.defaultInterpreterPath": ".venv/bin/python3",
+      "python.testing.pytestArgs": [
+        "tests"
+      ],
+      "python.testing.unittestEnabled": false,
+      "python.testing.pytestEnabled": true,
+      "[python]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+          "source.fixAll": true,
+          "source.organizeImports": true
+        },
+        "ruff.linting.enabled": true,
+        "python.linting.enabled": true,
+        "python.linting.mypyEnabled": true,
+        "python.analysis.typeCheckingMode": "off" // Pylance type check
+    },
+    "launch": {
+      "version": "0.2.0",
+      "configurations": [
+          {
+              "name": "Python Debugger: Current File",
+              "type": "debugpy",
+              "request": "launch",
+              "program": "${file}",
+              "console": "integratedTerminal"
+          }
+        ]
+      }
+    }
 	},
-	"postCreateCommand": "uv sync && uv run pre-commit install"
+  "postCreateCommand": "uv python install 3.10 3.11 3.12 3.13 3.14 && uv python pin 3.11 && uv venv --python 3.11 && uv sync && uv run pre-commit install"
 }
