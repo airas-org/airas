@@ -1,3 +1,4 @@
+import argparse
 import logging
 
 from typing import TypedDict
@@ -15,13 +16,11 @@ from airas.create.create_experimental_design_subgraph.nodes.generate_experiment_
 from airas.create.create_experimental_design_subgraph.nodes.generate_experiment_code import (
     generate_experiment_code,
 )
-from airas.create.create_experimental_design_subgraph.input_data import (
-    create_experimental_design_subgraph_input_data,
-)
 
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
+from airas.typing.paper import CandidatePaperInfo
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -29,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 class CreateExperimentalDesignInputState(TypedDict):
     new_method: str
-    base_method_text: str
+    base_method_text: CandidatePaperInfo
     base_experimental_code: str
     base_experimental_info: str
 
@@ -120,24 +119,33 @@ class CreateExperimentalDesignSubgraph:
 CreateExperimentalDesign = create_wrapped_subgraph(
     CreateExperimentalDesignSubgraph,
     CreateExperimentalDesignInputState,
-    CreateExperimentalDesignHiddenState,
+    CreateExperimentalDesignOutputState,
 )
 
-if __name__ == "__main__":
-    subgraph = CreateExperimentalDesignSubgraph()
-    graph = subgraph.build_graph()
-    output = graph.invoke(
-        create_experimental_design_subgraph_input_data,
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Execute CreateExperimentalDesignSubgraph"
     )
-    print(f"output: {output}")
+    parser.add_argument("github_repository", help="Your GitHub repository")
+    parser.add_argument(
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
+    args = parser.parse_args()
 
-    # github_repository = "auto-res2/test20"
-    # branch_name = "test"
+    ced = CreateExperimentalDesign(
+        github_repository=args.github_repository,
+        branch_name=args.branch_name,
+    )
+    result = ced.run()
+    print(f"result: {result}")
 
-    # experimentalplaner = CreateExperimentalDesign(
-    #     github_repository=github_repository,
-    #     branch_name=branch_name,
-    # )
 
-    # result = experimentalplaner.run()
-    # print(f"result: {result}")
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        logger.error(
+            f"Error running CreateExperimentalDesignSubgraph: {e}", exc_info=True
+        )
+        raise

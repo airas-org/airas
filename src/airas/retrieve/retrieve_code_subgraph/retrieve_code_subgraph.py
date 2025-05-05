@@ -1,3 +1,4 @@
+import argparse
 import logging
 from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
@@ -9,14 +10,12 @@ from airas.retrieve.retrieve_code_subgraph.node.retrieve_repository_contents imp
 from airas.retrieve.retrieve_code_subgraph.node.extract_experimental_info import (
     extract_experimental_info,
 )
-from airas.retrieve.retrieve_code_subgraph.input_data import (
-    retrieve_code_subgraph_input_data,
-)
 
 from airas.utils.check_api_key import check_api_key
 from airas.utils.logging_utils import setup_logging
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
+from airas.typing.paper import CandidatePaperInfo
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -24,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 class RetrieveCodeInputState(TypedDict):
     base_github_url: str
-    base_method_text: str
+    base_method_text: CandidatePaperInfo
 
 
 class RetrieveCodeHiddenState(TypedDict):
@@ -32,8 +31,8 @@ class RetrieveCodeHiddenState(TypedDict):
 
 
 class RetrieveCodeOutputState(TypedDict):
-    experimental_code: str
-    experimental_info: str
+    base_experimental_code: str
+    base_experimental_info: str
 
 
 class RetrieveCodeState(
@@ -64,8 +63,8 @@ class RetrieveCodeSubgraph:
             repository_content_str=state["repository_content_str"],
         )
         return {
-            "experimental_code": extract_code,
-            "experimental_info": experimental_info,
+            "base_experimental_code": extract_code,
+            "base_experimental_info": experimental_info,
         }
 
     def build_graph(self) -> CompiledGraph:
@@ -93,8 +92,27 @@ RetrieveCode = create_wrapped_subgraph(
     RetrieveCodeOutputState,
 )
 
+
+def main():
+    parser = argparse.ArgumentParser(description="Execute RetrieveCodeSubgraph")
+    parser.add_argument("github_repository", help="Your GitHub repository")
+    parser.add_argument(
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
+    args = parser.parse_args()
+
+    rc = RetrieveCode(
+        github_repository=args.github_repository,
+        branch_name=args.branch_name,
+    )
+    # result = rc.run(retrieve_code_subgraph_input_data)
+    result = rc.run({})
+    print(f"result: {result}")
+
+
 if __name__ == "__main__":
-    subgraph = RetrieveCodeSubgraph()
-    compiled_graph = subgraph.build_graph()
-    output = compiled_graph.invoke(retrieve_code_subgraph_input_data)
-    print("Output:", output)
+    try:
+        main()
+    except Exception as e:
+        logger.error(f"Error running RetrieveCodeSubgraph: {e}", exc_info=True)
+        raise

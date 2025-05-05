@@ -1,3 +1,4 @@
+import argparse
 import logging
 
 from langgraph.graph import START, END, StateGraph
@@ -13,13 +14,15 @@ from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
 from airas.utils.api_client.llm_facade_client import LLM_MODEL
 
+from airas.typing.paper import CandidatePaperInfo
+
 setup_logging()
 logger = logging.getLogger(__name__)
 
 
 class CreateMethodSubgraphInputState(TypedDict):
-    base_method_text: str
-    add_method_texts: list[str]
+    base_method_text: CandidatePaperInfo
+    add_method_texts: list[CandidatePaperInfo]
 
 
 class CreateMethodSubgraphHiddenState(TypedDict):
@@ -53,7 +56,7 @@ class CreateMethodSubgraph:
         new_method = generator_node(
             llm_name=self.llm_name,
             base_method_text=state["base_method_text"],
-            add_method_text_list=state["add_method_texts"],
+            add_method_texts=state["add_method_texts"],
         )
         return {"new_method": new_method}
 
@@ -71,26 +74,32 @@ class CreateMethodSubgraph:
 CreateMethod = create_wrapped_subgraph(
     CreateMethodSubgraph,
     CreateMethodSubgraphInputState,
-    CreateMethodSubgraphHiddenState,
+    CreateMethodSubgraphOutputState,
 )
 
-if __name__ == "__main__":
-    # llm_name = "o3-mini-2025-01-31"
-    # subgraph = CreateMethodSubgraph(
-    #     llm_name=llm_name,
-    # ).build_graph()
 
-    # result = subgraph.invoke(create_method_subgraph_input_data)
-    # print(result)
+def main():
+    llm_name = "o3-mini-2025-01-31"
 
-    github_repository = "auto-res2/test-tanaka-2"
-    branch_name = "test"
+    parser = argparse.ArgumentParser(description="Execute CreateMethodSubgraph")
+    parser.add_argument("github_repository", help="Your GitHub repository")
+    parser.add_argument(
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
+    args = parser.parse_args()
 
     cm = CreateMethod(
-        github_repository=github_repository,
-        branch_name=branch_name,
-        llm_name="o3-mini-2025-01-31",
+        github_repository=args.github_repository,
+        branch_name=args.branch_name,
+        llm_name=llm_name,
     )
-
     result = cm.run()
     print(f"result: {result}")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        logger.error(f"Error running CreateMethodSubgraph: {e}", exc_info=True)
+        raise
