@@ -131,7 +131,7 @@ class GithubGraphWrapper:
             return {
                 "original_state": original_state,
                 "user_input_state": user_input_state,
-                "branch_name": final_branch,
+                "final_branch_name": final_branch,
             }
 
         input_conflict = any(
@@ -150,23 +150,22 @@ class GithubGraphWrapper:
         return {
             "original_state": original_state,
             "user_input_state": user_input_state,
-            "branch_name": final_branch,
+            "final_branch_name": final_branch,
         }
 
     # @time_node("wrapper", "run_subgraph")
     def _run_subgraph(self, state: dict[str, Any]) -> dict[str, Any]:
         original_state = state.get("original_state") or {}
-        user_input_state = (
-            state.get("user_input_state") if "user_input_state" in state else state
-        )
+        user_input_state = state.get("user_input_state", state)
         merged_input_state = self._deep_merge(original_state, user_input_state)
-        branch_name = state.get("branch_name", self.branch_name)
 
-        state_for_subgraph = {
+        final_branch_name = state.get("final_branch_name", self.branch_name)
+
+        state_for_subgraph = {  # NOTE: Corresponds to cases where the original subgraph (CompiledGraph) refers to these internally
             **merged_input_state,
             "github_owner": self.github_owner,
             "repository_name": self.repository_name,
-            "branch_name": branch_name,
+            "final_branch_name": final_branch_name,
         }
 
         missing = [k for k in self.input_state_keys if k not in state_for_subgraph]
@@ -180,35 +179,35 @@ class GithubGraphWrapper:
         return {
             "merged_input_state": merged_input_state,
             "output_state": output_state,
-            "branch_name": branch_name,
+            "final_branch_name": final_branch_name,
         }
 
     # @time_node("wrapper", "upload_to_github")
-    def _upload_to_github(self, state: dict[str, Any]) -> dict[str, bool]:
+    def _upload_to_github(self, state: dict[str, Any]) -> dict[str, Any]:
         merged_input_state = state.get("merged_input_state", {})
         raw_output_state = state.get("output_state", {})
-        branch_to_use = state.get("branch_name", self.branch_name)
-        output_state = {
+        final_branch_name = state.get("final_branch_name", self.branch_name)
+        output_state = {  # NOTE: Removal of github-related meta information
             k: raw_output_state[k]
             for k in self.output_state_keys
             if k in raw_output_state
         }
-        merged_output_state = self._deep_merge(merged_input_state, output_state)
+        state_to_upload = self._deep_merge(merged_input_state, output_state)
 
-        formatted_extra_files = self._format_extra_files(branch_to_use)
+        formatted_extra_files = self._format_extra_files(final_branch_name)
 
-        result = upload_to_github(
+        github_upload_success = upload_to_github(
             github_owner=self.github_owner,
             repository_name=self.repository_name,
-            branch_name=branch_to_use,
+            branch_name=final_branch_name,
             output_path=self.research_file_path,
-            state=merged_output_state,
+            state=state_to_upload,
             extra_files=formatted_extra_files,
             commit_message=f"Update by subgraph: {self.subgraph_name}",
         )
-        logger.info("Updated research_history.json.")
+        logger.info(f"Updated {self.research_file_path}")
         logger.info(
-            f"Check here：https://github.com/{self.github_repository}/blob/{branch_to_use}/.research/research_history.json"
+            f"Check here：https://github.com/{self.github_repository}/blob/{final_branch_name}/{self.research_file_path}"
         )
         if formatted_extra_files is not None:
             for file_config in formatted_extra_files:
@@ -220,7 +219,12 @@ class GithubGraphWrapper:
                     logger.info(f"Uploaded HTML available at: {github_pages_url}")
                     break
 
-        return {"github_upload_success": result}
+        return {
+            "github_upload_success": github_upload_success,
+            "merged_input_state": merged_input_state,
+            "output_state": output_state,
+            "final_branch_name": final_branch_name,
+        }
 
     def build_graph(self) -> CompiledGraph:
         wrapper = StateGraph(dict[str, Any])
@@ -297,6 +301,20 @@ def create_wrapped_subgraph(
         def run(self, use_input: dict[str, Any] = {}) -> dict[str, Any]:
             graph = self.build_graph()
             config = {"recursion_limit": 300}  # NOTE:
-            return graph.invoke(use_input, config=config)
+            result = graph.invoke(use_input, config=config)
+            base = {
+                "github_upload_success": result.get("github_upload_success", False),
+                "subgraph_name": self.subgraph_name,
+                "github_owner": self.github_owner,
+                "repository_name": self.repository_name,
+                "final_branch_name": result["final_branch_name"],
+                "research_file_path": self.research_file_path,
+                "extra_files": self.extra_files,
+            }
+            return {
+                **base,
+                **result.get("merged_input_state", {}),
+                **result.get("output_state", {}),
+            }
 
     return GithubGraphRunner
