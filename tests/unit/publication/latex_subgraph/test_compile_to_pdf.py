@@ -1,8 +1,10 @@
 import os
-import pytest
 import subprocess
-from unittest.mock import patch
 from types import SimpleNamespace
+from unittest.mock import patch
+
+import pytest
+
 from airas.publication.latex_subgraph.nodes.compile_to_pdf import LatexNode
 
 

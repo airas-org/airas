@@ -1,23 +1,22 @@
-import os
 import logging
-from typing import TypedDict
-from langgraph.graph import START, END, StateGraph
-from langgraph.graph.graph import CompiledGraph
+import os
 
-from airas.write.writer_subgraph.nodes.generate_note import generate_note
-from airas.write.writer_subgraph.nodes.paper_writing import WritingNode
+from langgraph.graph import END, START, StateGraph
+from langgraph.graph.graph import CompiledGraph
+from typing_extensions import TypedDict
+
+from airas.utils.check_api_key import check_api_key
+from airas.utils.execution_timers import ExecutionTimeState, time_node
+from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
+from airas.utils.logging_utils import setup_logging
 from airas.write.writer_subgraph.input_data import (
     writer_subgraph_input_data,
 )
-
-from airas.utils.check_api_key import check_api_key
-from airas.utils.logging_utils import setup_logging
-from airas.utils.execution_timers import time_node, ExecutionTimeState
-from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
+from airas.write.writer_subgraph.nodes.generate_note import generate_note
+from airas.write.writer_subgraph.nodes.paper_writing import WritingNode
 
 setup_logging()
 logger = logging.getLogger(__name__)
-
 
 class WriterSubgraphInputState(TypedDict):
     base_method_text: str

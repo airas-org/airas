@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from airas.preparation.prepare_repository_subgraph.prepare_repository_subgraph import (
     PrepareRepository,
 )

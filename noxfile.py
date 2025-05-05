@@ -1,5 +1,6 @@
-import nox
 import os
+
+import nox
 
 # For local use (Python path for uv management)
 local_python_versions = [

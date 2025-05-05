@@ -1,11 +1,13 @@
 import os
 import re
-import subprocess
 import shutil
+import subprocess
 import tempfile
-from pydantic import BaseModel
-from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
 from logging import getLogger
+
+from pydantic import BaseModel
+
+from airas.utils.api_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
 
 logger = getLogger(__name__)
 
@@ -66,7 +68,7 @@ The value of \"latex_full_text\" must contain the complete LaTeX text."""
         except Exception as e:
             raise RuntimeError(
                 f"Failed to copy directory {self.template_dir} to {self.latex_save_dir}: {e}"
-            )
+            ) from e
 
     def _fill_template(self, content: dict) -> str:
         # Read the copied template, replace placeholders with content, and save the updated file

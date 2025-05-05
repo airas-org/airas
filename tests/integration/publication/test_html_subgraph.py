@@ -1,4 +1,5 @@
 import pytest
+
 from airas.publication.html_subgraph.html_subgraph import HtmlSubgraph
 
 

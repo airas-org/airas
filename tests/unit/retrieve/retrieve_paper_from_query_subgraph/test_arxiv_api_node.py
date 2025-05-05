@@ -1,4 +1,5 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from airas.retrieve.retrieve_paper_subgraph.nodes.arxiv_api_node import ArxivNode
 
 

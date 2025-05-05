@@ -1,9 +1,10 @@
-import requests
 from typing import Literal
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
-from airas.utils.api_client.openai_client import OpenAIClient, OPENAI_MODEL
-from airas.utils.api_client.google_genai_client import GoogelGenAIClient, VERTEXAI_MODEL
 
+import requests
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
+
+from airas.utils.api_client.google_genai_client import VERTEXAI_MODEL, GoogelGenAIClient
+from airas.utils.api_client.openai_client import OPENAI_MODEL, OpenAIClient
 
 LLM_MODEL = Literal[OPENAI_MODEL, VERTEXAI_MODEL]
 

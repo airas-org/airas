@@ -1,8 +1,8 @@
-import os
 import glob
+import os
 from typing import Optional
-from jinja2 import Template
 
+from jinja2 import Template
 
 corresponding_section: dict[str, list[str]] = {
     "Title": [],

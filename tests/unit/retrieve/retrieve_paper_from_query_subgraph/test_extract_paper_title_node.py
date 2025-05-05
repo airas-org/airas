@@ -1,4 +1,5 @@
 from unittest.mock import patch
+
 from airas.retrieve.retrieve_paper_subgraph.nodes.extract_paper_title_node import (
     extract_paper_title_node,
 )

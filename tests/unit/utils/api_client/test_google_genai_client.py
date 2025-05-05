@@ -1,7 +1,9 @@
 import os
+
 import pytest
 from pydantic import BaseModel
-from airas.utils.api_client.google_genai_client import GoogelGenAIClient, VERTEXAI_MODEL
+
+from airas.utils.api_client.google_genai_client import VERTEXAI_MODEL, GoogelGenAIClient
 
 ALL_VERTEXAI_MODEL_NAMES = [t for t in VERTEXAI_MODEL.__args__]
 

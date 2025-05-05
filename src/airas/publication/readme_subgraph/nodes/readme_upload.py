@@ -1,8 +1,8 @@
-import os
 import base64
+import os
+from logging import getLogger
 
 from airas.utils.api_request_handler import fetch_api_data, retry_request
-from logging import getLogger
 
 logger = getLogger(__name__)
 

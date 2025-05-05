@@ -1,15 +1,17 @@
-import os
 import logging
+import os
 from logging import getLogger
+
+from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 from tenacity import (
+    before_log,
+    before_sleep_log,
     retry,
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    before_log,
-    before_sleep_log,
 )
-from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
+
 from airas.utils.api_client.base_http_client import BaseHTTPClient
 
 logger = getLogger(__name__)
@@ -52,12 +54,14 @@ class FireCrawlClient(BaseHTTPClient):
         self,
         url: str,
         *,
-        formats: list[str] = ["markdown"],
+        formats: list[str] | None = None,
         only_main_content: bool = True,
         wait_for: int = 10000,
         timeout_ms: int = 15000,
         timeout: float = 60.0,
     ) -> dict | str | bytes | None:
+        if formats is None:
+            formats = ["markdown"]
         payload = {
             "url": url,
             "formats": formats,

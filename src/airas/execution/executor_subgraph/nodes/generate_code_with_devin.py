@@ -1,6 +1,6 @@
-import os
-from airas.utils.api_request_handler import fetch_api_data, retry_request
 from logging import getLogger
+
+from airas.utils.api_request_handler import fetch_api_data, retry_request
 
 logger = getLogger(__name__)
 
@@ -12,7 +12,6 @@ def _request_create_session(
     new_method: str,
     experiment_code: str,
 ):
-    DEVIN_API_KEY = os.getenv("DEVIN_API_KEY")
     url = "https://api.devin.ai/v1/sessions"
     data = {
         "prompt": f"""\

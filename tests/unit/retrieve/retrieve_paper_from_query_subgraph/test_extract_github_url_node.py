@@ -1,8 +1,10 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 from airas.retrieve.retrieve_paper_subgraph.nodes.extract_github_url_node import (
     ExtractGithubUrlNode,
 )
-import pytest
 
 
 # Normal case test: returns correct GitHub URL from text and LLM

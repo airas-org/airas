@@ -1,19 +1,19 @@
 import logging
 from copy import deepcopy
 from datetime import datetime, timezone
-from typing import Any, Protocol, TypeVar, TypedDict
-from langgraph.graph import StateGraph, START, END
+from typing import Any, Protocol, TypeVar
+
+from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
-from airas.utils.logging_utils import setup_logging
-from airas.utils.github_utils.github_file_io import (
-    download_from_github,
-    upload_to_github,
-    create_branch_on_github,
-    ExtraFileConfig,
-)
 
 from airas.utils.check_api_key import check_api_key
-
+from airas.utils.github_utils.github_file_io import (
+    ExtraFileConfig,
+    create_branch_on_github,
+    download_from_github,
+    upload_to_github,
+)
+from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -23,8 +23,8 @@ class GithubGraphWrapper:
     def __init__(
         self,
         subgraph: CompiledGraph,
-        input_state: type[TypedDict],
-        output_state: type[TypedDict],
+        input_state: Any,
+        output_state: Any,
         github_repository: str,
         branch_name: str,
         research_file_path: str = ".research/research_history.json",
@@ -56,8 +56,8 @@ class GithubGraphWrapper:
         )
         try:
             owner, repository = github_repository.split("/", 1)
-        except ValueError:
-            raise ValueError("Repo string must be in the format 'owner/repository'")
+        except ValueError as e:
+            raise ValueError("Repo string must be in the format 'owner/repository'") from e
         self.github_owner = owner
         self.repository_name = repository
 
@@ -280,11 +280,7 @@ def create_wrapped_subgraph(
         ):
             subgraph_instance = subgraph(*args, **kwargs)
             compiled_subgraph = subgraph_instance.build_graph()
-            setattr(
-                compiled_subgraph,
-                "__source_subgraph_name__",
-                subgraph_instance.__class__.__name__,
-            )
+            compiled_subgraph.__source_subgraph_name__ = subgraph_instance.__class__.__name__
             super().__init__(
                 subgraph=compiled_subgraph,
                 input_state=input_state,
@@ -298,9 +294,11 @@ def create_wrapped_subgraph(
                 public_branch=public_branch,
             )
 
-        def run(self, use_input: dict[str, Any] = {}) -> dict[str, Any]:
+        def run(self, use_input: dict[str, Any] | None = None) -> dict[str, Any]:
             graph = self.build_graph()
             config = {"recursion_limit": 300}  # NOTE:
+            if use_input is None:
+                use_input = {}
             result = graph.invoke(use_input, config=config)
             base = {
                 "github_upload_success": result.get("github_upload_success", False),

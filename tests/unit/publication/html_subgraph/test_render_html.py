@@ -1,8 +1,10 @@
-import pytest
 from pathlib import Path
+
+import pytest
+
 from airas.publication.html_subgraph.nodes.render_html import (
-    _wrap_in_html_template,
     _save_index_html,
+    _wrap_in_html_template,
 )
 
 

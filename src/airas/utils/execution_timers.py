@@ -1,12 +1,13 @@
 import time
 from functools import wraps
-from typing import TypedDict
 from logging import getLogger
+
+from typing_extensions import TypedDict
 
 logger = getLogger(__name__)
 
 
-class ExecutionTimeState(TypedDict, total=False):
+class ExecutionTimeState(TypedDict):
     execution_time: dict[str, dict[str, list[float]]]
 
 
@@ -62,3 +63,5 @@ def time_subgraph(subgraph_name: str):
         return wrapper
 
     return decorator
+
+__all__ = ["time_node", "time_subgraph", "ExecutionTimeState"]

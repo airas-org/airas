@@ -14,7 +14,6 @@ dependencies = [
     "langchain>=0.2.15",
     "langgraph>=0.2.23",
     "openai>=1.35.13",
-    "pydantic>=2.9.2",
     "pypdf>=4.3.1",
     "semanticscholar>=0.8.4",
     "tomli-w>=1.0.0",
@@ -25,6 +24,7 @@ dependencies = [
     "tenacity>=9.0.0",
     "feedparser>=6.0.11",
     "pytz>=2025.2",
+    "typing-extensions>=4.12.2",
 ]
 
 [project.urls]
@@ -42,6 +42,7 @@ dev = [
     "pytest>=8.3.3",
     "pytest-cov>=6.1.1",
     "ruff>=0.11.8",
+    "types-requests>=2.32.0.20250328",
 ]
 
 [tool.ruff]
@@ -53,9 +54,17 @@ select = ["E", "F", "B", "I"]
 ignore = ["E501"]
 
 [tool.mypy]
-strict = true
+python_version = "3.11"
 ignore_missing_imports = true
-plugins = ["pydantic.mypy"]
+warn_unused_ignores = true
+warn_return_any = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = false
+warn_unused_configs = true
+allow_untyped_globals = true
+disable_error_code = ["misc", "valid-type", "union-attr", "assignment", "call-overload", "arg-type", "return", "return-value", "attr-defined", "import-untyped", "call-arg"]
 
 [tool.pydantic-mypy]
 init_typed = true

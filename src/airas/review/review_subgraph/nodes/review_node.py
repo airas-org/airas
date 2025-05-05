@@ -1,12 +1,13 @@
+import json
 import os
 import os.path as osp
 import time
-import json
-from pydantic import BaseModel, create_model
-
-from jinja2 import Environment
 from typing import Optional
 
+from jinja2 import Environment
+from pydantic import BaseModel, create_model
+
+from airas.utils.api_client.llm_facade_client import LLMFacadeClient
 
 # 各サブグラフの出力フィールドを定義
 LLM_OUTPUT_FIELDS = {
@@ -194,6 +195,7 @@ class ReviewNode:
         return json.dumps(review_content, indent=2)
 
     def _review(self, content: str) -> Optional[tuple[str, dict, str]]:
+        client = LLMFacadeClient(self.llm_name)
         if self.review_target not in self.review_prompt_dict:
             raise ValueError(f"Invalid review target: {self.review_target}")
 
@@ -206,16 +208,13 @@ class ReviewNode:
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                response = completion(
-                    model=self.llm_name,
-                    messages=[
-                        {"role": "system", "content": system_prompt_rendered},
-                        {"role": "user", "content": user_prompt_rendered},
-                    ],
-                    temperature=0,
-                    response_format=self.dynamic_model,
+                messages = system_prompt_rendered + user_prompt_rendered
+                structured_output, cost = client.structured_outputs(
+                    message=messages,
+                    data_model=self.dynamic_model,
                 )
-                structured_output = json.loads(response.choices[0].message.content)
+                if structured_output is None:
+                    raise ValueError("Error: No response from the llm model.")
                 review_feedback = structured_output.get("review_feedback", "")
                 review_scores = {
                     key: value

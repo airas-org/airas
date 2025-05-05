@@ -1,6 +1,7 @@
 import json
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from airas.utils.github_utils.github_file_io import download_from_github
 

@@ -1,7 +1,8 @@
 import os
 from datetime import datetime, timezone
-from airas.utils.api_request_handler import fetch_api_data, retry_request
 from logging import getLogger
+
+from airas.utils.api_request_handler import fetch_api_data, retry_request
 
 logger = getLogger(__name__)
 

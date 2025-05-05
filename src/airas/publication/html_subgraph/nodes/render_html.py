@@ -1,5 +1,6 @@
-import os
 import logging
+import os
+
 from jinja2 import Environment
 
 logger = logging.getLogger(__name__)

@@ -1,9 +1,10 @@
 from typing import List
 
 from mcp.server.fastmcp import FastMCP
+
 from airas.retrieve_paper_subgraph.retrieve_paper_subgraph import (
-    RetrievePaperSubgraph,
     RetrievePaperInputState,
+    RetrievePaperSubgraph,
 )
 
 # Initialize FastMCP server

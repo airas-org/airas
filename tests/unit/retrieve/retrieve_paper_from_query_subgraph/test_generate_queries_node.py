@@ -1,4 +1,5 @@
 from unittest.mock import patch
+
 from airas.retrieve.retrieve_paper_subgraph.nodes.generate_queries_node import (
     generate_queries_node,
 )

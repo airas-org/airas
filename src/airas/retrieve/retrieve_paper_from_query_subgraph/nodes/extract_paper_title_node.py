@@ -1,10 +1,12 @@
+from logging import getLogger
+
 from jinja2 import Environment
 from pydantic import BaseModel
-from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
+
 from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_paper_title_node_prompt import (
     extract_paper_title_node_prompt,
 )
-from logging import getLogger
+from airas.utils.api_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
 
 logger = getLogger(__name__)
 

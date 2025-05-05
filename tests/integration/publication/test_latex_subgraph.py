@@ -1,6 +1,8 @@
-import pytest
-from unittest.mock import patch
 import json
+from unittest.mock import patch
+
+import pytest
+
 from airas.publication.latex_subgraph.latex_subgraph import LatexSubgraph
 
 
