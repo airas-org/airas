@@ -163,6 +163,7 @@ cython_debug/
 
 .ruff_cache
 .DS_Store
+.vscode/
 !.gitkeep
 data/*
 .gitmessage.txt
