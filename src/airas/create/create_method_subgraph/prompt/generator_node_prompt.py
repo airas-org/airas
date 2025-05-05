@@ -8,4 +8,7 @@ Your task is to propose a genuinely novel method that mitigates one or more chal
 {{ base_method_text }}
 
 # Add Method
-{{ add_method_text }}"""
+{% for add_method_text in add_method_texts %}
+---
+{{ add_method_text }}
+{% endfor %}"""

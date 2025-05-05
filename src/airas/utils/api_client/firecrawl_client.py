@@ -54,7 +54,7 @@ class FireCrawlClient(BaseHTTPClient):
         *,
         formats: list[str] = ["markdown"],
         only_main_content: bool = True,
-        wait_for: int = 5000,
+        wait_for: int = 10000,
         timeout_ms: int = 15000,
         timeout: float = 60.0,
     ) -> dict | str | bytes | None:

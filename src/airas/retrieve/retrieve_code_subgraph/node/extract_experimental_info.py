@@ -4,6 +4,7 @@ from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
 from airas.retrieve.retrieve_code_subgraph.prompt.extract_experimental_info_prompt import (
     extract_experimental_info_prompt,
 )
+from airas.typing.paper import CandidatePaperInfo
 
 
 class LLMOutput(BaseModel):
@@ -12,7 +13,7 @@ class LLMOutput(BaseModel):
 
 
 def extract_experimental_info(
-    model_name: LLM_MODEL, method_text: str, repository_content_str
+    model_name: LLM_MODEL, method_text: CandidatePaperInfo, repository_content_str
 ) -> tuple[str, str]:
     client = LLMFacadeClient(model_name)
     env = Environment()

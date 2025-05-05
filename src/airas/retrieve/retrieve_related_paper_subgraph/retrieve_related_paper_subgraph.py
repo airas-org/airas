@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 class RetrieveRelatedPaperInputState(TypedDict):
     base_queries: list[str]
     base_github_url: str
-    base_method_text: str
+    base_method_text: CandidatePaperInfo
     add_queries: list[str] | None
 
 
@@ -75,7 +75,7 @@ class RetrieveRelatedPaperHiddenState(TypedDict):
 class RetrieveRelatedPaperOutputState(TypedDict):
     generated_queries: list[str]
     add_github_urls: list[str]
-    add_method_texts: list[str]
+    add_method_texts: list[CandidatePaperInfo]
 
 
 class RetrieveRelatedPaperState(
@@ -167,7 +167,7 @@ class RetrieveRelatedPaperSubgraph:
     def _check_extracted_titles(self, state: RetrieveRelatedPaperState) -> str:
         logger.info("check_extracted_titles")
         if not state.get("extracted_paper_titles"):
-            return "Stop"
+            return "Regenerate queries"  # TODO: Add a state to loop count and define a "Stop" case
         return "Continue"
 
     @time_node("retrieve_add_paper_subgraph", "_search_arxiv_node")
