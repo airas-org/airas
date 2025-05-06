@@ -1,5 +1,5 @@
 <!-- Title Image Placeholder -->
-![Airas Logo](images/airas_short.png)
+![Airas Logo](https://i.imgur.com/BNFAt17.png)
 
 <p align="center">
   <a href="https://pypi.org/project/airas/">
