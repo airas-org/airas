@@ -11,6 +11,9 @@ from airas.retrieve.retrieve_code_subgraph.node.extract_experimental_info import
 from airas.retrieve.retrieve_code_subgraph.node.retrieve_repository_contents import (
     retrieve_repository_contents,
 )
+from airas.retrieve.retrieve_code_subgraph.input_data import (
+    retrieve_code_subgraph_input_data,
+)
 from airas.typing.paper import CandidatePaperInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -57,16 +60,24 @@ class RetrieveCodeSubgraph:
 
     @time_node("retrieve_code_subgraph", "extract_experimental_info")
     def _extract_experimental_info(self, state: RetrieveCodeState) -> dict:
-        extract_code, experimental_info = extract_experimental_info(
-            model_name="gemini-2.0-flash-001",
-            method_text=state["base_method_text"],
-            repository_content_str=state["repository_content_str"],
-        )
-        return {
-            "base_experimental_code": extract_code,
-            "base_experimental_info": experimental_info,
-        }
-
+        if state["repository_content_str"] == "":
+            logger.warning("No repository content found. Skipping extraction.")
+            return {
+                "base_experimental_code": "",
+                "base_experimental_info": "",
+            }
+        
+        else:
+            extract_code, experimental_info = extract_experimental_info(
+                model_name="gemini-2.0-flash-001",
+                method_text=state["base_method_text"],
+                repository_content_str=state["repository_content_str"],
+            )
+            return {
+                "base_experimental_code": extract_code,
+                "base_experimental_info": experimental_info,
+            }
+    
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(RetrieveCodeState)
         # make nodes
@@ -100,11 +111,12 @@ def main():
         "branch_name", help="Your branch name in your GitHub repository"
     )
     args = parser.parse_args()
-
+    
     rc = RetrieveCode(
         github_repository=args.github_repository,
         branch_name=args.branch_name,
     )
+  
     # result = rc.run(retrieve_code_subgraph_input_data)
     result = rc.run({})
     print(f"result: {result}")

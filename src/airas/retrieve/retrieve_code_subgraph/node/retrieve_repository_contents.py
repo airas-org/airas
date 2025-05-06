@@ -60,9 +60,7 @@ def retrieve_repository_contents(github_url: str) -> str:
         tree_sha="main",
     )
     if repository_tree_info is None:
-        raise RuntimeError(
-            f"Failed to retrieve the tree for {github_owner}/{repository_name}"
-        )
+        return ""
     file_path_list = [i.get("path", "") for i in repository_tree_info["tree"]]
     filtered_file_path_list = [
         f for f in file_path_list if f.endswith((".py", ".ipynb"))
@@ -81,10 +79,3 @@ def retrieve_repository_contents(github_url: str) -> str:
 File Path: {file_path}
 content: {content}"""
     return content_str
-
-
-if __name__ == "__main__":
-    github_owner = "auto-res"
-    repository_name = "airas"
-    content = retrieve_repository_contents(github_owner, repository_name)
-    print(content)
