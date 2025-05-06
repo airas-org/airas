@@ -1,4 +1,6 @@
+import argparse
 import logging
+import time
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -97,6 +99,7 @@ class PrepareRepository:
 
     @time_node("research_preparation", "_retrieve_branch_name")
     def _check_branch_existence(self, state: PrepareRepositoryState) -> dict:
+        time.sleep(3)
         target_branch_sha = check_branch_existence(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
@@ -183,19 +186,34 @@ class PrepareRepository:
         return result
 
 
-if __name__ == "__main__":
-    # github_repository = "auto-res2/test-tanaka-2"
-    github_repository = "genga6/test-repository"
-    branch_name = "base_branch"
+def main():
+    parser = argparse.ArgumentParser(
+        description="Execute PreparaRepository"
+    )
+    parser.add_argument("github_repository", help="Your GitHub repository")
+    parser.add_argument(
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
+    args = parser.parse_args()
 
     subgraph = PrepareRepository(
         device_type="gpu",
-        # organization="genga6org",
+        organization="auto-res2",
     )
 
     input = {
-        "github_repository": github_repository,
-        "branch_name": branch_name,
+        "github_repository": args.github_repository,
+        "branch_name":     args.branch_name,
     }
+
     result = subgraph.run(input)
-    print(result)
+    print(f"result: {result}")
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        logger.error(
+            f"Error running PrepareRepository: {e}", exc_info=True
+        )
+        raise

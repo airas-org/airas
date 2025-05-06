@@ -12,7 +12,7 @@ logger = getLogger(__name__)
 def check_github_repository(github_owner: str, repository_name: str) -> bool | None:
     client = GithubClient()
     return client.check_repository_existence(
-        repository_owner=github_owner,
+        github_owner=github_owner,
         repository_name=repository_name,
     )
 

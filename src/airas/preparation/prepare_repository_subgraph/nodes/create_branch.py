@@ -18,7 +18,7 @@ def create_branch(
 ) -> bool:
     client = GithubClient()
     return client.create_branch(
-        repository_owner=github_owner,
+        github_owner=github_owner,
         repository_name=repository_name,
         branch_name=branch_name,
         from_sha=main_sha,

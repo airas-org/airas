@@ -16,10 +16,9 @@ def retrieve_main_branch_sha(
 ) -> str | None:
     client = GithubClient()
     sha = client.check_branch_existence(
-        repository_owner=github_owner,
+        github_owner=github_owner,
         repository_name=repository_name,
         branch_name="main",
-        raise_if_missing=True,
     )
     return sha
 

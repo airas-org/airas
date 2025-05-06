@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 
@@ -239,26 +240,33 @@ Executor = create_wrapped_subgraph(
     ExecutorSubgraphOutputState,
 )
 
-if __name__ == "__main__":
-    max_code_fix_iteration = 3
-    github_repository = "auto-res2/auto-research"
-    branch_name = "aaa"
+def main():
+    max_code_fix_iteration = 1
     save_dir = "/workspaces/airas/data"
 
-    subgraph = ExecutorSubgraph(
-        save_dir=save_dir,
-        max_code_fix_iteration=max_code_fix_iteration,
-    ).build_graph()
+    parser = argparse.ArgumentParser(
+        description="Execute ExecutorSubgraph"
+    )
+    parser.add_argument("github_repository", help="Your GitHub repository")
+    parser.add_argument(
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
+    args = parser.parse_args()
 
-    output = subgraph.invoke(executor_subgraph_input_data)
-    print(output)
+    ex = Executor(
+        github_repository=args.github_repository,
+        branch_name=args.branch_name,
+        max_code_fix_iteration=max_code_fix_iteration, 
+        save_dir=save_dir, 
+    )
+    result = ex.run()
+    print(f"result: {result}")
 
-    # executor = Executor(
-    #     github_repository=github_repository,
-    #     branch_name=branch_name,
-    #     save_dir=save_dir,
-    #     max_code_fix_iteration=max_code_fix_iteration,
-    # )
-
-    # result = executor.run()
-    # print(f"result: {result}")
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        logger.error(
+            f"Error running ExecutorSubgraph: {e}", exc_info=True
+        )
+        raise
