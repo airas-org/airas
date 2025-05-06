@@ -15,10 +15,13 @@ def check_branch_existence(
 ) -> str | None:
     client = GithubClient()
     sha = client.check_branch_existence(
-        repository_owner=github_owner,
+        github_owner=github_owner,
         repository_name=repository_name,
         branch_name=branch_name,
     )
+    if not sha:
+        logger.error(f"Branch '{branch_name}' not found in repository '{repository_name}'.")
+        return None
     return sha
 
 

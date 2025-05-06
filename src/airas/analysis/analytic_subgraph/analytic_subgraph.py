@@ -1,3 +1,4 @@
+import argparse
 import logging
 
 from langgraph.graph import END, START, StateGraph
@@ -78,19 +79,28 @@ Analytics = create_wrapped_subgraph(
     AnalyticSubgraphOutputState,
 )
 
-if __name__ == "__main__":
-    llm_name = "o1-2024-12-17"
-    github_repository = "auto-res2/test20"
-    branch_name = "test2"
-    subgraph = AnalyticSubgraph(
+
+def main():
+    llm_name = "o3-mini-2025-01-31"
+
+    parser = argparse.ArgumentParser(description="Execute AnalyticSubgraph")
+    parser.add_argument("github_repository", help="Your GitHub repository")
+    parser.add_argument(
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
+    args = parser.parse_args()
+
+    an = Analytics(
+        github_repository=args.github_repository,
+        branch_name=args.branch_name,
         llm_name=llm_name,
-    ).build_graph()
-    output = subgraph.invoke(analytic_subgraph_input_data)
-    print(f"output: {output}")
+    )
+    result = an.run()
+    print(f"result: {result}")
 
-    # retriever = Analytics(
-    #     github_repository=github_repository, branch_name=branch_name, llm_name=llm_name
-    # )
-
-    # result = retriever.run()
-    # print(f"result: {result}")
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        logger.error(f"Error running AnalyticSubgraph: {e}", exc_info=True)
+        raise

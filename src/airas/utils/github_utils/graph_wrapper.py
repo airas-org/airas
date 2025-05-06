@@ -9,15 +9,15 @@ from langgraph.graph.graph import CompiledGraph
 from airas.utils.check_api_key import check_api_key
 from airas.utils.github_utils.github_file_io import (
     ExtraFileConfig,
-    create_branch_on_github,
     download_from_github,
     upload_to_github,
+    upload_extra_files,
 )
 from airas.utils.logging_utils import setup_logging
+from airas.utils.api_client.github_client import GithubClient
 
 setup_logging()
 logger = logging.getLogger(__name__)
-
 
 class GithubGraphWrapper:
     def __init__(
@@ -32,6 +32,7 @@ class GithubGraphWrapper:
         perform_download: bool = True,
         perform_upload: bool = True,
         public_branch: str = "gh-pages",
+        client: GithubClient | None = None,
     ):
         self.subgraph = subgraph
         self.input_state = input_state
@@ -61,6 +62,23 @@ class GithubGraphWrapper:
         self.github_owner = owner
         self.repository_name = repository
 
+        self.client = client or GithubClient()
+        self._validate_repo_and_branch()
+
+    def _validate_repo_and_branch(self) -> None:
+        if not self.client.check_repository_existence(
+            github_owner=self.github_owner,
+            repository_name=self.repository_name,
+        ):
+            raise ValueError(f"GitHub repository not found: '{self.github_owner}/{self.repository_name}'")
+
+        if not self.client.check_branch_existence(
+            github_owner=self.github_owner,
+            repository_name=self.repository_name,
+            branch_name=self.branch_name,
+        ):
+            raise ValueError(f"GitHub branch not found: '{self.github_owner}/{self.repository_name}/{self.branch_name}'")
+
     def _deep_merge(self, old: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
         result = deepcopy(old)
         for k, v in new.items():
@@ -74,14 +92,19 @@ class GithubGraphWrapper:
         ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         new_branch = f"{self.branch_name}-{self.subgraph_name}-{ts}"
 
-        create_branch_on_github(
+        base_sha = self.client.check_branch_existence(
             github_owner=self.github_owner,
             repository_name=self.repository_name,
-            new_branch_name=new_branch,
-            base_branch_name=self.branch_name,
+            branch_name=self.branch_name,
+        )
+        self.client.create_branch(
+            github_owner=self.github_owner,
+            repository_name=self.repository_name,
+            branch_name=new_branch,
+            from_sha=base_sha,
         )
 
-        logger.info(f"Created new GitHub branch: {new_branch}")
+        logger.info(f"[GitHub I/O] Created branch '{new_branch}' from '{self.branch_name}'")
         return new_branch
 
     def _format_extra_files(self, branch_name: str) -> list[ExtraFileConfig] | None:
@@ -106,6 +129,18 @@ class GithubGraphWrapper:
 
         return formatted_files
 
+    def _log_public_html_url(self, formatted_extra_files: list[ExtraFileConfig] | None) -> None:
+        if not formatted_extra_files:
+            return
+        for file_config in formatted_extra_files:
+            if file_config["upload_branch"].lower() == self.public_branch.lower():
+                target_path = file_config["upload_dir"]
+                if not target_path.endswith("/"):
+                    target_path += "/"
+                github_pages_url = f"https://{self.github_owner}.github.io/{self.repository_name}/{target_path}"
+                logger.info(f"Uploaded HTML available at: {github_pages_url}")
+                break
+
     def _call_api(self) -> None:
         pass
 
@@ -124,33 +159,33 @@ class GithubGraphWrapper:
         user_input_state = {k: v for k, v in state.items() if k != "original_state"}
 
         if not self.perform_download:
-            final_branch = self._create_branch_name()
+            branch_name = self._create_branch_name()
             logger.info(
-                f"perform_download is set to False; creating a new branch for safety: {final_branch}"
+                f"perform_download=False; created new branch '{branch_name}' derived from base branch '{self.branch_name}' for safety"
             )
             return {
                 "original_state": original_state,
                 "user_input_state": user_input_state,
-                "final_branch_name": final_branch,
+                "branch_name": branch_name,
             }
 
         input_conflict = any(
             k in original_state for k in user_input_state
         )  # NOTE: If the key for this newly passed input is a duplicate
         output_conflict = any(key in original_state for key in self.output_state_keys)
-        final_branch = self.branch_name
+        branch_name = self.branch_name
 
         if input_conflict or output_conflict:
             reason = "Input mismatch" if input_conflict else "Output key conflict"
-            final_branch = self._create_branch_name()
-            logger.info(f"{reason} detected. Created new branch: {final_branch}")
+            branch_name = self._create_branch_name()
+            logger.info(f"{reason} detected. Created new branch: {branch_name}")
         else:
-            logger.info(f"No conflict. Using existing branch: {final_branch}")
+            logger.info(f"No conflict. Using existing branch: {branch_name}")
 
         return {
             "original_state": original_state,
             "user_input_state": user_input_state,
-            "final_branch_name": final_branch,
+            "branch_name": branch_name,
         }
 
     # @time_node("wrapper", "run_subgraph")
@@ -159,13 +194,13 @@ class GithubGraphWrapper:
         user_input_state = state.get("user_input_state", state)
         merged_input_state = self._deep_merge(original_state, user_input_state)
 
-        final_branch_name = state.get("final_branch_name", self.branch_name)
+        branch_name = state.get("branch_name", self.branch_name)
 
         state_for_subgraph = {  # NOTE: Corresponds to cases where the original subgraph (CompiledGraph) refers to these internally
             **merged_input_state,
             "github_owner": self.github_owner,
             "repository_name": self.repository_name,
-            "final_branch_name": final_branch_name,
+            "branch_name": branch_name,
         }
 
         missing = [k for k in self.input_state_keys if k not in state_for_subgraph]
@@ -179,14 +214,15 @@ class GithubGraphWrapper:
         return {
             "merged_input_state": merged_input_state,
             "output_state": output_state,
-            "final_branch_name": final_branch_name,
+            "branch_name": branch_name,
         }
 
     # @time_node("wrapper", "upload_to_github")
     def _upload_to_github(self, state: dict[str, Any]) -> dict[str, Any]:
         merged_input_state = state.get("merged_input_state", {})
         raw_output_state = state.get("output_state", {})
-        final_branch_name = state.get("final_branch_name", self.branch_name)
+        branch_name = state.get("branch_name", self.branch_name)
+
         output_state = {  # NOTE: Removal of github-related meta information
             k: raw_output_state[k]
             for k in self.output_state_keys
@@ -194,36 +230,37 @@ class GithubGraphWrapper:
         }
         state_to_upload = self._deep_merge(merged_input_state, output_state)
 
-        formatted_extra_files = self._format_extra_files(final_branch_name)
-
-        github_upload_success = upload_to_github(
-            github_owner=self.github_owner,
-            repository_name=self.repository_name,
-            branch_name=final_branch_name,
-            output_path=self.research_file_path,
-            state=state_to_upload,
-            extra_files=formatted_extra_files,
+        ok_json  = upload_to_github(
+            self.github_owner,
+            self.repository_name,
+            branch_name,
+            self.research_file_path,
+            state_to_upload,
             commit_message=f"Update by subgraph: {self.subgraph_name}",
         )
-        logger.info(f"Updated {self.research_file_path}")
+
+        if formatted_extra_files := self._format_extra_files(branch_name):
+            ok_extra = upload_extra_files(
+                self.github_owner,
+                self.repository_name,
+                self.extra_files,
+                commit_message=f"Upload assets from subgraph: {self.subgraph_name}",
+            )
+            github_upload_success = ok_json and ok_extra
+        else:
+            github_upload_success = ok_json
+
+        logger.info(f"Updated {self.research_file_path} (branch: {branch_name})")
         logger.info(
-            f"Check here：https://github.com/{self.github_repository}/blob/{final_branch_name}/{self.research_file_path}"
+            f"Check here：https://github.com/{self.github_repository}/blob/{branch_name}/{self.research_file_path}"
         )
-        if formatted_extra_files is not None:
-            for file_config in formatted_extra_files:
-                if file_config["upload_branch"].lower() == self.public_branch.lower():
-                    target_path = file_config["upload_dir"]
-                    if not target_path.endswith("/"):
-                        target_path += "/"
-                    github_pages_url = f"https://{self.github_owner}.github.io/{self.repository_name}/{target_path}"
-                    logger.info(f"Uploaded HTML available at: {github_pages_url}")
-                    break
+        self._log_public_html_url(formatted_extra_files)
 
         return {
             "github_upload_success": github_upload_success,
             "merged_input_state": merged_input_state,
             "output_state": output_state,
-            "final_branch_name": final_branch_name,
+            "branch_name": branch_name,
         }
 
     def build_graph(self) -> CompiledGraph:
@@ -305,7 +342,7 @@ def create_wrapped_subgraph(
                 "subgraph_name": self.subgraph_name,
                 "github_owner": self.github_owner,
                 "repository_name": self.repository_name,
-                "final_branch_name": result["final_branch_name"],
+                "branch_name": result["branch_name"],
                 "research_file_path": self.research_file_path,
                 "extra_files": self.extra_files,
             }

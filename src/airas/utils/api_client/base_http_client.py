@@ -45,6 +45,18 @@ class BaseHTTPClient(ResponseParserMixIn, ABC):
 
     def post(self, path: str, **kwargs):
         return self._request("POST", path, **kwargs)
+    
+    @overload
+    def put(
+        self, path: str, *, parse: Literal[True], **kwargs
+    ) -> dict | bytes | str: ...
+    @overload
+    def put(
+        self, path: str, *, parse: Literal[False], **kwargs
+    ) -> requests.Response: ...
+
+    def put(self, path: str, **kwargs):
+        return self._request("PUT", path, **kwargs)
 
     def _request(
         self,

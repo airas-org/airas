@@ -56,7 +56,7 @@ class FireCrawlClient(BaseHTTPClient):
         *,
         formats: list[str] | None = None,
         only_main_content: bool = True,
-        wait_for: int = 10000,
+        wait_for: int = 5000,
         timeout_ms: int = 15000,
         timeout: float = 60.0,
     ) -> dict | str | bytes | None:
@@ -69,4 +69,11 @@ class FireCrawlClient(BaseHTTPClient):
             "waitFor": wait_for,
             "timeout": timeout_ms,
         }
-        return self.post(path="scrape", json=payload, timeout=timeout)
+        # NOTE: Enhance error handling
+        response = self.post(path="scrape", json=payload, timeout=timeout)
+        if isinstance(response, dict):
+            data = response.get("data") or {}
+            markdown = data.get("markdown") or ""
+            if not markdown.strip():
+                raise ValueError("No markdown data found in the response.")
+        return response
