@@ -33,20 +33,8 @@
         "python.linting.enabled": true,
         "python.linting.mypyEnabled": true,
         "python.analysis.typeCheckingMode": "off" // Pylance type check
-    },
-    "launch": {
-      "version": "0.2.0",
-      "configurations": [
-          {
-              "name": "Python Debugger: Current File",
-              "type": "debugpy",
-              "request": "launch",
-              "program": "${file}",
-              "console": "integratedTerminal"
-          }
-        ]
       }
     }
-	},
+  },
   "postCreateCommand": "uv python install 3.10 3.11 3.12 3.13 3.14 && uv python pin 3.11 && uv venv --python 3.11 && uv sync && uv run pre-commit install"
 }

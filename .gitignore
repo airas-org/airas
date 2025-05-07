@@ -164,6 +164,7 @@ cython_debug/
 .ruff_cache
 .DS_Store
 .vscode/
+!.vscode/launch.json
 !.gitkeep
 data/*
 .gitmessage.txt
