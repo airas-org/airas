@@ -4,55 +4,38 @@ import shutil
 import zipfile
 from logging import getLogger
 
-from airas.utils.api_request_handler import fetch_api_data, retry_request
+from airas.utils.api_client.github_client import GithubClient
 
 logger = getLogger(__name__)
 
 
-def _request_github_actions_artifacts(
-    headers: dict, github_owner: str, repository_name: str
-):
-    url = f"https://api.github.com/repos/{github_owner}/{repository_name}/actions/artifacts"
-    return retry_request(fetch_api_data, url, headers=headers, method="GET")
-
-
-def _parse_artifacts_info(artifacts_infos: dict, workflow_run_id: str):
-    artifacts_redirect_url_dict = {}
+def _parse_artifacts_id(artifacts_infos: dict, workflow_run_id: str) -> dict[str, int]:
+    artifacts_id_dict = {}
     for artifacts_info in artifacts_infos["artifacts"]:
-        if artifacts_info["workflow_run"]["id"] == workflow_run_id:
-            artifacts_redirect_url_dict[artifacts_info["name"]] = artifacts_info[
-                "archive_download_url"
-            ]
-    return artifacts_redirect_url_dict
+        if str(artifacts_info["workflow_run"]["id"]) == str(workflow_run_id):
+            artifacts_id_dict[artifacts_info["name"]] = artifacts_info["id"]
+    return artifacts_id_dict
 
+def _save_zip_and_extract(zip_bytes: bytes, iteration_save_dir: str, artifact_name: str) -> None:
+    zip_path = os.path.join(iteration_save_dir, f"{artifact_name}.zip")
 
-def _request_download_artifacts(
-    headers: dict, artifacts_redirect_url_dict: dict, iteration_save_dir: str
-):
-    for key, url in artifacts_redirect_url_dict.items():
-        response = retry_request(
-            fetch_api_data, url, headers=headers, method="GET", stream=True
-        )
-        _zip_to_txt(response, iteration_save_dir, key)
+    with open(zip_path, "wb") as f:
+        f.write(zip_bytes)
+    logger.info(f"Downloaded artifact saved to: {zip_path}")
 
-
-def _zip_to_txt(response, iteration_save_dir, key):
-    zip_file_path = os.path.join(iteration_save_dir, f"{key}.zip")
-    with open(zip_file_path, "wb") as f:
-        f.write(response)
-    logger.info(f"Downloaded artifact saved to: {zip_file_path}")
-    with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
+    with zipfile.ZipFile(zip_path, "r") as zip_ref:
         zip_ref.extractall(iteration_save_dir)
     logger.info(f"Extracted artifact to: {iteration_save_dir}")
-    if os.path.exists(zip_file_path):
-        os.remove(zip_file_path)
-        logger.info(f"ZIP file deleted: {zip_file_path}")
+
+    if os.path.exists(zip_path):
+        os.remove(zip_path)
+        logger.info(f"ZIP file deleted: {zip_path}")
 
 
-def _copy_images_to_latest_dir(source_dir: str, dest_dir: str):
+def _copy_images_to_latest_dir(source_dir: str, dest_dir: str) -> None:
     if os.path.exists(dest_dir):
         shutil.rmtree(dest_dir)
-        logger.info(f"Removed exisiting images/ directory: {dest_dir}")
+        logger.info(f"Removed exisiting images/: {dest_dir}")
     os.makedirs(dest_dir, exist_ok=True)
 
     for file_path in glob.glob(os.path.join(source_dir, "*.pdf")):
@@ -61,35 +44,36 @@ def _copy_images_to_latest_dir(source_dir: str, dest_dir: str):
         shutil.copyfile(file_path, dest_path)
         logger.info(f"Copied image to: {dest_path}")
 
-
 def retrieve_github_actions_artifacts(
-    github_owner,
-    repository_name,
-    workflow_run_id,
-    save_dir,
-    fix_iteration_count,
+    github_owner: str,
+    repository_name: str,
+    workflow_run_id: str | int,
+    save_dir: str,
+    fix_iteration_count: int,
+    *, 
+    client: GithubClient | None = None, 
 ) -> tuple[str, str]:
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f"Bearer {os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN')}",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
+    client = client or GithubClient()
+
     iteration_save_dir = save_dir + f"/iteration_{fix_iteration_count}"
     os.makedirs(iteration_save_dir, exist_ok=True)
-    response_artifacts_infos = _request_github_actions_artifacts(
-        headers, github_owner, repository_name
+
+    response_artifacts_infos = client.list_repository_artifacts(
+        github_owner, repository_name
     )
-    if response_artifacts_infos:
-        logger.info("Successfully retrieved artifacts information.")
-    else:
-        logger.error("Failure to retrieve artifacts information.")
-        raise RuntimeError("Failure to retrieve artifacts information.")
-    get_artifacts_redirect_url_dict = _parse_artifacts_info(
+    
+    artifacts_id_dict = _parse_artifacts_id(
         response_artifacts_infos, workflow_run_id
     )
-    _request_download_artifacts(
-        headers, get_artifacts_redirect_url_dict, iteration_save_dir
-    )
+    if not artifacts_id_dict:
+        raise RuntimeError("No artifacts found for the specified run.")
+
+    for name, artifacts_id in artifacts_id_dict.items():
+        content = client.download_artifact_archive(
+            github_owner, repository_name, artifacts_id
+        )
+        _save_zip_and_extract(content, iteration_save_dir, name)
+
     with open(os.path.join(iteration_save_dir, "output.txt"), "r") as f:
         output_text_data = f.read()
     with open(os.path.join(iteration_save_dir, "error.txt"), "r") as f:
@@ -101,31 +85,3 @@ def retrieve_github_actions_artifacts(
         output_text_data,
         error_text_data,
     )
-
-
-# if __name__ == "__main__":
-#     graph_builder = StateGraph(State)
-#     graph_builder.add_node(
-#         "retrieve_github_actions_artifacts",
-#         RetrieveGithubActionsArtifactsNode(
-#             input_key=[
-#                 "github_owner",
-#                 "repository_name",
-#                 "workflow_run_id",
-#                 "save_dir",
-#                 "num_iterations",
-#             ],
-#             output_key=["output_file_path", "error_file_path"],
-#         ),
-#     )
-#     graph_builder.add_edge(START, "retrieve_github_actions_artifacts")
-#     graph_builder.add_edge("retrieve_github_actions_artifacts", END)
-#     graph = graph_builder.compile()
-#     state = {
-#         "github_owner": "auto-res",
-#         "repository_name": "experimental-script",
-#         "workflow_run_id": 13055964079,
-#         "save_dir": "/workspaces/researchgraph/data",
-#         "num_iterations": 1,
-#     }
-#     graph.invoke(state, debug=True)

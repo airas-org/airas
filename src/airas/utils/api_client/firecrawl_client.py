@@ -70,7 +70,8 @@ class FireCrawlClient(BaseHTTPClient):
             "timeout": timeout_ms,
         }
         # NOTE: Enhance error handling
-        response = self.post(path="scrape", json=payload, timeout=timeout)
+        raw_response = self.post(path="scrape", json=payload, timeout=timeout)
+        response = self.parse_response(raw_response)
         if isinstance(response, dict):
             data = response.get("data") or {}
             markdown = data.get("markdown") or ""

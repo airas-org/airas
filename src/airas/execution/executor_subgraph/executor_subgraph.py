@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 import os
 
@@ -87,11 +88,12 @@ class ExecutorSubgraph:
     @time_node("executor_subgraph", "_generate_code_with_devin_node")
     def _generate_code_with_devin_node(self, state: ExecutorSubgraphState) -> dict:
         logger.info("---ExecutorSubgraph---")
+        branch_name=state["branch_name"]
         experiment_session_id, experiment_devin_url = generate_code_with_devin(
             headers=self.headers,
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+            branch_name=branch_name,
             new_method=state["new_method"],
             experiment_code=state["experiment_code"],
         )
@@ -99,7 +101,7 @@ class ExecutorSubgraph:
         return {
             "fix_iteration_count": 0,
             "experiment_session_id": experiment_session_id,
-            "branch_name": experiment_session_id,
+            "branch_name": branch_name,
             "experiment_devin_url": experiment_devin_url,
         }
 
@@ -260,13 +262,11 @@ def main():
         save_dir=save_dir, 
     )
     result = ex.run()
-    print(f"result: {result}")
+    print(f"result: {json.dumps(result, indent=2)}")
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        logger.error(
-            f"Error running ExecutorSubgraph: {e}", exc_info=True
-        )
+        logger.error(f"Error running ExecutorSubgraph: {e}")
         raise

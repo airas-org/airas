@@ -9,12 +9,13 @@ logger = getLogger(__name__)
 # https://docs.github.com/ja/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
 
 
-def check_github_repository(github_owner: str, repository_name: str) -> bool | None:
+def check_github_repository(github_owner: str, repository_name: str) -> bool:
     client = GithubClient()
-    return client.check_repository_existence(
+    response = client.get_repository(
         github_owner=github_owner,
         repository_name=repository_name,
     )
+    return response is not None
 
 
 if __name__ == "__main__":

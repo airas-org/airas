@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 import operator
 import os
@@ -382,8 +383,7 @@ def main():
     )
 
     result = base_paper_retriever.run(input)
-    print(f"result: {result}")
-    return
+    print(f"result: {json.dumps(result, indent=2)}")
 
 
 if __name__ == "__main__":

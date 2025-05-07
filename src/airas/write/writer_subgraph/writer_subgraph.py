@@ -1,3 +1,5 @@
+import argparse
+import json
 import logging
 import os
 
@@ -93,30 +95,33 @@ PaperWrite = create_wrapped_subgraph(
 )
 
 
-if __name__ == "__main__":
+def main():
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/researchgraph/data"
     refine_round = 1
 
-    github_repository = "auto-res2/experiment_script_matsuzawa"
-    branch_name = "base-branch"
+    parser = argparse.ArgumentParser(
+        description="Execute WriterSubgraph"
+    )
+    parser.add_argument("github_repository", help="Your GitHub repository")
+    parser.add_argument(
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
+    args = parser.parse_args()
 
-    subgraph = WriterSubgraph(
-        save_dir=save_dir,
-        llm_name=llm_name,
-        refine_round=refine_round,
-    ).build_graph()
+    pw = PaperWrite(
+        github_repository=args.github_repository,
+        branch_name=args.branch_name,
+        save_dir=save_dir, 
+        llm_name=llm_name, 
+        refine_round=refine_round
+    )
+    result = pw.run()
+    print(f"result: {json.dumps(result, indent=2)}")
 
-    output = subgraph.invoke(writer_subgraph_input_data)
-    print(f"output: {output}")
-
-    # paper_writer = PaperWriter(
-    #     github_repository=github_repository,
-    #     branch_name=branch_name,
-    #     llm_name=llm_name,
-    #     save_dir=save_dir,
-    #     refine_round=refine_round,
-    # )
-
-    # result = paper_writer.run({})
-    # print(f"result: {result}")
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        logger.error(f"Error running WriterSubgraph: {e}")
+        raise

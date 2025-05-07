@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 class ResponseParserMixIn:
     @staticmethod
-    def _parse_response(resp: requests.Response) -> dict | str | bytes | None:
+    def parse_response(resp: requests.Response) -> dict | str | bytes | None:
         content_type = resp.headers.get("Content-Type", "").lower()
         # JSON -> dict
         if "application/json" in content_type:

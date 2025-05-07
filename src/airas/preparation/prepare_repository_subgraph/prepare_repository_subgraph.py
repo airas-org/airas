@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 import time
 
@@ -207,13 +208,14 @@ def main():
     }
 
     result = subgraph.run(input)
-    print(f"result: {result}")
+    print(f"result: {json.dumps(result, indent=2)}")
 
 if __name__ == "__main__":
+    import sys
     try:
         main()
     except Exception as e:
         logger.error(
-            f"Error running PrepareRepository: {e}", exc_info=True
+            f"Error running PrepareRepository: {e}"
         )
-        raise
+        sys.exit(1)

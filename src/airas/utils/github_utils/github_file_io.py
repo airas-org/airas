@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import os
@@ -26,12 +27,13 @@ def download_from_github(
 ) -> dict[str, Any]:
     client = client or GithubClient()
     logger.info(f"[GitHub I/O] Downloading input from: {input_path}")
-    file_bytes = client.read_file_bytes(
+    data = client.read_file_bytes(
         github_owner,
         repository_name,
         branch_name,
         input_path,
     )
+    file_bytes = base64.b64decode(data.get("content"))
     if not file_bytes:
         msg = f"Github file not found: {input_path}"
         logger.error(msg)

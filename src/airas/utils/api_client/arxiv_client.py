@@ -63,4 +63,6 @@ class ArxivClient(BaseHTTPClient):
             "sortBy": sort_by,
             "sortOrder": sort_order,
         }
-        return self.get(path="query", params=params, timeout=timeout)
+        response = self.get(path="query", params=params, timeout=timeout)
+        # TODO: Enhance error handling
+        return self.parse_response(response)

@@ -1,3 +1,5 @@
+import argparse
+import json
 import logging
 
 from langgraph.graph import END, START, StateGraph
@@ -69,14 +71,27 @@ ReadmeUpload = create_wrapped_subgraph(
     ReadmeSubgraphOutputState,
 )
 
-if __name__ == "__main__":
-    github_repository = "auto-res2/experiment_script_matsuzawa"
-    branch_name = "base-branch"
 
-    readme_uploader = ReadmeUpload(
-        github_repository=github_repository,
-        branch_name=branch_name,
+def main():
+    parser = argparse.ArgumentParser(
+        description="Execute ReadmeSubgraph"
     )
+    parser.add_argument("github_repository", help="Your GitHub repository")
+    parser.add_argument(
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
+    args = parser.parse_args()
 
-    result = readme_uploader.run()
-    print(f"result: {result}")
+    pw = ReadmeUpload(
+        github_repository=args.github_repository,
+        branch_name=args.branch_name,
+    )
+    result = pw.run()
+    print(f"result: {json.dumps(result, indent=2)}")
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        logger.error(f"Error running ReadmeSubgraph: {e}")
+        raise

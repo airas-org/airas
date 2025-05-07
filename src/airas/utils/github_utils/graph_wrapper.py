@@ -66,7 +66,7 @@ class GithubGraphWrapper:
         self._validate_repo_and_branch()
 
     def _validate_repo_and_branch(self) -> None:
-        if not self.client.check_repository_existence(
+        if not self.client.get_repository(
             github_owner=self.github_owner,
             repository_name=self.repository_name,
         ):
@@ -135,9 +135,7 @@ class GithubGraphWrapper:
         for file_config in formatted_extra_files:
             if file_config["upload_branch"].lower() == self.public_branch.lower():
                 target_path = file_config["upload_dir"]
-                if not target_path.endswith("/"):
-                    target_path += "/"
-                github_pages_url = f"https://{self.github_owner}.github.io/{self.repository_name}/{target_path}"
+                github_pages_url = f"https://{self.github_owner}.github.io/{self.repository_name}/{target_path}/index.html"
                 logger.info(f"Uploaded HTML available at: {github_pages_url}")
                 break
 

@@ -10,72 +10,54 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-@retry(
-    retry=retry_if_exception_type(requests.exceptions.ConnectionError),
-    stop=stop_after_attempt(3),
-    wait=wait_fixed(1),
-)
-def _retrieve_file_contents(
-    github_owner: str, 
-    repository_name: str, 
-    file_path: str
-):
-    github_client = GithubClient()
-    content = github_client.get_repository_content(
-        github_owner=github_owner,
-        repository_name=repository_name,
-        file_path=file_path,
-    )
-    return content
-
-
-@retry(
-    retry=retry_if_exception_type(requests.exceptions.ConnectionError),
-    stop=stop_after_attempt(3),
-    wait=wait_fixed(1),
-)
-def _retrieve_repository_tree(
-    github_owner: str, repository_name: str, tree_sha: str
-):
-    github_client = GithubClient()
-    tree = github_client.get_a_tree(
-        github_owner=github_owner,
-        repository_name=repository_name,
-        tree_sha=tree_sha,
-    )
-    return tree
-
 
 def retrieve_repository_contents(github_url: str) -> str:
     match = re.match(r"https://github\.com/([^/]+)/([^/]+)", github_url)
-    if match:
-        github_owner = match.group(1)
-        repository_name = match.group(2)
-    else:
+    if not match:
         raise ValueError(f"Invalid GitHub URL: {github_url}")
+    github_owner, repository_name = match.group(1), match.group(2)
 
-    repository_tree_info = _retrieve_repository_tree(
-        github_owner=github_owner,
-        repository_name=repository_name,
-        tree_sha="main",
-    )
+    client = GithubClient()
+    response = client.get_repository(github_owner, repository_name)
+    if not response:
+        return ""
+    
+    default_branch = response.get("default_branch", "master") # or `main``
+    try:
+        repository_tree_info = client.get_a_tree(
+            github_owner=github_owner,
+            repository_name=repository_name,
+            tree_sha=default_branch,
+        )
+    except Exception as e:
+        logger.error(f"Failed to retrieve repository tree: {e}")
+        return ""
+
     if repository_tree_info is None:
         return ""
-    file_path_list = [i.get("path", "") for i in repository_tree_info["tree"]]
-    filtered_file_path_list = [
-        f for f in file_path_list if f.endswith((".py", ".ipynb"))
+    
+
+    file_paths = [
+        entry.get("path", "")
+        for entry in repository_tree_info["tree"]
+        if entry.get("path", "").endswith((".py", ".ipynb"))
     ]
-    content_str = ""
-    for file_path in filtered_file_path_list:
-        content = _retrieve_file_contents(
+
+    contents = []
+    for file_path in file_paths:
+        file_bytes = client.get_repository_content(
             github_owner=github_owner,
             repository_name=repository_name,
             file_path=file_path,
         )
-        if content is None:
+        if file_bytes is None:
             logger.warning(f"Failed to retrieve file data: {file_path}")
-        else:
-            content_str += f"""\
-File Path: {file_path}
-content: {content}"""
-    return content_str
+            continue
+        try:
+            content_str = file_bytes.decode("utf-8")
+        except AttributeError:
+            content_str = str(file_bytes)
+        contents.append(
+            f"File Path: {file_path}\nContent:\n{content_str}"
+        )
+    return "\n".join(contents)

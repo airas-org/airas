@@ -13,13 +13,15 @@ DEVICETYPE = Literal["cpu", "gpu"]
 def retrieve_main_branch_sha(
     github_owner: str,
     repository_name: str,
-) -> str | None:
+) -> str:
     client = GithubClient()
     sha = client.check_branch_existence(
         github_owner=github_owner,
         repository_name=repository_name,
         branch_name="main",
     )
+    if sha is None:
+        raise RuntimeError(f"Failed to retrieve SHA for 'main' branch of {github_owner}/{repository_name}")
     return sha
 
 
