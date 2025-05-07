@@ -388,8 +388,8 @@ class GithubClient(BaseHTTPClient):
                 logger.error(f"Workflow or repository not found (404): {path}")
                 raise GithubClientFatalError(f"Workflow or repository not found (404): {path}")
             case 422:
-                logger.warning(f"Validation failed, or the endpoint has been spammed (422): {path}")
-                raise GithubClientRetryableError(f"Validation failed, or the endpoint has been spammed (422): {path}")
+                logger.error(f"Validation failed, or the endpoint has been spammed (422): {path}")
+                raise GithubClientFatalError(f"Validation failed, or the endpoint has been spammed (422): {path}")
             case _:
                 self._raise_for_status(response, path)
                 return False
