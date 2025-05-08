@@ -21,7 +21,11 @@ def analytic_node(
     verification_policy: str,
     experiment_code: str,
     output_text_data: str,
+    client: LLMFacadeClient | None = None, 
 ) -> str | None:
+    if client is None:
+        client = LLMFacadeClient(llm_name=llm_name)
+
     env = Environment()
     template = env.from_string(analytic_node_prompt)
     data = {
@@ -31,7 +35,7 @@ def analytic_node(
         "output_text_data": output_text_data,
     }
     messages = template.render(data)
-    output, cost = LLMFacadeClient(llm_name=llm_name).structured_outputs(
+    output, cost = client.structured_outputs(
         message=messages, data_model=LLMOutput
     )
     if output is None:

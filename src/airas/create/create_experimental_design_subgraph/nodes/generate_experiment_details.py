@@ -11,8 +11,11 @@ def generate_experiment_details(
     verification_policy: str,
     base_experimental_code: str,
     base_experimental_info: str,
+    client: LLMFacadeClient | None = None, 
 ) -> str:
-    client = LLMFacadeClient(llm_name)
+    if client is None:
+        client = LLMFacadeClient(llm_name=llm_name)
+        
     env = Environment()
     template = env.from_string(generate_experiment_details_prompt)
     data = {

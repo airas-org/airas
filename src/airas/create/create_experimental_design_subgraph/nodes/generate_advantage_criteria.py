@@ -6,8 +6,14 @@ from airas.create.create_experimental_design_subgraph.prompt.generate_advantage_
 from airas.utils.api_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
 
 
-def generate_advantage_criteria(llm_name: LLM_MODEL, new_method: str) -> str:
-    client = LLMFacadeClient(llm_name)
+def generate_advantage_criteria(
+    llm_name: LLM_MODEL, 
+    new_method: str, 
+    client: LLMFacadeClient | None = None, 
+) -> str:
+    if client is None:
+        client = LLMFacadeClient(llm_name=llm_name)
+        
     env = Environment()
     template = env.from_string(generate_advantage_criteria_prompt)
     data = {

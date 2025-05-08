@@ -17,29 +17,28 @@ def sample_inputs():
 
 
 @pytest.mark.parametrize(
-    "facade_return, expected, mode",
+    "dummy_return, expected, mode",
     [
         (("code result", 0.01), "code result", "success"),
         ((None, 0.01), None, "ValueError"),
     ],
 )
 def test_generate_experiment_code_success_and_failure(
-    monkeypatch,
-    dummy_llm_facade_client,
     sample_inputs,
-    facade_return,
+    dummy_return,
     expected,
     mode,
+    dummy_llm_facade_client,
 ):
-    dummy_llm_facade_client._next_return = facade_return
-    monkeypatch.setattr(mod, "LLMFacadeClient", dummy_llm_facade_client)
+    client = dummy_llm_facade_client(sample_inputs["llm_name"])
+    client._next_return = dummy_return
 
     match mode:
         case "success":
-            result = generate_experiment_code(**sample_inputs)
+            result = generate_experiment_code(**sample_inputs, client=client)
             assert result == expected
         case "ValueError":
             with pytest.raises(ValueError):
-                generate_experiment_code(**sample_inputs)
+                generate_experiment_code(**sample_inputs, client=client)
         case _:
             raise NotImplementedError(f"Unsupported mode: {mode}")

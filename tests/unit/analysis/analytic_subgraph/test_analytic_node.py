@@ -1,6 +1,5 @@
 import pytest
 
-import airas.analysis.analytic_subgraph.nodes.analytic_node as mod
 from airas.analysis.analytic_subgraph.nodes.analytic_node import analytic_node
 
 
@@ -16,7 +15,7 @@ def sample_inputs() -> dict[str, str]:
 
 
 @pytest.mark.parametrize(
-    "structured_return, expected",
+    "dummy_return, expected",
     [
         ({"analysis_report": "This is a report."}, "This is a report."),
         (None, None),
@@ -24,13 +23,13 @@ def sample_inputs() -> dict[str, str]:
     ],
 )
 def test_analytic_node(
-    monkeypatch: pytest.MonkeyPatch,
     sample_inputs: dict[str, str],
-    structured_return: dict[str, str],
+    dummy_return: dict[str, str],
     expected: None | str,
     dummy_llm_facade_client,
 ):
-    dummy_llm_facade_client._next_return = structured_return
-    monkeypatch.setattr(mod, "LLMFacadeClient", dummy_llm_facade_client)
-    result = analytic_node(**sample_inputs)
+    client = dummy_llm_facade_client(sample_inputs["llm_name"])
+    client._next_return = dummy_return
+
+    result = analytic_node(**sample_inputs, client=client)
     assert result == expected
