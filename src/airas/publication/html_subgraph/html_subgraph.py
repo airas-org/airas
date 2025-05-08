@@ -1,3 +1,5 @@
+import argparse
+import json
 import glob
 import logging
 import os
@@ -81,36 +83,50 @@ HtmlConvert = create_wrapped_subgraph(
 )
 
 
-if __name__ == "__main__":
+def main():
     llm_name = "o3-mini-2025-01-31"
-    save_dir = "/workspaces/researchgraph/data"
-    figures_dir = "/workspaces/researchgraph/data/images"
+    save_dir = "/workspaces/airas/data"
+    figures_dir = "/workspaces/airas/data/images"
     pdf_files = glob.glob(os.path.join(figures_dir, "*.pdf"))
 
-    github_repository = "auto-res2/experiment_script_matsuzawa"
-    branch_name = "base-branch"
-    # research_file_path = ".research/research_history.json"
+
+    parser = argparse.ArgumentParser(
+        description="Execute HtmlSubgraph"
+    )
+    parser.add_argument("github_repository", help="Your GitHub repository")
+    parser.add_argument(
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
+    args = parser.parse_args()
+
+    branch_name = args.branch_name
 
     extra_files = [
         {
             "upload_branch": "gh-pages",
-            "upload_dir": "branches/{{ branch_name }}/",
+            "upload_dir": f"branches/{branch_name}/",
             "local_file_paths": [f"{save_dir}/index.html"],
         },
         {
             "upload_branch": "gh-pages",
-            "upload_dir": "branches/{{ branch_name }}/images/",
+            "upload_dir": f"branches/{branch_name}/images/",
             "local_file_paths": pdf_files,
         },
     ]
 
-    html_converter = HtmlConvert(
-        github_repository=github_repository,
-        branch_name=branch_name,
+    hc = HtmlConvert(
+        github_repository=args.github_repository,
+        branch_name=args.branch_name,
         extra_files=extra_files,
         llm_name=llm_name,
         save_dir=save_dir,
     )
+    result = hc.run()
+    print(f"result: {json.dumps(result, indent=2)}")
 
-    result = html_converter.run({})
-    print(f"result: {result}")
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        logger.error(f"Error running HtmlSubgraph: {e}")
+        raise

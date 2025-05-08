@@ -15,14 +15,20 @@ def create_branch(
     repository_name: str,
     branch_name: str,
     main_sha: str,
-) -> bool:
-    client = GithubClient()
-    return client.create_branch(
+    client: GithubClient | None = None, 
+) -> Literal[True]:
+    if client is None:
+        client = GithubClient()
+
+    response = client.create_branch(
         github_owner=github_owner,
         repository_name=repository_name,
         branch_name=branch_name,
         from_sha=main_sha,
     )
+    if not response:
+        raise RuntimeError(f"Failed to create branch '{branch_name}' from '{main_sha}' in {github_owner}/{repository_name}")
+    return response
 
 
 if __name__ == "__main__":

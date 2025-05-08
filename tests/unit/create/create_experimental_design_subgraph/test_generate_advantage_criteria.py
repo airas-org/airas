@@ -15,29 +15,28 @@ def sample_inputs() -> dict[str, str]:
 
 
 @pytest.mark.parametrize(
-    "facade_return, expected, mode",
+    "dummy_return, expected, mode",
     [
         (("criteria result", 0.01), "criteria result", "success"),
         ((None, 0.01), None, "ValueError"),
     ],
 )
 def test_generate_advantage_criteria(
-    monkeypatch: pytest.MonkeyPatch,
-    dummy_llm_facade_client,
     sample_inputs: dict[str, str],
-    facade_return,
+    dummy_return,
     expected,
     mode,
+    dummy_llm_facade_client,
 ):
-    dummy_llm_facade_client._next_return = facade_return
-    monkeypatch.setattr(mod, "LLMFacadeClient", dummy_llm_facade_client)
+    client = dummy_llm_facade_client(sample_inputs["llm_name"])
+    client._next_return = dummy_return
 
     match mode:
         case "success":
-            result = generate_advantage_criteria(**sample_inputs)
+            result = generate_advantage_criteria(**sample_inputs, client=client)
             assert result == expected
         case "ValueError":
             with pytest.raises(ValueError):
-                generate_advantage_criteria(**sample_inputs)
+                generate_advantage_criteria(**sample_inputs, client=client)
         case _:
             raise NotImplementedError(f"Unsupported mode: {mode}")

@@ -68,7 +68,6 @@ class BaseHTTPClient(ResponseParserMixIn, ABC):
         json: dict | None = None,
         stream: bool = False,
         timeout: float = 10.0,
-        parse: bool = True,
     ) -> dict | str | bytes | requests.Response | None:
         url = f"{self.base_url}/{path.lstrip('/')}"
         headers = {**self.default_headers, **(headers or {})}
@@ -83,8 +82,6 @@ class BaseHTTPClient(ResponseParserMixIn, ABC):
                 stream=stream,
                 timeout=timeout,
             )
-            if parse:
-                return self._parse_response(response)
             return response
         except Exception as e:
             logger.warning(f"[{self.__class__.__name__}] {method} {url}: {e}")
@@ -136,7 +133,6 @@ class AsyncBaseHTTPClient(ResponseParserMixIn, ABC):
         json: dict | None = None,
         stream: bool = False,
         timeout: float = 10.0,
-        parse: bool = True,
     ) -> dict | str | bytes | requests.Response | None:
         url = f"{self.base_url}/{path.lstrip('/')}"
         headers = {**self.default_headers, **(headers or {})}
@@ -151,8 +147,6 @@ class AsyncBaseHTTPClient(ResponseParserMixIn, ABC):
                 stream=stream,
                 timeout=timeout,
             )
-            if parse:
-                return self._parse_response(response)
             return response
         except Exception as e:
             logger.warning(f"[{self.__class__.__name__}] {method} {url}: {e}")

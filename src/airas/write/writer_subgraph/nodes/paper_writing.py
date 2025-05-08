@@ -29,11 +29,16 @@ class WritingNode:
         refine_round: int = 2,
         refine_only: bool = False,
         target_sections: list[str] | None = None,
+        client: LLMFacadeClient | None = None, 
     ):
         if target_sections is None:
             target_sections = []
 
         self.llm_name = llm_name
+        self.client = client
+        if self.client is None:
+            self.client = LLMFacadeClient(llm_name=self.llm_name)
+
         self.refine_round = refine_round
         self.refine_only = refine_only
         self.target_sections = target_sections or [
@@ -178,7 +183,7 @@ Pay particular attention to fixing any errors such as:
 
     def _call_llm(self, prompt: str, system_prompt: str) -> dict[str, str]:
         messages = system_prompt + prompt
-        output, cost = LLMFacadeClient(llm_name=self.llm_name).structured_outputs(
+        output, cost = self.client.structured_outputs(
             message=messages, data_model=PaperContent
         )
         if output is None:

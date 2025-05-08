@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 
 from langgraph.graph import END, START, StateGraph
@@ -136,14 +137,12 @@ def main():
         branch_name=args.branch_name,
     )
     result = ced.run()
-    print(f"result: {result}")
+    print(f"result: {json.dumps(result, indent=2)}")
 
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        logger.error(
-            f"Error running CreateExperimentalDesignSubgraph: {e}", exc_info=True
-        )
+        logger.error(f"Error running CreateExperimentalDesignSubgraph: {e}")
         raise

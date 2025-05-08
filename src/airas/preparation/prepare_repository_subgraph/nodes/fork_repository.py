@@ -15,13 +15,19 @@ def fork_repository(
     # NOTE:Make it possible to respond simply by rewriting run_experiment.yml.
     device_type: DEVICETYPE,
     organization: str = "",
-) -> bool:
-    client = GithubClient()
-    return client.fork_repository(
+    client: GithubClient | None = None, 
+) -> Literal[True]:
+    if client is None:
+        client = GithubClient()
+        
+    response = client.fork_repository(
         repository_name=repository_name,
         device_type=device_type,
         organization=organization,
     )
+    if not response:
+        raise RuntimeError("Fork of the repository failed")
+    return response
 
 
 if __name__ == "__main__":

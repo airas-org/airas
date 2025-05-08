@@ -15,8 +15,10 @@ def generator_node(
     llm_name: LLM_MODEL,
     base_method_text: CandidatePaperInfo,
     add_method_texts: list[CandidatePaperInfo],
+    client: LLMFacadeClient | None = None, 
 ) -> str:
-    client = LLMFacadeClient(llm_name)
+    if client is None:
+        client = LLMFacadeClient(llm_name=llm_name)
 
     env = Environment()
     template = env.from_string(generator_node_prompt)

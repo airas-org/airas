@@ -1,175 +1,82 @@
-import os
+import time
 from datetime import datetime, timezone
 from logging import getLogger
 
-from airas.utils.api_request_handler import fetch_api_data, retry_request
+from airas.utils.api_client.github_client import GithubClient
 
 logger = getLogger(__name__)
 
 
-def _request_github_actions_workflow_execution(
-    headers: dict, github_owner: str, repository_name: str, branch_name: str
-):
-    workflow_file_name = "run_experiment.yml"
-    url = f"https://api.github.com/repos/{github_owner}/{repository_name}/actions/workflows/{workflow_file_name}/dispatches"
-    data = {
-        "ref": f"{branch_name}",
-    }
-    return retry_request(fetch_api_data, url, headers=headers, data=data, method="POST")
-
-
-def _request_github_actions_workflow_info_before_execution(
-    headers: dict, github_owner: str, repository_name: str, branch_name: str
-):
-    url = f"https://api.github.com/repos/{github_owner}/{repository_name}/actions/runs"
-    params = {
-        "branch": f"{branch_name}",
-        "event": "workflow_dispatch",
-    }
-    return retry_request(
-        fetch_api_data, url, headers=headers, params=params, method="GET"
-    )
-
-
-def _request_github_actions_workflow_info_after_execution(
-    headers: dict,
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    num_workflow_runs_before_execution: int,
-):
-    url = f"https://api.github.com/repos/{github_owner}/{repository_name}/actions/runs"
-    params = {
-        "branch": f"{branch_name}",
-        "event": "workflow_dispatch",
-    }
-
-    # NOTE:The number of runs is increased by one to confirm that execution is complete.
-    def should_retry(response) -> bool:
-        # Describe the process so that it is True if you want to retry
-        num_workflow_runs_after_execution = _count_github_actions_workflow_runs(
-            response
-        )
-        return not (
-            (
-                num_workflow_runs_after_execution
-                == num_workflow_runs_before_execution + 1
-            )
-            and _check_confirmation_of_execution_completion(response)
-        )
-
-    return retry_request(
-        fetch_api_data,
-        url,
-        headers=headers,
-        params=params,
-        method="GET",
-        check_condition=should_retry,
-    )
+_WORKFLOW_FILE = "run_experiment.yml"
+_POLL_INTERVAL_SEC = 10
+_TIMEOUT_SEC = 600
 
 
 def _count_github_actions_workflow_runs(response: dict) -> int:
-    num_workflow_runs = len(response["workflow_runs"])
-    return num_workflow_runs
+    return len(response["workflow_runs"])
 
-
-def _parse_workflow_run_id(response: dict):
-    workflow_timestamp_dict = {}
+def _parse_workflow_run_id(response: dict) -> int:
+    latest_id = 0
     latest_timestamp = datetime.min.replace(tzinfo=timezone.utc)
     for res in response["workflow_runs"]:
         created_at = datetime.fromisoformat(res["created_at"].replace("Z", "+00:00"))
-        workflow_timestamp_dict[created_at] = res["id"]
         if created_at > latest_timestamp:
             latest_timestamp = created_at
-    return workflow_timestamp_dict[latest_timestamp]
+            latest_id = res["id"]
+    return latest_id
 
-
-def _check_confirmation_of_execution_completion(response: dict):
-    status_list = []
-    for res in response["workflow_runs"]:
-        status_list.append(res["status"])
-    return all(item == "completed" for item in status_list)
-
+def _check_confirmation_of_execution_completion(response: dict) -> bool:
+    return all(res["status"] == "completed" for res in response["workflow_runs"])
 
 def execute_github_actions_workflow(
-    github_owner: str, repository_name: str, branch_name: str
+    github_owner: str, 
+    repository_name: str, 
+    branch_name: str, 
+    *, 
+    client: GithubClient | None = None, 
 ) -> int:
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f"Bearer {os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN')}",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    # Check the number of runs before executing workflow
-    response_before_execution = _request_github_actions_workflow_info_before_execution(
-        headers=headers,
-        github_owner=github_owner,
-        repository_name=repository_name,
-        branch_name=branch_name,
-    )
-    if response_before_execution:
-        logger.info(
-            "Successfully retrieved information on Github actions prior to execution of workflow."
-        )
-    else:
-        logger.error(
-            f"Failed to fetch workflow info before execution. "
-            f"Owner: {github_owner}, Repo: {repository_name}, Branch: {branch_name}"
-        )
-        raise RuntimeError("Failed to fetch workflow info before execution.")
-    num_workflow_runs_before_execution = _count_github_actions_workflow_runs(
-        response_before_execution
-    )
-    logger.info(
-        f"Number of workflow runs before execution:{num_workflow_runs_before_execution}"
-    )
+    client = client or GithubClient()
 
-    # Execute the workflow
-    _request_github_actions_workflow_execution(
-        headers=headers,
-        github_owner=github_owner,
-        repository_name=repository_name,
-        branch_name=branch_name,
+    response_before_execution = client.list_workflow_runs(
+        github_owner, repository_name, branch_name
     )
+    
+    num_workflow_runs_before_execution = _count_github_actions_workflow_runs(response_before_execution)
+    logger.info(f"Number of workflow runs before execution:{num_workflow_runs_before_execution}")
 
-    # Check the number of runs after executing workflow
-    response_after_execution = _request_github_actions_workflow_info_after_execution(
-        headers,
+    ok_dispatch = client.dispatch_workflow(
         github_owner,
         repository_name,
-        branch_name,
-        num_workflow_runs_before_execution,
+        _WORKFLOW_FILE, 
+        ref=branch_name, 
     )
-    if response_after_execution:
-        logger.info(
-            "Successfully retrieved information on Github actions after execution of workflow."
+    if not ok_dispatch:
+        raise RuntimeError("Failed to dispatch workflow")
+    logger.info("Workflow dispatch sent.")
+
+    start = time.time()
+    while True:
+        response_after_execution = client.list_workflow_runs(
+            github_owner, repository_name, branch_name
         )
-    else:
-        logger.error(
-            f"Failed to fetch workflow info after execution. "
-            f"Owner: {github_owner}, Repo: {repository_name}, Branch: {branch_name}"
-        )
-        raise RuntimeError("Failed to fetch workflow info after execution.")
+        if (
+            _count_github_actions_workflow_runs(response_after_execution) == num_workflow_runs_before_execution + 1 
+            and _check_confirmation_of_execution_completion(response_after_execution)
+        ):
+            run_id = _parse_workflow_run_id(response_after_execution)
+            logger.info(f"Workflow {run_id} completed")
+            return run_id
+        
+        if time.time() - start > _TIMEOUT_SEC:
+            raise TimeoutError("Workflow did not finish within timeout.")
+        
+        time.sleep(_POLL_INTERVAL_SEC)
 
-    workflow_run_id = _parse_workflow_run_id(response_after_execution)
 
-    return workflow_run_id
+if __name__ == "__main__":
 
-
-# if __name__ == "__main__":
-#     graph_builder = StateGraph(State)
-#     graph_builder.add_node(
-#         "retrieve_github_actions_artifacts",
-#         ExecuteGithubActionsWorkflowNode(
-#             input_key=["github_owner", "repository_name", "branch_name"],
-#             output_key=["workflow_run_id"],
-#         ),
-#     )
-#     graph_builder.add_edge(START, "retrieve_github_actions_artifacts")
-#     graph_builder.add_edge("retrieve_github_actions_artifacts", END)
-#     graph = graph_builder.compile()
-#     state = {
-#         "github_owner": "auto-res",
-#         "repository_name": "experimental-script",
-#         "branch_name": "devin/1738251222-learnable-gated-pooling",
-#     }
-#     graph.invoke(state, debug=True)
+    github_owner = "auto-res2"
+    repository_name = "experiment_script_matsuzawa"
+    branch_name = "base-branch-retrievepaperfromquerysubgraph-20250507-121037"
+    result = execute_github_actions_workflow(github_owner, repository_name, branch_name)
+    print(f"result: {result}")
