@@ -11,9 +11,14 @@ DEVICETYPE = Literal["cpu", "gpu"]
 
 
 def check_branch_existence(
-    github_owner: str, repository_name: str, branch_name: str
+    github_owner: str, 
+    repository_name: str, 
+    branch_name: str, 
+    client: GithubClient | None = None, 
 ) -> str | None:
-    client = GithubClient()
+    if client is None:
+        client = GithubClient()
+        
     sha = client.check_branch_existence(
         github_owner=github_owner,
         repository_name=repository_name,

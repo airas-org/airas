@@ -1,42 +1,48 @@
-from unittest.mock import MagicMock, patch
-
 import pytest
-import requests
 
-from airas.preparation.prepare_repository_subgraph.nodes.retrieve_main_branch_sha import (
-    retrieve_main_branch_sha,
+from airas.preparation.prepare_repository_subgraph.nodes.retrieve_main_branch_sha import retrieve_main_branch_sha
+
+
+@pytest.fixture
+def sample_inputs_retrieve() -> dict[str, str]:
+    return {
+        "github_owner": "auto-res2",
+        "repository_name": "test-repo",
+    }
+
+@pytest.mark.parametrize(
+    "dummy_return, expected, should_raise",
+    [
+        ("abc123", "abc123", False),
+        (None, None, True),
+    ],
 )
+def test_retrieve_main_branch_sha_di(
+    sample_inputs_retrieve: dict[str, str],
+    dummy_return,
+    expected,
+    should_raise,
+    dummy_github_client,
+):
+    client = dummy_github_client()
+    client._next_return = dummy_return
 
-
-# Normal case test: returns sha string when status_code is 200
-@patch(
-    "airas.preparation.prepare_repository_subgraph.nodes.retrieve_main_branch_sha.requests.get"
-)
-def test_retrieve_main_branch_sha_success(mock_get):
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"commit": {"sha": "mainsha123"}}
-    mock_get.return_value = mock_response
-    assert retrieve_main_branch_sha("owner", "repo", max_retries=1) == "mainsha123"
-
-
-# Abnormal case test: raises RuntimeError on 301
-@patch(
-    "airas.preparation.prepare_repository_subgraph.nodes.retrieve_main_branch_sha.requests.get"
-)
-def test_retrieve_main_branch_sha_moved(mock_get):
-    mock_response = MagicMock()
-    mock_response.status_code = 301
-    mock_get.return_value = mock_response
-    with pytest.raises(RuntimeError):
-        retrieve_main_branch_sha("owner", "repo", max_retries=1)
-
-
-# Abnormal case test: raises RuntimeError after max retries on HTTPError
-@patch(
-    "airas.preparation.prepare_repository_subgraph.nodes.retrieve_main_branch_sha.requests.get",
-    side_effect=requests.RequestException("fail"),
-)
-def test_retrieve_main_branch_sha_request_exception(mock_get):
-    with pytest.raises(RuntimeError):
-        retrieve_main_branch_sha("owner", "repo", max_retries=1)
+    if should_raise:
+        with pytest.raises(RuntimeError) as excinfo:
+            retrieve_main_branch_sha(
+                github_owner=sample_inputs_retrieve["github_owner"],
+                repository_name=sample_inputs_retrieve["repository_name"],
+                client=client,
+            )
+        assert (
+            f"Failed to retrieve SHA for 'main' branch of "
+            f"{sample_inputs_retrieve['github_owner']}/"
+            f"{sample_inputs_retrieve['repository_name']}"
+        ) in str(excinfo.value)
+    else:
+        result = retrieve_main_branch_sha(
+            github_owner=sample_inputs_retrieve["github_owner"],
+            repository_name=sample_inputs_retrieve["repository_name"],
+            client=client,
+        )
+        assert result == expected

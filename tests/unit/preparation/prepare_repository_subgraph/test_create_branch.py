@@ -1,54 +1,49 @@
-from unittest.mock import MagicMock, patch
-
 import pytest
-import requests
+from typing import Literal
+from airas.preparation.prepare_repository_subgraph.nodes.create_branch import create_branch
 
-from airas.preparation.prepare_repository_subgraph.nodes.create_branch import (
-    create_branch,
+@pytest.fixture
+def sample_inputs() -> dict[str, str]:
+    return {
+        "github_owner": "auto-res2",
+        "repository_name": "test-repo",
+        "branch_name": "new-branch",
+        "main_sha": "abc123",
+    }
+
+@pytest.mark.parametrize(
+    "dummy_return, should_raise",
+    [
+        (True, False),
+        (False, True),
+        (None, True),
+    ],
 )
+def test_create_branch(
+    sample_inputs: dict[str, str],
+    dummy_return,
+    should_raise,
+    dummy_github_client,
+):
+    client = dummy_github_client()
+    client._next_return = dummy_return
 
-
-# Normal case test: returns True when status_code is 201
-@patch(
-    "airas.preparation.prepare_repository_subgraph.nodes.create_branch.requests.post"
-)
-def test_create_branch_success(mock_post):
-    mock_response = MagicMock()
-    mock_response.status_code = 201
-    mock_post.return_value = mock_response
-    assert create_branch("owner", "repo", "branch", "sha", max_retries=1) is True
-
-
-# Abnormal case test: raises RuntimeError on 409
-@patch(
-    "airas.preparation.prepare_repository_subgraph.nodes.create_branch.requests.post"
-)
-def test_create_branch_conflict(mock_post):
-    mock_response = MagicMock()
-    mock_response.status_code = 409
-    mock_post.return_value = mock_response
-    with pytest.raises(RuntimeError):
-        create_branch("owner", "repo", "branch", "sha", max_retries=1)
-
-
-# Abnormal case test: raises RuntimeError on 422
-@patch(
-    "airas.preparation.prepare_repository_subgraph.nodes.create_branch.requests.post"
-)
-def test_create_branch_validation_failed(mock_post):
-    mock_response = MagicMock()
-    mock_response.status_code = 422
-    mock_response.json.return_value = {"message": "validation error"}
-    mock_post.return_value = mock_response
-    with pytest.raises(RuntimeError):
-        create_branch("owner", "repo", "branch", "sha", max_retries=1)
-
-
-# Abnormal case test: raises RuntimeError after max retries on HTTPError
-@patch(
-    "airas.preparation.prepare_repository_subgraph.nodes.create_branch.requests.post",
-    side_effect=requests.RequestException("fail"),
-)
-def test_create_branch_request_exception(mock_post):
-    with pytest.raises(RuntimeError):
-        create_branch("owner", "repo", "branch", "sha", max_retries=1)
+    if should_raise:
+        with pytest.raises(RuntimeError) as excinfo:
+            create_branch(
+                github_owner=sample_inputs["github_owner"],
+                repository_name=sample_inputs["repository_name"],
+                branch_name=sample_inputs["branch_name"],
+                main_sha=sample_inputs["main_sha"],
+                client=client,
+            )
+        assert f"Failed to create branch '{sample_inputs['branch_name']}'" in str(excinfo.value)
+    else:
+        result = create_branch(
+            github_owner=sample_inputs["github_owner"],
+            repository_name=sample_inputs["repository_name"],
+            branch_name=sample_inputs["branch_name"],
+            main_sha=sample_inputs["main_sha"],
+            client=client,
+        )
+        assert result is True 

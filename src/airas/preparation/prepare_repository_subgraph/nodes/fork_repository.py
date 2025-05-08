@@ -15,8 +15,11 @@ def fork_repository(
     # NOTE:Make it possible to respond simply by rewriting run_experiment.yml.
     device_type: DEVICETYPE,
     organization: str = "",
+    client: GithubClient | None = None, 
 ) -> Literal[True]:
-    client = GithubClient()
+    if client is None:
+        client = GithubClient()
+        
     response = client.fork_repository(
         repository_name=repository_name,
         device_type=device_type,

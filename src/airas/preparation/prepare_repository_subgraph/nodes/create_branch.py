@@ -15,8 +15,11 @@ def create_branch(
     repository_name: str,
     branch_name: str,
     main_sha: str,
+    client: GithubClient | None = None, 
 ) -> Literal[True]:
-    client = GithubClient()
+    if client is None:
+        client = GithubClient()
+
     response = client.create_branch(
         github_owner=github_owner,
         repository_name=repository_name,
