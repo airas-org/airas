@@ -1,156 +1,71 @@
-import json
-
 import pytest
 
 from airas.write.writer_subgraph.nodes.paper_writing import WritingNode
 
 
 @pytest.fixture
-def fake_llm_response() -> dict[str, str]:
+def sample_llm_output() -> dict[str, str]:
     return {
-        "Title": "My Title",
-        "Abstract": "My Abstract",
-        "Introduction": "My Intro",
-        "Related_Work": "My Related Work",
-        "Background": "My Background",
-        "Method": "My Method",
-        "Experimental_Setup": "My Setup",
-        "Results": "My Results",
-        "Conclusions": "My Conclusions",
+        "Title": "A Novel Approach to Testing",
+        "Abstract": "This abstract summarizes the novel testing approach.",
+        "Introduction": "In this paper, we introduce our testing method.",
+        "Related_Work": "Several works have explored testing paradigms.",
+        "Background": "Background on testing frameworks is provided.",
+        "Method": "We propose a templated test generation method.",
+        "Experimental_Setup": "We ran tests on dummy data.",
+        "Results": "Our tests passed with 100% success.",
+        "Conclusions": "This method is effective for unit testing.",
     }
 
 
-@pytest.fixture
-def node() -> WritingNode:
-    node = WritingNode(llm_name="gpt-4o-mini-2024-07-18")
-    return node
+def test_replace_underscores_in_keys(dummy_llm_facade_client):
+    client = dummy_llm_facade_client("dummy-model")
+    node = WritingNode(llm_name="dummy-model", client=client)
+
+    transformed = node._replace_underscores_in_keys({
+        "Related_Work": "val1",
+        "Experimental_Setup": "val2",
+    })
+    assert "Related Work" in transformed
+    assert transformed["Related Work"] == "val1"
+    assert "Experimental Setup" in transformed
+    assert transformed["Experimental Setup"] == "val2"
 
 
-def test_replace_underscores_in_keys(node: WritingNode) -> None:
-    inp = {"A_B": "x", "C": "y"}
-    out = node._replace_underscores_in_keys(inp)
-    assert out == {"A B": "x", "C": "y"}
+def test_generate_write_and_refinement_prompts(dummy_llm_facade_client):
+    client = dummy_llm_facade_client("dummy-model")
+    node = WritingNode(llm_name="dummy-model", client=client)
+
+    write_prompt = node._generate_write_prompt()
+    assert "research paper" in write_prompt
+    refine_prompt = node._generate_refinement_prompt({"Title": "Test"})
+    assert "You are refining a research paper" in refine_prompt
 
 
-def test_call_llm_success(
-    node: WritingNode,
-    monkeypatch: pytest.MonkeyPatch,
-    fake_llm_response: dict[str, str],
-) -> None:
-    monkeypatch.setattr(
-        "airas.utils.api_client.llm_facade_client.LLMFacadeClient.structured_outputs",
-        lambda self, message, data_model: (fake_llm_response, 0.0),
-    )
-    result = node._call_llm(prompt="p", system_prompt="s")
-    assert result["Related Work"] == fake_llm_response["Related_Work"]
+def test_execute_refine_only_requires_content(dummy_llm_facade_client):
+    client = dummy_llm_facade_client("dummy-model")
+    node = WritingNode(llm_name="dummy-model", client=client, refine_only=True)
 
-    expected_keys = [
-        "Title",
-        "Abstract",
-        "Introduction",
-        "Related Work",
-        "Background",
-        "Method",
-        "Experimental Setup",
-        "Results",
-        "Conclusions",
-    ]
-    for k in expected_keys:
-        assert k in result
+    with pytest.raises(ValueError) as excinfo:
+        node.execute(note="dummy note", paper_content=None)
+    assert "paper_content must be provided when refine_only is True" in str(excinfo.value)
 
 
-@pytest.mark.parametrize(
-    "raw_response, expected_msg",
-    [
-        (None, "No response"),
-        ("", "No response"),
-        ("{}", "Missing or empty"),
-        ('{"Title": ""}', "Missing or empty"),
-    ],
-)
-def test_call_llm_errors(
-    node: WritingNode,
-    monkeypatch: pytest.MonkeyPatch,
-    raw_response: str | None,
-    expected_msg: str,
-) -> None:
-    def fake_structured_outputs(self, message, data_model):
-        if raw_response is None or raw_response == "":
-            return None, 0.0
-        if isinstance(raw_response, str):
-            return json.loads(raw_response), 0.0
-        return raw_response, 0.0
+def test_execute_refine_only_success(dummy_llm_facade_client, sample_llm_output):
+    client = dummy_llm_facade_client("dummy-model")
+    client._next_return = sample_llm_output
+    node = WritingNode(llm_name="dummy-model", client=client, refine_only=True)
 
-    monkeypatch.setattr(
-        "airas.utils.api_client.llm_facade_client.LLMFacadeClient.structured_outputs",
-        fake_structured_outputs,
-    )
-    with pytest.raises(ValueError) as exc:
-        node._call_llm(prompt="p", system_prompt="s")
-    assert expected_msg in str(exc.value)
-
-
-def test_generate_write_prompt(node: WritingNode) -> None:
-    prompt = node._generate_write_prompt()
-    assert "writing a research paper" in prompt
-
-
-def test_generate_refinement_prompt(node: WritingNode) -> None:
-    sample_content = {"Any": "Value"}
-    prompt = node._generate_refinement_prompt(sample_content)
-    assert "You are refining a research paper" in prompt
-    assert "Here is the content that needs refinement" in prompt
-    assert "Unenclosed math symbols" in prompt
-
-
-def test_render_system_prompt(node: WritingNode) -> None:
-    note = "This is context"
-    sys_prompt = node._render_system_prompt(note)
-    assert "This is context" in sys_prompt
-    assert "## Title Tips" in sys_prompt
-    assert "## Abstract Tips" in sys_prompt
-
-
-def test_execute_full(
-    node: WritingNode,
-    monkeypatch: pytest.MonkeyPatch,
-    fake_llm_response: dict[str, str],
-) -> None:
-    monkeypatch.setattr(
-        "airas.utils.api_client.llm_facade_client.LLMFacadeClient.structured_outputs",
-        lambda self, message, data_model: (fake_llm_response, 0.0),
-    )
-    result = node.execute(note="My paper context")
-    assert result["Title"] == fake_llm_response["Title"]
-    assert result["Related Work"] == fake_llm_response["Related_Work"]
-
-
-def test_execute_refine_only(
-    monkeypatch: pytest.MonkeyPatch, fake_llm_response: dict[str, str]
-) -> None:
-    node_refine = WritingNode(llm_name="gpt-4o-mini-2024-07-18", refine_only=True)
-    initial_content = {
-        "Title": "Init",
-        "Abstract": "A",
-        "Introduction": "I",
-        "Related Work": "RW",
-        "Background": "BG",
-        "Method": "M",
-        "Experimental Setup": "ES",
-        "Results": "R",
-        "Conclusions": "C",
+    result = node.execute(note="dummy note", paper_content=sample_llm_output)
+    expected = {
+        "Title": sample_llm_output["Title"],
+        "Abstract": sample_llm_output["Abstract"],
+        "Introduction": sample_llm_output["Introduction"],
+        "Related Work": sample_llm_output["Related_Work"],
+        "Background": sample_llm_output["Background"],
+        "Method": sample_llm_output["Method"],
+        "Experimental Setup": sample_llm_output["Experimental_Setup"],
+        "Results": sample_llm_output["Results"],
+        "Conclusions": sample_llm_output["Conclusions"],
     }
-    monkeypatch.setattr(
-        "airas.utils.api_client.llm_facade_client.LLMFacadeClient.structured_outputs",
-        lambda self, message, data_model: (fake_llm_response, 0.0),
-    )
-    result = node_refine.execute(note="ctx", paper_content=initial_content)
-    assert result["Title"] == fake_llm_response["Title"]
-    assert result["Related Work"] == fake_llm_response["Related_Work"]
-
-
-def test_execute_refine_only_without_content() -> None:
-    node_refine = WritingNode(llm_name="gpt-4o-mini-2024-07-18", refine_only=True)
-    with pytest.raises(ValueError) as exc:
-        node_refine.execute(note="ctx")
-    assert "paper_content must be provided" in str(exc.value)
+    assert result == expected

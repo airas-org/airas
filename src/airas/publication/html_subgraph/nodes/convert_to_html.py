@@ -18,7 +18,11 @@ class LLMOutput(BaseModel):
 def convert_to_html(
     llm_name: LLM_MODEL,
     paper_content: dict[str, str],
+    client: LLMFacadeClient | None = None, 
 ) -> str:
+    if client is None:
+        client = LLMFacadeClient(llm_name=llm_name)
+
     data = {
         "sections": [
             {"name": section, "content": paper_content[section]}
@@ -29,9 +33,7 @@ def convert_to_html(
     env = Environment()
     template = env.from_string(convert_to_html_prompt)
     messages = template.render(data)
-    output, cost = LLMFacadeClient(
-        llm_name=llm_name,
-    ).structured_outputs(
+    output, cost = client.structured_outputs(
         message=messages,
         data_model=LLMOutput,
     )

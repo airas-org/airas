@@ -1,47 +1,47 @@
-from unittest.mock import patch
-
 import pytest
 
 from airas.publication.html_subgraph.nodes.convert_to_html import convert_to_html
 
 
-def test_convert_to_html_success():
-    with patch(
-        "airas.utils.api_client.llm_facade_client.LLMFacadeClient.structured_outputs",
-        return_value=({"generated_html_text": "<p>OK</p>"}, 0.01),
-    ):
-        result = convert_to_html(
-            llm_name="gpt-4o-mini-2024-07-18", paper_content={"sec1": "text"}
-        )
-        assert result == "<p>OK</p>"
-
+@pytest.fixture
+def sample_paper_content() -> dict[str, str]:
+    return {
+        "Section1": "Content of section 1",
+        "Section2": "Content of section 2",
+    }
 
 @pytest.mark.parametrize(
-    "raw_response, expected_msg",
+    "dummy_return, expected, error_msg",
     [
-        (None, "No response"),
-        ("", "Empty HTML content"),
-        ("{}", "Empty HTML content"),
-        ('{"generated_html_text": ""}', "Empty HTML content"),
+        ({"generated_html_text": "<div>HTML</div>"}, "<div>HTML</div>", None),
+        (None, None, "No response from the model in convert_to_html."),
+        ({}, None, "Empty HTML content"),
+        ({"other_key": "value"}, None, "Error: No response from the model in convert_to_html."),
+        ({"generated_html_text": ""}, None, "Empty HTML content"),
     ],
 )
-def test_convert_to_html_errors(raw_response, expected_msg):
-    def fake_structured_outputs(*args, **kwargs):
-        if raw_response is None:
-            return None, 0.01
-        try:
-            import json
+def test_convert_to_html_with_dummy_client(
+    sample_paper_content: dict[str, str],
+    dummy_return,
+    expected,
+    error_msg,
+    dummy_llm_facade_client,
+):
+    client = dummy_llm_facade_client("dummy-model")
+    client._next_return = dummy_return
 
-            return json.loads(raw_response), 0.01
-        except Exception:
-            return raw_response, 0.01
-
-    with patch(
-        "airas.utils.api_client.llm_facade_client.LLMFacadeClient.structured_outputs",
-        side_effect=fake_structured_outputs,
-    ):
-        with pytest.raises(ValueError) as exc:
+    if error_msg:
+        with pytest.raises(ValueError) as excinfo:
             convert_to_html(
-                llm_name="gpt-4o-mini-2024-07-18", paper_content={"sec1": "text"}
+                llm_name="dummy-model",
+                paper_content=sample_paper_content,
+                client=client,
             )
-        assert expected_msg in str(exc.value)
+        assert error_msg in str(excinfo.value)
+    else:
+        result = convert_to_html(
+            llm_name="dummy-model",
+            paper_content=sample_paper_content,
+            client=client,
+        )
+        assert result == expected
