@@ -27,11 +27,11 @@ def check_branch_existence(
         )
         return None
     
-    sha = response["commit"]["sha"]
-    if not sha:
-        logger.warning(f"Branch '{branch_name}' not found in repository '{repository_name}'.")
+    try:
+        return response["commit"]["sha"]
+    except KeyError:
+        logger.warning(f"Unexpected response format: missing 'commit.sha'. Response: {response}")
         return None
-    return sha
 
 
 if __name__ == "__main__":

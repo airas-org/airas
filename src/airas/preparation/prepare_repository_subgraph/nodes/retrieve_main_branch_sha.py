@@ -20,9 +20,13 @@ def retrieve_main_branch_sha(
         repository_name=repository_name,
         branch_name="main",
     )
-    sha = response["commit"]["sha"]
-    if sha is None:
-        raise RuntimeError(f"Failed to retrieve SHA for 'main' branch of {github_owner}/{repository_name}")
+    try:
+        sha = response["commit"]["sha"]
+    except (TypeError, KeyError):
+        raise RuntimeError(f"Failed to retrieve SHA for 'main' branch of {github_owner}/{repository_name}")  # noqa: B904
+
+    if not sha:
+        raise RuntimeError(f"Empty SHA for 'main' branch of {github_owner}/{repository_name}")
     return sha
 
 

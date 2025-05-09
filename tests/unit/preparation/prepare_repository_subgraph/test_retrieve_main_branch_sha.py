@@ -13,8 +13,11 @@ def sample_inputs_retrieve() -> dict[str, str]:
 @pytest.mark.parametrize(
     "dummy_return, expected, should_raise",
     [
-        ("abc123", "abc123", False),
+        ({"commit": {"sha": "abc123"}}, "abc123", False),
         (None, None, True),
+        ({}, None, True),
+        ({"commit": {}}, None, True),
+        ({"commit": {"sha": ""}}, None, True),
     ],
 )
 def test_retrieve_main_branch_sha_di(
@@ -35,7 +38,7 @@ def test_retrieve_main_branch_sha_di(
                 client=client,
             )
         assert (
-            f"Failed to retrieve SHA for 'main' branch of "
+            "SHA for 'main' branch of "
             f"{sample_inputs_retrieve['github_owner']}/"
             f"{sample_inputs_retrieve['repository_name']}"
         ) in str(excinfo.value)
