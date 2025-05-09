@@ -44,7 +44,7 @@ def execute_github_actions_workflow(
     num_workflow_runs_before_execution = _count_github_actions_workflow_runs(response_before_execution)
     logger.info(f"Number of workflow runs before execution:{num_workflow_runs_before_execution}")
 
-    ok_dispatch = client.dispatch_workflow(
+    ok_dispatch = client.create_workflow_dispatch(
         github_owner,
         repository_name,
         _WORKFLOW_FILE, 

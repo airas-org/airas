@@ -30,7 +30,7 @@ def retrieve_repository_contents(github_url: str) -> str:
             tree_sha=default_branch,
         )
     except Exception as e:
-        logger.error(f"Failed to retrieve repository tree: {e}")
+        logger.warning(f"Failed to retrieve repository tree: {e}")
         return ""
 
     if repository_tree_info is None:

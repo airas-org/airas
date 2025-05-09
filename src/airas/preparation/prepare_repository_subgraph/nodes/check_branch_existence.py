@@ -6,9 +6,6 @@ from airas.utils.api_client.github_client import GithubClient
 logger = getLogger(__name__)
 DEVICETYPE = Literal["cpu", "gpu"]
 
-# NOTE：API Documentation
-# https://docs.github.com/ja/rest/branches/branches?apiVersion=2022-11-28#get-a-branch
-
 
 def check_branch_existence(
     github_owner: str, 
@@ -19,13 +16,20 @@ def check_branch_existence(
     if client is None:
         client = GithubClient()
         
-    sha = client.check_branch_existence(
+    response = client.get_branch(
         github_owner=github_owner,
         repository_name=repository_name,
         branch_name=branch_name,
     )
+    if response is None:
+        logger.warning(
+            f"Branch '{branch_name}' not found in repository '{repository_name}'."
+        )
+        return None
+    
+    sha = response["commit"]["sha"]
     if not sha:
-        logger.error(f"Branch '{branch_name}' not found in repository '{repository_name}'.")
+        logger.warning(f"Branch '{branch_name}' not found in repository '{repository_name}'.")
         return None
     return sha
 

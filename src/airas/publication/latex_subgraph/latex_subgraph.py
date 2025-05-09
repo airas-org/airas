@@ -110,11 +110,9 @@ def main():
     )
     args = parser.parse_args()
 
-    branch_name = args.branch_name
-
     extra_files = [
         {
-            "upload_branch": f"{branch_name}",
+            "upload_branch": "{branch_name}",
             "upload_dir": ".research/",
             "local_file_paths": [f"{save_dir}/paper.pdf"],
         }

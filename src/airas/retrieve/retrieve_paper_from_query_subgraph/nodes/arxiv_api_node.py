@@ -6,7 +6,11 @@ import feedparser
 import pytz
 from pydantic import BaseModel, Field, ValidationError
 
-from airas.utils.api_client.arxiv_client import ArxivClient
+from airas.utils.api_client.arxiv_client import (
+    ArxivClient,
+    ArxivClientFatalError,
+    ArxivClientRetryableError,
+)
 
 logger = getLogger(__name__)
 
@@ -57,19 +61,19 @@ class ArxivNode:
         from_date, to_date = self._date_range()
         start_index = self.start_indices.get(query, 0)
 
-        response = self.client.search(
-            query=query,
-            start=start_index,
-            max_results=self.num_retrieve_paper,
-            from_date=from_date,
-            to_date=to_date,
-        )
-
-        if response is None:
-            logger.warning("Failed to fetch data from arXiv API")
+        try:
+            xml_feed: str = self.client.search(
+                query=query,
+                start=start_index,
+                max_results=self.num_retrieve_paper,
+                from_date=from_date,
+                to_date=to_date,
+            )
+        except (ArxivClientRetryableError, ArxivClientFatalError) as e:
+            logger.warning(f"arXiv API request failed: {e}")
             return []
 
-        feed = feedparser.parse(response.text)
+        feed = feedparser.parse(xml_feed)
         papers = [
             paper.model_dump()
             for entry in feed.entries

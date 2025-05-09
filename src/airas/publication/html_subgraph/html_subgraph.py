@@ -99,17 +99,15 @@ def main():
     )
     args = parser.parse_args()
 
-    branch_name = args.branch_name
-
     extra_files = [
         {
             "upload_branch": "gh-pages",
-            "upload_dir": f"branches/{branch_name}/",
+            "upload_dir": "branches/{branch_name}/",
             "local_file_paths": [f"{save_dir}/index.html"],
         },
         {
             "upload_branch": "gh-pages",
-            "upload_dir": f"branches/{branch_name}/images/",
+            "upload_dir": "branches/{branch_name}/images/",
             "local_file_paths": pdf_files,
         },
     ]
