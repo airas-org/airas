@@ -16,9 +16,9 @@ def sample_inputs() -> dict[str, str]:
 @pytest.mark.parametrize(
     "dummy_return, expected",
     [
-        ("abc123def", "abc123def"), 
+        ({"commit": {"sha": "abc123def"}}, "abc123def"),
         (None, None),
-        ("", None),
+        ({}, None),
     ],
 )
 def test_check_branch_existence(

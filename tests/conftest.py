@@ -32,7 +32,7 @@ class DummyGithubClient:
     def __init__(self):
         pass
 
-    def check_branch_existence(
+    def get_branch(
         self, github_owner: str, repository_name: str, branch_name: str
     ) -> Any:
         return self._next_return

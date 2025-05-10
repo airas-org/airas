@@ -1,16 +1,12 @@
 import logging
-from abc import ABC
-from typing import Literal, overload
 
 import httpx
 import requests
 
-from airas.utils.api_client.parser_mixin import ResponseParserMixIn
-
 logger = logging.getLogger(__name__)
 
 
-class BaseHTTPClient(ResponseParserMixIn, ABC):
+class BaseHTTPClient:
     def __init__(
         self,
         base_url: str,
@@ -22,43 +18,7 @@ class BaseHTTPClient(ResponseParserMixIn, ABC):
         self.default_headers = default_headers or {}
         self.session = session or requests.Session()
 
-    @overload
-    def get(
-        self, path: str, *, parse: Literal[True], **kwargs
-    ) -> dict | bytes | str: ...
-    @overload
-    def get(
-        self, path: str, *, parse: Literal[False], **kwargs
-    ) -> requests.Response: ...
-
-    def get(self, path: str, **kwargs):
-        return self._request("GET", path, **kwargs)
-
-    @overload
-    def post(
-        self, path: str, *, parse: Literal[True], **kwargs
-    ) -> dict | bytes | str: ...
-    @overload
-    def post(
-        self, path: str, *, parse: Literal[False], **kwargs
-    ) -> requests.Response: ...
-
-    def post(self, path: str, **kwargs):
-        return self._request("POST", path, **kwargs)
-    
-    @overload
-    def put(
-        self, path: str, *, parse: Literal[True], **kwargs
-    ) -> dict | bytes | str: ...
-    @overload
-    def put(
-        self, path: str, *, parse: Literal[False], **kwargs
-    ) -> requests.Response: ...
-
-    def put(self, path: str, **kwargs):
-        return self._request("PUT", path, **kwargs)
-
-    def _request(
+    def request(
         self,
         method: str,
         path: str,
@@ -68,7 +28,7 @@ class BaseHTTPClient(ResponseParserMixIn, ABC):
         json: dict | None = None,
         stream: bool = False,
         timeout: float = 10.0,
-    ) -> dict | str | bytes | requests.Response | None:
+    ) -> requests.Response:
         url = f"{self.base_url}/{path.lstrip('/')}"
         headers = {**self.default_headers, **(headers or {})}
 
@@ -87,8 +47,17 @@ class BaseHTTPClient(ResponseParserMixIn, ABC):
             logger.warning(f"[{self.__class__.__name__}] {method} {url}: {e}")
             raise
 
+    def get(self, path: str, **kwargs) -> requests.Response:
+        return self.request("GET", path, **kwargs)
 
-class AsyncBaseHTTPClient(ResponseParserMixIn, ABC):
+    def post(self, path: str, **kwargs) -> requests.Response:
+        return self.request("POST", path, **kwargs)
+
+    def put(self, path: str, **kwargs) -> requests.Response:
+        return self.request("PUT", path, **kwargs)
+
+
+class AsyncBaseHTTPClient:
     def __init__(
         self,
         base_url: str,
@@ -100,30 +69,7 @@ class AsyncBaseHTTPClient(ResponseParserMixIn, ABC):
         self.default_headers = default_headers or {}
         self.session = session or httpx.AsyncClient()
 
-    @overload
-    async def get(
-        self, path: str, *, parse: Literal[True], **kwargs
-    ) -> dict | bytes | str: ...
-    @overload
-    async def get(
-        self, path: str, *, parse: Literal[False], **kwargs
-    ) -> requests.Response: ...
-
-    async def get(self, path: str, **kwargs):
-        return await self._request("GET", path, **kwargs)
-
-    @overload
-    async def post(
-        self, path: str, *, parse: Literal[True], **kwargs
-    ) -> dict | bytes | str: ...
-    @overload
-    async def post(
-        self, path: str, *, parse: Literal[False], **kwargs
-    ) -> requests.Response: ...
-    async def post(self, path: str, **kwargs):
-        return await self._request("POST", path, **kwargs)
-
-    async def _request(
+    async def request(
         self,
         method: str,
         path: str,
@@ -133,7 +79,7 @@ class AsyncBaseHTTPClient(ResponseParserMixIn, ABC):
         json: dict | None = None,
         stream: bool = False,
         timeout: float = 10.0,
-    ) -> dict | str | bytes | requests.Response | None:
+    ) -> requests.Response:
         url = f"{self.base_url}/{path.lstrip('/')}"
         headers = {**self.default_headers, **(headers or {})}
 
@@ -151,3 +97,12 @@ class AsyncBaseHTTPClient(ResponseParserMixIn, ABC):
         except Exception as e:
             logger.warning(f"[{self.__class__.__name__}] {method} {url}: {e}")
             raise
+
+    async def get(self, path: str, **kwargs) -> requests.Response:
+        return self.request("GET", path, **kwargs)
+
+    async def post(self, path: str, **kwargs) -> requests.Response:
+        return self.request("POST", path, **kwargs)
+
+    async def put(self, path: str, **kwargs) -> requests.Response:
+        return self.request("PUT", path, **kwargs)

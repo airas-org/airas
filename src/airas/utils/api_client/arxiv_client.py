@@ -1,7 +1,8 @@
 import logging
 from logging import getLogger
+from typing import Any, Protocol, runtime_checkable
 
-from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
+import requests
 from tenacity import (
     before_log,
     before_sleep_log,
@@ -12,20 +13,39 @@ from tenacity import (
 )
 
 from airas.utils.api_client.base_http_client import BaseHTTPClient
+from airas.utils.api_client.response_parser import ResponseParser
 
 logger = getLogger(__name__)
 
-RETRY_EXC = (HTTPError, ConnectionError, Timeout, RequestException, Exception)
-MAX_RETRIES = 10
+from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
+
+
+@runtime_checkable
+class ResponseParserProtocol(Protocol):
+    def parse(self, response: requests.Response, *, as_: str) -> Any: ...
+
+class ArxivClientError(RuntimeError): ...
+class ArxivClientRetryableError(ArxivClientError): ...
+class ArxivClientFatalError(ArxivClientError): ...
+
+
+DEFAULT_MAX_RETRIES = 10
 WAIT_POLICY = wait_exponential(multiplier=1.0, max=180.0)
+RETRY_EXC = (
+    ArxivClientRetryableError,
+    ConnectionError,
+    HTTPError,
+    Timeout,
+    RequestException,
+)
 
 ARXIV_RETRY = retry(
-    retry=retry_if_exception_type(RETRY_EXC),
-    stop=stop_after_attempt(MAX_RETRIES),
+    stop=stop_after_attempt(DEFAULT_MAX_RETRIES),
     wait=WAIT_POLICY,
     before=before_log(logger, logging.WARNING),
     before_sleep=before_sleep_log(logger, logging.WARNING),
     reraise=True,
+    retry=retry_if_exception_type(RETRY_EXC),
 )
 
 
@@ -34,8 +54,22 @@ class ArxivClient(BaseHTTPClient):
         self,
         base_url: str = "https://export.arxiv.org/api",
         default_headers: dict[str, str] | None = None,
+        parser: ResponseParserProtocol | None = None, 
     ):
         super().__init__(base_url=base_url, default_headers=default_headers)
+        self._parser = parser or ResponseParser()
+
+    @staticmethod
+    def _raise_for_status(resp: requests.Response, path: str) -> None:
+        code = resp.status_code
+        if 200 <= code < 300:
+            return
+
+        if 500 <= code < 600:
+            raise ArxivClientRetryableError(f"Server error {code} : {path}")
+
+        raise ArxivClientFatalError(f"Client error {code} : {path}")
+
 
     @ARXIV_RETRY
     def search(
@@ -49,7 +83,7 @@ class ArxivClient(BaseHTTPClient):
         from_date: str | None = None,
         to_date: str | None = None,
         timeout: float = 15.0,
-    ) -> dict | str | bytes | None:
+    ) -> str:
         sanitized = query.replace(":", "")
         if from_date and to_date:
             search_q = f"(all:{sanitized}) AND submittedDate:[{from_date} TO {to_date}]"
@@ -64,5 +98,6 @@ class ArxivClient(BaseHTTPClient):
             "sortOrder": sort_order,
         }
         response = self.get(path="query", params=params, timeout=timeout)
-        # TODO: Enhance error handling
-        return self.parse_response(response)
+        self._raise_for_status(response, path="query")
+
+        return self._parser.parse(response, as_="xml")

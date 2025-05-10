@@ -1,6 +1,8 @@
 import base64
 import logging
 import os
+from datetime import datetime, timezone
+from typing import Any, Literal, Protocol, runtime_checkable
 
 import requests
 from tenacity import (
@@ -10,36 +12,35 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
-from typing import Any
-from datetime import datetime, timezone
 
 from airas.utils.api_client.base_http_client import BaseHTTPClient
+from airas.utils.api_client.response_parser import ResponseParser
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
 
+
+@runtime_checkable
+class ResponseParserProtocol(Protocol):
+    def parse(self, response: requests.Response, *, as_: str) -> Any: ...
+
+class GithubClientError(RuntimeError): ...
+class GithubClientRetryableError(GithubClientError): ...
+class GithubClientFatalError(GithubClientError): ...
+
 DEFAULT_MAX_RETRIES = 10
 DEFAULT_INITIAL_WAIT = 1.0
-
-
-class GithubClientError(RuntimeError):
-    ...
-
-class GithubClientRetryableError(GithubClientError):
-    ...
-
-class GithubClientFatalError(GithubClientError):
-    ...
 
 GITHUB_RETRY = retry(
     stop=stop_after_attempt(DEFAULT_MAX_RETRIES),
     wait=wait_exponential(multiplier=DEFAULT_INITIAL_WAIT),
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+    reraise=True,
     retry=(
         retry_if_exception_type(GithubClientRetryableError)
         | retry_if_exception_type(requests.RequestException)
     ),
-    before_sleep=before_sleep_log(logger, logging.WARNING),
 )
 
 
@@ -48,6 +49,7 @@ class GithubClient(BaseHTTPClient):
         self,
         base_url: str = "https://api.github.com",
         default_headers: dict[str, str] | None = None,
+        parser: ResponseParserProtocol | None = None, 
     ) -> None:
         auth_headers = {
             "Accept": "application/vnd.github+json",
@@ -58,6 +60,7 @@ class GithubClient(BaseHTTPClient):
             base_url=base_url,
             default_headers={**auth_headers, **(default_headers or {})},
         )
+        self._parser = parser or ResponseParser()
 
     @staticmethod
     def _raise_for_status(response: requests.Response, path: str) -> None:
@@ -69,9 +72,7 @@ class GithubClient(BaseHTTPClient):
         if 300 <= code < 400:
             location = response.headers.get("Location", "unknown")
             logger.warning(f"Unexpected redirect ({code}) for {path} → {location}")
-            raise GithubClientRetryableError(
-                f"Redirect response ({code}) for {path}; check Location: {location}"
-            )
+            raise GithubClientRetryableError(f"Redirect response ({code}) for {path}; check Location: {location}")
 
         if code == 403:
             if response.headers.get("X-RateLimit-Remaining") == "0":
@@ -86,25 +87,14 @@ class GithubClient(BaseHTTPClient):
                 raise GithubClientFatalError(
                     f"Access forbidden (403) for {path}: {response.text}"
                 )
-        
+                
         if 400 <= code < 500:
-            raise GithubClientFatalError(
-                f"Client error {code} for URL {path}: {response.text}"
-            )
+            raise GithubClientFatalError(f"Client error {code} for URL {path}: {response.text}")
 
         if 500 <= code < 600:
-            raise GithubClientRetryableError(
-                f"Server error {code} for URL {path}: {response.text}"
-            )
+            raise GithubClientRetryableError(f"Server error {code} for URL {path}: {response.text}")
 
-        if code >= 600 or code < 200:
-            raise GithubClientFatalError(
-                f"Unexpected HTTP status {code} for URL {path}: {response.text}"
-            )
-        
-        raise GithubClientRetryableError(
-            f"Unhandled status code {code} for URL: {path}"
-        )
+        raise GithubClientFatalError(f"Unexpected status {code}: {response.text}")
 
     # --------------------------------------------------
     # Repository
@@ -113,46 +103,106 @@ class GithubClient(BaseHTTPClient):
     @GITHUB_RETRY
     def get_repository(
         self, github_owner: str, repository_name: str
-    ) -> dict:
+    ) -> dict | None:
         # https://docs.github.com/ja/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
         # For public repositories, no access token is required.
         path = f"/repos/{github_owner}/{repository_name}"
-
         response = self.get(path=path)
         match response.status_code:
             case 200:
                 logger.info("A research repository exists (200).")
-                return self.parse_response(response)
+                return self._parser.parse(response, as_="json")
             case 404:
                 logger.warning(f"Repository not found: {path} (404).")
                 return None  # NOTE: Returning None is intentional; a missing branch is an expected case.
             case _:
                 self._raise_for_status(response, path)
-                return self.parse_response
+                return None
 
-            
-    @GITHUB_RETRY
-    def get_repository_content(
-        self, github_owner: str, repository_name: str, file_path: str
-    ) -> bytes | None:
+    def _fetch_content(
+        self, 
+        github_owner: str, 
+        repository_name: str, 
+        file_path: str, 
+        branch_name: str | None = None, 
+        as_: Literal["json", "bytes"] = "json", 
+    ) -> dict | bytes | None:
         # https://docs.github.com/ja/rest/repos/contents?apiVersion=2022-11-28#get-repository-content
-        # For public repositories, no access token is required.
         path = f"/repos/{github_owner}/{repository_name}/contents/{file_path}"
-        headers={"Accept": "application/vnd.github.raw+json"}
 
-        response = self.get(path=path, headers=headers)
+        response = self.get(path, params={"ref": branch_name})
         match response.status_code:
             case 200:
-                return self.parse_response(response)
-            case 302:
-                logger.warning("Found (301).")
-                return None  # NOTE: Returning None is intentional; a missing branch is an expected case.
-            case 304:
-                logger.warning("Not modified (304).")
-                return None
+                logger.info(f"Success (200): {path}")
+                return self._parser.parse(response, as_="bytes" if as_ == "bytes" else "json")
+            case 404:
+                logger.error(f"Resource not found (404): {path}")
+                raise GithubClientFatalError(f"Resource not found (404): {path}")
+            case 403:
+                logger.error(f"Access forbidden (403): {path}")
+                raise GithubClientFatalError(f"Access forbidden (403): {path}")
             case _:
                 self._raise_for_status(response, path)
-                return self.parse_response(response)
+                return None       
+
+    @GITHUB_RETRY
+    def get_repository_content(
+        self, 
+        github_owner: str, 
+        repository_name: str, 
+        file_path: str, 
+        branch_name: str | None = None, 
+        as_: Literal["json", "bytes"] = "json"
+    ) -> dict | bytes | None:
+        return self._fetch_content(
+            github_owner=github_owner, 
+            repository_name=repository_name, 
+            file_path=file_path, 
+            branch_name=branch_name, 
+            as_=as_, 
+        )
+
+    @GITHUB_RETRY
+    def commit_file_bytes(
+        self,
+        github_owner: str,
+        repository_name: str,
+        branch_name: str,
+        file_path: str,
+        file_content: bytes,
+        commit_message: str,
+    ) -> bool:
+        sha: str | None = None
+        meta = self._fetch_content(
+            github_owner=github_owner, 
+            repository_name=repository_name, 
+            file_path=file_path, 
+            branch_name=branch_name, 
+        )
+        if meta:
+            sha = meta.get("sha")
+
+        payload = {
+            "message": commit_message,
+            "branch": branch_name,
+            "content": base64.b64encode(file_content).decode(),
+        }
+        if sha:
+            payload["sha"] = sha
+
+        path = f"/repos/{github_owner}/{repository_name}/contents/{file_path}"
+        response = self.put(path=path, json=payload)
+
+        match response.status_code:
+            case 200:
+                logger.info(f"Success (200): {path}")
+                return True
+            case 403:
+                logger.error(f"Access forbidden (403): {path}")
+                raise GithubClientFatalError(f"Access forbidden (403): {path}")
+            case _:
+                self._raise_for_status(response, path)
+                return False
             
     @GITHUB_RETRY
     def fork_repository(
@@ -170,17 +220,11 @@ class GithubClient(BaseHTTPClient):
             raise ValueError("Invalid device type. Must be 'cpu' or 'gpu'.")
 
         path = f"/repos/{source}/forks"
-        if organization == "":
-            json = {
-                "name": repository_name,
-                "default_branch_only": "true",
-            }
-        else:
-            json = {
-                "organization": organization,
-                "name": repository_name,
-                "default_branch_only": "true",
-            }
+        json = {
+            "name": repository_name,
+            "default_branch_only": "true",
+            **({"organization": organization} if organization else {}),
+        }
 
         response = self.post(path=path, json=json)
         match response.status_code:
@@ -205,12 +249,12 @@ class GithubClient(BaseHTTPClient):
     # --------------------------------------------------
 
     @GITHUB_RETRY
-    def check_branch_existence(
+    def get_branch(
         self,
         github_owner: str,
         repository_name: str,
         branch_name: str,
-    ) -> str | None:
+    ) -> dict | None:
         # https://docs.github.com/ja/rest/branches/branches?apiVersion=2022-11-28#get-a-branch
         # For public repositories, no access token is required.
         path = f"/repos/{github_owner}/{repository_name}/branches/{branch_name}"
@@ -219,8 +263,8 @@ class GithubClient(BaseHTTPClient):
         match response.status_code:
             case 200:
                 logger.info("The specified branch exists (200).")
-                response = self.parse_response(response)
-                return response["commit"]["sha"]
+                response = self._parser.parse(response, as_="json")
+                return response
             case 301:
                 logger.warning(f"Moved permanently: {path} (301).")
                 return None  # NOTE: Returning None is intentional; a missing branch is an expected case.
@@ -229,8 +273,8 @@ class GithubClient(BaseHTTPClient):
                 return None
             case _:
                 self._raise_for_status(response, path)
-                return self.parse_response(response)
-
+                return None
+            
     @GITHUB_RETRY
     def create_branch(
         self,
@@ -265,17 +309,16 @@ class GithubClient(BaseHTTPClient):
     @GITHUB_RETRY
     def get_a_tree(
         self, github_owner: str, repository_name: str, tree_sha: str
-    ) -> dict:
+    ) -> dict | None:
         # https://docs.github.com/ja/rest/git/trees?apiVersion=2022-11-28#get-a-tree
         # For public repositories, no access token is required.
         path = f"/repos/{github_owner}/{repository_name}/git/trees/{tree_sha}"
-        headers={"Accept": "application/vnd.github+json"}
         params = {"recursive": "true"}
 
-        response = self.get(path=path, headers=headers, params=params)
+        response = self.get(path=path, params=params)
         match response.status_code:
             case 200:
-                return self.parse_response(response)
+                return self._parser.parse(response, as_="json")
             case 404:
                 logger.error("Resource not found (404).")
                 raise GithubClientFatalError(f"Resource not found (404): {path}")
@@ -287,82 +330,14 @@ class GithubClient(BaseHTTPClient):
                 raise GithubClientFatalError("Validation failed, or the endpoint has been spammed (422).")
             case _:
                 self._raise_for_status(response, path)
-                return self.parse_response(response)
-            
-    # --------------------------------------------------
-    # Content I/O
-    # --------------------------------------------------
+                return None
 
-    @GITHUB_RETRY
-    def read_file_bytes(
-        self,
-        github_owner: str,
-        repository_name: str,
-        branch_name: str,
-        repository_path: str,
-    ) -> dict:
-        path = f"/repos/{github_owner}/{repository_name}/contents/{repository_path}"
-        params = {"ref": branch_name}
-        
-        response = self.get(path=path, params=params)
-        match response.status_code:
-            case 200:
-                logger.info(f"Success (200): {path}")
-                return self.parse_response(response)
-            case 404:
-                logger.error(f"Resource not found (404): {path}")
-                raise GithubClientFatalError(f"Resource not found (404): {path}")
-            case 403:
-                logger.error(f"Access forbidden (403): {path}")
-                raise GithubClientFatalError(f"Access forbidden (403): {path}")
-            case _:
-                self._raise_for_status(response, path)
-                return self.parse_response(response)
-
-    @GITHUB_RETRY
-    def write_file_bytes(
-        self,
-        github_owner: str,
-        repository_name: str,
-        branch_name: str,
-        repository_path: str,
-        file_content: bytes,
-        commit_message: str,
-    ) -> bool:
-        path = f"/repos/{github_owner}/{repository_name}/contents/{repository_path}"
-        params = {"ref": branch_name}
-        sha: str | None = None
-
-        response = self.get(path=path, params=params)
-        # TODO: Set the condition of status code
-
-        if response.status_code == 200 and "sha" in response.json():
-            sha = response.json()["sha"]
-
-        payload: dict[str, Any] = {
-            "message": commit_message,
-            "branch": branch_name,
-            "content": base64.b64encode(file_content).decode(),
-        }
-        if sha:
-            payload["sha"] = sha
-
-        response = self.put(path=path, json=payload)
-        if response.status_code in (200, 201):
-            logger.info(f"[GitHub] {repository_path} uploaded/updated → branch {branch_name}")
-            return True
-
-        logger.error(
-            f"[GitHub] Failed to upload {repository_path} → {response.status_code}: {response.text}"
-        )
-        return False
-    
     # --------------------------------------------------
     # Github Actions
     # --------------------------------------------------
 
     @GITHUB_RETRY
-    def dispatch_workflow(
+    def create_workflow_dispatch(
         self, 
         github_owner: str, 
         repository_name: str, 
@@ -372,9 +347,7 @@ class GithubClient(BaseHTTPClient):
     ) -> bool:
         # https://docs.github.com/ja/rest/actions/workflows?apiVersion=2022-11-28#create-a-workflow-dispatch-event
         path = f"/repos/{github_owner}/{repository_name}/actions/workflows/{workflow_file_name}/dispatches"
-        json = {"ref": ref}
-        if inputs:
-            json["inputs"] = inputs
+        json = {"ref": ref, **({"inputs": inputs} if inputs else {})}
         
         response = self.post(path=path, json=json)
         match response.status_code:
@@ -401,7 +374,7 @@ class GithubClient(BaseHTTPClient):
         repository_name: str, 
         branch_name: str, 
         event: str = "workflow_dispatch", 
-    ) -> dict:
+    ) -> dict | None:
         # https://docs.github.com/ja/rest/actions/workflow-runs?apiVersion=2022-11-28#list-workflow-runs-for-a-repository
         path = f"/repos/{github_owner}/{repository_name}/actions/runs"
         params = {"branch": branch_name, "event": event}
@@ -409,7 +382,7 @@ class GithubClient(BaseHTTPClient):
         match response.status_code:
             case 200:
                 logger.info(f"Success (200): {path}")
-                return self.parse_response(response)
+                return self._parser.parse(response, as_="json")
             case 403:
                 logger.error(f"Access forbidden (403): {path}")
                 raise GithubClientFatalError(f"Access forbidden (403): {path}")
@@ -421,21 +394,21 @@ class GithubClient(BaseHTTPClient):
                 raise GithubClientFatalError(f"Validation failed, or the endpoint has been spammed (422): {path}")
             case _:
                 self._raise_for_status(response, path)
-                return self.parse_response(response)
+                return None
             
     @GITHUB_RETRY
     def list_repository_artifacts(
         self, 
         github_owner: str, 
         repository_name: str, 
-    ) -> dict:
+    ) -> dict | None:
         # https://docs.github.com/ja/rest/actions/artifacts?apiVersion=2022-11-28#list-artifacts-for-a-repository
         path = f"/repos/{github_owner}/{repository_name}/actions/artifacts"
         response = self.get(path=path)
         match response.status_code:
             case 200:
                 logger.info(f"Success (200): {path}")
-                return self.parse_response(response)
+                return self._parser.parse(response, as_="json")
             case 403:
                 logger.error(f"Access forbidden (403): {path}")
                 raise GithubClientFatalError(f"Access forbidden (403): {path}")
@@ -447,7 +420,7 @@ class GithubClient(BaseHTTPClient):
                 raise GithubClientFatalError(f"Validation failed, or the endpoint has been spammed (422): {path}")
             case _:
                 self._raise_for_status(response, path)
-                return self.parse_response(response)
+                return None
     
     @GITHUB_RETRY
     def download_artifact_archive(
@@ -455,7 +428,7 @@ class GithubClient(BaseHTTPClient):
         github_owner: str, 
         repository_name: str, 
         artifact_id: int, 
-    ) -> bytes:
+    ) -> bytes | None:
         # https://docs.github.com/ja/rest/actions/artifacts?apiVersion=2022-11-28#download-an-artifact
         path = f"/repos/{github_owner}/{repository_name}/actions/artifacts/{artifact_id}/zip"
         
@@ -463,13 +436,13 @@ class GithubClient(BaseHTTPClient):
         match response.status_code:
             case 200:
                 logger.info(f"Success (200): {path}")
-                return self.parse_response(response)
+                return self._parser.parse(response, as_="bytes")
             case 302:
                 logger.info(f"Found (302): {path}")
-                return self.parse_response(response)
+                return self._parser.parse(response, as_="bytes")
             case 404:
                 logger.error(f"Artifact not found: {artifact_id} (404)")
                 raise GithubClientFatalError(f"Artifact not found: {artifact_id} (404)")
             case _:
                 self._raise_for_status(response, path)
-                return self.parse_response(response)
+                return None

@@ -6,9 +6,6 @@ from airas.utils.api_client.github_client import GithubClient
 logger = getLogger(__name__)
 DEVICETYPE = Literal["cpu", "gpu"]
 
-# NOTE：API Documentation
-# https://docs.github.com/ja/rest/branches/branches?apiVersion=2022-11-28#get-a-branch
-
 
 def retrieve_main_branch_sha(
     github_owner: str,
@@ -18,13 +15,18 @@ def retrieve_main_branch_sha(
     if client is None:
         client = GithubClient()
 
-    sha = client.check_branch_existence(
+    response = client.get_branch(
         github_owner=github_owner,
         repository_name=repository_name,
         branch_name="main",
     )
-    if sha is None:
-        raise RuntimeError(f"Failed to retrieve SHA for 'main' branch of {github_owner}/{repository_name}")
+    try:
+        sha = response["commit"]["sha"]
+    except (TypeError, KeyError):
+        raise RuntimeError(f"Failed to retrieve SHA for 'main' branch of {github_owner}/{repository_name}")  # noqa: B904
+
+    if not sha:
+        raise RuntimeError(f"Empty SHA for 'main' branch of {github_owner}/{repository_name}")
     return sha
 
 
