@@ -208,14 +208,15 @@ class GithubClient(BaseHTTPClient):
     def fork_repository(
         self,
         repository_name: str,
-        device_type: str = "cpu",
+        device_type: str = "gpu",
         organization: str = "",
     ) -> bool:
         # https://docs.github.com/ja/rest/repos/forks?apiVersion=2022-11-28#create-a-fork
+        # TODO：Integrate the CPU repository and GPU repository. Make it possible to specify which one to use when running experiments.
         if device_type == "cpu":
             source = "auto-res/cpu-repository"
         elif device_type == "gpu":
-            source = "auto-res2/gpu-repository"
+            source = "airas-org/airas-template"
         else:
             raise ValueError("Invalid device type. Must be 'cpu' or 'gpu'.")
 
