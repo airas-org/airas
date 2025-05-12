@@ -51,12 +51,17 @@ class DummyGithubClient:
     ) -> Any:
         return self._next_return
     
-    def fork_repository(
-        self, 
-        repository_name: str, 
-        device_type: str, 
-        organization: str, 
+    def create_repository_from_template(
+        self,
+        github_owner: str,
+        repository_name: str,
+        template_owner: str,
+        template_repo: str,
+        include_all_branches: bool = True,
+        private: bool = False,
     ) -> Any:
+        if isinstance(self._next_return, Exception):
+            raise self._next_return
         return self._next_return
 
 @pytest.fixture
