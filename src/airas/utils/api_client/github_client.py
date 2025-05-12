@@ -244,7 +244,39 @@ class GithubClient(BaseHTTPClient):
             case _:
                 self._raise_for_status(response, path)
                 return False
+            
+    @GITHUB_RETRY
+    def create_repository_from_template(
+        self,
+        github_owner: str, 
+        repository_name: str,
+        template_owner: str,
+        template_repo: str,
+        include_all_branches: bool = True,
+        private: bool = False,
+    ) -> dict | None:        
+        # https://docs.github.com/ja/rest/repos/repos?apiVersion=2022-11-28#create-a-repository-using-a-template
+        path = f"/repos/{template_owner}/{template_repo}/generate"
+        payload: dict[str, Any] = {
+            "owner": github_owner, 
+            "name": repository_name,
+            "include_all_branches": include_all_branches,
+            "private": private,
+        }
 
+        response = self.post(path=path, json=payload)
+        match response.status_code:
+            case 201:
+                logger.info(f"Repository created from template (201): {template_owner}/{template_repo} → {repository_name}")
+                return self._parser.parse(response, as_="json")
+            case 404:
+                raise GithubClientFatalError(f"Template not found (404): {path}")
+            case 422:
+                raise GithubClientFatalError(f"Validation failed or repository already exists (422): {response.text}")
+            case _:
+                self._raise_for_status(response, path)
+                return None  
+    
     # --------------------------------------------------
     # Branch
     # --------------------------------------------------
@@ -270,7 +302,7 @@ class GithubClient(BaseHTTPClient):
                 logger.warning(f"Moved permanently: {path} (301).")
                 return None  # NOTE: Returning None is intentional; a missing branch is an expected case.
             case 404:
-                logger.error(f"Branch not found: {path} (404).")
+                logger.warning(f"Branch not found: {path} (404).")
                 return None
             case _:
                 self._raise_for_status(response, path)
