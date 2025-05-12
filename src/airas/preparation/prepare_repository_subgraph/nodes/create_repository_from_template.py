@@ -26,16 +26,17 @@ def create_repository_from_template(
             include_all_branches=include_all_branches,
             private=private,
         )
-        if result:
-            logger.info(
-                f"Repository created from template: {template_owner}/{template_repo} -> {github_owner}/{repository_name}"
+        if not result:
+            error = (
+                f"No repository created; received empty response for template "
+                f"{template_owner}/{template_repo}"
             )
-            return True
-        else:
-            logger.warning(
-                f"No repository created; received empty response for template {template_owner}/{template_repo}"
-            )
-        return False
+            logger.error(error)
+            raise RuntimeError(error)
+        
+        logger.info(f"Repository created from template: {template_owner}/{template_repo} -> {github_owner}/{repository_name}")
+        return True
+
     except Exception as e:
         logger.error(f"Unexpected error when creating from template: {e}")
         raise

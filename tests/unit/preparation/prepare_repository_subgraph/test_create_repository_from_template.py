@@ -45,7 +45,7 @@ def sample_inputs_create() -> dict[str, Any]:
     "dummy_return, expected_result, should_raise",
     [
         (True, True, False),
-        (False, False, False),
+        (False, False, True),
         (Exception("template error"), None, True),
     ],
 )
