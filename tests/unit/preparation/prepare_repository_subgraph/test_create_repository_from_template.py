@@ -7,29 +7,6 @@ from airas.preparation.prepare_repository_subgraph.nodes.create_repository_from_
 )
 
 
-class DummyGithubClient:
-    _next_return: Any = None
-
-    def __init__(self):
-        pass
-
-    def create_repository_from_template(
-        self,
-        github_owner: str,
-        repository_name: str,
-        template_owner: str,
-        template_repo: str,
-        include_all_branches: bool = True,
-        private: bool = False,
-    ) -> Any:
-        if isinstance(self._next_return, Exception):
-            raise self._next_return
-        return self._next_return
-
-@pytest.fixture
-def dummy_github_client():
-    return DummyGithubClient
-
 @pytest.fixture
 def sample_inputs_create() -> dict[str, Any]:
     return {
