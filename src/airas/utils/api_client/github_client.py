@@ -136,7 +136,7 @@ class GithubClient(BaseHTTPClient):
                 logger.info(f"Success (200): {path}")
                 return self._parser.parse(response, as_="bytes" if as_ == "bytes" else "json")
             case 404:
-                logger.error(f"Resource not found (404): {path}")
+                logger.warning(f"Resource not found (404): {path}")
                 raise GithubClientFatalError(f"Resource not found (404): {path}")
             case 403:
                 logger.error(f"Access forbidden (403): {path}")
@@ -173,14 +173,21 @@ class GithubClient(BaseHTTPClient):
         commit_message: str,
     ) -> bool:
         sha: str | None = None
-        meta = self._fetch_content(
-            github_owner=github_owner, 
-            repository_name=repository_name, 
-            file_path=file_path, 
-            branch_name=branch_name, 
-        )
-        if meta:
-            sha = meta.get("sha")
+        try:
+            meta = self._fetch_content(
+                github_owner=github_owner,
+                repository_name=repository_name,
+                file_path=file_path,
+                branch_name=branch_name,
+            )
+            if isinstance(meta, dict):
+                sha = meta.get("sha")
+        except GithubClientFatalError as e:
+            if "404" in str(e):
+                logger.warning(f"File not found, will create new: {file_path}")
+                sha = None
+            else:
+                raise
 
         payload = {
             "message": commit_message,
