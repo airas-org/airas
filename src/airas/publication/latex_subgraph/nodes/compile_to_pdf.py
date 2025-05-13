@@ -27,6 +27,7 @@ class LatexNode:
         save_dir: str,
         timeout: int = 30,
         latex_template_file_path: str = "latex_subgraph/latex/template.tex",
+        client: LLMFacadeClient | None = None, 
     ):
         self.llm_name = llm_name
         self.latex_template_file_path = latex_template_file_path
@@ -40,7 +41,7 @@ class LatexNode:
         self.latex_save_dir = os.path.join(self.save_dir, "latex")
         os.makedirs(self.latex_save_dir, exist_ok=True)
         self.template_copy_file = os.path.join(self.latex_save_dir, "template.tex")
-        self.client = LLMFacadeClient(self.llm_name)
+        self.client = client if client is not None else LLMFacadeClient(self.llm_name)
 
     def _call_llm(self, prompt: str) -> str:
         system_prompt = """

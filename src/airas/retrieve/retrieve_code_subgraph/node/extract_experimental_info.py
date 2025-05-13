@@ -1,9 +1,6 @@
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.retrieve.retrieve_code_subgraph.prompt.extract_experimental_info_prompt import (
-    extract_experimental_info_prompt,
-)
 from airas.typing.paper import CandidatePaperInfo
 from airas.utils.api_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
 
@@ -14,11 +11,17 @@ class LLMOutput(BaseModel):
 
 
 def extract_experimental_info(
-    model_name: LLM_MODEL, method_text: CandidatePaperInfo, repository_content_str
+    llm_name: LLM_MODEL, 
+    method_text: CandidatePaperInfo, 
+    repository_content_str: str, 
+    prompt_template: str, 
+    client: LLMFacadeClient | None = None, 
 ) -> tuple[str, str]:
-    client = LLMFacadeClient(model_name)
+    if client is None:
+        client = LLMFacadeClient(llm_name=llm_name)
+
     env = Environment()
-    template = env.from_string(extract_experimental_info_prompt)
+    template = env.from_string(prompt_template)
     data = {
         "method_text": method_text,
         "repository_content_str": repository_content_str,
@@ -34,15 +37,3 @@ def extract_experimental_info(
         extract_code = output["extract_code"]
         extract_info = output["extract_info"]
         return extract_code, extract_info
-
-
-if __name__ == "__main__":
-    method_text = "This is a test method."
-    repository_content_str = "This is a test repository content."
-    extract_code, extract_info = extract_experimental_info(
-        model_name="gemini-2.0-flash-001",
-        method_text=method_text,
-        repository_content_str=repository_content_str,
-    )
-    print("Extracted Code:", extract_code)
-    print("Extracted Info:", extract_info)

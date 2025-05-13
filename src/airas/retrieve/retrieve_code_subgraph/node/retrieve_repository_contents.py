@@ -1,9 +1,6 @@
 import logging
 import re
 
-import requests
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
-
 from airas.utils.api_client.github_client import GithubClient
 from airas.utils.logging_utils import setup_logging
 

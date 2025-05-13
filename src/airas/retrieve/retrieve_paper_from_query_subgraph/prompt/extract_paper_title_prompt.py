@@ -1,4 +1,4 @@
-extract_paper_title_node_prompt = """\
+extract_paper_title_prompt = """\
 "Queries" represents the user's search keywords.
 "Content" is a block of markdown that lists research papers based on the user's search.
 # Instructions:

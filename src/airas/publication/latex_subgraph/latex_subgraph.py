@@ -10,6 +10,8 @@ from typing_extensions import TypedDict
 from airas.publication.latex_subgraph.nodes.compile_to_pdf import LatexNode
 from airas.publication.latex_subgraph.nodes.convert_to_latex import (
     convert_to_latex,
+)
+from airas.publication.latex_subgraph.prompt.convert_to_latex_prompt import (
     convert_to_latex_prompt,
 )
 from airas.utils.check_api_key import check_api_key
@@ -59,8 +61,8 @@ class LatexSubgraph:
     def _convert_to_latex_node(self, state: LatexSubgraphState) -> dict:
         paper_tex_content = convert_to_latex(
             llm_name=self.llm_name,
-            prompt_template=convert_to_latex_prompt,
             paper_content=state["paper_content"],
+            prompt_template=convert_to_latex_prompt,
         )
         return {"paper_tex_content": paper_tex_content}
 

@@ -11,33 +11,43 @@ from langgraph.graph.graph import CompiledGraph
 from pydantic import TypeAdapter
 from typing_extensions import TypedDict
 
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.arxiv_api_node import (
-    ArxivNode,
-)  # NOTE: `arxiv_client.py`を使用
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_github_url_node import (
-    ExtractGithubUrlNode,
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_github_url_from_text import (
+    extract_github_url_from_text,
 )
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_paper_title_node import (
-    extract_paper_title_node,
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_paper_title import (
+    extract_paper_title,
 )
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.generate_queries_node import (
-    generate_queries_node,
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.generate_queries import (
+    generate_queries,
 )
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.retrieve_arxiv_text_node import (
-    RetrievearXivTextNode,
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.retrieve_arxiv_text_from_url import (
+    retrieve_arxiv_text_from_url,
 )
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.select_best_paper_node import (
-    select_add_paper_prompt,
-    select_best_paper_node,
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.search_arxiv import (
+    search_arxiv,
 )
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.summarize_paper_node import (
-    summarize_paper_node,
-    summarize_paper_prompt_base,
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.select_best_paper import (
+    select_best_paper,
 )
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.web_scrape_node import (
-    web_scrape_node,
-)  # NOTE: `firecrawl_client.py`を使用
-from airas.retrieve.retrieve_related_paper_subgraph.prompt.generate_queries_node_prompt import (
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.summarize_paper import (
+    summarize_paper,
+)
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.web_scrape import (
+    web_scrape,
+)
+from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_github_url_prompt import (
+    extract_github_url_from_text_prompt,
+)
+from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_paper_title_prompt import (
+    extract_paper_title_prompt,
+)
+from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.select_best_paper_prompt import (
+    select_related_paper_prompt,
+)
+from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.summarize_paper_prompt import (
+    summarize_paper_prompt,
+)
+from airas.retrieve.retrieve_related_paper_subgraph.prompt.generate_queries_prompt import (
     generate_queries_prompt,
 )
 from airas.typing.paper import CandidatePaperInfo
@@ -128,11 +138,11 @@ class RetrieveRelatedPaperSubgraph:
             "candidate_add_papers_info_list": [],
         }
 
-    @time_node("retrieve_add_paper_subgraph", "_generate_queries_node")
+    @time_node("retrieve_related_paper_subgraph", "_generate_queries_node")
     def _generate_queries_node(self, state: RetrieveRelatedPaperState) -> dict:
         add_queries = state.get("add_queries") or []
         all_queries = state["base_queries"] + add_queries + state["generated_queries"]
-        new_generated_queries = generate_queries_node(
+        new_generated_queries = generate_queries(
             llm_name=self.llm_name,
             prompt_template=generate_queries_prompt,
             selected_base_paper_info=state["selected_base_paper_info"],
@@ -143,24 +153,25 @@ class RetrieveRelatedPaperSubgraph:
             "process_index": 0,
         }
 
-    @time_node("retrieve_add_paper_subgraph", "_web_scrape_node")
+    @time_node("retrieve_related_paper_subgraph", "_web_scrape_node")
     def _web_scrape_node(self, state: RetrieveRelatedPaperState) -> dict:
         add_queries = state.get("add_queries") or []
         all_queries = state["base_queries"] + add_queries + state["generated_queries"]
-        scraped_results = web_scrape_node(
+        scraped_results = web_scrape(
             queries=all_queries,
             scrape_urls=self.scrape_urls,  # TODO: 2週目移行で無駄なクエリ検索が生じるため修正する
         )
         return {"scraped_results": scraped_results}
 
-    @time_node("retrieve_add_paper_subgraph", "_extract_paper_title_node")
+    @time_node("retrieve_related_paper_subgraph", "_extract_paper_title_node")
     def _extract_paper_title_node(self, state: RetrieveRelatedPaperState) -> dict:
         add_queries = state.get("add_queries") or []
         all_queries = state["base_queries"] + add_queries + state["generated_queries"]
-        extracted_paper_titles = extract_paper_title_node(
+        extracted_paper_titles = extract_paper_title(
             llm_name="o3-mini-2025-01-31",
             queries=all_queries,
             scraped_results=state["scraped_results"],
+            prompt_template=extract_paper_title_prompt, 
         )
         return {"extracted_paper_titles": extracted_paper_titles}
 
@@ -170,7 +181,7 @@ class RetrieveRelatedPaperSubgraph:
             return "Regenerate queries"  # TODO: Add a state to loop count and define a "Stop" case
         return "Continue"
 
-    @time_node("retrieve_add_paper_subgraph", "_search_arxiv_node")
+    @time_node("retrieve_related_paper_subgraph", "_search_arxiv_node")
     def _search_arxiv_node(self, state: RetrieveRelatedPaperState) -> dict:
         extract_paper_titles = state["extracted_paper_titles"]
         if not extract_paper_titles:
@@ -181,34 +192,36 @@ class RetrieveRelatedPaperSubgraph:
         batch_paper_titles = extract_paper_titles[
             : min(len(extract_paper_titles), self.arxiv_query_batch_size)
         ]
-        search_paper_list = ArxivNode(
+        search_paper_list = search_arxiv(
+            queries=batch_paper_titles, 
             num_retrieve_paper=self.arxiv_num_retrieve_paper,
-        ).execute(queries=batch_paper_titles)
+        )
         return {
             "search_paper_list": search_paper_list,
             "search_paper_count": len(search_paper_list),
         }
 
-    @time_node("retrieve_add_paper_subgraph", "_retrieve_arxiv_full_text_node")
-    def _retrieve_arxiv_full_text_node(self, state: RetrieveRelatedPaperState) -> dict:
+    @time_node("retrieve_related_paper_subgraph", "_retrieve_arxiv_text_from_url_node")
+    def _retrieve_arxiv_text_from_url_node(self, state: RetrieveRelatedPaperState) -> dict:
         process_index = state["process_index"]
         logger.info(f"process_index: {process_index}")
         paper_info = state["search_paper_list"][process_index]
-        paper_full_text = RetrievearXivTextNode(papers_dir=self.papers_dir).execute(
+        paper_full_text = retrieve_arxiv_text_from_url(
+            papers_dir=self.papers_dir, 
             arxiv_url=paper_info["arxiv_url"]
         )
         return {"paper_full_text": paper_full_text}
 
-    @time_node("retrieve_add_paper_subgraph", "_extract_github_url_node")
-    def _extract_github_url_node(self, state: RetrieveRelatedPaperState) -> dict:
+    @time_node("retrieve_related_paper_subgraph", "_extract_github_url_from_text_node")
+    def _extract_github_url_from_text_node(self, state: RetrieveRelatedPaperState) -> dict:
         paper_full_text = state["paper_full_text"]
         process_index = state["process_index"]
         paper_summary = state["search_paper_list"][process_index]["summary"]
-        github_url = ExtractGithubUrlNode(
-            llm_name="gemini-2.0-flash-001",
-        ).execute(
-            paper_full_text=paper_full_text,
+        github_url = extract_github_url_from_text(
+            text=paper_full_text,
             paper_summary=paper_summary,
+            llm_name="gemini-2.0-flash-001",
+            prompt_template=extract_github_url_from_text_prompt,
         )
         # GitHub URLが取得できなかった場合は次の論文を処理するためにProcess Indexを進める
         process_index = process_index + 1 if github_url == "" else process_index
@@ -222,7 +235,7 @@ class RetrieveRelatedPaperSubgraph:
         else:
             return "Generate paper summary"
 
-    @time_node("retrieve_add_paper_subgraph", "_summarize_paper_node")
+    @time_node("retrieve_related_paper_subgraph", "_summarize_paper_node")
     def _summarize_paper_node(self, state: RetrieveRelatedPaperState) -> dict:
         paper_full_text = state["paper_full_text"]
         (
@@ -231,9 +244,9 @@ class RetrieveRelatedPaperSubgraph:
             experimental_setup,
             limitations,
             future_research_directions,
-        ) = summarize_paper_node(
+        ) = summarize_paper(
             llm_name="gemini-2.0-flash-001",
-            prompt_template=summarize_paper_prompt_base,
+            prompt_template=summarize_paper_prompt,
             paper_text=paper_full_text,
         )
 
@@ -267,7 +280,7 @@ class RetrieveRelatedPaperSubgraph:
             return "Next paper"
         return "All complete"
 
-    @time_node("retrieve_add_paper_subgraph", "_select_best_paper_node")
+    @time_node("retrieve_related_paper_subgraph", "_select_best_paper_node")
     def _select_best_paper_node(self, state: RetrieveRelatedPaperState) -> dict:
         candidate_papers_info_list = state["candidate_add_papers_info_list"]
         base_arxiv_id = state["selected_base_paper_info"]["arxiv_id"]
@@ -277,9 +290,9 @@ class RetrieveRelatedPaperSubgraph:
             if paper_info["arxiv_id"] != base_arxiv_id
         ]
 
-        selected_arxiv_ids = select_best_paper_node(
+        selected_arxiv_ids = select_best_paper(
             llm_name="gemini-2.0-flash-001",
-            prompt_template=select_add_paper_prompt,
+            prompt_template=select_related_paper_prompt,
             candidate_papers=filtered_candidates,
             selected_base_paper_info=state["selected_base_paper_info"],
             add_paper_num=self.add_paper_num,
@@ -343,10 +356,10 @@ class RetrieveRelatedPaperSubgraph:
             "search_arxiv_node", self._search_arxiv_node
         )  # TODO: 検索結果が空ならEND
         graph_builder.add_node(
-            "retrieve_arxiv_full_text_node", self._retrieve_arxiv_full_text_node
+            "retrieve_arxiv_text_from_url_node", self._retrieve_arxiv_text_from_url_node
         )
         graph_builder.add_node(
-            "extract_github_urls_node", self._extract_github_url_node
+            "extract_github_url_from_text_node", self._extract_github_url_from_text_node
         )
         graph_builder.add_node("summarize_paper_node", self._summarize_paper_node)
         graph_builder.add_node("select_best_paper_node", self._select_best_paper_node)
@@ -364,15 +377,15 @@ class RetrieveRelatedPaperSubgraph:
                 "Continue": "search_arxiv_node",
             },
         )
-        graph_builder.add_edge("search_arxiv_node", "retrieve_arxiv_full_text_node")
+        graph_builder.add_edge("search_arxiv_node", "retrieve_arxiv_text_from_url_node")
         graph_builder.add_edge(
-            "retrieve_arxiv_full_text_node", "extract_github_urls_node"
+            "retrieve_arxiv_text_from_url_node", "extract_github_url_from_text_node"
         )
         graph_builder.add_conditional_edges(
-            source="extract_github_urls_node",
+            source="extract_github_url_from_text_node",
             path=self._check_github_urls,
             path_map={
-                "Next paper": "retrieve_arxiv_full_text_node",
+                "Next paper": "retrieve_arxiv_text_from_url_node",
                 "Generate paper summary": "summarize_paper_node",
                 "All complete": "select_best_paper_node",
             },
@@ -381,7 +394,7 @@ class RetrieveRelatedPaperSubgraph:
             source="summarize_paper_node",
             path=self._check_paper_count,
             path_map={
-                "Next paper": "retrieve_arxiv_full_text_node",
+                "Next paper": "retrieve_arxiv_text_from_url_node",
                 "All complete": "select_best_paper_node",
             },
         )
@@ -415,7 +428,7 @@ def main():
     add_paper_num = 1
 
     llm_name = "o3-mini-2025-01-31"
-    save_dir = "/workspaces/researchgraph/data"
+    save_dir = "/workspaces/airas/data"
     input = {
         "add_queries": ["vision"],
     }

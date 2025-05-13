@@ -3,9 +3,6 @@ from logging import getLogger
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.publication.html_subgraph.prompt.convert_to_html_prompt import (
-    convert_to_html_prompt,
-)
 from airas.utils.api_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
 
 logger = getLogger(__name__)
@@ -18,6 +15,7 @@ class LLMOutput(BaseModel):
 def convert_to_html(
     llm_name: LLM_MODEL,
     paper_content: dict[str, str],
+    prompt_template: str, 
     client: LLMFacadeClient | None = None, 
 ) -> str:
     if client is None:
@@ -31,7 +29,7 @@ def convert_to_html(
     }
 
     env = Environment()
-    template = env.from_string(convert_to_html_prompt)
+    template = env.from_string(prompt_template)
     messages = template.render(data)
     output, cost = client.structured_outputs(
         message=messages,

@@ -12,21 +12,22 @@ class LLMOutput(BaseModel):
     generated_query_5: str
 
 
-def generate_queries_node(
+def generate_queries(
     llm_name: LLM_MODEL,
     prompt_template: str,
     selected_base_paper_info: str,
     queries: list,
+    client: LLMFacadeClient | None = None, 
 ) -> list[str]:
+    if client is None:
+        client = LLMFacadeClient(llm_name=llm_name)
     data = {"selected_base_paper_info": selected_base_paper_info, "queries": queries}
 
     env = Environment()
     template = env.from_string(prompt_template)
     messages = template.render(data)
 
-    output, cost = LLMFacadeClient(
-        llm_name=llm_name,
-    ).structured_outputs(message=messages, data_model=LLMOutput)
+    output, cost = client.structured_outputs(message=messages, data_model=LLMOutput)
     if output is None:
         raise ValueError("Error: No response from LLM in generate_queries_node.")
     return [

@@ -1,55 +1,3 @@
-from logging import getLogger
-
-from jinja2 import Environment
-from pydantic import BaseModel
-
-from airas.utils.api_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
-
-logger = getLogger(__name__)
-
-
-class LLMOutput(BaseModel):
-    selected_arxiv_id: str
-
-
-def select_best_paper_node(
-    llm_name: LLM_MODEL,
-    prompt_template: str,
-    candidate_papers,
-    selected_base_paper_info=None,
-    add_paper_num: int = 3,
-) -> list[str]:
-    if selected_base_paper_info is None:
-        data = {
-            "candidate_papers": candidate_papers,
-            "add_paper_num": add_paper_num,
-        }
-    else:
-        data = {
-            "candidate_papers": candidate_papers,
-            "selected_base_paper": selected_base_paper_info,
-            "add_paper_num": add_paper_num,
-        }
-
-    env = Environment()
-    template = env.from_string(prompt_template)
-    messages = template.render(data)
-    output, cost = LLMFacadeClient(llm_name=llm_name).structured_outputs(
-        message=messages, data_model=LLMOutput
-    )
-    if "selected_arxiv_id" in output:
-        arxiv_id_str = output["selected_arxiv_id"]
-        arxiv_id_list = [
-            arxiv_id.strip()
-            for arxiv_id in arxiv_id_str.split("\n")
-            if arxiv_id.strip()
-        ]
-        return arxiv_id_list
-    else:
-        logger.warning("No 'selected_arxiv_id' found in the response.")
-        return []
-
-
 select_base_paper_prompt = """
 You are an expert research assistant tasked with selecting the most relevant and high-quality paper from a list of research papers. 
 Your goal is to identify the paper that best aligns with the research topic and provides the most value as a foundational base for further research.
@@ -93,7 +41,7 @@ Below is a list of papers with their details:
 """
 
 
-select_add_paper_prompt = """
+select_related_paper_prompt = """
 You are an expert research assistant tasked with selecting the most relevant and high-quality research paper from a list of candidate papers. 
 Your goal is to identify {{ add_paper_num }} papers that can be effectively synthesized with a given foundational paper (Research A) to create a novel and non-trivial research direction.
 
