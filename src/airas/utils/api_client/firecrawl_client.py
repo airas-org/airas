@@ -74,6 +74,8 @@ class FireCrawlClient(BaseHTTPClient):
         code = resp.status_code
         if 200 <= code < 300:
             return
+        if code == 408:
+            raise FireCrawlClientRetryableError(f"Timeout (408) on {path}")
         if 500 <= code < 600:
             raise FireCrawlClientRetryableError(f"Server error {code}: {path}")
         raise FireCrawlClientFatalError(f"Client error {code}: {path}")
