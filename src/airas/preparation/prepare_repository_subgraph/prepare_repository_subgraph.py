@@ -16,9 +16,8 @@ from airas.preparation.prepare_repository_subgraph.nodes.check_github_repository
 from airas.preparation.prepare_repository_subgraph.nodes.create_branch import (
     create_branch,
 )
-from airas.preparation.prepare_repository_subgraph.nodes.fork_repository import (
-    DEVICETYPE,
-    fork_repository,
+from airas.preparation.prepare_repository_subgraph.nodes.create_repository_from_template import (
+    create_repository_from_template,
 )
 from airas.preparation.prepare_repository_subgraph.nodes.retrieve_main_branch_sha import (
     retrieve_main_branch_sha,
@@ -40,7 +39,7 @@ class PrepareRepositoryHiddenState(TypedDict):
     github_owner: str
     repository_name: str
     repository_exists: bool
-    fork_result: bool
+    template_result: bool
     target_branch_sha: str
     create_result: bool
     main_sha: str
@@ -57,11 +56,11 @@ class PrepareRepositoryState(
 class PrepareRepository:
     def __init__(
         self,
-        device_type: DEVICETYPE = "cpu",
-        organization: str = "",
+        template_owner: str,
+        template_repo: str,
     ):
-        self.device_type = device_type
-        self.organization = organization
+        self.template_owner = template_owner
+        self.template_repo = template_repo
         check_api_key(
             github_personal_access_token_check=True,
         )
@@ -77,7 +76,7 @@ class PrepareRepository:
         else:
             raise ValueError("Invalid repository name format.")
 
-    @time_node("research_preparation", "_get_github_repository")
+    @time_node("research_preparation", "_check_github_repository")
     def _check_github_repository(self, state: PrepareRepositoryState) -> dict:
         repository_exists = check_github_repository(
             github_owner=state["github_owner"],
@@ -85,22 +84,23 @@ class PrepareRepository:
         )
         return {"repository_exists": repository_exists}
 
-    @time_node("research_preparation", "_fork_repository")
-    def _fork_repository(self, state: PrepareRepositoryState) -> dict:
-        fork_result = fork_repository(
+    @time_node("research_preparation", "_create_repository_from_template")
+    def _create_repository_from_template(self, state: PrepareRepositoryState) -> dict:
+        template_result = create_repository_from_template(
+            github_owner=state["github_owner"],
             repository_name=state["repository_name"],
-            device_type=self.device_type,
-            organization=self.organization,
+            template_owner=self.template_owner,
+            template_repo=self.template_repo,
         )
-        return {"fork_result": fork_result}
+        return {"template_result": template_result}
 
     # リポジトリが存在する場合でもfork_resultの値を設定するメソッドを追加
-    def _set_fork_result(self, state: PrepareRepositoryState) -> dict:
-        return {"fork_result": True}  # リポジトリが既に存在する場合は成功とみなす
+    def _set_template_result(self, state: PrepareRepositoryState) -> dict:
+        return {"template_result": True}  # リポジトリが既に存在する場合は成功とみなす
 
-    @time_node("research_preparation", "_retrieve_branch_name")
+    @time_node("research_preparation", "_check_branch_existence")
     def _check_branch_existence(self, state: PrepareRepositoryState) -> dict:
-        time.sleep(3)
+        time.sleep(5)
         target_branch_sha = check_branch_existence(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
@@ -126,11 +126,11 @@ class PrepareRepository:
         )
         return {"create_result": create_result}
 
-    def _should_fork_repo(self, state: PrepareRepositoryState) -> str:
+    def _should_create_from_template(self, state: PrepareRepositoryState) -> str:
         if not state["repository_exists"]:
-            return "fork_repository"
+            return "create_repository_from_template"
         else:
-            return "set_fork_result"
+            return "set_template_result"
 
     def _should_create_branch(self, state: PrepareRepositoryState) -> str:
         if not state["target_branch_sha"]:
@@ -143,14 +143,10 @@ class PrepareRepository:
         # make nodes
         graph_builder.add_node("init", self._init)
         graph_builder.add_node("check_github_repository", self._check_github_repository)
-        graph_builder.add_node("fork_repository", self._fork_repository)
-        graph_builder.add_node(
-            "set_fork_result", self._set_fork_result
-        )  # 新しいノードを追加
+        graph_builder.add_node("create_repository_from_template", self._create_repository_from_template)
+        graph_builder.add_node("set_template_result", self._set_template_result)
         graph_builder.add_node("check_branch_existence", self._check_branch_existence)
-        graph_builder.add_node(
-            "retrieve_main_branch_sha", self._retrieve_main_branch_sha
-        )
+        graph_builder.add_node("retrieve_main_branch_sha", self._retrieve_main_branch_sha)
         graph_builder.add_node("create_branch", self._create_branch)
 
         # make edges
@@ -158,16 +154,14 @@ class PrepareRepository:
         graph_builder.add_edge("init", "check_github_repository")
         graph_builder.add_conditional_edges(
             "check_github_repository",
-            self._should_fork_repo,
+            self._should_create_from_template,
             {
-                "fork_repository": "fork_repository",
-                "set_fork_result": "set_fork_result",  # 分岐先を変更
+                "create_repository_from_template": "create_repository_from_template",
+                "set_template_result": "set_template_result",
             },
         )
-        graph_builder.add_edge("fork_repository", "check_branch_existence")
-        graph_builder.add_edge(
-            "set_fork_result", "check_branch_existence"
-        )  # 新しいエッジを追加
+        graph_builder.add_edge("create_repository_from_template", "check_branch_existence")
+        graph_builder.add_edge("set_template_result", "check_branch_existence")
         graph_builder.add_conditional_edges(
             "check_branch_existence",
             self._should_create_branch,
@@ -192,14 +186,22 @@ def main():
         description="Execute PreparaRepository"
     )
     parser.add_argument("github_repository", help="Your GitHub repository")
+    parser.add_argument("branch_name", help="Your branch name in your GitHub repository")
     parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
+        "--template-owner",
+        default="airas-org",
+        help="Template repository owner (default: airas-org)"
+    )
+    parser.add_argument(
+        "--template-repo",
+        default="airas-template",
+        help="Template repository name (default: airas-template)"
     )
     args = parser.parse_args()
 
     subgraph = PrepareRepository(
-        device_type="gpu",
-        organization="auto-res2",
+        template_owner=args.template_owner, 
+        template_repo=args.template_repo, 
     )
 
     input = {

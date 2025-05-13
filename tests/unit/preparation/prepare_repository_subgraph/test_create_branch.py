@@ -1,5 +1,4 @@
 import pytest
-from typing import Literal
 from airas.preparation.prepare_repository_subgraph.nodes.create_branch import create_branch
 
 @pytest.fixture
