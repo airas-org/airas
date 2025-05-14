@@ -3,9 +3,6 @@ from logging import getLogger
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.execution.executor_subgraph.prompt.llm_decide import (
-    llm_decide_prompt,
-)
 from airas.utils.api_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
 
 logger = getLogger(__name__)
@@ -19,9 +16,11 @@ def llm_decide(
     llm_name: LLM_MODEL,
     output_text_data: str,
     error_text_data: str,
-    prompt_template: str = llm_decide_prompt,
+    prompt_template: str,
+    client: LLMFacadeClient | None = None, 
 ) -> bool | None:
-    client = LLMFacadeClient(llm_name)
+    if client is None:
+        client = LLMFacadeClient(llm_name=llm_name)
 
     data = {"output_text_data": output_text_data, "error_text_data": error_text_data}
 

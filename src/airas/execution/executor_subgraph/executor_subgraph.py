@@ -7,9 +7,6 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
-from airas.execution.executor_subgraph.input_data import (
-    executor_subgraph_input_data,
-)
 from airas.execution.executor_subgraph.nodes.check_devin_completion import (
     check_devin_completion,
 )
@@ -25,6 +22,9 @@ from airas.execution.executor_subgraph.nodes.generate_code_with_devin import (
 from airas.execution.executor_subgraph.nodes.llm_decide import llm_decide
 from airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts import (
     retrieve_github_actions_artifacts,
+)
+from airas.execution.executor_subgraph.prompt.llm_decide import (
+    llm_decide_prompt,
 )
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -150,6 +150,7 @@ class ExecutorSubgraph:
             llm_name="o3-mini-2025-01-31",
             output_text_data=state["output_text_data"],
             error_text_data=state["error_text_data"],
+            prompt_template=llm_decide_prompt, 
         )
         return {
             "judgment_result": judgment_result,

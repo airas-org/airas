@@ -10,29 +10,39 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.arxiv_api_node import (
-    ArxivNode,
-)  # NOTE: `arxiv_client.py`
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_github_url_node import (
-    ExtractGithubUrlNode,
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_github_url_from_text import (
+    extract_github_url_from_text,
 )
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_paper_title_node import (
-    extract_paper_title_node,
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_paper_title import (
+    extract_paper_title,
 )
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.retrieve_arxiv_text_node import (
-    RetrievearXivTextNode,
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.retrieve_arxiv_text_from_url import (
+    retrieve_arxiv_text_from_url,
 )
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.select_best_paper_node import (
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.search_arxiv import (
+    search_arxiv,
+)
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.select_best_paper import (
+    select_best_paper,
+)
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.summarize_paper import (
+    summarize_paper,
+)
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.web_scrape import (
+    web_scrape,
+)
+from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_github_url_prompt import (
+    extract_github_url_from_text_prompt,
+)
+from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_paper_title_prompt import (
+    extract_paper_title_prompt,
+)
+from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.select_best_paper_prompt import (
     select_base_paper_prompt,
-    select_best_paper_node,
 )
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.summarize_paper_node import (
-    summarize_paper_node,
-    summarize_paper_prompt_base,
+from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.summarize_paper_prompt import (
+    summarize_paper_prompt,
 )
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.web_scrape_node import (
-    web_scrape_node,
-)  # NOTE: `firecrawl_client.py`
 from airas.typing.paper import CandidatePaperInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -109,24 +119,25 @@ class RetrievePaperFromQuerySubgraph:
             "candidate_base_papers_info_list": [],
         }
 
-    @time_node("retrieve_base_paper_subgraph", "_web_scrape_node")
+    @time_node("retrieve_paper_from_query_subgraph", "_web_scrape_node")
     def _web_scrape_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, list[str]]:
-        scraped_results = web_scrape_node(
+        scraped_results = web_scrape(
             queries=state["base_queries"],  # TODO: abstractもスクレイピングする
             scrape_urls=self.scrape_urls,
         )
         return {"scraped_results": scraped_results}
 
-    @time_node("retrieve_base_paper_subgraph", "_extract_paper_title_node")
+    @time_node("retrieve_paper_from_query_subgraph", "_extract_paper_title_node")
     def _extract_paper_title_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, list[str]]:
-        extracted_paper_titles = extract_paper_title_node(
+        extracted_paper_titles = extract_paper_title(
             llm_name="o3-mini-2025-01-31",
             queries=state["base_queries"],
             scraped_results=state["scraped_results"],
+            prompt_template=extract_paper_title_prompt
         )
         return {"extracted_paper_titles": extracted_paper_titles}
 
@@ -136,7 +147,7 @@ class RetrievePaperFromQuerySubgraph:
             return "Stop"
         return "Continue"
 
-    @time_node("retrieve_base_paper_subgraph", "_search_arxiv_node")
+    @time_node("retrieve_paper_from_query_subgraph", "_search_arxiv_node")
     def _search_arxiv_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, list[dict[Any, Any]] | int]:
@@ -149,38 +160,40 @@ class RetrievePaperFromQuerySubgraph:
         batch_paper_titles = extract_paper_titles[
             : min(len(extract_paper_titles), self.arxiv_query_batch_size)
         ]
-        search_paper_list = ArxivNode(
+        search_paper_list = search_arxiv(
+            queries=batch_paper_titles, 
             num_retrieve_paper=self.arxiv_num_retrieve_paper,
-        ).execute(queries=batch_paper_titles)
+        )
         return {
             "search_paper_list": search_paper_list,
             "search_paper_count": len(search_paper_list),
         }
 
-    @time_node("retrieve_base_paper_subgraph", "_retrieve_arxiv_full_text_node")
-    def _retrieve_arxiv_full_text_node(
+    @time_node("retrieve_paper_from_query_subgraph", "_retrieve_arxiv_text_from_url_node")
+    def _retrieve_arxiv_text_from_url_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, str]:
         process_index = state["process_index"]
         logger.info(f"process_index: {process_index}")
         paper_info = state["search_paper_list"][process_index]
-        paper_full_text = RetrievearXivTextNode(papers_dir=self.papers_dir).execute(
+        paper_full_text = retrieve_arxiv_text_from_url(
+            papers_dir=self.papers_dir, 
             arxiv_url=paper_info["arxiv_url"]
         )
         return {"paper_full_text": paper_full_text}
 
-    @time_node("retrieve_base_paper_subgraph", "_extract_github_url_node")
-    def _extract_github_url_node(
+    @time_node("retrieve_paper_from_query_subgraph", "_extract_github_url_from_text_node")
+    def _extract_github_url_from_text_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, str | int]:
         paper_full_text = state["paper_full_text"]
         process_index = state["process_index"]
         paper_summary = state["search_paper_list"][process_index]["summary"]
-        github_url = ExtractGithubUrlNode(
-            llm_name="gemini-2.0-flash-001",
-        ).execute(
-            paper_full_text=paper_full_text,
+        github_url = extract_github_url_from_text(
+            text=paper_full_text,
             paper_summary=paper_summary,
+            llm_name="gemini-2.0-flash-001",
+            prompt_template=extract_github_url_from_text_prompt
         )
         # GitHub URLが取得できなかった場合は次の論文を処理するためにProcess Indexを進める
         process_index = process_index + 1 if github_url == "" else process_index
@@ -194,7 +207,7 @@ class RetrievePaperFromQuerySubgraph:
         else:
             return "Generate paper summary"
 
-    @time_node("retrieve_base_paper_subgraph", "_summarize_base_paper_node")
+    @time_node("retrieve_paper_from_query_subgraph", "_summarize_paper_node")
     def _summarize_paper_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, list[CandidatePaperInfo] | int]:
@@ -205,9 +218,9 @@ class RetrievePaperFromQuerySubgraph:
             experimental_setup,
             limitations,
             future_research_directions,
-        ) = summarize_paper_node(
+        ) = summarize_paper(
             llm_name="gemini-2.0-flash-001",
-            prompt_template=summarize_paper_prompt_base,
+            prompt_template=summarize_paper_prompt,
             paper_text=state["paper_full_text"],
         )
 
@@ -240,13 +253,13 @@ class RetrievePaperFromQuerySubgraph:
             return "Next paper"
         return "All complete"
 
-    @time_node("retrieve_base_paper_subgraph", "_base_select_best_paper_node")
+    @time_node("retrieve_paper_from_query_subgraph", "_select_best_paper_node")
     def _select_best_paper_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, str | CandidatePaperInfo | None]:
         candidate_papers_info_list = state["candidate_base_papers_info_list"]
         # TODO:論文の検索数の制御がうまくいっていない気がする
-        selected_arxiv_ids = select_best_paper_node(
+        selected_arxiv_ids = select_best_paper(
             llm_name="gemini-2.0-flash-001",
             prompt_template=select_base_paper_prompt,
             candidate_papers=candidate_papers_info_list,
@@ -298,10 +311,10 @@ class RetrievePaperFromQuerySubgraph:
             "search_arxiv_node", self._search_arxiv_node
         )  # TODO: 検索結果が空ならEND
         graph_builder.add_node(
-            "retrieve_arxiv_full_text_node", self._retrieve_arxiv_full_text_node
+            "retrieve_arxiv_text_from_url_node", self._retrieve_arxiv_text_from_url_node
         )
         graph_builder.add_node(
-            "extract_github_urls_node", self._extract_github_url_node
+            "extract_github_url_from_text_node", self._extract_github_url_from_text_node
         )
         graph_builder.add_node("summarize_paper_node", self._summarize_paper_node)
         graph_builder.add_node("select_best_paper_node", self._select_best_paper_node)
@@ -318,15 +331,15 @@ class RetrievePaperFromQuerySubgraph:
                 "Continue": "search_arxiv_node",
             },
         )
-        graph_builder.add_edge("search_arxiv_node", "retrieve_arxiv_full_text_node")
+        graph_builder.add_edge("search_arxiv_node", "retrieve_arxiv_text_from_url_node")
         graph_builder.add_edge(
-            "retrieve_arxiv_full_text_node", "extract_github_urls_node"
+            "retrieve_arxiv_text_from_url_node", "extract_github_url_from_text_node"
         )
         graph_builder.add_conditional_edges(
-            source="extract_github_urls_node",
+            source="extract_github_url_from_text_node",
             path=self._check_github_urls,
             path_map={
-                "Next paper": "retrieve_arxiv_full_text_node",
+                "Next paper": "retrieve_arxiv_text_from_url_node",
                 "Generate paper summary": "summarize_paper_node",
                 "All complete": "select_best_paper_node",
             },
@@ -335,7 +348,7 @@ class RetrievePaperFromQuerySubgraph:
             source="summarize_paper_node",
             path=self._check_paper_count,
             path_map={
-                "Next paper": "retrieve_arxiv_full_text_node",
+                "Next paper": "retrieve_arxiv_text_from_url_node",
                 "All complete": "select_best_paper_node",
             },
         )
@@ -359,7 +372,7 @@ def main():
         # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=title",
     ]
     llm_name = "o3-mini-2025-01-31"
-    save_dir = "/workspaces/researchgraph/data"
+    save_dir = "/workspaces/airas/data"
     input = {
         "base_queries": ["transformer"],
     }

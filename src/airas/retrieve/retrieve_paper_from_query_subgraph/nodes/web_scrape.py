@@ -9,12 +9,13 @@ logger = getLogger(__name__)
 FIRE_CRAWL_API_KEY = os.getenv("FIRE_CRAWL_API_KEY")
 
 
-def web_scrape_node(
+def web_scrape(
     queries: list,
     scrape_urls: list,
     client: FireCrawlClient | None = None
 ) -> list[str]:
-    client = client or FireCrawlClient()
+    if client is None:
+        client = FireCrawlClient()
     logger.info("Executing FireCrawl API scraping...")
 
     scraped_results = []
@@ -41,11 +42,3 @@ def web_scrape_node(
     if not scraped_results:
         raise RuntimeError("No markdown obtained for any URL")
     return scraped_results
-
-
-if __name__ == "__main__":
-    queries = ["deep learning"]
-    scrape_urls = ["https://iclr.cc/virtual/2024/papers.html?filter=title"]
-
-    scraped_results = web_scrape_node(queries, scrape_urls=scrape_urls)
-    print(f"Scraped results: {scraped_results}")

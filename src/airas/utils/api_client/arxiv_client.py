@@ -101,3 +101,18 @@ class ArxivClient(BaseHTTPClient):
         self._raise_for_status(response, path="query")
 
         return self._parser.parse(response, as_="xml")
+
+    @ARXIV_RETRY
+    def fetch_pdf(self, arxiv_id: str, timeout: float = 30.0) -> requests.Response:
+        pdf_url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
+
+        response = requests.get(pdf_url, stream=True, timeout=timeout)
+        match response.status_code:
+            case 200:
+                return response
+            case 404:
+                logger.error(f"PDF not found (404): {pdf_url}")
+                raise ArxivClientFatalError(f"PDF not found: {arxiv_id}")
+            case _:
+                self._raise_for_status(response, f"fetch_pdf {arxiv_id}")
+                return response

@@ -12,8 +12,8 @@ from airas.retrieve.retrieve_code_subgraph.node.extract_experimental_info import
 from airas.retrieve.retrieve_code_subgraph.node.retrieve_repository_contents import (
     retrieve_repository_contents,
 )
-from airas.retrieve.retrieve_code_subgraph.input_data import (
-    retrieve_code_subgraph_input_data,
+from airas.retrieve.retrieve_code_subgraph.prompt.extract_experimental_info_prompt import (
+    extract_experimental_info_prompt,
 )
 from airas.typing.paper import CandidatePaperInfo
 from airas.utils.check_api_key import check_api_key
@@ -70,9 +70,10 @@ class RetrieveCodeSubgraph:
         
         else:
             extract_code, experimental_info = extract_experimental_info(
-                model_name="gemini-2.0-flash-001",
+                llm_name="gemini-2.0-flash-001",
                 method_text=state["base_method_text"],
                 repository_content_str=state["repository_content_str"],
+                prompt_template=extract_experimental_info_prompt, 
             )
             return {
                 "base_experimental_code": extract_code,
@@ -119,7 +120,7 @@ def main():
     )
   
     # result = rc.run(retrieve_code_subgraph_input_data)
-    result = rc.run({})
+    result = rc.run()
     print(f"result: {json.dumps(result, indent=2)}")
 
 

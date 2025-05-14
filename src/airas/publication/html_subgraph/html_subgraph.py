@@ -1,6 +1,6 @@
 import argparse
-import json
 import glob
+import json
 import logging
 import os
 
@@ -10,6 +10,9 @@ from typing_extensions import TypedDict
 
 from airas.publication.html_subgraph.nodes.convert_to_html import convert_to_html
 from airas.publication.html_subgraph.nodes.render_html import render_html
+from airas.publication.html_subgraph.prompt.convert_to_html_prompt import (
+    convert_to_html_prompt,
+)
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
@@ -55,6 +58,7 @@ class HtmlSubgraph:
         paper_html_content = convert_to_html(
             llm_name=self.llm_name,
             paper_content=state["paper_content"],
+            prompt_template=convert_to_html_prompt, 
         )
         return {"paper_html_content": paper_html_content}
 

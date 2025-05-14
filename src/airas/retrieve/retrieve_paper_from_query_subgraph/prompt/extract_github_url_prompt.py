@@ -1,4 +1,4 @@
-extract_github_url_node_prompt = """\
+extract_github_url_from_text_prompt = """\
 # Task
 You carefully read the contents of the “Paper Outline” and select one GitHub link from the “GitHub URLs List” that you think is most relevant to the contents.
 # Constraints
