@@ -172,11 +172,15 @@ class ExecutorSubgraph:
     def iteration_function(self, state: ExecutorSubgraphState):
         if state["judgment_result"] is True:
             return "finish"
-        else:
-            if state["fix_iteration_count"] < self.max_code_fix_iteration:
-                return "correction"
-            else:
-                return "finish"
+        
+        if state["fix_iteration_count"] < self.max_code_fix_iteration:
+            return "correction"
+        
+        logger.warning(
+            f"Max fix_iteration_count ({state['fix_iteration_count']}) exceeded and judgment_result is False. "
+            "Proceeding to finish.",
+        )
+        return "finish"
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(ExecutorSubgraphState)
@@ -244,7 +248,7 @@ Executor = create_wrapped_subgraph(
 )
 
 def main():
-    max_code_fix_iteration = 1
+    max_code_fix_iteration = 10
     save_dir = "/workspaces/airas/data"
 
     parser = argparse.ArgumentParser(
