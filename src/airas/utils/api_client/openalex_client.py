@@ -1,165 +1,129 @@
-# %%
-import json
+import logging
 import os
-import re
-import shutil
-from datetime import datetime
+from logging import getLogger
+from typing import Any, Protocol, runtime_checkable
 
-import pyalex
 import requests
-from langchain_community.document_loaders import PyPDFLoader
-from pydantic import BaseModel, ValidationError
+from requests.exceptions import (
+    ConnectionError,
+    HTTPError,
+    RequestException,
+    Timeout,
+)
+from tenacity import (
+    before_log,
+    before_sleep_log,
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
-from airas.core.node import Node
-from airas.nodes.retrievenode.base.paper_search import PaperSearch
+from airas.utils.api_client.base_http_client import BaseHTTPClient
+from airas.utils.api_client.response_parser import ResponseParser
+
+logger = getLogger(__name__)
 
 
-class OpenAlexResponse(BaseModel):
-    title: str
-    paper_abstract: str
-    author: str
-    public_date: datetime
+@runtime_checkable
+class ResponseParserProtocol(Protocol):
+    def parse(self, response: requests.Response, *, as_: str) -> Any: ...
+
+class OpenAlexClientError(RuntimeError): ...
+class OpenAlexClientRetryableError(OpenAlexClientError): ...
+class OpenAlexClientFatalError(OpenAlexClientError): ...
 
 
-class OpenAlexNode(Node, PaperSearch):
+_DEFAULT_MAX_RETRIES = 10
+_WAIT_POLICY = wait_exponential(multiplier=1.0, max=180.0)
+
+_RETRY_EXC = (
+    OpenAlexClientRetryableError,
+    ConnectionError,
+    HTTPError,
+    Timeout,
+    RequestException,
+)
+
+OPENALEX_RETRY = retry(
+    stop=stop_after_attempt(_DEFAULT_MAX_RETRIES),
+    wait=_WAIT_POLICY,
+    before=before_log(logger, logging.WARNING),
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+    retry=retry_if_exception_type(_RETRY_EXC),
+    reraise=True,
+)
+
+
+class OpenAlexClient(BaseHTTPClient):
     def __init__(
         self,
-        input_key: list[str],
-        output_key: list[str],
-        save_dir: str,
-        num_keywords: int,
-        num_retrieve_paper: int,
+        *,
+        base_url: str = "https://api.openalex.org",
+        default_headers: dict[str, str] | None = None,
+        parser: ResponseParserProtocol | None = None,
     ):
-        super().__init__(input_key, output_key)
-        self.save_dir = save_dir
-        self.num_keywords = num_keywords
-        self.num_retrieve_paper = num_retrieve_paper
-
-    def search_paper(
-        self, keywords: str | list[str], num_retrieve_paper: int
-    ) -> list[dict]:
-        """Search papers using OpenAlex API."""
-        works = pyalex.Works().filter(publication_year=">2011", is_oa=True)
-        search_results = []
-        for keyword in keywords:
-            results = works.search(keyword).get(page=1, per_page=num_retrieve_paper)
-
-            # Validate each result using Pydantic
-            validated_results = []
-            for item in results:
-                try:
-                    validated_result = OpenAlexResponse(
-                        paper_abstract=item.get("abstract", ""),
-                        author=item.get("author", "Unknown"),
-                        public_date=datetime.strptime(
-                            item.get("publication_date", "1970-01-01"), "%Y-%m-%d"
-                        ),
-                    )
-                    validated_results.append(validated_result)
-                except ValidationError as e:
-                    print(f"Validation error for item {item}: {e}")
-
-            search_results.append(validated_results)
-        return search_results
-
-    def download_from_arxiv_id(self, arxiv_id: str) -> None:
-        """Download PDF file from arXiv
-
-        Args:
-            arxiv_id (_type_): _description_
-            save_dir (_type_): _description_
-        """
-
-        url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
-        response = requests.get(url, stream=True)
-
-        if response.status_code == 200:
-            with open(os.path.join(self.save_dir, f"{arxiv_id}.pdf"), "wb") as file:
-                shutil.copyfileobj(response.raw, file)
-            print(f"Downloaded {arxiv_id}.pdf to {self.save_dir}")
-        else:
-            print(f"Failed to download {arxiv_id}.pdf")
-
-    def download_from_arxiv_ids(self, arxiv_ids: list[str]) -> None:
-        """Download PDF files from arXiv
-
-        Args:
-            arxiv_ids (_type_): _description_
-            save_dir (_type_): _description_
-        """
-        # save_dirが存在しない場合、ディレクトリを作成
-        if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
-        else:
-            shutil.rmtree(self.save_dir)
-            os.makedirs(self.save_dir)
-
-        for arxiv_id in arxiv_ids:
-            self.download_from_arxiv_id(arxiv_id)
-
-    def convert_pdf_to_text(self, pdf_path):
-        """Convert PDF file to text
-
-        Args:
-            pdf_path (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
-
-        loader = PyPDFLoader(pdf_path)
-        pages = loader.load_and_split()
-        content = ""
-        for page in pages[:20]:
-            content += page.page_content
-
-        return content
-
-    def execute(self, state) -> dict:
-        """Retriever
-
-        Args:
-            state (_type_): _description_
-        """
-        keywords = json.loads(state[self.input_key[0]])
-        keywords = [keywords[: self.num_keywords]]
-
-        search_results = self.search_paper(
-            keywords, num_retrieve_paper=self.num_retrieve_paper
+        api_key = os.getenv("OPENALEX_API_KEY")
+        params_header = f"?api_key={api_key}" if api_key else ""
+        super().__init__(
+            base_url=base_url.rstrip("/"),
+            default_headers=default_headers or {},
         )
+        self._parser = parser or ResponseParser()
+        self._key_qs = params_header
 
-        def _get_arxiv_id_from_url(url: str) -> str | None:
-            match = re.search(r"\d{4}\.\d{5}", url)
-            if match:
-                return match.group()
 
-        for results in search_results:
-            arxiv_ids = []
+    @staticmethod
+    def _raise_for_status(resp: requests.Response, path: str) -> None:
+        code = resp.status_code
+        if 200 <= code < 300:
+            return
+        if code in (408, 429) or 500 <= code < 600:
+            raise OpenAlexClientRetryableError(f"HTTP {code}: {path}")
+        raise OpenAlexClientFatalError(f"HTTP {code}: {path}")
 
-            for item in results:
-                print(item.title)
-                print(item.id)
 
-                if "arxiv" not in item.indexed_in:
-                    continue
-                ind_loc = item.indexed_in.index("arxiv")
+    @OPENALEX_RETRY
+    def search_paper_titles(
+        self,
+        query: str,
+        *,
+        year: str | None = None,
+        per_page: int = 20,
+        page: int = 1,
+        timeout: float = 30.0,
+    ) -> dict[str, Any]:
+        # https://docs.openalex.org/api-entities/works/search-works
+        per_page = max(1, min(per_page, 200))
 
-                arxiv_url = item.locations[ind_loc].landing_page_url
-                arxiv_id = _get_arxiv_id_from_url(arxiv_url)
-                if arxiv_id is None:
-                    continue
-
-                arxiv_ids.append(arxiv_id)
-            self.download_from_arxiv_ids(arxiv_ids[: self.num_retrieve_paper])
-
-        return {
-            self.output_key[0]: {
-                f"paper_{idx + 1}": {
-                    "full_text": self.convert_pdf_to_text(
-                        os.path.join(self.save_dir, filename)
-                    )
-                }
-                for idx, filename in enumerate(os.listdir(self.save_dir))
-                if filename.endswith(".pdf")
-            }
+        params: dict[str, Any] = {
+            "page": page,
+            "per-page": per_page,
+            "select": "id,display_name,publication_year",
         }
+        filters: list[str] = [f"default.search:{query}"]
+        if year:
+            if "-" in year:
+                y_from, y_to = year.split("-", 1)
+                filters.append(f"from_publication_date:{y_from}-01-01")
+                filters.append(f"to_publication_date:{y_to}-12-31")
+            else:
+                filters.append(f"publication_year:{year}")
+
+        if filters:
+            params["filter"] = ",".join(filters)
+
+        if self._key_qs:
+            params["api_key"] = os.getenv("OPENALEX_API_KEY")
+
+        path = "works"
+        response = self.get(path=path, params=params, timeout=timeout)
+        self._raise_for_status(response, path)
+        return self._parser.parse(response, as_="json")
+
+if __name__ == "__main__":
+    results = OpenAlexClient().search_paper_titles(
+        query="cnn",
+        year="2020-2025"
+    )
+    print(f"{results}")
