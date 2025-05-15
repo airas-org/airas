@@ -1,12 +1,9 @@
-import os
 import urllib.parse
 from logging import getLogger
 
 from airas.utils.api_client.firecrawl_client import FireCrawlClient
 
 logger = getLogger(__name__)
-
-FIRE_CRAWL_API_KEY = os.getenv("FIRE_CRAWL_API_KEY")
 
 
 def web_scrape(
