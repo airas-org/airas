@@ -13,7 +13,6 @@ from airas.analysis.analytic_subgraph.nodes.analytic_node import analytic_node
 from airas.utils.api_client.llm_facade_client import LLM_MODEL
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
-from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
@@ -74,29 +73,18 @@ class AnalyticSubgraph:
         return graph_builder.compile()
 
 
-Analytics = create_wrapped_subgraph(
-    AnalyticSubgraph,
-    AnalyticSubgraphInputState,
-    AnalyticSubgraphOutputState,
-)
-
-
 def main():
-    llm_name = "o3-mini-2025-01-31"
-
-    parser = argparse.ArgumentParser(description="Execute AnalyticSubgraph")
-    parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
-    )
+    parser = argparse.ArgumentParser(description="Analytic Subgraph"
+                                     )
+    parser.add_argument("--llm_name", default="o3-mini-2025-01-31")
     args = parser.parse_args()
 
-    an = Analytics(
-        github_repository=args.github_repository,
-        branch_name=args.branch_name,
-        llm_name=llm_name,
+    analytic_subgraph = AnalyticSubgraph(
+        llm_name=args.llm_name,
     )
-    result = an.run()
+    graph = analytic_subgraph.build_graph()
+
+    result = graph.invoke(analytic_subgraph_input_data)
     print(f"result: {json.dumps(result, indent=2)}")
 
 if __name__ == "__main__":

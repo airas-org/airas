@@ -6,6 +6,9 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
+from airas.create.create_experimental_design_subgraph.input_data import (
+    create_experimental_design_subgraph_input_data,
+)
 from airas.create.create_experimental_design_subgraph.nodes.generate_advantage_criteria import (
     generate_advantage_criteria,
 )
@@ -16,9 +19,9 @@ from airas.create.create_experimental_design_subgraph.nodes.generate_experiment_
     generate_experiment_details,
 )
 from airas.typing.paper import CandidatePaperInfo
+from airas.utils.api_client.llm_facade_client import LLM_MODEL
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
-from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
@@ -52,15 +55,19 @@ class CreateExperimentalDesignState(
 
 
 class CreateExperimentalDesignSubgraph:
-    def __init__(self):
+    def __init__(
+        self, 
+        llm_name: LLM_MODEL = "o3-mini-2025-01-31"
+    ):
         check_api_key(llm_api_key_check=True)
+        self.llm_name = llm_name
 
     @time_node("create_experimental_subgraph", "_generate_advantage_criteria_node")
     def _generate_advantage_criteria_node(
         self, state: CreateExperimentalDesignState
     ) -> dict:
         verification_policy = generate_advantage_criteria(
-            llm_name="o3-mini-2025-01-31",
+            llm_name=self.llm_name,
             new_method=state["new_method"],
         )
         return {"verification_policy": verification_policy}
@@ -70,7 +77,7 @@ class CreateExperimentalDesignSubgraph:
         self, state: CreateExperimentalDesignState
     ) -> dict:
         experimet_details = generate_experiment_details(
-            llm_name="o3-mini-2025-01-31",
+            llm_name=self.llm_name,
             verification_policy=state["verification_policy"],
             base_experimental_code=state["base_experimental_code"],
             base_experimental_info=state["base_experimental_info"],
@@ -82,7 +89,7 @@ class CreateExperimentalDesignSubgraph:
         self, state: CreateExperimentalDesignState
     ) -> dict:
         experiment_code = generate_experiment_code(
-            llm_name="o3-mini-2025-01-31",
+            llm_name=self.llm_name,
             experiment_details=state["experiment_details"],
             base_experimental_code=state["base_experimental_code"],
             base_experimental_info=state["base_experimental_info"],
@@ -115,28 +122,19 @@ class CreateExperimentalDesignSubgraph:
         return graph_builder.compile()
 
 
-CreateExperimentalDesign = create_wrapped_subgraph(
-    CreateExperimentalDesignSubgraph,
-    CreateExperimentalDesignInputState,
-    CreateExperimentalDesignOutputState,
-)
-
-
 def main():
     parser = argparse.ArgumentParser(
-        description="Execute CreateExperimentalDesignSubgraph"
+        description="CreateExperimentalDesignSubgraph"
     )
-    parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
-    )
+    parser.add_argument("--llm_name", default="o3-mini-2025-01-31")
     args = parser.parse_args()
 
-    ced = CreateExperimentalDesign(
-        github_repository=args.github_repository,
-        branch_name=args.branch_name,
+    create_experimental_design_subgraph = CreateExperimentalDesignSubgraph(
+        llm_name=args.llm_name, 
     )
-    result = ced.run()
+    graph = create_experimental_design_subgraph.build_graph()
+
+    result = graph.invoke(create_experimental_design_subgraph_input_data)
     print(f"result: {json.dumps(result, indent=2)}")
 
 
