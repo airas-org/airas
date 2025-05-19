@@ -429,9 +429,6 @@ def main():
 
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/airas/data"
-    input = {
-        "add_queries": ["vision"],
-    }
 
     parser = argparse.ArgumentParser(
         description="execute retrieve_related_paper_subgraph"
@@ -451,7 +448,7 @@ def main():
         add_paper_num=add_paper_num,
     )
 
-    result = add_paper_retriever.run(input)
+    result = add_paper_retriever.run()
     print(f"result: {json.dumps(result, indent=2)}")
     return
 

@@ -33,8 +33,6 @@ class GithubGraphWrapper:
         branch_name: str,
         research_file_path: str = ".research/research_history.json",
         extra_files: list[ExtraFileConfig] | None = None,
-        perform_download: bool = True,
-        perform_upload: bool = True,
         public_branch: str = "gh-pages",
         client: GithubClient | None = None,
     ):
@@ -55,8 +53,6 @@ class GithubGraphWrapper:
         self.branch_name = branch_name
         self.research_file_path = research_file_path
         self.extra_files = extra_files
-        self.perform_download = perform_download
-        self.perform_upload = perform_upload
         self.public_branch = public_branch
 
         check_api_key(github_personal_access_token_check=True)
@@ -198,17 +194,6 @@ class GithubGraphWrapper:
         original_state = state.get("original_state", {})
         user_input_state = {k: v for k, v in state.items() if k != "original_state"}
 
-        if not self.perform_download:
-            branch_name = self._create_child_branch()
-            logger.info(
-                f"perform_download=False; created new branch '{branch_name}' derived from base branch '{self.branch_name}' for safety"
-            )
-            return {
-                "original_state": original_state,
-                "user_input_state": user_input_state,
-                "branch_name": branch_name,
-            }
-
         branch_name = self.branch_name
         input_conflict = any(k in original_state for k in user_input_state)
         output_conflict = any(key in original_state for key in self.output_state_keys)
@@ -283,27 +268,16 @@ class GithubGraphWrapper:
 
     def build_graph(self) -> CompiledGraph:
         wrapper = StateGraph(dict[str, Any])
-        prev = START
-
-        if self.perform_download:
-            wrapper.add_node("download_from_github", self._download_from_github)
-            wrapper.add_edge(prev, "download_from_github")
-            prev = "download_from_github"
-
+        wrapper.add_node("download_from_github", self._download_from_github)
         wrapper.add_node("prepare_branch", self._prepare_branch)
-        wrapper.add_edge(prev, "prepare_branch")
-        prev = "prepare_branch"
-
         wrapper.add_node("run_subgraph", self._run_subgraph)
-        wrapper.add_edge(prev, "run_subgraph")
-        prev = "run_subgraph"
+        wrapper.add_node("upload_to_github", self._upload_to_github)
 
-        if self.perform_upload:
-            wrapper.add_node("upload_to_github", self._upload_to_github)
-            wrapper.add_edge(prev, "upload_to_github")
-            prev = "upload_to_github"
-
-        wrapper.add_edge(prev, END)
+        wrapper.add_edge(START, "download_from_github")
+        wrapper.add_edge("download_from_github", "prepare_branch")
+        wrapper.add_edge("prepare_branch", "run_subgraph")
+        wrapper.add_edge("run_subgraph", "upload_to_github")
+        wrapper.add_edge("upload_to_github", END)
         return wrapper.compile()
 
 
@@ -327,8 +301,6 @@ def create_wrapped_subgraph(
             branch_name: str,
             research_file_path: str = ".research/research_history.json",
             extra_files: list[ExtraFileConfig] | None = None,
-            perform_download: bool = True,
-            perform_upload: bool = True,
             public_branch: str = "gh-pages",
             *args: Any,
             **kwargs: Any,
@@ -344,17 +316,13 @@ def create_wrapped_subgraph(
                 branch_name=branch_name,
                 research_file_path=research_file_path,
                 extra_files=extra_files,
-                perform_download=perform_download,
-                perform_upload=perform_upload,
                 public_branch=public_branch,
             )
 
-        def run(self, use_input: dict[str, Any] | None = None) -> dict[str, Any]:
+        def run(self) -> dict[str, Any]:
             graph = self.build_graph()
             config = {"recursion_limit": 300}  # NOTE:
-            if use_input is None:
-                use_input = {}
-            result = graph.invoke(use_input, config=config)
+            result = graph.invoke({}, config=config)
             base = {
                 "github_upload_success": result.get("github_upload_success", False),
                 "subgraph_name": self.subgraph_name,
