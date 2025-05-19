@@ -373,9 +373,6 @@ def main():
     ]
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/airas/data"
-    input = {
-        "base_queries": ["transformer"],
-    }
 
     parser = argparse.ArgumentParser(
         description="execute retrieve_paper_from_query_subgraph"
@@ -389,13 +386,12 @@ def main():
     base_paper_retriever = RetrievePaperFromQuery(
         github_repository=args.github_repository,
         branch_name=args.branch_name,
-        perform_download=False,
         llm_name=llm_name,
         save_dir=save_dir,
         scrape_urls=scrape_urls,
     )
 
-    result = base_paper_retriever.run(input)
+    result = base_paper_retriever.run()
     print(f"result: {json.dumps(result, indent=2)}")
 
 
