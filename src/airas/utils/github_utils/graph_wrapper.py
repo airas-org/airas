@@ -182,7 +182,7 @@ class GithubGraphWrapper:
             if cfg["upload_branch"].lower() == self.public_branch.lower():
                 target_path = cfg["upload_dir"].rstrip("/")
                 github_pages_url = f"https://{self.github_owner}.github.io/{self.repository_name}/{target_path}/index.html"
-                logger.info(f"Uploaded HTML available at: {github_pages_url}")
+                print(f"Uploaded HTML available at: {github_pages_url}")
                 break
 
     def _call_api(self) -> None:
