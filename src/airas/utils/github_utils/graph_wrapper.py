@@ -154,7 +154,7 @@ class GithubGraphWrapper:
         sha = response["commit"]["sha"]
         
         self.client.create_branch(self.github_owner, self.repository_name, new_branch, from_sha=sha)
-        logger.info(f"[GitHub I/O] Created safety branch '{new_branch}' from '{self.branch_name}'")
+        print(f"[GitHub I/O] Created safety branch '{new_branch}' from '{self.branch_name}'")
         return new_branch
 
     def _format_extra_files(self, branch_name: str) -> list[ExtraFileConfig] | None:
@@ -182,7 +182,7 @@ class GithubGraphWrapper:
             if cfg["upload_branch"].lower() == self.public_branch.lower():
                 target_path = cfg["upload_dir"].rstrip("/")
                 github_pages_url = f"https://{self.github_owner}.github.io/{self.repository_name}/{target_path}/index.html"
-                print(f"Uploaded HTML available at: {github_pages_url}")
+                print(f"Uploaded HTML available at: {github_pages_url} (It may take a few minutes to reflect on GitHub Pages)")
                 break
 
     def _call_api(self) -> None:
@@ -259,7 +259,7 @@ class GithubGraphWrapper:
             github_upload_success = ok_json
 
         logger.info(f"Updated {self.research_file_path} (branch: {branch_name})")
-        logger.info(f"Check here：https://github.com/{self.github_owner}/{self.repository_name}/blob/{branch_name}/{self.research_file_path}")
+        print(f"Check here：https://github.com/{self.github_owner}/{self.repository_name}/blob/{branch_name}/{self.research_file_path}")
         self._log_public_html_url(formatted_extra_files)
 
         if self.wait_seconds > 0:
