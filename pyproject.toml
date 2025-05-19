@@ -1,6 +1,6 @@
 [project]
 name = "airas"
-version = "0.0.11.dev21"
+version = "0.0.11.dev22"
 description = "Add your description here"
 readme = "README.md"
 authors = [
