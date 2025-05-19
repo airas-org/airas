@@ -1,5 +1,6 @@
 import argparse
 import json
+import time
 from datetime import datetime
 from typing import Any
 
@@ -39,9 +40,14 @@ class GithubUploadSubgraphState(
 
 
 class GithubUploadSubgraph:
-    def __init__(self, subgraph_name: str):
+    def __init__(
+        self, 
+        subgraph_name: str, 
+        wait_seconds: float = 3.0,     
+    ):
         check_api_key(llm_api_key_check=True)
         self.subgraph_name = subgraph_name
+        self.wait_seconds = wait_seconds
 
     def _init(self, state: GithubUploadSubgraphState) -> dict[str, Any]:
         github_repository = state["github_repository"]
@@ -97,6 +103,8 @@ class GithubUploadSubgraph:
             file_path=state["research_file_path"],
             commit_message=commit_message
         )
+        if success and self.wait_seconds > 0:
+            time.sleep(self.wait_seconds)
         return {"github_upload_success": success}
 
     def build_graph(self) -> CompiledGraph:

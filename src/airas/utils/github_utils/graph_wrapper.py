@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import os
+import time
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any, Protocol, TypeVar
@@ -35,6 +36,7 @@ class GithubGraphWrapper:
         extra_files: list[ExtraFileConfig] | None = None,
         public_branch: str = "gh-pages",
         client: GithubClient | None = None,
+        wait_seconds: float = 3.0, 
     ):
         self.subgraph = subgraph
         self.subgraph_name = getattr(
@@ -54,6 +56,7 @@ class GithubGraphWrapper:
         self.research_file_path = research_file_path
         self.extra_files = extra_files
         self.public_branch = public_branch
+        self.wait_seconds = wait_seconds
 
         check_api_key(github_personal_access_token_check=True)
         self.client = client or GithubClient()
@@ -258,6 +261,9 @@ class GithubGraphWrapper:
         logger.info(f"Updated {self.research_file_path} (branch: {branch_name})")
         logger.info(f"Check here：https://github.com/{self.github_owner}/{self.repository_name}/blob/{branch_name}/{self.research_file_path}")
         self._log_public_html_url(formatted_extra_files)
+
+        if self.wait_seconds > 0:
+            time.sleep(self.wait_seconds)
 
         return {
             "github_upload_success": github_upload_success,
