@@ -38,7 +38,7 @@ def _copy_images_to_latest_dir(source_dir: str, dest_dir: str) -> None:
         logger.info(f"Removed exisiting images/: {dest_dir}")
     os.makedirs(dest_dir, exist_ok=True)
 
-    for file_path in glob.glob(os.path.join(source_dir, "*.pdf")):
+    for file_path in glob.glob(os.path.join(source_dir, "**", "*.pdf"), recursive=True):
         filename = os.path.basename(file_path)
         dest_path = os.path.join(dest_dir, filename)
         shutil.copyfile(file_path, dest_path)
