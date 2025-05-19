@@ -114,6 +114,11 @@ class GithubUploadSubgraph:
         sg.add_edge("merge_history",   "github_upload")
         sg.add_edge("github_upload",   END)
         return sg.compile()
+    
+    def run(self, input: dict) -> dict:
+        graph = self.build_graph()
+        result = graph.invoke(input)
+        return result
 
 
 if __name__ == "__main__":
@@ -131,7 +136,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     subgraph = GithubUploadSubgraph(subgraph_name="retrieve_paper_from_query")
-    compiled = subgraph.build_graph()
 
     new_output = {
         "base_queries": "diffusion model"
@@ -144,5 +148,5 @@ if __name__ == "__main__":
         "new_output": new_output, 
     }
 
-    result = compiled.invoke(initial_state)
+    result = subgraph.run(initial_state)
     print(json.dumps(result, indent=2))
