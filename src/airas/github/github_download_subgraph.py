@@ -12,13 +12,13 @@ from airas.utils.execution_timers import ExecutionTimeState, time_node
 
 
 class GithubDownloadInputState(TypedDict):
-    github_owner: str
-    repository_name: str
+    github_repository: str
     branch_name: str
     research_file_path: str | None
 
-class GithubDownloadHiddenState(TypedDict): ...
-
+class GithubDownloadHiddenState(TypedDict):
+    github_owner: str
+    repository_name: str
 
 class GithubDownloadOutputState(TypedDict):
     research_history: dict[str, Any]
@@ -38,6 +38,17 @@ class GithubDownloadSubgraph:
     ):
         check_api_key(llm_api_key_check=True)
 
+    def _init(self, state: GithubDownloadSubgraphState) -> dict[str, Any]:
+        github_repository = state["github_repository"]
+        if "/" in github_repository:
+            github_owner, repository_name = github_repository.split("/", 1)
+            return {
+                "github_owner": github_owner,
+                "repository_name": repository_name,
+            }
+        else:
+            raise ValueError("Invalid repository name format.")
+
     @time_node("github_download_subgraph", "_github_download_node")
     def _github_download_node(self, state: GithubDownloadSubgraphState) -> dict[str, Any]:
         research_history = github_download(
@@ -50,8 +61,11 @@ class GithubDownloadSubgraph:
 
     def build_graph(self) -> CompiledGraph:
         sg = StateGraph(GithubDownloadSubgraphState)
+        sg.add_node("init", self._init)
         sg.add_node("github_download", self._github_download_node)
-        sg.add_edge(START, "github_download")
+
+        sg.add_edge(START, "init")
+        sg.add_edge("init", "github_download")
         sg.add_edge("github_download", END)
         return sg.compile()
 
@@ -61,8 +75,7 @@ if __name__ == "__main__":
         description="Download GitHub research history and print as JSON."
     )
     parser = argparse.ArgumentParser(description="GithubDownloadSubgraph")
-    parser.add_argument("github_owner", help="Your github owner")
-    parser.add_argument("repository_name", help="Your repository name")
+    parser.add_argument("github_repository", help="Your GitHub repository")
     parser.add_argument("branch_name", help="Your branch name in your GitHub repository")
     parser.add_argument(
         "--research_file_path", 
@@ -75,8 +88,7 @@ if __name__ == "__main__":
     compiled = subgraph.build_graph()
 
     initial_state = {
-        "github_owner":       args.github_owner,
-        "repository_name":    args.repository_name,
+        "github_repository":       args.github_repository,
         "branch_name":        args.branch_name,
         "research_file_path": args.research_file_path,
     }

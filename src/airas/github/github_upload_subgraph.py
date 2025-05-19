@@ -16,14 +16,15 @@ from airas.utils.execution_timers import ExecutionTimeState, time_node
 
 
 class GithubUploadInputState(TypedDict):
-    github_owner: str
-    repository_name: str
+    github_repository: str
     branch_name: str
     research_file_path: str
     new_output: dict[str, Any]
     extra_files: list[ExtraFileConfig] | None
 
 class GithubUploadHiddenState(TypedDict): 
+    github_owner: str
+    repository_name: str
     research_history: dict[str, Any]
 
 class GithubUploadOutputState(TypedDict):
@@ -41,6 +42,17 @@ class GithubUploadSubgraph:
     def __init__(self, subgraph_name: str):
         check_api_key(llm_api_key_check=True)
         self.subgraph_name = subgraph_name
+
+    def _init(self, state: GithubUploadSubgraphState) -> dict[str, Any]:
+        github_repository = state["github_repository"]
+        if "/" in github_repository:
+            github_owner, repository_name = github_repository.split("/", 1)
+            return {
+                "github_owner": github_owner,
+                "repository_name": repository_name,
+            }
+        else:
+            raise ValueError("Invalid repository name format.")
 
     @time_node("github_upload_subgraph", "_github_download_node")
     def _github_download_node(self, state: GithubUploadSubgraphState) -> dict[str, Any]:
@@ -89,13 +101,14 @@ class GithubUploadSubgraph:
 
     def build_graph(self) -> CompiledGraph:
         sg = StateGraph(GithubUploadSubgraphState)
-        sg = StateGraph(GithubUploadSubgraphState)
+        sg.add_node("init",               self._init)
         sg.add_node("github_download",    self._github_download_node)
         sg.add_node("prepare_branch",     self._prepare_branch_node)
         sg.add_node("merge_history",      self._merge_history_node)
         sg.add_node("github_upload",      self._github_upload_node)
 
-        sg.add_edge(START,             "github_download")
+        sg.add_edge(START,             "init")
+        sg.add_edge("init",            "github_download")
         sg.add_edge("github_download", "prepare_branch")
         sg.add_edge("prepare_branch",  "merge_history")
         sg.add_edge("merge_history",   "github_upload")
@@ -108,8 +121,7 @@ if __name__ == "__main__":
         description="Upload GitHub research history and print as JSON."
     )
     parser = argparse.ArgumentParser(description="GithubUploadSubgraph")
-    parser.add_argument("github_owner", help="Your github owner")
-    parser.add_argument("repository_name", help="Your repository name")
+    parser.add_argument("github_repository", help="Your GitHub repository")
     parser.add_argument("branch_name", help="Your branch name in your GitHub repository")
     parser.add_argument(
         "--research_file_path", 
@@ -126,8 +138,7 @@ if __name__ == "__main__":
     }
 
     initial_state = {
-        "github_owner": args.github_owner,
-        "repository_name": args.repository_name,
+        "github_repository": args.github_repository, 
         "branch_name": args.branch_name,
         "research_file_path": args.research_file_path,
         "new_output": new_output, 
