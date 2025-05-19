@@ -68,6 +68,11 @@ class GithubDownloadSubgraph:
         sg.add_edge("init", "github_download")
         sg.add_edge("github_download", END)
         return sg.compile()
+    
+    def run(self, input: dict) -> dict:
+        graph = self.build_graph()
+        result = graph.invoke(input)
+        return result
 
 
 if __name__ == "__main__":
@@ -85,7 +90,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     subgraph = GithubDownloadSubgraph()
-    compiled = subgraph.build_graph()
 
     initial_state = {
         "github_repository":       args.github_repository,
@@ -93,5 +97,5 @@ if __name__ == "__main__":
         "research_file_path": args.research_file_path,
     }
 
-    result = compiled.invoke(initial_state)
+    result = subgraph.run(initial_state)
     print(json.dumps(result, indent=2))
