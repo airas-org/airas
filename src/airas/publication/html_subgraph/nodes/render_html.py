@@ -50,6 +50,24 @@ def _wrap_in_html_template(paper_html_content: str) -> str:
     figure {
       text-align: center;
       margin: 1.5em 0;
+      background: none !important;
+    }
+    img {
+      background: #fff;
+    }
+    figure img {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto;
+    }
+    .img-pair .pair {
+      display: flex;
+      justify-content: space-between;
+    }
+    .img-pair img {
+      max-width: 48%;
+      height: auto;
     }
     figcaption {
       font-size: 0.9em;

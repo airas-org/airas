@@ -53,6 +53,7 @@ def execute_github_actions_workflow(
     if not ok_dispatch:
         raise RuntimeError("Failed to dispatch workflow")
     logger.info("Workflow dispatch sent.")
+    print(f"Check running workflows: https://github.com/{github_owner}/{repository_name}/actions")
 
     start = time.time()
     while True:

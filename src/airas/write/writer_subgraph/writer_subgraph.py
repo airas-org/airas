@@ -97,7 +97,7 @@ PaperWrite = create_wrapped_subgraph(
 
 def main():
     llm_name = "o3-mini-2025-01-31"
-    save_dir = "/workspaces/researchgraph/data"
+    save_dir = "/workspaces/airas/data"
     refine_round = 1
 
     parser = argparse.ArgumentParser(

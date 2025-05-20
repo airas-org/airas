@@ -28,9 +28,19 @@ Section: {{ section.name }}
 - For listing contributions or features, use <ul> and <li>.
     - Start each list item with <strong>...</strong> for a short descriptor.
 
-- Use <figure> and <figcaption> with <img> for all figures (in the "Results" section only).
-    - Use appropriate relative paths for src (e.g., images/foo.png).
-    - Keep layout clear with centered or responsive figures.
+- Use <figure> and <figcaption> for all figures (in the "Results" section only).
+    - All figures must use <img src="..."> for static image display.
+    - If the original file is a `.pdf`, assume a corresponding `.png` image has been generated (e.g., `plot1.pdf` → `plot1.png`).
+    - Always use the `.png` version in the <img> tag (e.g., `src="images/plot1.png"`).
+    - All figures must include a <figcaption> **whose text starts with `Figure N:`** (e.g., `Figure 1: Convergence of ...`).  
+    - Use appropriate relative paths for src (e.g., images/plot1.png).
+
+  - **Width & layout rules (match the LaTeX spec):**
+    - If the filename ends with `_pair1.png` or `_pair2.png`, wrap the two related images in a single
+      `<figure class="img-pair">` and set each `<img>` to `style="width:48%;height:auto"`.  
+      The two images must appear side by side (use `<div class="pair">` if needed).
+    - Otherwise (default), set the single `<img>` to `style="width:70%;height:auto"`.
+    - The `<figcaption>` should follow the entire pair or single image as appropriate.
 
 - Use <pre><code> for pseudocode or actual code (only in the "Method" section).
     - Keep indentation clean and avoid syntax highlighting.

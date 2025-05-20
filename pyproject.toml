@@ -25,6 +25,7 @@ dependencies = [
     "feedparser>=6.0.11",
     "pytz>=2025.2",
     "typing-extensions>=4.12.2",
+    "pymupdf>=1.25.5",
 ]
 
 [project.urls]
