@@ -8,6 +8,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
+from airas.publication.html_subgraph.nodes.convert_pdf_to_png import convert_pdf_to_png
 from airas.publication.html_subgraph.nodes.convert_to_html import convert_to_html
 from airas.publication.html_subgraph.nodes.render_html import render_html
 from airas.publication.html_subgraph.prompt.convert_to_html_prompt import (
@@ -27,6 +28,7 @@ class HtmlSubgraphInputState(TypedDict):
 
 
 class HtmlSubgraphHiddenState(TypedDict):
+    pdf_to_png: bool
     paper_html_content: str
 
 
@@ -53,6 +55,13 @@ class HtmlSubgraph:
         self.save_dir = save_dir
         check_api_key(llm_api_key_check=True)
 
+    @time_node("html_subgraph", "_convert_pdf_to_png_node")
+    def _convert_pdf_to_png(self, state: HtmlSubgraphState) -> dict[str, bool]:
+        pdf_to_png = convert_pdf_to_png(self.save_dir)
+        return {
+            "pdf_to_png": pdf_to_png
+        }
+
     @time_node("html_subgraph", "_convert_to_html_node")
     def _convert_to_html_node(self, state: HtmlSubgraphState) -> dict:
         paper_html_content = convert_to_html(
@@ -72,10 +81,12 @@ class HtmlSubgraph:
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(HtmlSubgraphState)
         # make nodes
+        graph_builder.add_node("convert_pdf_to_png_node", self._convert_pdf_to_png)
         graph_builder.add_node("convert_to_html_node", self._convert_to_html_node)
         graph_builder.add_node("render_html_node", self._render_html_node)
         # make edges
-        graph_builder.add_edge(START, "convert_to_html_node")
+        graph_builder.add_edge(START, "convert_pdf_to_png_node")
+        graph_builder.add_edge("convert_pdf_to_png_node", "convert_to_html_node")
         graph_builder.add_edge("convert_to_html_node", "render_html_node")
         graph_builder.add_edge("render_html_node", END)
 
@@ -90,9 +101,6 @@ HtmlConvert = create_wrapped_subgraph(
 def main():
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/airas/data"
-    figures_dir = "/workspaces/airas/data/images"
-    pdf_files = glob.glob(os.path.join(figures_dir, "*.pdf"))
-
 
     parser = argparse.ArgumentParser(
         description="Execute HtmlSubgraph"
@@ -103,16 +111,21 @@ def main():
     )
     args = parser.parse_args()
 
+    upload_branch = "gh-pages"
+    upload_dir = "branches/{branch_name}/"
+    html_files = [f"{save_dir}/index.html"]
+    png_files = glob.glob(os.path.join(os.path.join(save_dir, "images"), "*.png"))
+
     extra_files = [
         {
-            "upload_branch": "gh-pages",
-            "upload_dir": "branches/{branch_name}/",
-            "local_file_paths": [f"{save_dir}/index.html"],
+            "upload_branch": upload_branch,
+            "upload_dir": upload_dir,
+            "local_file_paths": html_files,
         },
         {
-            "upload_branch": "gh-pages",
-            "upload_dir": "branches/{branch_name}/images/",
-            "local_file_paths": pdf_files,
+            "upload_branch": upload_branch,
+            "upload_dir": os.path.join(upload_dir, "images"), 
+            "local_file_paths": png_files,
         },
     ]
 

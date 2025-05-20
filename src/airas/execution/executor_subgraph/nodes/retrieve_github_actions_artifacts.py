@@ -56,6 +56,8 @@ def retrieve_github_actions_artifacts(
     client = client or GithubClient()
 
     iteration_save_dir = save_dir + f"/iteration_{fix_iteration_count}"
+    if os.path.exists(iteration_save_dir):
+        shutil.rmtree(iteration_save_dir)
     os.makedirs(iteration_save_dir, exist_ok=True)
 
     response_artifacts_infos = client.list_repository_artifacts(

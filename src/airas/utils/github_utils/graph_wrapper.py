@@ -154,7 +154,7 @@ class GithubGraphWrapper:
         sha = response["commit"]["sha"]
         
         self.client.create_branch(self.github_owner, self.repository_name, new_branch, from_sha=sha)
-        print(f"[GitHub I/O] Created safety branch '{new_branch}' from '{self.branch_name}'")
+        logger.info(f"[GitHub I/O] Created safety branch '{new_branch}' from '{self.branch_name}'")
         return new_branch
 
     def _format_extra_files(self, branch_name: str) -> list[ExtraFileConfig] | None:
@@ -203,9 +203,9 @@ class GithubGraphWrapper:
         if input_conflict or output_conflict:
             reason = "Input Key conflict" if input_conflict else "Output key conflict"
             branch_name = self._create_child_branch()
-            logger.info(f"{reason} detected. Created new branch: {branch_name}")
+            print(f"{reason} detected. Created new branch: {branch_name}")
         else:
-            logger.info(f"No conflict. Using existing branch: {branch_name}")
+            print(f"No key conflict. Using existing branch: {branch_name}")
 
         return {
             "original_state": original_state,

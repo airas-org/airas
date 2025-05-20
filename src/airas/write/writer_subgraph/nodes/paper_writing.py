@@ -128,12 +128,18 @@ Here is the context of the entire paper:
     - DO NOT add any assumptions, invented data, or details that are not explicitly mentioned in the context.
 
 - Ensure that ALL relevant details from the context are included.
+    - You must include **all figures provided in the context**, regardless of perceived relevance. Do not omit any.
     - You are free to organize and structure the content in a natural and logical way, rather than directly following the order or format of the context.
     - You must include all relevant details of methods, experiments, and results—including mathematical equations, pseudocode (if applicable), experimental setups, configurations, numerical results, and figures/tables.
     - When beneficial for clarity, describe the mathematical equations, parameter settings, and procedures in a structured and easy-to-follow way, using natural language or numbered steps.
     - Avoid overly explanatory or repetitive descriptions that would be self-evident to readers familiar with standard machine learning notation.
     - Keep the experimental results (figures and tables) only in the `Results section`, and make sure that any captions are filled in. 
     - If image filenames (e.g., `figure1.pdf`) are provided in the context, refer to them explicitly in the text.
+
+- When referring to figures in the "Results" section:
+    - Include a **caption with a descriptive title** (not just the filename).
+    - **The caption must start with "Figure N: "** where N is the sequential figure number (e.g., `Figure 1: Convergence comparison ...`).
+    - Reference figures in the body text using these numbers (e.g., "As shown in Figure 2...").
 
 - Avoid editor instructions, placeholders, speculative text, or comments like "details are missing."
     - Example: Remove phrases like "Here’s a refined version of this section," as they are not part of the final document.
