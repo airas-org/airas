@@ -32,7 +32,6 @@ def execute_github_actions_workflow(
     github_owner: str, 
     repository_name: str, 
     branch_name: str, 
-    *, 
     client: GithubClient | None = None, 
 ) -> int:
     client = client or GithubClient()

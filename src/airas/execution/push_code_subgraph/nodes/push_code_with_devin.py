@@ -59,7 +59,7 @@ Please follow the “Rules” section to create an experimental script to conduc
     return retry_request(fetch_api_data, url, headers=headers, data=data, method="POST")
 
 
-def generate_code_with_devin(
+def push_code_with_devin(
     headers: dict,
     github_owner: str,
     repository_name: str,
