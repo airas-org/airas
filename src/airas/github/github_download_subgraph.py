@@ -14,7 +14,6 @@ from airas.utils.execution_timers import ExecutionTimeState, time_node
 class GithubDownloadInputState(TypedDict):
     github_repository: str
     branch_name: str
-    research_file_path: str | None
 
 class GithubDownloadHiddenState(TypedDict):
     github_owner: str
@@ -35,8 +34,10 @@ class GithubDownloadSubgraphState(
 class GithubDownloadSubgraph:
     def __init__(
         self,
+        research_file_path: str = ".research/research_history.json", 
     ):
         check_api_key(llm_api_key_check=True)
+        self.research_file_path = research_file_path
 
     def _init(self, state: GithubDownloadSubgraphState) -> dict[str, Any]:
         github_repository = state["github_repository"]
@@ -55,7 +56,7 @@ class GithubDownloadSubgraph:
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
-            file_path=state.get("research_file_path") or ".research/research_history.json",
+            file_path=self.research_file_path,
         )
         return {"research_history": research_history}
 
@@ -82,11 +83,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="GithubDownloadSubgraph")
     parser.add_argument("github_repository", help="Your GitHub repository")
     parser.add_argument("branch_name", help="Your branch name in your GitHub repository")
-    parser.add_argument(
-        "--research_file_path", 
-        help="Your branch name in your GitHub repository", 
-        default=".research/research_history.json"
-    )
+
     args = parser.parse_args()
 
     subgraph = GithubDownloadSubgraph()
@@ -94,7 +91,6 @@ if __name__ == "__main__":
     initial_state = {
         "github_repository":       args.github_repository,
         "branch_name":        args.branch_name,
-        "research_file_path": args.research_file_path,
     }
 
     result = subgraph.run(initial_state)
