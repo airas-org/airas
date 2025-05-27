@@ -124,7 +124,7 @@ class GithubClient(BaseHTTPClient):
         github_owner: str, 
         repository_name: str, 
         file_path: str, 
-        branch_name: str | None = None, 
+        branch_name: str | None = None,  # NOTE: If None, the repository's default branch will be used.
         as_: Literal["json", "bytes"] = "json", 
     ) -> dict | bytes | None:
         # https://docs.github.com/ja/rest/repos/contents?apiVersion=2022-11-28#get-repository-content
