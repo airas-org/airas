@@ -92,7 +92,7 @@ class FixCodeSubgraph:
             error_text_data=state["error_text_data"],
         )
         if not success:
-            logger.warning("fix_code_with_devin failed. Continuing with executed_flag=False")
+            logger.warning("`fix_code_with_devin` failed. Continuing with `executed_flag=False`")
         return {
             "executed_flag": False
         }

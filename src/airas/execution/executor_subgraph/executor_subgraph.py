@@ -34,7 +34,7 @@ class ExecutorSubgraphInputState(TypedDict):
 
 
 class ExecutorSubgraphHiddenState(TypedDict):
-    workflow_run_id: int
+    workflow_run_id: int | None
 
 
 class ExecutorSubgraphOutputState(TypedDict):
@@ -69,17 +69,12 @@ class ExecutorSubgraph:
         if not state.get("push_completion", True):
             raise ValueError("ExecutorSubgraph was called without a successful code push (expected push_completion == True)")
         
-        try:
-            workflow_run_id = execute_github_actions_workflow(
-                github_owner=state["github_owner"],
-                repository_name=state["repository_name"],
-                branch_name=state["branch_name"],
-            )
-            executed_flag = True
-            logger.info(f"Workflow {workflow_run_id} executed successfully.")
-        except Exception as e:
-            logger.error(f"Workflow execution failed: {e}")
-            executed_flag = False
+        workflow_run_id = execute_github_actions_workflow(
+            github_owner=state["github_owner"],
+            repository_name=state["repository_name"],
+            branch_name=state["branch_name"],
+        )
+        executed_flag = workflow_run_id is not None
         return {
             "workflow_run_id": workflow_run_id,
             "executed_flag": executed_flag,
@@ -89,6 +84,13 @@ class ExecutorSubgraph:
     def _retrieve_github_actions_artifacts_node(
         self, state: ExecutorSubgraphState
     ) -> dict:
+        if state["workflow_run_id"] is None:
+            logger.warning("Skipping artifact retrieval due to missing `workflow_run_id`.")
+            return {
+                "output_text_data": "",
+                "error_text_data": "",
+            }
+
         output_text_data, error_text_data = retrieve_github_actions_artifacts(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
