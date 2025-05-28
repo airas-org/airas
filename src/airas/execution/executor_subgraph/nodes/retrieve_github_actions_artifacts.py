@@ -9,6 +9,16 @@ from airas.utils.api_client.github_client import GithubClient
 logger = getLogger(__name__)
 
 
+def _get_next_iteration_dir(save_dir: str) -> str:
+    pattern = os.path.join(save_dir, "iteration_*")
+    nums = [
+        int(os.path.basename(p).split("_")[1])
+        for p in glob.glob(pattern)
+        if os.path.basename(p).split("_")[1].isdigit()
+    ]
+    next_index = max(nums, default=-1) + 1
+    return os.path.join(save_dir, f"iteration_{next_index}")
+
 def _parse_artifacts_id(artifacts_infos: dict, workflow_run_id: str) -> dict[str, int]:
     artifacts_id_dict = {}
     for artifacts_info in artifacts_infos["artifacts"]:
@@ -49,13 +59,12 @@ def retrieve_github_actions_artifacts(
     repository_name: str,
     workflow_run_id: str | int,
     save_dir: str,
-    fix_iteration_count: int,
-    *, 
     client: GithubClient | None = None, 
 ) -> tuple[str, str]:
     client = client or GithubClient()
 
-    iteration_save_dir = save_dir + f"/iteration_{fix_iteration_count}"
+    iteration_save_dir = _get_next_iteration_dir(save_dir)
+
     if os.path.exists(iteration_save_dir):
         shutil.rmtree(iteration_save_dir)
     os.makedirs(iteration_save_dir, exist_ok=True)
