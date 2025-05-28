@@ -39,7 +39,7 @@ class WriterSubgraphInputState(TypedDict):
 class WriterSubgraphHiddenState(TypedDict):
     github_owner: str
     repository_name: str
-    figures_dir: str
+    figures_dir: str | None
     cleanup_tmp: bool
     note: str
 

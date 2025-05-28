@@ -84,15 +84,19 @@ def _wrap_in_html_template(paper_html_content: str) -> str:
     return template.render(content=paper_html_content)
 
 
-def _save_index_html(content: str, save_dir: str) -> None:
+def _save_html(content: str, save_dir: str, filename: str) -> None:
     os.makedirs(save_dir, exist_ok=True)
-    html_path = os.path.join(save_dir, "index.html")
+    html_path = os.path.join(save_dir, filename)
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(content)
     logger.info(f"Saved HTML to: {html_path}")
 
 
-def render_html(paper_html_content: str, save_dir: str) -> str:
+def render_html(
+    paper_html_content: str, 
+    save_dir: str, 
+    filename: str = "index.html", 
+) -> str:
     full_html = _wrap_in_html_template(paper_html_content)
-    _save_index_html(full_html, save_dir)
+    _save_html(full_html, save_dir, filename)
     return full_html

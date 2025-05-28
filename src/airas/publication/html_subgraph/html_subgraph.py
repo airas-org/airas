@@ -1,8 +1,8 @@
 import argparse
-import glob
 import json
 import logging
 import os
+import shutil
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -37,7 +37,7 @@ class HtmlSubgraphInputState(TypedDict):
 class HtmlSubgraphHiddenState(TypedDict):
     github_owner: str
     repository_name: str
-    figures_dir: str
+    figures_dir: str | None
     cleanup_tmp: bool
     pdf_to_png: bool
     paper_html_content: str
@@ -67,6 +67,12 @@ class HtmlSubgraph:
         self.llm_name = llm_name
         self.save_dir = save_dir
         self.tmp_dir = tmp_dir
+
+        self.html_dir = os.path.join(save_dir, "html")
+        if os.path.exists(self.html_dir):
+            shutil.rmtree(self.html_dir)
+        os.makedirs(self.html_dir, exist_ok=True)
+
         check_api_key(llm_api_key_check=True)
 
     def _init(self, state: HtmlSubgraphState) -> dict[str, str]:
@@ -93,7 +99,12 @@ class HtmlSubgraph:
 
     @html_timed
     def _convert_pdf_to_png(self, state: HtmlSubgraphState) -> dict[str, bool]:
-        pdf_to_png = convert_pdf_to_png(state["figures_dir"])
+        pdf_dir = state["figures_dir"]
+        if pdf_dir is None:
+            return {"pdf_to_png": False}
+        
+        to_png_dir = os.path.join(self.html_dir, "images")
+        pdf_to_png = convert_pdf_to_png(pdf_dir, to_png_dir)
         return {
             "pdf_to_png": pdf_to_png
         }
@@ -110,12 +121,12 @@ class HtmlSubgraph:
     @html_timed
     def _render_html_node(self, state: HtmlSubgraphState) -> dict:
         full_html = render_html(
-            paper_html_content=state["paper_html_content"], save_dir=self.save_dir
+            paper_html_content=state["paper_html_content"], 
+            save_dir=self.html_dir, 
         )
         return {"full_html": full_html}
     
-    #gh-pagesブランチにアップロード
-    
+
     @html_timed
     def _cleanup_tmp_dir(self, state: HtmlSubgraphState) -> dict[str, bool]:
         cleanup_tmp = cleanup_tmp_dir(

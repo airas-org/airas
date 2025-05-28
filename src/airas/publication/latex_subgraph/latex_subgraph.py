@@ -38,7 +38,7 @@ class LatexSubgraphInputState(TypedDict):
 class LatexSubgraphHiddenState(TypedDict):
     github_owner: str
     repository_name: str
-    figures_dir: str
+    figures_dir: str | None
     cleanup_tmp: bool
     paper_tex_content: dict[str, str]
 
@@ -68,8 +68,11 @@ class LatexSubgraph:
         self.save_dir = save_dir
         self.tmp_dir = tmp_dir
 
-        self.figures_dir = os.path.join(self.save_dir, "images")
-        self.pdf_file_path = os.path.join(self.save_dir, "paper.pdf")
+        self.latex_dir = os.path.join(save_dir, "latex")
+        if os.path.exists(self.latex_dir):
+            shutil.rmtree(self.latex_dir)
+        os.makedirs(self.latex_dir, exist_ok=True)
+
         check_api_key(llm_api_key_check=True)
 
     def _init(self, state: LatexSubgraphState) -> dict[str, str]:
@@ -86,21 +89,13 @@ class LatexSubgraph:
     @latex_timed
     def _prepare_figures(self, state: LatexSubgraphState) -> dict[str, str | None]:
         logger.info("---LatexSubgraph---")
-        src_dir = fetch_figures_from_repository(
+        figures_dir = fetch_figures_from_repository(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
             tmp_dir=self.tmp_dir,
         )
-        if src_dir is None:
-            logger.warning("No figures found in the repository – skipping figure copy.")
-            return {"figures_dir": None}
-        
-        if os.path.exists(self.figures_dir):
-            shutil.rmtree(self.figures_dir)
-        shutil.copytree(src_dir, self.figures_dir)
-
-        return {"figures_dir": self.figures_dir}
+        return {"figures_dir": figures_dir}
 
     @latex_timed
     def _convert_to_latex_node(self, state: LatexSubgraphState) -> dict:
@@ -115,11 +110,9 @@ class LatexSubgraph:
     def _latex_node(self, state: LatexSubgraphState) -> dict:
         tex_text = LatexNode(
             llm_name=self.llm_name,
+            save_dir=self.latex_dir,
             figures_dir=state["figures_dir"],
-            pdf_file_path=self.pdf_file_path,
-            save_dir=self.save_dir,
-            timeout=30,
-        ).execute(
+        ).compile_to_pdf(
             paper_tex_content=state["paper_tex_content"],
         )
         return {

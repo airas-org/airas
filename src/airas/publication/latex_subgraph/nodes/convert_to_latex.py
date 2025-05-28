@@ -28,7 +28,7 @@ def convert_to_latex(
     llm_name: LLM_MODEL,
     paper_content: dict[str, str],
     prompt_template: str,
-    figures_dir: str = "../images",  
+    figures_dir: str = "images",  
 ) -> dict[str, str]:
     client = LLMFacadeClient(llm_name)
 
