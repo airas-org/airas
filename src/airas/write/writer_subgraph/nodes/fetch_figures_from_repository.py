@@ -53,7 +53,7 @@ def _download_figures(
     branch_name: str, 
     blob_paths: list[str], 
     tmp_dir: str, 
-    remote_dir: str = ".research", 
+    remote_dir: str, 
     client: GithubClient | None = None, 
 ) -> list[str]:
     client = client or GithubClient()
@@ -73,11 +73,9 @@ def _download_figures(
                 logger.warning(f"Failed to fetch binary for {path}")
                 continue
 
-            rel_path = path.removeprefix(remote_dir)
+            rel_path = os.path.relpath(path, remote_dir)
             local_path = os.path.join(tmp_dir, rel_path)
-
-            parent_dir = os.path.dirname(local_path)
-            os.makedirs(parent_dir, exist_ok=True)
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
 
             with open(local_path, "wb") as fp:
                 fp.write(binary)
@@ -122,7 +120,7 @@ def fetch_figures_from_repository(
     tmp_dir: str,
     remote_dir: str = ".research", 
     client: GithubClient | None = None,
-) -> str:
+) -> str | None:
     client = client or GithubClient()
 
     blob_paths = _list_iteration_pdf_paths(
@@ -142,6 +140,7 @@ def fetch_figures_from_repository(
         branch_name=branch_name,
         blob_paths=blob_paths,
         tmp_dir=tmp_dir,
+        remote_dir=remote_dir, 
         client=client, 
     )
     logger.info(f"Total figures downloaded: {len(downloaded_paths)}")

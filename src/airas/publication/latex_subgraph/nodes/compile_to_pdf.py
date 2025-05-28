@@ -22,7 +22,7 @@ class LatexNode:
     def __init__(
         self,
         llm_name: LLM_MODEL,
-        figures_dir: str,
+        figures_dir: str | None,
         pdf_file_path: str,
         save_dir: str,
         timeout: int = 30,
@@ -228,7 +228,6 @@ Return the complete corrected LaTeX text."""
             return tex_text
 
     def _compile_latex(self, cwd: str):
-        # Compile the LaTeX document to PDF using pdflatex and bibtex commands
         logger.info("GENERATING LATEX")
         commands = [
             ["pdflatex", "-interaction=nonstopmode", self.template_copy_file],
@@ -252,15 +251,19 @@ Return the complete corrected LaTeX text."""
                 logger.info(f"Standard Error:\n{result.stderr}")
             except subprocess.TimeoutExpired as e:
                 logger.error(f"Latex command timed out: {e}")
+                raise
             except subprocess.CalledProcessError as e:
                 logger.error(f"Error running command {' '.join(command)}: {e}")
+                raise
             except FileNotFoundError:
                 logger.error(
                     f"Command not found: {' '.join(command)}. "
                     "Make sure pdflatex and bibtex are installed and on your PATH."
                 )
+                raise
             except Exception as e:
                 logger.error(f"An unexpected error occurred: {e}")
+                raise
 
         logger.info("FINISHED GENERATING LATEX")
         pdf_filename = (
@@ -269,7 +272,8 @@ Return the complete corrected LaTeX text."""
         try:
             shutil.move(os.path.join(cwd, pdf_filename), self.pdf_file_path)
         except FileNotFoundError:
-            logger.info("Failed to rename PDF.")
+            logger.error("PDF generation failed: the expected output file was not found after LaTeX compilation.")
+            raise
 
     def execute(self, paper_tex_content: dict[str, str]) -> str:
         """
@@ -294,12 +298,15 @@ Return the complete corrected LaTeX text."""
             #     iteration_count += 1
             #     continue
 
-            logger.info("Check figures...")
-            original_tex_text = tex_text
-            tex_text = self._check_figures(tex_text)
-            if tex_text != original_tex_text:
-                iteration_count += 1
-                continue
+            if self.figures_dir is None:
+                logger.info("Skip figure checks because `figures_dir` is `None`.")
+            else:
+                logger.info("Check figures...")
+                original_tex_text = tex_text
+                tex_text = self._check_figures(tex_text)
+                if tex_text != original_tex_text:
+                    iteration_count += 1
+                    continue
 
             logger.info("Check duplicates...")
             original_tex_text = tex_text

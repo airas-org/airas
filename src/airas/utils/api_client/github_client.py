@@ -130,11 +130,15 @@ class GithubClient(BaseHTTPClient):
         # https://docs.github.com/ja/rest/repos/contents?apiVersion=2022-11-28#get-repository-content
         path = f"/repos/{github_owner}/{repository_name}/contents/{file_path}"
 
-        response = self.get(path, params={"ref": branch_name})
+        headers = None
+        if as_ == "bytes":
+            headers = {"Accept": "application/vnd.github.raw+json"}
+
+        response = self.get(path, params={"ref": branch_name}, headers=headers)
         match response.status_code:
             case 200:
                 logger.info(f"Success (200): {path}")
-                return self._parser.parse(response, as_="bytes" if as_ == "bytes" else "json")
+                return self._parser.parse(response, as_=as_)
             case 404:
                 logger.warning(f"Resource not found (404): {path}")
                 raise GithubClientFatalError(f"Resource not found (404): {path}")

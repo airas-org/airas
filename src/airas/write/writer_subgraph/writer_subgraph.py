@@ -8,7 +8,6 @@ from typing_extensions import TypedDict
 
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
-from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 from airas.utils.logging_utils import setup_logging
 from airas.write.writer_subgraph.input_data import (
     writer_subgraph_input_data,
@@ -61,13 +60,13 @@ class WriterSubgraphState(
 class WriterSubgraph:
     def __init__(
         self,
-        tmp_dir: str,
         llm_name: str,
+        tmp_dir: str,
         refine_round: int = 2,
     ):
         # NOTE: tmp_dir is a temporary directory used during execution and will be cleaned up at the end.
-        self.tmp_dir = tmp_dir
         self.llm_name = llm_name
+        self.tmp_dir = tmp_dir
         self.refine_round = refine_round
         check_api_key(llm_api_key_check=True)
 
@@ -83,7 +82,7 @@ class WriterSubgraph:
             raise ValueError("Invalid repository name format.")
 
     @writer_timed
-    def _prepare_figures(self, state: WriterSubgraphState) -> dict[str, list[str]]:
+    def _prepare_figures(self, state: WriterSubgraphState) -> dict[str, str | None]:
         logger.info("---WriterSubgraph---")
         figures_dir = fetch_figures_from_repository(
             github_owner=state["github_owner"],
@@ -150,8 +149,8 @@ def main():
     args = parser.parse_args()
 
     writer_subgraph = WriterSubgraph(
-        tmp_dir=tmp_dir, 
         llm_name=llm_name, 
+        tmp_dir=tmp_dir, 
         refine_round=refine_round, 
     ).build_graph()
     result = writer_subgraph.invoke({

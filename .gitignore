@@ -167,5 +167,6 @@ cython_debug/
 !.vscode/launch.json
 !.gitkeep
 data/*
+tmp/*
 .gitmessage.txt
 .github/copilot-instructions.md
