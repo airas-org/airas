@@ -86,12 +86,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    subgraph = GithubDownloadSubgraph()
-
-    initial_state = {
+    state = {
         "github_repository":       args.github_repository,
         "branch_name":        args.branch_name,
     }
 
-    result = subgraph.run(initial_state)
+    result = GithubDownloadSubgraph().run(state)
     print(json.dumps(result, indent=2))
