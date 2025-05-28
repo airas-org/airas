@@ -18,7 +18,7 @@
 
 🌐 AIRAS(AI Research Automation System) is a framework for automating AI research.
 
-💡 See what others are building and share your projects in our [Discord](https://discord.gg/Qh5DmY6D)! 
+💡 See what others are building and share your projects in our [Discord](https://discord.gg/ktumZQP3Tp)! 
 
 
 # Quick Start
