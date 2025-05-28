@@ -1,85 +1,235 @@
 import time
-from datetime import datetime, timezone
+from dataclasses import dataclass
 from logging import getLogger
+from typing import Optional
 
 from airas.utils.api_client.github_client import GithubClient
 
 logger = getLogger(__name__)
 
-
-_WORKFLOW_FILE = "run_experiment.yml"
 _POLL_INTERVAL_SEC = 10
 _TIMEOUT_SEC = 600
 
 
-def _count_github_actions_workflow_runs(response: dict) -> int:
-    return len(response["workflow_runs"])
+@dataclass
+class WorkflowResult:
+    """Result of a workflow execution"""
+    run_id: Optional[int]
+    success: bool
+    error_message: Optional[str] = None
 
-def _parse_workflow_run_id(response: dict) -> int:
-    latest_id = 0
-    latest_timestamp = datetime.min.replace(tzinfo=timezone.utc)
-    for res in response["workflow_runs"]:
-        created_at = datetime.fromisoformat(res["created_at"].replace("Z", "+00:00"))
-        if created_at > latest_timestamp:
-            latest_timestamp = created_at
-            latest_id = res["id"]
-    return latest_id
 
-def _check_confirmation_of_execution_completion(response: dict) -> bool:
-    return all(res["status"] == "completed" for res in response["workflow_runs"])
+class WorkflowExecutor:
+    """Handles GitHub Actions workflow execution and monitoring"""
+    
+    def __init__(self, client: Optional[GithubClient] = None):
+        self.client = client or GithubClient()
+    
+    def execute_workflow(
+        self,
+        github_owner: str,
+        repository_name: str,
+        branch_name: str,
+        gpu_enabled: bool = False,
+    ) -> WorkflowResult:
+        """Execute a GitHub Actions workflow and wait for completion.
+        
+        Args:
+            github_owner: The owner/organization name of the GitHub repository
+            repository_name: The name of the GitHub repository
+            branch_name: The branch name to run the workflow on
+            gpu_enabled: Whether to use GPU-enabled workflow
+        
+        Returns:
+            WorkflowResult containing execution status and run ID
+        """
+        try:
+            # Step 1: Get baseline workflow count
+            baseline_count = self._get_baseline_workflow_count(
+                github_owner, repository_name, branch_name
+            )
+            if baseline_count is None:
+                return WorkflowResult(None, False, "Failed to get baseline workflow count")
+            
+            # Step 2: Dispatch workflow
+            workflow_file = self._get_workflow_file(gpu_enabled)
+            success = self._dispatch_workflow(
+                github_owner, repository_name, workflow_file, branch_name
+            )
+            if not success:
+                return WorkflowResult(None, False, "Failed to dispatch workflow")
+            
+            # Step 3: Wait for completion
+            run_id = self._wait_for_completion(
+                github_owner, repository_name, branch_name, baseline_count
+            )
+            if run_id is None:
+                return WorkflowResult(None, False, "Workflow execution timed out or failed")
+            
+            return WorkflowResult(run_id, True)
+            
+        except Exception as e:
+            logger.error(f"Workflow execution failed: {e}")
+            return WorkflowResult(None, False, str(e))
+    
+    def _get_workflow_file(self, gpu_enabled: bool) -> str:
+        """Get the appropriate workflow file name"""
+        return "run_experiment_on_gpu.yml" if gpu_enabled else "run_experiment_on_cpu.yml"
+    
+    def _get_baseline_workflow_count(
+        self, github_owner: str, repository_name: str, branch_name: str
+    ) -> Optional[int]:
+        """Get the current number of workflow runs as baseline"""
+        try:
+            response = self.client.list_workflow_runs(github_owner, repository_name, branch_name)
+            if not response:
+                return None
+            count = len(response.get("workflow_runs", []))
+            logger.info(f"Baseline workflow count: {count}")
+            return count
+        except Exception as e:
+            logger.error(f"Failed to get baseline workflow count: {e}")
+            return None
+    
+    def _dispatch_workflow(
+        self,
+        github_owner: str,
+        repository_name: str,
+        workflow_file: str,
+        branch_name: str,
+    ) -> bool:
+        """Dispatch the workflow to GitHub Actions"""
+        try:
+            success = self.client.create_workflow_dispatch(
+                github_owner, repository_name, workflow_file, ref=branch_name
+            )
+            if success:
+                logger.info("Workflow dispatch sent successfully")
+                print(f"Check running workflows: https://github.com/{github_owner}/{repository_name}/actions")
+                return True
+            else:
+                logger.error("Workflow dispatch failed")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to dispatch workflow: {e}")
+            return False
+    
+    def _wait_for_completion(
+        self,
+        github_owner: str,
+        repository_name: str,
+        branch_name: str,
+        baseline_count: int,
+    ) -> Optional[int]:
+        """Wait for workflow completion and return the run ID"""
+        start_time = time.time()
+        
+        while True:
+            # Check timeout
+            if time.time() - start_time > _TIMEOUT_SEC:
+                logger.error("Workflow execution timed out")
+                return None
+            
+            # Get current workflow status
+            response = self._get_workflow_runs(github_owner, repository_name, branch_name)
+            if not response:
+                time.sleep(_POLL_INTERVAL_SEC)
+                continue
+            
+            # Check if new workflow completed
+            run_id = self._check_for_new_completed_workflow(response, baseline_count)
+            if run_id:
+                logger.info(f"Workflow {run_id} completed successfully")
+                return run_id
+            
+            time.sleep(_POLL_INTERVAL_SEC)
+    
+    def _get_workflow_runs(
+        self, github_owner: str, repository_name: str, branch_name: str
+    ) -> Optional[dict]:
+        """Safely get workflow runs from GitHub API"""
+        try:
+            response = self.client.list_workflow_runs(github_owner, repository_name, branch_name)
+            return response if response else None
+        except Exception as e:
+            logger.warning(f"Error getting workflow runs: {e}")
+            return None
+    
+    def _check_for_new_completed_workflow(
+        self, response: dict, baseline_count: int
+    ) -> Optional[int]:
+        """Check if a new workflow has completed and return its run ID"""
+        workflow_runs = response.get("workflow_runs", [])
+        current_count = len(workflow_runs)
+        
+        logger.debug(f"Current workflow count: {current_count}, baseline: {baseline_count}")
+        
+        # Check if new workflow exists and is completed
+        if current_count > baseline_count and workflow_runs:
+            latest_run = workflow_runs[0]  # Most recent run
+            if self._is_workflow_completed(latest_run):
+                return latest_run.get("id")
+        
+        return None
+    
+    def _is_workflow_completed(self, workflow_run: dict) -> bool:
+        """Check if a workflow run is completed"""
+        status = workflow_run.get("status")
+        conclusion = workflow_run.get("conclusion")
+        
+        logger.debug(f"Workflow status: {status}, conclusion: {conclusion}")
+        
+        # Workflow is completed when status is "completed" and has a conclusion
+        return status == "completed" and conclusion is not None
 
+# Legacy function wrapper for backward compatibility
 def execute_github_actions_workflow(
     github_owner: str, 
     repository_name: str, 
-    branch_name: str, 
-    client: GithubClient | None = None, 
-) -> int | None:
-    client = client or GithubClient()
-
-    try:
-        response_before_execution = client.list_workflow_runs(
-            github_owner, repository_name, branch_name
-        )
+    branch_name: str,
+    experiment_iteration: int,
+    gpu_enabled: bool = False,
+    client: Optional[GithubClient] = None, 
+) -> tuple[bool, int]:
+    """Execute a GitHub Actions workflow and wait for completion.
+    
+    This function dispatches a workflow on GitHub Actions and monitors its execution
+    until completion. It supports both CPU and GPU-enabled workflows based on the
+    gpu_enabled parameter.
+    
+    Args:
+        github_owner: The owner/organization name of the GitHub repository
+        repository_name: The name of the GitHub repository
+        branch_name: The branch name to run the workflow on
+        gpu_enabled: Whether to use GPU-enabled workflow. Defaults to False
+        client: GitHub API client instance. If None, a new one will be created
+    
+    Returns:
+        True if execution completed successfully, False otherwise
         
-        num_workflow_runs_before_execution = _count_github_actions_workflow_runs(response_before_execution)
-        logger.info(f"Number of workflow runs before execution:{num_workflow_runs_before_execution}")
+    Example:
+        >>> result = execute_github_actions_workflow(
+        ...     github_owner="example-org",
+        ...     repository_name="my-repo",
+        ...     branch_name="main",
+        ...     gpu_enabled=True
+        ... )
+        >>> print(f"Workflow execution successful: {result}")
+    """
+    executor = WorkflowExecutor(client)
+    result = executor.execute_workflow(github_owner, repository_name, branch_name, gpu_enabled)
+    return result.success, experiment_iteration + 1
 
-        ok_dispatch = client.create_workflow_dispatch(
-            github_owner,
-            repository_name,
-            _WORKFLOW_FILE, 
-            ref=branch_name, 
-        )
-        if not ok_dispatch:
-            raise RuntimeError("Failed to dispatch workflow")
-        logger.info("Workflow dispatch sent.")
-        print(f"Check running workflows: https://github.com/{github_owner}/{repository_name}/actions")
 
-        start = time.time()
-        while True:
-            response_after_execution = client.list_workflow_runs(
-                github_owner, repository_name, branch_name
-            )
-            if (
-                _count_github_actions_workflow_runs(response_after_execution) == num_workflow_runs_before_execution + 1 
-                and _check_confirmation_of_execution_completion(response_after_execution)
-            ):
-                run_id = _parse_workflow_run_id(response_after_execution)
-                logger.info(f"Workflow {run_id} completed")
-                return run_id
-            
-            if time.time() - start > _TIMEOUT_SEC:
-                raise TimeoutError("Workflow did not finish within timeout.")
-            
-            time.sleep(_POLL_INTERVAL_SEC)
-    except Exception as e:
-        logger.error(f"execute_github_actions_workflow failed: {e}")
-        return None
-
-if __name__ == "__main__":
-
-    github_owner = "auto-res2"
-    repository_name = "experiment_script_matsuzawa"
-    branch_name = "base-branch-retrievepaperfromquerysubgraph-20250507-121037"
-    result = execute_github_actions_workflow(github_owner, repository_name, branch_name)
+if __name__ == "__main__":    
+    github_owner = "fuyu-quant"
+    repository_name = "airas-temp"
+    branch_name = "main"
+    experiment_iteration = 1
+    result, experiment_iteration = execute_github_actions_workflow(
+        github_owner, 
+        repository_name, 
+        branch_name,
+        experiment_iteration
+    )
     print(f"result: {result}")
