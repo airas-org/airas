@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 import os
+import time
 from typing import Any
 
 from typing_extensions import TypedDict
@@ -56,6 +57,7 @@ def github_upload(
     file_path: str | None = ".research/research_history.json",
     extra_files: list[ExtraFileConfig] | None = None,
     commit_message: str = "Update history via github_upload",
+    wait_seconds: float = 3.0, 
     client: GithubClient | None = None,
 ) -> bool:
     if client is None:
@@ -80,14 +82,12 @@ def github_upload(
             client,
             commit_message=commit_message,
         )
-
+    if wait_seconds > 0:
+        time.sleep(wait_seconds)
     return ok_json and ok_assets
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Merge and upload research history and assets to GitHub."
-    )
     parser = argparse.ArgumentParser(description="github_download")
     parser.add_argument("github_owner", help="Your github owner")
     parser.add_argument("repository_name", help="Your repository name")
