@@ -1,6 +1,5 @@
 import argparse
 import json
-import time
 from datetime import datetime
 from typing import Any
 
@@ -19,17 +18,18 @@ from airas.utils.execution_timers import ExecutionTimeState, time_node
 class GithubUploadInputState(TypedDict):
     github_repository: str
     branch_name: str
-    research_file_path: str
     new_output: dict[str, Any]
-    extra_files: list[ExtraFileConfig] | None
+
 
 class GithubUploadHiddenState(TypedDict): 
     github_owner: str
     repository_name: str
     research_history: dict[str, Any]
 
+
 class GithubUploadOutputState(TypedDict):
     github_upload_success: bool
+
 
 class GithubUploadSubgraphState(
     GithubUploadInputState,
@@ -43,11 +43,15 @@ class GithubUploadSubgraph:
     def __init__(
         self, 
         subgraph_name: str, 
-        wait_seconds: float = 3.0,     
+        create_branch: bool = True, 
+        research_file_path: str = ".research/research_history.json", 
+        extra_files: list[ExtraFileConfig] | None = None,    
     ):
         check_api_key(llm_api_key_check=True)
         self.subgraph_name = subgraph_name
-        self.wait_seconds = wait_seconds
+        self.create_branch = create_branch
+        self.research_file_path = research_file_path
+        self.extra_files = extra_files
 
     def _init(self, state: GithubUploadSubgraphState) -> dict[str, Any]:
         github_repository = state["github_repository"]
@@ -56,6 +60,8 @@ class GithubUploadSubgraph:
             return {
                 "github_owner": github_owner,
                 "repository_name": repository_name,
+                "subgraph_name": self.subgraph_name,
+                "create_branch": self.create_branch,
             }
         else:
             raise ValueError("Invalid repository name format.")
@@ -66,7 +72,7 @@ class GithubUploadSubgraph:
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
-            file_path=state["research_file_path"], 
+            file_path=self.research_file_path, 
         )
         return {"research_history": research_history}
     
@@ -76,8 +82,6 @@ class GithubUploadSubgraph:
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
-            research_history=state["research_history"],
-            new_output=state["new_output"],
             subgraph_name=self.subgraph_name, 
         )
         return {"branch_name": new_branch}
@@ -99,12 +103,10 @@ class GithubUploadSubgraph:
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
             research_history=state["research_history"],
-            extra_files=state.get("extra_files"),
-            file_path=state["research_file_path"],
+            extra_files=self.extra_files,
+            file_path=self.research_file_path,
             commit_message=commit_message
         )
-        if success and self.wait_seconds > 0:
-            time.sleep(self.wait_seconds)
         return {"github_upload_success": success}
 
     def build_graph(self) -> CompiledGraph:
@@ -117,7 +119,14 @@ class GithubUploadSubgraph:
 
         sg.add_edge(START,             "init")
         sg.add_edge("init",            "github_download")
-        sg.add_edge("github_download", "prepare_branch")
+        sg.add_conditional_edges(
+            "github_download",
+            lambda st: "prepare_branch" if self.create_branch else "merge_history",
+            {
+                "prepare_branch": "prepare_branch", 
+                "merge_history": "merge_history"
+            },
+        )
         sg.add_edge("prepare_branch",  "merge_history")
         sg.add_edge("merge_history",   "github_upload")
         sg.add_edge("github_upload",   END)
@@ -136,25 +145,21 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="GithubUploadSubgraph")
     parser.add_argument("github_repository", help="Your GitHub repository")
     parser.add_argument("branch_name", help="Your branch name in your GitHub repository")
-    parser.add_argument(
-        "--research_file_path", 
-        help="Your branch name in your GitHub repository", 
-        default=".research/research_history.json"
-    )
+
     args = parser.parse_args()
 
-    subgraph = GithubUploadSubgraph(subgraph_name="retrieve_paper_from_query")
-
     new_output = {
-        "base_queries": "diffusion model"
+        "base_queries": "llm"
     }
 
-    initial_state = {
+    state = {
         "github_repository": args.github_repository, 
         "branch_name": args.branch_name,
-        "research_file_path": args.research_file_path,
         "new_output": new_output, 
     }
 
-    result = subgraph.run(initial_state)
+    result = GithubUploadSubgraph(
+        subgraph_name="retrieve_paper_from_query",
+        create_branch=True,
+    ).run(state)
     print(json.dumps(result, indent=2))

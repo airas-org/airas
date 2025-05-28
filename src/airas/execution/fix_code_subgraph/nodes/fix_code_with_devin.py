@@ -1,5 +1,7 @@
+from logging import getLogger
 from airas.utils.api_request_handler import fetch_api_data, retry_request
 
+logger = getLogger(__name__)
 
 def _request_revision_to_devin(
     headers, session_id: str, output_text_data: str, error_text_data: str
@@ -38,7 +40,10 @@ def fix_code_with_devin(
     session_id: str,
     output_text_data: str,
     error_text_data: str,
-    fix_iteration_count: int,
-) -> int:
-    _request_revision_to_devin(headers, session_id, output_text_data, error_text_data)
-    return fix_iteration_count + 1
+) -> bool:
+    try:
+        _request_revision_to_devin(headers, session_id, output_text_data, error_text_data)
+        return True
+    except Exception as e:
+        logger.error(f"Fix request to Devin failed: {e}")
+        return False
