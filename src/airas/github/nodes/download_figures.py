@@ -52,13 +52,13 @@ def _download_figures(
     repository_name: str, 
     branch_name: str, 
     blob_paths: list[str], 
-    tmp_dir: str, 
+    save_dir: str, 
     remote_dir: str, 
     client: GithubClient | None = None, 
 ) -> list[str]:
     client = client or GithubClient()
     downloaded: list[str] = []
-    os.makedirs(tmp_dir, exist_ok=True)
+    os.makedirs(save_dir, exist_ok=True)
 
     for path in blob_paths:
         try:
@@ -74,7 +74,7 @@ def _download_figures(
                 continue
 
             rel_path = os.path.relpath(path, remote_dir)
-            local_path = os.path.join(tmp_dir, rel_path)
+            local_path = os.path.join(save_dir, rel_path)
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
 
             with open(local_path, "wb") as fp:
@@ -117,8 +117,8 @@ def download_figures(
     github_owner: str,
     repository_name: str,
     branch_name: str,
-    tmp_dir: str,
-    remote_dir: str = ".research", 
+    remote_dir: str, 
+    save_dir: str,
     client: GithubClient | None = None,
 ) -> str | None:
     client = client or GithubClient()
@@ -139,13 +139,13 @@ def download_figures(
         repository_name=repository_name,
         branch_name=branch_name,
         blob_paths=blob_paths,
-        tmp_dir=tmp_dir,
+        save_dir=save_dir,
         remote_dir=remote_dir, 
         client=client, 
     )
     logger.info(f"Total figures downloaded: {len(downloaded_paths)}")
 
-    latest_dir = _find_latest_images_dir(downloaded_paths, tmp_dir)
+    latest_dir = _find_latest_images_dir(downloaded_paths, save_dir)
     if latest_dir is None:
         logger.exception("Failed to fetch figures from repository")
         return None 

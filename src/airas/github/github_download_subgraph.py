@@ -42,10 +42,12 @@ class GithubDownloadSubgraph:
     def __init__(
         self,
         tmp_dir: str, 
+        remote_dir: str = ".research", 
         research_file_path: str = ".research/research_history.json", 
     ):
         check_api_key(llm_api_key_check=True)
         self.tmp_dir = tmp_dir
+        self.remote_dir = remote_dir
         self.research_file_path = research_file_path
 
     def _init(self, state: GithubDownloadSubgraphState) -> dict[str, Any]:
@@ -82,7 +84,8 @@ class GithubDownloadSubgraph:
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
-            tmp_dir=self.tmp_dir,
+            remote_dir=self.remote_dir, 
+            save_dir=self.tmp_dir,
         )
         return {"figures_dir": figures_dir}
 
