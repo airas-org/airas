@@ -32,47 +32,49 @@ def execute_github_actions_workflow(
     github_owner: str, 
     repository_name: str, 
     branch_name: str, 
-    *, 
     client: GithubClient | None = None, 
-) -> int:
+) -> int | None:
     client = client or GithubClient()
 
-    response_before_execution = client.list_workflow_runs(
-        github_owner, repository_name, branch_name
-    )
-    
-    num_workflow_runs_before_execution = _count_github_actions_workflow_runs(response_before_execution)
-    logger.info(f"Number of workflow runs before execution:{num_workflow_runs_before_execution}")
-
-    ok_dispatch = client.create_workflow_dispatch(
-        github_owner,
-        repository_name,
-        _WORKFLOW_FILE, 
-        ref=branch_name, 
-    )
-    if not ok_dispatch:
-        raise RuntimeError("Failed to dispatch workflow")
-    logger.info("Workflow dispatch sent.")
-    print(f"Check running workflows: https://github.com/{github_owner}/{repository_name}/actions")
-
-    start = time.time()
-    while True:
-        response_after_execution = client.list_workflow_runs(
+    try:
+        response_before_execution = client.list_workflow_runs(
             github_owner, repository_name, branch_name
         )
-        if (
-            _count_github_actions_workflow_runs(response_after_execution) == num_workflow_runs_before_execution + 1 
-            and _check_confirmation_of_execution_completion(response_after_execution)
-        ):
-            run_id = _parse_workflow_run_id(response_after_execution)
-            logger.info(f"Workflow {run_id} completed")
-            return run_id
         
-        if time.time() - start > _TIMEOUT_SEC:
-            raise TimeoutError("Workflow did not finish within timeout.")
-        
-        time.sleep(_POLL_INTERVAL_SEC)
+        num_workflow_runs_before_execution = _count_github_actions_workflow_runs(response_before_execution)
+        logger.info(f"Number of workflow runs before execution:{num_workflow_runs_before_execution}")
 
+        ok_dispatch = client.create_workflow_dispatch(
+            github_owner,
+            repository_name,
+            _WORKFLOW_FILE, 
+            ref=branch_name, 
+        )
+        if not ok_dispatch:
+            raise RuntimeError("Failed to dispatch workflow")
+        logger.info("Workflow dispatch sent.")
+        print(f"Check running workflows: https://github.com/{github_owner}/{repository_name}/actions")
+
+        start = time.time()
+        while True:
+            response_after_execution = client.list_workflow_runs(
+                github_owner, repository_name, branch_name
+            )
+            if (
+                _count_github_actions_workflow_runs(response_after_execution) == num_workflow_runs_before_execution + 1 
+                and _check_confirmation_of_execution_completion(response_after_execution)
+            ):
+                run_id = _parse_workflow_run_id(response_after_execution)
+                logger.info(f"Workflow {run_id} completed")
+                return run_id
+            
+            if time.time() - start > _TIMEOUT_SEC:
+                raise TimeoutError("Workflow did not finish within timeout.")
+            
+            time.sleep(_POLL_INTERVAL_SEC)
+    except Exception as e:
+        logger.error(f"execute_github_actions_workflow failed: {e}")
+        return None
 
 if __name__ == "__main__":
 
