@@ -113,7 +113,7 @@ def _find_latest_images_dir(
     latest_dir = os.path.join(tmp_dir, f"iteration{latest_idx}", "images")
     return latest_dir
 
-def fetch_figures_from_repository(
+def download_figures(
     github_owner: str,
     repository_name: str,
     branch_name: str,
@@ -151,13 +151,3 @@ def fetch_figures_from_repository(
         return None 
     logger.info(f"Latest images dir: {latest_dir}")
     return latest_dir
-
-
-if __name__== "__main__":
-    latest_dir = fetch_figures_from_repository(
-        github_owner="auto-res2", 
-        repository_name="experiment_script_matsuzawa", 
-        branch_name="base-branch", 
-        tmp_dir="/workspaces/airas/tmp", 
-    )
-    print(f"latest_dir: {latest_dir}")
