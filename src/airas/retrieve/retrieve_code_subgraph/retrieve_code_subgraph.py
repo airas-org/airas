@@ -16,6 +16,7 @@ from airas.retrieve.retrieve_code_subgraph.prompt.extract_experimental_info_prom
     extract_experimental_info_prompt,
 )
 from airas.typing.paper import CandidatePaperInfo
+from airas.utils.api_client.llm_facade_client import LLM_MODEL
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
@@ -49,8 +50,12 @@ class RetrieveCodeState(
 
 
 class RetrieveCodeSubgraph:
-    def __init__(self):
+    def __init__(
+        self, 
+        llm_name: LLM_MODEL = "gemini-2.0-flash-001", 
+    ):
         check_api_key(llm_api_key_check=True)
+        self.llm_name = llm_name
 
     @time_node("retrieve_code_subgraph", "retrieve_repository_contents")
     def _retrieve_repository_contents(self, state: RetrieveCodeState) -> dict:
@@ -70,7 +75,7 @@ class RetrieveCodeSubgraph:
         
         else:
             extract_code, experimental_info = extract_experimental_info(
-                llm_name="gemini-2.0-flash-001",
+                llm_name=self.llm_name,
                 method_text=state["base_method_text"],
                 repository_content_str=state["repository_content_str"],
                 prompt_template=extract_experimental_info_prompt, 

@@ -28,12 +28,12 @@ def convert_to_latex(
     llm_name: LLM_MODEL,
     paper_content: dict[str, str],
     prompt_template: str,
-    figure_relative_path: str = "../images",  
+    figures_dir: str = "images",  
 ) -> dict[str, str]:
     client = LLMFacadeClient(llm_name)
 
     data = {
-        "figure_relative_path": figure_relative_path,
+        "figures_dir": figures_dir,
         "sections": [
             {"name": section, "content": paper_content[section]}
             for section in paper_content.keys()
