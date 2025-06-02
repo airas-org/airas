@@ -23,11 +23,11 @@ class GithubDownloadHiddenState(TypedDict):
     github_owner: str
     repository_name: str
     cleanup_tmp: bool
-    figures_dir: str | None
 
 
 class GithubDownloadOutputState(TypedDict):
     research_history: dict[str, Any]
+    figures_dir: str | None
 
 
 class GithubDownloadSubgraphState(
@@ -41,13 +41,15 @@ class GithubDownloadSubgraphState(
 class GithubDownloadSubgraph:
     def __init__(
         self,
-        tmp_dir: str, 
-        remote_dir: str = ".research", 
+        use_figures: bool = False, 
+        from_remote_dir: str = ".research", 
+        to_tmp_dir: str | None = None, 
         research_file_path: str = ".research/research_history.json", 
     ):
         check_api_key(llm_api_key_check=True)
-        self.tmp_dir = tmp_dir
-        self.remote_dir = remote_dir
+        self.use_figures = use_figures
+        self.from_remote_dir = from_remote_dir
+        self.to_tmp_dir = to_tmp_dir
         self.research_file_path = research_file_path
 
     def _init(self, state: GithubDownloadSubgraphState) -> dict[str, Any]:
@@ -64,7 +66,7 @@ class GithubDownloadSubgraph:
     @gh_download_timed
     def _cleanup_tmp_dir(self, state: GithubDownloadSubgraphState) -> dict[str, bool]:
         cleanup_tmp = cleanup_tmp_dir(
-            tmp_dir=self.tmp_dir
+            tmp_dir=self.to_tmp_dir
         )
         return {"cleanup_tmp": cleanup_tmp}
 
@@ -76,7 +78,10 @@ class GithubDownloadSubgraph:
             branch_name=state["branch_name"],
             file_path=self.research_file_path,
         )
-        return {"research_history": research_history}
+        return {
+            "research_history": research_history, 
+            "figures_dir": None,     
+        }
 
     @gh_download_timed
     def _download_figures(self, state: GithubDownloadSubgraphState) -> dict[str, str]:
@@ -84,23 +89,29 @@ class GithubDownloadSubgraph:
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
-            remote_dir=self.remote_dir, 
-            save_dir=self.tmp_dir,
+            remote_dir=self.from_remote_dir, 
+            save_dir=self.to_tmp_dir,
         )
         return {"figures_dir": figures_dir}
 
     def build_graph(self) -> CompiledGraph:
         sg = StateGraph(GithubDownloadSubgraphState)
         sg.add_node("init", self._init)
-        sg.add_node("cleanup_tmp_dir", self._cleanup_tmp_dir)
         sg.add_node("github_download", self._github_download)
-        sg.add_node("download_figures", self._download_figures)
 
-        sg.add_edge(START, "init")
-        sg.add_edge("init", "cleanup_tmp_dir")
-        sg.add_edge("cleanup_tmp_dir", "github_download")
-        sg.add_edge("github_download", "download_figures")
-        sg.add_edge("download_figures", END)
+        if self.use_figures:
+            sg.add_node("cleanup_tmp_dir", self._cleanup_tmp_dir)
+            sg.add_node("download_figures", self._download_figures)
+
+            sg.add_edge(START, "init")
+            sg.add_edge("init", "cleanup_tmp_dir")
+            sg.add_edge("cleanup_tmp_dir", "github_download")
+            sg.add_edge("github_download", "download_figures")
+            sg.add_edge("download_figures", END)
+        else:
+            sg.add_edge(START, "init")
+            sg.add_edge("init", "github_download")
+            sg.add_edge("github_download", END)
         return sg.compile()
     
     def run(self, input: dict) -> dict:
@@ -110,7 +121,8 @@ class GithubDownloadSubgraph:
 
 
 if __name__ == "__main__":
-    tmp_dir: str = "/workspaces/airas/tmp"
+    from_remote_dir = ".research"
+    to_tmp_dir = "/workspaces/airas/tmp"
 
     parser = argparse.ArgumentParser(
         description="Download GitHub research history and print as JSON."
@@ -126,8 +138,11 @@ if __name__ == "__main__":
         "branch_name":        args.branch_name,
     }
 
-    result = GithubDownloadSubgraph(
-        tmp_dir=tmp_dir
-    ).run(state)
+    result = GithubDownloadSubgraph().run(state)
+    # result = GithubDownloadSubgraph(
+    #     use_figures=True, 
+    #     from_remote_dir=from_remote_dir, 
+    #     to_tmp_dir=to_tmp_dir
+    # ).run(state)
 
     print(json.dumps(result, indent=2))
