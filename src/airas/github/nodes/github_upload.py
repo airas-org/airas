@@ -43,6 +43,13 @@ def _commit_assets(
                     commit_message=commit_message,
                 )
                 success &= ok
+
+                if branch == "gh-pages" and target_path.endswith(".html"):
+                    relative_path = target_path.removeprefix("/").lstrip("/")
+                    print(
+                        f"Uploaded HTML available at: https://{github_owner}.github.io/{repository_name}/{relative_path}"
+                        " (It may take a few minutes to reflect on GitHub Pages)"
+                    )
             except Exception as e:
                 logger.warning(f"Asset upload failed: {local_path} ({e})")
                 success = False
@@ -72,6 +79,8 @@ def github_upload(
         file_content=json.dumps(research_history, ensure_ascii=False, indent=2).encode(),
         commit_message=commit_message,
     )
+    if ok_json:
+        print(f"Check here：https://github.com/{github_owner}/{repository_name}/blob/{branch_name}/{file_path}")
 
     ok_assets = True
     if extra_files:
