@@ -42,14 +42,14 @@ class GithubDownloadSubgraph:
     def __init__(
         self,
         use_figures: bool = False, 
-        from_remote_dir: str = ".research", 
-        to_tmp_dir: str | None = None, 
+        remote_dir: str = ".research", 
+        tmp_dir: str | None = None, 
         research_file_path: str = ".research/research_history.json", 
     ):
         check_api_key(llm_api_key_check=True)
         self.use_figures = use_figures
-        self.from_remote_dir = from_remote_dir
-        self.to_tmp_dir = to_tmp_dir
+        self.remote_dir = remote_dir
+        self.tmp_dir = tmp_dir
         self.research_file_path = research_file_path
 
     def _init(self, state: GithubDownloadSubgraphState) -> dict[str, Any]:
@@ -66,7 +66,7 @@ class GithubDownloadSubgraph:
     @gh_download_timed
     def _cleanup_tmp_dir(self, state: GithubDownloadSubgraphState) -> dict[str, bool]:
         cleanup_tmp = cleanup_tmp_dir(
-            tmp_dir=self.to_tmp_dir
+            tmp_dir=self.tmp_dir
         )
         return {"cleanup_tmp": cleanup_tmp}
 
@@ -89,8 +89,8 @@ class GithubDownloadSubgraph:
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
-            remote_dir=self.from_remote_dir, 
-            save_dir=self.to_tmp_dir,
+            remote_dir=self.remote_dir, 
+            save_dir=self.tmp_dir,
         )
         return {"figures_dir": figures_dir}
 
@@ -121,8 +121,8 @@ class GithubDownloadSubgraph:
 
 
 if __name__ == "__main__":
-    from_remote_dir = ".research"
-    to_tmp_dir = "/workspaces/airas/tmp"
+    remote_dir = ".research"
+    tmp_dir = "/workspaces/airas/tmp"
 
     parser = argparse.ArgumentParser(
         description="Download GitHub research history and print as JSON."
@@ -141,8 +141,8 @@ if __name__ == "__main__":
     result = GithubDownloadSubgraph().run(state)
     # result = GithubDownloadSubgraph(
     #     use_figures=True, 
-    #     from_remote_dir=from_remote_dir, 
-    #     to_tmp_dir=to_tmp_dir
+    #     remote_dir=remote_dir, 
+    #     tmp_dir=tmp_dir
     # ).run(state)
 
     print(json.dumps(result, indent=2))
