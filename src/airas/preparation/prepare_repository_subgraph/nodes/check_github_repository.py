@@ -1,6 +1,6 @@
 from logging import getLogger
 
-from airas.utils.api_client.github_client import GithubClient
+from airas.utils.api_client.github_client import GithubClient, GithubClientError
 
 logger = getLogger(__name__)
 
@@ -17,17 +17,12 @@ def check_github_repository(
     if client is None:
         client = GithubClient()
 
-    response = client.get_repository(
-        github_owner=github_owner,
-        repository_name=repository_name,
-    )
-    return response is not None
-
-
-if __name__ == "__main__":
-    # Example usage
-    github_owner = "auto-res2"
-    repository_name = "gpu-repository"
-    github_owner = "auto-res"
-    repository_name = "cpu-repository"
-    check_github_repository(github_owner, repository_name)
+    try:
+        response = client.get_repository(
+            github_owner=github_owner,
+            repository_name=repository_name,
+        )
+        return response is not None
+    except GithubClientError as e:
+        logger.warning(f"Repository check failed: {e}")
+        return False

@@ -43,6 +43,8 @@ GITHUB_RETRY = retry(
     ),
 )
 
+# TODO: Raise exceptions for all error cases; let the caller handle failures.
+# TODO: Use an Enum for HTTP status codes and extract retry logic into a mixin for reuse across API clients.
 
 class GithubClient(BaseHTTPClient):
     def __init__(
@@ -103,7 +105,7 @@ class GithubClient(BaseHTTPClient):
     @GITHUB_RETRY
     def get_repository(
         self, github_owner: str, repository_name: str
-    ) -> dict | None:
+    ) -> dict:
         # https://docs.github.com/ja/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
         # For public repositories, no access token is required.
         path = f"/repos/{github_owner}/{repository_name}"
@@ -114,10 +116,10 @@ class GithubClient(BaseHTTPClient):
                 return self._parser.parse(response, as_="json")
             case 404:
                 logger.warning(f"Repository not found: {path} (404).")
-                return None  # NOTE: Returning None is intentional; a missing branch is an expected case.
+                raise GithubClientFatalError(f"Resource not found (404): {path}")
             case _:
                 self._raise_for_status(response, path)
-                return None
+
 
     def _fetch_content(
         self, 
@@ -126,7 +128,7 @@ class GithubClient(BaseHTTPClient):
         file_path: str, 
         branch_name: str | None = None,  # NOTE: If None, the repository's default branch will be used.
         as_: Literal["json", "bytes"] = "json", 
-    ) -> dict | bytes | None:
+    ) -> dict | bytes:
         # https://docs.github.com/ja/rest/repos/contents?apiVersion=2022-11-28#get-repository-content
         path = f"/repos/{github_owner}/{repository_name}/contents/{file_path}"
 
@@ -146,8 +148,7 @@ class GithubClient(BaseHTTPClient):
                 logger.error(f"Access forbidden (403): {path}")
                 raise GithubClientFatalError(f"Access forbidden (403): {path}")
             case _:
-                self._raise_for_status(response, path)
-                return None       
+                self._raise_for_status(response, path)  
 
     @GITHUB_RETRY
     def get_repository_content(
@@ -157,7 +158,7 @@ class GithubClient(BaseHTTPClient):
         file_path: str, 
         branch_name: str | None = None, 
         as_: Literal["json", "bytes"] = "json"
-    ) -> dict | bytes | None:
+    ) -> dict | bytes:
         return self._fetch_content(
             github_owner=github_owner, 
             repository_name=repository_name, 
