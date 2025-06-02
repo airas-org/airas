@@ -61,7 +61,7 @@ def github_upload(
     repository_name: str,
     branch_name: str,
     research_history: dict[str, Any],
-    file_path: str | None = ".research/research_history.json",
+    file_path: str = ".research/research_history.json",
     extra_files: list[ExtraFileConfig] | None = None,
     commit_message: str = "Update history via github_upload",
     wait_seconds: float = 3.0, 
