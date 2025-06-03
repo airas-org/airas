@@ -104,17 +104,29 @@ class HtmlSubgraph:
         graph_builder.add_edge("render_html", END)
 
         return graph_builder.compile()
+    
+    def run(
+        self, 
+        input: HtmlSubgraphInputState, 
+        config: dict | None = None
+    ) -> HtmlSubgraphOutputState:
+        graph = self.build_graph()
+        result = graph.invoke(input, config=config or {})
+
+        output_keys = HtmlSubgraphOutputState.__annotations__.keys()
+        output = {k: result[k] for k in output_keys if k in result}
+        return output
 
 
 def main():
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/airas/data"
+    input = html_subgraph_input_data
 
-    html_subgraph = HtmlSubgraph(
+    result = HtmlSubgraph(
         llm_name=llm_name, 
         save_dir=save_dir, 
-    ).build_graph()
-    result = html_subgraph.invoke(html_subgraph_input_data)
+    ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")
 
 if __name__ == "__main__":

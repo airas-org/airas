@@ -81,17 +81,29 @@ class WriterSubgraph:
         graph_builder.add_edge("writeup", END)
 
         return graph_builder.compile()
+    
+    def run(
+        self, 
+        input: WriterSubgraphInputState, 
+        config: dict | None = None
+    ) -> WriterSubgraphOutputState:
+        graph = self.build_graph()
+        result = graph.invoke(input, config=config or {})
+
+        output_keys = WriterSubgraphOutputState.__annotations__.keys()
+        output = {k: result[k] for k in output_keys if k in result}
+        return output
 
 
 def main():
     llm_name = "o3-mini-2025-01-31"
     refine_round = 1
+    input = writer_subgraph_input_data
 
-    writer_subgraph = WriterSubgraph(
+    result = WriterSubgraph(
         llm_name=llm_name, 
         refine_round=refine_round, 
-    ).build_graph()
-    result = writer_subgraph.invoke(writer_subgraph_input_data)
+    ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")
 
 if __name__ == "__main__":

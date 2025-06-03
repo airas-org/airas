@@ -1,29 +1,27 @@
-import argparse
+
 import json
 import logging
-import os
+from typing import Literal
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
-from typing import Literal
 from typing_extensions import TypedDict
 
-
+from airas.execution.executor_subgraph.input_data import executor_subgraph_input_data
 from airas.execution.executor_subgraph.nodes.execute_github_actions_workflow import (
     execute_github_actions_workflow,
 )
 from airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts import (
     retrieve_github_actions_artifacts,
 )
-from airas.execution.executor_subgraph.input_data import executor_subgraph_input_data
-
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
-from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+executor_timed = lambda f: time_node("executor_subgraph")(f)  # noqa: E731
 
 
 class ExecutorSubgraphInputState(TypedDict):
@@ -62,7 +60,7 @@ class ExecutorSubgraph:
             github_personal_access_token_check=True,
         )
 
-    @time_node("executor_subgraph", "_execute_github_actions_workflow_node")
+    @executor_timed
     def _execute_github_actions_workflow_node(
         self, state: ExecutorSubgraphState
     ) -> dict:  
@@ -80,7 +78,7 @@ class ExecutorSubgraph:
             "executed_flag": executed_flag,
         }
 
-    @time_node("executor_subgraph", "_retrieve_github_actions_artifacts_node")
+    @executor_timed
     def _retrieve_github_actions_artifacts_node(
         self, state: ExecutorSubgraphState
     ) -> dict:
@@ -112,31 +110,26 @@ class ExecutorSubgraph:
         graph_builder.add_edge("retrieve_github_actions_artifacts_node", END)
         return graph_builder.compile()
 
+    def run(
+        self, 
+        input: ExecutorSubgraphInputState, 
+        config: dict | None = None
+    ) -> ExecutorSubgraphOutputState:
+        graph = self.build_graph()
+        result = graph.invoke(input, config=config or {})
 
-Executor = create_wrapped_subgraph(
-    ExecutorSubgraph,
-    ExecutorSubgraphInputState,
-    ExecutorSubgraphOutputState,
-)
+        output_keys = ExecutorSubgraphOutputState.__annotations__.keys()
+        output = {k: result[k] for k in output_keys if k in result}
+        return output
+
 
 def main():
     save_dir = "/workspaces/airas/data"
+    input = executor_subgraph_input_data
 
-    parser = argparse.ArgumentParser(
-        description="ExecutorSubgraph"
-    )
-    parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
-    )
-    args = parser.parse_args()
-
-    ex = Executor(
-        github_repository=args.github_repository,
-        branch_name=args.branch_name,
+    result = ExecutorSubgraph(
         save_dir=save_dir, 
-    )
-    result = ex.run()
+    ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")
 
 if __name__ == "__main__":

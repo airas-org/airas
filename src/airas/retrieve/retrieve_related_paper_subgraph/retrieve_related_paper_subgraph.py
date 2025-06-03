@@ -1,4 +1,4 @@
-import argparse
+
 import json
 import logging
 import operator
@@ -47,17 +47,21 @@ from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.select_best_paper_
 from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.summarize_paper_prompt import (
     summarize_paper_prompt,
 )
+from airas.retrieve.retrieve_related_paper_subgraph.input_data import (
+    retrieve_related_paper_subgraph_input_data,
+)
 from airas.retrieve.retrieve_related_paper_subgraph.prompt.generate_queries_prompt import (
     generate_queries_prompt,
 )
 from airas.typing.paper import CandidatePaperInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
-from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+retrieve_paper_from_query_timed = lambda f: time_node("retrieve_paper_from_query_subgraph")(f)  # noqa: E731
 
 
 class RetrieveRelatedPaperInputState(TypedDict):
@@ -138,7 +142,7 @@ class RetrieveRelatedPaperSubgraph:
             "candidate_add_papers_info_list": [],
         }
 
-    @time_node("retrieve_related_paper_subgraph", "_generate_queries_node")
+    @retrieve_paper_from_query_timed
     def _generate_queries_node(self, state: RetrieveRelatedPaperState) -> dict:
         add_queries = state.get("add_queries") or []
         all_queries = state["base_queries"] + add_queries + state["generated_queries"]
@@ -153,7 +157,7 @@ class RetrieveRelatedPaperSubgraph:
             "process_index": 0,
         }
 
-    @time_node("retrieve_related_paper_subgraph", "_web_scrape_node")
+    @retrieve_paper_from_query_timed
     def _web_scrape_node(self, state: RetrieveRelatedPaperState) -> dict:
         add_queries = state.get("add_queries") or []
         all_queries = state["base_queries"] + add_queries + state["generated_queries"]
@@ -163,7 +167,7 @@ class RetrieveRelatedPaperSubgraph:
         )
         return {"scraped_results": scraped_results}
 
-    @time_node("retrieve_related_paper_subgraph", "_extract_paper_title_node")
+    @retrieve_paper_from_query_timed
     def _extract_paper_title_node(self, state: RetrieveRelatedPaperState) -> dict:
         add_queries = state.get("add_queries") or []
         all_queries = state["base_queries"] + add_queries + state["generated_queries"]
@@ -181,7 +185,7 @@ class RetrieveRelatedPaperSubgraph:
             return "Regenerate queries"  # TODO: Add a state to loop count and define a "Stop" case
         return "Continue"
 
-    @time_node("retrieve_related_paper_subgraph", "_search_arxiv_node")
+    @retrieve_paper_from_query_timed
     def _search_arxiv_node(self, state: RetrieveRelatedPaperState) -> dict:
         extract_paper_titles = state["extracted_paper_titles"]
         if not extract_paper_titles:
@@ -201,7 +205,7 @@ class RetrieveRelatedPaperSubgraph:
             "search_paper_count": len(search_paper_list),
         }
 
-    @time_node("retrieve_related_paper_subgraph", "_retrieve_arxiv_text_from_url_node")
+    @retrieve_paper_from_query_timed
     def _retrieve_arxiv_text_from_url_node(self, state: RetrieveRelatedPaperState) -> dict:
         process_index = state["process_index"]
         logger.info(f"process_index: {process_index}")
@@ -212,7 +216,7 @@ class RetrieveRelatedPaperSubgraph:
         )
         return {"paper_full_text": paper_full_text}
 
-    @time_node("retrieve_related_paper_subgraph", "_extract_github_url_from_text_node")
+    @retrieve_paper_from_query_timed
     def _extract_github_url_from_text_node(self, state: RetrieveRelatedPaperState) -> dict:
         paper_full_text = state["paper_full_text"]
         process_index = state["process_index"]
@@ -235,7 +239,7 @@ class RetrieveRelatedPaperSubgraph:
         else:
             return "Generate paper summary"
 
-    @time_node("retrieve_related_paper_subgraph", "_summarize_paper_node")
+    @retrieve_paper_from_query_timed
     def _summarize_paper_node(self, state: RetrieveRelatedPaperState) -> dict:
         paper_full_text = state["paper_full_text"]
         (
@@ -280,7 +284,7 @@ class RetrieveRelatedPaperSubgraph:
             return "Next paper"
         return "All complete"
 
-    @time_node("retrieve_related_paper_subgraph", "_select_best_paper_node")
+    @retrieve_paper_from_query_timed
     def _select_best_paper_node(self, state: RetrieveRelatedPaperState) -> dict:
         candidate_papers_info_list = state["candidate_add_papers_info_list"]
         base_arxiv_id = state["selected_base_paper_info"]["arxiv_id"]
@@ -410,12 +414,18 @@ class RetrieveRelatedPaperSubgraph:
 
         return graph_builder.compile()
 
+    def run(
+        self, 
+        input: RetrieveRelatedPaperInputState, 
+        config: dict | None = None
+    ) -> RetrieveRelatedPaperOutputState:
+        config = {"recursion_limit": 100} if config is None else config
+        graph = self.build_graph()
+        result = graph.invoke(input, config=config or {})
 
-RetrieveRelatedPaper = create_wrapped_subgraph(
-    RetrieveRelatedPaperSubgraph,
-    RetrieveRelatedPaperInputState,
-    RetrieveRelatedPaperOutputState,
-)
+        output_keys = RetrieveRelatedPaperOutputState.__annotations__.keys()
+        output = {k: result[k] for k in output_keys if k in result}
+        return output
 
 
 def main():
@@ -426,33 +436,18 @@ def main():
         # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=title",
     ]
     add_paper_num = 1
-
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/airas/data"
+    input = retrieve_related_paper_subgraph_input_data
 
-    parser = argparse.ArgumentParser(
-        description="execute retrieve_related_paper_subgraph"
-    )
-    parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
-    )
-    args = parser.parse_args()
-
-    add_paper_retriever = RetrieveRelatedPaper(
-        github_repository=args.github_repository,
-        branch_name=args.branch_name,
+    result = RetrieveRelatedPaperSubgraph(
         llm_name=llm_name,
         save_dir=save_dir,
         scrape_urls=scrape_urls,
         add_paper_num=add_paper_num,
-    )
-
-    result = add_paper_retriever.run()
+    ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")
-    return
-
-
+    
 if __name__ == "__main__":
     try:
         main()

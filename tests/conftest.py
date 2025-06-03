@@ -28,6 +28,7 @@ def dummy_llm_facade_client():
 
 class DummyGithubClient:
     _next_return: Any = None
+    _raise_error: Exception | None = None
 
     def __init__(self):
         pass
@@ -37,9 +38,9 @@ class DummyGithubClient:
     ) -> Any:
         return self._next_return
 
-    def get_repository(
-        self, github_owner: str, repository_name: str
-    ) -> Any:
+    def get_repository(self, github_owner: str, repository_name: str) -> Any:
+        if self._raise_error:
+            raise self._raise_error
         return self._next_return
     
     def create_branch(
