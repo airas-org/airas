@@ -18,13 +18,13 @@ from airas.utils.execution_timers import ExecutionTimeState, time_node
 class GithubUploadInputState(TypedDict):
     github_repository: str
     branch_name: str
-    new_output: dict[str, Any]
 
 
 class GithubUploadHiddenState(TypedDict): 
     github_owner: str
     repository_name: str
     research_history: dict[str, Any]
+    new_output: dict[str, Any]
 
 
 class GithubUploadOutputState(TypedDict):
@@ -90,7 +90,7 @@ class GithubUploadSubgraph:
     def _merge_history_node(self, state: GithubUploadSubgraphState) -> dict[str, Any]:
         merged_history = merge_history(
             old=state["research_history"],
-            new=state["new_output"]
+            new=state["new_output"], 
         )
         return {"research_history": merged_history}
 
@@ -134,8 +134,18 @@ class GithubUploadSubgraph:
     
     def run(self, input: dict) -> dict:
         graph = self.build_graph()
-        result = graph.invoke(input)
-        return result
+
+        input_keys = GithubUploadInputState.__annotations__.keys()
+        state = {k: v for k, v in input.items() if k in input_keys}
+        state["new_output"] = {k: v for k, v in input.items() if k not in input_keys}
+        result = graph.invoke(state)
+        
+        new_output = result.get("new_output", {})
+        return {
+            **new_output, 
+            "github_repository": result["github_repository"],
+            "branch_name":       result["branch_name"]
+        }
 
 
 if __name__ == "__main__":
@@ -148,14 +158,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    new_output = {
-        "base_queries": "llm"
-    }
-
+    base_queries = "llm"
     state = {
         "github_repository": args.github_repository, 
         "branch_name": args.branch_name,
-        "new_output": new_output, 
+        "base_queries": base_queries, 
     }
 
     result = GithubUploadSubgraph(

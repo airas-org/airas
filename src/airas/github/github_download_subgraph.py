@@ -114,10 +114,20 @@ class GithubDownloadSubgraph:
             sg.add_edge("github_download", END)
         return sg.compile()
     
-    def run(self, input: dict) -> dict:
+    def run(self, input: dict, config: dict | None = None) -> dict:
         graph = self.build_graph()
-        result = graph.invoke(input)
-        return result
+        result = graph.invoke(input, config=config or {})
+
+        output_keys = GithubDownloadOutputState.__annotations__.keys()
+        output = {k: result[k] for k in output_keys if k in result and k != "research_history"}
+        research_history = result.get("research_history", {})
+
+        return {
+            **research_history,
+            **output,
+            "github_repository": result["github_repository"],
+            "branch_name":       result["branch_name"]
+        }
 
 
 if __name__ == "__main__":

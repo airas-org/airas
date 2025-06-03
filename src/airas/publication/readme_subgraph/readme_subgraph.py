@@ -69,10 +69,11 @@ class ReadmeSubgraph:
         config: dict | None = None
     ) -> ReadmeSubgraphOutputState:
         graph = self.build_graph()
-        full_result = graph.invoke(input, config=config or {})
+        result = graph.invoke(input, config=config or {})
+
         output_keys = ReadmeSubgraphOutputState.__annotations__.keys()
-        result = {k: full_result[k] for k in output_keys if k in full_result}
-        return result
+        output = {k: result[k] for k in output_keys if k in result}
+        return output
 
 
 def main():
