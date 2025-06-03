@@ -1,4 +1,3 @@
-import argparse
 import json
 import logging
 
@@ -6,6 +5,9 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
+from airas.create.create_experimental_design_subgraph.input_data import (
+    create_experimental_design_subgraph_input_data,
+)
 from airas.create.create_experimental_design_subgraph.nodes.generate_advantage_criteria import (
     generate_advantage_criteria,
 )
@@ -19,11 +21,12 @@ from airas.typing.paper import CandidatePaperInfo
 from airas.utils.api_client.llm_facade_client import LLM_MODEL
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
-from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+create_experimental_design_timed = lambda f: time_node("create_experimental_design_subgraph")(f)  # noqa: E731
 
 
 class CreateExperimentalDesignInputState(TypedDict):
@@ -60,7 +63,7 @@ class CreateExperimentalDesignSubgraph:
         check_api_key(llm_api_key_check=True)
         self.llm_name = llm_name
 
-    @time_node("create_experimental_subgraph", "_generate_advantage_criteria_node")
+    @create_experimental_design_timed
     def _generate_advantage_criteria_node(
         self, state: CreateExperimentalDesignState
     ) -> dict:
@@ -70,7 +73,7 @@ class CreateExperimentalDesignSubgraph:
         )
         return {"verification_policy": verification_policy}
 
-    @time_node("create_experimental_subgraph", "_generate_experiment_details_node")
+    @create_experimental_design_timed
     def _generate_experiment_details_node(
         self, state: CreateExperimentalDesignState
     ) -> dict:
@@ -82,7 +85,7 @@ class CreateExperimentalDesignSubgraph:
         )
         return {"experiment_details": experimet_details}
 
-    @time_node("create_experimental_subgraph", "_generate_experiment_code_node")
+    @create_experimental_design_timed
     def _generate_experiment_code_node(
         self, state: CreateExperimentalDesignState
     ) -> dict:
@@ -96,7 +99,6 @@ class CreateExperimentalDesignSubgraph:
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(CreateExperimentalDesignState)
-        # make nodes
         graph_builder.add_node(
             "generate_advantage_criteria_node", self._generate_advantage_criteria_node
         )
@@ -107,7 +109,6 @@ class CreateExperimentalDesignSubgraph:
             "generate_experiment_code_node", self._generate_experiment_code_node
         )
 
-        # make edges
         graph_builder.add_edge(START, "generate_advantage_criteria_node")
         graph_builder.add_edge(
             "generate_advantage_criteria_node", "generate_experiment_details_node"
@@ -119,31 +120,22 @@ class CreateExperimentalDesignSubgraph:
 
         return graph_builder.compile()
 
-
-CreateExperimentalDesign = create_wrapped_subgraph(
-    CreateExperimentalDesignSubgraph,
-    CreateExperimentalDesignInputState,
-    CreateExperimentalDesignOutputState,
-)
+    def run(
+        self, 
+        input: CreateExperimentalDesignInputState, 
+        config: dict | None = None
+    ) -> CreateExperimentalDesignOutputState:
+        graph = self.build_graph()
+        full_result = graph.invoke(input, config=config or {})
+        output_keys = CreateExperimentalDesignOutputState.__annotations__.keys()
+        result = {k: full_result[k] for k in output_keys if k in full_result}
+        return result
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Execute CreateExperimentalDesignSubgraph"
-    )
-    parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
-    )
-    args = parser.parse_args()
-
-    ced = CreateExperimentalDesign(
-        github_repository=args.github_repository,
-        branch_name=args.branch_name,
-    )
-    result = ced.run()
+    input = create_experimental_design_subgraph_input_data
+    result = CreateExperimentalDesignSubgraph().run(input)
     print(f"result: {json.dumps(result, indent=2)}")
-
 
 if __name__ == "__main__":
     try:

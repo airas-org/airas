@@ -1,4 +1,3 @@
-import argparse
 import json
 import logging
 
@@ -6,6 +5,9 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
+from airas.retrieve.retrieve_code_subgraph.input_data import (
+    retrieve_code_subgraph_input_data,
+)
 from airas.retrieve.retrieve_code_subgraph.node.extract_experimental_info import (
     extract_experimental_info,
 )
@@ -19,11 +21,12 @@ from airas.typing.paper import CandidatePaperInfo
 from airas.utils.api_client.llm_facade_client import LLM_MODEL
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
-from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+retrieve_code_timed = lambda f: time_node("retrieve_code_subgraph")(f)  # noqa: E731
 
 
 class RetrieveCodeInputState(TypedDict):
@@ -57,14 +60,14 @@ class RetrieveCodeSubgraph:
         check_api_key(llm_api_key_check=True)
         self.llm_name = llm_name
 
-    @time_node("retrieve_code_subgraph", "retrieve_repository_contents")
+    @retrieve_code_timed
     def _retrieve_repository_contents(self, state: RetrieveCodeState) -> dict:
         content_str = retrieve_repository_contents(github_url=state["base_github_url"])
         return {
             "repository_content_str": content_str,
         }
 
-    @time_node("retrieve_code_subgraph", "extract_experimental_info")
+    @retrieve_code_timed
     def _extract_experimental_info(self, state: RetrieveCodeState) -> dict:
         if state["repository_content_str"] == "":
             logger.warning("No repository content found. Skipping extraction.")
@@ -87,47 +90,36 @@ class RetrieveCodeSubgraph:
     
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(RetrieveCodeState)
-        # make nodes
         graph_builder.add_node(
             "retrieve_repository_contents", self._retrieve_repository_contents
         )
         graph_builder.add_node(
             "extract_experimental_info", self._extract_experimental_info
         )
-        # make edges
+
         graph_builder.add_edge(START, "retrieve_repository_contents")
         graph_builder.add_edge(
             "retrieve_repository_contents", "extract_experimental_info"
         )
         graph_builder.add_edge("extract_experimental_info", END)
-
         return graph_builder.compile()
 
-
-RetrieveCode = create_wrapped_subgraph(
-    RetrieveCodeSubgraph,
-    RetrieveCodeInputState,
-    RetrieveCodeOutputState,
-)
+    def run(
+        self, 
+        input: RetrieveCodeInputState, 
+        config: dict | None = None
+    ) -> RetrieveCodeOutputState:
+        graph = self.build_graph()
+        full_result = graph.invoke(input, config=config or {})
+        output_keys = RetrieveCodeOutputState.__annotations__.keys()
+        result = {k: full_result[k] for k in output_keys if k in full_result}
+        return result
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Execute RetrieveCodeSubgraph")
-    parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
-    )
-    args = parser.parse_args()
-    
-    rc = RetrieveCode(
-        github_repository=args.github_repository,
-        branch_name=args.branch_name,
-    )
-  
-    # result = rc.run(retrieve_code_subgraph_input_data)
-    result = rc.run()
+    input = retrieve_code_subgraph_input_data
+    result = RetrieveCodeSubgraph().run(input)
     print(f"result: {json.dumps(result, indent=2)}")
-
 
 if __name__ == "__main__":
     try:

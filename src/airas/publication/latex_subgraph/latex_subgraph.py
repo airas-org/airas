@@ -93,16 +93,27 @@ class LatexSubgraph:
 
         return graph_builder.compile()
 
+    def run(
+        self, 
+        input: LatexSubgraphInputState, 
+        config: dict | None = None
+    ) -> LatexSubgraphOutputState:
+        graph = self.build_graph()
+        full_result = graph.invoke(input, config=config or {})
+        output_keys = LatexSubgraphOutputState.__annotations__.keys()
+        result = {k: full_result[k] for k in output_keys if k in full_result}
+        return result
+
 
 def main():
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/airas/data"
+    input = latex_subgraph_input_data
 
-    latex_subgraph = LatexSubgraph(
+    result = LatexSubgraph(
         llm_name=llm_name, 
         save_dir=save_dir, 
-    ).build_graph()
-    result = latex_subgraph.invoke(latex_subgraph_input_data)
+    ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")
 
 if __name__ == "__main__":

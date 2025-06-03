@@ -1,4 +1,3 @@
-import argparse
 import json
 import logging
 
@@ -6,16 +5,20 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
+from airas.create.create_method_subgraph.input_data import (
+    create_method_subgraph_input_data,
+)
 from airas.create.create_method_subgraph.nodes.generator_node import generator_node
 from airas.typing.paper import CandidatePaperInfo
 from airas.utils.api_client.llm_facade_client import LLM_MODEL
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
-from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+create_method_timed = lambda f: time_node("create_method_subgraph")(f)  # noqa: E731
 
 
 class CreateMethodSubgraphInputState(TypedDict):
@@ -47,7 +50,7 @@ class CreateMethodSubgraph:
         self.llm_name = llm_name
         check_api_key(llm_api_key_check=True)
 
-    @time_node("create_method_subgraph", "_generator_node")
+    @create_method_timed
     def _generator_node(self, state: CreateMethodSubgraphState) -> dict:
         logger.info("---CreateMethodSubgraph---")
         new_method = generator_node(
@@ -59,40 +62,31 @@ class CreateMethodSubgraph:
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(CreateMethodSubgraphState)
-        # make nodes
         graph_builder.add_node("generator_node", self._generator_node)
-        # make edges
+        
         graph_builder.add_edge(START, "generator_node")
         graph_builder.add_edge("generator_node", END)
-
         return graph_builder.compile()
-
-
-CreateMethod = create_wrapped_subgraph(
-    CreateMethodSubgraph,
-    CreateMethodSubgraphInputState,
-    CreateMethodSubgraphOutputState,
-)
+    
+    def run(
+        self, 
+        input: CreateMethodSubgraphInputState, 
+        config: dict | None = None
+    ) -> CreateMethodSubgraphOutputState:
+        graph = self.build_graph()
+        full_result = graph.invoke(input, config=config or {})
+        output_keys = CreateMethodSubgraphOutputState.__annotations__.keys()
+        result = {k: full_result[k] for k in output_keys if k in full_result}
+        return result
 
 
 def main():
     llm_name = "o3-mini-2025-01-31"
-
-    parser = argparse.ArgumentParser(description="Execute CreateMethodSubgraph")
-    parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
-    )
-    args = parser.parse_args()
-
-    cm = CreateMethod(
-        github_repository=args.github_repository,
-        branch_name=args.branch_name,
+    input = create_method_subgraph_input_data
+    result = CreateMethodSubgraph(
         llm_name=llm_name,
-    )
-    result = cm.run()
+    ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")
-
 
 if __name__ == "__main__":
     try:

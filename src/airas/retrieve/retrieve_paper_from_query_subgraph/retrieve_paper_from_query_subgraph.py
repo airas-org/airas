@@ -1,4 +1,3 @@
-import argparse
 import json
 import logging
 import operator
@@ -10,6 +9,9 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
+from airas.retrieve.retrieve_paper_from_query_subgraph.input_data import (
+    retrieve_paper_from_query_subgraph_input_data,
+)
 from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_github_url_from_text import (
     extract_github_url_from_text,
 )
@@ -46,11 +48,12 @@ from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.summarize_paper_pr
 from airas.typing.paper import CandidatePaperInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
-from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+retrieve_paper_from_query_timed = lambda f: time_node("retrieve_paper_from_query_subgraph")(f)  # noqa: E731
 
 
 class RetrievePaperFromQueryInputState(TypedDict):
@@ -119,7 +122,7 @@ class RetrievePaperFromQuerySubgraph:
             "candidate_base_papers_info_list": [],
         }
 
-    @time_node("retrieve_paper_from_query_subgraph", "_web_scrape_node")
+    @retrieve_paper_from_query_timed
     def _web_scrape_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, list[str]]:
@@ -129,7 +132,7 @@ class RetrievePaperFromQuerySubgraph:
         )
         return {"scraped_results": scraped_results}
 
-    @time_node("retrieve_paper_from_query_subgraph", "_extract_paper_title_node")
+    @retrieve_paper_from_query_timed
     def _extract_paper_title_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, list[str]]:
@@ -147,7 +150,7 @@ class RetrievePaperFromQuerySubgraph:
             return "Stop"
         return "Continue"
 
-    @time_node("retrieve_paper_from_query_subgraph", "_search_arxiv_node")
+    @retrieve_paper_from_query_timed
     def _search_arxiv_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, list[dict[Any, Any]] | int]:
@@ -169,7 +172,7 @@ class RetrievePaperFromQuerySubgraph:
             "search_paper_count": len(search_paper_list),
         }
 
-    @time_node("retrieve_paper_from_query_subgraph", "_retrieve_arxiv_text_from_url_node")
+    @retrieve_paper_from_query_timed
     def _retrieve_arxiv_text_from_url_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, str]:
@@ -182,7 +185,7 @@ class RetrievePaperFromQuerySubgraph:
         )
         return {"paper_full_text": paper_full_text}
 
-    @time_node("retrieve_paper_from_query_subgraph", "_extract_github_url_from_text_node")
+    @retrieve_paper_from_query_timed
     def _extract_github_url_from_text_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, str | int]:
@@ -207,7 +210,7 @@ class RetrievePaperFromQuerySubgraph:
         else:
             return "Generate paper summary"
 
-    @time_node("retrieve_paper_from_query_subgraph", "_summarize_paper_node")
+    @retrieve_paper_from_query_timed
     def _summarize_paper_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, list[CandidatePaperInfo] | int]:
@@ -253,7 +256,7 @@ class RetrievePaperFromQuerySubgraph:
             return "Next paper"
         return "All complete"
 
-    @time_node("retrieve_paper_from_query_subgraph", "_select_best_paper_node")
+    @retrieve_paper_from_query_timed
     def _select_best_paper_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, str | CandidatePaperInfo | None]:
@@ -356,12 +359,18 @@ class RetrievePaperFromQuerySubgraph:
         graph_builder.add_edge("prepare_state", END)
         return graph_builder.compile()
 
-
-RetrievePaperFromQuery = create_wrapped_subgraph(
-    RetrievePaperFromQuerySubgraph,
-    RetrievePaperFromQueryInputState,
-    RetrievePaperFromQueryOutputState,
-)
+    def run(
+        self, 
+        input: RetrievePaperFromQueryInputState, 
+        config: dict | None = None
+    ) -> RetrievePaperFromQueryOutputState:
+        config = {"recursion_limit": 100} if config is None else config
+        
+        graph = self.build_graph()
+        full_result = graph.invoke(input, config=config or {})
+        output_keys = RetrievePaperFromQueryOutputState.__annotations__.keys()
+        result = {k: full_result[k] for k in output_keys if k in full_result}
+        return result
 
 
 def main():
@@ -373,27 +382,14 @@ def main():
     ]
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/airas/data"
+    input = retrieve_paper_from_query_subgraph_input_data
 
-    parser = argparse.ArgumentParser(
-        description="execute retrieve_paper_from_query_subgraph"
-    )
-    parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
-    )
-    args = parser.parse_args()
-
-    base_paper_retriever = RetrievePaperFromQuery(
-        github_repository=args.github_repository,
-        branch_name=args.branch_name,
+    result = RetrievePaperFromQuerySubgraph(
         llm_name=llm_name,
         save_dir=save_dir,
         scrape_urls=scrape_urls,
-    )
-
-    result = base_paper_retriever.run()
+    ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")
-
 
 if __name__ == "__main__":
     try:

@@ -11,17 +11,14 @@ from typing_extensions import TypedDict
 from airas.preparation.prepare_repository_subgraph.nodes.check_branch_existence import (
     check_branch_existence,
 )
-from airas.preparation.prepare_repository_subgraph.nodes.check_github_repository import (
-    check_github_repository,
+from airas.preparation.prepare_repository_subgraph.nodes.check_repository_from_template import (
+    check_repository_from_template,
 )
 from airas.preparation.prepare_repository_subgraph.nodes.create_branch import (
     create_branch,
 )
 from airas.preparation.prepare_repository_subgraph.nodes.create_repository_from_template import (
     create_repository_from_template,
-)
-from airas.preparation.prepare_repository_subgraph.nodes.is_repository_created_from_template import (
-    is_repository_created_from_template,
 )
 from airas.preparation.prepare_repository_subgraph.nodes.retrieve_main_branch_sha import (
     retrieve_main_branch_sha,
@@ -44,17 +41,22 @@ class PrepareRepositoryInputState(TypedDict):
 class PrepareRepositoryHiddenState(TypedDict):
     github_owner: str
     repository_name: str
-    repository_exists: bool
-    template_result: bool
     target_branch_sha: str
-    create_result: bool
     main_sha: str
+    repository_from_template: bool
+    branch_already_exists: bool
+    branch_created: bool
+
+class PrepareRepositoryOutputState(TypedDict):
+    repository_status: bool
+    branch_status: bool
 
 
 class PrepareRepositoryState(
-    ExecutionTimeState,
     PrepareRepositoryInputState,
     PrepareRepositoryHiddenState,
+    PrepareRepositoryOutputState, 
+    ExecutionTimeState,
 ):
     pass
 
@@ -71,7 +73,7 @@ class PrepareRepository:
             github_personal_access_token_check=True,
         )
 
-    def _init(self, state: PrepareRepositoryState) -> dict:
+    def _init(self, state: PrepareRepositoryState) -> dict[str, str]:
         github_repository = state["github_repository"]
         if "/" in github_repository:
             github_owner, repository_name = github_repository.split("/", 1)
@@ -81,52 +83,42 @@ class PrepareRepository:
             }
         else:
             raise ValueError("Invalid repository name format.")
-
+        
     @prepare_repository_timed
-    def _check_github_repository(self, state: PrepareRepositoryState) -> dict[str, bool]:
-        repository_exists = check_github_repository(
+    def _check_repository_from_template(self, state: PrepareRepositoryState) -> dict[str, Literal[True]]:
+        repository_from_template = check_repository_from_template(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
+            template_owner=self.template_owner,
+            template_repo=self.template_repo,
         )
-        return {"repository_exists": repository_exists}
+        return {"repository_from_template": repository_from_template}
 
     @prepare_repository_timed
     def _create_repository_from_template(self, state: PrepareRepositoryState) -> dict[str, bool]:
-        template_result = create_repository_from_template(
+        repository_from_template = create_repository_from_template(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             template_owner=self.template_owner,
             template_repo=self.template_repo,
         )
-        return {"template_result": template_result}
+        return {"repository_from_template": repository_from_template}
     
     @prepare_repository_timed
-    def _is_repository_created_from_template(self, state: PrepareRepositoryState) -> dict[str, Literal[True]]:
-        template_result = is_repository_created_from_template(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
-            template_owner=self.template_owner,
-            template_repo=self.template_repo,
-        )
-        if not template_result:
-            raise RuntimeError(
-                f"The repository `{state['github_owner']}/{state['repository_name']}` already exists "
-                f"but was not created from the specified template `{self.template_owner}/{self.template_repo}`."
-            )
-        return {"template_result": template_result}
-
-    @prepare_repository_timed
-    def _check_branch_existence(self, state: PrepareRepositoryState) -> dict:
+    def _check_branch_existence(self, state: PrepareRepositoryState) -> dict[str, str | bool]:
         time.sleep(5)
         target_branch_sha = check_branch_existence(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
         )
-        return {"target_branch_sha": target_branch_sha}
+        return {
+            "target_branch_sha": target_branch_sha, 
+            "branch_already_exists": bool(target_branch_sha), 
+        }
 
     @prepare_repository_timed
-    def _retrieve_main_branch_sha(self, state: PrepareRepositoryState) -> dict:
+    def _retrieve_main_branch_sha(self, state: PrepareRepositoryState) -> dict[str, str]:
         main_sha = retrieve_main_branch_sha(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
@@ -134,73 +126,86 @@ class PrepareRepository:
         return {"main_sha": main_sha}
 
     @prepare_repository_timed
-    def _create_branch(self, state: PrepareRepositoryState) -> dict:
-        create_result = create_branch(
+    def _create_branch(self, state: PrepareRepositoryState) -> dict[str, bool]:
+        branch_created = create_branch(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
             main_sha=state["main_sha"],
         )
-        return {"create_result": create_result}
+        return {"branch_created": branch_created}
+    
+    @prepare_repository_timed
+    def _finalize_state(self, state: PrepareRepositoryState) -> dict[str, bool]:
+        repository_status = state.get("repository_from_template", False)
+        branch_status = state.get("branch_already_exists", False) or state.get("branch_created", False)
+        return {
+            "repository_status": repository_status,
+            "branch_status": branch_status,
+        }
 
     def _should_create_from_template(self, state: PrepareRepositoryState) -> str:
-        if not state["repository_exists"]:
-            return "create_repository_from_template"
+        if not state["repository_from_template"]:
+            return "Create"
         else:
-            return "is_repository_created_from_template"
+            return "Skip"
 
     def _should_create_branch(self, state: PrepareRepositoryState) -> str:
-        if not state["target_branch_sha"]:
-            return "retrieve_main_branch_sha"
+        if not state["branch_already_exists"]:
+            return "Create"
         else:
-            return "end"
+            return "Skip"
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(PrepareRepositoryState)
-        # make nodes
+
         graph_builder.add_node("init", self._init)
-        graph_builder.add_node("check_github_repository", self._check_github_repository)
+        graph_builder.add_node("check_repository_from_template", self._check_repository_from_template)
         graph_builder.add_node("create_repository_from_template", self._create_repository_from_template)
-        graph_builder.add_node("is_repository_created_from_template", self._is_repository_created_from_template)
         graph_builder.add_node("check_branch_existence", self._check_branch_existence)
         graph_builder.add_node("retrieve_main_branch_sha", self._retrieve_main_branch_sha)
         graph_builder.add_node("create_branch", self._create_branch)
+        graph_builder.add_node("finalize_state", self._finalize_state)
 
-        # make edges
         graph_builder.add_edge(START, "init")
-        graph_builder.add_edge("init", "check_github_repository")
+        graph_builder.add_edge("init", "check_repository_from_template")
         graph_builder.add_conditional_edges(
-            "check_github_repository",
+            "check_repository_from_template",
             self._should_create_from_template,
             {
-                "create_repository_from_template": "create_repository_from_template",
-                "is_repository_created_from_template": "is_repository_created_from_template",
+                "Create": "create_repository_from_template",
+                "Skip": "check_branch_existence",
             },
         )
         graph_builder.add_edge("create_repository_from_template", "check_branch_existence")
-        graph_builder.add_edge("is_repository_created_from_template", "check_branch_existence")
         graph_builder.add_conditional_edges(
             "check_branch_existence",
             self._should_create_branch,
             {
-                "retrieve_main_branch_sha": "retrieve_main_branch_sha",
-                "end": END,
+                "Create": "retrieve_main_branch_sha",
+                "Skip": "finalize_state",
             },
         )
         graph_builder.add_edge("retrieve_main_branch_sha", "create_branch")
-        graph_builder.add_edge("create_branch", END)
-
+        graph_builder.add_edge("create_branch", "finalize_state")
+        graph_builder.add_edge("finalize_state", END)
         return graph_builder.compile()
 
-    def run(self, input: dict) -> dict:
+    def run(
+        self, 
+        input: PrepareRepositoryInputState, 
+        config: dict | None = None
+    ) -> PrepareRepositoryOutputState:
         graph = self.build_graph()
-        result = graph.invoke(input)
+        full_result = graph.invoke(input, config=config or {})
+        output_keys = PrepareRepositoryOutputState.__annotations__.keys()
+        result = {k: full_result[k] for k in output_keys if k in full_result}
         return result
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Execute PreparaRepository"
+        description="PreparaRepository"
     )
     parser.add_argument("github_repository", help="Your GitHub repository")
     parser.add_argument("branch_name", help="Your branch name in your GitHub repository")
