@@ -2,18 +2,23 @@ import json
 import logging
 import os
 import shutil
+from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
-from typing_extensions import TypedDict
+from typing_extensions import NotRequired, TypedDict
 
 from airas.publication.latex_subgraph.input_data import latex_subgraph_input_data
 from airas.publication.latex_subgraph.nodes.compile_to_pdf import LatexNode
 from airas.publication.latex_subgraph.nodes.convert_to_latex import (
     convert_to_latex,
 )
+from airas.publication.latex_subgraph.nodes.generate_bib import generate_bib
 from airas.publication.latex_subgraph.prompt.convert_to_latex_prompt import (
     convert_to_latex_prompt,
+)
+from airas.publication.latex_subgraph.prompt.generate_bib_prompt import (
+    generate_bib_prompt,
 )
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -25,12 +30,14 @@ latex_timed = lambda f: time_node("latex_subgraph")(f)  # noqa: E731
 
 
 class LatexSubgraphInputState(TypedDict):
-    paper_content: dict[str, str]
-    figures_dir: str | None
+    paper_content_with_placeholders: dict[str, str]
+    references: dict[str, dict[str, Any]]
+    figures_dir: NotRequired[str]
 
 
 class LatexSubgraphHiddenState(TypedDict):
     paper_tex_content: dict[str, str]
+    references_bib: dict[str, str]
 
 
 class LatexSubgraphOutputState(TypedDict):
@@ -63,11 +70,21 @@ class LatexSubgraph:
         check_api_key(llm_api_key_check=True)
 
     @latex_timed
+    def _generate_bib(self, state: LatexSubgraphState) -> dict:
+        references_bib = generate_bib(
+            llm_name=self.llm_name, 
+            prompt_template=generate_bib_prompt, 
+            references=state["references"]
+        )
+        return {"references_bib": references_bib}
+
+    @latex_timed
     def _convert_to_latex(self, state: LatexSubgraphState) -> dict:
         paper_tex_content = convert_to_latex(
             llm_name=self.llm_name,
-            paper_content=state["paper_content"],
             prompt_template=convert_to_latex_prompt,
+            paper_content_with_placeholders=state["paper_content_with_placeholders"],
+            references_bib=state["references_bib"], 
         )
         return {"paper_tex_content": paper_tex_content}
 
@@ -79,15 +96,18 @@ class LatexSubgraph:
             figures_dir=state["figures_dir"],
         ).compile_to_pdf(
             paper_tex_content=state["paper_tex_content"],
+            references_bib=state["references_bib"], 
         )
         return {"tex_text": tex_text}
         
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(LatexSubgraphState)
+        graph_builder.add_node("generate_bib", self._generate_bib)
         graph_builder.add_node("convert_to_latex", self._convert_to_latex)
         graph_builder.add_node("compile_to_pdf", self._compile_to_pdf)
 
-        graph_builder.add_edge(START, "convert_to_latex")
+        graph_builder.add_edge(START, "generate_bib")
+        graph_builder.add_edge("generate_bib", "convert_to_latex")
         graph_builder.add_edge("convert_to_latex", "compile_to_pdf")
         graph_builder.add_edge("compile_to_pdf", END)
 
@@ -115,7 +135,6 @@ def main():
         llm_name=llm_name, 
         save_dir=save_dir, 
     ).run(input)
-    print(f"result: {json.dumps(result, indent=2)}")
 
 if __name__ == "__main__":
     try:

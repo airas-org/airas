@@ -3,8 +3,8 @@ import os
 from logging import getLogger
 from typing import Any, Protocol, runtime_checkable
 
-import requests
-from requests.exceptions import (
+import requests  # type: ignore
+from requests.exceptions import (  # type: ignore
     ConnectionError,
     HTTPError,
     RequestException,
@@ -72,6 +72,17 @@ class OpenAlexClient(BaseHTTPClient):
         self._parser = parser or ResponseParser()
         self._key_qs = params_header
 
+    @staticmethod
+    def _build_year_filters(year: str | None) -> list[str]:
+        if not year:
+            return []
+        if "-" in year:
+            y_from, y_to = year.split("-", 1)
+            return [
+                f"from_publication_date:{y_from}-01-01",
+                f"to_publication_date:{y_to}-12-31",
+            ]
+        return [f"publication_year:{year}"]
 
     @staticmethod
     def _raise_for_status(resp: requests.Response, path: str) -> None:
@@ -82,48 +93,54 @@ class OpenAlexClient(BaseHTTPClient):
             raise OpenAlexClientRetryableError(f"HTTP {code}: {path}")
         raise OpenAlexClientFatalError(f"HTTP {code}: {path}")
 
-
     @OPENALEX_RETRY
-    def search_paper_titles(
+    def search_papers(
         self,
         query: str,
         *,
         year: str | None = None,
         per_page: int = 20,
         page: int = 1,
+        sort: str | None = "relevance_score:desc", 
+        fields: tuple[str, ...] | None = None,
         timeout: float = 30.0,
     ) -> dict[str, Any]:
         # https://docs.openalex.org/api-entities/works/search-works
+        DEFAULT_FIELDS = (
+            "id",
+            "doi",
+            "display_name",
+            "publication_year",
+            "publication_date",
+            "authorships",
+            "biblio",
+            "primary_location", 
+        )
+
+        fields = fields or DEFAULT_FIELDS
         per_page = max(1, min(per_page, 200))
 
         params: dict[str, Any] = {
             "page": page,
             "per-page": per_page,
-            "select": "id,display_name,publication_year",
+            "select": ",".join(fields),
+            "filter": ",".join(
+                ["default.search:" + query, *self._build_year_filters(year)]
+            ),
         }
-        filters: list[str] = [f"default.search:{query}"]
-        if year:
-            if "-" in year:
-                y_from, y_to = year.split("-", 1)
-                filters.append(f"from_publication_date:{y_from}-01-01")
-                filters.append(f"to_publication_date:{y_to}-12-31")
-            else:
-                filters.append(f"publication_year:{year}")
-
-        if filters:
-            params["filter"] = ",".join(filters)
-
+        if sort:
+            params["sort"] = sort
         if self._key_qs:
             params["api_key"] = os.getenv("OPENALEX_API_KEY")
 
         path = "works"
-        response = self.get(path=path, params=params, timeout=timeout)
-        self._raise_for_status(response, path)
-        return self._parser.parse(response, as_="json")
+        resp = self.get(path=path, params=params, timeout=timeout)
+        self._raise_for_status(resp, path)
+        return self._parser.parse(resp, as_="json")
 
 if __name__ == "__main__":
-    results = OpenAlexClient().search_paper_titles(
+    results = OpenAlexClient().search_papers(
         query="cnn",
-        year="2020-2025"
+        year="2020-2025", 
     )
     print(f"{results}")

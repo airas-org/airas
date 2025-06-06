@@ -108,6 +108,7 @@ class RetrieveRelatedPaperSubgraph:
         save_dir: str,
         scrape_urls: list,
         add_paper_num: int = 5,
+        n_query: int = 5, 
         arxiv_query_batch_size: int = 10,
         arxiv_num_retrieve_paper: int = 1,
         arxiv_period_days: int | None = None,
@@ -116,6 +117,7 @@ class RetrieveRelatedPaperSubgraph:
         self.save_dir = save_dir
         self.scrape_urls = scrape_urls
         self.add_paper_num = add_paper_num
+        self.n_query = n_query
 
         self.arxiv_query_batch_size = arxiv_query_batch_size
         self.arxiv_num_retrieve_paper = arxiv_num_retrieve_paper
@@ -149,8 +151,9 @@ class RetrieveRelatedPaperSubgraph:
         new_generated_queries = generate_queries(
             llm_name=self.llm_name,
             prompt_template=generate_queries_prompt,
-            selected_base_paper_info=state["selected_base_paper_info"],
-            queries=all_queries,
+            paper_info=state["selected_base_paper_info"],
+            n_queries=self.n_query, 
+            previous_queries=all_queries,
         )
         return {
             "generated_queries": state["generated_queries"] + new_generated_queries,

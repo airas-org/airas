@@ -2,10 +2,11 @@ import json
 import logging
 import os
 import shutil
+from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
-from typing_extensions import TypedDict
+from typing_extensions import NotRequired, TypedDict
 
 from airas.publication.html_subgraph.input_data import html_subgraph_input_data
 from airas.publication.html_subgraph.nodes.convert_pdf_to_png import convert_pdf_to_png
@@ -24,8 +25,9 @@ html_timed = lambda f: time_node("html_subgraph")(f)  # noqa: E731
 
 
 class HtmlSubgraphInputState(TypedDict):
-    paper_content: dict[str, str]
-    figures_dir: str | None
+    paper_content_with_placeholders: dict[str, str]
+    references: dict[str, dict[str, Any]]
+    figures_dir: NotRequired[str]
 
 
 class HtmlSubgraphHiddenState(TypedDict):
@@ -64,7 +66,7 @@ class HtmlSubgraph:
 
     @html_timed
     def _convert_pdf_to_png(self, state: HtmlSubgraphState) -> dict[str, bool]:
-        pdf_dir = state["figures_dir"]
+        pdf_dir = state.get("figures_dir")
         if pdf_dir is None:
             logger.info("No images available. Skipping PDF to PNG conversion.")
             return {"pdf_to_png": False}
@@ -79,7 +81,8 @@ class HtmlSubgraph:
     def _convert_to_html(self, state: HtmlSubgraphState) -> dict:
         paper_html_content = convert_to_html(
             llm_name=self.llm_name,
-            paper_content=state["paper_content"],
+            paper_content_with_placeholders=state["paper_content_with_placeholders"],
+            references=state["references"], 
             prompt_template=convert_to_html_prompt, 
         )
         return {"paper_html_content": paper_html_content}
@@ -127,7 +130,6 @@ def main():
         llm_name=llm_name, 
         save_dir=save_dir, 
     ).run(input)
-    print(f"result: {json.dumps(result, indent=2)}")
 
 if __name__ == "__main__":
     try:

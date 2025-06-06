@@ -43,7 +43,7 @@ class GithubDownloadSubgraph:
         self,
         use_figures: bool = False, 
         remote_dir: str = ".research", 
-        tmp_dir: str | None = None, 
+        tmp_dir: str | None = None,     # NOTE: This directory is cleaned up at the beginning of each execution
         research_file_path: str = ".research/research_history.json", 
     ):
         check_api_key(llm_api_key_check=True)

@@ -79,6 +79,16 @@ The value of \"latex_full_text\" must contain the complete LaTeX text."""
             f.write(tex_text)
         return tex_text
     
+    def _write_references_bib(self, references_bib: dict[str, str]):
+        bib_file_path = os.path.join(self.save_dir, "references.bib")
+        try:
+            with open(bib_file_path, "a", encoding="utf-8") as f:
+                for entry in references_bib.values():
+                    f.write("\n\n" + entry.strip())
+            logger.info(f"Wrote {len(references_bib)} BibTeX entries to {bib_file_path}")
+        except Exception as e:
+            logger.error(f"Failed to write references.bib: {e}")
+
     def _copy_figures_to_save_dir(self):
         if self.figures_dir is None:
             logger.info("No source figures directory provided (figures_dir is None). Skipping figure copy step.")
@@ -223,31 +233,39 @@ Return the complete corrected LaTeX text."""
 
     def _compile_latex(self, cwd: str):
         logger.info("GENERATING LATEX")
+        tex_file_path = self.latex_instance_file
+        tex_file_basename = os.path.splitext(os.path.basename(tex_file_path))[0]
+
+        # NOTE:  # If the .bbl file is not generated, it is highly likely that the first pdflatex command failed.
         commands = [
-            ["pdflatex", "-interaction=nonstopmode", self.latex_instance_file],
-            # ["bibtex", os.path.splitext(self.latex_instance_file)[0]],
-            ["pdflatex", "-interaction=nonstopmode", self.latex_instance_file],
-            ["pdflatex", "-interaction=nonstopmode", self.latex_instance_file],
+            ["pdflatex", "-interaction=nonstopmode", tex_file_path],
+            ["bibtex", tex_file_basename], 
+            ["pdflatex", "-interaction=nonstopmode", tex_file_path],
+            ["pdflatex", "-interaction=nonstopmode", tex_file_path],
         ]
 
         for command in commands:
-                result = subprocess.run(
-                    command,
-                    cwd=cwd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    timeout=self.timeout,
-                    check=True,
-                )
-                logger.info(f"Standard Output:\n{result.stdout}")
-                logger.info(f"Standard Error:\n{result.stderr}")
+            result = subprocess.run(
+                command,
+                cwd=cwd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=self.timeout,
+                check=True,
+            )
+            logger.info(f"Standard Output:\n{result.stdout}")
+            logger.info(f"Standard Error:\n{result.stderr}")
 
-
-    def compile_to_pdf(self, paper_tex_content: dict[str, str]) -> str:
+    def compile_to_pdf(
+        self, 
+        paper_tex_content: dict[str, str], 
+        references_bib: dict[str, str], 
+    ) -> str:
         self._copy_template()
         self._copy_figures_to_save_dir()
         tex_text = self._fill_template(paper_tex_content)
+        self._write_references_bib(references_bib)
 
         for i in range(self.max_iterations):
             logger.info(f"=== Iteration {i+1} ===")

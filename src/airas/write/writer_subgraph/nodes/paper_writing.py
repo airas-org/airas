@@ -1,25 +1,13 @@
 from logging import getLogger
 
 from jinja2 import Environment
-from pydantic import BaseModel
 
 from airas.utils.api_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
+from airas.typing.paper import PaperContent
 
 logger = getLogger(__name__)
 
 env = Environment()
-
-
-class PaperContent(BaseModel):
-    Title: str
-    Abstract: str
-    Introduction: str
-    Related_Work: str
-    Background: str
-    Method: str
-    Experimental_Setup: str
-    Results: str
-    Conclusions: str
 
 
 class WritingNode:

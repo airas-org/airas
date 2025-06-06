@@ -1,4 +1,6 @@
+import re
 from logging import getLogger
+from typing import Any
 
 from jinja2 import Environment
 from pydantic import BaseModel
@@ -12,10 +14,24 @@ class LLMOutput(BaseModel):
     generated_html_text: str
 
 
+def _replace_placeholders(
+    html_text: str,
+    references: dict[str, dict[str, Any]],
+) -> str:
+    for i, (placeholder, ref) in enumerate(references.items()):
+
+        link = ref.get("doi") or ref.get("id") or "#"
+        display_text = f"[{i + 1}]"
+        anchor = f'<a href="{link}" target="_blank">{display_text}</a>'
+        html_text = html_text.replace(placeholder, anchor)
+
+    return html_text
+    
 def convert_to_html(
     llm_name: LLM_MODEL,
-    paper_content: dict[str, str],
     prompt_template: str, 
+    paper_content_with_placeholders: dict[str, str],
+    references: dict[str, dict[str, Any]], 
     client: LLMFacadeClient | None = None, 
 ) -> str:
     if client is None:
@@ -23,8 +39,8 @@ def convert_to_html(
 
     data = {
         "sections": [
-            {"name": section, "content": paper_content[section]}
-            for section in paper_content.keys()
+            {"name": section, "content": paper_content_with_placeholders[section]}
+            for section in paper_content_with_placeholders.keys()
         ]
     }
 
@@ -37,12 +53,12 @@ def convert_to_html(
     )
     if output is None:
         raise ValueError("No response from the model in convert_to_html.")
-    if not isinstance(output, dict) or not output:
+    
+    if not isinstance(output, dict) :
         raise ValueError("Empty HTML content")
-    if "generated_html_text" in output:
-        generated_html_text = output["generated_html_text"]
-        if not generated_html_text:
-            raise ValueError("Empty HTML content")
-        return generated_html_text
-    else:
-        raise ValueError("Error: No response from the model in convert_to_html.")
+    
+    generated_html_text = output["generated_html_text"]
+    if not generated_html_text:
+        raise ValueError("Missing or empty 'generated_html_text' in output.")
+
+    return _replace_placeholders(generated_html_text, references)
