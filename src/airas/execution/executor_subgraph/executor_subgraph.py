@@ -85,10 +85,13 @@ class ExecutorSubgraph:
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
+            experiment_iteration=state["experiment_iteration"],
         )
         return {
             "output_text_data": output_text_data,
             "error_text_data": error_text_data,
+            # NOTE: We increment the experiment_iteration here to reflect the next iteration
+            "experiment_iteration": state["experiment_iteration"] + 1,
         }
 
     def build_graph(self) -> CompiledGraph:

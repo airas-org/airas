@@ -65,6 +65,7 @@ def retrieve_github_actions_results(
     github_owner: str,
     repository_name: str,
     branch_name: str,
+    experiment_iteration: int,
 ) -> tuple[str, str]:
     """
     Retrieve output.txt and error.txt files from .research/iteration1/ directory in the repository.
@@ -80,8 +81,8 @@ def retrieve_github_actions_results(
     """
     client = GithubClient()
 
-    output_file_path = ".research/iteration1/output.txt"
-    error_file_path = ".research/iteration1/error.txt"
+    output_file_path = f".research/iteration{experiment_iteration}/output.txt"
+    error_file_path = f".research/iteration{experiment_iteration}/error.txt"
 
     # Get both files using the helper function
     output_text_data = _get_single_file_content(
