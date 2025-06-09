@@ -11,6 +11,7 @@ def _request_create_session(
     branch_name: str,
     new_method: str,
     experiment_code: str,
+    experiment_iteration: int,
 ):
     url = "https://api.devin.ai/v1/sessions"
     data = {
@@ -36,6 +37,7 @@ Please follow the “Rules” section to create an experimental script to conduc
 ## Directory and Script Roles
 - .github/workflows/run_experiment.yml...Under no circumstances should the contents or folder structure of the “run_experiment.yml” file be altered. This rule must be observed.
 - .research/research_history.json...Under no circumstances should the contents or folder structure of the “research_history.json” file be altered. This rule must be observed.
+- .research/iteration{experiment_iteration}/images...Please save all images output from the experiment in this directory.
 - config...If you want to set parameters for running the experiment, place the file that completes the parameters under this directory.
 - data...This directory is used to store data used for model training and evaluation.
 - models...This directory is used to store pre-trained and trained models.
@@ -45,7 +47,7 @@ Please follow the “Rules” section to create an experimental script to conduc
     - preprocess.py...Script for preprocessing data. Implement the code necessary for data preprocessing.
     - main.py...Scripts for running the experiment, using train.py, evaluate.py, and preprocess.py to implement the entire process from model training to evaluation.
                 The script should be implemented in such a way that the results of the experiment can be seen in detail on the standard output.
-- requirements.txt...Please list the python packages required to run the model.        
+- requirements.txt...Please list the python packages required to run the model. 
 
 # New Method
 ----------------------------------------
@@ -66,7 +68,8 @@ def push_code_with_devin(
     branch_name: str,
     new_method: str,
     experiment_code: str,
-) -> tuple[str | None, str | None]:
+    experiment_iteration: int,
+) -> tuple[str, str]:
     repository_url = f"https://github.com/{github_owner}/{repository_name}"
     response = _request_create_session(
         headers=headers,
@@ -74,6 +77,7 @@ def push_code_with_devin(
         branch_name=branch_name,
         new_method=new_method,
         experiment_code=experiment_code,
+        experiment_iteration=experiment_iteration,
     )
     if response:
         logger.info("Successfully created Devin session.")
@@ -87,6 +91,6 @@ def push_code_with_devin(
     else:
         logger.error("Failed to create Devin session.")
         return (
-            None,
-            None,
+            "",
+            "",
         )

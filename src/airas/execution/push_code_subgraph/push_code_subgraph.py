@@ -6,7 +6,6 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
-from airas.execution.push_code_subgraph.input_data import push_code_subgraph_input_data
 from airas.execution.push_code_subgraph.nodes.check_devin_completion import (
     check_devin_completion,
 )
@@ -29,6 +28,7 @@ class PushCodeSubgraphInputState(TypedDict):
     github_owner: str
     repository_name: str
     branch_name: str
+    experiment_iteration: int
 
 
 class PushCodeSubgraphHiddenState(TypedDict):
@@ -62,23 +62,21 @@ class PushCodeSubgraph:
             devin_api_key_check=True,
             github_personal_access_token_check=True,
         )
-
+      
     @push_code_timed
     def _push_code_with_devin_node(self, state: PushCodeSubgraphState) -> dict[str, str]:
         logger.info("---PushCodeSubgraph---")
-        branch_name=state["branch_name"]
         experiment_session_id, experiment_devin_url = push_code_with_devin(
             headers=self.headers,
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
-            branch_name=branch_name,
+            branch_name=state["branch_name"],
             new_method=state["new_method"],
             experiment_code=state["experiment_code"],
+            experiment_iteration=state["experiment_iteration"],
         )
-
         return {
             "experiment_session_id": experiment_session_id,
-            "branch_name": branch_name,
             "experiment_devin_url": experiment_devin_url,
         }
 
@@ -107,17 +105,24 @@ class PushCodeSubgraph:
         self, 
         input: PushCodeSubgraphInputState, 
         config: dict | None = None
-    ) -> PushCodeSubgraphOutputState:
+    ) -> dict:
         graph = self.build_graph()
         result = graph.invoke(input, config=config or {})
 
-        output_keys = PushCodeSubgraphOutputState.__annotations__.keys()
-        output = {k: result[k] for k in output_keys if k in result}
-        return output
+        # output_keys = PushCodeSubgraphOutputState.__annotations__.keys()
+        # output = {k: result[k] for k in output_keys if k in result}
+        return result
 
 
 def main():
-    input = push_code_subgraph_input_data
+    input = PushCodeSubgraphInputState(
+        new_method="example_method",
+        experiment_code="print('Hello, world!')",
+        github_owner="example_owner",
+        repository_name="example_repo",
+        branch_name="main",
+        experiment_iteration=1,
+    )
     result = PushCodeSubgraph().run(input)
     print(f"result: {json.dumps(result, indent=2)}")
 

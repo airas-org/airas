@@ -110,13 +110,13 @@ class ExecutorSubgraph:
         self, 
         input: ExecutorSubgraphInputState, 
         config: dict | None = None
-    ) -> ExecutorSubgraphOutputState:
+    ) -> dict:
         graph = self.build_graph()
         result = graph.invoke(input, config=config or {})
 
-        output_keys = ExecutorSubgraphOutputState.__annotations__.keys()
-        output = {k: result[k] for k in output_keys if k in result}
-        return output
+        #output_keys = ExecutorSubgraphOutputState.__annotations__.keys()
+        #output = {k: result[k] for k in output_keys if k in result}
+        return result
 
 def main():
     parser = argparse.ArgumentParser(
@@ -134,13 +134,13 @@ def main():
         "repository_name": args.repository_name,
         "branch_name": args.branch_name,
         "gpu_enabled": False,
-        "experiment_iteration": 0,
+        "experiment_iteration": 1,
         "push_completion": True,  # Set to True to indicate a successful code push
     }
     result = ExecutorSubgraph().run(
-        state=state
+        input=state
     )
-    print(f"result: {json.dumps(result, indent=2)}")
+    print(f"result: {json.dumps(result, indent=2, ensure_ascii=False)}")
 
 if __name__ == "__main__":
     try:

@@ -116,7 +116,8 @@ def main():
         output_data, error_data = retrieve_github_actions_results(
             github_owner=github_owner,
             repository_name=repository_name,
-            branch_name=branch_name
+            branch_name=branch_name,
+            experiment_iteration=1,  # Example iteration
         )
         
         print("Successfully retrieved files!")

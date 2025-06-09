@@ -187,6 +187,7 @@ def execute_github_actions_workflow(
     github_owner: str, 
     repository_name: str, 
     branch_name: str,
+    experiment_iteration: int,
     gpu_enabled: bool = False,
     client: Optional[GithubClient] = None, 
 ) -> tuple[bool, int]:
@@ -217,7 +218,7 @@ def execute_github_actions_workflow(
     """
     executor = WorkflowExecutor(client)
     result = executor.execute_workflow(github_owner, repository_name, branch_name, gpu_enabled)
-    return result.success
+    return result.success, experiment_iteration + 1
 
 
 if __name__ == "__main__":    

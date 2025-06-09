@@ -108,13 +108,13 @@ class RetrieveCodeSubgraph:
         self, 
         input: RetrieveCodeInputState, 
         config: dict | None = None
-    ) -> RetrieveCodeOutputState:
+    ) -> dict:
         graph = self.build_graph()
         result = graph.invoke(input, config=config or {})
 
-        output_keys = RetrieveCodeOutputState.__annotations__.keys()
-        output = {k: result[k] for k in output_keys if k in result}
-        return output
+        # output_keys = RetrieveCodeOutputState.__annotations__.keys()
+        # output = {k: result[k] for k in output_keys if k in result}
+        return result
 
 
 def main():

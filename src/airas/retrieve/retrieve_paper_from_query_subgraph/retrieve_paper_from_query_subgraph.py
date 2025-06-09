@@ -363,14 +363,14 @@ class RetrievePaperFromQuerySubgraph:
         self, 
         input: RetrievePaperFromQueryInputState, 
         config: dict | None = None
-    ) -> RetrievePaperFromQueryOutputState:
+    ) -> dict:
         config = {"recursion_limit": 100} if config is None else config
         graph = self.build_graph()
         result = graph.invoke(input, config=config or {})
 
-        output_keys = RetrievePaperFromQueryOutputState.__annotations__.keys()
-        output = {k: result[k] for k in output_keys if k in result}
-        return output
+        # output_keys = RetrievePaperFromQueryOutputState.__annotations__.keys()
+        # output = {k: result[k] for k in output_keys if k in result}
+        return result
 
 
 def main():

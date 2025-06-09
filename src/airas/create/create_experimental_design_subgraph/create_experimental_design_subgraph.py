@@ -124,13 +124,13 @@ class CreateExperimentalDesignSubgraph:
         self, 
         input: CreateExperimentalDesignInputState, 
         config: dict | None = None
-    ) -> CreateExperimentalDesignOutputState:
+    ) -> dict:
         graph = self.build_graph()
         result = graph.invoke(input, config=config or {})
 
-        output_keys = CreateExperimentalDesignOutputState.__annotations__.keys()
-        output = {k: result[k] for k in output_keys if k in result}
-        return output
+        # output_keys = CreateExperimentalDesignOutputState.__annotations__.keys()
+        # output = {k: result[k] for k in output_keys if k in result}
+        return result
 
 
 def main():

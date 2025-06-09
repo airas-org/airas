@@ -76,9 +76,9 @@ class CreateMethodSubgraph:
         graph = self.build_graph()
         result = graph.invoke(input, config=config or {})
 
-        output_keys = CreateMethodSubgraphOutputState.__annotations__.keys()
-        output = {k: result[k] for k in output_keys if k in result}
-        return output
+        # output_keys = CreateMethodSubgraphOutputState.__annotations__.keys()
+        # output = {k: result[k] for k in output_keys if k in result}
+        return result
 
 
 def main():
