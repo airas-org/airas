@@ -41,22 +41,22 @@ Section: {{ section.name }}
 
 - All figures must be inserted using the following LaTeX format, using a `width` that reflects the filename:
     ```latex
-    \\includegraphics[width=<appropriate-width>]{ {{ figure_relative_path }}/filename.pdf }
+    \\includegraphics[width=\\linewidth]{ {{ figures_dir }}/filename.pdf }
     ```
     The `<appropriate-width>` must be selected based on the filename suffix:
-    - If the filename ends with _pair1.pdf or _pair2.pdf, use 0.48\\linewidth and place the figures side by side using subfigure blocks
+    - If the filename ends with _pair1.pdf or _pair2.pdf, use 0.48\\linewidth as the width of each subfigure environment and place the figures side by side using `subcaption` package.
     - Otherwise (default), use 0.7\\linewidth
 
-- When referring to file names, commands, or code snippets, do not use the \\texttt{} command or any monospaced font environments. 
-    - Instead, use plain text with single quotes (e.g., 'main.py', '--config'), and escape special characters such as underscores using `\\_` (e.g., 'config\\_file.yaml'). 
-
+- **Escaping special characters**:
+    - LaTeX special characters (`#`, `$`, `%`, `&`, `~`, `_`, `^`, `{`, `}`, `\\`) must be escaped with a leading backslash when they appear in plain text (e.g., `data\_set`, `C\&C`).
+    - Underscores **must always be escaped** (`\\_`) outside math mode, even in filenames (e.g., memory\_profiler), code-style words, itemize lists, or citation contexts.
+    
 - Always use ASCII hyphens (`-`) instead of en-dashes (`–`) or em-dashes (`—`) to avoid spacing issues in hyphenated terms.
-
 - Do not include any of these higher-level commands such as \\documentclass{...}, \\begin{document}, and \\end{document}.
     - Additionally, avoid including section-specific commands such as \\begin{abstract}, \\section{ {{ section }} }, or any other similar environment definitions.
+- Do not modify {{ citation_placeholders }}.
 
-- Be sure to use \\cite or \\citet where relevant, referring to the works provided in the file.
-    - **Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
+    
     
 **Output Format Example** (as JSON):
 ```json

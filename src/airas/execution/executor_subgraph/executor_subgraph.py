@@ -1,14 +1,14 @@
-import argparse
+
 import json
 import logging
-import os
+from typing import Literal
+import argparse
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
-from typing import Literal
 from typing_extensions import TypedDict
 
-
+#from airas.execution.executor_subgraph.input_data import executor_subgraph_input_data
 from airas.execution.executor_subgraph.nodes.execute_github_actions_workflow import (
     execute_github_actions_workflow,
 )
@@ -22,6 +22,8 @@ from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+executor_timed = lambda f: time_node("executor_subgraph")(f)  # noqa: E731
 
 
 class ExecutorSubgraphInputState(TypedDict):
@@ -58,7 +60,7 @@ class ExecutorSubgraph:
             github_personal_access_token_check=True,
         )
 
-    @time_node("executor_subgraph", "_execute_github_actions_workflow_node")
+    @executor_timed
     def _execute_github_actions_workflow_node(
         self, state: ExecutorSubgraphState
     ) -> dict:  
@@ -77,7 +79,7 @@ class ExecutorSubgraph:
             "experiment_iteration": experiment_iteration,
         }
 
-    @time_node("executor_subgraph", "_retrieve_github_actions_artifacts_node")
+    @executor_timed
     def _retrieve_github_actions_artifacts_node(
         self, state: ExecutorSubgraphState
     ) -> dict:
@@ -103,12 +105,18 @@ class ExecutorSubgraph:
         graph_builder.add_edge("execute_github_actions_workflow_node", "retrieve_github_actions_artifacts_node")
         graph_builder.add_edge("retrieve_github_actions_artifacts_node", END)
         return graph_builder.compile()
-    
-    def run(self, state: ExecutorSubgraphState) -> ExecutorSubgraphOutputState:
-        graph = self.build_graph()
-        result = graph.invoke(state)
-        return result
 
+    def run(
+        self, 
+        input: ExecutorSubgraphInputState, 
+        config: dict | None = None
+    ) -> ExecutorSubgraphOutputState:
+        graph = self.build_graph()
+        result = graph.invoke(input, config=config or {})
+
+        output_keys = ExecutorSubgraphOutputState.__annotations__.keys()
+        output = {k: result[k] for k in output_keys if k in result}
+        return output
 
 def main():
     parser = argparse.ArgumentParser(

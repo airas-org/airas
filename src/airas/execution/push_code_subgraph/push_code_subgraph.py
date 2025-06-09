@@ -1,4 +1,3 @@
-import argparse
 import json
 import logging
 import os
@@ -16,11 +15,12 @@ from airas.execution.push_code_subgraph.nodes.push_code_with_devin import (
 )
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
-from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+push_code_timed = lambda f: time_node("push_code_subgraph")(f)  # noqa: E731
 
 
 class PushCodeSubgraphInputState(TypedDict):
@@ -63,7 +63,7 @@ class PushCodeSubgraph:
             github_personal_access_token_check=True,
         )
 
-    @time_node("push_code_subgraph", "_push_code_with_devin_node")
+    @push_code_timed
     def _push_code_with_devin_node(self, state: PushCodeSubgraphState) -> dict[str, str]:
         logger.info("---PushCodeSubgraph---")
         branch_name=state["branch_name"]
@@ -82,7 +82,7 @@ class PushCodeSubgraph:
             "experiment_devin_url": experiment_devin_url,
         }
 
-    @time_node("push_code_subgraph", "_check_devin_completion_node")
+    @push_code_timed
     def _check_devin_completion_node(self, state: PushCodeSubgraphState) -> dict[str, bool]:
         result = check_devin_completion(
             headers=self.headers,
@@ -102,29 +102,23 @@ class PushCodeSubgraph:
         graph_builder.add_edge("push_code_with_devin_node", "check_devin_completion_node")
         graph_builder.add_edge("check_devin_completion_node", END)
         return graph_builder.compile()
+    
+    def run(
+        self, 
+        input: PushCodeSubgraphInputState, 
+        config: dict | None = None
+    ) -> PushCodeSubgraphOutputState:
+        graph = self.build_graph()
+        result = graph.invoke(input, config=config or {})
 
+        output_keys = PushCodeSubgraphOutputState.__annotations__.keys()
+        output = {k: result[k] for k in output_keys if k in result}
+        return output
 
-PushCode = create_wrapped_subgraph(
-    PushCodeSubgraph,
-    PushCodeSubgraphInputState,
-    PushCodeSubgraphOutputState,
-)
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="PushCodeSubgraph"
-    )
-    parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
-    )
-    args = parser.parse_args()
-
-    pc= PushCode(
-        github_repository=args.github_repository,
-        branch_name=args.branch_name,
-    )
-    result = pc.run()
+    input = push_code_subgraph_input_data
+    result = PushCodeSubgraph().run(input)
     print(f"result: {json.dumps(result, indent=2)}")
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@ def openalex_search_titles(
     *,
     year: str | None = None,
     max_results: int = 20,
+    fields: tuple[str] = ("id", "display_name", "publication_year"), 
     sleep_sec: float = 0.2,
     client: OpenAlexClient | None = None,
 ) -> list[str] | None:
@@ -33,11 +34,12 @@ def openalex_search_titles(
 
         while per_page > 0:
             try:
-                response = client.search_paper_titles(
+                response = client.search_papers(
                     query=q,
                     year=year,
                     per_page=per_page,
                     page=current_page,
+                    fields=fields, 
                 )
             except Exception as exc:
                 logger.warning(f"Search failed for '{q}' (page {current_page}): {exc}")

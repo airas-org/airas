@@ -1,4 +1,5 @@
 from typing_extensions import TypedDict
+from pydantic import BaseModel
 
 
 class CandidatePaperInfo(TypedDict):
@@ -16,3 +17,15 @@ class CandidatePaperInfo(TypedDict):
     experimental_setup: str
     limitations: str
     future_research_directions: str
+
+
+class PaperContent(BaseModel):
+    Title: str
+    Abstract: str
+    Introduction: str
+    Related_Work: str
+    Background: str
+    Method: str
+    Experimental_Setup: str
+    Results: str
+    Conclusions: str

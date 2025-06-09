@@ -19,7 +19,7 @@ corresponding_section: dict[str, list[str]] = {
 }
 
 
-def generate_note(state: dict, figures_dir: Optional[str] = None) -> str:
+def generate_note(state: dict, figures_dir: str | None = None) -> str:
     template = Template("""
     {% for section, items in sections.items() %}
     # {{ section }}

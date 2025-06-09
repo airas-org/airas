@@ -1,31 +1,31 @@
-import argparse
 import json
 import logging
 import os
+from typing import Literal
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
-from typing import Literal
 from typing_extensions import TypedDict
 
-from airas.execution.push_code_subgraph.nodes.check_devin_completion import (
-    check_devin_completion,
-)
-from airas.execution.fix_code_subgraph.nodes.fix_code_with_devin import (
-    fix_code_with_devin,
-)
-from airas.execution.fix_code_subgraph.nodes.llm_decide import llm_decide
 from airas.execution.executor_subgraph.prompt.llm_decide import (
     llm_decide_prompt,
 )
 from airas.execution.fix_code_subgraph.input_data import fix_code_subgraph_input_data
-from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
+from airas.execution.fix_code_subgraph.nodes.fix_code_with_devin import (
+    fix_code_with_devin,
+)
+from airas.execution.fix_code_subgraph.nodes.llm_decide import llm_decide
+from airas.execution.push_code_subgraph.nodes.check_devin_completion import (
+    check_devin_completion,
+)
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+fix_code_timed = lambda f: time_node("fix_code_subgraph")(f)  # noqa: E731
 
 
 class FixCodeSubgraphInputState(TypedDict):
@@ -68,7 +68,7 @@ class FixCodeSubgraph:
             github_personal_access_token_check=True,
         )
 
-    @time_node("fix_code_subgraph", "_llm_decide_node")
+    @fix_code_timed
     def _llm_decide_node(self, state: FixCodeSubgraphState) -> dict[str, bool]:
         if not state.get("executed_flag", True):
             raise ValueError("Invalid state: GitHub Actions workflow was not executed (expected executed_flag == True)")
@@ -83,7 +83,7 @@ class FixCodeSubgraph:
             "judgment_result": judgment_result,
         }
 
-    @time_node("fix_code_subgraph", "_fix_code_with_devin_node")
+    @fix_code_timed
     def _fix_code_with_devin_node(self, state: FixCodeSubgraphState) -> dict:
         success = fix_code_with_devin(
             headers=self.headers,
@@ -97,7 +97,7 @@ class FixCodeSubgraph:
             "executed_flag": False
         }
     
-    @time_node("fix_code_subgraph", "_check_devin_completion_node")
+    @fix_code_timed
     def _check_devin_completion_node(self, state: FixCodeSubgraphState) -> dict[str, bool]:
         result = check_devin_completion(
             headers=self.headers,
@@ -133,28 +133,22 @@ class FixCodeSubgraph:
         graph_builder.add_edge("check_devin_completion_node", END)
         return graph_builder.compile()
 
+    def run(
+        self, 
+        input: FixCodeSubgraphInputState, 
+        config: dict | None = None
+    ) -> FixCodeSubgraphOutputState:
+        graph = self.build_graph()
+        result = graph.invoke(input, config=config or {})
 
-FixCode = create_wrapped_subgraph(
-    FixCodeSubgraph,
-    FixCodeSubgraphInputState,
-    FixCodeSubgraphOutputState,
-)
+        output_keys = FixCodeSubgraphOutputState.__annotations__.keys()
+        output = {k: result[k] for k in output_keys if k in result}
+        return output
+
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="FixCodeSubgraph"
-    )
-    parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
-    )
-    args = parser.parse_args()
-
-    fc = FixCode(
-        github_repository=args.github_repository,
-        branch_name=args.branch_name,
-    )
-    result = fc.run()
+    input = fix_code_subgraph_input_data
+    result = FixCodeSubgraph().run(input)
     print(f"result: {json.dumps(result, indent=2)}")
 
 if __name__ == "__main__":

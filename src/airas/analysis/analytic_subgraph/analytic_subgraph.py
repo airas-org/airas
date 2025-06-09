@@ -1,4 +1,3 @@
-import argparse
 import json
 import logging
 
@@ -13,11 +12,13 @@ from airas.analysis.analytic_subgraph.nodes.analytic_node import analytic_node
 from airas.utils.api_client.llm_facade_client import LLM_MODEL
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
-from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+analytic_timed = lambda f: time_node("analytic_subgraph")(f)  # noqa: E731
+
 
 
 class AnalyticSubgraphInputState(TypedDict):
@@ -52,7 +53,7 @@ class AnalyticSubgraph:
         self.llm_name = llm_name
         check_api_key(llm_api_key_check=True)
 
-    @time_node("analytic_subgraph", "_analytic_node")
+    @analytic_timed
     def _analytic_node(self, state: AnalyticSubgraphState) -> dict:
         analysis_report = analytic_node(
             llm_name=self.llm_name,
@@ -65,38 +66,33 @@ class AnalyticSubgraph:
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(AnalyticSubgraphState)
-        # make nodes
         graph_builder.add_node("analytic_node", self._analytic_node)
-        # make edges
+
         graph_builder.add_edge(START, "analytic_node")
         graph_builder.add_edge("analytic_node", END)
-
         return graph_builder.compile()
+    
+    def run(
+        self, 
+        input: AnalyticSubgraphInputState, 
+        config: dict | None = None
+    ) -> AnalyticSubgraphOutputState:
+        graph = self.build_graph()
+        result = graph.invoke(input, config=config or {})
 
-
-Analytics = create_wrapped_subgraph(
-    AnalyticSubgraph,
-    AnalyticSubgraphInputState,
-    AnalyticSubgraphOutputState,
-)
+        output_keys = AnalyticSubgraphOutputState.__annotations__.keys()
+        output = {k: result[k] for k in output_keys if k in result}
+        return output
 
 
 def main():
     llm_name = "o3-mini-2025-01-31"
+    input = analytic_subgraph_input_data
 
-    parser = argparse.ArgumentParser(description="Execute AnalyticSubgraph")
-    parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
-    )
-    args = parser.parse_args()
-
-    an = Analytics(
-        github_repository=args.github_repository,
-        branch_name=args.branch_name,
+    result = AnalyticSubgraph(
         llm_name=llm_name,
-    )
-    result = an.run()
+    ).run(input)
+
     print(f"result: {json.dumps(result, indent=2)}")
 
 if __name__ == "__main__":

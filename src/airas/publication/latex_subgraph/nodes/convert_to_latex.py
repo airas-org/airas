@@ -1,43 +1,49 @@
+import re
 from logging import getLogger
 
 from jinja2 import Environment
-from pydantic import BaseModel
 
+from airas.typing.paper import PaperContent
 from airas.utils.api_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
 
 logger = getLogger(__name__)
 
 
-class PaperContent(BaseModel):
-    Title: str
-    Abstract: str
-    Introduction: str
-    Related_Work: str
-    Background: str
-    Method: str
-    Experimental_Setup: str
-    Results: str
-    Conclusions: str
-
-
 def _replace_underscores_in_keys(paper_dict: dict[str, str]) -> dict[str, str]:
     return {key.replace("_", " "): value for key, value in paper_dict.items()}
+
+def _replace_placeholders(
+    latex_text: str,
+    references_bib: dict[str, str],  # {"[[CITATION_1]]": "@article{smith2023, ... }"}
+) -> str:
+    for placeholder, bibtex_entry in references_bib.items():
+        match = re.match(r"@\w+\{([^,]+),", bibtex_entry)
+        if not match:
+            logger.warning(f"Could not extract citation key from BibTeX entry: {bibtex_entry}")
+            continue
+        entry_key = match.group(1)
+        citation = f"\\citep{{{entry_key}}}"
+        latex_text = latex_text.replace(placeholder, citation)
+    return latex_text
 
 
 def convert_to_latex(
     llm_name: LLM_MODEL,
-    paper_content: dict[str, str],
     prompt_template: str,
-    figure_relative_path: str = "../images",  
+    paper_content_with_placeholders: dict[str, str],
+    references_bib: dict[str, str], 
+    figures_dir: str = "images",
+    client: LLMFacadeClient | None = None, 
 ) -> dict[str, str]:
-    client = LLMFacadeClient(llm_name)
+    client = client or LLMFacadeClient(llm_name)
 
     data = {
-        "figure_relative_path": figure_relative_path,
+        "figures_dir": figures_dir,
         "sections": [
-            {"name": section, "content": paper_content[section]}
-            for section in paper_content.keys()
-        ]
+            {"name": section, "content": paper_content_with_placeholders[section]}
+            for section in paper_content_with_placeholders.keys()
+        ], 
+        "citation_placeholders": list(references_bib.keys()),  
     }
 
     env = Environment()
@@ -59,6 +65,37 @@ def convert_to_latex(
     if missing_fields:
         raise ValueError(f"Missing or empty fields in model response: {missing_fields}")
 
-    return _replace_underscores_in_keys(output)
+    output = _replace_underscores_in_keys(output)
+    output = {
+        section: _replace_placeholders(content, references_bib)
+        for section, content in output.items()
+    }
 
+    return output
+
+
+if __name__ == "__main__":
+    from airas.publication.latex_subgraph.prompt.convert_to_latex_prompt import (
+        convert_to_latex_prompt,
+    )
+    llm_name = "o3-mini-2025-01-31"
+    paper_content_with_placeholders = {
+        "Title": "Sample Title",
+        "Abstract": "This is a sample abstract.",
+        "Introduction": "This is a sample introduction including a citation [[CITATION_1]].",
+        "Related Work": "This is a sample related work", 
+        "Background": "Sample background section.",
+        "Method": "Sample method description.",
+        "Experimental Setup": "Sample experimental setup.",
+        "Results": "Sample results.",
+        "Conclusions": "Sample conclusion."
+    }
+    references_bib = {'[[CITATION_1]]': "@article{Boyd2005, author = {Stephen Boyd and V. Balakrishnan and {\\'E}ric F\\'eron and Laurent El Ghaoui}, title = {History of linear matrix inequalities in control theory}, year = {2005}, volume = {1}, pages = {31--34}, doi = {10.1109/acc.1994.751687} }\n"}
+    result = convert_to_latex(
+        llm_name=llm_name, 
+        prompt_template=convert_to_latex_prompt, 
+        references_bib=references_bib, 
+        paper_content_with_placeholders=paper_content_with_placeholders
+    )
+    print(f"result: {result}")
 

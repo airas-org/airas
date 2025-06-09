@@ -1,25 +1,13 @@
 from logging import getLogger
 
 from jinja2 import Environment
-from pydantic import BaseModel
 
 from airas.utils.api_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
+from airas.typing.paper import PaperContent
 
 logger = getLogger(__name__)
 
 env = Environment()
-
-
-class PaperContent(BaseModel):
-    Title: str
-    Abstract: str
-    Introduction: str
-    Related_Work: str
-    Background: str
-    Method: str
-    Experimental_Setup: str
-    Results: str
-    Conclusions: str
 
 
 class WritingNode:
@@ -135,6 +123,7 @@ Here is the context of the entire paper:
     - Avoid overly explanatory or repetitive descriptions that would be self-evident to readers familiar with standard machine learning notation.
     - Keep the experimental results (figures and tables) only in the `Results section`, and make sure that any captions are filled in. 
     - If image filenames (e.g., `figure1.pdf`) are provided in the context, refer to them explicitly in the text.
+    - Do not invent or assume the existence of any figures or visual content. If no figure is provided, you must not fabricate or imply the existence of one.
 
 - When referring to figures in the "Results" section:
     - Include a **caption with a descriptive title** (not just the filename).
