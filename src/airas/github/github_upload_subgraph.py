@@ -8,7 +8,7 @@ from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.github.nodes.github_download import github_download
-from airas.github.nodes.github_upload import ExtraFileConfig, github_upload
+from airas.github.nodes.github_upload import github_upload
 from airas.github.nodes.merge_history import merge_history
 from airas.github.nodes.prepare_branch import prepare_branch
 from airas.utils.check_api_key import check_api_key
@@ -44,14 +44,12 @@ class GithubUploadSubgraph:
         self, 
         subgraph_name: str, 
         create_branch: bool = True, 
-        research_file_path: str = ".research/research_history.json", 
-        extra_files: list[ExtraFileConfig] | None = None,    
+        research_file_path: str = ".research/research_history.json",  
     ):
         check_api_key(llm_api_key_check=True)
         self.subgraph_name = subgraph_name
         self.create_branch = create_branch
         self.research_file_path = research_file_path
-        self.extra_files = extra_files
 
     def _init(self, state: GithubUploadSubgraphState) -> dict[str, Any]:
         github_repository = state["github_repository"]
@@ -103,7 +101,6 @@ class GithubUploadSubgraph:
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
             research_history=state["research_history"],
-            extra_files=self.extra_files,
             file_path=self.research_file_path,
             commit_message=commit_message
         )
@@ -167,6 +164,6 @@ if __name__ == "__main__":
 
     result = GithubUploadSubgraph(
         subgraph_name="retrieve_paper_from_query",
-        create_branch=True,
+        create_branch=False,
     ).run(state)
     print(json.dumps(result, indent=2))

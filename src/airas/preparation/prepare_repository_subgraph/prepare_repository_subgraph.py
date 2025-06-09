@@ -201,6 +201,7 @@ class PrepareRepository:
 
         output_keys = PrepareRepositoryOutputState.__annotations__.keys()
         output = {k: result[k] for k in output_keys if k in result}
+        # print(実行完了ログ)
         return output
 
 
