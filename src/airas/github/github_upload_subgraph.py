@@ -21,7 +21,7 @@ class GithubUploadInputState(TypedDict):
 
 class GithubUploadHiddenState(TypedDict): 
     research_history: dict[str, Any]
-    new_output: dict[str, Any]
+    cumulative_output: dict[str, Any]
 
 
 class GithubUploadOutputState(TypedDict):
@@ -66,7 +66,7 @@ class GithubUploadSubgraph:
     def _merge_history_node(self, state: GithubUploadSubgraphState) -> dict[str, Any]:
         merged_history = merge_history(
             old=state["research_history"],
-            new=state["new_output"], 
+            new=state["cumulative_output"], 
             subgraph_name=state["subgraph_name"]
         )
         return {"research_history": merged_history}
@@ -101,7 +101,7 @@ class GithubUploadSubgraph:
         input_keys = GithubUploadInputState.__annotations__.keys()
         state = {k: v for k, v in input.items() if k in input_keys}
 
-        state["new_output"] = {k: v for k, v in input.items() if k not in input_keys}
+        state["cumulative_output"] = {k: v for k, v in input.items() if k not in input_keys}
         result = self.build_graph().invoke(state)
         return result
 
