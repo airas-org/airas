@@ -1,19 +1,21 @@
 
 import json
 import logging
-from typing import Any, Literal
+from typing import Literal, Any
+import argparse
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
-from airas.execution.executor_subgraph.input_data import executor_subgraph_input_data
+#from airas.execution.executor_subgraph.input_data import executor_subgraph_input_data
 from airas.execution.executor_subgraph.nodes.execute_github_actions_workflow import (
     execute_github_actions_workflow,
 )
-from airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts import (
-    retrieve_github_actions_artifacts,
+from airas.execution.executor_subgraph.nodes.retrieve_github_actions_results import (
+    retrieve_github_actions_results,
 )
+
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -25,14 +27,15 @@ executor_timed = lambda f: time_node("executor_subgraph")(f)  # noqa: E731
 
 
 class ExecutorSubgraphInputState(TypedDict):
-    github_owner: str
-    repository_name: str
+    github_repository: str
     branch_name: str
+    gpu_enabled: bool
+    experiment_iteration: int
     push_completion: Literal[True]
 
 
 class ExecutorSubgraphHiddenState(TypedDict):
-    workflow_run_id: int | None
+    pass
 
 
 class ExecutorSubgraphOutputState(TypedDict):
@@ -51,11 +54,7 @@ class ExecutorSubgraphState(
 
 
 class ExecutorSubgraph:
-    def __init__(
-        self,
-        save_dir: str,
-    ):
-        self.save_dir = save_dir
+    def __init__(self):
         check_api_key(
             github_personal_access_token_check=True,
         )
@@ -67,37 +66,30 @@ class ExecutorSubgraph:
         if not state.get("push_completion", True):
             raise ValueError("ExecutorSubgraph was called without a successful code push (expected push_completion == True)")
         
-        workflow_run_id = execute_github_actions_workflow(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
+        executed_flag = execute_github_actions_workflow(
+            github_repository=state["github_repository"],
             branch_name=state["branch_name"],
+            experiment_iteration=state["experiment_iteration"],
+            gpu_enabled=state["gpu_enabled"],
         )
-        executed_flag = workflow_run_id is not None
         return {
-            "workflow_run_id": workflow_run_id,
-            "executed_flag": executed_flag,
+            "executed_flag": executed_flag
         }
 
     @executor_timed
     def _retrieve_github_actions_artifacts_node(
         self, state: ExecutorSubgraphState
     ) -> dict:
-        if state["workflow_run_id"] is None:
-            logger.warning("Skipping artifact retrieval due to missing `workflow_run_id`.")
-            return {
-                "output_text_data": "",
-                "error_text_data": "",
-            }
-
-        output_text_data, error_text_data = retrieve_github_actions_artifacts(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
-            workflow_run_id=state["workflow_run_id"],
-            save_dir=self.save_dir,
+        output_text_data, error_text_data = retrieve_github_actions_results(
+            github_repository=state["github_repository"],
+            branch_name=state["branch_name"],
+            experiment_iteration=state["experiment_iteration"],
         )
         return {
             "output_text_data": output_text_data,
             "error_text_data": error_text_data,
+            # NOTE: We increment the experiment_iteration here to reflect the next iteration
+            "experiment_iteration": state["experiment_iteration"] + 1,
         }
 
     def build_graph(self) -> CompiledGraph:
@@ -132,13 +124,26 @@ class ExecutorSubgraph:
 
 
 def main():
-    save_dir = "/workspaces/airas/data"
-    input = executor_subgraph_input_data
+    parser = argparse.ArgumentParser(
+        description="ExecutorSubgraph"
+    )
+    parser.add_argument("github_owner", help="Your GitHub owner/organization name")
+    parser.add_argument("repository_name", help="Your GitHub repository")
+    parser.add_argument(
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
+    args = parser.parse_args()
 
-    result = ExecutorSubgraph(
-        save_dir=save_dir, 
-    ).run(input)
-    print(f"result: {json.dumps(result, indent=2)}")
+    state = {
+        "github_owner": args.github_owner,
+        "repository_name": args.repository_name,
+        "branch_name": args.branch_name,
+        "gpu_enabled": False,
+        "experiment_iteration": 1,
+        "push_completion": True,  # Set to True to indicate a successful code push
+    }
+    result = ExecutorSubgraph().run(state)
+    print(f"result: {json.dumps(result, indent=2, ensure_ascii=False)}")
 
 if __name__ == "__main__":
     try:

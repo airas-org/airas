@@ -430,7 +430,6 @@ class RetrieveRelatedPaperSubgraph:
         input_state = {k: state[k] for k in input_state_keys if k in state}
         result = self.build_graph().invoke(input_state, config=config or {})
         output_state = {k: result[k] for k in output_state_keys if k in result}
-
         cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
 
         return {
