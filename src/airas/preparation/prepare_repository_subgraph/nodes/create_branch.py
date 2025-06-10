@@ -28,6 +28,8 @@ def create_branch(
     )
     if not response:
         raise RuntimeError(f"Failed to create branch '{branch_name}' from '{main_sha}' in {github_owner}/{repository_name}")
+    
+    print(f"Branch '{branch_name}' created in repository '{github_owner}/{repository_name}'")
     return response
 
 

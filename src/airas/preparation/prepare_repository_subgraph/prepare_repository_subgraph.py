@@ -34,13 +34,9 @@ prepare_repository_timed = lambda f: time_node("prepare_repository")(f)  # noqa:
 
 
 class PrepareRepositoryInputState(TypedDict):
-    github_repository: str
-    branch_name: str
-
+    ...
 
 class PrepareRepositoryHiddenState(TypedDict):
-    github_owner: str
-    repository_name: str
     target_branch_sha: str
     main_sha: str
     repository_from_template: bool
@@ -64,31 +60,29 @@ class PrepareRepositoryState(
 class PrepareRepository:
     def __init__(
         self,
+        github_repository: str, 
+        branch_name: str, 
         template_owner: str = "airas-org",
         template_repo: str = "airas-template",
     ):
-        self.template_owner = template_owner
-        self.template_repo = template_repo
         check_api_key(
             github_personal_access_token_check=True,
         )
+        self.github_repository = github_repository
+        self.branch_name = branch_name
+        self.template_owner = template_owner
+        self.template_repo = template_repo
 
-    def _init(self, state: PrepareRepositoryState) -> dict[str, str]:
-        github_repository = state["github_repository"]
-        if "/" in github_repository:
-            github_owner, repository_name = github_repository.split("/", 1)
-            return {
-                "github_owner": github_owner,
-                "repository_name": repository_name,
-            }
+        if "/" in self.github_repository:
+            self.github_owner, self.repository_name = self.github_repository.split("/", 1)
         else:
             raise ValueError("Invalid repository name format.")
         
     @prepare_repository_timed
     def _check_repository_from_template(self, state: PrepareRepositoryState) -> dict[str, Literal[True]]:
         repository_from_template = check_repository_from_template(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
+            github_owner=self.github_owner,
+            repository_name=self.repository_name,
             template_owner=self.template_owner,
             template_repo=self.template_repo,
         )
@@ -97,8 +91,8 @@ class PrepareRepository:
     @prepare_repository_timed
     def _create_repository_from_template(self, state: PrepareRepositoryState) -> dict[str, bool]:
         repository_from_template = create_repository_from_template(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
+            github_owner=self.github_owner,
+            repository_name=self.repository_name,
             template_owner=self.template_owner,
             template_repo=self.template_repo,
         )
@@ -108,9 +102,9 @@ class PrepareRepository:
     def _check_branch_existence(self, state: PrepareRepositoryState) -> dict[str, str | bool]:
         time.sleep(5)
         target_branch_sha = check_branch_existence(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+            github_owner=self.github_owner,
+            repository_name=self.repository_name,
+            branch_name=self.branch_name,
         )
         return {
             "target_branch_sha": target_branch_sha, 
@@ -120,17 +114,17 @@ class PrepareRepository:
     @prepare_repository_timed
     def _retrieve_main_branch_sha(self, state: PrepareRepositoryState) -> dict[str, str]:
         main_sha = retrieve_main_branch_sha(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
+            github_owner=self.github_owner,
+            repository_name=self.repository_name,
         )
         return {"main_sha": main_sha}
 
     @prepare_repository_timed
     def _create_branch(self, state: PrepareRepositoryState) -> dict[str, bool]:
         branch_created = create_branch(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+            github_owner=self.github_owner,
+            repository_name=self.repository_name,
+            branch_name=self.branch_name,
             main_sha=state["main_sha"],
         )
         return {"branch_created": branch_created}
@@ -159,7 +153,6 @@ class PrepareRepository:
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(PrepareRepositoryState)
 
-        graph_builder.add_node("init", self._init)
         graph_builder.add_node("check_repository_from_template", self._check_repository_from_template)
         graph_builder.add_node("create_repository_from_template", self._create_repository_from_template)
         graph_builder.add_node("check_branch_existence", self._check_branch_existence)
@@ -167,8 +160,7 @@ class PrepareRepository:
         graph_builder.add_node("create_branch", self._create_branch)
         graph_builder.add_node("finalize_state", self._finalize_state)
 
-        graph_builder.add_edge(START, "init")
-        graph_builder.add_edge("init", "check_repository_from_template")
+        graph_builder.add_edge(START, "check_repository_from_template")
         graph_builder.add_conditional_edges(
             "check_repository_from_template",
             self._should_create_from_template,
@@ -193,15 +185,14 @@ class PrepareRepository:
 
     def run(
         self, 
-        input: PrepareRepositoryInputState, 
         config: dict | None = None
     ) -> PrepareRepositoryOutputState:
+        input = {"repository_status": False}
         graph = self.build_graph()
         result = graph.invoke(input, config=config or {})
 
         output_keys = PrepareRepositoryOutputState.__annotations__.keys()
         output = {k: result[k] for k in output_keys if k in result}
-        # print(実行完了ログ)
         return output
 
 
@@ -214,15 +205,10 @@ def main():
 
     args = parser.parse_args()
 
-    subgraph = PrepareRepository()
-
-    input = {
-        "github_repository": args.github_repository,
-        "branch_name":     args.branch_name,
-    }
-
-    result = subgraph.run(input)
-    print(f"result: {json.dumps(result, indent=2)}")
+    PrepareRepository(        
+        github_repository=args.github_repository,
+        branch_name=args.branch_name
+    ).run()
 
 if __name__ == "__main__":
     import sys

@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -70,15 +71,21 @@ class CreateMethodSubgraph:
     
     def run(
         self, 
-        input: CreateMethodSubgraphInputState, 
+        state: dict[str, Any], 
         config: dict | None = None
-    ) -> CreateMethodSubgraphOutputState:
-        graph = self.build_graph()
-        result = graph.invoke(input, config=config or {})
+    ) -> dict[str, Any]:
+        input_state_keys = CreateMethodSubgraphInputState.__annotations__.keys()
+        output_state_keys = CreateMethodSubgraphOutputState.__annotations__.keys()
 
-        output_keys = CreateMethodSubgraphOutputState.__annotations__.keys()
-        output = {k: result[k] for k in output_keys if k in result}
-        return output
+        input_state = {k: state[k] for k in input_state_keys if k in state}
+        result = self.build_graph().invoke(input_state, config=config or {})
+        output_state = {k: result[k] for k in output_state_keys if k in result}
+
+        return {
+            "subgraph_name": self.__class__.__name__,
+            **state,
+            **output_state, 
+        }
 
 
 def main():

@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Literal
+from typing import Any, Literal
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -135,15 +135,21 @@ class FixCodeSubgraph:
 
     def run(
         self, 
-        input: FixCodeSubgraphInputState, 
+        state: dict[str, Any], 
         config: dict | None = None
-    ) -> FixCodeSubgraphOutputState:
-        graph = self.build_graph()
-        result = graph.invoke(input, config=config or {})
+    ) -> dict[str, Any]:
+        input_state_keys = FixCodeSubgraphInputState.__annotations__.keys()
+        output_state_keys = FixCodeSubgraphOutputState.__annotations__.keys()
 
-        output_keys = FixCodeSubgraphOutputState.__annotations__.keys()
-        output = {k: result[k] for k in output_keys if k in result}
-        return output
+        input_state = {k: state[k] for k in input_state_keys if k in state}
+        result = self.build_graph().invoke(input_state, config=config or {})
+        output_state = {k: result[k] for k in output_state_keys if k in result}
+
+        return {
+            "subgraph_name": self.__class__.__name__,
+            **state,
+            **output_state, 
+        }
 
 
 def main():
