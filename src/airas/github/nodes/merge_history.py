@@ -21,22 +21,3 @@ def merge_history(
             ordered[k] = v
 
     return ordered
-
-
-if __name__ == "__main__":
-    old = {
-        "_order": ["Subgraph1", "Subgraph2"], 
-        "Subgraph1": {"a": 1}, 
-        "Subgraph2": {"x": 10, "conf": {"lr": 0.01, "epoch": 5}}
-    }
-
-    new = {
-        "conf": {"epoch": 10}, "metric": 0.93
-    }
-
-    result = merge_history(
-        old=old,
-        new=new, 
-        subgraph_name="Subgraph2"
-    )
-    print(f"result: {result}")
