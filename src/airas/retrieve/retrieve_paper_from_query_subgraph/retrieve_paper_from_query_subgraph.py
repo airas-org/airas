@@ -361,16 +361,21 @@ class RetrievePaperFromQuerySubgraph:
 
     def run(
         self, 
-        input: RetrievePaperFromQueryInputState, 
+        state: dict[str, Any], 
         config: dict | None = None
-    ) -> RetrievePaperFromQueryOutputState:
-        config = {"recursion_limit": 100} if config is None else config
-        graph = self.build_graph()
-        result = graph.invoke(input, config=config or {})
+    ) -> dict[str, Any]:
+        input_state_keys = RetrievePaperFromQueryInputState.__annotations__.keys()
+        output_state_keys = RetrievePaperFromQueryOutputState.__annotations__.keys()
 
-        output_keys = RetrievePaperFromQueryOutputState.__annotations__.keys()
-        output = {k: result[k] for k in output_keys if k in result}
-        return output
+        input_state = {k: state[k] for k in input_state_keys if k in state}
+        result = self.build_graph().invoke(input_state, config=config or {})
+        output_state = {k: result[k] for k in output_state_keys if k in result}
+
+        return {
+            "subgraph_name": self.__class__.__name__,
+            **state,
+            **output_state, 
+        }
 
 
 def main():
