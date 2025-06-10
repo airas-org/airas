@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -25,8 +26,7 @@ push_code_timed = lambda f: time_node("push_code_subgraph")(f)  # noqa: E731
 class PushCodeSubgraphInputState(TypedDict):
     new_method: str
     experiment_code: str
-    github_owner: str
-    repository_name: str
+    github_repository: str
     branch_name: str
     experiment_iteration: int
 
@@ -68,8 +68,7 @@ class PushCodeSubgraph:
         logger.info("---PushCodeSubgraph---")
         experiment_session_id, experiment_devin_url = push_code_with_devin(
             headers=self.headers,
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
+            github_repository=state["github_repository"],
             branch_name=state["branch_name"],
             new_method=state["new_method"],
             experiment_code=state["experiment_code"],
@@ -103,23 +102,30 @@ class PushCodeSubgraph:
     
     def run(
         self, 
-        input: PushCodeSubgraphInputState, 
+        state: dict[str, Any], 
         config: dict | None = None
-    ) -> dict:
-        graph = self.build_graph()
-        result = graph.invoke(input, config=config or {})
+    ) -> dict[str, Any]:
+        input_state_keys = PushCodeSubgraphInputState.__annotations__.keys()
+        output_state_keys = PushCodeSubgraphOutputState.__annotations__.keys()
 
-        # output_keys = PushCodeSubgraphOutputState.__annotations__.keys()
-        # output = {k: result[k] for k in output_keys if k in result}
-        return result
+        input_state = {k: state[k] for k in input_state_keys if k in state}
+        result = self.build_graph().invoke(input_state, config=config or {})
+        output_state = {k: result[k] for k in output_state_keys if k in result}
+
+        cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
+
+        return {
+            "subgraph_name": self.__class__.__name__,
+            **cleaned_state,
+            **output_state, 
+        }
 
 
 def main():
     input = PushCodeSubgraphInputState(
         new_method="example_method",
         experiment_code="print('Hello, world!')",
-        github_owner="example_owner",
-        repository_name="example_repo",
+        github_repository="fuyu-quant/airas-temp",
         branch_name="main",
         experiment_iteration=1,
     )

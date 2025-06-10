@@ -62,8 +62,7 @@ def _get_single_file_content(
 
 
 def retrieve_github_actions_results(
-    github_owner: str,
-    repository_name: str,
+    github_repository : str,
     branch_name: str,
     experiment_iteration: int,
 ) -> tuple[str, str]:
@@ -71,14 +70,14 @@ def retrieve_github_actions_results(
     Retrieve output.txt and error.txt files from .research/iteration1/ directory in the repository.
     
     Args:
-        github_owner: GitHub repository owner
-        repository_name: Repository name
+        github_repository: Full GitHub repository name in the format "owner/repository"
         branch_name: Branch name to retrieve files from
         client: GitHub client instance (optional)
         
     Returns:
         Tuple of (output_text_data, error_text_data)
     """
+    github_owner, repository_name = github_repository.split("/", 1)
     client = GithubClient()
 
     output_file_path = f".research/iteration{experiment_iteration}/output.txt"

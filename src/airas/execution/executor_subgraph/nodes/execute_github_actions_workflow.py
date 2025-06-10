@@ -30,6 +30,7 @@ class WorkflowExecutor:
         github_owner: str,
         repository_name: str,
         branch_name: str,
+        experiment_iteration: int,
         gpu_enabled: bool = False,
     ) -> WorkflowResult:
         """Execute a GitHub Actions workflow and wait for completion.
@@ -54,7 +55,7 @@ class WorkflowExecutor:
             # Step 2: Dispatch workflow
             workflow_file = self._get_workflow_file(gpu_enabled)
             success = self._dispatch_workflow(
-                github_owner, repository_name, workflow_file, branch_name
+                github_owner, repository_name, workflow_file, experiment_iteration, branch_name
             )
             if not success:
                 return WorkflowResult(None, False, "Failed to dispatch workflow")
@@ -96,12 +97,16 @@ class WorkflowExecutor:
         github_owner: str,
         repository_name: str,
         workflow_file: str,
+        experiment_iteration: int,
         branch_name: str,
     ) -> bool:
         """Dispatch the workflow to GitHub Actions"""
+        inputs = {
+            "experiment_iteration": str(experiment_iteration),
+        }
         try:
             success = self.client.create_workflow_dispatch(
-                github_owner, repository_name, workflow_file, ref=branch_name
+                github_owner, repository_name, workflow_file, ref=branch_name, inputs=inputs
             )
             if success:
                 logger.info("Workflow dispatch sent successfully")
@@ -184,13 +189,12 @@ class WorkflowExecutor:
 
 # Legacy function wrapper for backward compatibility
 def execute_github_actions_workflow(
-    github_owner: str, 
-    repository_name: str, 
+    github_repository: str,
     branch_name: str,
     experiment_iteration: int,
     gpu_enabled: bool = False,
     client: Optional[GithubClient] = None, 
-) -> tuple[bool, int]:
+) -> bool:
     """Execute a GitHub Actions workflow and wait for completion.
     
     This function dispatches a workflow on GitHub Actions and monitors its execution
@@ -198,8 +202,7 @@ def execute_github_actions_workflow(
     gpu_enabled parameter.
     
     Args:
-        github_owner: The owner/organization name of the GitHub repository
-        repository_name: The name of the GitHub repository
+        github_repository: The GitHub repository in the format "owner/repo"
         branch_name: The branch name to run the workflow on
         gpu_enabled: Whether to use GPU-enabled workflow. Defaults to False
         client: GitHub API client instance. If None, a new one will be created
@@ -216,18 +219,18 @@ def execute_github_actions_workflow(
         ... )
         >>> print(f"Workflow execution successful: {result}")
     """
+    github_owner, repository_name = github_repository.split("/", 1)
     executor = WorkflowExecutor(client)
-    result = executor.execute_workflow(github_owner, repository_name, branch_name, gpu_enabled)
-    return result.success, experiment_iteration + 1
+    result = executor.execute_workflow(github_owner, repository_name, branch_name, experiment_iteration, gpu_enabled)
+    return result.success
 
 
 if __name__ == "__main__":    
-    github_owner = "fuyu-quant"
-    repository_name = "airas-temp"
+    github_repository = "fuyu-quant/airas-temp"
     branch_name = "main"
-    result, experiment_iteration = execute_github_actions_workflow(
-        github_owner, 
-        repository_name, 
+    result = execute_github_actions_workflow(
+        github_repository, 
         branch_name,
+        experiment_iteration=1,
     )
     print(f"result: {result}")

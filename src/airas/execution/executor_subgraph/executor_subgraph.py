@@ -1,7 +1,7 @@
 
 import json
 import logging
-from typing import Literal
+from typing import Literal, Any
 import argparse
 
 from langgraph.graph import END, START, StateGraph
@@ -27,8 +27,7 @@ executor_timed = lambda f: time_node("executor_subgraph")(f)  # noqa: E731
 
 
 class ExecutorSubgraphInputState(TypedDict):
-    github_owner: str
-    repository_name: str
+    github_repository: str
     branch_name: str
     gpu_enabled: bool
     experiment_iteration: int
@@ -67,16 +66,14 @@ class ExecutorSubgraph:
         if not state.get("push_completion", True):
             raise ValueError("ExecutorSubgraph was called without a successful code push (expected push_completion == True)")
         
-        executed_flag, experiment_iteration = execute_github_actions_workflow(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
+        executed_flag = execute_github_actions_workflow(
+            github_repository=state["github_repository"],
             branch_name=state["branch_name"],
             experiment_iteration=state["experiment_iteration"],
             gpu_enabled=state["gpu_enabled"],
         )
         return {
-            "executed_flag": executed_flag,
-            "experiment_iteration": experiment_iteration,
+            "executed_flag": executed_flag
         }
 
     @executor_timed
@@ -84,8 +81,7 @@ class ExecutorSubgraph:
         self, state: ExecutorSubgraphState
     ) -> dict:
         output_text_data, error_text_data = retrieve_github_actions_results(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
+            github_repository=state["github_repository"],
             branch_name=state["branch_name"],
             experiment_iteration=state["experiment_iteration"],
         )
@@ -108,15 +104,24 @@ class ExecutorSubgraph:
 
     def run(
         self, 
-        input: ExecutorSubgraphInputState, 
+        state: dict[str, Any], 
         config: dict | None = None
-    ) -> dict:
-        graph = self.build_graph()
-        result = graph.invoke(input, config=config or {})
+    ) -> dict[str, Any]:
+        input_state_keys = ExecutorSubgraphInputState.__annotations__.keys()
+        output_state_keys = ExecutorSubgraphOutputState.__annotations__.keys()
 
-        #output_keys = ExecutorSubgraphOutputState.__annotations__.keys()
-        #output = {k: result[k] for k in output_keys if k in result}
-        return result
+        input_state = {k: state[k] for k in input_state_keys if k in state}
+        result = self.build_graph().invoke(input_state, config=config or {})
+        output_state = {k: result[k] for k in output_state_keys if k in result}
+
+        cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
+
+        return {
+            "subgraph_name": self.__class__.__name__,
+            **cleaned_state,
+            **output_state, 
+        }
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -137,9 +142,7 @@ def main():
         "experiment_iteration": 1,
         "push_completion": True,  # Set to True to indicate a successful code push
     }
-    result = ExecutorSubgraph().run(
-        input=state
-    )
+    result = ExecutorSubgraph().run(state)
     print(f"result: {json.dumps(result, indent=2, ensure_ascii=False)}")
 
 if __name__ == "__main__":

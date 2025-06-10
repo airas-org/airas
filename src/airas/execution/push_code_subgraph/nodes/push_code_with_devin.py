@@ -63,13 +63,13 @@ Please follow the “Rules” section to create an experimental script to conduc
 
 def push_code_with_devin(
     headers: dict,
-    github_owner: str,
-    repository_name: str,
+    github_repository: str,
     branch_name: str,
     new_method: str,
     experiment_code: str,
     experiment_iteration: int,
 ) -> tuple[str, str]:
+    github_owner, repository_name = github_repository.split("/", 1)
     repository_url = f"https://github.com/{github_owner}/{repository_name}"
     response = _request_create_session(
         headers=headers,

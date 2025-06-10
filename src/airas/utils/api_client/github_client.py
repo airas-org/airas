@@ -206,7 +206,7 @@ class GithubClient(BaseHTTPClient):
         response = self.put(path=path, json=payload)
 
         match response.status_code:
-            case 200:
+            case 200 | 201:
                 logger.info(f"Success (200): {path}")
                 return True
             case 403:

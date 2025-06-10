@@ -14,27 +14,11 @@ from airas.execution import (
   PushCodeSubgraph
 )
 from airas.analysis import AnalyticSubgraph
+from airas.write import WriterSubgraph, CitationSubgraph
 import json
 import os
 from datetime import datetime
 
-github_repository = "auto-res2/test-tanaka-v2"
-branch_name = "develop"
-
-pr = PrepareRepository()
-
-input = {
-    "github_repository": github_repository,
-    "branch_name": branch_name,
-}
-result = pr.run(input)
-
-
-state = {
-    "base_queries": ["diffusion model"],
-    "gpu_enabled": True,
-    "experiment_iteration": 1
-}
 
 scrape_urls = [
     "https://icml.cc/virtual/2024/papers.html?filter=title",
@@ -53,12 +37,14 @@ creator2 = CreateExperimentalDesignSubgraph(llm_name=llm_name)
 coder = PushCodeSubgraph()
 executor = ExecutorSubgraph()
 fixer = FixCodeSubgraph(llm_name=llm_name)
+analysis = AnalyticSubgraph(llm_name)
+writer = WriterSubgraph(llm_name)
+citation = CitationSubgraph(llm_name=llm_name)
 
-# Create a directory for saving states
-state_save_dir = "/workspaces/airas/data/states"
-os.makedirs(state_save_dir, exist_ok=True)
 
 def save_state(state, step_name):
+    state_save_dir = "/workspaces/airas/data/states"
+    os.makedirs(state_save_dir, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"state_{step_name}_{timestamp}.json"
     filepath = os.path.join(state_save_dir, filename)
@@ -67,34 +53,117 @@ def save_state(state, step_name):
         json.dump(state, f, indent=2, ensure_ascii=False, default=str)
     
     print(f"State saved: {filepath}")
+    return
 
-# Run each step and save state
-state = retriever.run(state)
-save_state(state, "retriever")
 
-state = retriever2.run(state)
-save_state(state, "retriever2")
+def load_state(filename):
+    state_save_dir = "/workspaces/airas/data/states"
+    os.makedirs(state_save_dir, exist_ok=True)
+    filepath = os.path.join(state_save_dir, filename)
+    with open(filepath, 'r', encoding='utf-8') as f:
+        state = json.load(f)
+    print(f"State loaded: {filepath}")
+    return state
 
-state = retriever3.run(state)
-save_state(state, "retriever3")
 
-state = creator.run(state)
-save_state(state, "creator")
+def retrieve_execution_subgraph_list(filename: str, subgraph_name_list: list[str]) -> list[str]:
+    START_FROM_STEP = filename.split('_')[1]
+    start_index = subgraph_name_list.index(START_FROM_STEP)
+    subgraph_name_list = subgraph_name_list[start_index + 1:]
+    return subgraph_name_list
 
-state = creator2.run(state)
-save_state(state, "creator2")
 
-state = coder.run(state)
-save_state(state, "coder")
+def run_from_state_file(github_repository, branch_name, filename: str | None = None):
+    """
+    filenameが指定されていればそのstateファイルから、指定されていなければ最初からsubgraphを順次実行し、各ステップの結果を保存する
+    """
+    subgraph_name_list = [
+        "retriever",
+        "retriever2",
+        "retriever3",
+        "creator",
+        "creator2",
+        "coder",
+        "executor",
+        "fixer",
+        # "anlysis",
+    ]
 
-state = executor.run(state)
-save_state(state, "executor")
+    if filename:
+        # stateをロード
+        state = load_state(filename)
+        # 実行対象のsubgraphリストを取得
+        subgraph_name_list = retrieve_execution_subgraph_list(filename, subgraph_name_list)
+    else:
+        # 最初から実行
+        state = {
+            "base_queries": ["diffusion model"],
+            "gpu_enabled": True,
+            "experiment_iteration": 1,
+            "github_repository": github_repository,
+            "branch_name": branch_name,
+        }
 
-state = fixer.run(state)
-save_state(state, "fixer")
+    for subgraph_name in subgraph_name_list:
+        if subgraph_name == "retriever":
+            state = retriever.run(state)
+            save_state(state, "retriever")
+        elif subgraph_name == "retriever2":
+            state = retriever2.run(state)
+            save_state(state, "retriever2")
+        elif subgraph_name == "retriever3":
+            state = retriever3.run(state)
+            save_state(state, "retriever3")
+        elif subgraph_name == "creator":
+            state = creator.run(state)
+            save_state(state, "creator")
+        elif subgraph_name == "creator2":
+            state = creator2.run(state)
+            save_state(state, "creator2")
+        elif subgraph_name == "coder":
+            state = coder.run(state)
+            save_state(state, "coder")
+        elif subgraph_name == "executor":
+            state = executor.run(state)
+            save_state(state, "executor")
+        elif subgraph_name == "fixer":
+            while True:
+                state = fixer.run(state)
+                save_state(state, "fixer")
+                if state.get("executed_flag") is True:
+                    state = analysis.run(state)
+                    save_state(state, "analysis")
+                    break
+                else:
+                    state = executor.run(state)
+                    save_state(state, "executor")
+        elif subgraph_name == "analysis":
+            state = analysis.run(state)
+            save_state(state, "analysis")
+        elif subgraph_name == "writer":
+            state = writer.run(state)
+            save_state(state, "writer")
+        elif subgraph_name == "citation":
+            state = citation.run(state)
+            save_state(state, "citation")
+        
 
-# if state["executed_flag"]:
-#   continue
+if __name__ == "__main__":
+    github_repository = "auto-res2/test-tanaka-v5"
+    branch_name = "develop"
+    
+    # リポジトリの用意
+    # PrepareRepository(
+    #     github_repository=github_repository,
+    #     branch_name=branch_name,
+    # ).run()
+    
+    
+    file_name = "state_coder_20250610_160554.json"
+    run_from_state_file(github_repository, branch_name, file_name)
 
-# anlysis = AnalyticSubgraph(llm_name="o3-mini-2025-01-31")
-# state = anlysis.run(state)
+    # import sys
+    # if len(sys.argv) > 1:
+    #     run_from_state_file(sys.argv[1])
+    # else:
+    #     run_from_state_file()
