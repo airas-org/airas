@@ -170,9 +170,11 @@ class LatexSubgraph:
         result = self.build_graph().invoke(input_state, config=config or {})
         output_state = {k: result[k] for k in output_state_keys if k in result}
 
+        cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
+
         return {
             "subgraph_name": self.__class__.__name__,
-            **state,
+            **cleaned_state,
             **output_state, 
         }
 

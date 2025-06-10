@@ -16,14 +16,10 @@ gh_upload_timed = lambda f: time_node("github_upload_subgraph")(f)  # noqa: E731
 
 
 class GithubUploadInputState(TypedDict):
-    github_repository: str
-    branch_name: str
     subgraph_name: str
 
 
 class GithubUploadHiddenState(TypedDict): 
-    github_owner: str
-    repository_name: str
     research_history: dict[str, Any]
     new_output: dict[str, Any]
 
