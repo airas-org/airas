@@ -422,6 +422,8 @@ class RetrieveRelatedPaperSubgraph:
         state: dict[str, Any], 
         config: dict | None = None
     ) -> dict[str, Any]:
+        config = {**{"recursion_limit": 100}, **(config or {})}
+
         input_state_keys = RetrieveRelatedPaperInputState.__annotations__.keys()
         output_state_keys = RetrieveRelatedPaperOutputState.__annotations__.keys()
 
