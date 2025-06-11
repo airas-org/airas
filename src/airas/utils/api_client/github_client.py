@@ -159,6 +159,7 @@ class GithubClient(BaseHTTPClient):
         branch_name: str | None = None, 
         as_: Literal["json", "bytes"] = "json"
     ) -> dict | bytes:
+        # https://docs.github.com/ja/rest/repos/contents?apiVersion=2022-11-28#get-repository-content
         return self._fetch_content(
             github_owner=github_owner, 
             repository_name=repository_name, 
@@ -491,3 +492,31 @@ class GithubClient(BaseHTTPClient):
             case _:
                 self._raise_for_status(response, path)
                 return None
+
+    # @GITHUB_RETRY
+    # def get_repository_content(
+    #     self,
+    #     github_owner: str, 
+    #     repository_name: str,
+    #     path: str,
+    #     ):
+    #     # https://docs.github.com/ja/rest/repos/contents?apiVersion=2022-11-28#get-repository-content
+    #     path = f"/repos/{github_owner}/{repository_name}/contents/{path}"
+        
+    #     response = self.get(path=path, stream=True)
+    #     match response.status_code:
+    #         case 200:
+    #             logger.info(f"Success (200): {path}")
+    #             return self._parser.parse(response, as_="bytes")
+    #         case 302:
+    #             logger.info(f"Found (302): {path}")
+    #             return self._parser.parse(response, as_="bytes")
+    #         case 304:
+    #             logger.info(f"Found (304): {path}")
+    #             return self._parser.parse(response, as_="bytes")
+    #         case 404:
+    #             logger.error("Contents not found: (404)")
+    #             raise GithubClientFatalError("Contents not found: (404)")
+    #         case _:
+    #             self._raise_for_status(response, path)
+    #             return None

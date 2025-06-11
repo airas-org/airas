@@ -86,7 +86,9 @@ def run_from_state_file(github_repository, branch_name, filename: str | None = N
         "coder",
         "executor",
         "fixer",
-        # "anlysis",
+        "anlysis",
+        "writer",
+        "citation",
     ]
 
     if filename:
@@ -149,18 +151,19 @@ def run_from_state_file(github_repository, branch_name, filename: str | None = N
         
 
 if __name__ == "__main__":
-    github_repository = "auto-res2/test-tanaka-v5"
-    branch_name = "develop"
+    github_repository = "auto-res2/test-tanaka-v6"
+    branch_name = "develop-1"
     
     # リポジトリの用意
-    # PrepareRepository(
-    #     github_repository=github_repository,
-    #     branch_name=branch_name,
-    # ).run()
+    PrepareRepository(
+        github_repository=github_repository,
+        branch_name=branch_name,
+    ).run()
     
     
-    file_name = "state_coder_20250610_160554.json"
-    run_from_state_file(github_repository, branch_name, file_name)
+    # file_name = "state_coder_20250610_160554.json"
+    # run_from_state_file(github_repository, branch_name, file_name)
+    run_from_state_file(github_repository, branch_name)
 
     # import sys
     # if len(sys.argv) > 1:

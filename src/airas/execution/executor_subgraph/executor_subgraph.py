@@ -41,6 +41,7 @@ class ExecutorSubgraphHiddenState(TypedDict):
 class ExecutorSubgraphOutputState(TypedDict):
     output_text_data: str
     error_text_data: str
+    image_file_name_list: list[str]
     executed_flag: bool
 
 
@@ -77,10 +78,10 @@ class ExecutorSubgraph:
         }
 
     @executor_timed
-    def _retrieve_github_actions_artifacts_node(
+    def _retrieve_github_actions_results(
         self, state: ExecutorSubgraphState
     ) -> dict:
-        output_text_data, error_text_data = retrieve_github_actions_results(
+        output_text_data, error_text_data, image_file_name_list = retrieve_github_actions_results(
             github_repository=state["github_repository"],
             branch_name=state["branch_name"],
             experiment_iteration=state["experiment_iteration"],
@@ -88,6 +89,7 @@ class ExecutorSubgraph:
         return {
             "output_text_data": output_text_data,
             "error_text_data": error_text_data,
+            "image_file_name_list": image_file_name_list,
             # NOTE: We increment the experiment_iteration here to reflect the next iteration
             "experiment_iteration": state["experiment_iteration"] + 1,
         }
@@ -95,7 +97,7 @@ class ExecutorSubgraph:
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(ExecutorSubgraphState)
         graph_builder.add_node("execute_github_actions_workflow_node", self._execute_github_actions_workflow_node)
-        graph_builder.add_node("retrieve_github_actions_artifacts_node", self._retrieve_github_actions_artifacts_node)
+        graph_builder.add_node("retrieve_github_actions_artifacts_node", self._retrieve_github_actions_results)
 
         graph_builder.add_edge(START, "execute_github_actions_workflow_node")
         graph_builder.add_edge("execute_github_actions_workflow_node", "retrieve_github_actions_artifacts_node")
