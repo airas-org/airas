@@ -2,7 +2,7 @@ import pytest
 import io
 import zipfile
 
-import airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts as mod
+import airas.execution.executor_subgraph.nodes.retrieve_github_actions_result as mod
 
 
 @pytest.fixture

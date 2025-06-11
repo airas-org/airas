@@ -32,7 +32,20 @@
         "ruff.linting.enabled": true,
         "python.linting.enabled": true,
         "python.linting.mypyEnabled": true,
-        "python.analysis.typeCheckingMode": "off" // Pylance type check
+        "python.analysis.typeCheckingMode": "off", // Pylance type check
+        "launch": {
+          "version": "0.2.0",
+          "configurations": [
+            {
+                "name": "Python: Current File",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "${file}",
+                "console": "integratedTerminal",
+                "justMyCode": true
+            }
+          ]
+        }
       }
     }
   },

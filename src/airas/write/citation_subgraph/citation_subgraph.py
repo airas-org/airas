@@ -117,15 +117,23 @@ class CitationSubgraph:
     
     def run(
         self, 
-        input: CitationSubgraphInputState, 
+        state: dict[str, Any], 
         config: dict | None = None
-    ) -> CitationSubgraphOutputState:
-        graph = self.build_graph()
-        result = graph.invoke(input, config=config or {})
+    ) -> dict[str, Any]:
+        input_state_keys = CitationSubgraphInputState.__annotations__.keys()
+        output_state_keys = CitationSubgraphOutputState.__annotations__.keys()
 
-        output_keys = CitationSubgraphOutputState.__annotations__.keys()
-        output = {k: result[k] for k in output_keys if k in result}
-        return output
+        input_state = {k: state[k] for k in input_state_keys if k in state}
+        result = self.build_graph().invoke(input_state, config=config or {})
+        output_state = {k: result[k] for k in output_state_keys if k in result}
+
+        cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
+
+        return {
+            "subgraph_name": self.__class__.__name__,
+            **cleaned_state,
+            **output_state, 
+        }
 
 
 def main():
