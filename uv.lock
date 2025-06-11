@@ -94,7 +94,7 @@ wheels = [
 
 [[package]]
 name = "airas"
-version = "0.0.11.dev36"
+version = "0.0.11.dev38"
 source = { editable = "." }
 dependencies = [
     { name = "feedparser" },
@@ -144,7 +144,7 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.4" },
     { name = "langchain", specifier = ">=0.2.15" },
     { name = "langchain-community", specifier = ">=0.2.15" },
-    { name = "langgraph", specifier = ">=0.2.23" },
+    { name = "langgraph", specifier = ">=0.4.8" },
     { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'", specifier = ">=1.6.0" },
     { name = "openai", specifier = ">=1.35.13" },
     { name = "pymupdf", specifier = ">=1.25.5" },
