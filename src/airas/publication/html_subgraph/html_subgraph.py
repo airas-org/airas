@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import shutil
 import sys
 from typing import Any
 
@@ -163,18 +164,26 @@ class HtmlSubgraph:
     ) -> dict[str, Any]:
         input_state_keys = HtmlSubgraphInputState.__annotations__.keys()
         output_state_keys = HtmlSubgraphOutputState.__annotations__.keys()
-
         input_state = {k: state[k] for k in input_state_keys if k in state}
-        result = self.build_graph().invoke(input_state, config=config or {})
-        output_state = {k: result[k] for k in output_state_keys if k in result}
 
-        cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
+        if os.path.exists(self.tmp_dir):
+            shutil.rmtree(self.tmp_dir)
+        os.makedirs(self.tmp_dir, exist_ok=True)
 
-        return {
-            "subgraph_name": self.__class__.__name__,
-            **cleaned_state,
-            **output_state, 
-        }
+        try:
+            result = self.build_graph().invoke(input_state, config=config or {})
+            output_state = {k: result[k] for k in output_state_keys if k in result}
+
+            cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
+
+            return {
+                "subgraph_name": self.__class__.__name__,
+                **cleaned_state,
+                **output_state,
+            }
+        finally:
+            if os.path.exists(self.tmp_dir):
+                shutil.rmtree(self.tmp_dir)
 
 
 def main():
