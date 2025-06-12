@@ -33,6 +33,9 @@ from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.summarize_paper imp
 from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.web_scrape import (
     web_scrape,
 )
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.openai_websearch_titles import (
+    openai_websearch_titles,
+)
 from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_github_url_prompt import (
     extract_github_url_from_text_prompt,
 )
@@ -96,6 +99,7 @@ class RetrievePaperFromQuerySubgraph:
         arxiv_query_batch_size: int = 10,
         arxiv_num_retrieve_paper: int = 1,
         arxiv_period_days: int | None = None,
+        use_openai_websearch: bool = False,
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
@@ -103,6 +107,7 @@ class RetrievePaperFromQuerySubgraph:
         self.arxiv_query_batch_size = arxiv_query_batch_size
         self.arxiv_num_retrieve_paper = arxiv_num_retrieve_paper
         self.arxiv_period_days = arxiv_period_days
+        self.use_openai_websearch = use_openai_websearch
 
         self.papers_dir = os.path.join(self.save_dir, "papers")
         self.selected_papers_dir = os.path.join(self.save_dir, "selected_papers")
@@ -143,6 +148,17 @@ class RetrievePaperFromQuerySubgraph:
             prompt_template=extract_paper_title_prompt
         )
         return {"extracted_paper_titles": extracted_paper_titles}
+
+    @retrieve_paper_from_query_timed
+    def _openai_websearch_titles_node(
+        self, state: RetrievePaperFromQueryState
+    ) -> dict[str, list[str]]:
+        extracted_paper_titles = openai_websearch_titles(
+            queries=state["base_queries"],
+            max_results=5,
+            sleep_sec=60.0,
+        )
+        return {"extracted_paper_titles": extracted_paper_titles or []}
 
     def _check_extracted_titles(self, state: RetrievePaperFromQueryState) -> str:
         logger.info("check_extracted_titles")
@@ -305,10 +321,14 @@ class RetrievePaperFromQuerySubgraph:
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(RetrievePaperFromQueryState)
 
+        # Add all nodes
         graph_builder.add_node("initialize_state", self._initialize_state)
         graph_builder.add_node("web_scrape_node", self._web_scrape_node)
         graph_builder.add_node(
             "extract_paper_title_node", self._extract_paper_title_node
+        )
+        graph_builder.add_node(
+            "openai_websearch_titles_node", self._openai_websearch_titles_node
         )
         graph_builder.add_node(
             "search_arxiv_node", self._search_arxiv_node
@@ -323,17 +343,34 @@ class RetrievePaperFromQuerySubgraph:
         graph_builder.add_node("select_best_paper_node", self._select_best_paper_node)
         graph_builder.add_node("prepare_state", self._prepare_state)
 
+        # Add edges based on configuration
         graph_builder.add_edge(START, "initialize_state")
-        graph_builder.add_edge("initialize_state", "web_scrape_node")
-        graph_builder.add_edge("web_scrape_node", "extract_paper_title_node")
-        graph_builder.add_conditional_edges(
-            source="extract_paper_title_node",
-            path=self._check_extracted_titles,
-            path_map={
-                "Stop": END,
-                "Continue": "search_arxiv_node",
-            },
-        )
+        
+        if self.use_openai_websearch:
+            # OpenAI Web Search path (直接タイトル検索)
+            graph_builder.add_edge("initialize_state", "openai_websearch_titles_node")
+            graph_builder.add_conditional_edges(
+                source="openai_websearch_titles_node",
+                path=self._check_extracted_titles,
+                path_map={
+                    "Stop": END,
+                    "Continue": "search_arxiv_node",
+                },
+            )
+        else:
+            # Traditional path (web scrape + extract titles)
+            graph_builder.add_edge("initialize_state", "web_scrape_node")
+            graph_builder.add_edge("web_scrape_node", "extract_paper_title_node")
+            graph_builder.add_conditional_edges(
+                source="extract_paper_title_node",
+                path=self._check_extracted_titles,
+                path_map={
+                    "Stop": END,
+                    "Continue": "search_arxiv_node",
+                },
+            )
+
+        # Common edges after title extraction
         graph_builder.add_edge("search_arxiv_node", "retrieve_arxiv_text_from_url_node")
         graph_builder.add_edge(
             "retrieve_arxiv_text_from_url_node", "extract_github_url_from_text_node"
@@ -384,11 +421,22 @@ def main():
     save_dir = "/workspaces/airas/data"
     input = retrieve_paper_from_query_subgraph_input_data
 
+    # 従来の方法（デフォルト）: web scrape + extract titles
     result = RetrievePaperFromQuerySubgraph(
         llm_name=llm_name,
         save_dir=save_dir,
         scrape_urls=scrape_urls,
+        # use_openai_websearch=False,  # デフォルトはFalse
     ).run(input)
+    
+    # OpenAI Web Search使用時（下記のコメントアウトを外すだけ）
+    # result = RetrievePaperFromQuerySubgraph(
+    #     llm_name=llm_name,
+    #     save_dir=save_dir,
+    #     scrape_urls=scrape_urls,  # OpenAI使用時は無視されるが互換性のため残す
+    #     use_openai_websearch=True,  # これをTrueにするだけで切り替え可能
+    # ).run(input)
+    
     print(f"result: {json.dumps(result, indent=2)}")
 
 if __name__ == "__main__":
