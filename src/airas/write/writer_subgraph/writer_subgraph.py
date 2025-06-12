@@ -27,7 +27,7 @@ class WriterSubgraphInputState(TypedDict):
     experiment_code: str
     output_text_data: str
     analysis_report: str
-    figures_dir: str | None
+    image_file_name_list: list[str]
 
 
 class WriterSubgraphHiddenState(TypedDict):
@@ -59,7 +59,7 @@ class WriterSubgraph:
 
     @writer_timed
     def _generate_note(self, state: WriterSubgraphState) -> dict:
-        note = generate_note(state=dict(state), figures_dir=state["figures_dir"])
+        note = generate_note(state=dict(state))
         return {"note": note}
 
     @writer_timed

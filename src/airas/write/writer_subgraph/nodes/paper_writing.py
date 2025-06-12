@@ -122,7 +122,9 @@ Here is the context of the entire paper:
     - When beneficial for clarity, describe the mathematical equations, parameter settings, and procedures in a structured and easy-to-follow way, using natural language or numbered steps.
     - Avoid overly explanatory or repetitive descriptions that would be self-evident to readers familiar with standard machine learning notation.
     - Keep the experimental results (figures and tables) only in the `Results section`, and make sure that any captions are filled in. 
-    - If image filenames (e.g., `figure1.pdf`) are provided in the context, refer to them explicitly in the text.
+    - Each figure may be referred to multiple times in the text, 
+        but the **actual image (filename)** must be embedded **exactly once**, in the appropriate location with a caption that explicitly includes its filename (e.g., "Figure 1: ... (filename: figure1.pdf)").
+    - If image filenames (e.g., figure1.pdf) are listed in the Figures: section of the note, refer to them by filename only and do not describe their content unless explicitly provided in the note.
     - Do not invent or assume the existence of any figures or visual content. If no figure is provided, you must not fabricate or imply the existence of one.
 
 - When referring to figures in the "Results" section:
