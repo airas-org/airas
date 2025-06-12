@@ -3,6 +3,7 @@ import logging
 import re
 from time import sleep
 
+from jinja2 import Environment
 from openai import OpenAI
 
 logger = logging.getLogger(__name__)
@@ -34,11 +35,29 @@ def _extract_json(text: str) -> dict:
     return json.loads(text)
 
 
+# Default prompt template
+_DEFAULT_PROMPT_TEMPLATE = """\
+You are a research assistant.
+Task: Find recent academic papers related to: {{ query }}
+Return **exactly {{ max_results }}** paper titles in JSON format.
+
+Required output — **only** this JSON, nothing else:
+{
+  "titles": [
+    "Paper title 1",
+    "Paper title 2",
+    "Paper title 3"
+  ]
+}
+"""
+
+
 def openai_websearch_titles(
     queries: list[str],
     *,
     max_results: int = 5,
     sleep_sec: float = 60.0,
+    prompt_template: str | None = None,
     client: OpenAI | None = None,
 ) -> list[str] | None:
     """
@@ -48,6 +67,7 @@ def openai_websearch_titles(
         queries: List of search queries
         max_results: Maximum number of results to return
         sleep_sec: Sleep time between queries (default 60 seconds)
+        prompt_template: Custom prompt template (uses default if None)
         client: OpenAI client instance
         
     Returns:
@@ -55,25 +75,24 @@ def openai_websearch_titles(
     """
     if client is None:
         client = OpenAI()
+    
+    # Use default prompt template if none provided
+    if prompt_template is None:
+        prompt_template = _DEFAULT_PROMPT_TEMPLATE
+    
+    # Initialize Jinja2 environment
+    env = Environment()
+    template = env.from_string(prompt_template)
 
     collected: set[str] = set()
 
     for i, query in enumerate(queries):
         logger.info(f"Searching papers with OpenAI web search for query: '{query}'")
         
-        # Create prompt for OpenAI API
-        prompt = (
-            "You are a research assistant.\n"
-            f"Task: Find recent academic papers related to: {query}\n"
-            f"Return **exactly {max_results}** paper titles in JSON format.\n\n"
-            "Required output — **only** this JSON, nothing else:\n"
-            '{\n'
-            '  "titles": [\n'
-            '    "Paper title 1",\n'
-            '    "Paper title 2",\n'
-            '    "Paper title 3"\n'
-            '  ]\n'
-            '}'
+        # Create prompt using template
+        prompt = template.render(
+            query=query,
+            max_results=max_results
         )
         
         try:

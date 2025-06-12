@@ -42,6 +42,9 @@ from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_github_url
 from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_paper_title_prompt import (
     extract_paper_title_prompt,
 )
+from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.openai_websearch_titles_prompt import (
+    openai_websearch_titles_prompt,
+)
 from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.select_best_paper_prompt import (
     select_base_paper_prompt,
 )
@@ -115,7 +118,7 @@ class RetrievePaperFromQuerySubgraph:
         os.makedirs(self.selected_papers_dir, exist_ok=True)
         check_api_key(
             llm_api_key_check=True,
-            fire_crawl_api_key_check=True,
+            fire_crawl_api_key_check=not self.use_openai_websearch,
         )
 
     def _initialize_state(
@@ -157,6 +160,7 @@ class RetrievePaperFromQuerySubgraph:
             queries=state["base_queries"],
             max_results=5,
             sleep_sec=60.0,
+            prompt_template=openai_websearch_titles_prompt,
         )
         return {"extracted_paper_titles": extracted_paper_titles or []}
 
@@ -418,24 +422,24 @@ def main():
         # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=title",
     ]
     llm_name = "o3-mini-2025-01-31"
-    save_dir = "/workspaces/airas/data"
+    save_dir = "./data"
     input = retrieve_paper_from_query_subgraph_input_data
 
     # 従来の方法（デフォルト）: web scrape + extract titles
-    result = RetrievePaperFromQuerySubgraph(
-        llm_name=llm_name,
-        save_dir=save_dir,
-        scrape_urls=scrape_urls,
-        # use_openai_websearch=False,  # デフォルトはFalse
-    ).run(input)
-    
-    # OpenAI Web Search使用時（下記のコメントアウトを外すだけ）
     # result = RetrievePaperFromQuerySubgraph(
     #     llm_name=llm_name,
     #     save_dir=save_dir,
-    #     scrape_urls=scrape_urls,  # OpenAI使用時は無視されるが互換性のため残す
-    #     use_openai_websearch=True,  # これをTrueにするだけで切り替え可能
+    #     scrape_urls=scrape_urls,
+    #     # use_openai_websearch=False,  # デフォルトはFalse
     # ).run(input)
+    
+    # OpenAI Web Search使用時（下記のコメントアウトを外すだけ）
+    result = RetrievePaperFromQuerySubgraph(
+        llm_name=llm_name,
+        save_dir=save_dir,
+        scrape_urls=scrape_urls,  # OpenAI使用時は無視されるが互換性のため残す
+        use_openai_websearch=True,  # これをTrueにするだけで切り替え可能
+    ).run(input)
     
     print(f"result: {json.dumps(result, indent=2)}")
 
