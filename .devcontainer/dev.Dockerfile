@@ -9,12 +9,6 @@ RUN apt-get update && apt-get install -y \
     vim \
     build-essential \
     locales \
-    texlive-base \
-    texlive-latex-recommended \
-    texlive-fonts-recommended \
-    texlive-latex-extra \
-    texlive-science \
-    chktex \
     && locale-gen en_US.UTF-8 && \
     update-locale LANG=en_US.UTF-8 && \
     rm -rf /var/lib/apt/lists/*

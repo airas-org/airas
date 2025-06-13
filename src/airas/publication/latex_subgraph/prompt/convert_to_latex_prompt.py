@@ -41,7 +41,7 @@ Section: {{ section.name }}
 
 - All figures must be inserted using the following LaTeX format, using a `width` that reflects the filename:
     ```latex
-    \\includegraphics[width=\\linewidth]{ {{ figures_dir }}/filename.pdf }
+    \\includegraphics[width=\\linewidth]{ images/filename.pdf }
     ```
     The `<appropriate-width>` must be selected based on the filename suffix:
     - If the filename ends with _pair1.pdf or _pair2.pdf, use 0.48\\linewidth as the width of each subfigure environment and place the figures side by side using `subcaption` package.
