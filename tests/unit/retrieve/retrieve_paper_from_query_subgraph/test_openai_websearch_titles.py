@@ -283,3 +283,107 @@ class TestOpenaiWebsearchTitles:
         )
         
         assert result is None
+
+    @patch("airas.retrieve.retrieve_paper_from_query_subgraph.nodes.openai_websearch_titles.sleep")
+    def test_conference_preference_parameter(self, mock_sleep):
+        """Test that conference_preference parameter is properly passed to template."""
+        mock_client = Mock()
+        mock_response = Mock()
+        
+        mock_message = Mock()
+        mock_message.type = "message"
+        mock_message.role = "assistant"
+        mock_content = Mock()
+        mock_content.text = '{"titles": ["Conference Paper Title"]}'
+        mock_message.content = [mock_content]
+        
+        mock_response.output = [mock_message]
+        mock_client.responses.create.return_value = mock_response
+        
+        result = openai_websearch_titles(
+            queries=["machine learning"],
+            max_results=5,
+            sleep_sec=0.1,
+            conference_preference="NeurIPS, ICML, ICLR",
+            client=mock_client,
+        )
+        
+        assert result == ["Conference Paper Title"]
+        
+        # Check that the API was called with the conference preference in prompt
+        call_args = mock_client.responses.create.call_args
+        prompt_text = call_args[1]["input"]
+        assert "NeurIPS, ICML, ICLR" in prompt_text
+        assert "Focus on papers from these conferences" in prompt_text
+
+    @patch("airas.retrieve.retrieve_paper_from_query_subgraph.nodes.openai_websearch_titles.sleep")
+    def test_no_conference_preference(self, mock_sleep):
+        """Test that when conference_preference is None, no conference instruction is added."""
+        mock_client = Mock()
+        mock_response = Mock()
+        
+        mock_message = Mock()
+        mock_message.type = "message"
+        mock_message.role = "assistant"
+        mock_content = Mock()
+        mock_content.text = '{"titles": ["General Paper Title"]}'
+        mock_message.content = [mock_content]
+        
+        mock_response.output = [mock_message]
+        mock_client.responses.create.return_value = mock_response
+        
+        result = openai_websearch_titles(
+            queries=["machine learning"],
+            max_results=5,
+            sleep_sec=0.1,
+            conference_preference=None,
+            client=mock_client,
+        )
+        
+        assert result == ["General Paper Title"]
+        
+        # Check that no conference instruction is in the prompt
+        call_args = mock_client.responses.create.call_args
+        prompt_text = call_args[1]["input"]
+        assert "Focus on papers from these conferences" not in prompt_text
+
+    @patch("airas.retrieve.retrieve_paper_from_query_subgraph.nodes.openai_websearch_titles.sleep")
+    def test_custom_prompt_template_with_conference(self, mock_sleep):
+        """Test using custom prompt template with conference preference."""
+        mock_client = Mock()
+        mock_response = Mock()
+        
+        mock_message = Mock()
+        mock_message.type = "message"
+        mock_message.role = "assistant"
+        mock_content = Mock()
+        mock_content.text = '{"titles": ["Custom Template Paper"]}'
+        mock_message.content = [mock_content]
+        
+        mock_response.output = [mock_message]
+        mock_client.responses.create.return_value = mock_response
+        
+        custom_template = """
+        Custom search for: {{ query }}
+        {% if conference_preference -%}
+        From venues: {{ conference_preference }}
+        {%- endif %}
+        Return {{ max_results }} titles in JSON format.
+        """
+        
+        result = openai_websearch_titles(
+            queries=["deep learning"],
+            max_results=3,
+            sleep_sec=0.1,
+            prompt_template=custom_template,
+            conference_preference="CVPR, ICCV",
+            client=mock_client,
+        )
+        
+        assert result == ["Custom Template Paper"]
+        
+        # Check that custom template was used
+        call_args = mock_client.responses.create.call_args
+        prompt_text = call_args[1]["input"]
+        assert "Custom search for: deep learning" in prompt_text
+        assert "From venues: CVPR, ICCV" in prompt_text

@@ -161,6 +161,7 @@ class RetrievePaperFromQuerySubgraph:
             max_results=5,
             sleep_sec=60.0,
             prompt_template=openai_websearch_titles_prompt,
+            conference_preference="NeurIPS, ICML, ICLR, ICML",
         )
         return {"extracted_paper_titles": extracted_paper_titles or []}
 

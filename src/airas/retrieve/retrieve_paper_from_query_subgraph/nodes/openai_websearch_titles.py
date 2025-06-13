@@ -35,10 +35,13 @@ def _extract_json(text: str) -> dict:
     return json.loads(text)
 
 
-# Default prompt template
+# Default prompt template (should match openai_websearch_titles_prompt.py)
 _DEFAULT_PROMPT_TEMPLATE = """\
 You are a research assistant.
 Task: Find recent academic papers related to: {{ query }}
+{% if conference_preference -%}
+Focus on papers from these conferences/venues: {{ conference_preference }}
+{%- endif %}
 Return **exactly {{ max_results }}** paper titles in JSON format.
 
 Required output — **only** this JSON, nothing else:
@@ -58,6 +61,7 @@ def openai_websearch_titles(
     max_results: int = 5,
     sleep_sec: float = 60.0,
     prompt_template: str | None = None,
+    conference_preference: str | None = None,
     client: OpenAI | None = None,
 ) -> list[str] | None:
     """
@@ -68,6 +72,7 @@ def openai_websearch_titles(
         max_results: Maximum number of results to return
         sleep_sec: Sleep time between queries (default 60 seconds)
         prompt_template: Custom prompt template (uses default if None)
+        conference_preference: Preferred conferences/venues (e.g., "NeurIPS, ICML, ICLR")
         client: OpenAI client instance
         
     Returns:
@@ -92,7 +97,8 @@ def openai_websearch_titles(
         # Create prompt using template
         prompt = template.render(
             query=query,
-            max_results=max_results
+            max_results=max_results,
+            conference_preference=conference_preference
         )
         
         try:
