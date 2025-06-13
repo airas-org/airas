@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Literal
+from typing import Any, Literal
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -10,7 +10,6 @@ from typing_extensions import TypedDict
 from airas.execution.executor_subgraph.prompt.llm_decide import (
     llm_decide_prompt,
 )
-from airas.execution.fix_code_subgraph.input_data import fix_code_subgraph_input_data
 from airas.execution.fix_code_subgraph.nodes.fix_code_with_devin import (
     fix_code_with_devin,
 )
@@ -32,7 +31,7 @@ class FixCodeSubgraphInputState(TypedDict):
     experiment_session_id: str
     output_text_data: str
     error_text_data: str
-    executed_flag: Literal[True]
+    executed_flag: Literal[True]  # This should be True if the GitHub Actions workflow was executed successfully
 
 
 class FixCodeSubgraphHiddenState(TypedDict):
@@ -57,7 +56,9 @@ class FixCodeSubgraphState(
 class FixCodeSubgraph:
     def __init__(
         self,
+        llm_name: str = "o3-mini-2025-01-31",
     ):
+        self.llm_name = llm_name
         self.headers = {
             "Authorization": f"Bearer {os.getenv('DEVIN_API_KEY')}",
             "Content-Type": "application/json",
@@ -74,7 +75,7 @@ class FixCodeSubgraph:
             raise ValueError("Invalid state: GitHub Actions workflow was not executed (expected executed_flag == True)")
         
         judgment_result = llm_decide(
-            llm_name="o3-mini-2025-01-31",
+            llm_name=self.llm_name,
             output_text_data=state["output_text_data"],
             error_text_data=state["error_text_data"],
             prompt_template=llm_decide_prompt, 
@@ -135,25 +136,33 @@ class FixCodeSubgraph:
 
     def run(
         self, 
-        input: FixCodeSubgraphInputState, 
+        state: dict[str, Any], 
         config: dict | None = None
-    ) -> FixCodeSubgraphOutputState:
-        graph = self.build_graph()
-        result = graph.invoke(input, config=config or {})
+    ) -> dict[str, Any]:
+        input_state_keys = FixCodeSubgraphInputState.__annotations__.keys()
+        output_state_keys = FixCodeSubgraphOutputState.__annotations__.keys()
 
-        output_keys = FixCodeSubgraphOutputState.__annotations__.keys()
-        output = {k: result[k] for k in output_keys if k in result}
-        return output
+        input_state = {k: state[k] for k in input_state_keys if k in state}
+        result = self.build_graph().invoke(input_state, config=config or {})
+        output_state = {k: result[k] for k in output_state_keys if k in result}
+
+        cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
+
+        return {
+            "subgraph_name": self.__class__.__name__,
+            **cleaned_state,
+            **output_state, 
+        }
 
 
-def main():
-    input = fix_code_subgraph_input_data
-    result = FixCodeSubgraph().run(input)
-    print(f"result: {json.dumps(result, indent=2)}")
+# def main():
+#     # input = {}
+#     # result = FixCodeSubgraph().run(input)
+#     print(f"result: {json.dumps(result, indent=2)}")
 
-if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        logger.error(f"Error running FixCodeSubgraph: {e}")
-        raise
+# if __name__ == "__main__":
+#     try:
+#         main()
+#     except Exception as e:
+#         logger.error(f"Error running FixCodeSubgraph: {e}")
+#         raise

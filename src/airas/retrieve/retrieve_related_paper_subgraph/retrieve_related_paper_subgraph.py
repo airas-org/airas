@@ -4,7 +4,7 @@ import logging
 import operator
 import os
 import shutil
-from typing import Annotated
+from typing import Annotated, Any
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -419,16 +419,24 @@ class RetrieveRelatedPaperSubgraph:
 
     def run(
         self, 
-        input: RetrieveRelatedPaperInputState, 
+        state: dict[str, Any], 
         config: dict | None = None
-    ) -> RetrieveRelatedPaperOutputState:
-        config = {"recursion_limit": 100} if config is None else config
-        graph = self.build_graph()
-        result = graph.invoke(input, config=config or {})
+    ) -> dict[str, Any]:
+        config = {**{"recursion_limit": 100}, **(config or {})}
 
-        output_keys = RetrieveRelatedPaperOutputState.__annotations__.keys()
-        output = {k: result[k] for k in output_keys if k in result}
-        return output
+        input_state_keys = RetrieveRelatedPaperInputState.__annotations__.keys()
+        output_state_keys = RetrieveRelatedPaperOutputState.__annotations__.keys()
+
+        input_state = {k: state[k] for k in input_state_keys if k in state}
+        result = self.build_graph().invoke(input_state, config=config or {})
+        output_state = {k: result[k] for k in output_state_keys if k in result}
+        cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
+
+        return {
+            "subgraph_name": self.__class__.__name__,
+            **cleaned_state,
+            **output_state, 
+        }
 
 
 def main():

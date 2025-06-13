@@ -1,6 +1,6 @@
 [project]
 name = "airas"
-version = "0.0.11.dev33"
+version = "0.0.11.dev38"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -12,7 +12,7 @@ keywords = ["AI", "Automation", "Research"]
 dependencies = [
     "langchain-community>=0.2.15",
     "langchain>=0.2.15",
-    "langgraph>=0.2.23",
+    "langgraph>=0.4.8",
     "openai>=1.35.13",
     "pypdf>=4.3.1",
     "semanticscholar>=0.8.4",

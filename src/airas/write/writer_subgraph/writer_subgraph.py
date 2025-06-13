@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -26,7 +27,7 @@ class WriterSubgraphInputState(TypedDict):
     experiment_code: str
     output_text_data: str
     analysis_report: str
-    figures_dir: str | None
+    image_file_name_list: list[str]
 
 
 class WriterSubgraphHiddenState(TypedDict):
@@ -58,7 +59,7 @@ class WriterSubgraph:
 
     @writer_timed
     def _generate_note(self, state: WriterSubgraphState) -> dict:
-        note = generate_note(state=dict(state), figures_dir=state["figures_dir"])
+        note = generate_note(state=dict(state))
         return {"note": note}
 
     @writer_timed
@@ -84,15 +85,23 @@ class WriterSubgraph:
     
     def run(
         self, 
-        input: WriterSubgraphInputState, 
+        state: dict[str, Any], 
         config: dict | None = None
-    ) -> WriterSubgraphOutputState:
-        graph = self.build_graph()
-        result = graph.invoke(input, config=config or {})
+    ) -> dict[str, Any]:
+        input_state_keys = WriterSubgraphInputState.__annotations__.keys()
+        output_state_keys = WriterSubgraphOutputState.__annotations__.keys()
 
-        output_keys = WriterSubgraphOutputState.__annotations__.keys()
-        output = {k: result[k] for k in output_keys if k in result}
-        return output
+        input_state = {k: state[k] for k in input_state_keys if k in state}
+        result = self.build_graph().invoke(input_state, config=config or {})
+        output_state = {k: result[k] for k in output_state_keys if k in result}
+
+        cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
+
+        return {
+            "subgraph_name": self.__class__.__name__,
+            **cleaned_state,
+            **output_state, 
+        }
 
 
 def main():

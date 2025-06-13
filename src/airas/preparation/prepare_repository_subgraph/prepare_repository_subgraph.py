@@ -1,8 +1,7 @@
 import argparse
-import json
 import logging
 import time
-from typing import Literal
+from typing import Any, Literal
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -37,7 +36,6 @@ class PrepareRepositoryInputState(TypedDict):
     github_repository: str
     branch_name: str
 
-
 class PrepareRepositoryHiddenState(TypedDict):
     github_owner: str
     repository_name: str
@@ -67,22 +65,22 @@ class PrepareRepository:
         template_owner: str = "airas-org",
         template_repo: str = "airas-template",
     ):
-        self.template_owner = template_owner
-        self.template_repo = template_repo
         check_api_key(
             github_personal_access_token_check=True,
         )
+        self.template_owner = template_owner
+        self.template_repo = template_repo
 
     def _init(self, state: PrepareRepositoryState) -> dict[str, str]:
-        github_repository = state["github_repository"]
-        if "/" in github_repository:
-            github_owner, repository_name = github_repository.split("/", 1)
+        try:
+            github_owner, repository_name = state["github_repository"].split("/", 1)
             return {
                 "github_owner": github_owner,
                 "repository_name": repository_name,
             }
-        else:
-            raise ValueError("Invalid repository name format.")
+        except ValueError:
+            logger.error(f"Invalid github_repository format: {state['github_repository']}")
+            raise
         
     @prepare_repository_timed
     def _check_repository_from_template(self, state: PrepareRepositoryState) -> dict[str, Literal[True]]:
@@ -191,13 +189,8 @@ class PrepareRepository:
         graph_builder.add_edge("finalize_state", END)
         return graph_builder.compile()
 
-    def run(
-        self, 
-        input: PrepareRepositoryInputState, 
-        config: dict | None = None
-    ) -> PrepareRepositoryOutputState:
-        graph = self.build_graph()
-        result = graph.invoke(input, config=config or {})
+    def run(self, input: dict[str, Any], config: dict | None = None) -> PrepareRepositoryOutputState:
+        result = self.build_graph().invoke(input, config=config or {})
 
         output_keys = PrepareRepositoryOutputState.__annotations__.keys()
         output = {k: result[k] for k in output_keys if k in result}
@@ -213,15 +206,11 @@ def main():
 
     args = parser.parse_args()
 
-    subgraph = PrepareRepository()
-
-    input = {
+    state = {
         "github_repository": args.github_repository,
-        "branch_name":     args.branch_name,
+        "branch_name": args.branch_name
     }
-
-    result = subgraph.run(input)
-    print(f"result: {json.dumps(result, indent=2)}")
+    PrepareRepository().run(state)
 
 if __name__ == "__main__":
     import sys
