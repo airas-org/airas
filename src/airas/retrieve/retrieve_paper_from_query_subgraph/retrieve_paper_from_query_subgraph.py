@@ -135,7 +135,7 @@ class RetrievePaperFromQuerySubgraph:
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, list[str]]:
         scraped_results = web_scrape(
-            queries=state["base_queries"],  # TODO: abstractもスクレイピングする
+            queries=state["base_queries"],  # TODO: also scrape abstracts
             scrape_urls=self.scrape_urls,
         )
         return {"scraped_results": scraped_results}
@@ -219,7 +219,7 @@ class RetrievePaperFromQuerySubgraph:
             llm_name="gemini-2.0-flash-001",
             prompt_template=extract_github_url_from_text_prompt
         )
-        # GitHub URLが取得できなかった場合は次の論文を処理するためにProcess Indexを進める
+        # If GitHub URL cannot be obtained, advance Process Index to process the next paper
         process_index = process_index + 1 if github_url == "" else process_index
         return {"github_url": github_url, "process_index": process_index}
 
@@ -282,14 +282,14 @@ class RetrievePaperFromQuerySubgraph:
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, str | CandidatePaperInfo | None]:
         candidate_papers_info_list = state["candidate_base_papers_info_list"]
-        # TODO:論文の検索数の制御がうまくいっていない気がする
+        # TODO: I feel like the control of the number of paper searches is not working well
         selected_arxiv_ids = select_best_paper(
             llm_name="gemini-2.0-flash-001",
             prompt_template=select_base_paper_prompt,
             candidate_papers=candidate_papers_info_list,
         )
 
-        # 選択された論文の情報を取得
+        # Get information of selected paper
         selected_arxiv_id = selected_arxiv_ids[0]
         selected_paper_info = next(
             (
@@ -299,7 +299,7 @@ class RetrievePaperFromQuerySubgraph:
             ),
             None,
         )
-        # 選択された論文を別のディレクトリにコピーする
+        # Copy selected paper to a separate directory
         for ext in ["txt", "pdf"]:
             source_path = os.path.join(self.papers_dir, f"{selected_arxiv_id}.{ext}")
             if os.path.exists(source_path):
@@ -337,7 +337,7 @@ class RetrievePaperFromQuerySubgraph:
         )
         graph_builder.add_node(
             "search_arxiv_node", self._search_arxiv_node
-        )  # TODO: 検索結果が空ならEND
+        )  # TODO: END if search results are empty
         graph_builder.add_node(
             "retrieve_arxiv_text_from_url_node", self._retrieve_arxiv_text_from_url_node
         )
@@ -352,7 +352,7 @@ class RetrievePaperFromQuerySubgraph:
         graph_builder.add_edge(START, "initialize_state")
         
         if self.use_openai_websearch:
-            # OpenAI Web Search path (直接タイトル検索)
+            # OpenAI Web Search path (direct title search)
             graph_builder.add_edge("initialize_state", "openai_websearch_titles_node")
             graph_builder.add_conditional_edges(
                 source="openai_websearch_titles_node",
@@ -426,20 +426,20 @@ def main():
     save_dir = "./data"
     input = retrieve_paper_from_query_subgraph_input_data
 
-    # 従来の方法（デフォルト）: web scrape + extract titles
+    # Traditional method (default): web scrape + extract titles
     # result = RetrievePaperFromQuerySubgraph(
     #     llm_name=llm_name,
     #     save_dir=save_dir,
     #     scrape_urls=scrape_urls,
-    #     # use_openai_websearch=False,  # デフォルトはFalse
+    #     # use_openai_websearch=False,  # Default is False
     # ).run(input)
     
-    # OpenAI Web Search使用時（下記のコメントアウトを外すだけ）
+    # When using OpenAI Web Search (just uncomment the code below)
     result = RetrievePaperFromQuerySubgraph(
         llm_name=llm_name,
         save_dir=save_dir,
-        scrape_urls=scrape_urls,  # OpenAI使用時は無視されるが互換性のため残す
-        use_openai_websearch=True,  # これをTrueにするだけで切り替え可能
+        scrape_urls=scrape_urls,  # Ignored when using OpenAI but kept for compatibility
+        use_openai_websearch=True,  # Just set this to True to switch
     ).run(input)
     
     print(f"result: {json.dumps(result, indent=2)}")
