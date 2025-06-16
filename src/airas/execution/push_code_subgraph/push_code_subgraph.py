@@ -28,7 +28,6 @@ class PushCodeSubgraphInputState(TypedDict):
     experiment_code: str
     github_repository: str
     branch_name: str
-    experiment_iteration: int
 
 
 class PushCodeSubgraphHiddenState(TypedDict):
@@ -39,6 +38,7 @@ class PushCodeSubgraphOutputState(TypedDict):
     push_completion: bool
     experiment_session_id: str
     experiment_devin_url: str
+    experiment_iteration: int
 
 
 class PushCodeSubgraphState(
@@ -62,10 +62,14 @@ class PushCodeSubgraph:
             devin_api_key_check=True,
             github_personal_access_token_check=True,
         )
+
+    @push_code_timed
+    def _init_state(self, state: PushCodeSubgraphState) -> dict[str, int]:
+        logger.info("---PushCodeSubgraph---")
+        return {"experiment_iteration": 1}
       
     @push_code_timed
     def _push_code_with_devin_node(self, state: PushCodeSubgraphState) -> dict[str, str]:
-        logger.info("---PushCodeSubgraph---")
         experiment_session_id, experiment_devin_url = push_code_with_devin(
             headers=self.headers,
             github_repository=state["github_repository"],
@@ -92,10 +96,12 @@ class PushCodeSubgraph:
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(PushCodeSubgraphState)
+        graph_builder.add_node("init_state", self._init_state)
         graph_builder.add_node("push_code_with_devin_node", self._push_code_with_devin_node)
         graph_builder.add_node("check_devin_completion_node", self._check_devin_completion_node)
 
-        graph_builder.add_edge(START, "push_code_with_devin_node")
+        graph_builder.add_edge(START, "init_state")
+        graph_builder.add_edge("init_state", "push_code_with_devin_node")
         graph_builder.add_edge("push_code_with_devin_node", "check_devin_completion_node")
         graph_builder.add_edge("check_devin_completion_node", END)
         return graph_builder.compile()
@@ -127,7 +133,6 @@ def main():
         experiment_code="print('Hello, world!')",
         github_repository="fuyu-quant/airas-temp",
         branch_name="main",
-        experiment_iteration=1,
     )
     result = PushCodeSubgraph().run(input)
     print(f"result: {json.dumps(result, indent=2)}")

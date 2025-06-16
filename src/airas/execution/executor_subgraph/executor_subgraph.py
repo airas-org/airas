@@ -29,7 +29,6 @@ executor_timed = lambda f: time_node("executor_subgraph")(f)  # noqa: E731
 class ExecutorSubgraphInputState(TypedDict):
     github_repository: str
     branch_name: str
-    gpu_enabled: bool
     experiment_iteration: int
     push_completion: Literal[True]
 
@@ -55,10 +54,14 @@ class ExecutorSubgraphState(
 
 
 class ExecutorSubgraph:
-    def __init__(self):
+    def __init__(
+        self, 
+        gpu_enabled: bool = False
+    ):
         check_api_key(
             github_personal_access_token_check=True,
         )
+        self.gpu_enabled = gpu_enabled
 
     @executor_timed
     def _execute_github_actions_workflow_node(
@@ -71,7 +74,7 @@ class ExecutorSubgraph:
             github_repository=state["github_repository"],
             branch_name=state["branch_name"],
             experiment_iteration=state["experiment_iteration"],
-            gpu_enabled=state["gpu_enabled"],
+            gpu_enabled=self.gpu_enabled,
         )
         return {
             "executed_flag": executed_flag
@@ -129,18 +132,15 @@ def main():
     parser = argparse.ArgumentParser(
         description="ExecutorSubgraph"
     )
-    parser.add_argument("github_owner", help="Your GitHub owner/organization name")
-    parser.add_argument("repository_name", help="Your GitHub repository")
+    parser.add_argument("github_repository", help="Your GitHub repository")
     parser.add_argument(
         "branch_name", help="Your branch name in your GitHub repository"
     )
     args = parser.parse_args()
 
     state = {
-        "github_owner": args.github_owner,
-        "repository_name": args.repository_name,
+        "github_repository": args.github_repository, 
         "branch_name": args.branch_name,
-        "gpu_enabled": False,
         "experiment_iteration": 1,
         "push_completion": True,  # Set to True to indicate a successful code push
     }
