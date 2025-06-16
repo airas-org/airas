@@ -17,12 +17,16 @@ readme_timed = lambda f: time_node("readme_subgraph")(f)  # noqa: E731
 
 
 class ReadmeSubgraphInputState(TypedDict):
-    github_owner: str
-    repository_name: str
+    github_repository: str
     branch_name: str
     paper_content: dict
     output_text_data: str
     experiment_devin_url: str
+
+
+class ReadmeSubgraphHiddenState(TypedDict):
+    github_owner: str
+    repository_name: str
 
 
 class ReadmeSubgraphOutputState(TypedDict):
@@ -31,6 +35,7 @@ class ReadmeSubgraphOutputState(TypedDict):
 
 class ReadmeSubgraphState(
     ReadmeSubgraphInputState,
+    ReadmeSubgraphHiddenState, 
     ReadmeSubgraphOutputState,
     ExecutionTimeState,
 ):
@@ -42,6 +47,17 @@ class ReadmeSubgraph:
         self,
     ) -> None:
         pass
+
+    def _init_state(self, state: ReadmeSubgraphState) -> dict[str, str]:
+        try:
+            github_owner, repository_name = state["github_repository"].split("/", 1)
+            return {
+                "github_owner": github_owner,
+                "repository_name": repository_name,
+            }
+        except ValueError:
+            logger.error(f"Invalid github_repository format: {state['github_repository']}")
+            raise
 
     @readme_timed
     def _readme_upload_node(self, state: ReadmeSubgraphState) -> dict:
@@ -57,9 +73,11 @@ class ReadmeSubgraph:
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(ReadmeSubgraphState)
+        graph_builder.add_node("init_state", self._init_state)
         graph_builder.add_node("readme_upload_node", self._readme_upload_node)
 
-        graph_builder.add_edge(START, "readme_upload_node")
+        graph_builder.add_edge(START, "init_state")
+        graph_builder.add_edge("init_state", "readme_upload_node")
         graph_builder.add_edge("readme_upload_node", END)
 
         return graph_builder.compile()
