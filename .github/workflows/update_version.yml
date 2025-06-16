@@ -22,7 +22,7 @@ jobs:
       - name: Install tools
         run: |
           pip install toml-cli semver
-      
+
       - name: Bump version, commit, and create PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
