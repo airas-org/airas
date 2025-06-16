@@ -137,7 +137,7 @@ class RetrievePaperFromQuerySubgraph:
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, list[str]]:
         extracted_paper_titles = extract_paper_title(
-            llm_name="o3-mini-2025-01-31",
+            llm_name="gemini-2.0-flash-001",
             queries=state["base_queries"],
             scraped_results=state["scraped_results"],
             prompt_template=extract_paper_title_prompt

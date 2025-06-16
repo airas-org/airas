@@ -23,7 +23,6 @@ class LatexNode:
         self,
         llm_name: LLM_MODEL,
         save_dir: str,
-        figures_dir: str | None,
         pdf_file_name: str = "generated_paper.pdf", 
         template_file_name: str = "template.tex", 
         max_iterations: int = 5, 
@@ -32,7 +31,7 @@ class LatexNode:
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
-        self.figures_dir = figures_dir
+
         self.max_iterations = max_iterations
         self.timeout = timeout
         self.client = client or LLMFacadeClient(self.llm_name)
@@ -43,9 +42,6 @@ class LatexNode:
         self.template_file_name = template_file_name
 
         self.latex_instance_file = os.path.join(self.save_dir, os.path.splitext(pdf_file_name)[0] + ".tex")
-        self.latex_figures_dir = os.path.join(self.save_dir, "images")
-        os.makedirs(self.latex_figures_dir, exist_ok=True)
-
 
     def _call_llm(self, prompt: str) -> str | None:
         system_prompt = """
@@ -89,67 +85,54 @@ The value of \"latex_full_text\" must contain the complete LaTeX text."""
         except Exception as e:
             logger.error(f"Failed to write references.bib: {e}")
 
-    def _copy_figures_to_save_dir(self):
-        if self.figures_dir is None:
-            logger.info("No source figures directory provided (figures_dir is None). Skipping figure copy step.")
-            return
+    def _check_references(self, tex_text: str) -> str:
+        cites = re.findall(r"\\cite[a-z]*{([^}]*)}", tex_text)
+        bib_path = os.path.join(self.save_dir, "references.bib")
+        if not os.path.exists(bib_path):
+            raise FileNotFoundError(f"references.bib file is missing at: {bib_path}")
 
-        for fig_file in os.listdir(self.figures_dir):
-            if not fig_file.endswith(".pdf"):
-                continue
-            src = os.path.join(self.figures_dir, fig_file)
-            dst = os.path.join(self.latex_figures_dir, fig_file)
-            try:
-                shutil.copyfile(src, dst)
-                logger.info(f"Copied figure: {src} → {dst}")
-            except Exception as e:
-                logger.warning(f"Failed to copy {fig_file}: {e}")
+        with open(bib_path, "r") as f:
+            bib_text = f.read()
+        missing_cites = [cite for cite in cites if cite.strip() not in bib_text]
 
-#     def _check_references(self, tex_text: str) -> str:
-#         cites = re.findall(r"\\cite[a-z]*{([^}]*)}", tex_text)
-#         bib_path = os.path.join(self.save_dir, "references.bib")
-#         if not os.path.exists(bib_path):
-#             raise FileNotFoundError(f"references.bib file is missing at: {bib_path}")
+        if not missing_cites:
+            logger.info("Reference check passed.")
+            return tex_text
 
-#         with open(bib_path, "r") as f:
-#             bib_text = f.read()
-#         missing_cites = [cite for cite in cites if cite.strip() not in bib_text]
+        logger.info(f"Missing references found: {missing_cites}")
+        prompt = f""""\n
+# LaTeX text
+--------
+{tex_text}
+--------
+# References.bib content
+--------
+{bib_text}
+--------
+The following reference is missing from references.bib: {missing_cites}.
+Only modify the BibTeX content or add missing \\cite{{...}} commands if needed.
 
-#         if not missing_cites:
-#             logger.info("No missing references found.")
-#             return tex_text
-
-#         logger.info(f"Missing references found: {missing_cites}")
-#         prompt = f""""\n
-# # LaTeX text
-# --------
-# {tex_text}
-# --------
-# # References.bib content
-# --------
-# {bib_text}
-# --------
-# The following reference is missing from references.bib: {missing_cites}.
-# Only modify the BibTeX content or add missing \\cite{{...}} commands if needed.
-
-# Do not remove, replace, or summarize any section of the LaTeX text such as Introduction, Method, or Results.
-# Do not comment out or rewrite any parts. Just fix the missing references.
-# Return the complete LaTeX document, including any bibtex changes."""
-#         llm_response = self._call_llm(prompt)
-#         if llm_response is None:
-#             raise RuntimeError(
-#                 f"LLM failed to respond for missing references: {missing_cites}"
-#             )
-#         return llm_response
+Do not remove, replace, or summarize any section of the LaTeX text such as Introduction, Method, or Results.
+Do not comment out or rewrite any parts. Just fix the missing references.
+Return the complete LaTeX document, including any bibtex changes."""
+        llm_response = self._call_llm(prompt)
+        if llm_response is None:
+            raise RuntimeError(
+                f"LLM failed to respond for missing references: {missing_cites}"
+            )
+        return llm_response
 
     def _check_figures(
         self,
         tex_text: str,
+        figures_name: list[str], 
         pattern: str = r"\\includegraphics.*?{(.*?)}",
     ) -> str:
-        all_figs = [f for f in os.listdir(self.latex_figures_dir) if f.endswith(".pdf")]
-        referenced_figs = re.findall(pattern, tex_text)
-        fig_to_use = [fig for fig in referenced_figs if fig in all_figs]
+        referenced_paths = re.findall(pattern, tex_text)
+        referenced_figs = [os.path.basename(path) for path in referenced_paths]
+
+        fig_to_use = [fig for fig in referenced_figs if fig in figures_name]
+
         if not fig_to_use:
             logger.info("No figures referenced in the LaTeX document.")
             return tex_text
@@ -231,55 +214,29 @@ Return the complete corrected LaTeX text."""
             logger.error("chktex command not found. Skipping LaTeX checks.")
             return tex_text
 
-    def _compile_latex(self, cwd: str):
-        logger.info("GENERATING LATEX")
-        tex_file_path = self.latex_instance_file
-        tex_file_basename = os.path.splitext(os.path.basename(tex_file_path))[0]
-
-        # NOTE:  # If the .bbl file is not generated, it is highly likely that the first pdflatex command failed.
-        commands = [
-            ["pdflatex", "-interaction=nonstopmode", tex_file_path],
-            ["bibtex", tex_file_basename], 
-            ["pdflatex", "-interaction=nonstopmode", tex_file_path],
-            ["pdflatex", "-interaction=nonstopmode", tex_file_path],
-        ]
-
-        for command in commands:
-            result = subprocess.run(
-                command,
-                cwd=cwd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=self.timeout,
-                check=True,
-            )
-            logger.info(f"Standard Output:\n{result.stdout}")
-            logger.info(f"Standard Error:\n{result.stderr}")
-
-    def compile_to_pdf(
+    def assemble_latex(
         self, 
         paper_tex_content: dict[str, str], 
         references_bib: dict[str, str], 
+        figures_name: list[str], 
     ) -> str:
         self._copy_template()
-        self._copy_figures_to_save_dir()
         tex_text = self._fill_template(paper_tex_content)
         self._write_references_bib(references_bib)
 
         for i in range(self.max_iterations):
             logger.info(f"=== Iteration {i+1} ===")
             updated = tex_text
-            if self.figures_dir:
-                updated = self._check_figures(updated)
+            updated = self._check_references(updated)
+            updated = self._check_figures(updated, figures_name)
             updated = self._check_duplicates(updated, {
                 "figure": r"\\includegraphics.*?{(.*?)}",
                 "section header": r"\\section{([^}]*)}"
             })
-            updated = self._fix_latex_errors(updated)
+            # updated = self._fix_latex_errors(updated)
 
             if updated == tex_text:
-                logger.info("No changes; finishing.")
+                logger.info("All checks complete.")
                 break
             tex_text = updated
         else:
@@ -288,8 +245,36 @@ Return the complete corrected LaTeX text."""
         with open(self.latex_instance_file, "w") as f:
             f.write(tex_text)
 
-        try:
-            self._compile_latex(os.path.dirname(self.latex_instance_file))
-        except Exception as e:
-            logger.error(f"PDF compile failed: {e}")
         return tex_text
+
+
+if __name__ == "__main__":
+    llm_name = "o3-mini-2025-01-31"
+    tmp_dir = "/workspaces/airas/tmp"
+    paper_tex_content = {
+        "abstract": "This is a sample abstract.",
+        "introduction": "This is a sample introduction.",
+        "method": "This is a sample method.",
+        "results": "These are the sample results.",
+        "conclusion": "This is a sample conclusion."
+    }
+
+    references_bib = {
+        "ref1": """@article{ref1,
+  title={Sample Reference},
+  author={Doe, John},
+  journal={Sample Journal},
+  year={2025}
+}"""
+    }
+
+    image_file_name_list = ["figure1.png", "figure2.jpg"]
+
+    result = LatexNode(
+        llm_name=llm_name, 
+        save_dir=tmp_dir
+    ).assemble_latex(
+        paper_tex_content=paper_tex_content, 
+        references_bib=references_bib, 
+        figures_name=image_file_name_list, 
+    )

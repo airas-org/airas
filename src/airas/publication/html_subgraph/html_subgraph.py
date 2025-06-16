@@ -105,7 +105,7 @@ class HtmlSubgraph:
         return {"full_html": full_html}
     
     @html_timed
-    def _upload_files(self, state: HtmlSubgraphState) -> dict[str, bool]:
+    def _upload_html(self, state: HtmlSubgraphState) -> dict[str, bool]:
         upload_dir = f"branches/{state['branch_name']}"
 
         ok_html = upload_files(
@@ -127,15 +127,17 @@ class HtmlSubgraph:
             workflow_file=self.workflow_file, 
         )
         if ok:
-            relative_path = os.path.join(
-                "branches", state["branch_name"], os.path.basename(self.html_path[0])
-            ).replace("\\", "/")
-
+            file_name = os.path.basename(self.html_path[0])
+            relative_path = os.path.join("branches", state["branch_name"], file_name).replace("\\", "/")
+            url = (
+                f"https://{state['github_owner']}.github.io/"
+                f"{state['repository_name']}/{relative_path}"
+            )
             print(
-                f"Uploaded HTML available at: https://{state['github_owner']}.github.io/"
-                f"{state['repository_name']}/{relative_path} "
+                f"Uploaded HTML available at: {url} "
                 "(It may take a few minutes to reflect on GitHub Pages)"
             )
+
         return {"dispatch_html_workflow": ok}
 
 
@@ -144,15 +146,15 @@ class HtmlSubgraph:
         graph_builder.add_node("init_state", self._init_state)
         graph_builder.add_node("convert_to_html", self._convert_to_html)
         graph_builder.add_node("render_html", self._render_html)
-        graph_builder.add_node("upload_files", self._upload_files)
+        graph_builder.add_node("upload_html", self._upload_html)
         graph_builder.add_node("dispatch_workflow", self._dispatch_workflow)
 
 
         graph_builder.add_edge(START, "init_state")
         graph_builder.add_edge("init_state", "convert_to_html")
         graph_builder.add_edge("convert_to_html", "render_html")
-        graph_builder.add_edge("render_html", "upload_files")
-        graph_builder.add_edge("upload_files", "dispatch_workflow")
+        graph_builder.add_edge("render_html", "upload_html")
+        graph_builder.add_edge("upload_html", "dispatch_workflow")
         graph_builder.add_edge("dispatch_workflow", END)
 
         return graph_builder.compile()

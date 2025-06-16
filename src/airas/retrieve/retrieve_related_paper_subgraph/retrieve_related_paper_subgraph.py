@@ -175,7 +175,7 @@ class RetrieveRelatedPaperSubgraph:
         add_queries = state.get("add_queries") or []
         all_queries = state["base_queries"] + add_queries + state["generated_queries"]
         extracted_paper_titles = extract_paper_title(
-            llm_name="o3-mini-2025-01-31",
+            llm_name="gemini-2.0-flash-001",
             queries=all_queries,
             scraped_results=state["scraped_results"],
             prompt_template=extract_paper_title_prompt, 
