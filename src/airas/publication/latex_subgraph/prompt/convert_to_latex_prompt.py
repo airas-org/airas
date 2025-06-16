@@ -48,8 +48,8 @@ Section: {{ section.name }}
     - Otherwise (default), use 0.7\\linewidth
 
 - **Escaping special characters**:
-    - LaTeX special characters (`#`, `$`, `%`, `&`, `~`, `_`, `^`, `{`, `}`, `\\`) must be escaped with a leading backslash when they appear in plain text (e.g., `data\_set`, `C\&C`).
-    - Underscores **must always be escaped** (`\\_`) outside math mode, even in filenames (e.g., memory\_profiler), code-style words, itemize lists, or citation contexts.
+    - LaTeX special characters (`#`, `$`, `%`, `&`, `~`, `_`, `^`, `{`, `}`, `\\`) must be escaped with a leading backslash when they appear in plain text (e.g., `data\\_set`, `C\\&C`).
+    - Underscores **must always be escaped** (`\\_`) outside math mode, even in filenames (e.g., memory\\_profiler), code-style words, itemize lists, or citation contexts.
     
 - Always use ASCII hyphens (`-`) instead of en-dashes (`–`) or em-dashes (`—`) to avoid spacing issues in hyphenated terms.
 - Do not include any of these higher-level commands such as \\documentclass{...}, \\begin{document}, and \\end{document}.

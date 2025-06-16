@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import sys
+import time
 from typing import Any
 
 from langgraph.graph import END, START, StateGraph
@@ -120,6 +121,7 @@ class HtmlSubgraph:
     
     @html_timed
     def _dispatch_workflow(self, state: HtmlSubgraphState) -> dict[str, bool]:
+        time.sleep(3) 
         ok = dispatch_workflow(
             github_owner=state["github_owner"], 
             repository_name=state["repository_name"], 
