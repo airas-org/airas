@@ -24,3 +24,9 @@ updates:
       - "python"
     commit-message:
       prefix: "chore"
+    allow:
+      - dependency-type: "all"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-patch"

@@ -109,7 +109,7 @@ If you use AIRAS in your research, please cite as follows:
 
 ```
 @software{airas2025,
-  author = {Toma Tanaka, Wataru Kumagai, Takumi Matsuzawa, Yuki Yoshino, Ilya Horiguchi, Shiro Takagi, Ryutaro Yamauchi},
+  author = {Toma Tanaka, Takumi Matsuzawa, Yuki Yoshino, Ilya Horiguchi, Shiro Takagi, Ryutaro Yamauchi, Wataru Kumagai},
   title = {AIRAS},
   year = {2025},
   publisher = {GitHub},
