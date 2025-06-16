@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import sys
+import time
 from typing import Any
 
 from langgraph.graph import END, START, StateGraph
@@ -10,13 +11,13 @@ from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.github.nodes.upload_files import upload_files
+from airas.publication.html_subgraph.nodes.dispatch_workflow import dispatch_workflow
 from airas.publication.latex_subgraph.input_data import latex_subgraph_input_data
 from airas.publication.latex_subgraph.nodes.assemble_latex import LatexNode
 from airas.publication.latex_subgraph.nodes.convert_to_latex import (
     convert_to_latex,
 )
 from airas.publication.latex_subgraph.nodes.generate_bib import generate_bib
-from airas.publication.html_subgraph.nodes.dispatch_workflow import dispatch_workflow
 from airas.publication.latex_subgraph.prompt.convert_to_latex_prompt import (
     convert_to_latex_prompt,
 )
@@ -140,6 +141,7 @@ class LatexSubgraph:
 
     @latex_timed
     def _dispatch_workflow(self, state: LatexSubgraphState) -> dict[str, bool]:
+        time.sleep(3)  
         ok = dispatch_workflow(
             github_owner=state["github_owner"], 
             repository_name=state["repository_name"], 
