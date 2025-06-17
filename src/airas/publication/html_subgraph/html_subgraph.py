@@ -44,6 +44,7 @@ class HtmlSubgraphHiddenState(TypedDict):
 
 class HtmlSubgraphOutputState(TypedDict):
     full_html: str
+    github_pages_url: str
 
 
 class HtmlSubgraphState(
@@ -120,7 +121,7 @@ class HtmlSubgraph:
         return {"html_upload": ok_html}
     
     @html_timed
-    def _dispatch_workflow(self, state: HtmlSubgraphState) -> dict[str, bool]:
+    def _dispatch_workflow(self, state: HtmlSubgraphState) -> dict[str, str | bool]:
         time.sleep(3) 
         ok = dispatch_workflow(
             github_owner=state["github_owner"], 
@@ -128,6 +129,7 @@ class HtmlSubgraph:
             branch_name=state["branch_name"], 
             workflow_file=self.workflow_file, 
         )
+        url = ""
         if ok:
             file_name = os.path.basename(self.html_path[0])
             relative_path = os.path.join("branches", state["branch_name"], file_name).replace("\\", "/")
@@ -140,7 +142,10 @@ class HtmlSubgraph:
                 "(It may take a few minutes to reflect on GitHub Pages)"
             )
 
-        return {"dispatch_html_workflow": ok}
+        return {
+            "dispatch_html_workflow": ok,
+            "github_pages_url": url,
+            }
 
 
     def build_graph(self) -> CompiledGraph:

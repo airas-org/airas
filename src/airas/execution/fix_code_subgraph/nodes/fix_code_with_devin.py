@@ -1,14 +1,13 @@
 from logging import getLogger
-from airas.utils.api_request_handler import fetch_api_data, retry_request
+from airas.utils.api_client.devin_client import DevinClient
 
 logger = getLogger(__name__)
 
 def _request_revision_to_devin(
-    headers, session_id: str, output_text_data: str, error_text_data: str
+    session_id: str, output_text_data: str, error_text_data: str
 ):
     url = f"https://api.devin.ai/v1/session/{session_id}/message"
-    data = {
-        "message": f"""
+    message = f"""
 # Instruction
 The following error occurred when executing the code in main.py. Please modify the code and push the modified code to the remote repository.
 Also, if there is no or little content in “Standard Output”, please modify main.py to make the standard output content richer.
@@ -17,33 +16,21 @@ Also, if there is no or little content in “Standard Output”, please modify m
 # Error
 {error_text_data}
 # Standard Output
-{output_text_data}""",
-    }
+{output_text_data}"""
 
-    def should_retry(response):
-        # Describe the process so that it is True if you want to retry
-        return response is not None
-
-    # TODO:RUNNINGならリクエスを送らないようにする
-    return retry_request(
-        fetch_api_data,
-        url,
-        headers=headers,
-        data=data,
-        method="POST",
-        check_condition=should_retry,
+    client = DevinClient()
+    return client.send_message(
+        session_id=session_id,
+        message=message,
     )
 
-
 def fix_code_with_devin(
-    headers: dict,
     session_id: str,
     output_text_data: str,
     error_text_data: str,
-) -> bool:
-    try:
-        _request_revision_to_devin(headers, session_id, output_text_data, error_text_data)
-        return True
-    except Exception as e:
-        logger.error(f"Fix request to Devin failed: {e}")
-        return False
+):
+    response = _request_revision_to_devin(session_id, output_text_data, error_text_data)
+    if response is not None:
+        raise RuntimeError(
+            "Failed to request revision to Devin"
+        )

@@ -1,21 +1,19 @@
 from logging import getLogger
 
-from airas.utils.api_request_handler import fetch_api_data, retry_request
+from airas.utils.api_client.devin_client import DevinClient
 
 logger = getLogger(__name__)
 
 
 def _request_create_session(
-    headers: dict,
     repository_url: str,
     branch_name: str,
     new_method: str,
     experiment_code: str,
     experiment_iteration: int,
 ):
-    url = "https://api.devin.ai/v1/sessions"
-    data = {
-        "prompt": f"""\
+    client = DevinClient()
+    prompt = f"""\
 # Instructions
 The “New Method” and “Experiment Code” sections contain ideas for new machine learning research and the code associated with those ideas. 
 Please follow the “Rules” section to create an experimental script to conduct this research.
@@ -55,14 +53,12 @@ Please follow the “Rules” section to create an experimental script to conduc
 ----------------------------------------
 # Experiment Code
 ----------------------------------------
-{experiment_code}""",
-        "idempotent": True,
-    }
-    return retry_request(fetch_api_data, url, headers=headers, data=data, method="POST")
+{experiment_code}"""
+
+    return client.create_session(prompt_template=prompt)
 
 
 def push_code_with_devin(
-    headers: dict,
     github_repository: str,
     branch_name: str,
     new_method: str,
@@ -72,25 +68,18 @@ def push_code_with_devin(
     github_owner, repository_name = github_repository.split("/", 1)
     repository_url = f"https://github.com/{github_owner}/{repository_name}"
     response = _request_create_session(
-        headers=headers,
         repository_url=repository_url,
         branch_name=branch_name,
         new_method=new_method,
         experiment_code=experiment_code,
         experiment_iteration=experiment_iteration,
     )
-    if response:
-        logger.info("Successfully created Devin session.")
-        experiment_session_id = response["session_id"]
-        experiment_devin_url = response["url"]
-        print(f"Devin URL: {experiment_devin_url}")
-        return (
-            experiment_session_id,
-            experiment_devin_url,
-        )
-    else:
-        logger.error("Failed to create Devin session.")
-        return (
-            "",
-            "",
-        )
+
+    logger.info("Successfully created Devin session.")
+    experiment_session_id = response["session_id"]
+    experiment_devin_url = response["url"]
+    print(f"Devin URL: {experiment_devin_url}")
+    return (
+        experiment_session_id,
+        experiment_devin_url,
+    )

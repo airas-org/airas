@@ -1,6 +1,4 @@
-import json
 import logging
-import os
 from typing import Any, Literal
 
 from langgraph.graph import END, START, StateGraph
@@ -59,10 +57,6 @@ class FixCodeSubgraph:
         llm_name: str = "o3-mini-2025-01-31",
     ):
         self.llm_name = llm_name
-        self.headers = {
-            "Authorization": f"Bearer {os.getenv('DEVIN_API_KEY')}",
-            "Content-Type": "application/json",
-        }
         check_api_key(
             llm_api_key_check=True,
             devin_api_key_check=True,
@@ -86,14 +80,11 @@ class FixCodeSubgraph:
 
     @fix_code_timed
     def _fix_code_with_devin_node(self, state: FixCodeSubgraphState) -> dict:
-        success = fix_code_with_devin(
-            headers=self.headers,
+        fix_code_with_devin(
             session_id=state["experiment_session_id"],
             output_text_data=state["output_text_data"],
             error_text_data=state["error_text_data"],
         )
-        if not success:
-            logger.warning("`fix_code_with_devin` failed. Continuing with `executed_flag=False`")
         return {
             "executed_flag": False
         }
@@ -101,7 +92,6 @@ class FixCodeSubgraph:
     @fix_code_timed
     def _check_devin_completion_node(self, state: FixCodeSubgraphState) -> dict[str, bool]:
         result = check_devin_completion(
-            headers=self.headers,
             session_id=state["experiment_session_id"],
         )
         if result is None:

@@ -189,8 +189,8 @@ class PrepareRepository:
         graph_builder.add_edge("finalize_state", END)
         return graph_builder.compile()
 
-    def run(self, input: dict[str, Any], config: dict | None = None) -> PrepareRepositoryOutputState:
-        result = self.build_graph().invoke(input, config=config or {})
+    def run(self, state: dict[str, Any], config: dict | None = None) -> PrepareRepositoryOutputState:
+        result = self.build_graph().invoke(state, config=config or {})
 
         output_keys = PrepareRepositoryOutputState.__annotations__.keys()
         output = {k: result[k] for k in output_keys if k in result}

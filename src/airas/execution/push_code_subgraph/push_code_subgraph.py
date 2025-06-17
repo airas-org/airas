@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 from typing import Any
 
 from langgraph.graph import END, START, StateGraph
@@ -54,10 +53,6 @@ class PushCodeSubgraph:
     def __init__(
         self,
     ):
-        self.headers = {
-            "Authorization": f"Bearer {os.getenv('DEVIN_API_KEY')}",
-            "Content-Type": "application/json",
-        }
         check_api_key(
             devin_api_key_check=True,
             github_personal_access_token_check=True,
@@ -71,7 +66,6 @@ class PushCodeSubgraph:
     @push_code_timed
     def _push_code_with_devin_node(self, state: PushCodeSubgraphState) -> dict[str, str]:
         experiment_session_id, experiment_devin_url = push_code_with_devin(
-            headers=self.headers,
             github_repository=state["github_repository"],
             branch_name=state["branch_name"],
             new_method=state["new_method"],
@@ -86,7 +80,6 @@ class PushCodeSubgraph:
     @push_code_timed
     def _check_devin_completion_node(self, state: PushCodeSubgraphState) -> dict[str, bool]:
         result = check_devin_completion(
-            headers=self.headers,
             session_id=state["experiment_session_id"],
         )
         if result is None:
@@ -131,8 +124,8 @@ def main():
     input = PushCodeSubgraphInputState(
         new_method="example_method",
         experiment_code="print('Hello, world!')",
-        github_repository="fuyu-quant/airas-temp",
-        branch_name="main",
+        github_repository="auto-res2/test-tanaka-v11",
+        branch_name="develop",
     )
     result = PushCodeSubgraph().run(input)
     print(f"result: {json.dumps(result, indent=2)}")

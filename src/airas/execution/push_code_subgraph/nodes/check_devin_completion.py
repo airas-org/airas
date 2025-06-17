@@ -1,18 +1,14 @@
+import time
 
-from airas.utils.api_request_handler import fetch_api_data, retry_request
+from airas.utils.api_client.devin_client import DevinClient
 
+def check_devin_completion(session_id: str) -> dict | None:
+    client = DevinClient()
+    while True:
+        response = client.retrieve_session(session_id)
+        status = response.get("status_enum")
 
-def check_devin_completion(headers: dict, session_id: str) -> dict | None:
-    url = f"https://api.devin.ai/v1/session/{session_id}"
+        if status in ["blocked", "stopped"]:
+            return response
 
-    def should_retry(response):
-        # Describe the process so that it is True if you want to retry
-        return response.get("status_enum") not in ["blocked", "stopped"]
-
-    return retry_request(
-        fetch_api_data,
-        url,
-        headers=headers,
-        method="GET",
-        check_condition=should_retry,
-    )
+        time.sleep(30)
