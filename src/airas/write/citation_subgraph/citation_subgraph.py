@@ -5,7 +5,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
-from airas.retrieve.retrieve_paper_from_query_subgraph2.nodes.generate_queries import (
+from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.generate_queries import (
     generate_queries,
 )
 from airas.utils.check_api_key import check_api_key
