@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.openai_websearch_titles import (
+from airas.retrieve.retrieve_paper_from_query_subgraph2.nodes.openai_websearch_titles import (
     _extract_json,
     _is_excluded_title,
     openai_websearch_titles,

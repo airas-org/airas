@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from airas.retrieve.retrieve_paper_from_query_subgraph.retrieve_paper_from_query_subgraph import (
+from airas.retrieve.retrieve_paper_from_query_subgraph2.retrieve_paper_from_query_subgraph import (
     RetrievePaperFromQuerySubgraph,
 )
 
