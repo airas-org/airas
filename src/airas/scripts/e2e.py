@@ -50,6 +50,8 @@ latex = LatexSubgraph("o3-mini-2025-01-31")
 readme = ReadmeSubgraph()
 html = HtmlSubgraph("o3-mini-2025-01-31")
 
+upload = GithubUploadSubgraph()
+
 
 def save_state(state, step_name: str, save_dir: str):
     filename = f"{step_name}.json"
@@ -76,7 +78,6 @@ def retrieve_execution_subgraph_list(filename: str, subgraph_name_list: list[str
     subgraph_name_list = subgraph_name_list[start_index + 1:]
     return subgraph_name_list
 
-
 def run_from_state_file(github_repository, branch_name, save_dir: str, filename: str | None = None):
     """
     filenameが指定されていればそのstateファイルから、指定されていなければ最初からsubgraphを順次実行し、各ステップの結果を保存する
@@ -87,15 +88,15 @@ def run_from_state_file(github_repository, branch_name, save_dir: str, filename:
         "retriever3",
         "creator",
         "creator2",
-        "coder",
-        "executor",
-        "fixer",
-        "anlysis",
-        "writer",
-        "citation",
-        "latex",
-        "readme",
-        "html",
+        # "coder",
+        # "executor",
+        # "fixer",
+        # "anlysis",
+        # "writer",
+        # "citation",
+        # "latex",
+        # "readme",
+        # "html",
     ]
 
     if filename:
@@ -107,8 +108,6 @@ def run_from_state_file(github_repository, branch_name, save_dir: str, filename:
         # 最初から実行
         state = {
             "base_queries": ["diffusion model"],
-            "gpu_enabled": True,
-            "experiment_iteration": 1,
             "github_repository": github_repository,
             "branch_name": branch_name,
         }
@@ -117,18 +116,23 @@ def run_from_state_file(github_repository, branch_name, save_dir: str, filename:
         if subgraph_name == "retriever":
             state = retriever.run(state)
             save_state(state, "retriever", save_dir)
+            upload.run(state)
         elif subgraph_name == "retriever2":
             state = retriever2.run(state)
             save_state(state, "retriever2", save_dir)
+            upload.run(state)
         elif subgraph_name == "retriever3":
             state = retriever3.run(state)
             save_state(state, "retriever3", save_dir)
+            upload.run(state)
         elif subgraph_name == "creator":
             state = creator.run(state)
             save_state(state, "creator", save_dir)
+            upload.run(state)
         elif subgraph_name == "creator2":
             state = creator2.run(state)
             save_state(state, "creator2", save_dir)
+            upload.run(state)
         elif subgraph_name == "coder":
             state = coder.run(state)
             save_state(state, "coder", save_dir)
@@ -167,8 +171,8 @@ def run_from_state_file(github_repository, branch_name, save_dir: str, filename:
         
 
 if __name__ == "__main__":
-    github_repository = "auto-res2/test-tanaka-v15"
-    branch_name = "test-1"
+    github_repository = "auto-res2/experiment_script_matsuzawa_5"
+    branch_name = "test"
     
     state = {
         "github_repository": github_repository,

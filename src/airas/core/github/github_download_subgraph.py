@@ -42,7 +42,7 @@ class GithubDownloadSubgraphState(
 
 class GithubDownloadSubgraph:
     def __init__(self):
-        check_api_key(llm_api_key_check=True)
+        check_api_key(github_personal_access_token_check=True,)
         self.research_file_path = ".research/research_history.json"
 
     def _init_state(self, state: GithubDownloadSubgraphState) -> dict[str, str]:
@@ -79,21 +79,7 @@ class GithubDownloadSubgraph:
     
     def run(self, state: dict, config: dict | None = None) -> dict:
         result = self.build_graph().invoke(state, config=config or {})
-
-        output_keys = GithubDownloadOutputState.__annotations__.keys()
-        output = {k: result[k] for k in output_keys if k in result and k != "research_history"}
-        research_history = result.get("research_history", {})
-        
-        merged = {}
-        order = research_history.get("_order", [])
-        for key in order:
-            value = research_history.get(key)
-            merged.update(value)
-
-        return {
-            **merged,
-            **output,
-        }
+        return result.get("research_history", {})
 
 
 if __name__ == "__main__":

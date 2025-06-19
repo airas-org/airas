@@ -14,7 +14,7 @@ def create_branch(
     github_owner: str,
     repository_name: str,
     branch_name: str,
-    main_sha: str,
+    sha: str,
     client: GithubClient | None = None, 
 ) -> Literal[True]:
     if client is None:
@@ -24,10 +24,10 @@ def create_branch(
         github_owner=github_owner,
         repository_name=repository_name,
         branch_name=branch_name,
-        from_sha=main_sha,
+        from_sha=sha,
     )
     if not response:
-        raise RuntimeError(f"Failed to create branch '{branch_name}' from '{main_sha}' in {github_owner}/{repository_name}")
+        raise RuntimeError(f"Failed to create branch '{branch_name}' from '{sha}' in {github_owner}/{repository_name}")
     
     print(f"Branch '{branch_name}' created in repository '{github_owner}/{repository_name}'")
     return response

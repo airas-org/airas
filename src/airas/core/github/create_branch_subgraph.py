@@ -1,103 +1,138 @@
 import argparse
-import logging
-from copy import deepcopy
+from logging import getLogger
 from typing import Any
 
-from airas.core.github.nodes.github_download import github_download
-from airas.core.github.nodes.github_upload import github_upload
-from airas.services.api_client.github_client import GithubClient
+from langgraph.graph import END, START, StateGraph
+from langgraph.graph.graph import CompiledGraph
+from typing_extensions import TypedDict
 
-logger = logging.getLogger(__name__)
+from airas.core.github.nodes.create_branch import create_branch
+from airas.core.github.nodes.find_commit_sha import find_commit_sha
+from airas.utils.check_api_key import check_api_key
+from airas.utils.execution_timers import ExecutionTimeState, time_node
+from airas.utils.logging_utils import setup_logging
 
+setup_logging()
+logger = getLogger(__name__)
 
-def _prune_history(history: dict[str, Any], restart_from: str) -> dict[str, Any]:
-    if not history:
-        raise ValueError(" is empty or does not exist.")
-
-    history = deepcopy(history)
-    order = history.get("_order", [])
-    if restart_from not in order:
-        raise ValueError(f"{restart_from} is not found in _order.")
-
-    keep_until = order.index(restart_from)
-    keep_set = set(order[:keep_until])
-
-    history["_order"] = order[:keep_until]
-
-    for key in list(history.keys()):
-        if key not in keep_set and key != "_order":
-            history.pop(key)
-
-    return history
+create_branch_timed = lambda f: time_node("create_branch_subgraph")(f)  # noqa: E731
 
 
-def create_branch(
-    github_repository: str,
-    from_branch: str,
-    to_branch: str, 
-    restart_from_subgraph: str, 
-    client: GithubClient | None = None,
-) -> bool:
-    client = client or GithubClient()
+class CreateBranchInputState(TypedDict):
+    github_repository: str
+    branch_name: str
 
-    if "/" in github_repository:
-        github_owner, repository_name = github_repository.split("/", 1)
-    else:
-        raise ValueError("Invalid repository name format.")
 
-    base_info = client.get_branch(
-        github_owner, repository_name, from_branch
-    )
-    if base_info is None:
-        raise RuntimeError(
-            f"Branch '{from_branch}' not found in {github_owner}/{repository_name}"
+class CreateBranchHiddenState(TypedDict):
+    github_owner: str
+    repository_name: str
+    target_sha: str
+    branch_created: bool
+
+
+class CreateBranchOutputState(TypedDict):
+    branch_name: str
+
+
+class CreateBranchSubgraphState(
+    CreateBranchInputState,
+    CreateBranchHiddenState,
+    CreateBranchOutputState,
+    ExecutionTimeState,
+): ...
+
+
+class CreateBranchSubgraph:
+    def __init__(
+        self, 
+        new_branch_name: str, 
+        up_to_subgraph: str 
+    ):
+        check_api_key(github_personal_access_token_check=True)
+        self.new_branch_name = new_branch_name
+        self.up_to_subgraph = up_to_subgraph
+    def _init_state(self, state: CreateBranchSubgraphState) -> dict[str, str]:
+        try:
+            github_owner, repository_name = state["github_repository"].split("/", 1)
+            return {
+                "github_owner": github_owner,
+                "repository_name": repository_name,
+            }
+        except ValueError:
+            logger.error(f"Invalid github_repository format: {state['github_repository']}")
+            raise
+        
+    @create_branch_timed
+    def _find_commit_sha(self, state: CreateBranchSubgraphState) -> dict[str, str]:
+        target_sha = find_commit_sha(
+            github_owner=state["github_owner"],
+            repository_name=state["repository_name"],
+            branch_name=state["branch_name"],
+            subgraph_name=self.up_to_subgraph, 
         )
-
-    sha = base_info["commit"]["sha"]
-    ok = client.create_branch(
-        github_owner, repository_name, to_branch, from_sha=sha
-    )
-
-    if not ok:
-        logger.error(f"Failed to create branch {to_branch}")
-        return False
+        return {"target_sha": target_sha}
     
-    research_history = github_download(
-        github_owner=github_owner,
-        repository_name=repository_name,
-        branch_name=from_branch,
-    )
-
-    pruned_history = _prune_history(research_history, restart_from_subgraph)
-
-    success = github_upload(
-        github_owner=github_owner,
-        repository_name=repository_name,
-        branch_name=to_branch,
-        research_history=pruned_history,
-        commit_message=f"[branch:{to_branch}] truncate at {restart_from_subgraph}",
-    )
-    if success:
-        print(
-            f"Created new branch '{to_branch}' from '{from_branch}' "
-            f"and pruned history up to {restart_from_subgraph}"
+    @create_branch_timed
+    def _create_branch(self, state: CreateBranchSubgraphState) -> dict[str, str]:
+        branch_created = create_branch(
+            github_owner=state["github_owner"],
+            repository_name=state["repository_name"],
+            branch_name=self.new_branch_name,
+            sha=state["target_sha"]
         )
-    return ok
+        if not branch_created:
+            raise RuntimeError("Failed to create branch")
+        return {"branch_name": self.new_branch_name}
+
+    def build_graph(self) -> CompiledGraph:
+        sg = StateGraph(CreateBranchSubgraphState)
+        sg.add_node("init_state", self._init_state)
+        sg.add_node("find_commit_sha", self._find_commit_sha)
+        sg.add_node("create_branch", self._create_branch)
+
+        sg.add_edge(START, "init_state")
+        sg.add_edge("init_state", "find_commit_sha")
+        sg.add_edge("find_commit_sha", "create_branch")
+        sg.add_edge("create_branch", END)
+        return sg.compile()
+    
+    def run(
+        self, 
+        state: dict[str, Any], 
+        config: dict | None = None
+    ) -> dict[str, Any]:
+        input_state_keys = CreateBranchInputState.__annotations__.keys()
+        output_state_keys = CreateBranchOutputState.__annotations__.keys()
+
+        input_state = {k: state[k] for k in input_state_keys if k in state}
+        result = self.build_graph().invoke(input_state, config=config or {})
+        output_state = {k: result[k] for k in output_state_keys if k in result}
+
+        cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
+
+        return {
+            "subgraph_name": self.__class__.__name__,
+            **cleaned_state,
+            **output_state, 
+        }
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="CreateBranch")
+    parser = argparse.ArgumentParser(description="CreateBranchSubgraph")
     parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument("from_branch", help="Branch to create from")
-    parser.add_argument("to_branch", help="Name of new branch to create")
-    parser.add_argument("restart_from_subgraph", help="Subgraph name to keep up to")
+    parser.add_argument("branch_name", help="Your Branch name")
+    parser.add_argument("new_branch_name", help="Name of new branch to create")
+    parser.add_argument("up_to_subgraph", help="Subgraph name to keep up to")
 
     args = parser.parse_args()
 
-    result = create_branch(
-        github_repository=args.github_repository,
-        from_branch=args.from_branch,
-        to_branch=args.to_branch,
-        restart_from_subgraph=args.restart_from_subgraph,
-    )
+    state = {
+        "github_repository": args.github_repository, 
+        "branch_name": args.branch_name, 
+    }
+
+    result = CreateBranchSubgraph(
+        new_branch_name=args.new_branch_name,
+        up_to_subgraph=args.up_to_subgraph,
+    ).run(state)
     print(f"result: {result}")
