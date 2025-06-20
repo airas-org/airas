@@ -20,7 +20,6 @@ class ReadmeSubgraphInputState(TypedDict):
     github_repository: str
     branch_name: str
     paper_content: dict
-    output_text_data: str
     experiment_devin_url: str
 
 

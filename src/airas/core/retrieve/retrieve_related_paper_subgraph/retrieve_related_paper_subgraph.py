@@ -66,7 +66,6 @@ retrieve_paper_from_query_timed = lambda f: time_node("retrieve_paper_from_query
 
 class RetrieveRelatedPaperInputState(TypedDict):
     base_queries: list[str]
-    base_github_url: str
     base_method_text: CandidatePaperInfo
     add_queries: list[str] | None
 
@@ -84,10 +83,10 @@ class RetrieveRelatedPaperHiddenState(TypedDict):
     candidate_add_papers_info_list: Annotated[list[CandidatePaperInfo], operator.add]
     selected_add_paper_arxiv_ids: list[str]
     selected_add_paper_info_list: list[CandidatePaperInfo]
+    generated_queries: list[str]
 
 
 class RetrieveRelatedPaperOutputState(TypedDict):
-    generated_queries: list[str]
     add_github_urls: list[str]
     add_method_texts: list[CandidatePaperInfo]
 

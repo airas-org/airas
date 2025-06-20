@@ -37,7 +37,6 @@ class FixCodeSubgraphHiddenState(TypedDict):
 
 
 class FixCodeSubgraphOutputState(TypedDict):
-    output_text_data: str
     push_completion: bool
     executed_flag: bool
 

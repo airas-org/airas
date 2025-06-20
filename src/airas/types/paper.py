@@ -1,6 +1,7 @@
+from pydantic import BaseModel, Field
+from airas.types.arxiv import ArxivInfo
+from typing import Optional, Any
 from typing_extensions import TypedDict
-from pydantic import BaseModel
-
 
 class CandidatePaperInfo(TypedDict):
     arxiv_id: str
@@ -29,3 +30,48 @@ class PaperContent(BaseModel):
     Experimental_Setup: str
     Results: str
     Conclusions: str
+
+
+class LLMExtractedInfo(BaseModel):
+    main_contributions: str = Field(..., description="")
+    methodology: str = Field(..., description="")
+    experimental_setup: str = Field(..., description="")
+    limitations: str = Field(..., description="")
+    future_research_directions: str = Field(..., description="")
+    experimental_code: str = Field(..., description="")
+    experimental_info: str = Field(..., description="")
+
+
+class PaperMetaData(BaseModel):
+		journal: str = Field(..., description="")
+		github_url: str = Field(..., description="")
+
+
+class PaperBody(BaseModel):
+    title: str = Field(..., description="")
+    abstract: str = Field(..., description="")
+    introduction: str = Field(..., description="")
+    related_work: str = Field(..., description="")
+    background: str = Field(..., description="")
+    method: str = Field(..., description="")
+    experimental_setup: str = Field(..., description="")
+    results: str = Field(..., description="")
+    conclusions: str = Field(..., description="")
+
+
+class PaperData(BaseModel):
+    title: str = Field(..., description="")
+    full_text: str = Field(..., description="")
+    paper_meta_info: Optional[PaperMetaData] = Field(..., description="")
+    arxiv_info: Optional[ArxivInfo] = Field(..., description="")
+    llm_extracted_info: Optional[LLMExtractedInfo] = Field(..., description="")
+    paper_body: Optional[PaperBody] = Field(..., description="")
+
+
+class WritePaperData(BaseModel):
+    paper_body: PaperBody
+    citation_paper_body: PaperBody
+    references: dict[str, dict[str, Any]]
+    # tex_text
+    tex_data: str = Field(..., description="")
+    html_data: str
