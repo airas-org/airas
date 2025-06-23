@@ -7,8 +7,10 @@ from langchain_community.document_loaders import PyPDFLoader
 
 from airas.services.api_client.arxiv_client import (
     ArxivClient,
-    ArxivClientFatalError,
-    ArxivClientRetryableError,
+)
+from airas.services.api_client.retry_policy import (
+    HTTPClientFatalError,
+    HTTPClientRetryableError,
 )
 
 logger = getLogger(__name__)
@@ -46,7 +48,7 @@ def retrieve_arxiv_text_from_url(
     # 2) Download the PDF
     try:
         response = client.fetch_pdf(arxiv_id)
-    except (ArxivClientRetryableError, ArxivClientFatalError):
+    except (HTTPClientRetryableError, HTTPClientFatalError):
         logger.error("Failed to fetch PDF, aborting")
         return ""
     
