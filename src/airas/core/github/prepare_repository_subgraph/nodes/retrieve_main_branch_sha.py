@@ -10,7 +10,7 @@ DEVICETYPE = Literal["cpu", "gpu"]
 def retrieve_main_branch_sha(
     github_owner: str,
     repository_name: str,
-    client: GithubClient | None = None, 
+    client: GithubClient | None = None,
 ) -> str:
     if client is None:
         client = GithubClient()
@@ -23,10 +23,13 @@ def retrieve_main_branch_sha(
     try:
         sha = response["commit"]["sha"]
     except (TypeError, KeyError):
-        raise RuntimeError(f"Failed to retrieve SHA for 'main' branch of {github_owner}/{repository_name}")  # noqa: B904
+        error_msg = f"Failed to retrieve SHA for 'main' branch of {github_owner}/{repository_name}"
+        raise RuntimeError(error_msg)  # noqa: B904
 
     if not sha:
-        raise RuntimeError(f"Empty SHA for 'main' branch of {github_owner}/{repository_name}")
+        raise RuntimeError(
+            f"Empty SHA for 'main' branch of {github_owner}/{repository_name}"
+        )
     return sha
 
 

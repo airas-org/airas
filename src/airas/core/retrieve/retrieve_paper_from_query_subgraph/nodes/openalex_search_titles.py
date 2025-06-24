@@ -13,12 +13,13 @@ def _is_excluded_title(title: str) -> bool:
     lowered = title.lower()
     return any(word in lowered for word in _EXCLUDE_KEYWORDS)
 
+
 def openalex_search_titles(
     queries: list[str],
     *,
     year: str | None = None,
     max_results: int = 20,
-    fields: tuple[str] = ("id", "display_name", "publication_year"), 
+    fields: tuple[str] = ("id", "display_name", "publication_year"),
     sleep_sec: float = 0.2,
     client: OpenAlexClient | None = None,
 ) -> list[str] | None:
@@ -39,7 +40,7 @@ def openalex_search_titles(
                     year=year,
                     per_page=per_page,
                     page=current_page,
-                    fields=fields, 
+                    fields=fields,
                 )
             except Exception as exc:
                 logger.warning(f"Search failed for '{q}' (page {current_page}): {exc}")
@@ -63,13 +64,15 @@ def openalex_search_titles(
     if not collected:
         logger.warning("No paper titles obtained for any query")
         return None
-    
+
     return sorted(collected)
 
 
 if __name__ == "__main__":
     results = openalex_search_titles(
-        queries=["This study introduces a vision transformer model for image recognition tasks."],
+        queries=[
+            "This study introduces a vision transformer model for image recognition tasks."
+        ],
         year="2020-2024",
         max_results=20,
     )

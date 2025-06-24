@@ -93,9 +93,9 @@ def _save_html(content: str, save_dir: str, filename: str) -> None:
 
 
 def render_html(
-    paper_html_content: str, 
-    save_dir: str, 
-    filename: str = "index.html", 
+    paper_html_content: str,
+    save_dir: str,
+    filename: str = "index.html",
 ) -> str:
     full_html = _wrap_in_html_template(paper_html_content)
     _save_html(full_html, save_dir, filename)

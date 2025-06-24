@@ -10,8 +10,8 @@ from airas.core.create.create_method_subgraph.input_data import (
     create_method_subgraph_input_data,
 )
 from airas.core.create.create_method_subgraph.nodes.generator_node import generator_node
-from airas.types.paper import CandidatePaperInfo
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.paper import CandidatePaperInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -33,6 +33,7 @@ class CreateMethodSubgraphHiddenState(TypedDict):
 
 class CreateMethodSubgraphOutputState(TypedDict):
     new_method: str
+
 
 class CreateMethodSubgraphState(
     CreateMethodSubgraphInputState,
@@ -64,16 +65,12 @@ class CreateMethodSubgraph:
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(CreateMethodSubgraphState)
         graph_builder.add_node("generator_node", self._generator_node)
-        
+
         graph_builder.add_edge(START, "generator_node")
         graph_builder.add_edge("generator_node", END)
         return graph_builder.compile()
-    
-    def run(
-        self, 
-        state: dict[str, Any], 
-        config: dict | None = None
-    ) -> dict[str, Any]:
+
+    def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
         input_state_keys = CreateMethodSubgraphInputState.__annotations__.keys()
         output_state_keys = CreateMethodSubgraphOutputState.__annotations__.keys()
 
@@ -86,7 +83,7 @@ class CreateMethodSubgraph:
         return {
             "subgraph_name": self.__class__.__name__,
             **cleaned_state,
-            **output_state, 
+            **output_state,
         }
 
 
@@ -97,6 +94,7 @@ def main():
         llm_name=llm_name,
     ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")
+
 
 if __name__ == "__main__":
     try:

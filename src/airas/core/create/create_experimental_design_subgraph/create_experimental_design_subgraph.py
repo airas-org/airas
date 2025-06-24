@@ -18,8 +18,8 @@ from airas.core.create.create_experimental_design_subgraph.nodes.generate_experi
 from airas.core.create.create_experimental_design_subgraph.nodes.generate_experiment_details import (
     generate_experiment_details,
 )
-from airas.types.paper import CandidatePaperInfo
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.paper import CandidatePaperInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -27,7 +27,8 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-create_experimental_design_timed = lambda f: time_node("create_experimental_design_subgraph")(f)  # noqa: E731
+create_str = "create_experimental_design_subgraph"
+create_experimental_design_timed = lambda f: time_node(create_str)(f)  # noqa: E731
 
 
 class CreateExperimentalDesignInputState(TypedDict):
@@ -58,8 +59,8 @@ class CreateExperimentalDesignState(
 
 class CreateExperimentalDesignSubgraph:
     def __init__(
-        self, 
-        llm_name: LLM_MODEL = "o3-mini-2025-01-31", 
+        self,
+        llm_name: LLM_MODEL = "o3-mini-2025-01-31",
     ):
         check_api_key(llm_api_key_check=True)
         self.llm_name = llm_name
@@ -121,11 +122,7 @@ class CreateExperimentalDesignSubgraph:
 
         return graph_builder.compile()
 
-    def run(
-        self, 
-        state: dict[str, Any], 
-        config: dict | None = None
-    ) -> dict[str, Any]:
+    def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
         input_state_keys = CreateExperimentalDesignInputState.__annotations__.keys()
         output_state_keys = CreateExperimentalDesignOutputState.__annotations__.keys()
 
@@ -138,13 +135,15 @@ class CreateExperimentalDesignSubgraph:
         return {
             "subgraph_name": self.__class__.__name__,
             **cleaned_state,
-            **output_state, 
+            **output_state,
         }
+
 
 def main():
     input = create_experimental_design_subgraph_input_data
     result = CreateExperimentalDesignSubgraph().run(input)
     print(f"result: {json.dumps(result, indent=2)}")
+
 
 if __name__ == "__main__":
     try:

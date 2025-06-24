@@ -1,4 +1,3 @@
-
 # Separated prompts for each specialized node
 # 1. Pure Novelty Verification Prompt (No refinement suggestions)
 PURE_NOVELTY_VERIFICATION_PROMPT = """\
@@ -308,7 +307,7 @@ class PromptManager:
     def render_prompt(template_str: str, **kwargs):
         """Render a Jinja2 template with provided context"""
         from jinja2 import Environment
+
         env = Environment()
         template = env.from_string(template_str)
         return template.render(**kwargs)
-

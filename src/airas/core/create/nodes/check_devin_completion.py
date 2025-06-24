@@ -2,6 +2,7 @@ import time
 
 from airas.services.api_client.devin_client import DevinClient
 
+
 def check_devin_completion(session_id: str) -> dict | None:
     client = DevinClient()
     while True:

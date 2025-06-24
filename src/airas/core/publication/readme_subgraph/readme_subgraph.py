@@ -35,7 +35,7 @@ class ReadmeSubgraphOutputState(TypedDict):
 
 class ReadmeSubgraphState(
     ReadmeSubgraphInputState,
-    ReadmeSubgraphHiddenState, 
+    ReadmeSubgraphHiddenState,
     ReadmeSubgraphOutputState,
     ExecutionTimeState,
 ):
@@ -56,7 +56,9 @@ class ReadmeSubgraph:
                 "repository_name": repository_name,
             }
         except ValueError:
-            logger.error(f"Invalid github_repository format: {state['github_repository']}")
+            logger.error(
+                f"Invalid github_repository format: {state['github_repository']}"
+            )
             raise
 
     @readme_timed
@@ -81,12 +83,8 @@ class ReadmeSubgraph:
         graph_builder.add_edge("readme_upload_node", END)
 
         return graph_builder.compile()
-    
-    def run(
-        self, 
-        state: dict[str, Any], 
-        config: dict | None = None
-    ) -> dict[str, Any]:
+
+    def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
         input_state_keys = ReadmeSubgraphInputState.__annotations__.keys()
         output_state_keys = ReadmeSubgraphOutputState.__annotations__.keys()
 
@@ -99,7 +97,7 @@ class ReadmeSubgraph:
         return {
             "subgraph_name": self.__class__.__name__,
             **cleaned_state,
-            **output_state, 
+            **output_state,
         }
 
 
@@ -107,6 +105,7 @@ def main():
     input = readme_subgraph_input_data
     result = ReadmeSubgraph().run(input)
     print(f"result: {json.dumps(result, indent=2)}")
+
 
 if __name__ == "__main__":
     try:

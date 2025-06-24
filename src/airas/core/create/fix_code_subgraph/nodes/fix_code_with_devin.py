@@ -1,7 +1,9 @@
 from logging import getLogger
+
 from airas.services.api_client.devin_client import DevinClient
 
 logger = getLogger(__name__)
+
 
 def _request_revision_to_devin(
     session_id: str, output_text_data: str, error_text_data: str
@@ -23,6 +25,7 @@ Also, if there is no or little content in “Standard Output”, please modify m
         message=message,
     )
 
+
 def fix_code_with_devin(
     session_id: str,
     output_text_data: str,
@@ -30,6 +33,4 @@ def fix_code_with_devin(
 ):
     response = _request_revision_to_devin(session_id, output_text_data, error_text_data)
     if response is not None:
-        raise RuntimeError(
-            "Failed to request revision to Devin"
-        )
+        raise RuntimeError("Failed to request revision to Devin")

@@ -63,10 +63,10 @@ def format_search_results(state) -> str:
 
     return f"""
 ## Selected Base Paper
-{format_selected_paper(state['selected_base_paper_info'])}
+{format_selected_paper(state["selected_base_paper_info"])}
 
 ## Searched Papers
-{format_search_paper_list(state['search_paper_list'])}
+{format_search_paper_list(state["search_paper_list"])}
 """.strip()
 
 

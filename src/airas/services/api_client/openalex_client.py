@@ -29,8 +29,13 @@ logger = getLogger(__name__)
 class ResponseParserProtocol(Protocol):
     def parse(self, response: requests.Response, *, as_: str) -> Any: ...
 
+
 class OpenAlexClientError(RuntimeError): ...
+
+
 class OpenAlexClientRetryableError(OpenAlexClientError): ...
+
+
 class OpenAlexClientFatalError(OpenAlexClientError): ...
 
 
@@ -101,7 +106,7 @@ class OpenAlexClient(BaseHTTPClient):
         year: str | None = None,
         per_page: int = 20,
         page: int = 1,
-        sort: str | None = "relevance_score:desc", 
+        sort: str | None = "relevance_score:desc",
         fields: tuple[str, ...] | None = None,
         timeout: float = 30.0,
     ) -> dict[str, Any]:
@@ -114,7 +119,7 @@ class OpenAlexClient(BaseHTTPClient):
             "publication_date",
             "authorships",
             "biblio",
-            "primary_location", 
+            "primary_location",
         )
 
         fields = fields or DEFAULT_FIELDS
@@ -138,9 +143,10 @@ class OpenAlexClient(BaseHTTPClient):
         self._raise_for_status(resp, path)
         return self._parser.parse(resp, as_="json")
 
+
 if __name__ == "__main__":
     results = OpenAlexClient().search_papers(
         query="cnn",
-        year="2020-2025", 
+        year="2020-2025",
     )
     print(f"{results}")

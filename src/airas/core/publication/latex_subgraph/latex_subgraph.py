@@ -11,7 +11,9 @@ from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.github.nodes.upload_files import upload_files
-from airas.core.publication.html_subgraph.nodes.dispatch_workflow import dispatch_workflow
+from airas.core.publication.html_subgraph.nodes.dispatch_workflow import (
+    dispatch_workflow,
+)
 from airas.core.publication.latex_subgraph.input_data import latex_subgraph_input_data
 from airas.core.publication.latex_subgraph.nodes.assemble_latex import LatexNode
 from airas.core.publication.latex_subgraph.nodes.convert_to_latex import (
@@ -68,12 +70,14 @@ class LatexSubgraph:
         self,
         llm_name: str,
         tmp_dir: str | None = None,
-        paper_name: str = "generated_paper.pdf", 
+        paper_name: str = "generated_paper.pdf",
     ):
         self.llm_name = llm_name
         self.tmp_dir = (
-            tmp_dir if tmp_dir is not None else
-            "/content/tmp" if 'google.colab' in sys.modules or os.path.exists("/content")
+            tmp_dir
+            if tmp_dir is not None
+            else "/content/tmp"
+            if "google.colab" in sys.modules or os.path.exists("/content")
             else "/workspaces/airas/tmp"
         )
         self.paper_name = paper_name
@@ -90,15 +94,17 @@ class LatexSubgraph:
                 "repository_name": repository_name,
             }
         except ValueError:
-            logger.error(f"Invalid github_repository format: {state['github_repository']}")
+            logger.error(
+                f"Invalid github_repository format: {state['github_repository']}"
+            )
             raise
 
     @latex_timed
     def _generate_bib(self, state: LatexSubgraphState) -> dict:
         references_bib = generate_bib(
-            llm_name=self.llm_name, 
-            prompt_template=generate_bib_prompt, 
-            references=state["references"]
+            llm_name=self.llm_name,
+            prompt_template=generate_bib_prompt,
+            references=state["references"],
         )
         return {"references_bib": references_bib}
 
@@ -108,7 +114,7 @@ class LatexSubgraph:
             llm_name=self.llm_name,
             prompt_template=convert_to_latex_prompt,
             paper_content_with_placeholders=state["paper_content_with_placeholders"],
-            references_bib=state["references_bib"], 
+            references_bib=state["references_bib"],
         )
         return {"paper_tex_content": paper_tex_content}
 
@@ -117,17 +123,19 @@ class LatexSubgraph:
         tex_text = LatexNode(
             llm_name=self.llm_name,
             save_dir=self.tmp_dir,
-            pdf_file_name=self.paper_name, 
+            pdf_file_name=self.paper_name,
         ).assemble_latex(
             paper_tex_content=state["paper_tex_content"],
-            references_bib=state["references_bib"], 
+            references_bib=state["references_bib"],
             figures_name=state["image_file_name_list"],
         )
         return {"tex_text": tex_text}
-    
+
     @latex_timed
     def _upload_latex(self, state: LatexSubgraphState) -> dict[str, bool]:
-        local_file_paths = [os.path.join(self.tmp_dir, f) for f in os.listdir(self.tmp_dir)]
+        local_file_paths = [
+            os.path.join(self.tmp_dir, f) for f in os.listdir(self.tmp_dir)
+        ]
         upload_latex_dir = os.path.join(self.upload_dir, "latex")
         ok_pdf = upload_files(
             github_owner=state["github_owner"],
@@ -141,15 +149,17 @@ class LatexSubgraph:
 
     @latex_timed
     def _dispatch_workflow(self, state: LatexSubgraphState) -> dict[str, bool]:
-        time.sleep(3)  
+        time.sleep(3)
         ok = dispatch_workflow(
-            github_owner=state["github_owner"], 
-            repository_name=state["repository_name"], 
-            branch_name=state["branch_name"], 
-            workflow_file=self.workflow_file, 
+            github_owner=state["github_owner"],
+            repository_name=state["repository_name"],
+            branch_name=state["branch_name"],
+            workflow_file=self.workflow_file,
         )
         if ok:
-            relative_path = os.path.join(self.upload_dir, self.paper_name).replace("\\", "/")
+            relative_path = os.path.join(self.upload_dir, self.paper_name).replace(
+                "\\", "/"
+            )
             url = (
                 f"https://github.com/"
                 f"{state['github_owner']}/{state['repository_name']}/blob/"
@@ -158,7 +168,7 @@ class LatexSubgraph:
             print(f"Uploaded Paper available at: {url}")
 
         return {"dispatch_paper_workflow": ok}
-        
+
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(LatexSubgraphState)
         graph_builder.add_node("init_state", self._init_state)
@@ -178,11 +188,7 @@ class LatexSubgraph:
 
         return graph_builder.compile()
 
-    def run(
-        self, 
-        state: dict[str, Any], 
-        config: dict | None = None
-    ) -> dict[str, Any]:
+    def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
         input_state_keys = LatexSubgraphInputState.__annotations__.keys()
         output_state_keys = LatexSubgraphOutputState.__annotations__.keys()
         input_state = {k: state[k] for k in input_state_keys if k in state}
@@ -210,19 +216,22 @@ class LatexSubgraph:
 def main():
     parser = argparse.ArgumentParser(description="LatexSubgraph")
     parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument("branch_name", help="Your branch name in your GitHub repository")
+    parser.add_argument(
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
     args = parser.parse_args()
 
     llm_name = "o3-mini-2025-01-31"
     input = {
-        **latex_subgraph_input_data, 
-        "github_repository": args.github_repository, 
-        "branch_name": args.branch_name, 
+        **latex_subgraph_input_data,
+        "github_repository": args.github_repository,
+        "branch_name": args.branch_name,
     }
 
-    result = LatexSubgraph(
-        llm_name=llm_name, 
+    _ = LatexSubgraph(
+        llm_name=llm_name,
     ).run(input)
+
 
 if __name__ == "__main__":
     try:

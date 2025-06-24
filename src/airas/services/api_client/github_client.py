@@ -25,9 +25,15 @@ logger = logging.getLogger(__name__)
 class ResponseParserProtocol(Protocol):
     def parse(self, response: requests.Response, *, as_: str) -> Any: ...
 
+
 class GithubClientError(RuntimeError): ...
+
+
 class GithubClientRetryableError(GithubClientError): ...
+
+
 class GithubClientFatalError(GithubClientError): ...
+
 
 DEFAULT_MAX_RETRIES = 10
 DEFAULT_INITIAL_WAIT = 1.0
@@ -46,12 +52,13 @@ GITHUB_RETRY = retry(
 # TODO: Raise exceptions for all error cases; let the caller handle failures.
 # TODO: Use an Enum for HTTP status codes and extract retry logic into a mixin for reuse across API clients.
 
+
 class GithubClient(BaseHTTPClient):
     def __init__(
         self,
         base_url: str = "https://api.github.com",
         default_headers: dict[str, str] | None = None,
-        parser: ResponseParserProtocol | None = None, 
+        parser: ResponseParserProtocol | None = None,
     ) -> None:
         auth_headers = {
             "Accept": "application/vnd.github+json",
@@ -70,18 +77,24 @@ class GithubClient(BaseHTTPClient):
 
         if 200 <= code < 300:
             return
-        
+
         if 300 <= code < 400:
             location = response.headers.get("Location", "unknown")
             logger.warning(f"Unexpected redirect ({code}) for {path} → {location}")
-            raise GithubClientRetryableError(f"Redirect response ({code}) for {path}; check Location: {location}")
+            raise GithubClientRetryableError(
+                f"Redirect response ({code}) for {path}; check Location: {location}"
+            )
 
         if code == 403:
             if response.headers.get("X-RateLimit-Remaining") == "0":
                 reset_epoch = int(response.headers.get("X-RateLimit-Reset", "0"))
                 reset_dt = datetime.fromtimestamp(reset_epoch, tz=timezone.utc)
-                delay = max((reset_dt - datetime.now(tz=timezone.utc)).total_seconds(), 0)
-                logger.warning(f"GitHub rate limit exceeded; will retry after {delay:.0f} s (at {reset_dt.isoformat()})")
+                delay = max(
+                    (reset_dt - datetime.now(tz=timezone.utc)).total_seconds(), 0
+                )
+                logger.warning(
+                    f"GitHub rate limit exceeded; will retry after {delay:.0f} s (at {reset_dt.isoformat()})"
+                )
                 raise GithubClientRetryableError(
                     f"Rate limit exceeded for {path}; retry after {delay:.0f} s"
                 )
@@ -89,12 +102,16 @@ class GithubClient(BaseHTTPClient):
                 raise GithubClientFatalError(
                     f"Access forbidden (403) for {path}: {response.text}"
                 )
-                
+
         if 400 <= code < 500:
-            raise GithubClientFatalError(f"Client error {code} for URL {path}: {response.text}")
+            raise GithubClientFatalError(
+                f"Client error {code} for URL {path}: {response.text}"
+            )
 
         if 500 <= code < 600:
-            raise GithubClientRetryableError(f"Server error {code} for URL {path}: {response.text}")
+            raise GithubClientRetryableError(
+                f"Server error {code} for URL {path}: {response.text}"
+            )
 
         raise GithubClientFatalError(f"Unexpected status {code}: {response.text}")
 
@@ -103,9 +120,7 @@ class GithubClient(BaseHTTPClient):
     # --------------------------------------------------
 
     @GITHUB_RETRY
-    def get_repository(
-        self, github_owner: str, repository_name: str
-    ) -> dict:
+    def get_repository(self, github_owner: str, repository_name: str) -> dict:
         # https://docs.github.com/ja/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
         # For public repositories, no access token is required.
         path = f"/repos/{github_owner}/{repository_name}"
@@ -120,14 +135,14 @@ class GithubClient(BaseHTTPClient):
             case _:
                 self._raise_for_status(response, path)
 
-
     def _fetch_content(
-        self, 
-        github_owner: str, 
-        repository_name: str, 
-        file_path: str, 
-        branch_name: str | None = None,  # NOTE: If None, the repository's default branch will be used.
-        as_: Literal["json", "bytes"] = "json", 
+        self,
+        github_owner: str,
+        repository_name: str,
+        file_path: str,
+        branch_name: str
+        | None = None,  # NOTE: If None, the repository's default branch will be used.
+        as_: Literal["json", "bytes"] = "json",
     ) -> dict | bytes:
         # https://docs.github.com/ja/rest/repos/contents?apiVersion=2022-11-28#get-repository-content
         path = f"/repos/{github_owner}/{repository_name}/contents/{file_path}"
@@ -148,24 +163,24 @@ class GithubClient(BaseHTTPClient):
                 logger.error(f"Access forbidden (403): {path}")
                 raise GithubClientFatalError(f"Access forbidden (403): {path}")
             case _:
-                self._raise_for_status(response, path)  
+                self._raise_for_status(response, path)
 
     @GITHUB_RETRY
     def get_repository_content(
-        self, 
-        github_owner: str, 
-        repository_name: str, 
-        file_path: str, 
-        branch_name: str | None = None, 
-        as_: Literal["json", "bytes"] = "json"
+        self,
+        github_owner: str,
+        repository_name: str,
+        file_path: str,
+        branch_name: str | None = None,
+        as_: Literal["json", "bytes"] = "json",
     ) -> dict | bytes:
         # https://docs.github.com/ja/rest/repos/contents?apiVersion=2022-11-28#get-repository-content
         return self._fetch_content(
-            github_owner=github_owner, 
-            repository_name=repository_name, 
-            file_path=file_path, 
-            branch_name=branch_name, 
-            as_=as_, 
+            github_owner=github_owner,
+            repository_name=repository_name,
+            file_path=file_path,
+            branch_name=branch_name,
+            as_=as_,
         )
 
     @GITHUB_RETRY
@@ -216,9 +231,9 @@ class GithubClient(BaseHTTPClient):
             case _:
                 self._raise_for_status(response, path)
                 return False
-            
+
     @GITHUB_RETRY
-    def fork_repository(   # NOTE: Currently unused because a template is being used
+    def fork_repository(  # NOTE: Currently unused because a template is being used
         self,
         repository_name: str,
         device_type: str = "gpu",
@@ -252,26 +267,30 @@ class GithubClient(BaseHTTPClient):
                 logger.error(f"Resource not found (404): {path}")
                 raise GithubClientFatalError(f"Resource not found (404): {path}")
             case 422:
-                logger.error(f"Validation failed, or the endpoint has been spammed (422): {path}")
-                raise GithubClientFatalError(f"Validation failed, or the endpoint has been spammed (422): {path}")
+                logger.error(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
+                raise GithubClientFatalError(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
             case _:
                 self._raise_for_status(response, path)
                 return False
-            
+
     @GITHUB_RETRY
     def create_repository_from_template(
         self,
-        github_owner: str, 
+        github_owner: str,
         repository_name: str,
         template_owner: str,
         template_repo: str,
         include_all_branches: bool = True,
         private: bool = False,
-    ) -> dict | None:        
+    ) -> dict | None:
         # https://docs.github.com/ja/rest/repos/repos?apiVersion=2022-11-28#create-a-repository-using-a-template
         path = f"/repos/{template_owner}/{template_repo}/generate"
         payload: dict[str, Any] = {
-            "owner": github_owner, 
+            "owner": github_owner,
             "name": repository_name,
             "include_all_branches": include_all_branches,
             "private": private,
@@ -280,16 +299,20 @@ class GithubClient(BaseHTTPClient):
         response = self.post(path=path, json=payload)
         match response.status_code:
             case 201:
-                logger.info(f"Repository created from template (201): {template_owner}/{template_repo} → {repository_name}")
+                logger.info(
+                    f"Repository created from template (201): {template_owner}/{template_repo} → {repository_name}"
+                )
                 return self._parser.parse(response, as_="json")
             case 404:
                 raise GithubClientFatalError(f"Template not found (404): {path}")
             case 422:
-                raise GithubClientFatalError(f"Validation failed or repository already exists (422): {response.text}")
+                raise GithubClientFatalError(
+                    f"Validation failed or repository already exists (422): {response.text}"
+                )
             case _:
                 self._raise_for_status(response, path)
-                return None  
-    
+                return None
+
     # --------------------------------------------------
     # Branch
     # --------------------------------------------------
@@ -320,7 +343,7 @@ class GithubClient(BaseHTTPClient):
             case _:
                 self._raise_for_status(response, path)
                 return None
-            
+
     @GITHUB_RETRY
     def create_branch(
         self,
@@ -342,8 +365,12 @@ class GithubClient(BaseHTTPClient):
                 logger.error(f"Conflict creating branch (409): {path}")
                 raise GithubClientFatalError(f"Conflict creating branch (409): {path}")
             case 422:
-                logger.error(f"Validation failed, or the endpoint has been spammed (422): {path}")
-                raise GithubClientFatalError(f"Validation failed, or the endpoint has been spammed (422): {path}")
+                logger.error(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
+                raise GithubClientFatalError(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
             case _:
                 self._raise_for_status(response, path)
                 return False
@@ -372,8 +399,12 @@ class GithubClient(BaseHTTPClient):
                 logger.error("Conflict (409).")
                 raise GithubClientFatalError("Conflict (409).")
             case 422:
-                logger.error("Validation failed, or the endpoint has been spammed (422).")
-                raise GithubClientFatalError("Validation failed, or the endpoint has been spammed (422).")
+                logger.error(
+                    "Validation failed, or the endpoint has been spammed (422)."
+                )
+                raise GithubClientFatalError(
+                    "Validation failed, or the endpoint has been spammed (422)."
+                )
             case _:
                 self._raise_for_status(response, path)
                 return None
@@ -384,17 +415,17 @@ class GithubClient(BaseHTTPClient):
 
     @GITHUB_RETRY
     def create_workflow_dispatch(
-        self, 
-        github_owner: str, 
-        repository_name: str, 
-        workflow_file_name: str, 
-        ref: str, 
-        inputs: dict | None = None, 
+        self,
+        github_owner: str,
+        repository_name: str,
+        workflow_file_name: str,
+        ref: str,
+        inputs: dict | None = None,
     ) -> bool:
         # https://docs.github.com/ja/rest/actions/workflows?apiVersion=2022-11-28#create-a-workflow-dispatch-event
         path = f"/repos/{github_owner}/{repository_name}/actions/workflows/{workflow_file_name}/dispatches"
         json = {"ref": ref, **({"inputs": inputs} if inputs else {})}
-        
+
         response = self.post(path=path, json=json)
         match response.status_code:
             case 204:
@@ -405,21 +436,27 @@ class GithubClient(BaseHTTPClient):
                 raise GithubClientFatalError(f"Access forbidden (403): {path}")
             case 404:
                 logger.error(f"Workflow or repository not found (404): {path}")
-                raise GithubClientFatalError(f"Workflow or repository not found (404): {path}")
+                raise GithubClientFatalError(
+                    f"Workflow or repository not found (404): {path}"
+                )
             case 422:
-                logger.error(f"Validation failed, or the endpoint has been spammed (422): {path}")
-                raise GithubClientFatalError(f"Validation failed, or the endpoint has been spammed (422): {path}")
+                logger.error(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
+                raise GithubClientFatalError(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
             case _:
                 self._raise_for_status(response, path)
                 return False
-            
+
     @GITHUB_RETRY
     def list_workflow_runs(
         self,
-        github_owner: str, 
-        repository_name: str, 
-        branch_name: str, 
-        event: str = "workflow_dispatch", 
+        github_owner: str,
+        repository_name: str,
+        branch_name: str,
+        event: str = "workflow_dispatch",
     ) -> dict | None:
         # https://docs.github.com/ja/rest/actions/workflow-runs?apiVersion=2022-11-28#list-workflow-runs-for-a-repository
         path = f"/repos/{github_owner}/{repository_name}/actions/runs"
@@ -434,19 +471,25 @@ class GithubClient(BaseHTTPClient):
                 raise GithubClientFatalError(f"Access forbidden (403): {path}")
             case 404:
                 logger.error(f"Workflow or repository not found (404): {path}")
-                raise GithubClientFatalError(f"Workflow or repository not found (404): {path}")
+                raise GithubClientFatalError(
+                    f"Workflow or repository not found (404): {path}"
+                )
             case 422:
-                logger.error(f"Validation failed, or the endpoint has been spammed (422): {path}")
-                raise GithubClientFatalError(f"Validation failed, or the endpoint has been spammed (422): {path}")
+                logger.error(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
+                raise GithubClientFatalError(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
             case _:
                 self._raise_for_status(response, path)
                 return None
-            
+
     @GITHUB_RETRY
     def list_repository_artifacts(
-        self, 
-        github_owner: str, 
-        repository_name: str, 
+        self,
+        github_owner: str,
+        repository_name: str,
     ) -> dict | None:
         # https://docs.github.com/ja/rest/actions/artifacts?apiVersion=2022-11-28#list-artifacts-for-a-repository
         path = f"/repos/{github_owner}/{repository_name}/actions/artifacts"
@@ -460,24 +503,30 @@ class GithubClient(BaseHTTPClient):
                 raise GithubClientFatalError(f"Access forbidden (403): {path}")
             case 404:
                 logger.error(f"Workflow or repository not found (404): {path}")
-                raise GithubClientFatalError(f"Workflow or repository not found (404): {path}")
+                raise GithubClientFatalError(
+                    f"Workflow or repository not found (404): {path}"
+                )
             case 422:
-                logger.error(f"Validation failed, or the endpoint has been spammed (422): {path}")
-                raise GithubClientFatalError(f"Validation failed, or the endpoint has been spammed (422): {path}")
+                logger.error(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
+                raise GithubClientFatalError(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
             case _:
                 self._raise_for_status(response, path)
                 return None
-    
+
     @GITHUB_RETRY
     def download_artifact_archive(
-        self, 
-        github_owner: str, 
-        repository_name: str, 
-        artifact_id: int, 
+        self,
+        github_owner: str,
+        repository_name: str,
+        artifact_id: int,
     ) -> bytes | None:
         # https://docs.github.com/ja/rest/actions/artifacts?apiVersion=2022-11-28#download-an-artifact
         path = f"/repos/{github_owner}/{repository_name}/actions/artifacts/{artifact_id}/zip"
-        
+
         response = self.get(path=path, stream=True)
         match response.status_code:
             case 200:
@@ -496,13 +545,13 @@ class GithubClient(BaseHTTPClient):
     # @GITHUB_RETRY
     # def get_repository_content(
     #     self,
-    #     github_owner: str, 
+    #     github_owner: str,
     #     repository_name: str,
     #     path: str,
     #     ):
     #     # https://docs.github.com/ja/rest/repos/contents?apiVersion=2022-11-28#get-repository-content
     #     path = f"/repos/{github_owner}/{repository_name}/contents/{path}"
-        
+
     #     response = self.get(path=path, stream=True)
     #     match response.status_code:
     #         case 200:

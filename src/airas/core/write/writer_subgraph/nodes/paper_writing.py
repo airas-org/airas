@@ -2,7 +2,10 @@ from logging import getLogger
 
 from jinja2 import Environment
 
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.paper import PaperContent
 
 logger = getLogger(__name__)
@@ -17,7 +20,7 @@ class WritingNode:
         refine_round: int = 2,
         refine_only: bool = False,
         target_sections: list[str] | None = None,
-        client: LLMFacadeClient | None = None, 
+        client: LLMFacadeClient | None = None,
     ):
         if target_sections is None:
             target_sections = []

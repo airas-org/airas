@@ -1,3 +1,1 @@
-readme_subgraph_input_data = {
-
-}
+readme_subgraph_input_data = {}

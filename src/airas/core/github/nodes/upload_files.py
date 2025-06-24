@@ -1,4 +1,3 @@
-import argparse
 import logging
 import os
 
@@ -14,13 +13,15 @@ def _upload_single_file(
     upload_dir: str,
     local_path: str,
     commit_message: str,
-    client: GithubClient, 
+    client: GithubClient,
 ) -> bool:
     try:
         with open(local_path, "rb") as f:
             content = f.read()
 
-        target_path = os.path.join(upload_dir, os.path.basename(local_path)).replace("\\", "/")
+        target_path = os.path.join(upload_dir, os.path.basename(local_path)).replace(
+            "\\", "/"
+        )
 
         ok = client.commit_file_bytes(
             github_owner=github_owner,
@@ -39,9 +40,9 @@ def _upload_single_file(
 def upload_files(
     github_owner: str,
     repository_name: str,
-    branch_name: str, 
-    upload_dir: str, 
-    local_file_paths: list[str], 
+    branch_name: str,
+    upload_dir: str,
+    local_file_paths: list[str],
     commit_message: str = "Upload files",
     client: GithubClient | None = None,
 ) -> bool:
