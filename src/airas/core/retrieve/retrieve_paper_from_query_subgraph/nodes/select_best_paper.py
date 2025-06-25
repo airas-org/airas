@@ -3,7 +3,10 @@ from logging import getLogger
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 
 logger = getLogger(__name__)
 
@@ -18,7 +21,7 @@ def select_best_paper(
     candidate_papers,
     selected_base_paper_info=None,
     add_paper_num: int = 3,
-    client: LLMFacadeClient | None = None, 
+    client: LLMFacadeClient | None = None,
 ) -> list[str]:
     if client is None:
         client = LLMFacadeClient(llm_name=llm_name)
@@ -38,7 +41,7 @@ def select_best_paper(
     template = env.from_string(prompt_template)
     messages = template.render(data)
     output, cost = client.structured_outputs(message=messages, data_model=LLMOutput)
-    
+
     if "selected_arxiv_id" in output:
         arxiv_id_str = output["selected_arxiv_id"]
         arxiv_id_list = [
@@ -50,5 +53,3 @@ def select_best_paper(
     else:
         logger.warning("No 'selected_arxiv_id' found in the response.")
         return []
-
-

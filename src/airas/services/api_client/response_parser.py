@@ -1,21 +1,25 @@
 import logging
+from typing import Any, Literal, overload
 
 import requests
-from typing import Any, Literal, overload
 
 logger = logging.getLogger(__name__)
 
 
 class UnexpectedContentTypeError(RuntimeError): ...
 
-class ResponseParser:
 
+class ResponseParser:
     @overload
     def parse(self, response: requests.Response, *, as_: Literal["json"]) -> dict: ...
     @overload
-    def parse(self, response: requests.Response, *, as_: Literal["text", "xml"]) -> str: ...
+    def parse(
+        self, response: requests.Response, *, as_: Literal["text", "xml"]
+    ) -> str: ...
     @overload
-    def parse(self, response: requests.Response, *, as_: Literal["bytes", "binary", "raw"]) -> bytes: ...
+    def parse(
+        self, response: requests.Response, *, as_: Literal["bytes", "binary", "raw"]
+    ) -> bytes: ...
     @overload
     def parse(self, response: requests.Response, *, as_: Literal["none"]) -> None: ...
 
@@ -31,7 +35,6 @@ class ResponseParser:
             return self._to_none(response)
 
         raise ValueError(f"Unsupported 'as_' parameter: {as_!r}")
-
 
     def _to_json(self, response: requests.Response) -> dict:
         if "application/json" not in response.headers.get("Content-Type", ""):

@@ -6,7 +6,10 @@ from logging import getLogger
 
 from pydantic import BaseModel
 
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 
 logger = getLogger(__name__)
 
@@ -22,11 +25,11 @@ class LatexNode:
         self,
         llm_name: LLM_MODEL,
         save_dir: str,
-        pdf_file_name: str = "generated_paper.pdf", 
-        template_file_name: str = "template.tex", 
-        max_iterations: int = 5, 
+        pdf_file_name: str = "generated_paper.pdf",
+        template_file_name: str = "template.tex",
+        max_iterations: int = 5,
         timeout: int = 30,
-        client: LLMFacadeClient | None = None, 
+        client: LLMFacadeClient | None = None,
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
@@ -35,12 +38,16 @@ class LatexNode:
         self.timeout = timeout
         self.client = client or LLMFacadeClient(self.llm_name)
 
-        self.latex_template_dir = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "latex"))
+        self.latex_template_dir = os.path.abspath(
+            os.path.join(SCRIPT_DIR, "..", "latex")
+        )
 
         self.pdf_file_name = pdf_file_name
         self.template_file_name = template_file_name
 
-        self.latex_instance_file = os.path.join(self.save_dir, os.path.splitext(pdf_file_name)[0] + ".tex")
+        self.latex_instance_file = os.path.join(
+            self.save_dir, os.path.splitext(pdf_file_name)[0] + ".tex"
+        )
 
     def _call_llm(self, prompt: str) -> str | None:
         system_prompt = """
@@ -73,14 +80,16 @@ The value of \"latex_full_text\" must contain the complete LaTeX text."""
         with open(self.latex_instance_file, "w") as f:
             f.write(tex_text)
         return tex_text
-    
+
     def _write_references_bib(self, references_bib: dict[str, str]):
         bib_file_path = os.path.join(self.save_dir, "references.bib")
         try:
             with open(bib_file_path, "a", encoding="utf-8") as f:
                 for entry in references_bib.values():
                     f.write("\n\n" + entry.strip())
-            logger.info(f"Wrote {len(references_bib)} BibTeX entries to {bib_file_path}")
+            logger.info(
+                f"Wrote {len(references_bib)} BibTeX entries to {bib_file_path}"
+            )
         except Exception as e:
             logger.error(f"Failed to write references.bib: {e}")
 
@@ -124,7 +133,7 @@ Return the complete LaTeX document, including any bibtex changes."""
     def _check_figures(
         self,
         tex_text: str,
-        figures_name: list[str], 
+        figures_name: list[str],
         pattern: str = r"\\includegraphics.*?{(.*?)}",
     ) -> str:
         referenced_paths = re.findall(pattern, tex_text)
@@ -150,15 +159,11 @@ Please modify and output the above Latex text based on the following instruction
 - If a figure is mentioned on Latex Text, please rewrite the content of Latex Text to cite it.
 - Do not use diagrams that do not exist in “Available Images”.
 - Return the complete LaTeX text."""
-        
+
         tex_text = self._call_llm(prompt) or tex_text
         return tex_text
 
-    def _check_duplicates(
-        self, 
-        tex_text: str, 
-        patterns: dict[str, str]
-    ) -> str:
+    def _check_duplicates(self, tex_text: str, patterns: dict[str, str]) -> str:
         for element_type, pattern in patterns.items():
             items = re.findall(pattern, tex_text)
             duplicates = {x for x in items if items.count(x) > 1}
@@ -169,7 +174,7 @@ Please modify and output the above Latex text based on the following instruction
 --------
 {tex_text}
 --------
-Duplicate {element_type} found: {', '.join(duplicates)}. Ensure any {element_type} is only included once. 
+Duplicate {element_type} found: {", ".join(duplicates)}. Ensure any {element_type} is only included once. 
 If duplicated, identify the best location for the {element_type} and remove any other.
 Return the complete corrected LaTeX text with the duplicates fixed."""
                 tex_text = self._call_llm(prompt) or tex_text
@@ -189,7 +194,7 @@ Return the complete corrected LaTeX text with the duplicates fixed."""
 
                 if not check_output:
                     return tex_text
-                
+
                 error_messages = check_output.strip().split("\n")
                 formatted_errors = "\n".join(
                     f"- {msg}" for msg in error_messages if msg
@@ -206,32 +211,35 @@ Make the minimal fix required and do not remove or change any packages unnecessa
 Pay attention to any accidental uses of HTML syntax, e.g. </end instead of \\end.
 
 Return the complete corrected LaTeX text."""
-                    
-                tex_text =  self._call_llm(prompt) or tex_text
+
+                tex_text = self._call_llm(prompt) or tex_text
             return tex_text
         except FileNotFoundError:
             logger.error("chktex command not found. Skipping LaTeX checks.")
             return tex_text
 
     def assemble_latex(
-        self, 
-        paper_tex_content: dict[str, str], 
-        references_bib: dict[str, str], 
-        figures_name: list[str], 
+        self,
+        paper_tex_content: dict[str, str],
+        references_bib: dict[str, str],
+        figures_name: list[str],
     ) -> str:
         self._copy_template()
         tex_text = self._fill_template(paper_tex_content)
         self._write_references_bib(references_bib)
 
         for i in range(self.max_iterations):
-            logger.info(f"=== Iteration {i+1} ===")
+            logger.info(f"=== Iteration {i + 1} ===")
             updated = tex_text
             updated = self._check_references(updated)
             updated = self._check_figures(updated, figures_name)
-            updated = self._check_duplicates(updated, {
-                "figure": r"\\includegraphics.*?{(.*?)}",
-                "section header": r"\\section{([^}]*)}"
-            })
+            updated = self._check_duplicates(
+                updated,
+                {
+                    "figure": r"\\includegraphics.*?{(.*?)}",
+                    "section header": r"\\section{([^}]*)}",
+                },
+            )
             # updated = self._fix_latex_errors(updated)
 
             if updated == tex_text:
@@ -255,7 +263,7 @@ if __name__ == "__main__":
         "introduction": "This is a sample introduction.",
         "method": "This is a sample method.",
         "results": "These are the sample results.",
-        "conclusion": "This is a sample conclusion."
+        "conclusion": "This is a sample conclusion.",
     }
 
     references_bib = {
@@ -269,11 +277,8 @@ if __name__ == "__main__":
 
     image_file_name_list = ["figure1.png", "figure2.jpg"]
 
-    result = LatexNode(
-        llm_name=llm_name, 
-        save_dir=tmp_dir
-    ).assemble_latex(
-        paper_tex_content=paper_tex_content, 
-        references_bib=references_bib, 
-        figures_name=image_file_name_list, 
+    result = LatexNode(llm_name=llm_name, save_dir=tmp_dir).assemble_latex(
+        paper_tex_content=paper_tex_content,
+        references_bib=references_bib,
+        figures_name=image_file_name_list,
     )

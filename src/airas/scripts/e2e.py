@@ -1,28 +1,24 @@
-from airas.core import (
-    AnalyticSubgraph,
-    CreateExperimentalDesignSubgraph,
-    CreateMethodSubgraph,
-    CreateCodeSubgraph,
-    FixCodeSubgraph,
-    GitHubActionsExecutorSubgraph,
-    PrepareRepositorySubgraph,
-    GithubDownloadSubgraph,
-    GithubUploadSubgraph,
-    HtmlSubgraph,
-    LatexSubgraph,
-    ReadmeSubgraph,
-    RetrieveCodeSubgraph,
-    RetrievePaperFromQuerySubgraph,
-    RetrieveRelatedPaperSubgraph,
-    CitationSubgraph,
-    WriterSubgraph,
-    create_branch,
-)
-
 import json
 import os
 from datetime import datetime
 
+from airas.core import (
+    AnalyticSubgraph,
+    CitationSubgraph,
+    CreateCodeSubgraph,
+    CreateExperimentalDesignSubgraph,
+    CreateMethodSubgraph,
+    FixCodeSubgraph,
+    GitHubActionsExecutorSubgraph,
+    HtmlSubgraph,
+    LatexSubgraph,
+    PrepareRepositorySubgraph,
+    ReadmeSubgraph,
+    RetrieveCodeSubgraph,
+    RetrievePaperFromQuerySubgraph,
+    RetrieveRelatedPaperSubgraph,
+    WriterSubgraph,
+)
 
 scrape_urls = [
     "https://icml.cc/virtual/2024/papers.html?filter=title",
@@ -30,13 +26,17 @@ scrape_urls = [
     # "https://nips.cc/virtual/2024/papers.html?filter=title",
     # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=title",
 ]
-#llm_name = "o3-mini-2025-01-31"
+# llm_name = "o3-mini-2025-01-31"
 llm_name = "gemini-2.0-flash-001"
 save_dir = "/workspaces/airas/data"
 
 prepare = PrepareRepositorySubgraph()
-retriever = RetrievePaperFromQuerySubgraph(llm_name=llm_name, save_dir=save_dir, scrape_urls=scrape_urls)
-retriever2 = RetrieveRelatedPaperSubgraph(llm_name=llm_name, save_dir=save_dir, scrape_urls=scrape_urls)
+retriever = RetrievePaperFromQuerySubgraph(
+    llm_name=llm_name, save_dir=save_dir, scrape_urls=scrape_urls
+)
+retriever2 = RetrieveRelatedPaperSubgraph(
+    llm_name=llm_name, save_dir=save_dir, scrape_urls=scrape_urls
+)
 retriever3 = RetrieveCodeSubgraph(llm_name=llm_name)
 creator = CreateMethodSubgraph(llm_name="o3-mini-2025-01-31")
 creator2 = CreateExperimentalDesignSubgraph(llm_name="o3-mini-2025-01-31")
@@ -56,28 +56,32 @@ def save_state(state, step_name: str, save_dir: str):
     state_save_dir = f"/workspaces/airas/data/{save_dir}"
     os.makedirs(state_save_dir, exist_ok=True)
     filepath = os.path.join(state_save_dir, filename)
-    with open(filepath, 'w', encoding='utf-8') as f:
+    with open(filepath, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2, ensure_ascii=False, default=str)
-    
+
     print(f"State saved: {filepath}")
     return state_save_dir
 
 
 def load_state(file_path: str) -> dict:
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         state = json.load(f)
     print(f"State loaded: {file_path}")
     return state
 
 
-def retrieve_execution_subgraph_list(filename: str, subgraph_name_list: list[str]) -> list[str]:
-    START_FROM_STEP = filename.split('_')[1]
+def retrieve_execution_subgraph_list(
+    filename: str, subgraph_name_list: list[str]
+) -> list[str]:
+    START_FROM_STEP = filename.split("_")[1]
     start_index = subgraph_name_list.index(START_FROM_STEP)
-    subgraph_name_list = subgraph_name_list[start_index + 1:]
+    subgraph_name_list = subgraph_name_list[start_index + 1 :]
     return subgraph_name_list
 
 
-def run_from_state_file(github_repository, branch_name, save_dir: str, filename: str | None = None):
+def run_from_state_file(
+    github_repository, branch_name, save_dir: str, filename: str | None = None
+):
     """
     filenameが指定されていればそのstateファイルから、指定されていなければ最初からsubgraphを順次実行し、各ステップの結果を保存する
     """
@@ -102,7 +106,9 @@ def run_from_state_file(github_repository, branch_name, save_dir: str, filename:
         # stateをロード
         state = load_state(filename)
         # 実行対象のsubgraphリストを取得
-        subgraph_name_list = retrieve_execution_subgraph_list(filename, subgraph_name_list)
+        subgraph_name_list = retrieve_execution_subgraph_list(
+            filename, subgraph_name_list
+        )
     else:
         # 最初から実行
         state = {
@@ -164,22 +170,22 @@ def run_from_state_file(github_repository, branch_name, save_dir: str, filename:
         elif subgraph_name == "html":
             state = html.run(state)
             save_state(state, "html", save_dir)
-        
+
 
 if __name__ == "__main__":
     github_repository = "auto-res2/test-tanaka-v15"
     branch_name = "test-1"
-    
+
     state = {
         "github_repository": github_repository,
         "branch_name": branch_name,
-      }
+    }
     prepare.run(state)
-    
+
     save_dir = datetime.now().strftime("%Y%m%d_%H%M%S")
     # file_name = "state_coder_20250610_160554.json"
     # run_from_state_file(github_repository, branch_name, file_name)
-    run_from_state_file(github_repository, branch_name, save_dir = save_dir)
+    run_from_state_file(github_repository, branch_name, save_dir=save_dir)
 
     # import sys
     # if len(sys.argv) > 1:

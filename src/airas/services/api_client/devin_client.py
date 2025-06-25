@@ -26,7 +26,11 @@ class ResponseParserProtocol(Protocol):
 
 
 class DevinClientError(RuntimeError): ...
+
+
 class DevinClientRetryableError(DevinClientError): ...
+
+
 class DevinClientFatalError(DevinClientError): ...
 
 
@@ -71,7 +75,6 @@ class DevinClient(BaseHTTPClient):
         )
         self._parser = parser or ResponseParser()
 
-
     @staticmethod
     def _raise_for_status(resp: requests.Response, path: str) -> None:
         code = resp.status_code
@@ -82,7 +85,6 @@ class DevinClient(BaseHTTPClient):
         if 500 <= code < 600:
             raise DevinClientRetryableError(f"Server error {code}: {path}")
         raise DevinClientFatalError(f"Client error {code}: {path}")
-
 
     @DEVIN_RETRY
     def create_session(
@@ -104,7 +106,6 @@ class DevinClient(BaseHTTPClient):
 
         return self._parser.parse(response, as_="json")
 
-
     @DEVIN_RETRY
     def retrieve_session(
         self,
@@ -118,22 +119,18 @@ class DevinClient(BaseHTTPClient):
         self._raise_for_status(response, path)
         return self._parser.parse(response, as_="json")
 
-
     @DEVIN_RETRY
     def send_message(
         self,
         *,
         session_id: str,
-        message: str, 
-        extra_params: dict[str, Any] | None = None, 
+        message: str,
+        extra_params: dict[str, Any] | None = None,
         timeout: float = 60.0,
     ) -> dict[str, Any]:
         # https://docs.devin.ai/api-reference/sessions/send-a-message-to-an-existing-devin-session
         path = f"session/{session_id}/message"
-        payload = {
-            "message": message,
-            **(extra_params or {})
-        }
+        payload = {"message": message, **(extra_params or {})}
         response = self.post(path=path, json=payload, timeout=timeout)
         self._raise_for_status(response, path)
         return self._parser.parse(response, as_="json")

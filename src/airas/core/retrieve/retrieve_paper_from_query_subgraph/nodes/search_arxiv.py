@@ -24,7 +24,8 @@ class ArxivResponse(BaseModel):
     summary: str = Field(default="No summary")
 
 
-_start_indices: dict[str, int] = {} 
+_start_indices: dict[str, int] = {}
+
 
 def _get_date_range(period_days: int | None) -> tuple[str, str] | tuple[None, None]:
     if period_days is None:
@@ -51,10 +52,7 @@ def _validate_entry(entry: Any) -> ArxivResponse | None:
 
 
 def _search_papers(
-    query: str, 
-    num_retrieve_paper: int, 
-    period_days: int | None, 
-    client: ArxivClient
+    query: str, num_retrieve_paper: int, period_days: int | None, client: ArxivClient
 ) -> list[dict[str, Any]]:
     from_date, to_date = _get_date_range(period_days)
     start_index = _start_indices.get(query, 0)
@@ -70,7 +68,7 @@ def _search_papers(
     except (ArxivClientRetryableError, ArxivClientFatalError) as e:
         logger.warning(f"arXiv API request failed: {e}")
         return []
-    
+
     feed = feedparser.parse(xml_feed)
     papers = [
         paper.model_dump()
@@ -84,25 +82,25 @@ def _search_papers(
 
 
 def search_arxiv(
-    queries: list[str], 
-    num_retrieve_paper: int = 5, 
-    period_days: int | None = None, 
-    client: ArxivClient | None = None, 
+    queries: list[str],
+    num_retrieve_paper: int = 5,
+    period_days: int | None = None,
+    client: ArxivClient | None = None,
 ) -> list[dict[str, Any]]:
     if client is None:
         client = ArxivClient()
     if not queries:
         logger.warning("No queries provided. Returning empty list.")
         return []
-    
+
     all_papers = []
     for query in queries:
         all_papers.extend(
             _search_papers(
-                query, 
-                num_retrieve_paper, 
-                period_days, 
-                client, 
+                query,
+                num_retrieve_paper,
+                period_days,
+                client,
             )
         )
     return all_papers

@@ -3,9 +3,9 @@ from typing import Any
 
 
 def merge_history(
-    old: dict[str, Any], 
-    new: dict[str, Any], 
-    subgraph_name: str,     
+    old: dict[str, Any],
+    new: dict[str, Any],
+    subgraph_name: str,
 ) -> dict[str, Any]:
     merged = deepcopy(old) if old else {}
 
@@ -16,7 +16,7 @@ def merge_history(
 
     delta = {k: v for k, v in new.items() if k not in existing_state_keys}
     if not delta:
-        return merged              
+        return merged
 
     order = merged.setdefault("_order", [])
     if subgraph_name not in order:
@@ -30,6 +30,7 @@ def merge_history(
             ordered[name] = merged[name]
 
     return ordered
+
 
 if __name__ == "__main__":
     old_1 = {

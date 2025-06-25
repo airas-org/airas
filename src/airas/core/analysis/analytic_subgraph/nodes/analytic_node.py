@@ -6,7 +6,10 @@ from pydantic import BaseModel
 from airas.core.analysis.analytic_subgraph.prompt.analytic_node_prompt import (
     analytic_node_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 
 logger = getLogger(__name__)
 
@@ -21,7 +24,7 @@ def analytic_node(
     verification_policy: str,
     experiment_code: str,
     output_text_data: str,
-    client: LLMFacadeClient | None = None, 
+    client: LLMFacadeClient | None = None,
 ) -> str | None:
     if client is None:
         client = LLMFacadeClient(llm_name=llm_name)
@@ -35,9 +38,7 @@ def analytic_node(
         "output_text_data": output_text_data,
     }
     messages = template.render(data)
-    output, cost = client.structured_outputs(
-        message=messages, data_model=LLMOutput
-    )
+    output, cost = client.structured_outputs(message=messages, data_model=LLMOutput)
     if output is None:
         logger.error("Error: No response from LLM.")
         return None

@@ -3,6 +3,7 @@ from logging import getLogger
 from typing import Any, Protocol, runtime_checkable
 
 import requests
+from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 from tenacity import (
     before_log,
     before_sleep_log,
@@ -17,15 +18,18 @@ from airas.services.api_client.response_parser import ResponseParser
 
 logger = getLogger(__name__)
 
-from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
-
 
 @runtime_checkable
 class ResponseParserProtocol(Protocol):
     def parse(self, response: requests.Response, *, as_: str) -> Any: ...
 
+
 class ArxivClientError(RuntimeError): ...
+
+
 class ArxivClientRetryableError(ArxivClientError): ...
+
+
 class ArxivClientFatalError(ArxivClientError): ...
 
 
@@ -54,7 +58,7 @@ class ArxivClient(BaseHTTPClient):
         self,
         base_url: str = "https://export.arxiv.org/api",
         default_headers: dict[str, str] | None = None,
-        parser: ResponseParserProtocol | None = None, 
+        parser: ResponseParserProtocol | None = None,
     ):
         super().__init__(base_url=base_url, default_headers=default_headers)
         self._parser = parser or ResponseParser()
@@ -69,7 +73,6 @@ class ArxivClient(BaseHTTPClient):
             raise ArxivClientRetryableError(f"Server error {code} : {path}")
 
         raise ArxivClientFatalError(f"Client error {code} : {path}")
-
 
     @ARXIV_RETRY
     def search(
