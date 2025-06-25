@@ -20,11 +20,17 @@ def retrieve_main_branch_sha(
         repository_name=repository_name,
         branch_name="main",
     )
+
+    if not response or not isinstance(response, dict):
+        raise RuntimeError(
+            f"Failed to retrieve branch info for 'main' branch of {github_owner}/{repository_name}"
+        )
+
     try:
         sha = response["commit"]["sha"]
     except (TypeError, KeyError):
-        error_msg = f"Failed to retrieve SHA for 'main' branch of {github_owner}/{repository_name}"
-        raise RuntimeError(error_msg)  # noqa: B904
+        msg = f"Invalid response format for 'main' branch of {github_owner}/{repository_name}"
+        raise RuntimeError(msg)  # noqa: B904
 
     if not sha:
         raise RuntimeError(
