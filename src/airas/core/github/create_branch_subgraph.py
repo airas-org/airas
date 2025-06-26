@@ -34,8 +34,8 @@ def _prune_history(history: dict[str, Any], restart_from: str) -> dict[str, Any]
 def create_branch(
     github_repository: str,
     from_branch: str,
-    to_branch: str, 
-    restart_from_subgraph: str, 
+    to_branch: str,
+    restart_from_subgraph: str,
     client: GithubClient | None = None,
 ) -> bool:
     client = client or GithubClient()
@@ -45,23 +45,19 @@ def create_branch(
     else:
         raise ValueError("Invalid repository name format.")
 
-    base_info = client.get_branch(
-        github_owner, repository_name, from_branch
-    )
+    base_info = client.get_branch(github_owner, repository_name, from_branch)
     if base_info is None:
         raise RuntimeError(
             f"Branch '{from_branch}' not found in {github_owner}/{repository_name}"
         )
 
     sha = base_info["commit"]["sha"]
-    ok = client.create_branch(
-        github_owner, repository_name, to_branch, from_sha=sha
-    )
+    ok = client.create_branch(github_owner, repository_name, to_branch, from_sha=sha)
 
     if not ok:
         logger.error(f"Failed to create branch {to_branch}")
         return False
-    
+
     research_history = github_download(
         github_owner=github_owner,
         repository_name=repository_name,

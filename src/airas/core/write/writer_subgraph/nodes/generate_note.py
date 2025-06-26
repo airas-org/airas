@@ -37,6 +37,7 @@ def generate_note(state: dict) -> str:
 
     return template.render(sections=sections)
 
+
 if __name__ == "__main__":
     sample_state = {
         "base_method_text": "Baseline method using XYZ.",
@@ -46,7 +47,7 @@ if __name__ == "__main__":
         "experiment_code": "def run(): pass",
         "output_text_data": "Achieved 95% accuracy.",
         "analysis_report": "Consistent improvement observed.",
-        "image_file_name_list": ["fig1.pdf", "fig2.pdf"]
+        "image_file_name_list": ["fig1.pdf", "fig2.pdf"],
     }
 
     note_text = generate_note(sample_state)

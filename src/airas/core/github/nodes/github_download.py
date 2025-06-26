@@ -10,15 +10,17 @@ logger = logging.getLogger(__name__)
 
 
 def github_download(
-    github_owner: str, 
-    repository_name: str, 
-    branch_name: str, 
-    file_path: str = ".research/research_history.json", 
-    client: GithubClient | None = None, 
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    file_path: str = ".research/research_history.json",
+    client: GithubClient | None = None,
 ) -> dict[str, Any]:
     if client is None:
         client = GithubClient()
-    logger.info(f"[GitHub I/O] Download: {github_owner}/{repository_name}@{branch_name}:{file_path}")
+    logger.info(
+        f"[GitHub I/O] Download: {github_owner}/{repository_name}@{branch_name}:{file_path}"
+    )
 
     try:
         blob = client.get_repository_content(
@@ -31,8 +33,8 @@ def github_download(
         return json.loads(raw) if raw else {}
     except FileNotFoundError as e:
         logger.error(f"State file not found – start with empty dict: {e}")
-        raise 
-    
+        raise
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -41,11 +43,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="github_download")
     parser.add_argument("github_owner", help="Your github owner")
     parser.add_argument("repository_name", help="Your repository name")
-    parser.add_argument("branch_name", help="Your branch name in your GitHub repository")
     parser.add_argument(
-        "--file_path", 
-        help="Your branch name in your GitHub repository", 
-        default=".research/research_history.json"
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
+    parser.add_argument(
+        "--file_path",
+        help="Your branch name in your GitHub repository",
+        default=".research/research_history.json",
     )
     args = parser.parse_args()
 

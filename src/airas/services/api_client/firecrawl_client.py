@@ -24,9 +24,15 @@ logger = getLogger(__name__)
 class ResponseParserProtocol(Protocol):
     def parse(self, response: requests.Response, *, as_: str) -> Any: ...
 
+
 class FireCrawlClientError(RuntimeError): ...
+
+
 class FireCrawlClientRetryableError(FireCrawlClientError): ...
+
+
 class FireCrawlClientFatalError(FireCrawlClientError): ...
+
 
 DEFAULT_MAX_RETRIES = 10
 WAIT_POLICY = wait_exponential(multiplier=1.0, max=180.0)
@@ -44,7 +50,7 @@ FIRECRAWL_RETRY = retry(
     before=before_log(logger, logging.WARNING),
     before_sleep=before_sleep_log(logger, logging.WARNING),
     reraise=True,
-    retry=retry_if_exception_type(RETRY_EXC), 
+    retry=retry_if_exception_type(RETRY_EXC),
 )
 
 
@@ -53,7 +59,7 @@ class FireCrawlClient(BaseHTTPClient):
         self,
         base_url: str = "https://api.firecrawl.dev/v1",
         default_headers: dict[str, str] | None = None,
-        parser: ResponseParserProtocol | None = None, 
+        parser: ResponseParserProtocol | None = None,
     ):
         api_key = os.getenv("FIRE_CRAWL_API_KEY")
         if not api_key:
@@ -79,7 +85,6 @@ class FireCrawlClient(BaseHTTPClient):
         if 500 <= code < 600:
             raise FireCrawlClientRetryableError(f"Server error {code}: {path}")
         raise FireCrawlClientFatalError(f"Client error {code}: {path}")
-
 
     @FIRECRAWL_RETRY
     def scrape(

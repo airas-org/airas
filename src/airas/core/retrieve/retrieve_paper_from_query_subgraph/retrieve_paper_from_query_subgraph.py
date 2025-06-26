@@ -53,7 +53,8 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-retrieve_paper_from_query_timed = lambda f: time_node("retrieve_paper_from_query_subgraph")(f)  # noqa: E731
+retrieve_str = "retrieve_paper_from_query_subgraph"
+retrieve_paper_from_query_timed = lambda f: time_node(retrieve_str)(f)  # noqa: E731
 
 
 class RetrievePaperFromQueryInputState(TypedDict):
@@ -140,7 +141,7 @@ class RetrievePaperFromQuerySubgraph:
             llm_name="gemini-2.0-flash-001",
             queries=state["base_queries"],
             scraped_results=state["scraped_results"],
-            prompt_template=extract_paper_title_prompt
+            prompt_template=extract_paper_title_prompt,
         )
         return {"extracted_paper_titles": extracted_paper_titles}
 
@@ -164,7 +165,7 @@ class RetrievePaperFromQuerySubgraph:
             : min(len(extract_paper_titles), self.arxiv_query_batch_size)
         ]
         search_paper_list = search_arxiv(
-            queries=batch_paper_titles, 
+            queries=batch_paper_titles,
             num_retrieve_paper=self.arxiv_num_retrieve_paper,
         )
         return {
@@ -180,8 +181,7 @@ class RetrievePaperFromQuerySubgraph:
         logger.info(f"process_index: {process_index}")
         paper_info = state["search_paper_list"][process_index]
         paper_full_text = retrieve_arxiv_text_from_url(
-            papers_dir=self.papers_dir, 
-            arxiv_url=paper_info["arxiv_url"]
+            papers_dir=self.papers_dir, arxiv_url=paper_info["arxiv_url"]
         )
         return {"paper_full_text": paper_full_text}
 
@@ -196,7 +196,7 @@ class RetrievePaperFromQuerySubgraph:
             text=paper_full_text,
             paper_summary=paper_summary,
             llm_name="gemini-2.0-flash-001",
-            prompt_template=extract_github_url_from_text_prompt
+            prompt_template=extract_github_url_from_text_prompt,
         )
         # GitHub URLが取得できなかった場合は次の論文を処理するためにProcess Indexを進める
         process_index = process_index + 1 if github_url == "" else process_index
@@ -359,11 +359,7 @@ class RetrievePaperFromQuerySubgraph:
         graph_builder.add_edge("prepare_state", END)
         return graph_builder.compile()
 
-    def run(
-        self, 
-        state: dict[str, Any], 
-        config: dict | None = None
-    ) -> dict[str, Any]:
+    def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
         config = {**{"recursion_limit": 100}, **(config or {})}
 
         input_state_keys = RetrievePaperFromQueryInputState.__annotations__.keys()
@@ -378,7 +374,7 @@ class RetrievePaperFromQuerySubgraph:
         return {
             "subgraph_name": self.__class__.__name__,
             **cleaned_state,
-            **output_state, 
+            **output_state,
         }
 
 
@@ -399,6 +395,7 @@ def main():
         scrape_urls=scrape_urls,
     ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")
+
 
 if __name__ == "__main__":
     try:

@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 analytic_timed = lambda f: time_node("analytic_subgraph")(f)  # noqa: E731
 
 
-
 class AnalyticSubgraphInputState(TypedDict):
     new_method: str
     verification_policy: str
@@ -72,12 +71,8 @@ class AnalyticSubgraph:
         graph_builder.add_edge(START, "analytic_node")
         graph_builder.add_edge("analytic_node", END)
         return graph_builder.compile()
-    
-    def run(
-        self, 
-        state: dict[str, Any], 
-        config: dict | None = None
-    ) -> dict[str, Any]:
+
+    def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
         input_state_keys = AnalyticSubgraphInputState.__annotations__.keys()
         output_state_keys = AnalyticSubgraphOutputState.__annotations__.keys()
 
@@ -90,7 +85,7 @@ class AnalyticSubgraph:
         return {
             "subgraph_name": self.__class__.__name__,
             **cleaned_state,
-            **output_state, 
+            **output_state,
         }
 
 
@@ -103,6 +98,7 @@ def main():
     ).run(input)
 
     print(f"result: {json.dumps(result, indent=2)}")
+
 
 if __name__ == "__main__":
     try:

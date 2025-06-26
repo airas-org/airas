@@ -225,7 +225,7 @@ class ReviewNode:
                 return review_feedback, review_scores, llm_return_to
 
             except Exception as e:
-                print(f"[Attempt {attempt+1}/{max_retries}] Unexpected error: {e}")
+                print(f"[Attempt {attempt + 1}/{max_retries}] Unexpected error: {e}")
         print("Exceeded maximum retries for LLM call.")
         return None
 

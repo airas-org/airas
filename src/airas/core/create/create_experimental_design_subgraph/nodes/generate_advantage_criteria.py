@@ -3,17 +3,20 @@ from jinja2 import Environment
 from airas.core.create.create_experimental_design_subgraph.prompt.generate_advantage_criteria_prompt import (
     generate_advantage_criteria_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 
 
 def generate_advantage_criteria(
-    llm_name: LLM_MODEL, 
-    new_method: str, 
-    client: LLMFacadeClient | None = None, 
+    llm_name: LLM_MODEL,
+    new_method: str,
+    client: LLMFacadeClient | None = None,
 ) -> str:
     if client is None:
         client = LLMFacadeClient(llm_name=llm_name)
-        
+
     env = Environment()
     template = env.from_string(generate_advantage_criteria_prompt)
     data = {

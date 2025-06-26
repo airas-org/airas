@@ -6,9 +6,10 @@ from airas.services.api_client.openalex_client import OpenAlexClient
 
 logger = logging.getLogger(__name__)
 
+
 def _search_one_query(
     query: str,
-    *, 
+    *,
     year: str | None,
     max_results: int,
     sleep_sec: float,
@@ -42,13 +43,16 @@ def _search_one_query(
 
     return collected[:max_results]
 
+
 def _summarize_paper_info(paper: dict[str, Any]) -> dict[str, Any]:
     authors = []
     for a in paper.get("authorships") or []:
         if name := (a.get("author") or {}).get("display_name"):
             authors.append(name)
 
-    journal = ((paper.get("primary_location") or {}).get("source") or {}).get("display_name")
+    journal = ((paper.get("primary_location") or {}).get("source") or {}).get(
+        "display_name"
+    )
 
     summary = {
         "id": paper.get("id"),
@@ -57,9 +61,10 @@ def _summarize_paper_info(paper: dict[str, Any]) -> dict[str, Any]:
         "authors": authors,
         "year": paper.get("publication_year"),
         "biblio": paper.get("biblio", {}),
-        "journal": journal
+        "journal": journal,
     }
     return summary
+
 
 # NOTE: Currently returns a single finalized paper per query, not a list of candidate papers.
 def openalex_fetch_references(

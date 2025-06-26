@@ -11,6 +11,7 @@ logger = getLogger(__name__)
 
 ARXIV_RETRY = make_retry_policy()
 
+
 @runtime_checkable
 class ResponseParserProtocol(Protocol):
     def parse(self, response: requests.Response, *, as_: str) -> Any: ...
@@ -21,11 +22,10 @@ class ArxivClient(BaseHTTPClient):
         self,
         base_url: str = "https://export.arxiv.org/api",
         default_headers: dict[str, str] | None = None,
-        parser: ResponseParserProtocol | None = None, 
+        parser: ResponseParserProtocol | None = None,
     ):
         super().__init__(base_url=base_url, default_headers=default_headers)
         self._parser = parser or ResponseParser()
-
 
     @ARXIV_RETRY
     def search(

@@ -6,18 +6,19 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
-from airas.utils.check_api_key import check_api_key
-from airas.utils.execution_timers import ExecutionTimeState, time_node
-from airas.utils.logging_utils import setup_logging
 from airas.core.write.writer_subgraph.input_data import (
     writer_subgraph_input_data,
 )
 from airas.core.write.writer_subgraph.nodes.generate_note import generate_note
 from airas.core.write.writer_subgraph.nodes.paper_writing import WritingNode
+from airas.utils.check_api_key import check_api_key
+from airas.utils.execution_timers import ExecutionTimeState, time_node
+from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
 writer_timed = lambda f: time_node("writer_subgraph")(f)  # noqa: E731
+
 
 class WriterSubgraphInputState(TypedDict):
     base_method_text: str
@@ -71,7 +72,7 @@ class WriterSubgraph:
             note=state["note"],
         )
         return {"paper_content": paper_content}
-    
+
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(WriterSubgraphState)
         graph_builder.add_node("generate_note", self._generate_note)
@@ -82,12 +83,8 @@ class WriterSubgraph:
         graph_builder.add_edge("writeup", END)
 
         return graph_builder.compile()
-    
-    def run(
-        self, 
-        state: dict[str, Any], 
-        config: dict | None = None
-    ) -> dict[str, Any]:
+
+    def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
         input_state_keys = WriterSubgraphInputState.__annotations__.keys()
         output_state_keys = WriterSubgraphOutputState.__annotations__.keys()
 
@@ -100,7 +97,7 @@ class WriterSubgraph:
         return {
             "subgraph_name": self.__class__.__name__,
             **cleaned_state,
-            **output_state, 
+            **output_state,
         }
 
 
@@ -110,10 +107,11 @@ def main():
     input = writer_subgraph_input_data
 
     result = WriterSubgraph(
-        llm_name=llm_name, 
-        refine_round=refine_round, 
+        llm_name=llm_name,
+        refine_round=refine_round,
     ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")
+
 
 if __name__ == "__main__":
     try:

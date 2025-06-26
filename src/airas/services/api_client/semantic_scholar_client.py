@@ -36,9 +36,15 @@ logger = getLogger(__name__)
 class ResponseParserProtocol(Protocol):
     def parse(self, response: requests.Response, *, as_: str) -> Any: ...
 
+
 class SemanticScholarClientError(RuntimeError): ...
+
+
 class SemanticScholarClientRetryableError(SemanticScholarClientError): ...
+
+
 class SemanticScholarClientFatalError(SemanticScholarClientError): ...
+
 
 _DEFAULT_MAX_RETRIES = 10
 _WAIT_POLICY = wait_exponential(multiplier=1.0, max=180.0)
@@ -90,7 +96,6 @@ class SemanticScholarClient(BaseHTTPClient):
             raise SemanticScholarClientRetryableError(f"HTTP {code}: {path}")
         raise SemanticScholarClientFatalError(f"HTTP {code}: {path}")
 
-
     @SEMANTIC_SCHOLAR_RETRY
     def search_paper_titles(
         self,
@@ -110,7 +115,7 @@ class SemanticScholarClient(BaseHTTPClient):
             base_fields.extend(fields)
         params: dict[str, Any] = {
             "query": query,
-            "fields": ",".join(dict.fromkeys(base_fields)), 
+            "fields": ",".join(dict.fromkeys(base_fields)),
             "limit": limit,
             "offset": offset,
         }
@@ -123,7 +128,9 @@ class SemanticScholarClient(BaseHTTPClient):
         response = self.get(path=path, params=params, timeout=timeout)
         match response.status_code:
             case 200:
-                logger.info("Best Title match paper with default or requested fields (200).")
+                logger.info(
+                    "Best Title match paper with default or requested fields (200)."
+                )
                 return self._parser.parse(response, as_="json")
             case 400:
                 logger.error("Bad query parameters (404).")

@@ -8,14 +8,14 @@ DEVICETYPE = Literal["cpu", "gpu"]
 
 
 def check_branch_existence(
-    github_owner: str, 
-    repository_name: str, 
-    branch_name: str, 
-    client: GithubClient | None = None, 
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    client: GithubClient | None = None,
 ) -> str | None:
     if client is None:
         client = GithubClient()
-        
+
     response = client.get_branch(
         github_owner=github_owner,
         repository_name=repository_name,
@@ -26,11 +26,13 @@ def check_branch_existence(
             f"Branch '{branch_name}' not found in repository '{repository_name}'."
         )
         return None
-    
+
     try:
         return response["commit"]["sha"]
     except KeyError:
-        logger.warning(f"Unexpected response format: missing 'commit.sha'. Response: {response}")
+        logger.warning(
+            f"Unexpected response format: missing 'commit.sha'. Response: {response}"
+        )
         return None
 
 
