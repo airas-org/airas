@@ -7,9 +7,7 @@ logger = getLogger(__name__)
 
 
 def web_scrape(
-    queries: list,
-    scrape_urls: list,
-    client: FireCrawlClient | None = None
+    queries: list, scrape_urls: list, client: FireCrawlClient | None = None
 ) -> list[str]:
     if client is None:
         client = FireCrawlClient()
@@ -25,7 +23,7 @@ def web_scrape(
                 response = client.scrape(full_url)
             except ValueError as e:
                 logger.warning(f"Empty content for {full_url}: {e}")
-                continue 
+                continue
             data = response.get("data") if isinstance(response, dict) else None
             if not data:
                 logger.warning(f"No data returned for URL: {full_url}")

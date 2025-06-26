@@ -2,6 +2,7 @@ import logging
 from logging import getLogger
 from typing import Literal
 
+from google.genai import errors as genai_errors
 from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 from tenacity import (
     before_log,
@@ -12,11 +13,16 @@ from tenacity import (
     wait_exponential,
 )
 
-logger = getLogger(__name__)
-from google.genai import errors as genai_errors
+from airas.services.api_client.llm_client.google_genai_client import (
+    VERTEXAI_MODEL,
+    GoogelGenAIClient,
+)
+from airas.services.api_client.llm_client.openai_client import (
+    OPENAI_MODEL,
+    OpenAIClient,
+)
 
-from airas.services.api_client.llm_client.google_genai_client import VERTEXAI_MODEL, GoogelGenAIClient
-from airas.services.api_client.llm_client.openai_client import OPENAI_MODEL, OpenAIClient
+logger = getLogger(__name__)
 
 LLM_MODEL = Literal[OPENAI_MODEL, VERTEXAI_MODEL]
 DEFAULT_MAX_RETRIES = 10
@@ -27,7 +33,7 @@ RETRY_EXC = (
     HTTPError,
     Timeout,
     RequestException,
-    genai_errors.APIError, 
+    genai_errors.APIError,
 )
 
 LLM_RETRY = retry(

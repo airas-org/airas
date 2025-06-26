@@ -15,23 +15,29 @@ def github_upload(
     research_history: dict[str, Any],
     file_path: str = ".research/research_history.json",
     commit_message: str = "Update history via github_upload",
-    wait_seconds: float = 3.0, 
+    wait_seconds: float = 3.0,
     client: GithubClient | None = None,
 ) -> bool:
     if client is None:
         client = GithubClient()
 
-    logger.info(f"[GitHub I/O] Upload: {github_owner}/{repository_name}@{branch_name}:{file_path}")
+    logger.info(
+        f"[GitHub I/O] Upload: {github_owner}/{repository_name}@{branch_name}:{file_path}"
+    )
     ok_json = client.commit_file_bytes(
         github_owner=github_owner,
         repository_name=repository_name,
         branch_name=branch_name,
         file_path=file_path,
-        file_content=json.dumps(research_history, ensure_ascii=False, indent=2).encode(),
+        file_content=json.dumps(
+            research_history, ensure_ascii=False, indent=2
+        ).encode(),
         commit_message=commit_message,
     )
     if ok_json:
-        print(f"Check here：https://github.com/{github_owner}/{repository_name}/blob/{branch_name}/{file_path}")
+        print(
+            f"Check here：https://github.com/{github_owner}/{repository_name}/blob/{branch_name}/{file_path}"
+        )
 
     if wait_seconds > 0:
         time.sleep(wait_seconds)

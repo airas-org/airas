@@ -53,9 +53,11 @@ class GithubDownloadSubgraph:
                 "repository_name": repository_name,
             }
         except ValueError:
-            logger.error(f"Invalid github_repository format: {state['github_repository']}")
+            logger.error(
+                f"Invalid github_repository format: {state['github_repository']}"
+            )
             raise
-        
+
     @gh_download_timed
     def _github_download(self, state: GithubDownloadSubgraphState) -> dict[str, Any]:
         research_history = github_download(
@@ -64,7 +66,7 @@ class GithubDownloadSubgraph:
             branch_name=state["branch_name"],
         )
         return {
-            "research_history": research_history, 
+            "research_history": research_history,
         }
 
     def build_graph(self) -> CompiledGraph:
@@ -76,7 +78,7 @@ class GithubDownloadSubgraph:
         sg.add_edge("init_state", "github_download")
         sg.add_edge("github_download", END)
         return sg.compile()
-    
+
     def run(self, state: dict, config: dict | None = None) -> dict:
         result = self.build_graph().invoke(state, config=config or {})
         return result.get("research_history", {})
@@ -87,13 +89,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="GithubDownloadSubgraph")
     parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument("branch_name", help="Your branch name in your GitHub repository")
+    parser.add_argument(
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
 
     args = parser.parse_args()
 
     state = {
         "github_repository": args.github_repository,
-        "branch_name": args.branch_name
+        "branch_name": args.branch_name,
     }
 
     result = GithubDownloadSubgraph().run(state)

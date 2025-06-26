@@ -18,8 +18,8 @@ def retrieve_repository_contents(github_url: str) -> str:
     response = client.get_repository(github_owner, repository_name)
     if not response:
         return ""
-    
-    default_branch = response.get("default_branch", "master") # or `main``
+
+    default_branch = response.get("default_branch", "master")  # or `main``
     try:
         repository_tree_info = client.get_a_tree(
             github_owner=github_owner,
@@ -32,7 +32,6 @@ def retrieve_repository_contents(github_url: str) -> str:
 
     if repository_tree_info is None:
         return ""
-    
 
     file_paths = [
         entry.get("path", "")
@@ -54,7 +53,5 @@ def retrieve_repository_contents(github_url: str) -> str:
             content_str = file_bytes.decode("utf-8")
         except AttributeError:
             content_str = str(file_bytes)
-        contents.append(
-            f"File Path: {file_path}\nContent:\n{content_str}"
-        )
+        contents.append(f"File Path: {file_path}\nContent:\n{content_str}")
     return "\n".join(contents)

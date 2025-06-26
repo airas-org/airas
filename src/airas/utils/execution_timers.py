@@ -1,8 +1,8 @@
 import time
 from functools import wraps
 from logging import getLogger
-
 from typing import Callable
+
 from typing_extensions import TypedDict
 
 logger = getLogger(__name__)
@@ -13,8 +13,7 @@ class ExecutionTimeState(TypedDict):
 
 
 def time_node(
-    subgraph_name: str, 
-    node_name: str | None = None
+    subgraph_name: str, node_name: str | None = None
 ) -> Callable[..., Callable[..., object]]:
     def decorator(func):
         actual_node = node_name or func.__name__
@@ -71,5 +70,6 @@ def time_subgraph(subgraph_name: str):
         return wrapper
 
     return decorator
+
 
 __all__ = ["time_node", "time_subgraph", "ExecutionTimeState"]

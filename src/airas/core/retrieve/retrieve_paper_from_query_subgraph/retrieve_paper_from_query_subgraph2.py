@@ -18,6 +18,9 @@ from airas.retrieve.retrieve_paper_from_query_subgraph2.nodes.extract_github_url
 from airas.retrieve.retrieve_paper_from_query_subgraph2.nodes.extract_paper_title import (
     extract_paper_title,
 )
+from airas.retrieve.retrieve_paper_from_query_subgraph2.nodes.openai_websearch_titles import (
+    openai_websearch_titles,
+)
 from airas.retrieve.retrieve_paper_from_query_subgraph2.nodes.retrieve_arxiv_text_from_url import (
     retrieve_arxiv_text_from_url,
 )
@@ -32,9 +35,6 @@ from airas.retrieve.retrieve_paper_from_query_subgraph2.nodes.summarize_paper im
 )
 from airas.retrieve.retrieve_paper_from_query_subgraph2.nodes.web_scrape import (
     web_scrape,
-)
-from airas.retrieve.retrieve_paper_from_query_subgraph2.nodes.openai_websearch_titles import (
-    openai_websearch_titles,
 )
 from airas.retrieve.retrieve_paper_from_query_subgraph2.prompt.extract_github_url_prompt import (
     extract_github_url_from_text_prompt,
@@ -59,7 +59,8 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-retrieve_paper_from_query_timed = lambda f: time_node("retrieve_paper_from_query_subgraph")(f)  # noqa: E731
+retrieve_str = "retrieve_paper_from_query_subgraph"
+retrieve_paper_from_query_timed = lambda f: time_node(retrieve_str)(f)  # noqa: E731
 
 
 class RetrievePaperFromQueryInputState(TypedDict):
@@ -148,7 +149,7 @@ class RetrievePaperFromQuerySubgraph:
             llm_name="o3-mini-2025-01-31",
             queries=state["base_queries"],
             scraped_results=state["scraped_results"],
-            prompt_template=extract_paper_title_prompt
+            prompt_template=extract_paper_title_prompt,
         )
         return {"extracted_paper_titles": extracted_paper_titles}
 
@@ -185,7 +186,7 @@ class RetrievePaperFromQuerySubgraph:
             : min(len(extract_paper_titles), self.arxiv_query_batch_size)
         ]
         search_paper_list = search_arxiv(
-            queries=batch_paper_titles, 
+            queries=batch_paper_titles,
             num_retrieve_paper=self.arxiv_num_retrieve_paper,
         )
         return {
@@ -201,8 +202,7 @@ class RetrievePaperFromQuerySubgraph:
         logger.info(f"process_index: {process_index}")
         paper_info = state["search_paper_list"][process_index]
         paper_full_text = retrieve_arxiv_text_from_url(
-            papers_dir=self.papers_dir, 
-            arxiv_url=paper_info["arxiv_url"]
+            papers_dir=self.papers_dir, arxiv_url=paper_info["arxiv_url"]
         )
         return {"paper_full_text": paper_full_text}
 
@@ -217,7 +217,7 @@ class RetrievePaperFromQuerySubgraph:
             text=paper_full_text,
             paper_summary=paper_summary,
             llm_name="gemini-2.0-flash-001",
-            prompt_template=extract_github_url_from_text_prompt
+            prompt_template=extract_github_url_from_text_prompt,
         )
         # If GitHub URL cannot be obtained, advance Process Index to process the next paper
         process_index = process_index + 1 if github_url == "" else process_index
@@ -350,7 +350,7 @@ class RetrievePaperFromQuerySubgraph:
 
         # Add edges based on configuration
         graph_builder.add_edge(START, "initialize_state")
-        
+
         if self.use_openai_websearch:
             # OpenAI Web Search path (direct title search)
             graph_builder.add_edge("initialize_state", "openai_websearch_titles_node")
@@ -401,11 +401,7 @@ class RetrievePaperFromQuerySubgraph:
         graph_builder.add_edge("prepare_state", END)
         return graph_builder.compile()
 
-    def run(
-        self, 
-        state: dict[str, Any], 
-        config: dict | None = None
-    ) -> dict[str, Any]:
+    def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
         config = {**{"recursion_limit": 100}, **(config or {})}
 
         input_state_keys = RetrievePaperFromQueryInputState.__annotations__.keys()
@@ -420,7 +416,7 @@ class RetrievePaperFromQuerySubgraph:
         return {
             "subgraph_name": self.__class__.__name__,
             **cleaned_state,
-            **output_state, 
+            **output_state,
         }
 
 
@@ -442,7 +438,7 @@ def main():
     #     scrape_urls=scrape_urls,
     #     # use_openai_websearch=False,  # Default is False
     # ).run(input)
-    
+
     # When using OpenAI Web Search (just uncomment the code below)
     result = RetrievePaperFromQuerySubgraph(
         llm_name=llm_name,
@@ -450,8 +446,9 @@ def main():
         scrape_urls=scrape_urls,  # Ignored when using OpenAI but kept for compatibility
         use_openai_websearch=True,  # Just set this to True to switch
     ).run(input)
-    
+
     print(f"result: {json.dumps(result, indent=2)}")
+
 
 if __name__ == "__main__":
     try:

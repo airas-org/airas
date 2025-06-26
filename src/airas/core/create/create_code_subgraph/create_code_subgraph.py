@@ -6,11 +6,11 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
-from airas.core.create.nodes.check_devin_completion import (
-    check_devin_completion,
-)
 from airas.core.create.create_code_subgraph.nodes.push_code_with_devin import (
     push_code_with_devin,
+)
+from airas.core.create.nodes.check_devin_completion import (
+    check_devin_completion,
 )
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -29,9 +29,8 @@ class PushCodeSubgraphInputState(TypedDict):
     branch_name: str
 
 
-class PushCodeSubgraphHiddenState(TypedDict):
-    ...
-    
+class PushCodeSubgraphHiddenState(TypedDict): ...
+
 
 class PushCodeSubgraphOutputState(TypedDict):
     push_completion: bool
@@ -62,9 +61,11 @@ class CreateCodeSubgraph:
     def _init_state(self, state: PushCodeSubgraphState) -> dict[str, int]:
         logger.info("---PushCodeSubgraph---")
         return {"experiment_iteration": 1}
-      
+
     @push_code_timed
-    def _push_code_with_devin_node(self, state: PushCodeSubgraphState) -> dict[str, str]:
+    def _push_code_with_devin_node(
+        self, state: PushCodeSubgraphState
+    ) -> dict[str, str]:
         experiment_session_id, experiment_devin_url = push_code_with_devin(
             github_repository=state["github_repository"],
             branch_name=state["branch_name"],
@@ -78,7 +79,9 @@ class CreateCodeSubgraph:
         }
 
     @push_code_timed
-    def _check_devin_completion_node(self, state: PushCodeSubgraphState) -> dict[str, bool]:
+    def _check_devin_completion_node(
+        self, state: PushCodeSubgraphState
+    ) -> dict[str, bool]:
         result = check_devin_completion(
             session_id=state["experiment_session_id"],
         )
@@ -86,24 +89,25 @@ class CreateCodeSubgraph:
             return {"push_completion": False}
         return {"push_completion": True}
 
-
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(PushCodeSubgraphState)
         graph_builder.add_node("init_state", self._init_state)
-        graph_builder.add_node("push_code_with_devin_node", self._push_code_with_devin_node)
-        graph_builder.add_node("check_devin_completion_node", self._check_devin_completion_node)
+        graph_builder.add_node(
+            "push_code_with_devin_node", self._push_code_with_devin_node
+        )
+        graph_builder.add_node(
+            "check_devin_completion_node", self._check_devin_completion_node
+        )
 
         graph_builder.add_edge(START, "init_state")
         graph_builder.add_edge("init_state", "push_code_with_devin_node")
-        graph_builder.add_edge("push_code_with_devin_node", "check_devin_completion_node")
+        graph_builder.add_edge(
+            "push_code_with_devin_node", "check_devin_completion_node"
+        )
         graph_builder.add_edge("check_devin_completion_node", END)
         return graph_builder.compile()
-    
-    def run(
-        self, 
-        state: dict[str, Any], 
-        config: dict | None = None
-    ) -> dict[str, Any]:
+
+    def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
         input_state_keys = PushCodeSubgraphInputState.__annotations__.keys()
         output_state_keys = PushCodeSubgraphOutputState.__annotations__.keys()
 
@@ -116,7 +120,7 @@ class CreateCodeSubgraph:
         return {
             "subgraph_name": self.__class__.__name__,
             **cleaned_state,
-            **output_state, 
+            **output_state,
         }
 
 
@@ -129,6 +133,7 @@ def main():
     )
     result = CreateCodeSubgraph().run(input)
     print(f"result: {json.dumps(result, indent=2)}")
+
 
 if __name__ == "__main__":
     try:

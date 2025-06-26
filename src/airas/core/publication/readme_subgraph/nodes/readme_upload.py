@@ -1,15 +1,12 @@
-
 from logging import getLogger
 
 from airas.services.api_client.github_client import GithubClient
 
 logger = getLogger(__name__)
 
+
 def _build_markdown(
-    title: str, 
-    abstract: str, 
-    research_history_url: str, 
-    devin_url: str
+    title: str, abstract: str, research_history_url: str, devin_url: str
 ) -> str:
     return f"""# {title}
 > ⚠️ **NOTE:** This research is an automatic research using AIRAS.
@@ -18,7 +15,7 @@ def _build_markdown(
 
 - [Research history]({research_history_url})
 - [Devin execution log]({devin_url})"""
-        
+
 
 def readme_upload(
     github_owner: str,
@@ -27,7 +24,7 @@ def readme_upload(
     title: str,
     abstract: str,
     devin_url: str,
-    client: GithubClient | None = None, 
+    client: GithubClient | None = None,
 ) -> bool:
     if client is None:
         client = GithubClient()

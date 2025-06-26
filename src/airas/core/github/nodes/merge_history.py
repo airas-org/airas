@@ -11,6 +11,7 @@ def merge_history(
     return merged
 
 
+
 if __name__ == "__main__":
     old = {"keyA": "valueA", "keyB": "valueB"}
     new = {"keyB": "valueB_new", "keyC": "valueC"}
