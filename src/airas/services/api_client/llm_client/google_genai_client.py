@@ -2,7 +2,7 @@ import ast
 import logging
 import os
 import re
-from typing import Literal
+from typing import Any, Literal
 
 from google import genai
 from pydantic import BaseModel
@@ -11,18 +11,29 @@ from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 
-VERTEXAI_MODEL_INFO = {
-    "gemini-2.5-pro-exp-03-25": {
+# https://ai.google.dev/gemini-api/docs/models?hl=ja
+VERTEXAI_MODEL_INFO: dict[str, dict[str, Any]] = {
+    "gemini-2.5-pro": {
         "max_input_tokens": 1048576,
         "max_output_tokens": 65536,
-        "input_token_cost": 1.25 * 1 / 1000000,
-        "output_token_cost": 10.0 * 1 / 1000000,
+        "cost_fn": lambda input_tokens, output_tokens: (
+            (1.25 / 1000000 if input_tokens <= 200000 else 2.50 / 1000000)
+            * input_tokens
+            + (10.00 / 1000000 if input_tokens <= 200000 else 15.00 / 1000000)
+            * output_tokens
+        ),
     },
-    "gemini-2.5-flash-preview-04-17": {
-        "max_input_tokens": 1000000,
+    "gemini-2.5-flash": {
+        "max_input_tokens": 1048576,
         "max_output_tokens": 65536,
-        "input_token_cost": 0.15 * 1 / 1000000,
-        "output_token_cost": 0.60 * 1 / 1000000,
+        "input_token_cost": 0.30 * 1 / 1000000,
+        "output_token_cost": 2.50 * 1 / 1000000,
+    },
+    "gemini-2.5-flash-lite-preview-06-17": {
+        "max_input_tokens": 1000000,
+        "max_output_tokens": 64000,
+        "input_token_cost": 0.10 * 1 / 1000000,
+        "output_token_cost": 0.40 * 1 / 1000000,
     },
     "gemini-2.0-flash-001": {
         "max_input_tokens": 1048576,
@@ -39,8 +50,9 @@ VERTEXAI_MODEL_INFO = {
 }
 
 VERTEXAI_MODEL = Literal[
-    "gemini-2.5-pro-exp-03-25",
-    "gemini-2.5-flash-preview-04-17",
+    "gemini-2.5-pro",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite-preview-06-17",
     "gemini-2.0-flash-001",
     "gemini-2.0-flash-lite-001",
 ]
@@ -68,10 +80,12 @@ class GoogelGenAIClient:
     def _calculate_cost(
         self, model_name: VERTEXAI_MODEL, input_tokens: int, output_tokens: int
     ) -> float:
-        input_cost = input_tokens * VERTEXAI_MODEL_INFO[model_name]["input_token_cost"]
-        output_cost = (
-            output_tokens * VERTEXAI_MODEL_INFO[model_name]["output_token_cost"]
-        )
+        model_info = VERTEXAI_MODEL_INFO[model_name]
+        if "cost_fn" in model_info:
+            return model_info["cost_fn"](input_tokens, output_tokens)
+
+        input_cost = input_tokens * model_info["input_token_cost"]
+        output_cost = output_tokens * model_info["output_token_cost"]
         return input_cost + output_cost
 
     def generate(
