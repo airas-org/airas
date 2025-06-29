@@ -65,7 +65,7 @@ def openai_websearch_titles(
 ) -> list[str] | None:
     """
     Search for paper titles using OpenAI API web search.
-    
+
     Args:
         queries: List of search queries
         max_results: Maximum number of results to return
@@ -73,17 +73,17 @@ def openai_websearch_titles(
         prompt_template: Custom prompt template (uses default if None)
         conference_preference: Preferred conferences/venues (e.g., "NeurIPS, ICML, ICLR")
         client: OpenAI client instance
-        
+
     Returns:
         List of paper titles or None if no results found
     """
     if client is None:
         client = OpenAI()
-    
+
     # Use default prompt template if none provided
     if prompt_template is None:
         prompt_template = _DEFAULT_PROMPT_TEMPLATE
-    
+
     # Initialize Jinja2 environment
     env = Environment()
     template = env.from_string(prompt_template)
@@ -92,40 +92,39 @@ def openai_websearch_titles(
 
     for i, query in enumerate(queries):
         logger.info(f"Searching papers with OpenAI web search for query: '{query}'")
-        
+
         # Create prompt using template
         prompt = template.render(
             query=query,
             max_results=max_results,
-            conference_preference=conference_preference
+            conference_preference=conference_preference,
         )
-        
+
         try:
             response = client.responses.create(
-                model="gpt-4o",
-                tools=[{"type": "web_search_preview"}],
-                input=prompt
+                model="gpt-4o", tools=[{"type": "web_search_preview"}], input=prompt
             )
-            
+
             # Extract assistant messages
             assistant_msgs = [
-                o for o in response.output
-                if getattr(o, "type", None) == "message" 
+                o
+                for o in response.output
+                if getattr(o, "type", None) == "message"
                 and getattr(o, "role", None) == "assistant"
             ]
-            
+
             if not assistant_msgs:
                 logger.warning(f"No assistant response for query: '{query}'")
                 continue
-                
+
             json_text = assistant_msgs[-1].content[0].text
             titles_data = _extract_json(json_text)
-            
+
             titles = titles_data.get("titles", [])
             if not titles:
                 logger.warning(f"No titles found for query: '{query}'")
                 continue
-                
+
             # Filter out excluded titles and add to collection
             for title in titles:
                 title = title.strip()
@@ -133,11 +132,11 @@ def openai_websearch_titles(
                     collected.add(title)
                     if len(collected) >= max_results:
                         return sorted(collected)
-                        
+
         except Exception as exc:
             logger.warning(f"OpenAI web search failed for '{query}': {exc}")
             continue
-        
+
         # Sleep between queries (except for the last query)
         if i < len(queries) - 1:
             logger.info(f"Waiting {sleep_sec} seconds before next query...")
@@ -146,7 +145,7 @@ def openai_websearch_titles(
     if not collected:
         logger.warning("No paper titles obtained from OpenAI web search")
         return None
-    
+
     return sorted(collected)
 
 

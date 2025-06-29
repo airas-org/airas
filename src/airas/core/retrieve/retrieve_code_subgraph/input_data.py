@@ -5,11 +5,11 @@ retrieve_code_subgraph_input_data = {
         "arxiv_url": "http://arxiv.org/abs/2302.13335v4",
         "title": "Diffusion Model-Augmented Behavioral Cloning",
         "authors": [
-        "Shang-Fu Chen",
-        "Hsiang-Chun Wang",
-        "Ming-Hao Hsu",
-        "Chun-Mao Lai",
-        "Shao-Hua Sun"
+            "Shang-Fu Chen",
+            "Hsiang-Chun Wang",
+            "Ming-Hao Hsu",
+            "Chun-Mao Lai",
+            "Shao-Hua Sun",
         ],
         "published_date": "2023-02-26T15:40:09Z",
         "journal": "",
@@ -20,6 +20,6 @@ retrieve_code_subgraph_input_data = {
         "methodology": "DBC uses a diffusion model trained on expert demonstrations to guide policy learning. The policy is trained to optimize both the BC loss and a diffusion model loss. The diffusion model loss is based on the difference between the diffusion model's estimate of how well the policy's actions fit the expert distribution and how well the expert's actions fit the distribution.",
         "experimental_setup": "The method was evaluated on continuous control tasks including navigation (MAZE), robot arm manipulation (FETCH PICK), dexterous manipulation (HAND ROTATE), and locomotion (CHEETAH, WALKER, ANTREACH). Baselines included BC, Implicit BC (IBC), and Diffusion Policy. Performance was measured using success rate and return. Ablation studies were conducted to analyze the impact of hyperparameters and design choices.",
         "limitations": "The framework is designed to learn from expert trajectories without interacting with the environment and cannot learn from agent trajectories. The method inherits any biases exhibited by the expert demonstrators.",
-        "future_research_directions": "Future work includes extending the method to incorporate agent data to allow for improvement when interacting with environments is possible. Mitigating biases inherited from expert demonstrators is also a direction for future research."
-    }, 
+        "future_research_directions": "Future work includes extending the method to incorporate agent data to allow for improvement when interacting with environments is possible. Mitigating biases inherited from expert demonstrators is also a direction for future research.",
+    },
 }

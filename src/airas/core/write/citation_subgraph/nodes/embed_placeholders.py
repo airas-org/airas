@@ -5,17 +5,20 @@ from logging import getLogger
 
 from jinja2 import Environment
 
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.paper import PaperContent
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
 
 logger = getLogger(__name__)
 
 _PLACEHOLDER_COUNTERS: dict[str, count] = defaultdict(lambda: count(1))
 
-def _replace_underscores_in_keys(
-    paper_dict: dict[str, str]
-) -> dict[str, str]:
+
+def _replace_underscores_in_keys(paper_dict: dict[str, str]) -> dict[str, str]:
     return {key.replace("_", " "): value for key, value in paper_dict.items()}
+
 
 def _assign_placeholder_ids(text: str, placeholder: str) -> tuple[str, list[str]]:
     pattern = re.escape(placeholder)
@@ -26,16 +29,17 @@ def _assign_placeholder_ids(text: str, placeholder: str) -> tuple[str, list[str]
         new_id = f"{placeholder[:-2]}_{next(counter)}]]"
         placeholder_ids.append(new_id)
         return new_id
-    
+
     new_text = re.sub(pattern, replacer, text)
     return new_text, placeholder_ids
+
 
 def embed_placeholders(
     llm_name: LLM_MODEL,
     paper_content: dict[str, str],
-    prompt_template: str, 
-    placeholder: str = "[[CITATION]]", 
-    client: LLMFacadeClient | None = None, 
+    prompt_template: str,
+    placeholder: str = "[[CITATION]]",
+    client: LLMFacadeClient | None = None,
 ) -> tuple[dict[str, str], list[str]]:
     if client is None:
         client = LLMFacadeClient(llm_name=llm_name)
@@ -44,8 +48,8 @@ def embed_placeholders(
         "sections": [
             {"name": section, "content": paper_content[section]}
             for section in paper_content.keys()
-        ], 
-        "placeholder": placeholder, 
+        ],
+        "placeholder": placeholder,
     }
 
     env = Environment()
@@ -53,7 +57,7 @@ def embed_placeholders(
     messages = template.render(data)
 
     try:
-        #TODO: Add error handling if none of the placeholders are embedded
+        # TODO: Add error handling if none of the placeholders are embedded
         output, cost = client.structured_outputs(
             message=messages,
             data_model=PaperContent,
@@ -68,10 +72,7 @@ def embed_placeholders(
             paper_content_with_placeholders[section] = new_text
             all_placeholders.extend(ids)
 
-        return (
-            paper_content_with_placeholders, 
-            all_placeholders
-        )
+        return (paper_content_with_placeholders, all_placeholders)
 
     except Exception as e:
         logger.warning(f"embed_placeholders failed, returning original content: {e}")

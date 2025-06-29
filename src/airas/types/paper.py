@@ -1,7 +1,10 @@
+from typing import Any, Optional
+
 from pydantic import BaseModel, Field
-from airas.types.arxiv import ArxivInfo
-from typing import Optional, Any
 from typing_extensions import TypedDict
+
+from airas.types.arxiv import ArxivInfo
+
 
 class CandidatePaperInfo(TypedDict):
     arxiv_id: str
@@ -43,8 +46,8 @@ class LLMExtractedInfo(BaseModel):
 
 
 class PaperMetaData(BaseModel):
-		journal: str = Field(..., description="")
-		github_url: str = Field(..., description="")
+    journal: str = Field(..., description="")
+    github_url: str = Field(..., description="")
 
 
 class PaperBody(BaseModel):

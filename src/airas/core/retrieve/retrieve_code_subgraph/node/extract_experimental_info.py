@@ -1,8 +1,11 @@
 from jinja2 import Environment
 from pydantic import BaseModel
 
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.paper import CandidatePaperInfo
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
 
 
 class LLMOutput(BaseModel):
@@ -11,11 +14,11 @@ class LLMOutput(BaseModel):
 
 
 def extract_experimental_info(
-    llm_name: LLM_MODEL, 
-    method_text: CandidatePaperInfo, 
-    repository_content_str: str, 
-    prompt_template: str, 
-    client: LLMFacadeClient | None = None, 
+    llm_name: LLM_MODEL,
+    method_text: CandidatePaperInfo,
+    repository_content_str: str,
+    prompt_template: str,
+    client: LLMFacadeClient | None = None,
 ) -> tuple[str, str]:
     if client is None:
         client = LLMFacadeClient(llm_name=llm_name)

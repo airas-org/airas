@@ -7,8 +7,10 @@ from langchain_community.document_loaders import PyPDFLoader
 
 from airas.services.api_client.arxiv_client import (
     ArxivClient,
-    ArxivClientFatalError,
-    ArxivClientRetryableError,
+)
+from airas.services.api_client.retry_policy import (
+    HTTPClientFatalError,
+    HTTPClientRetryableError,
 )
 
 logger = getLogger(__name__)
@@ -25,9 +27,9 @@ def _extract_text_from_pdf(pdf_path: str) -> str | None:
 
 
 def retrieve_arxiv_text_from_url(
-    papers_dir: str, 
-    arxiv_url: str, 
-    client: ArxivClient | None = None, 
+    papers_dir: str,
+    arxiv_url: str,
+    client: ArxivClient | None = None,
 ) -> str:
     if client is None:
         client = ArxivClient()
@@ -42,14 +44,14 @@ def retrieve_arxiv_text_from_url(
             text = f.read()
         logger.info(f"Loaded text from {text_path}")
         return text
-    
+
     # 2) Download the PDF
     try:
         response = client.fetch_pdf(arxiv_id)
-    except (ArxivClientRetryableError, ArxivClientFatalError):
+    except (HTTPClientRetryableError, HTTPClientFatalError):
         logger.error("Failed to fetch PDF, aborting")
         return ""
-    
+
     try:
         os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
         with open(pdf_path, "wb") as fp:
@@ -58,12 +60,12 @@ def retrieve_arxiv_text_from_url(
     except Exception as e:
         logger.error(f"Failed to save PDF: {e}")
         return ""
-    
+
     # 3) Extract text from the downloaded PDF
     full_text = _extract_text_from_pdf(pdf_path)
     if full_text is None:
         return ""
-    
+
     # 4) Save the extracted text to cache
     try:
         os.makedirs(os.path.dirname(text_path), exist_ok=True)

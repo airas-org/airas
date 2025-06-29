@@ -7,14 +7,14 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
+from airas.core.github.nodes.create_branch import (
+    create_branch,
+)
 from airas.core.github.prepare_repository_subgraph.nodes.check_branch_existence import (
     check_branch_existence,
 )
 from airas.core.github.prepare_repository_subgraph.nodes.check_repository_from_template import (
     check_repository_from_template,
-)
-from airas.core.github.prepare_repository_subgraph.nodes.create_branch import (
-    create_branch,
 )
 from airas.core.github.prepare_repository_subgraph.nodes.create_repository_from_template import (
     create_repository_from_template,
@@ -36,6 +36,7 @@ class PrepareRepositoryInputState(TypedDict):
     github_repository: str
     branch_name: str
 
+
 class PrepareRepositoryHiddenState(TypedDict):
     github_owner: str
     repository_name: str
@@ -45,6 +46,7 @@ class PrepareRepositoryHiddenState(TypedDict):
     branch_already_exists: bool
     branch_created: bool
 
+
 class PrepareRepositoryOutputState(TypedDict):
     repository_status: bool
     branch_status: bool
@@ -53,7 +55,7 @@ class PrepareRepositoryOutputState(TypedDict):
 class PrepareRepositoryState(
     PrepareRepositoryInputState,
     PrepareRepositoryHiddenState,
-    PrepareRepositoryOutputState, 
+    PrepareRepositoryOutputState,
     ExecutionTimeState,
 ):
     pass
@@ -79,11 +81,15 @@ class PrepareRepositorySubgraph:
                 "repository_name": repository_name,
             }
         except ValueError:
-            logger.error(f"Invalid github_repository format: {state['github_repository']}")
+            logger.error(
+                f"Invalid github_repository format: {state['github_repository']}"
+            )
             raise
-        
+
     @prepare_repository_timed
-    def _check_repository_from_template(self, state: PrepareRepositoryState) -> dict[str, Literal[True]]:
+    def _check_repository_from_template(
+        self, state: PrepareRepositoryState
+    ) -> dict[str, Literal[True]]:
         repository_from_template = check_repository_from_template(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
@@ -93,7 +99,9 @@ class PrepareRepositorySubgraph:
         return {"repository_from_template": repository_from_template}
 
     @prepare_repository_timed
-    def _create_repository_from_template(self, state: PrepareRepositoryState) -> dict[str, bool]:
+    def _create_repository_from_template(
+        self, state: PrepareRepositoryState
+    ) -> dict[str, bool]:
         repository_from_template = create_repository_from_template(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
@@ -101,9 +109,11 @@ class PrepareRepositorySubgraph:
             template_repo=self.template_repo,
         )
         return {"repository_from_template": repository_from_template}
-    
+
     @prepare_repository_timed
-    def _check_branch_existence(self, state: PrepareRepositoryState) -> dict[str, str | bool]:
+    def _check_branch_existence(
+        self, state: PrepareRepositoryState
+    ) -> dict[str, str | bool]:
         time.sleep(5)
         target_branch_sha = check_branch_existence(
             github_owner=state["github_owner"],
@@ -111,12 +121,14 @@ class PrepareRepositorySubgraph:
             branch_name=state["branch_name"],
         )
         return {
-            "target_branch_sha": target_branch_sha, 
-            "branch_already_exists": bool(target_branch_sha), 
+            "target_branch_sha": target_branch_sha,
+            "branch_already_exists": bool(target_branch_sha),
         }
 
     @prepare_repository_timed
-    def _retrieve_main_branch_sha(self, state: PrepareRepositoryState) -> dict[str, str]:
+    def _retrieve_main_branch_sha(
+        self, state: PrepareRepositoryState
+    ) -> dict[str, str]:
         main_sha = retrieve_main_branch_sha(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
@@ -129,14 +141,16 @@ class PrepareRepositorySubgraph:
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
-            main_sha=state["main_sha"],
+            sha=state["main_sha"],
         )
         return {"branch_created": branch_created}
-    
+
     @prepare_repository_timed
     def _finalize_state(self, state: PrepareRepositoryState) -> dict[str, bool]:
         repository_status = state.get("repository_from_template", False)
-        branch_status = state.get("branch_already_exists", False) or state.get("branch_created", False)
+        branch_status = state.get("branch_already_exists", False) or state.get(
+            "branch_created", False
+        )
         return {
             "repository_status": repository_status,
             "branch_status": branch_status,
@@ -158,10 +172,16 @@ class PrepareRepositorySubgraph:
         graph_builder = StateGraph(PrepareRepositoryState)
 
         graph_builder.add_node("init", self._init)
-        graph_builder.add_node("check_repository_from_template", self._check_repository_from_template)
-        graph_builder.add_node("create_repository_from_template", self._create_repository_from_template)
+        graph_builder.add_node(
+            "check_repository_from_template", self._check_repository_from_template
+        )
+        graph_builder.add_node(
+            "create_repository_from_template", self._create_repository_from_template
+        )
         graph_builder.add_node("check_branch_existence", self._check_branch_existence)
-        graph_builder.add_node("retrieve_main_branch_sha", self._retrieve_main_branch_sha)
+        graph_builder.add_node(
+            "retrieve_main_branch_sha", self._retrieve_main_branch_sha
+        )
         graph_builder.add_node("create_branch", self._create_branch)
         graph_builder.add_node("finalize_state", self._finalize_state)
 
@@ -175,7 +195,9 @@ class PrepareRepositorySubgraph:
                 "Skip": "check_branch_existence",
             },
         )
-        graph_builder.add_edge("create_repository_from_template", "check_branch_existence")
+        graph_builder.add_edge(
+            "create_repository_from_template", "check_branch_existence"
+        )
         graph_builder.add_conditional_edges(
             "check_branch_existence",
             self._should_create_branch,
@@ -189,7 +211,9 @@ class PrepareRepositorySubgraph:
         graph_builder.add_edge("finalize_state", END)
         return graph_builder.compile()
 
-    def run(self, state: dict[str, Any], config: dict | None = None) -> PrepareRepositoryOutputState:
+    def run(
+        self, state: dict[str, Any], config: dict | None = None
+    ) -> PrepareRepositoryOutputState:
         result = self.build_graph().invoke(state, config=config or {})
 
         output_keys = PrepareRepositoryOutputState.__annotations__.keys()
@@ -198,26 +222,26 @@ class PrepareRepositorySubgraph:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="PreparaRepository"
-    )
+    parser = argparse.ArgumentParser(description="PreparaRepository")
     parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument("branch_name", help="Your branch name in your GitHub repository")
+    parser.add_argument(
+        "branch_name", help="Your branch name in your GitHub repository"
+    )
 
     args = parser.parse_args()
 
     state = {
         "github_repository": args.github_repository,
-        "branch_name": args.branch_name
+        "branch_name": args.branch_name,
     }
     PrepareRepositorySubgraph().run(state)
 
+
 if __name__ == "__main__":
     import sys
+
     try:
         main()
     except Exception as e:
-        logger.error(
-            f"Error running PrepareRepository: {e}"
-        )
+        logger.error(f"Error running PrepareRepository: {e}")
         sys.exit(1)

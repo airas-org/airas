@@ -33,8 +33,10 @@ def create_repository_from_template(
             )
             logger.error(error)
             raise RuntimeError(error)
-        
-        print(f"Repository created from template: {template_owner}/{template_repo} -> {github_owner}/{repository_name}")
+
+        print(
+            f"Repository created from template: {template_owner}/{template_repo} -> {github_owner}/{repository_name}"
+        )
         return True
 
     except Exception as e:

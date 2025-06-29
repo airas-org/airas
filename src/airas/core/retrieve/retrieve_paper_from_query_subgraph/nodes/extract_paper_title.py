@@ -3,7 +3,10 @@ from logging import getLogger
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 
 logger = getLogger(__name__)
 
@@ -17,7 +20,7 @@ def extract_paper_title(
     queries: list,
     scraped_results: list,
     prompt_template: str,
-    client: LLMFacadeClient | None = None, 
+    client: LLMFacadeClient | None = None,
 ) -> list[str]:
     if client is None:
         client = LLMFacadeClient(llm_name=llm_name)

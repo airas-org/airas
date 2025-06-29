@@ -1,7 +1,10 @@
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 
 
 class LLMOutput(BaseModel):
@@ -16,7 +19,7 @@ def summarize_paper(
     llm_name: LLM_MODEL,
     prompt_template: str,
     paper_text: str,
-    client: LLMFacadeClient | None = None, 
+    client: LLMFacadeClient | None = None,
 ) -> tuple[str, str, str, str, str]:
     if client is None:
         client = LLMFacadeClient(llm_name=llm_name)

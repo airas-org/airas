@@ -6,7 +6,10 @@ from jinja2 import Environment
 from pydantic import BaseModel
 
 from airas.services.api_client.github_client import GithubClient
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 
 logger = getLogger(__name__)
 
@@ -15,10 +18,7 @@ class LLMOutput(BaseModel):
     index: int | None
 
 
-def _extract_github_urls_from_text(
-    text: str, 
-    github_client: GithubClient
-) -> list[str]:
+def _extract_github_urls_from_text(text: str, github_client: GithubClient) -> list[str]:
     try:
         matches = re.findall(r"https?://github\.com/[\w\-\_]+/[\w\-\_]+", text)
         valid_urls: list[str] = []
@@ -32,10 +32,7 @@ def _extract_github_urls_from_text(
         return []
 
 
-def _is_valid_github_url(
-    github_url: str, 
-    github_client: GithubClient
-) -> bool:
+def _is_valid_github_url(github_url: str, github_client: GithubClient) -> bool:
     path = urlparse(github_url).path.strip("/")
     parts = path.split("/")
     if len(parts) < 2:
@@ -50,10 +47,10 @@ def _is_valid_github_url(
 
 
 def _select_github_url(
-    paper_summary: str, 
-    candidates: list[str], 
-    prompt_template: str, 
-    llm_client: LLMFacadeClient, 
+    paper_summary: str,
+    candidates: list[str],
+    prompt_template: str,
+    llm_client: LLMFacadeClient,
 ) -> int | None:
     env = Environment()
     template = env.from_string(prompt_template)
@@ -64,7 +61,9 @@ def _select_github_url(
     prompt = template.render(data)
 
     try:
-        output, cost = llm_client.structured_outputs(message=prompt, data_model=LLMOutput)
+        output, cost = llm_client.structured_outputs(
+            message=prompt, data_model=LLMOutput
+        )
         if output is None:
             logger.warning("Error: No response from LLM.")
             return None
@@ -72,15 +71,15 @@ def _select_github_url(
     except Exception as e:
         logger.warning(f"Error during LLM selection: {e}")
         return None
-        
+
 
 def extract_github_url_from_text(
-    text: str, 
-    paper_summary: str, 
-    llm_name: LLM_MODEL, 
+    text: str,
+    paper_summary: str,
+    llm_name: LLM_MODEL,
     prompt_template: str,
-    llm_client: LLMFacadeClient | None = None, 
-    github_client: GithubClient | None = None, 
+    llm_client: LLMFacadeClient | None = None,
+    github_client: GithubClient | None = None,
 ) -> str:
     if llm_client is None:
         llm_client = LLMFacadeClient(llm_name=llm_name)
@@ -90,7 +89,7 @@ def extract_github_url_from_text(
     candidates = _extract_github_urls_from_text(text, github_client)
     if not candidates:
         return ""
-    
+
     idx = _select_github_url(paper_summary, candidates, prompt_template, llm_client)
     if idx is None or not (0 <= idx < len(candidates)):
         return ""

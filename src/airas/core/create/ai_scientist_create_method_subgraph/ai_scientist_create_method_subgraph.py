@@ -7,19 +7,33 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
-from airas.core.create.ai_scientist_create_method_subgraph.nodes.generator_node import generator_node
-from airas.core.create.ai_scientist_create_method_subgraph.nodes.agent_decision_node import agent_decision_node
-from airas.core.create.ai_scientist_create_method_subgraph.nodes.refinement_feedback_node import refinement_feedback_node
-from airas.core.create.ai_scientist_create_method_subgraph.prompt.PromptManager import PromptManager
-from airas.core.create.ai_scientist_create_method_subgraph.nodes.pure_novelty_verification_node import pure_novelty_verification_node
+from airas.core.create.ai_scientist_create_method_subgraph.nodes.agent_decision_node import (
+    agent_decision_node,
+)
+from airas.core.create.ai_scientist_create_method_subgraph.nodes.generator_node import (
+    generator_node,
+)
+from airas.core.create.ai_scientist_create_method_subgraph.nodes.pure_novelty_verification_node import (
+    pure_novelty_verification_node,
+)
+from airas.core.create.ai_scientist_create_method_subgraph.nodes.refinement_feedback_node import (
+    refinement_feedback_node,
+)
+from airas.core.create.ai_scientist_create_method_subgraph.prompt.PromptManager import (
+    PromptManager,
+)
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.paper import CandidatePaperInfo
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL, LLMFacadeClient
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
 
 class CreateMethodSubgraphInputState(TypedDict):
     base_method_text: CandidatePaperInfo
@@ -59,13 +73,13 @@ T = TypeVar("T")
 def print_node_start(node_name: str, iteration: int = None):
     """Print node execution start with visual formatting"""
     if iteration is not None:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"🚀 STARTING NODE: {node_name} (Iteration {iteration})")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
     else:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"🚀 STARTING NODE: {node_name}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
 
 def print_node_end(node_name: str, result_summary: str = ""):
@@ -73,7 +87,7 @@ def print_node_end(node_name: str, result_summary: str = ""):
     print(f"✅ COMPLETED NODE: {node_name}")
     if result_summary:
         print(f"📋 RESULT: {result_summary}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
 
 def print_routing_decision(from_node: str, to_node: str, reason: str = ""):
@@ -99,7 +113,7 @@ class AIScientistCreateMethodSubgraph:
         self.client = LLMFacadeClient(llm_name=llm_name)
         check_api_key(llm_api_key_check=True)
 
-        print(f"\n🔧 INITIALIZED CreateMethodSubgraph:")
+        print("\n🔧 INITIALIZED CreateMethodSubgraph:")
         print(f"   LLM: {llm_name}")
         print(f"   Max Iterations: {max_iterations}")
         print(f"   Novelty Threshold: {novelty_threshold}")
@@ -117,12 +131,12 @@ class AIScientistCreateMethodSubgraph:
             "feedback_history": [],
             "max_iterations": self.max_iterations,
             "confidence_score": 0.0,
-            "refinement_feedback": ""
+            "refinement_feedback": "",
         }
 
-        print(f"📊 Initial State Set:")
+        print("📊 Initial State Set:")
         print(f"   Max Iterations: {self.max_iterations}")
-        print(f"   Starting Iteration Count: 0")
+        print("   Starting Iteration Count: 0")
 
         print_node_end("INITIALIZATION", "Process initialized successfully")
         return result
@@ -130,12 +144,16 @@ class AIScientistCreateMethodSubgraph:
     @time_node("create_method_subgraph", "_generator_node")
     def _generator_node(self, state: CreateMethodSubgraphState) -> dict:
         """Generate or refine method based on feedback"""
-        current_iteration = state.get('iteration_count', 0) + 1
+        current_iteration = state.get("iteration_count", 0) + 1
         print_node_start("GENERATOR", current_iteration)
-        logger.info(f"---CreateMethodSubgraph Generator Node (Iteration {current_iteration})---")
+        logger.info(
+            f"---CreateMethodSubgraph Generator Node (Iteration {current_iteration})---"
+        )
 
         # Check if this is a refinement iteration
-        is_refinement = state.get("iteration_count", 0) > 0 and state.get("refinement_feedback")
+        is_refinement = state.get("iteration_count", 0) > 0 and state.get(
+            "refinement_feedback"
+        )
 
         print(f"🔍 Generation Mode: {'REFINEMENT' if is_refinement else 'INITIAL'}")
 
@@ -151,13 +169,12 @@ class AIScientistCreateMethodSubgraph:
                     "previous_method": state.get("raw_generated_method", ""),
                     "refinement_feedback": state.get("refinement_feedback", ""),
                     "base_method_text": state["base_method_text"],
-                    "add_method_texts": state["add_method_texts"]
+                    "add_method_texts": state["add_method_texts"],
                 }
 
                 # Render the enhanced generator prompt
                 enhanced_prompt = PromptManager.render_prompt(
-                    PromptManager.get_generator_prompt,
-                    **template_data
+                    PromptManager.get_generator_prompt, **template_data
                 )
 
                 print("✅ Rendered ENHANCED_GENERATOR_PROMPT for refinement")
@@ -165,7 +182,7 @@ class AIScientistCreateMethodSubgraph:
                 # Generate using LLM directly instead of generator_node
                 new_method, _ = self.client.generate(message=enhanced_prompt)
 
-                print(f"🔧 Generated refined method using enhanced prompt")
+                print("🔧 Generated refined method using enhanced prompt")
 
             except Exception as e:
                 print(f"⚠️ Error with enhanced generator prompt: {e}")
@@ -203,7 +220,7 @@ TASK: Create a significantly improved method that addresses all the feedback abo
                 new_method = generator_node(
                     llm_name=self.llm_name,
                     base_method_text=enhanced_base_method,
-                    add_method_texts=state["add_method_texts"]
+                    add_method_texts=state["add_method_texts"],
                 )
         else:
             print("🆕 Generating initial method from base and additional methods...")
@@ -214,13 +231,12 @@ TASK: Create a significantly improved method that addresses all the feedback abo
                 template_data = {
                     "is_refinement": False,
                     "base_method_text": state["base_method_text"],
-                    "add_method_texts": state["add_method_texts"]
+                    "add_method_texts": state["add_method_texts"],
                 }
 
                 # Render the enhanced generator prompt
                 enhanced_prompt = PromptManager.render_prompt(
-                    PromptManager.get_generator_prompt,
-                    **template_data
+                    PromptManager.get_generator_prompt, **template_data
                 )
 
                 print("✅ Rendered ENHANCED_GENERATOR_PROMPT for initial generation")
@@ -228,7 +244,7 @@ TASK: Create a significantly improved method that addresses all the feedback abo
                 # Generate using LLM directly
                 new_method, _ = self.client.generate(message=enhanced_prompt)
 
-                print(f"🔧 Generated initial method using enhanced prompt")
+                print("🔧 Generated initial method using enhanced prompt")
 
             except Exception as e:
                 print(f"⚠️ Error with enhanced generator prompt: {e}")
@@ -238,65 +254,75 @@ TASK: Create a significantly improved method that addresses all the feedback abo
                 new_method = generator_node(
                     llm_name=self.llm_name,
                     base_method_text=state["base_method_text"],
-                    add_method_texts=state["add_method_texts"]
+                    add_method_texts=state["add_method_texts"],
                 )
 
         # Update generation history with more detailed information
         generation_history = state.get("generation_history", [])
 
         # Preserve verification results and feedback from previous iteration
-        previous_verification = None
-        previous_feedback = None
+        _previous_verification = None
+        _previous_feedback = None
         if generation_history:
             last_entry = generation_history[-1]
-            previous_verification = last_entry.get("verification_result")
-            previous_feedback = last_entry.get("refinement_feedback")
+            _previous_verification = last_entry.get("verification_result")
+            _previous_feedback = last_entry.get("refinement_feedback")
 
         new_entry = {
             "iteration": current_iteration,
             "method": new_method,
             "is_refinement": is_refinement,
             "timestamp": "2025-01-31",
-            "previous_verification_result": state.get("verification_result") if is_refinement else None,
-            "applied_feedback": state.get("refinement_feedback") if is_refinement else None,
-            "base_method_preserved": True
+            "previous_verification_result": state.get("verification_result")
+            if is_refinement
+            else None,
+            "applied_feedback": state.get("refinement_feedback")
+            if is_refinement
+            else None,
+            "base_method_preserved": True,
         }
 
         generation_history.append(new_entry)
 
         # 🆕 DETAILED OUTPUT: Show generated method content
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * 80}")
         print(f"📝 GENERATED METHOD (Iteration {current_iteration}):")
-        print(f"{'='*80}")
+        print(f"{'=' * 80}")
         print(new_method)
-        print(f"{'='*80}\n")
+        print(f"{'=' * 80}\n")
 
-        print(f"✨ Generated method preview (first 200 chars):")
+        print("✨ Generated method preview (first 200 chars):")
         print(f"   {new_method[:200]}...")
         print(f"📈 Total generation attempts: {len(generation_history)}")
         print(f"📊 Method length: {len(new_method)} characters")
 
         if is_refinement:
-            print(f"🔄 Applied refinement feedback from previous iteration")
-            print(f"📊 Previous verification: Novel={state.get('verification_result', {}).get('is_novel', 'Unknown')}")
+            print("🔄 Applied refinement feedback from previous iteration")
+            print(
+                f"📊 Previous verification: Novel={state.get('verification_result', {}).get('is_novel', 'Unknown')}"
+            )
 
             # Show what feedback was applied
             feedback = state.get("refinement_feedback", "")
             if feedback:
-                print(f"\n📝 APPLIED REFINEMENT FEEDBACK:")
-                print(f"{'='*50}")
+                print("\n📝 APPLIED REFINEMENT FEEDBACK:")
+                print(f"{'=' * 50}")
                 print(feedback[:500] + "..." if len(feedback) > 500 else feedback)
-                print(f"{'='*50}\n")
+                print(f"{'=' * 50}\n")
 
-        logger.info(f"Generated method (iteration {current_iteration}): {new_method[:200]}...")
+        logger.info(
+            f"Generated method (iteration {current_iteration}): {new_method[:200]}..."
+        )
 
         result = {
             "raw_generated_method": new_method,
             "generation_history": generation_history,
-            "iteration_count": current_iteration
+            "iteration_count": current_iteration,
         }
 
-        print_node_end("GENERATOR", f"Method generated for iteration {current_iteration}")
+        print_node_end(
+            "GENERATOR", f"Method generated for iteration {current_iteration}"
+        )
         return result
 
     @time_node("create_method_subgraph", "_novelty_verification_node")
@@ -313,7 +339,7 @@ TASK: Create a significantly improved method that addresses all the feedback abo
             raw_generated_method=state["raw_generated_method"],
             base_method_text=state["base_method_text"],
             add_method_texts=state["add_method_texts"],
-            num_retrieve_paper=self.num_retrieve_paper
+            num_retrieve_paper=self.num_retrieve_paper,
         )
 
         # Print verification results
@@ -326,7 +352,7 @@ TASK: Create a significantly improved method that addresses all the feedback abo
         significance_level = verification_result.get("significance_level", "medium")
         related_papers = verification_result.get("related_papers", [])
 
-        print(f"📊 VERIFICATION RESULTS:")
+        print("📊 VERIFICATION RESULTS:")
         print(f"   Novel: {'✅ YES' if is_novel else '❌ NO'}")
         print(f"   Confidence: {confidence:.2f}")
         print(f"   Significance Level: {significance_level}")
@@ -335,11 +361,11 @@ TASK: Create a significantly improved method that addresses all the feedback abo
         print(f"   Related Papers Analyzed: {len(related_papers)}")
 
         # 🆕 DETAILED OUTPUT: Show verification details
-        print(f"\n{'='*80}")
-        print(f"🔍 DETAILED VERIFICATION RESULTS:")
-        print(f"{'='*80}")
+        print(f"\n{'=' * 80}")
+        print("🔍 DETAILED VERIFICATION RESULTS:")
+        print(f"{'=' * 80}")
 
-        print(f"📝 EXPLANATION:")
+        print("📝 EXPLANATION:")
         print(explanation)
         print()
 
@@ -356,7 +382,7 @@ TASK: Create a significantly improved method that addresses all the feedback abo
             print()
 
         if overlap_analysis:
-            print(f"🔄 OVERLAP ANALYSIS:")
+            print("🔄 OVERLAP ANALYSIS:")
             major_overlaps = overlap_analysis.get("major_overlaps", [])
             minor_similarities = overlap_analysis.get("minor_similarities", [])
             unique_contributions = overlap_analysis.get("unique_contributions", [])
@@ -387,12 +413,15 @@ TASK: Create a significantly improved method that addresses all the feedback abo
                 print(f"   ... and {len(related_papers) - 3} more papers")
             print()
 
-        print(f"{'='*80}\n")
+        print(f"{'=' * 80}\n")
 
         logger.info(f"Verification result: {verification_result}")
 
         result = {"verification_result": verification_result}
-        print_node_end("NOVELTY_VERIFICATION", f"Novel: {is_novel}, Confidence: {confidence:.2f}, Significance: {significance_level}")
+        print_node_end(
+            "NOVELTY_VERIFICATION",
+            f"Novel: {is_novel}, Confidence: {confidence:.2f}, Significance: {significance_level}",
+        )
         return result
 
     @time_node("create_method_subgraph", "_agent_decision_node")
@@ -408,7 +437,7 @@ TASK: Create a significantly improved method that addresses all the feedback abo
         # Calculate confidence score based on verification result
         confidence_score = self._calculate_confidence_score(verification_result)
 
-        print(f"🤖 AGENT ANALYSIS:")
+        print("🤖 AGENT ANALYSIS:")
         print(f"   Current Iteration: {iteration_count}/{max_iterations}")
         print(f"   Method is Novel: {verification_result.get('is_novel', False)}")
         print(f"   Confidence Score: {confidence_score:.2f}")
@@ -421,57 +450,68 @@ TASK: Create a significantly improved method that addresses all the feedback abo
             verification_result=verification_result,
             iteration_count=iteration_count,
             max_iterations=max_iterations,
-            confidence_score=confidence_score
+            confidence_score=confidence_score,
         )
 
         print(f"🎯 AGENT DECISION: {agent_decision.upper()}")
 
         # 🆕 DETAILED OUTPUT: Show agent decision analysis
-        print(f"\n{'='*80}")
-        print(f"🤖 AGENT DECISION ANALYSIS:")
-        print(f"{'='*80}")
+        print(f"\n{'=' * 80}")
+        print("🤖 AGENT DECISION ANALYSIS:")
+        print(f"{'=' * 80}")
 
-        print(f"📊 DECISION FACTORS:")
-        print(f"   • Iteration Progress: {iteration_count}/{max_iterations} ({(iteration_count/max_iterations)*100:.1f}%)")
-        print(f"   • Novelty Status: {'✅ Novel' if verification_result.get('is_novel', False) else '❌ Not Novel'}")
+        print("📊 DECISION FACTORS:")
+        print(
+            f"   • Iteration Progress: {iteration_count}/{max_iterations} ({(iteration_count / max_iterations) * 100:.1f}%)"
+        )
+        print(
+            f"   • Novelty Status: {'✅ Novel' if verification_result.get('is_novel', False) else '❌ Not Novel'}"
+        )
         print(f"   • Confidence Score: {confidence_score:.2f}")
         print(f"   • Novelty Threshold: {self.novelty_threshold}")
-        print(f"   • Threshold Met: {'✅ Yes' if confidence_score >= self.novelty_threshold else '❌ No'}")
+        print(
+            f"   • Threshold Met: {'✅ Yes' if confidence_score >= self.novelty_threshold else '❌ No'}"
+        )
 
         # Show decision reasoning
         if agent_decision == "continue":
-            print(f"\n🔄 CONTINUE DECISION:")
-            if not verification_result.get('is_novel', False):
-                print(f"   • Reason: Method lacks novelty - needs improvement")
+            print("\n🔄 CONTINUE DECISION:")
+            if not verification_result.get("is_novel", False):
+                print("   • Reason: Method lacks novelty - needs improvement")
             elif confidence_score < self.novelty_threshold:
-                print(f"   • Reason: Confidence ({confidence_score:.2f}) below threshold ({self.novelty_threshold})")
+                print(
+                    f"   • Reason: Confidence ({confidence_score:.2f}) below threshold ({self.novelty_threshold})"
+                )
             else:
-                print(f"   • Reason: Agent determined further improvement possible")
+                print("   • Reason: Agent determined further improvement possible")
 
-            print(f"   • Action: Generate refinement feedback for next iteration")
+            print("   • Action: Generate refinement feedback for next iteration")
 
         else:  # finalize
-            print(f"\n🏁 FINALIZE DECISION:")
+            print("\n🏁 FINALIZE DECISION:")
             if iteration_count >= max_iterations:
                 print(f"   • Reason: Maximum iterations ({max_iterations}) reached")
-            elif verification_result.get('is_novel', False) and confidence_score >= self.novelty_threshold:
-                print(f"   • Reason: Novel method with high confidence achieved")
+            elif (
+                verification_result.get("is_novel", False)
+                and confidence_score >= self.novelty_threshold
+            ):
+                print("   • Reason: Novel method with high confidence achieved")
             else:
-                print(f"   • Reason: Agent determined method ready for finalization")
+                print("   • Reason: Agent determined method ready for finalization")
 
-            print(f"   • Action: Proceed to final output preparation")
+            print("   • Action: Proceed to final output preparation")
 
         # Show generation history summary
         generation_history = state.get("generation_history", [])
         if generation_history:
-            print(f"\n📈 GENERATION HISTORY SUMMARY:")
+            print("\n📈 GENERATION HISTORY SUMMARY:")
             for entry in generation_history:
                 iter_num = entry.get("iteration", 0)
                 is_refinement = entry.get("is_refinement", False)
                 mode = "🔄 REFINEMENT" if is_refinement else "🆕 INITIAL"
                 print(f"   Iteration {iter_num}: {mode}")
 
-        print(f"{'='*80}\n")
+        print(f"{'=' * 80}\n")
 
         logger.info(f"Agent decision: {agent_decision}")
 
@@ -483,8 +523,10 @@ TASK: Create a significantly improved method that addresses all the feedback abo
             # Always preserve current refinement feedback for next iteration
             if current_refinement_feedback:
                 feedback_history.append(current_refinement_feedback)
-                print(f"📚 Added current feedback to history (total: {len(feedback_history)})")
-                print(f"🔄 Refinement feedback will be applied in next iteration")
+                print(
+                    f"📚 Added current feedback to history (total: {len(feedback_history)})"
+                )
+                print("🔄 Refinement feedback will be applied in next iteration")
             else:
                 print("⚠️ No refinement feedback available for next iteration")
 
@@ -493,7 +535,9 @@ TASK: Create a significantly improved method that addresses all the feedback abo
             "confidence_score": confidence_score,
             "feedback_history": feedback_history,
             # Preserve refinement feedback for next iteration if continuing
-            "refinement_feedback": current_refinement_feedback if agent_decision == "continue" else ""
+            "refinement_feedback": current_refinement_feedback
+            if agent_decision == "continue"
+            else "",
         }
 
         print_node_end("AGENT_DECISION", f"Decision: {agent_decision}")
@@ -511,7 +555,13 @@ TASK: Create a significantly improved method that addresses all the feedback abo
                 base_score += 0.1
 
             # Look for positive indicators in explanation
-            positive_indicators = ["significant", "novel", "innovative", "advancement", "breakthrough"]
+            positive_indicators = [
+                "significant",
+                "novel",
+                "innovative",
+                "advancement",
+                "breakthrough",
+            ]
             for indicator in positive_indicators:
                 if indicator.lower() in explanation.lower():
                     base_score += 0.02
@@ -532,33 +582,35 @@ TASK: Create a significantly improved method that addresses all the feedback abo
         iteration_count = state.get("iteration_count", 0)
 
         print("💭 Generating refinement feedback based on verification results...")
-        print(f"📊 Input for feedback generation:")
+        print("📊 Input for feedback generation:")
         print(f"   Method Novel: {verification_result.get('is_novel', False)}")
         print(f"   Confidence: {verification_result.get('confidence', 0.0):.2f}")
         print(f"   Issues Count: {len(verification_result.get('specific_issues', []))}")
-        print(f"   Related Papers: {len(verification_result.get('related_papers', []))}")
+        print(
+            f"   Related Papers: {len(verification_result.get('related_papers', []))}"
+        )
 
         refinement_feedback = refinement_feedback_node(
             verification_result=verification_result,
             current_method=current_method,
-            iteration_count=iteration_count
+            iteration_count=iteration_count,
         )
 
         print(f"📝 Feedback generated (length: {len(refinement_feedback)} chars)")
 
         # 🆕 DETAILED OUTPUT: Show full refinement feedback
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * 80}")
         print(f"📝 GENERATED REFINEMENT FEEDBACK (Iteration {iteration_count}):")
-        print(f"{'='*80}")
+        print(f"{'=' * 80}")
         print(refinement_feedback)
-        print(f"{'='*80}\n")
+        print(f"{'=' * 80}\n")
 
         # Log the detailed feedback sections for debugging
         feedback_sections = {
             "Immediate Improvements": "### Immediate Improvements Needed:",
             "Technical Enhancement": "### Technical Enhancement Suggestions:",
             "Differentiation Strategies": "### Differentiation Strategies:",
-            "Novel Directions": "### Novel Directions to Explore:"
+            "Novel Directions": "### Novel Directions to Explore:",
         }
 
         print("📋 FEEDBACK SECTIONS ANALYSIS:")
@@ -569,16 +621,19 @@ TASK: Create a significantly improved method that addresses all the feedback abo
                 print(f"   ❌ {section_name} section missing")
 
         # Count specific recommendations
-        improvement_count = refinement_feedback.count("•") + refinement_feedback.count("-")
+        improvement_count = refinement_feedback.count("•") + refinement_feedback.count(
+            "-"
+        )
         print(f"📊 Total recommendations provided: {improvement_count}")
 
         logger.info(f"Generated refinement feedback: {refinement_feedback[:200]}...")
 
         result = {"refinement_feedback": refinement_feedback}
-        print_node_end("REFINEMENT_FEEDBACK", f"Structured feedback generated ({len(refinement_feedback)} chars, {improvement_count} recommendations)")
+        print_node_end(
+            "REFINEMENT_FEEDBACK",
+            f"Structured feedback generated ({len(refinement_feedback)} chars, {improvement_count} recommendations)",
+        )
         return result
-
-    
 
     @time_node("create_method_subgraph", "_finalization_node")
     def _finalization_node(self, state: CreateMethodSubgraphState) -> dict:
@@ -593,7 +648,7 @@ TASK: Create a significantly improved method that addresses all the feedback abo
         generation_history = state.get("generation_history", [])
         feedback_history = state.get("feedback_history", [])
 
-        print(f"🎉 FINALIZATION SUMMARY:")
+        print("🎉 FINALIZATION SUMMARY:")
         print(f"   Total Iterations: {total_iterations}")
         print(f"   Final Method is Novel: {verification_result.get('is_novel', False)}")
         print(f"   Final Confidence: {verification_result.get('confidence', 0.0):.2f}")
@@ -601,33 +656,41 @@ TASK: Create a significantly improved method that addresses all the feedback abo
         print(f"   Feedback Applications: {len(feedback_history)}")
 
         # 🆕 DETAILED OUTPUT: Show final results
-        print(f"\n{'='*80}")
-        print(f"🏆 FINAL METHOD OUTPUT:")
-        print(f"{'='*80}")
+        print(f"\n{'=' * 80}")
+        print("🏆 FINAL METHOD OUTPUT:")
+        print(f"{'=' * 80}")
         print(final_method)
-        print(f"{'='*80}\n")
+        print(f"{'=' * 80}\n")
 
         # Show process summary
-        print(f"📊 PROCESS SUMMARY:")
-        print(f"{'='*50}")
+        print("📊 PROCESS SUMMARY:")
+        print(f"{'=' * 50}")
 
         # Iteration breakdown
-        initial_generations = sum(1 for entry in generation_history if not entry.get("is_refinement", False))
-        refinement_generations = sum(1 for entry in generation_history if entry.get("is_refinement", False))
+        initial_generations = sum(
+            1 for entry in generation_history if not entry.get("is_refinement", False)
+        )
+        refinement_generations = sum(
+            1 for entry in generation_history if entry.get("is_refinement", False)
+        )
 
-        print(f"📈 Generation Breakdown:")
+        print("📈 Generation Breakdown:")
         print(f"   • Initial Generations: {initial_generations}")
         print(f"   • Refinement Generations: {refinement_generations}")
         print(f"   • Total Generations: {len(generation_history)}")
 
         # Final verification details
-        print(f"\n🔍 Final Verification Details:")
-        print(f"   • Novel: {'✅ YES' if verification_result.get('is_novel', False) else '❌ NO'}")
+        print("\n🔍 Final Verification Details:")
+        print(
+            f"   • Novel: {'✅ YES' if verification_result.get('is_novel', False) else '❌ NO'}"
+        )
         print(f"   • Confidence: {verification_result.get('confidence', 0.0):.2f}")
-        print(f"   • Significance: {verification_result.get('significance_level', 'medium')}")
+        print(
+            f"   • Significance: {verification_result.get('significance_level', 'medium')}"
+        )
 
-        issues = verification_result.get('specific_issues', [])
-        novel_aspects = verification_result.get('novel_aspects', [])
+        issues = verification_result.get("specific_issues", [])
+        novel_aspects = verification_result.get("novel_aspects", [])
         if issues:
             print(f"   • Remaining Issues: {len(issues)}")
         if novel_aspects:
@@ -635,7 +698,7 @@ TASK: Create a significantly improved method that addresses all the feedback abo
 
         # Show iteration timeline
         if generation_history:
-            print(f"\n⏱️ Iteration Timeline:")
+            print("\n⏱️ Iteration Timeline:")
             for entry in generation_history:
                 iter_num = entry.get("iteration", 0)
                 is_refinement = entry.get("is_refinement", False)
@@ -645,22 +708,27 @@ TASK: Create a significantly improved method that addresses all the feedback abo
 
         # Show applied feedback summary
         if feedback_history:
-            print(f"\n📝 Applied Feedback Summary:")
+            print("\n📝 Applied Feedback Summary:")
             for i, feedback in enumerate(feedback_history, 1):
-                feedback_preview = feedback[:150] + "..." if len(feedback) > 150 else feedback
+                feedback_preview = (
+                    feedback[:150] + "..." if len(feedback) > 150 else feedback
+                )
                 print(f"   Feedback {i}: {feedback_preview}")
 
-        print(f"{'='*50}\n")
+        print(f"{'=' * 50}\n")
 
         logger.info(f"Finalized method after {total_iterations} iterations")
 
         result = {
             "new_method": final_method,
             "final_verification_result": verification_result,
-            "total_iterations": total_iterations
+            "total_iterations": total_iterations,
         }
 
-        print_node_end("FINALIZATION", f"Process completed after {total_iterations} iterations (Novel: {verification_result.get('is_novel', False)}, Confidence: {verification_result.get('confidence', 0.0):.2f})")
+        print_node_end(
+            "FINALIZATION",
+            f"Process completed after {total_iterations} iterations (Novel: {verification_result.get('is_novel', False)}, Confidence: {verification_result.get('confidence', 0.0):.2f})",
+        )
         return result
 
     def _route_after_decision(self, state: CreateMethodSubgraphState) -> str:
@@ -680,24 +748,22 @@ TASK: Create a significantly improved method that addresses all the feedback abo
                 print_routing_decision(
                     "AGENT_DECISION",
                     "REFINEMENT_FEEDBACK",
-                    f"Continuing iteration {iteration_count + 1} - generating improvement feedback " +
-                    f"(novel: {is_novel}, confidence: {confidence:.2f})"
+                    f"Continuing iteration {iteration_count + 1} - generating improvement feedback "
+                    + f"(novel: {is_novel}, confidence: {confidence:.2f})",
                 )
                 return "refinement_feedback_node"
             else:
                 print_routing_decision(
                     "AGENT_DECISION",
                     "GENERATOR",
-                    f"Continuing iteration {iteration_count + 1} with existing feedback"
+                    f"Continuing iteration {iteration_count + 1} with existing feedback",
                 )
                 return "generator_node"
         else:
-            print_routing_decision("AGENT_DECISION", "FINALIZATION", "Agent decided to finalize")
+            print_routing_decision(
+                "AGENT_DECISION", "FINALIZATION", "Agent decided to finalize"
+            )
             return "finalization_node"
-
-
-
-
 
     def build_graph(self) -> CompiledGraph:
         print("🏗️ Building execution graph...")
@@ -706,8 +772,12 @@ TASK: Create a significantly improved method that addresses all the feedback abo
         # Add nodes
         graph_builder.add_node("initialization_node", self._initialization_node)
         graph_builder.add_node("generator_node", self._generator_node)
-        graph_builder.add_node("novelty_verification_node", self._novelty_verification_node)
-        graph_builder.add_node("refinement_feedback_node", self._refinement_feedback_node)
+        graph_builder.add_node(
+            "novelty_verification_node", self._novelty_verification_node
+        )
+        graph_builder.add_node(
+            "refinement_feedback_node", self._refinement_feedback_node
+        )
         graph_builder.add_node("agent_decision_node", self._agent_decision_node)
         graph_builder.add_node("finalization_node", self._finalization_node)
 
@@ -726,8 +796,8 @@ TASK: Create a significantly improved method that addresses all the feedback abo
             {
                 "generator_node": "generator_node",
                 "refinement_feedback_node": "refinement_feedback_node",
-                "finalization_node": "finalization_node"
-            }
+                "finalization_node": "finalization_node",
+            },
         )
 
         # After refinement feedback, go back to generator
@@ -737,16 +807,19 @@ TASK: Create a significantly improved method that addresses all the feedback abo
 
         print("✅ Graph built successfully!")
         print("\n📊 UPDATED EXECUTION FLOW:")
-        print("   START → INITIALIZATION → GENERATOR → NOVELTY_VERIFICATION → AGENT_DECISION")
+        print(
+            "   START → INITIALIZATION → GENERATOR → NOVELTY_VERIFICATION → AGENT_DECISION"
+        )
         print("                                                                    ↓")
         print("   ┌─────────────────────────────────────────────────────────────────┘")
-        print("   ↓ (continue w/o feedback)     ↓ (continue w/ feedback)    ↓ (finalize)")
+        print(
+            "   ↓ (continue w/o feedback)     ↓ (continue w/ feedback)    ↓ (finalize)"
+        )
         print("   REFINEMENT_FEEDBACK    →    GENERATOR                   FINALIZATION")
         print("           ↓")
         print("       GENERATOR")
 
         return graph_builder.compile()
-
 
 
 def main():
@@ -765,7 +838,7 @@ def main():
         novelty_threshold=0.8,
         branch_name=args.branch_name,
         llm_name=llm_name,
-        num_retrieve_paper=5
+        num_retrieve_paper=5,
     )
     result = cm.run()
     print(f"result: {json.dumps(result, indent=2)}")
