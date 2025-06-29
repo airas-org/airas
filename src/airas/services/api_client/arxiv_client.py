@@ -63,5 +63,5 @@ class ArxivClient(BaseHTTPClient):
         pdf_url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
 
         response = requests.get(pdf_url, stream=True, timeout=timeout)
-        raise_for_status(response, f"fetch_pdf {arxiv_id}")
+        raise_for_status(response)
         return response
