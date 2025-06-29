@@ -113,8 +113,6 @@ def run_from_state_file(
         # 最初から実行
         state = {
             "base_queries": ["diffusion model"],
-            "gpu_enabled": True,
-            "experiment_iteration": 1,
             "github_repository": github_repository,
             "branch_name": branch_name,
         }

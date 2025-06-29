@@ -7,14 +7,14 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
+from airas.core.github.nodes.create_branch import (
+    create_branch,
+)
 from airas.core.github.prepare_repository_subgraph.nodes.check_branch_existence import (
     check_branch_existence,
 )
 from airas.core.github.prepare_repository_subgraph.nodes.check_repository_from_template import (
     check_repository_from_template,
-)
-from airas.core.github.prepare_repository_subgraph.nodes.create_branch import (
-    create_branch,
 )
 from airas.core.github.prepare_repository_subgraph.nodes.create_repository_from_template import (
     create_repository_from_template,
@@ -141,7 +141,7 @@ class PrepareRepositorySubgraph:
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
-            main_sha=state["main_sha"],
+            sha=state["main_sha"],
         )
         return {"branch_created": branch_created}
 

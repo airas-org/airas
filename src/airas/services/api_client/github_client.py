@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Literal, Protocol, runtime_checkable
 
-import requests
+import requests  # type: ignore
 from tenacity import (
     before_sleep_log,
     retry,
@@ -374,6 +374,27 @@ class GithubClient(BaseHTTPClient):
             case _:
                 self._raise_for_status(response, path)
                 return False
+
+    def list_commits(
+        self, 
+        github_owner: str, 
+        repository_name: str, 
+        sha: str | None = None, 
+        per_page: int = 100, 
+        page: int = 1, 
+    ) -> list[dict]:
+    # https://docs.github.com/ja/rest/commits/commits?apiVersion=2022-11-28#list-commits
+        path = f"/repos/{github_owner}/{repository_name}/commits"
+        params = {
+            **({"sha": sha} if sha else {}),
+            "per_page": per_page,
+            "page": page,
+        }
+
+        response = self.get(path=path, params=params)
+        if response.status_code == 200:
+            return self._parser.parse(response, as_="json")
+        self._raise_for_status(response, path)  
 
     # --------------------------------------------------
     # Tree

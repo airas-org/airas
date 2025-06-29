@@ -46,7 +46,7 @@ class GithubUploadSubgraphState(
 
 class GithubUploadSubgraph:
     def __init__(self):
-        check_api_key(llm_api_key_check=True)
+        check_api_key(github_personal_access_token_check=True,)
         self.research_file_path = ".research/research_history.json"
 
     def _init_state(self, state: GithubUploadSubgraphState) -> dict[str, str]:
@@ -76,16 +76,13 @@ class GithubUploadSubgraph:
     def _merge_history_node(self, state: GithubUploadSubgraphState) -> dict[str, Any]:
         merged_history = merge_history(
             old=state["research_history"],
-            new=state["cumulative_output"],
-            subgraph_name=state["subgraph_name"],
+            new=state["cumulative_output"], 
         )
         return {"research_history": merged_history}
 
     @time_node("github_upload_subgraph", "_github_upload_node")
     def _github_upload_node(self, state: GithubUploadSubgraphState) -> dict[str, Any]:
-        commit_message = (
-            f"[{state['subgraph_name']}] run at {datetime.now().isoformat()}"
-        )
+        commit_message = f"[subgraph: {state['subgraph_name']}] run at {datetime.now().isoformat()}"
 
         success = github_upload(
             github_owner=state["github_owner"],
