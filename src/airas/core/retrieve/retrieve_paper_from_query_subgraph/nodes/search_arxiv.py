@@ -6,10 +6,10 @@ import feedparser
 import pytz
 from pydantic import BaseModel, Field, ValidationError
 
-from airas.services.api_client.arxiv_client import (
-    ArxivClient,
-    ArxivClientFatalError,
-    ArxivClientRetryableError,
+from airas.services.api_client.arxiv_client import ArxivClient
+from airas.services.api_client.retry_policy import (
+    HTTPClientFatalError,
+    HTTPClientRetryableError,
 )
 
 logger = getLogger(__name__)
@@ -65,7 +65,7 @@ def _search_papers(
             from_date=from_date,
             to_date=to_date,
         )
-    except (ArxivClientRetryableError, ArxivClientFatalError) as e:
+    except (HTTPClientRetryableError, HTTPClientFatalError) as e:
         logger.warning(f"arXiv API request failed: {e}")
         return []
 
