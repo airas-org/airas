@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 
-from airas.core import (
+from airas.features import (
     AnalyticSubgraph,
     CitationSubgraph,
     CreateCodeSubgraph,
@@ -10,6 +10,8 @@ from airas.core import (
     CreateMethodSubgraph,
     FixCodeSubgraph,
     GitHubActionsExecutorSubgraph,
+    GithubDownloadSubgraph,
+    GithubUploadSubgraph,
     HtmlSubgraph,
     LatexSubgraph,
     PrepareRepositorySubgraph,
@@ -49,6 +51,8 @@ citation = CitationSubgraph(llm_name="o3-mini-2025-01-31")
 latex = LatexSubgraph("o3-mini-2025-01-31")
 readme = ReadmeSubgraph()
 html = HtmlSubgraph("o3-mini-2025-01-31")
+upload = GithubUploadSubgraph()
+download = GithubDownloadSubgraph()
 
 
 def save_state(state, step_name: str, save_dir: str):
@@ -71,16 +75,17 @@ def load_state(file_path: str) -> dict:
 
 
 def retrieve_execution_subgraph_list(
-    filename: str, subgraph_name_list: list[str]
+    file_path: str, subgraph_name_list: list[str]
 ) -> list[str]:
-    START_FROM_STEP = filename.split("_")[1]
+    filename = os.path.basename(file_path)
+    START_FROM_STEP = os.path.splitext(filename)[0]
     start_index = subgraph_name_list.index(START_FROM_STEP)
     subgraph_name_list = subgraph_name_list[start_index + 1 :]
     return subgraph_name_list
 
 
 def run_from_state_file(
-    github_repository, branch_name, save_dir: str, filename: str | None = None
+    github_repository, branch_name, save_dir: str, file_path: str | None = None
 ):
     """
     filenameが指定されていればそのstateファイルから、指定されていなければ最初からsubgraphを順次実行し、各ステップの結果を保存する
@@ -102,12 +107,12 @@ def run_from_state_file(
         "html",
     ]
 
-    if filename:
+    if file_path:
         # stateをロード
-        state = load_state(filename)
+        state = load_state(file_path)
         # 実行対象のsubgraphリストを取得
         subgraph_name_list = retrieve_execution_subgraph_list(
-            filename, subgraph_name_list
+            file_path, subgraph_name_list
         )
     else:
         # 最初から実行
@@ -168,11 +173,13 @@ def run_from_state_file(
         elif subgraph_name == "html":
             state = html.run(state)
             save_state(state, "html", save_dir)
+        # state = upload.run(state)
+        # state = download.run(state)
 
 
 if __name__ == "__main__":
-    github_repository = "auto-res2/test-tanaka-v15"
-    branch_name = "test-1"
+    github_repository = "auto-res2/test-tanaka-v16"
+    branch_name = "test"
 
     state = {
         "github_repository": github_repository,
@@ -181,9 +188,9 @@ if __name__ == "__main__":
     prepare.run(state)
 
     save_dir = datetime.now().strftime("%Y%m%d_%H%M%S")
-    # file_name = "state_coder_20250610_160554.json"
-    # run_from_state_file(github_repository, branch_name, file_name)
-    run_from_state_file(github_repository, branch_name, save_dir=save_dir)
+    file_path = "/workspaces/airas/data/20250629_135044/latex.json"
+    run_from_state_file(github_repository, branch_name, save_dir, file_path)
+    # run_from_state_file(github_repository, branch_name, save_dir=save_dir)
 
     # import sys
     # if len(sys.argv) > 1:
