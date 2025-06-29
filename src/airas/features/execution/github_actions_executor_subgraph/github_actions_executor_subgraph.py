@@ -1,5 +1,3 @@
-import argparse
-import json
 import logging
 from typing import Literal
 
@@ -16,6 +14,8 @@ from airas.features.execution.github_actions_executor_subgraph.nodes.execute_git
 from airas.features.execution.github_actions_executor_subgraph.nodes.retrieve_github_actions_results import (
     retrieve_github_actions_results,
 )
+from airas.types.github import GitHubRepository
+from airas.types.method import MLMethodData
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -45,12 +45,13 @@ class GitHubActionsExecutorSubgraphOutputState(TypedDict):
 
 
 class ExecutorSubgraphState(
-    GitHubActionsExecutorSubgraphInputState,
-    GitHubActionsExecutorSubgraphHiddenState,
-    GitHubActionsExecutorSubgraphOutputState,
+    # GitHubActionsExecutorSubgraphInputState,
+    # GitHubActionsExecutorSubgraphHiddenState,
+    # GitHubActionsExecutorSubgraphOutputState,
     ExecutionTimeState,
 ):
-    pass
+    new_method: MLMethodData
+    experiment_repository: GitHubRepository
 
 
 class GitHubActionsExecutorSubgraph(BaseSubgraph):
@@ -67,34 +68,42 @@ class GitHubActionsExecutorSubgraph(BaseSubgraph):
     def _execute_github_actions_workflow_node(
         self, state: ExecutorSubgraphState
     ) -> dict:
-        if not state.get("push_completion", True):
+        new_method = state["new_method"]
+        experiment_repository = state["experiment_repository"]
+        if not new_method.experiment_meta_info.push_completion:
             raise ValueError(
                 "ExecutorSubgraph was called without a successful code push (expected push_completion == True)"
             )
 
         executed_flag = execute_github_actions_workflow(
-            github_repository=state["github_repository"],
-            branch_name=state["branch_name"],
-            experiment_iteration=state["experiment_iteration"],
+            github_owner=experiment_repository.github_owner,
+            repository_name=experiment_repository.repository_name,
+            branch_name=experiment_repository.branch_name,
+            experiment_iteration=experiment_repository.experiment_meta_info.iteration,
             gpu_enabled=self.gpu_enabled,
         )
-        return {"executed_flag": executed_flag}
+        experiment_repository.experiment_meta_info.executed_flag = executed_flag
+        return {"experiment_repository": experiment_repository}
 
     @executor_timed
     def _retrieve_github_actions_results(self, state: ExecutorSubgraphState) -> dict:
+        new_method = state["new_method"]
+        experiment_repository = state["experiment_repository"]
+
         output_text_data, error_text_data, image_file_name_list = (
             retrieve_github_actions_results(
-                github_repository=state["github_repository"],
-                branch_name=state["branch_name"],
-                experiment_iteration=state["experiment_iteration"],
+                github_owner=experiment_repository.github_owner,
+                repository_name=experiment_repository.repository_name,
+                branch_name=experiment_repository.branch_name,
+                experiment_iteration=new_method.experiment_meta_info.iteration,
             )
         )
+        new_method.experiment_result.result = output_text_data
+        new_method.experiment_result.error = error_text_data
+        new_method.experiment_result.image_file_name_list = image_file_name_list
+        new_method.experiment_meta_info.iteration = +1
         return {
-            "output_text_data": output_text_data,
-            "error_text_data": error_text_data,
-            "image_file_name_list": image_file_name_list,
-            # NOTE: We increment the experiment_iteration here to reflect the next iteration
-            "experiment_iteration": state["experiment_iteration"] + 1,
+            "new_method": new_method,
         }
 
     def build_graph(self) -> CompiledGraph:
@@ -117,27 +126,27 @@ class GitHubActionsExecutorSubgraph(BaseSubgraph):
         return graph_builder.compile()
 
 
-def main():
-    parser = argparse.ArgumentParser(description="ExecutorSubgraph")
-    parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
-    )
-    args = parser.parse_args()
+# def main():
+#     parser = argparse.ArgumentParser(description="ExecutorSubgraph")
+#     parser.add_argument("github_repository", help="Your GitHub repository")
+#     parser.add_argument(
+#         "branch_name", help="Your branch name in your GitHub repository"
+#     )
+#     args = parser.parse_args()
 
-    state = {
-        "github_repository": args.github_repository,
-        "branch_name": args.branch_name,
-        "experiment_iteration": 1,
-        "push_completion": True,  # Set to True to indicate a successful code push
-    }
-    result = GitHubActionsExecutorSubgraph().run(state)
-    print(f"result: {json.dumps(result, indent=2, ensure_ascii=False)}")
+#     state = {
+#         "github_repository": args.github_repository,
+#         "branch_name": args.branch_name,
+#         "experiment_iteration": 1,
+#         "push_completion": True,  # Set to True to indicate a successful code push
+#     }
+#     result = GitHubActionsExecutorSubgraph().run(state)
+#     print(f"result: {json.dumps(result, indent=2, ensure_ascii=False)}")
 
 
-if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        logger.error(f"Error running ExecutorSubgraph: {e}")
-        raise
+# if __name__ == "__main__":
+#     try:
+#         main()
+#     except Exception as e:
+#         logger.error(f"Error running ExecutorSubgraph: {e}")
+#         raise

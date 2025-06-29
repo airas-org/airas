@@ -57,7 +57,8 @@ def _get_single_file_content(
 
 
 def retrieve_github_actions_results(
-    github_repository: str,
+    github_owner: str,
+    repository_name: str,
     branch_name: str,
     experiment_iteration: int,
 ) -> tuple[str, str, list[str]]:
@@ -72,7 +73,6 @@ def retrieve_github_actions_results(
     Returns:
         Tuple of (output_text_data, error_text_data)
     """
-    github_owner, repository_name = github_repository.split("/", 1)
     client = GithubClient()
 
     output_file_path = f".research/iteration{experiment_iteration}/output.txt"

@@ -215,7 +215,8 @@ class WorkflowExecutor:
 
 # Legacy function wrapper for backward compatibility
 def execute_github_actions_workflow(
-    github_repository: str,
+    github_owner: str,
+    repository_name: str,
     branch_name: str,
     experiment_iteration: int,
     gpu_enabled: bool = False,
@@ -245,7 +246,6 @@ def execute_github_actions_workflow(
         ... )
         >>> print(f"Workflow execution successful: {result}")
     """
-    github_owner, repository_name = github_repository.split("/", 1)
     executor = WorkflowExecutor(client)
     result = executor.execute_workflow(
         github_owner, repository_name, branch_name, experiment_iteration, gpu_enabled
@@ -253,12 +253,12 @@ def execute_github_actions_workflow(
     return result.success
 
 
-if __name__ == "__main__":
-    github_repository = "fuyu-quant/airas-temp"
-    branch_name = "main"
-    result = execute_github_actions_workflow(
-        github_repository,
-        branch_name,
-        experiment_iteration=1,
-    )
-    print(f"result: {result}")
+# if __name__ == "__main__":
+#     github_repository = "fuyu-quant/airas-temp"
+#     branch_name = "main"
+#     result = execute_github_actions_workflow(
+#         github_repository,
+#         branch_name,
+#         experiment_iteration=1,
+#     )
+#     print(f"result: {result}")

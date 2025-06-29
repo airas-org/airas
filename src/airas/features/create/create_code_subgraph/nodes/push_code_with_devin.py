@@ -59,13 +59,13 @@ Please follow the “Rules” section to create an experimental script to conduc
 
 
 def push_code_with_devin(
-    github_repository: str,
+    github_owner: str,
+    repository_name: str,
     branch_name: str,
     new_method: str,
     experiment_code: str,
     experiment_iteration: int,
 ) -> tuple[str, str]:
-    github_owner, repository_name = github_repository.split("/", 1)
     repository_url = f"https://github.com/{github_owner}/{repository_name}"
     response = _request_create_session(
         repository_url=repository_url,

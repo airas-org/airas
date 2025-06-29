@@ -14,6 +14,7 @@ from airas.features.create.create_method_subgraph.nodes.generator_node import (
     generator_node,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.method import MLMethodData
 from airas.types.paper import CandidatePaperInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -35,7 +36,7 @@ class CreateMethodSubgraphHiddenState(TypedDict):
 
 
 class CreateMethodSubgraphOutputState(TypedDict):
-    new_method: str
+    new_method: MLMethodData
 
 
 class CreateMethodSubgraphState(
@@ -48,8 +49,8 @@ class CreateMethodSubgraphState(
 
 
 class CreateMethodSubgraph(BaseSubgraph):
-    InputState = CreateMethodSubgraphInputState
-    OutputState = CreateMethodSubgraphOutputState
+    # InputState = CreateMethodSubgraphInputState
+    # OutputState = CreateMethodSubgraphOutputState
 
     def __init__(
         self,
@@ -61,11 +62,12 @@ class CreateMethodSubgraph(BaseSubgraph):
     @create_method_timed
     def _generator_node(self, state: CreateMethodSubgraphState) -> dict:
         logger.info("---CreateMethodSubgraph---")
-        new_method = generator_node(
+        method = generator_node(
             llm_name=cast(LLM_MODEL, self.llm_name),
             base_method_text=state["base_method_text"],
             add_method_texts=state["add_method_texts"],
         )
+        new_method = MLMethodData(method=method)
         return {"new_method": new_method}
 
     def build_graph(self) -> CompiledGraph:
