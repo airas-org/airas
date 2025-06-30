@@ -1,108 +1,49 @@
-from typing import List
+from fastmcp import FastMCP
 
-from mcp.server.fastmcp import FastMCP
-
-from airas.retrieve_paper_subgraph.retrieve_paper_subgraph import (
-    RetrievePaperInputState,
-    RetrievePaperSubgraph,
+from airas.services.mcp_server.mcp_tools.create_mcp_tool import (
+    create_mcp_tool as create_mcp_tool_logic,
 )
 
 # Initialize FastMCP server
-mcp = FastMCP("research-graph")
-
-
-class MCPServerConfig:
-    def __init__(self, save_dir: str, scrape_urls: List[str], add_paper_num: int):
-        self.save_dir = save_dir
-        self.scrape_urls: List[str] = scrape_urls
-        self.add_paper_num = add_paper_num
-
-
-server_config = MCPServerConfig(
-    save_dir="./data",
-    scrape_urls=[
-        "https://icml.cc/virtual/2024/papers.html?filter=title",
-        "https://iclr.cc/virtual/2024/papers.html?filter=title",
-        # "https://nips.cc/virtual/2024/papers.html?filter=title",
-        # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=title",
-        # "https://eccv.ecva.net/virtual/2024/papers.html?filter=title",
-    ],
-    add_paper_num=3,
-)
-
-
-def format_search_results(state) -> str:
-    def format_search_paper(paper):
-        return "\n".join(
-            [
-                f"Title: {paper['title']}",
-                f"Authors: {', '.join(paper['authors'])}",
-                f"Summary: {paper['summary']}",
-                f"Published: {paper['published_date']}",
-                f"Link: {paper['arxiv_url']}",
-            ]
-        )
-
-    def format_search_paper_list(papers):
-        return "\n--\n".join(map(format_search_paper, papers))
-
-    def format_selected_paper(paper):
-        return "\n".join(
-            [
-                f"Title: {paper.title}",
-                f"Authors: {', '.join(paper.authors)}",
-                f"Summary: {paper.summary}",
-                f"Contributions: {paper.main_contributions}",
-                f"Experiments: {paper.experimental_setup}",
-                f"Limitations: {paper.limitations}",
-                f"Future Research Directions: {paper.future_research_directions}",
-                f"Published: {paper.published_date}",
-                f"Link: {paper.arxiv_url}",
-            ]
-        )
-
-    return f"""
-## Selected Base Paper
-{format_selected_paper(state["selected_base_paper_info"])}
-
-## Searched Papers
-{format_search_paper_list(state["search_paper_list"])}
-""".strip()
+mcp: FastMCP = FastMCP("airas")
 
 
 @mcp.tool()
-async def retrieve_paper_subgraph(keywords: str) -> str:
+async def create_mcp_tool(
+    module_path: str,
+) -> str:
     """
-    Retrieve a subgraph of research papers based on the provided keywords.
+    Automatically generate and register an MCP-compatible tool using a language model.
 
-    This function initializes a subgraph retrieval process using the specified
-    keywords, builds a graph of related research papers, and formats the results
-    for display. The search includes scraping paper metadata from configured URLs
-    and processing them with a language model.
+    This tool takes the module path of a Python subgraph implementation, loads its source code,
+    sends it to an LLM using a Jinja2 template prompt, and automatically generates, saves,
+    and registers a FastMCP-compatible tool into the MCP server.
 
     Args:
-        keywords (str): Comma-separated keywords to search for. Each keyword is
-                        used to query and retrieve relevant research papers.
+        module_path (str): The importable Python module path of the subgraph.
 
     Returns:
-        str: A formatted string containing details of the selected base paper
-             and a list of searched papers, including their titles, authors,
-             summaries, publication dates, and links.
+        str: A success message with the file path if the tool was created successfully,
+             or an error message if the generation failed.
     """
-    # Initialize the RetrievePaperSubgraph class
-    subgraph = RetrievePaperSubgraph(
-        llm_name="o3-mini-2025-01-31",
-        save_dir=server_config.save_dir,
-        scrape_urls=server_config.scrape_urls,
-        add_paper_num=server_config.add_paper_num,
-    ).build_graph()
+    result = create_mcp_tool_logic(module_path)
+    return result
 
-    state: RetrievePaperInputState = RetrievePaperInputState(
-        queries=list(map(lambda x: x.strip(), keywords.split(",")))
-    )
-    response = subgraph.invoke(state, config={"recursion_limit": 500})
 
-    return format_search_results(response)
+# -------------------- MCP Tool Registration --------------------
+# All new MCP-compatible tools should be added **below this line**.
+# Each MCP tool must accept a single input argument named `state`.
+
+from airas.services.mcp_server.mcp_tools.retrieve_paper_from_query_subgraph_mcp import (  # noqa: E402
+    retrieve_paper_from_query_subgraph_mcp,
+)
+
+
+@mcp.tool(
+    description="This tool accepts a state dictionary containing a list of base_queries, initializes the RetrievePaperFromQuerySubgraph with server configuration parameters (llm_name, save_dir, and scrape_urls), executes the subgraph to retrieve paper information, and returns a human-readable summary containing the base GitHub URL and details of the selected paper."
+)
+def retrieve_paper_from_query_subgraph(state: dict) -> str:
+    return retrieve_paper_from_query_subgraph_mcp(state)
 
 
 if __name__ == "__main__":
