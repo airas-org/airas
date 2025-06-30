@@ -9,7 +9,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.paper import PaperContent
+from airas.types.paper import PaperBody
 
 logger = getLogger(__name__)
 
@@ -36,18 +36,18 @@ def _assign_placeholder_ids(text: str, placeholder: str) -> tuple[str, list[str]
 
 def embed_placeholders(
     llm_name: LLM_MODEL,
-    paper_content: dict[str, str],
+    paper_content: PaperBody,
     prompt_template: str,
     placeholder: str = "[[CITATION]]",
     client: LLMFacadeClient | None = None,
-) -> tuple[dict[str, str], list[str]]:
+) -> tuple[PaperBody, list[str]]:
     if client is None:
         client = LLMFacadeClient(llm_name=llm_name)
 
     data = {
         "sections": [
-            {"name": section, "content": paper_content[section]}
-            for section in paper_content.keys()
+            {"name": section, "content": paper_content.section}
+            for section in paper_content.model_fields.keys()
         ],
         "placeholder": placeholder,
     }
@@ -60,7 +60,7 @@ def embed_placeholders(
         # TODO: Add error handling if none of the placeholders are embedded
         output, cost = client.structured_outputs(
             message=messages,
-            data_model=PaperContent,
+            data_model=PaperBody,
         )
         output = _replace_underscores_in_keys(output)
 
@@ -72,7 +72,7 @@ def embed_placeholders(
             paper_content_with_placeholders[section] = new_text
             all_placeholders.extend(ids)
 
-        return (paper_content_with_placeholders, all_placeholders)
+        return paper_content_with_placeholders, all_placeholders
 
     except Exception as e:
         logger.warning(f"embed_placeholders failed, returning original content: {e}")

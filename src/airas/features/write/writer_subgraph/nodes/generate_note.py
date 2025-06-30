@@ -1,54 +1,52 @@
+from typing import Optional
+
 from jinja2 import Template
 
-note: dict[str, list[str]] = {
-    "Methods": [
-        "base_method_text",
-        "new_method",
-        "verification_policy",
-        "experiment_details",
-    ],
-    "Codes": ["experiment_code"],
-    "Results": ["output_text_data"],
-    "Analysis": ["analysis_report"],
-    "Figures": ["image_file_name_list"],
-}
 
-
-def generate_note(state: dict) -> str:
+def generate_note(
+    base_method_text: Optional[str] = None,
+    new_method: Optional[str] = None,
+    verification_policy: Optional[str] = None,
+    experiment_details: Optional[str] = None,
+    experiment_code: Optional[str] = None,
+    output_text_data: Optional[str] = None,
+    analysis_report: Optional[str] = None,
+    image_file_name_list: Optional[list[str]] = None,
+) -> str:
     template = Template("""
     {% for section, items in sections.items() %}
     # {{ section }}
     {% for key, value in items.items() %}
-    {% if key == "image_file_name_list" %}
+    {% if key == "image_file_name_list" and value %}
     {% for img in value %}
     - {{ img }}
     {% endfor %}
-    {% else %}
+    {% elif value is not none %}
     {{ key }}: {{ value }}
     {% endif %}
     {% endfor %}
     {% endfor %}
     """)
 
-    sections: dict[str, dict] = {
-        section: {name: state[name] for name in names}
-        for section, names in note.items()
+    sections = {
+        "Methods": {
+            "base_method_text": base_method_text,
+            "new_method": new_method,
+            "verification_policy": verification_policy,
+            "experiment_details": experiment_details,
+        },
+        "Codes": {
+            "experiment_code": experiment_code,
+        },
+        "Results": {
+            "output_text_data": output_text_data,
+        },
+        "Analysis": {
+            "analysis_report": analysis_report,
+        },
+        "Figures": {
+            "image_file_name_list": image_file_name_list or [],
+        },
     }
 
     return template.render(sections=sections)
-
-
-if __name__ == "__main__":
-    sample_state = {
-        "base_method_text": "Baseline method using XYZ.",
-        "new_method": "Proposed method with enhancements.",
-        "verification_policy": "We compare on ABC metric.",
-        "experiment_details": "3 trials on synthetic data.",
-        "experiment_code": "def run(): pass",
-        "output_text_data": "Achieved 95% accuracy.",
-        "analysis_report": "Consistent improvement observed.",
-        "image_file_name_list": ["fig1.pdf", "fig2.pdf"],
-    }
-
-    note_text = generate_note(sample_state)
-    print(note_text)

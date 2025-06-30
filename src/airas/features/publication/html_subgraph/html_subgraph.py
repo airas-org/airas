@@ -24,6 +24,8 @@ from airas.features.publication.html_subgraph.prompt.convert_to_html_prompt impo
     convert_to_html_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepository
+from airas.types.paper import PaperData
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -59,7 +61,8 @@ class HtmlSubgraphState(
     HtmlSubgraphOutputState,
     ExecutionTimeState,
 ):
-    pass
+    generate_paper_data: PaperData
+    experiment_repository: GitHubRepository
 
 
 class HtmlSubgraph(BaseSubgraph):

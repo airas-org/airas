@@ -41,11 +41,11 @@ class CreateMethodSubgraphOutputState(TypedDict):
 
 class CreateMethodSubgraphState(
     CreateMethodSubgraphInputState,
-    CreateMethodSubgraphHiddenState,
-    CreateMethodSubgraphOutputState,
+    # CreateMethodSubgraphHiddenState,
+    # CreateMethodSubgraphOutputState,
     ExecutionTimeState,
 ):
-    pass
+    new_method: MLMethodData
 
 
 class CreateMethodSubgraph(BaseSubgraph):

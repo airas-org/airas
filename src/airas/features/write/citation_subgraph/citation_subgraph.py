@@ -3,6 +3,7 @@ from typing import Any, cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -25,6 +26,7 @@ from airas.features.write.citation_subgraph.prompt.generate_queries_prompt impor
     generate_queries_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.paper import PaperBody, PaperData
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -50,17 +52,20 @@ class CitationSubgraphOutputState(TypedDict):
 
 
 class CitationSubgraphState(
-    CitationSubgraphInputState,
-    CitationSubgraphHiddenState,
-    CitationSubgraphOutputState,
+    # CitationSubgraphInputState,
+    # CitationSubgraphHiddenState,
+    # CitationSubgraphOutputState,
     ExecutionTimeState,
 ):
-    pass
+    generate_paper_data: PaperData
+    references: dict[str, dict[str, Any]]
+    placeholder_keys: list[str]
+    generated_citation_queries: dict[str, str]
 
 
 class CitationSubgraph(BaseSubgraph):
-    InputState = CitationSubgraphInputState
-    OutputState = CitationSubgraphOutputState
+    # InputState = CitationSubgraphInputState
+    # OutputState = CitationSubgraphOutputState
 
     def __init__(
         self,
@@ -73,13 +78,15 @@ class CitationSubgraph(BaseSubgraph):
     def _embed_placeholders(
         self, state: CitationSubgraphState
     ) -> dict[str, dict[str, str] | list[str]]:
+        generate_paper_data = state["generate_paper_data"]
         paper_content_with_placeholders, placeholder_keys = embed_placeholders(
             llm_name=cast(LLM_MODEL, self.llm_name),
-            paper_content=state["paper_content"],
+            paper_content=generate_paper_data.paper_body,
             prompt_template=embed_placeholders_prompt,
         )
+        generate_paper_data.citation_paper_body = paper_content_with_placeholders
         return {
-            "paper_content_with_placeholders": paper_content_with_placeholders,
+            "generate_paper_data": generate_paper_data,
             "placeholder_keys": placeholder_keys,
         }
 
@@ -87,9 +94,10 @@ class CitationSubgraph(BaseSubgraph):
     def _generate_query(
         self, state: CitationSubgraphState
     ) -> dict[str, dict[str, str]]:
+        generate_paper_data = state["generate_paper_data"]
         generated_citation_queries = generate_queries(
             llm_name=cast(LLM_MODEL, self.llm_name),
-            paper_info=state["paper_content_with_placeholders"],
+            paper_info=generate_paper_data.citation_paper_body,
             prompt_template=generate_queries_prompt,
             dict_keys=state["placeholder_keys"],
         )
@@ -100,18 +108,21 @@ class CitationSubgraph(BaseSubgraph):
         references = openalex_fetch_references(
             generated_citation_queries=state["generated_citation_queries"]
         )
-        paper = state["paper_content_with_placeholders"]
+        generate_paper_data = state["generate_paper_data"]
         cleaned_paper = {}
 
-        for section, content in paper.items():
+        for section, content in (
+            cast(BaseModel, generate_paper_data.paper_body).model_dump().items()
+        ):
             for placeholder, ref in references.items():
                 if not ref:
                     content = content.replace(placeholder, "")
             cleaned_paper[section] = content
 
+        generate_paper_data.citation_paper_body = PaperBody(**cleaned_paper)
+        generate_paper_data.references = references
         return {
-            "references": references,
-            "paper_content_with_placeholders": cleaned_paper,
+            "generate_paper_data": generate_paper_data,
         }
 
     def build_graph(self) -> CompiledGraph:

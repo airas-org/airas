@@ -4,7 +4,6 @@ from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
-from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
 from airas.features.write.writer_subgraph.input_data import (
@@ -13,6 +12,8 @@ from airas.features.write.writer_subgraph.input_data import (
 from airas.features.write.writer_subgraph.nodes.generate_note import generate_note
 from airas.features.write.writer_subgraph.nodes.paper_writing import WritingNode
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.method import MLMethodData
+from airas.types.paper import PaperData
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -22,37 +23,39 @@ logger = logging.getLogger(__name__)
 writer_timed = lambda f: time_node("writer_subgraph")(f)  # noqa: E731
 
 
-class WriterSubgraphInputState(TypedDict):
-    base_method_text: str
-    new_method: str
-    verification_policy: str
-    experiment_details: str
-    experiment_code: str
-    output_text_data: str
-    analysis_report: str
-    image_file_name_list: list[str]
+# class WriterSubgraphInputState(TypedDict):
+#     base_method_text: str
+#     new_method: str
+#     verification_policy: str
+#     experiment_details: str
+#     experiment_code: str
+#     output_text_data: str
+#     analysis_report: str
+#     image_file_name_list: list[str]
 
 
-class WriterSubgraphHiddenState(TypedDict):
-    note: str
+# class WriterSubgraphHiddenState(TypedDict):
+#     note: str
 
 
-class WriterSubgraphOutputState(TypedDict):
-    paper_content: dict[str, str]
+# class WriterSubgraphOutputState(TypedDict):
+#     paper_content: dict[str, str]
 
 
 class WriterSubgraphState(
-    WriterSubgraphInputState,
-    WriterSubgraphHiddenState,
-    WriterSubgraphOutputState,
+    # WriterSubgraphInputState,
+    # WriterSubgraphHiddenState,
+    # WriterSubgraphOutputState,
     ExecutionTimeState,
 ):
-    pass
+    base_method_text: str
+    new_method: MLMethodData
+    generate_paper_data: PaperData
 
 
 class WriterSubgraph(BaseSubgraph):
-    InputState = WriterSubgraphInputState
-    OutputState = WriterSubgraphOutputState
+    # InputState = WriterSubgraphInputState
+    # OutputState = WriterSubgraphOutputState
 
     def __init__(
         self,
@@ -65,18 +68,33 @@ class WriterSubgraph(BaseSubgraph):
 
     @writer_timed
     def _generate_note(self, state: WriterSubgraphState) -> dict:
-        note = generate_note(state=dict(state))
-        return {"note": note}
+        new_method = state["new_method"]
+        notes = generate_note(
+            base_method_text=state["base_method_text"],
+            new_method=new_method.method,
+            verification_policy=new_method.verification_policy,
+            experiment_details=new_method.experiment_details,
+            experiment_code=new_method.experiment_code,
+            output_text_data=cast(str, new_method.experiment_result.result),
+            analysis_report=new_method.experiment_result.analysis_report,
+            image_file_name_list=new_method.experiment_result.image_file_name_list,
+        )
+        new_method.experiment_result.notes = notes
+        return {"new_method": new_method}
 
     @writer_timed
     def _writeup(self, state: WriterSubgraphState) -> dict:
+        new_method = state["new_method"]
         paper_content = WritingNode(
             llm_name=cast(LLM_MODEL, self.llm_name),
             refine_round=self.refine_round,
         ).execute(
-            note=state["note"],
+            note=new_method.experiment_result.notes,
         )
-        return {"paper_content": paper_content}
+        generate_paper_data = PaperData(
+            title=paper_content.title, paper_body=paper_content
+        )
+        return {"generate_paper_data": generate_paper_data}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(WriterSubgraphState)

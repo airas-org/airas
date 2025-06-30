@@ -11,6 +11,8 @@ class ExperimentResult(BaseModel):
     result: Optional[str] = Field(None, description="")
     error: Optional[str] = Field(None, description="")
     image_file_name_list: Optional[list[str]] = Field(None, description="")
+    analysis_report: Optional[str] = Field(None, description="")
+    notes: Optional[str] = Field(None, description="")
 
 
 class ExperimentMetaInfo(BaseModel):

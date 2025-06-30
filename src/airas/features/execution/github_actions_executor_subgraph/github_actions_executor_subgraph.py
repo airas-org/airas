@@ -55,8 +55,8 @@ class ExecutorSubgraphState(
 
 
 class GitHubActionsExecutorSubgraph(BaseSubgraph):
-    InputState = GitHubActionsExecutorSubgraphInputState
-    OutputState = GitHubActionsExecutorSubgraphOutputState
+    # InputState = GitHubActionsExecutorSubgraphInputState
+    # OutputState = GitHubActionsExecutorSubgraphOutputState
 
     def __init__(self, gpu_enabled: bool):
         self.gpu_enabled = gpu_enabled

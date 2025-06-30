@@ -6,7 +6,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.paper import PaperContent
+from airas.types.paper import PaperBody
 
 logger = getLogger(__name__)
 
@@ -18,7 +18,6 @@ class WritingNode:
         self,
         llm_name: LLM_MODEL,
         refine_round: int = 2,
-        refine_only: bool = False,
         target_sections: list[str] | None = None,
         client: LLMFacadeClient | None = None,
     ):
@@ -31,7 +30,6 @@ class WritingNode:
             self.client = LLMFacadeClient(llm_name=self.llm_name)
 
         self.refine_round = refine_round
-        self.refine_only = refine_only
         self.target_sections = target_sections or [
             "Title",
             "Abstract",
@@ -42,6 +40,7 @@ class WritingNode:
             "Experimental Setup",
             "Results",
             "Conclusions",
+            "Acknowledgement",
         ]
         self.per_section_tips_prompt_dict = {
             "Title": """\n
@@ -139,22 +138,7 @@ Here is the context of the entire paper:
     - Example: Remove phrases like "Here’s a refined version of this section," as they are not part of the final document.
     - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
 
-- The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**.
-
-**Output Format Example** (as JSON):
-```json
-{
-  "Title": "Efficient Adaptation of Large Language Models via Low-Rank Optimization",
-  "Abstract": "This paper proposes a novel method...",
-  "Introduction": "In recent years...",
-  "Related_Work": "...",
-  "Background": "...",
-  "Method": "...",
-  "Experimental_Setup": "...",
-  "Results": "...",
-  "Conclusions": "We conclude that..."
-}
-```"""
+- The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**."""
 
         self.write_prompt_template = """\n
 You are writing a research paper."""
@@ -176,40 +160,38 @@ Pay particular attention to fixing any errors such as:
 - Results or insights in the context that have not yet need included
 - Any relevant figures that have not yet been included in the text"""
 
-    def _replace_underscores_in_keys(
-        self, paper_dict: dict[str, str]
-    ) -> dict[str, str]:
-        return {key.replace("_", " "): value for key, value in paper_dict.items()}
+    # def _replace_underscores_in_keys(
+    #     self, paper_dict: dict[str, str]
+    # ) -> PaperBody:
+    #     return {key.replace("_", " "): value for key, value in paper_dict.items()}
 
-    def _call_llm(self, prompt: str, system_prompt: str) -> dict[str, str]:
+    def _call_llm(self, prompt: str, system_prompt: str) -> PaperBody:
         messages = system_prompt + prompt
         output, cost = self.client.structured_outputs(
-            message=messages, data_model=PaperContent
+            message=messages, data_model=PaperBody
         )
         if output is None:
             raise ValueError("Error: No response from LLM.")
 
-        missing_fields = [
-            field
-            for field in PaperContent.model_fields
-            if field not in output or not output[field].strip()
-        ]
-        if missing_fields:
-            raise ValueError(
-                f"Missing or empty fields in model response: {missing_fields}"
-            )
+        # missing_fields = [
+        #     field
+        #     for field in PaperContent.model_fields
+        #     if field not in output or not output[field].strip()
+        # ]
+        # if missing_fields:
+        #     raise ValueError(
+        #         f"Missing or empty fields in model response: {missing_fields}"
+        #     )
 
-        return self._replace_underscores_in_keys(output)
+        return output  # self._replace_underscores_in_keys(output)
 
-    def _write(self, note: str) -> dict[str, str]:
+    def _write(self, note: str) -> PaperBody:
         prompt = self._generate_write_prompt()
         system_prompt = self._render_system_prompt(note)
         content = self._call_llm(prompt=prompt, system_prompt=system_prompt)
-        if not content:
-            raise RuntimeError("Failed to generate content. The LLM returned None.")
         return content
 
-    def _refine(self, note: str, content: dict[str, str]) -> dict[str, str]:
+    def _refine(self, note: str, content: PaperBody) -> PaperBody:
         for round_num in range(self.refine_round):
             prompt = self._generate_refinement_prompt(content)
             system_prompt = self._render_system_prompt(note)
@@ -247,19 +229,10 @@ Pay particular attention to fixing any errors such as:
             error_list_prompt=self.error_list_prompt,
         )
 
-    def execute(
-        self, note: str, paper_content: dict[str, str] | None = None
-    ) -> dict[str, str]:
-        if not self.refine_only:
-            logger.info("Generating full paper in one LLM call...")
-            initial_content = self._write(note)
-            paper_content = self._refine(note, initial_content)
-        else:
-            if paper_content is None:
-                raise ValueError(
-                    "paper_content must be provided when refine_only is True."
-                )
-            paper_content = self._refine(note, paper_content)
+    def execute(self, note: str) -> PaperBody:
+        logger.info("Generating full paper in one LLM call...")
+        initial_content = self._write(note)
+        paper_content = self._refine(note, initial_content)
         return paper_content
 
 

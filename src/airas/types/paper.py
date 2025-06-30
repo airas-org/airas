@@ -23,30 +23,17 @@ class CandidatePaperInfo(TypedDict):
     future_research_directions: str
 
 
-class PaperContent(BaseModel):
-    Title: str
-    Abstract: str
-    Introduction: str
-    Related_Work: str
-    Background: str
-    Method: str
-    Experimental_Setup: str
-    Results: str
-    Conclusions: str
-
-
 class PaperBody(BaseModel):
     title: str = Field(..., description="")
-    abstract: str
-    introduction: str
-    related_work: str
-    background: str
-    method: str
-    experimental_setup: str
-    results: str
-    conclusions: str
-    acknowledgement: str
-    image_data: Any = Field(..., description="")
+    abstract: str = Field(..., description="")
+    introduction: str = Field(..., description="")
+    related_work: str = Field(..., description="")
+    background: str = Field(..., description="")
+    method: str = Field(..., description="")
+    experimental_setup: str = Field(..., description="")
+    results: str = Field(..., description="")
+    conclusions: str = Field(..., description="")
+    acknowledgement: str = Field(..., description="")
 
 
 class LLMExtractedInfo(BaseModel):
@@ -59,32 +46,39 @@ class LLMExtractedInfo(BaseModel):
 
 
 class MetaData(BaseModel):
-    peer_review_status: Literal["yes", "no", "unknown"]
-    language: str
-    access_type: Literal["free", "paid", "unknown"]
-    journal: str
-    github_url: str
-    authors: list[str]
-    is_generated: bool
+    peer_review_status: Optional[Literal["yes", "no", "unknown"]] = Field(
+        None, description=""
+    )
+    language: Optional[str] = Field(None, description="")
+    access_type: Optional[Literal["free", "paid", "unknown"]] = Field(
+        None, description=""
+    )
+    journal: Optional[str] = Field(None, description="")
+    github_url: Optional[str] = Field(None, description="")
+    authors: Optional[list[str]] = Field(None, description="")
+    is_generated: Optional[bool] = Field(None, description="")
 
 
 class AlternativeFormats(BaseModel):
-    tex_data: str
-    html_data: str
+    tex_data: Optional[str] = Field(None, description="")
+    html_data: Optional[str] = Field(None, description="")
 
 
 class ExternalSources(BaseModel):
-    arxiv_info: ArxivInfo
+    arxiv_info: Optional[ArxivInfo] = Field(None, description="")
     # openalex_info: OpenAlexInfo
 
 
 class PaperData(BaseModel):
     title: str = Field(..., description="")
-    full_text: Optional[str] = Field(..., description="")
-    paper_body: Optional[PaperBody] = Field(..., description="")
-    # ？citation_paper_body: PaperBody
-    references: Optional[list[PaperBody]] = Field(..., description="")
-    meta_data: Optional[MetaData] = Field(..., description="")
-    external_sources: Optional[ExternalSources] = Field(..., description="")
-    llm_extracted_info: Optional[LLMExtractedInfo] = Field(..., description="")
-    alternative_formats: Optional[AlternativeFormats] = Field(..., description="")
+    full_text: Optional[str] = Field(None, description="")
+    paper_body: Optional[PaperBody] = Field(None, description="")
+    image_data: Optional[Any] = Field(None, description="")
+    citation_paper_body: Optional[PaperBody] = Field(None, description="")
+    references: Optional[dict[str, dict[str, Any]]] = Field(None, description="")
+    # TODO:引用論文の取得ロジックを変更し以下に変更する
+    # references: Optional[list[PaperBody]] = Field(None, description="")
+    meta_data: Optional[MetaData] = Field(None, description="")
+    external_sources: Optional[ExternalSources] = Field(None, description="")
+    llm_extracted_info: Optional[LLMExtractedInfo] = Field(None, description="")
+    alternative_formats: Optional[AlternativeFormats] = Field(None, description="")
