@@ -12,7 +12,7 @@ The goal is to enable the function to be used via a FastMCP server.
 ## Instructions:
 
 - Output only valid Python code.
-- Use `from {{ module_path }} import ...` for imports.
+- Use `from {{ module_path }} import ...` for imports. Do not change, shorten, or omit the `module_path`.
 - Format return values using a helper like `format_result()` based on the actual structure of `state`.
 - **Read the `source_code` and infer:**
     - The appropriate arguments required to instantiate the Subgraph class.

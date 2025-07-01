@@ -1,0 +1,12 @@
+{
+    "mcpServers": {
+      "airas": {
+        "type": "stdio",
+        "command": "sh", 
+        "args": [
+          "-c", 
+          "uv run python /workspaces/airas/src/airas/services/mcp_server/mcp_server.py"
+        ]
+      }
+    }
+  }

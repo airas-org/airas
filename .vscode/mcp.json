@@ -12,7 +12,7 @@
       "command": "sh", 
       "args": [
         "-c", 
-        "uv run python /workspaces/airas/src/airas/services/mcp_server/mcp_server.py"
+        "uv run python src/airas/services/mcp_server/mcp_server.py"
       ]
     }
   },

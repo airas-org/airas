@@ -16,9 +16,9 @@ from airas.services.mcp_server.mcp_tools.create_mcp_tool_prompt import (
 logger = getLogger(__name__)
 
 
-BASE_DIR = "/workspaces/airas/src/airas"
-MCP_TOOL_DIR = f"{BASE_DIR}/services/mcp_server/mcp_tools"
-MCP_SERVER_PATH = f"{BASE_DIR}/services/mcp_server/mcp_server.py"
+BASE_DIR = "/workspaces/airas"
+MCP_TOOL_DIR = f"{BASE_DIR}/src/airas/services/mcp_server/mcp_tools"
+MCP_SERVER_PATH = f"{BASE_DIR}/src/airas/services/mcp_server/mcp_server.py"
 
 
 class LLMOutput(BaseModel):
