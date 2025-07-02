@@ -7,26 +7,26 @@ The goal is to enable the function to be used via a FastMCP server.
 ## Tool specification:
 
 - Module path: `{{ module_path }}`
-- MCP tool name: `{{ tool_name }}`
 
 ## Instructions:
 
 - Output only valid Python code.
-- Use `from {{ module_path }} import ...` for imports. Do not change, shorten, or omit the `module_path`.
-- Format return values using a helper like `format_result()` based on the actual structure of `state`.
-- **Read the `source_code` and infer:**
-    - The appropriate arguments required to instantiate the Subgraph class.
-    - How to define `MCPServerConfig` with the necessary attributes to support subgraph instantiation.
-    - How the final state looks, in order to design `format_result()` for human-readability.
-- Do not include explanations or comments outside of the code block.
+- Use the actual Subgraph class name found in the source_code when importing and instantiating the subgraph.
+- Include a clear and concise natural-language description inside `@mcp.tool(description="...")`, summarizing what the tool takes as input, what it does, and what it returns.  
+  The function must always take a single argument named `state`, and the actual input values are provided as fields inside this `state` dictionary.
+- Name the tool function using the last part of the `module_path`.
+- Read the `source_code` to infer the arguments needed to instantiate the Subgraph class.
+  In particular, do not extract constructor arguments from state. Instead, refer to the main() function in the source code to determine how the Subgraph is instantiated, using fixed values or configuration variables. 
+  You may omit arguments that have default values in the class definition.
+- Return the final `state` as-is from the function.
+- Do not add any imports or helper functions that are not already shown in the Reference template.
 
-- Finally, return a JSON object with:
-  - `description`: A brief natural language summary describing what the tool takes as input, what it does, and what it returns.
-  - `output_code`: The full code of the MCP-compatible tool
+- Return a JSON object **as a string** with exactly one field:
+  - `output_code`: A complete implementation of the MCP-compatible tool, following the structure shown in the reference template.
 
 ## Source code of the module:
 
-Below is the full code of the source module. You can use it to understand class definitions, subgraph initialization, helper functions like `format_result`, and server-level configs like `MCPServerConfig`.
+Below is the full code of the source module. You can use it to understand class definitions, subgraph initialization.
 
 ```python
 {{ source_code | indent(4) }}
@@ -35,31 +35,16 @@ Below is the full code of the source module. You can use it to understand class 
 ## Reference template:
 
 ```python
-from your_module_path import (
+from {{ module_path }} import (
     YourSubgraph,
 )
 
-class MCPServerConfig:
-    def __init__(self, **kwargs):
-        self.config1 = kwargs.get("config1")
-        self.config2 = kwargs.get("config2")
+@mcp.tool(description="Brief explanation of what the tool does.")
+def your_subgraph(state: dict) -> dict:
+    state = YourSubgraph(
+        # appropriate arguments
+    ).run(state)
 
-server_config = MCPServerConfig(
-    config1=...,
-    config2=...,
-)
-
-def format_result(state) -> str:
-    return f"Result:\n{state}"
-
-
-def {{ tool_name }}_mcp(state: dict) -> str:
-    subgraph = YourSubgraph(
-        config1=server_config.config1,
-        config2=server_config.config2,
-    )
-
-    state = subgraph.run(state, config={"recursion_limit": 500})
-    return format_result(state)
+    return state
 ```
 """

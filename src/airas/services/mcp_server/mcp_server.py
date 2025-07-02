@@ -19,8 +19,7 @@ async def create_mcp_tool(
     Automatically generate and register an MCP-compatible tool using a language model.
 
     This tool takes the module path of a Python subgraph implementation, loads its source code,
-    sends it to an LLM using a Jinja2 template prompt, and automatically generates, saves,
-    and registers a FastMCP-compatible tool into the MCP server.
+    sends it to an LLM using a Jinja2 template prompt, and automatically registers a FastMCP-compatible tool into the MCP server.
 
     Args:
         module_path (str): The importable Python module path of the subgraph.
@@ -37,16 +36,53 @@ async def create_mcp_tool(
 # All new MCP-compatible tools should be added **below this line**.
 # Each MCP tool must accept a single input argument named `state`.
 
-from airas.services.mcp_server.mcp_tools.retrieve_paper_from_query_subgraph_mcp import (
-    retrieve_paper_from_query_subgraph_mcp,
+
+from airas.features.retrieve.retrieve_paper_from_query_subgraph.retrieve_paper_from_query_subgraph import (
+    RetrievePaperFromQuerySubgraph,
 )
 
 
 @mcp.tool(
-    description="This MCP tool takes a state dictionary as input containing a list of base queries. It instantiates the RetrievePaperFromQuerySubgraph with server configuration parameters (LLM name, data directory, and URLs to scrape) and then runs the subgraph to retrieve and process academic papers. The final state is formatted to display the base GitHub URL and the associated method text details."
+    description="This tool takes a state dictionary containing a 'base_queries' field, processes it through a paper retrieval subgraph that performs web scraping, arXiv searching, paper text extraction, GitHub URL extraction, and summarization, and finally selects the best paper. The output state includes a 'base_github_url' and 'base_method_text' representing the selected paper details."
 )
-def retrieve_paper_from_query_subgraph(state: dict) -> str:
-    return retrieve_paper_from_query_subgraph_mcp(state)
+def retrieve_paper_from_query_subgraph(state: dict) -> dict:
+    state = RetrievePaperFromQuerySubgraph(
+        llm_name="o3-mini-2025-01-31",
+        save_dir="/workspaces/airas/data",
+        scrape_urls=["https://icml.cc/virtual/2024/papers.html?filter=title"],
+    ).run(state)
+    return state
+
+
+from airas.features.retrieve.retrieve_related_paper_subgraph.retrieve_related_paper_subgraph import (
+    RetrieveRelatedPaperSubgraph,
+)
+
+
+@mcp.tool(
+    description="This tool takes a state dictionary that includes 'base_queries', 'base_github_url', 'base_method_text', and optionally 'add_queries'. It instantiates the RetrieveRelatedPaperSubgraph with fixed configuration parameters (using 'o3-mini-2025-01-31' as the LLM name, '/workspaces/airas/data' as the save directory, a preset scrape URL, and an add paper number of 1) to run the related paper retrieval process, and returns the updated state."
+)
+def retrieve_related_paper_subgraph(state: dict) -> dict:
+    state = RetrieveRelatedPaperSubgraph(
+        llm_name="o3-mini-2025-01-31",
+        save_dir="/workspaces/airas/data",
+        scrape_urls=["https://icml.cc/virtual/2024/papers.html?filter=title"],
+        add_paper_num=1,
+    ).run(state)
+    return state
+
+
+from airas.features.retrieve.retrieve_code_subgraph.retrieve_code_subgraph import (
+    RetrieveCodeSubgraph,
+)
+
+
+@mcp.tool(
+    description="This tool takes a state dictionary with 'base_github_url' and 'base_method_text' fields, instantiates the RetrieveCodeSubgraph with a predefined LLM model, runs the subgraph to retrieve repository content and extract experimental code and info, and returns the updated state containing 'repository_content_str', 'base_experimental_code', and 'base_experimental_info'."
+)
+def retrieve_code_subgraph(state: dict) -> dict:
+    state = RetrieveCodeSubgraph().run(state)
+    return state
 
 
 if __name__ == "__main__":
