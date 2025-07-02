@@ -10,6 +10,6 @@ uv run python path/to/your/repo/src/airas/services/mcp_server/mcp_server.py
 - Once the server is running, GitHub Copilot can interact with the registered subgraphs as MCP tools.
 
 - To add a new MCP tool, you can use the `create_mcp_tool`, which is itself available as an MCP tool.
-By providing the target module path, it will automatically generate and register the tool on the server.
+By providing the target module path, it will automatically register the tool on the server.
 
 Note: After adding a new tool, please restart the MCP server to make it available.

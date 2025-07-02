@@ -15,6 +15,14 @@
         "uv run python src/airas/services/mcp_server/mcp_server.py"
       ]
     }
+    // "airas-reloader": {
+    //   "type": "stdio",
+    //   "command": "sh", 
+    //   "args": [
+    //     "-c", 
+    //     "npx mcp-reloader --include src/airas/services/mcp_server/mcp_server.py -- uv run python src/airas/services/mcp_server/mcp_server.py"
+    //   ],
+    // }
   },
   "inputs": [
     {
