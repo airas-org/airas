@@ -2778,16 +2778,16 @@ wheels = [
 
 [[package]]
 name = "semanticscholar"
-version = "0.9.0"
+version = "0.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "nest-asyncio" },
     { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/07/7c/0ef193e7854cf58bf53f098155925bc749bacdbf18a77082db31e67cb0e5/semanticscholar-0.9.0.tar.gz", hash = "sha256:d4791f70cefeef1121265f07fd3eea2593e7e93a582878c2f17b7787069b77ce", size = 29915, upload-time = "2024-11-30T18:51:40.333Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/90/3034058446c39b7069baaa2476c3d7649af3729d99137e85f57ae95de460/semanticscholar-0.10.0.tar.gz", hash = "sha256:82f907265aebcb1d9432b1cdd880d706230444515a4b94017358b938d007dbec", size = 24318, upload-time = "2025-02-17T02:38:25.25Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ad/e1/c16d648e270009387c08185cced1a53bc3cb019e998f6cb9c0af1a85fe8f/semanticscholar-0.9.0-py3-none-any.whl", hash = "sha256:f895099684de3de01747bb8467887370d3c3bc014ba12c0e0118afee25059b6b", size = 24923, upload-time = "2024-11-30T18:51:17.988Z" },
+    { url = "https://files.pythonhosted.org/packages/21/3e/f59d7b485230763f278ece2abece586cd0725512786a4db04b05729d566a/semanticscholar-0.10.0-py3-none-any.whl", hash = "sha256:28a572eb8504d493ab5671bc3ce76f84ae70534a5828ec0cd38a26f27e66bd02", size = 22416, upload-time = "2025-02-17T02:38:24.149Z" },
 ]
 
 [[package]]
