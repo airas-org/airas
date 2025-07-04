@@ -46,11 +46,11 @@ class PrepareRepositoryHiddenState(TypedDict):
     repository_from_template: bool
     branch_already_exists: bool
     branch_created: bool
-
-
-class PrepareRepositoryOutputState(TypedDict):
     repository_status: bool
     branch_status: bool
+
+
+class PrepareRepositoryOutputState(TypedDict): ...
 
 
 class PrepareRepositoryState(
@@ -229,7 +229,8 @@ def main():
         "github_repository": args.github_repository,
         "branch_name": args.branch_name,
     }
-    PrepareRepositorySubgraph().run(state)
+    state = PrepareRepositorySubgraph().run(state)
+    print(f"result: {state}")
 
 
 if __name__ == "__main__":

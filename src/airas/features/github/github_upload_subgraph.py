@@ -31,10 +31,10 @@ class GithubUploadHiddenState(TypedDict):
     repository_name: str
     research_history: dict[str, Any]
     cumulative_output: dict[str, Any]
-
-
-class GithubUploadOutputState(TypedDict):
     github_upload_success: bool
+
+
+class GithubUploadOutputState(TypedDict): ...
 
 
 class GithubUploadSubgraphState(
@@ -117,6 +117,16 @@ class GithubUploadSubgraph(BaseSubgraph):
         sg.add_edge("github_upload", END)
         return sg.compile()
 
+    def run(self, input: dict) -> dict:
+        input_keys = GithubUploadInputState.__annotations__.keys()
+        state = {k: v for k, v in input.items() if k in input_keys}
+
+        state["cumulative_output"] = {
+            k: v for k, v in input.items() if k not in input_keys
+        }
+        result = self.build_graph().invoke(state)
+        return result
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="GithubUploadSubgraph")
@@ -136,4 +146,5 @@ if __name__ == "__main__":
         "subgraph_name": subgraph_name,
     }
 
-    GithubUploadSubgraph().run(state)
+    state = GithubUploadSubgraph().run(state)
+    print(f"result: {state}")
