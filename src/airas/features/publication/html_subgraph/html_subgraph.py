@@ -56,13 +56,17 @@ class HtmlSubgraphOutputState(TypedDict):
 
 
 class HtmlSubgraphState(
-    HtmlSubgraphInputState,
-    HtmlSubgraphHiddenState,
-    HtmlSubgraphOutputState,
+    # HtmlSubgraphInputState,
+    # HtmlSubgraphHiddenState,
+    # HtmlSubgraphOutputState,
     ExecutionTimeState,
 ):
     generate_paper_data: PaperData
     experiment_repository: GitHubRepository
+    paper_html_content: str
+    html_upload: bool
+    dispatch_html_workflow: bool
+    github_pages_url: str
 
 
 class HtmlSubgraph(BaseSubgraph):
@@ -87,25 +91,26 @@ class HtmlSubgraph(BaseSubgraph):
         self.workflow_file = "publish_html.yml"
         check_api_key(llm_api_key_check=True)
 
-    def _init_state(self, state: HtmlSubgraphState) -> dict[str, str]:
-        try:
-            github_owner, repository_name = state["github_repository"].split("/", 1)
-            return {
-                "github_owner": github_owner,
-                "repository_name": repository_name,
-            }
-        except ValueError:
-            logger.error(
-                f"Invalid github_repository format: {state['github_repository']}"
-            )
-            raise
+    # def _init_state(self, state: HtmlSubgraphState) -> dict[str, str]:
+    #     try:
+    #         github_owner, repository_name = state["github_repository"].split("/", 1)
+    #         return {
+    #             "github_owner": github_owner,
+    #             "repository_name": repository_name,
+    #         }
+    #     except ValueError:
+    #         logger.error(
+    #             f"Invalid github_repository format: {state['github_repository']}"
+    #         )
+    #         raise
 
     @html_timed
     def _convert_to_html(self, state: HtmlSubgraphState) -> dict:
+        generate_paper_data = state["generate_paper_data"]
         paper_html_content = convert_to_html(
             llm_name=cast(LLM_MODEL, self.llm_name),
-            paper_content_with_placeholders=state["paper_content_with_placeholders"],
-            references=state["references"],
+            paper_content_with_placeholders=generate_paper_data.citation_paper_body,
+            references=generate_paper_data.references,
             prompt_template=convert_to_html_prompt,
         )
         return {"paper_html_content": paper_html_content}
@@ -117,15 +122,19 @@ class HtmlSubgraph(BaseSubgraph):
             save_dir=self.tmp_dir,
             filename=self.html_name,
         )
-        return {"full_html": full_html}
+        generate_paper_data = state["generate_paper_data"]
+        generate_paper_data.alternative_formats.html_data = full_html
+        return {"generate_paper_data": generate_paper_data}
 
     @html_timed
     def _upload_html(self, state: HtmlSubgraphState) -> dict[str, bool]:
-        upload_dir = f"branches/{state['branch_name']}"
+        experiment_repository = state["experiment_repository"]
+
+        upload_dir = f"branches/{experiment_repository.branch_name}/html"
 
         ok_html = upload_files(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
+            github_owner=experiment_repository.github_owner,
+            repository_name=experiment_repository.repository_name,
             branch_name=self.upload_branch,
             upload_dir=upload_dir,
             local_file_paths=self.html_path,
@@ -136,21 +145,23 @@ class HtmlSubgraph(BaseSubgraph):
     @html_timed
     def _dispatch_workflow(self, state: HtmlSubgraphState) -> dict[str, str | bool]:
         time.sleep(3)
+        experiment_repository = state["experiment_repository"]
+
         ok = dispatch_workflow(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+            github_owner=experiment_repository.github_owner,
+            repository_name=experiment_repository.repository_name,
+            branch_name=experiment_repository.branch_name,
             workflow_file=self.workflow_file,
         )
         url = ""
         if ok:
             file_name = os.path.basename(self.html_path[0])
             relative_path = os.path.join(
-                "branches", state["branch_name"], file_name
+                "branches", experiment_repository.branch_name, file_name
             ).replace("\\", "/")
             url = (
-                f"https://{state['github_owner']}.github.io/"
-                f"{state['repository_name']}/{relative_path}"
+                f"https://{experiment_repository.github_owner}.github.io/"
+                f"{experiment_repository.repository_name}/{relative_path}"
             )
             print(
                 f"Uploaded HTML available at: {url} "
@@ -164,14 +175,14 @@ class HtmlSubgraph(BaseSubgraph):
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(HtmlSubgraphState)
-        graph_builder.add_node("init_state", self._init_state)
+        # graph_builder.add_node("init_state", self._init_state)
         graph_builder.add_node("convert_to_html", self._convert_to_html)
         graph_builder.add_node("render_html", self._render_html)
         graph_builder.add_node("upload_html", self._upload_html)
         graph_builder.add_node("dispatch_workflow", self._dispatch_workflow)
 
-        graph_builder.add_edge(START, "init_state")
-        graph_builder.add_edge("init_state", "convert_to_html")
+        # graph_builder.add_edge(START, "init_state")
+        graph_builder.add_edge(START, "convert_to_html")
         graph_builder.add_edge("convert_to_html", "render_html")
         graph_builder.add_edge("render_html", "upload_html")
         graph_builder.add_edge("upload_html", "dispatch_workflow")

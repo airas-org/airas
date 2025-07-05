@@ -20,7 +20,7 @@ from airas.features.retrieve.retrieve_code_subgraph.prompt.extract_experimental_
     extract_experimental_info_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.paper import CandidatePaperInfo
+from airas.types.paper import CandidatePaperInfo, PaperData
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -46,17 +46,18 @@ class RetrieveCodeOutputState(TypedDict):
 
 
 class RetrieveCodeState(
-    RetrieveCodeInputState,
-    RetrieveCodeHiddenState,
-    RetrieveCodeOutputState,
+    # RetrieveCodeInputState,
+    # RetrieveCodeHiddenState,
+    # RetrieveCodeOutputState,
     ExecutionTimeState,
 ):
-    pass
+    base_paper_data: PaperData
+    repository_content_str: str
 
 
 class RetrieveCodeSubgraph(BaseSubgraph):
-    InputState = RetrieveCodeInputState
-    OutputState = RetrieveCodeOutputState
+    # InputState = RetrieveCodeInputState
+    # OutputState = RetrieveCodeOutputState
 
     def __init__(
         self,
@@ -67,7 +68,10 @@ class RetrieveCodeSubgraph(BaseSubgraph):
 
     @retrieve_code_timed
     def _retrieve_repository_contents(self, state: RetrieveCodeState) -> dict:
-        content_str = retrieve_repository_contents(github_url=state["base_github_url"])
+        base_paper_data = state["base_paper_data"]
+        content_str = retrieve_repository_contents(
+            github_url=base_paper_data.meta_data.github_url
+        )
         return {
             "repository_content_str": content_str,
         }
@@ -82,15 +86,17 @@ class RetrieveCodeSubgraph(BaseSubgraph):
             }
 
         else:
+            base_paper_data = state["base_paper_data"]
             extract_code, experimental_info = extract_experimental_info(
                 llm_name=cast(LLM_MODEL, self.llm_name),
-                method_text=state["base_method_text"],
+                method_text=base_paper_data.llm_extracted_info.methodology,
                 repository_content_str=state["repository_content_str"],
                 prompt_template=extract_experimental_info_prompt,
             )
+            base_paper_data.llm_extracted_info.experimental_code = extract_code
+            base_paper_data.llm_extracted_info.experimental_info = experimental_info
             return {
-                "base_experimental_code": extract_code,
-                "base_experimental_info": experimental_info,
+                "base_paper_data": base_paper_data,
             }
 
     def build_graph(self) -> CompiledGraph:

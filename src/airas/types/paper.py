@@ -42,7 +42,8 @@ class LLMExtractedInfo(BaseModel):
     experimental_setup: str = Field(..., description="")
     limitations: str = Field(..., description="")
     future_research_directions: str = Field(..., description="")
-    github_code: str = Field(..., description="")
+    experimental_code: Optional[str] = Field(None, description="")
+    experimental_info: Optional[str] = Field(None, description="")
 
 
 class MetaData(BaseModel):
