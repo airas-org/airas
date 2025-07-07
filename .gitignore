@@ -169,4 +169,3 @@ cython_debug/
 data/*
 tmp/*
 .gitmessage.txt
-.github/copilot-instructions.md

@@ -21,9 +21,9 @@ The goal is to enable the function to be used via a FastMCP server.
   - Operate on fields inside `state`
   - Return the final `state` as-is
 - Include a clear and concise natural-language description inside `@mcp.tool(description="...")`, summarizing:
-  - what the tool takes as input
+  - what the tool takes as input (Use actual key names present in the `state` object)
   - what it does
-  - what it returns
+  - what it returns  
 
 - **Do not insert any blank line between `@mcp.tool(...)` and the `def` line.** The decorator must be immediately followed by the function definition without any newline in between.
 - Function name: use the **last part** of the `module_path`.

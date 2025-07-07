@@ -2,10 +2,11 @@
     "mcpServers": {
       "airas": {
         "type": "stdio",
-        "command": "sh", 
+        "command": "uv",
         "args": [
-          "-c", 
-          "uv run python /workspaces/airas/src/airas/services/mcp_server/mcp_server.py"
+          "run",
+          "python",
+          "${workspaceFolder}/src/airas/services/mcp_server/mcp_server.py"
         ]
       }
     }

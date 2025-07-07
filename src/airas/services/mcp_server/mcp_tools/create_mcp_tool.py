@@ -15,8 +15,24 @@ from airas.services.mcp_server.mcp_tools.create_mcp_tool_prompt import (
 logger = getLogger(__name__)
 
 
-BASE_DIR = "/workspaces/airas"
-MCP_SERVER_PATH = f"{BASE_DIR}/src/airas/services/mcp_server/mcp_server.py"
+try:
+    mcp_server_spec = importlib.util.find_spec("airas.services.mcp_server.mcp_server")
+
+    if mcp_server_spec is None or mcp_server_spec.origin is None:
+        raise FileNotFoundError(
+            "Could not find the file for 'airas.services.mcp_server.mcp_server' module."
+        )
+
+    MCP_SERVER_PATH = mcp_server_spec.origin
+    logger.info(f"Dynamically resolved MCP_SERVER_PATH: {MCP_SERVER_PATH}")
+
+except (ModuleNotFoundError, FileNotFoundError) as e:
+    logger.error(f"Failed to dynamically determine MCP_SERVER_PATH: {e}")
+    logger.error(
+        "Please ensure the 'airas' project is installed correctly (e.g., 'pip install -e .') "
+        "or that PYTHONPATH is set to include the project's 'src' directory."
+    )
+    MCP_SERVER_PATH = ""
 
 
 class LLMOutput(BaseModel):
