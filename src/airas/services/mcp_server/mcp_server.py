@@ -40,7 +40,7 @@ from airas.features.analysis.analytic_subgraph.analytic_subgraph import Analytic
 
 
 @mcp.tool(
-    description="This tool takes a state dictionary with keys 'new_method', 'verification_policy', 'experiment_code', and 'output_text_data', runs the analytic subgraph with a predefined llm_name, and returns the state augmented with an 'analysis_report'."
+    description="Takes a state dict with keys 'new_method', 'verification_policy', 'experiment_code', and 'output_text_data'; instantiates AnalyticSubgraph with a fixed llm_name ('o3-mini-2025-01-31'), runs the analysis to generate an 'analysis_report', and returns the updated state."
 )
 def analytic_subgraph(state: dict) -> dict:
     state = AnalyticSubgraph(llm_name="o3-mini-2025-01-31").run(state)
@@ -53,7 +53,7 @@ from airas.features.create.create_code_subgraph.create_code_subgraph import (
 
 
 @mcp.tool(
-    description="Takes a state dict with keys: new_method, experiment_code, github_repository, branch_name; executes the CreateCodeSubgraph to push code and check devin completion; returns updated state with push_completion, experiment_session_id, experiment_devin_url, and experiment_iteration."
+    description="Takes a state dictionary with keys: new_method, experiment_code, github_repository, branch_name; creates and runs a CreateCodeSubgraph to push code to Devin and then check for its completion; returns the updated state."
 )
 def create_code_subgraph(state: dict) -> dict:
     state = CreateCodeSubgraph().run(state)
@@ -66,7 +66,7 @@ from airas.features.create.create_experimental_design_subgraph.create_experiment
 
 
 @mcp.tool(
-    description="Takes a state dictionary with keys 'new_method', 'base_method_text', 'base_experimental_code', and 'base_experimental_info'; runs the CreateExperimentalDesignSubgraph subgraph which generates 'verification_policy', 'experiment_details', and 'experiment_code'; and returns the updated state dictionary."
+    description="Takes a state dict containing keys 'new_method', 'base_method_text', 'base_experimental_code', and 'base_experimental_info'. It instantiates the CreateExperimentalDesignSubgraph and runs it to generate additional keys 'verification_policy', 'experiment_details', and 'experiment_code' in the state, and then returns the updated state."
 )
 def create_experimental_design_subgraph(state: dict) -> dict:
     state = CreateExperimentalDesignSubgraph().run(state)
@@ -79,7 +79,7 @@ from airas.features.create.create_method_subgraph.create_method_subgraph import 
 
 
 @mcp.tool(
-    description="This tool takes as input a state dictionary with keys 'base_method_text' and 'add_method_texts', uses CreateMethodSubgraph with a fixed LLM model 'o3-mini-2025-01-31' to generate a new method, and returns the updated state including the 'new_method' key."
+    description="Takes a state dictionary with keys 'base_method_text' (a CandidatePaperInfo) and 'add_method_texts' (a list of CandidatePaperInfo), instantiates CreateMethodSubgraph with a fixed llm_name 'o3-mini-2025-01-31', runs the subgraph to generate a new method stored under 'new_method', and returns the updated state."
 )
 def create_method_subgraph(state: dict) -> dict:
     state = CreateMethodSubgraph(llm_name="o3-mini-2025-01-31").run(state)
@@ -90,7 +90,7 @@ from airas.features.create.fix_code_subgraph.fix_code_subgraph import FixCodeSub
 
 
 @mcp.tool(
-    description="This tool takes a state dictionary with keys 'experiment_session_id', 'output_text_data', 'error_text_data', and 'executed_flag'; it instantiates the FixCodeSubgraph, runs its pipeline to decide whether code fixing is needed and to process the fix, and then returns the updated state."
+    description="Takes input state with keys 'experiment_session_id', 'output_text_data', 'error_text_data', and 'executed_flag'; runs the FixCodeSubgraph to decide whether to fix the code using LLM and Devin, updating 'output_text_data', 'push_completion', and 'executed_flag'; returns the updated state."
 )
 def fix_code_subgraph(state: dict) -> dict:
     state = FixCodeSubgraph().run(state)
@@ -103,7 +103,7 @@ from airas.features.execution.github_actions_executor_subgraph.github_actions_ex
 
 
 @mcp.tool(
-    description="This tool takes as input a state dictionary containing 'github_repository', 'branch_name', 'experiment_iteration', and 'push_completion'. It instantiates the GitHubActionsExecutorSubgraph with a fixed GPU setting (e.g., gpu_enabled=False), runs the subgraph workflow on the provided state, and returns the updated state with execution results."
+    description="Takes a state dict with keys 'github_repository', 'branch_name', 'experiment_iteration', and 'push_completion'; executes the GitHub Actions workflow and then retrieves the corresponding results; returns the updated state including output_text_data, error_text_data, image_file_name_list, executed_flag, and an incremented experiment_iteration."
 )
 def github_actions_executor_subgraph(state: dict) -> dict:
     state = GitHubActionsExecutorSubgraph(gpu_enabled=False).run(state)
@@ -114,11 +114,11 @@ from airas.features.github.create_branch_subgraph import CreateBranchSubgraph
 
 
 @mcp.tool(
-    description="Takes a dictionary with keys 'github_repository' and 'branch_name'; instantiates the subgraph with fixed parameters (new_branch_name set to 'new_branch' and up_to_subgraph set to 'create_branch_subgraph'), runs the graph to create a new branch, and returns the updated state."
+    description="Takes a state dict with 'github_repository' and 'branch_name', creates a new branch using CreateBranchSubgraph with fixed configuration (new_branch_name='default_new_branch' and up_to_subgraph='default_subgraph'), and returns the state with the branch creation result."
 )
 def create_branch_subgraph(state: dict) -> dict:
     state = CreateBranchSubgraph(
-        new_branch_name="new_branch", up_to_subgraph="create_branch_subgraph"
+        new_branch_name="default_new_branch", up_to_subgraph="default_subgraph"
     ).run(state)
     return state
 
@@ -127,7 +127,7 @@ from airas.features.github.github_download_subgraph import GithubDownloadSubgrap
 
 
 @mcp.tool(
-    description="This tool accepts a state dictionary containing 'github_repository' (formatted as 'owner/repo') and 'branch_name'. It instantiates the GithubDownloadSubgraph, runs it to download the research history from the specified GitHub repository, and returns the final state with the research history."
+    description="This tool takes a state with 'github_repository' and 'branch_name' keys; it instantiates the GithubDownloadSubgraph to download the research history from the specified repository and branch, and returns the resulting state containing the 'research_history' field."
 )
 def github_download_subgraph(state: dict) -> dict:
     state = GithubDownloadSubgraph().run(state)
@@ -138,7 +138,7 @@ from airas.features.github.github_upload_subgraph import GithubUploadSubgraph
 
 
 @mcp.tool(
-    description="Takes a state dictionary with keys like 'github_repository', 'branch_name', and 'subgraph_name', instantiates the GithubUploadSubgraph which downloads the research history, merges it with cumulative output, uploads the merged history to GitHub, and returns the updated state."
+    description="Takes a state dictionary with keys 'github_repository', 'branch_name', and 'subgraph_name' (additional keys are collected as cumulative output). It instantiates GithubUploadSubgraph, which processes the input by parsing the repository details, downloading the research history, merging with cumulative output, and uploading the merged data to GitHub. Returns the enriched state including fields like 'research_history' and 'github_upload_success'."
 )
 def github_upload_subgraph(state: dict) -> dict:
     state = GithubUploadSubgraph().run(state)
@@ -151,7 +151,7 @@ from airas.features.github.prepare_repository_subgraph.prepare_repository_subgra
 
 
 @mcp.tool(
-    description="This tool takes a state dictionary with 'github_repository' and 'branch_name'. It prepares the GitHub repository by initializing repository details, checking if the repository is created from a template, creating it if necessary, checking branch existence, and creating the branch if needed, then returns the updated state."
+    description="Takes a state dictionary with keys 'github_repository' and 'branch_name', instantiates PrepareRepositorySubgraph using default template values, runs the subgraph, and returns the modified state."
 )
 def prepare_repository_subgraph(state: dict) -> dict:
     state = PrepareRepositorySubgraph().run(state)
@@ -162,7 +162,7 @@ from airas.features.publication.html_subgraph.html_subgraph import HtmlSubgraph
 
 
 @mcp.tool(
-    description="Takes a state dictionary containing GitHub repository details, branch name, paper content with placeholders, and references; it runs the HTML subgraph workflow to convert the content to HTML, render and upload it, and dispatch a workflow, returning the state with generated HTML and GitHub Pages URL."
+    description="Takes a state dict with keys 'github_repository', 'branch_name', 'paper_content_with_placeholders', and 'references'. It instantiates an HtmlSubgraph using a fixed llm_name, processes the paper content to generate and render HTML, uploads the HTML to GitHub, and dispatches a workflow. The final state returned includes output fields such as 'full_html' and 'github_pages_url'."
 )
 def html_subgraph(state: dict) -> dict:
     state = HtmlSubgraph(llm_name="o3-mini-2025-01-31").run(state)
@@ -173,7 +173,7 @@ from airas.features.publication.latex_subgraph.latex_subgraph import LatexSubgra
 
 
 @mcp.tool(
-    description="Takes a state dict with GitHub repository info and publication content; instantiates LatexSubgraph with a fixed LLM name ('o3-mini-2025-01-31'), processes the LaTeX subgraph (bibliography generation, LaTeX conversion, assembly, file upload, and workflow dispatch), and returns the updated state including the generated tex_text."
+    description="This tool takes a state dict with keys 'github_repository', 'branch_name', 'paper_content_with_placeholders', 'references', and 'image_file_name_list'. It instantiates the LatexSubgraph with a fixed LLM model 'o3-mini-2025-01-31' and executes its LaTeX generation workflow (including generating bibliography, converting content, assembling LaTeX, uploading files, and dispatching the GitHub workflow). It returns the original state updated with the output field 'tex_text', which contains the generated LaTeX document."
 )
 def latex_subgraph(state: dict) -> dict:
     state = LatexSubgraph(llm_name="o3-mini-2025-01-31").run(state)
@@ -184,7 +184,7 @@ from airas.features.publication.readme_subgraph.readme_subgraph import ReadmeSub
 
 
 @mcp.tool(
-    description="This tool takes a state dictionary as input with keys including 'github_repository', 'branch_name', 'paper_content', 'output_text_data', and 'experiment_devin_url'. It instantiates the ReadmeSubgraph, processes the readme upload, and returns the updated state including the 'readme_upload_result'."
+    description="Takes a state dictionary with keys 'github_repository', 'branch_name', 'paper_content', and 'experiment_devin_url'. It instantiates ReadmeSubgraph which splits 'github_repository' into 'github_owner' and 'repository_name', then uploads the README using 'Title' and 'Abstract' from 'paper_content'. Returns the state updated with 'readme_upload_result' along with other added execution fields."
 )
 def readme_subgraph(state: dict) -> dict:
     state = ReadmeSubgraph().run(state)
@@ -197,7 +197,7 @@ from airas.features.retrieve.retrieve_code_subgraph.retrieve_code_subgraph impor
 
 
 @mcp.tool(
-    description="This tool receives a state dictionary containing the input fields 'base_github_url' and 'base_method_text'. It instantiates the RetrieveCodeSubgraph (which retrieves the repository contents and extracts experimental code/information) and executes it, updating the state with fields such as 'repository_content_str', 'base_experimental_code', and 'base_experimental_info'. It returns the updated state as-is."
+    description="Takes a state dict with keys 'base_github_url' and 'base_method_text', uses RetrieveCodeSubgraph to retrieve repository contents and extract experimental info, and returns the updated state with keys 'base_experimental_code' and 'base_experimental_info'."
 )
 def retrieve_code_subgraph(state: dict) -> dict:
     state = RetrieveCodeSubgraph().run(state)
@@ -210,14 +210,16 @@ from airas.features.retrieve.retrieve_paper_from_query_subgraph.retrieve_paper_f
 
 
 @mcp.tool(
-    description="Takes a state dictionary with a 'base_queries' field (list of strings), instantiates the RetrievePaperFromQuerySubgraph with fixed llm_name, save_dir, and scrape_urls, runs the subgraph to process the query and augment the state, and returns the updated state."
+    description="Takes a state dict with key 'base_queries' as input, runs the RetrievePaperFromQuerySubgraph using fixed parameters (llm_name, save_dir, and scrape_urls) to retrieve and process paper information, and returns the updated state containing keys such as 'base_github_url' and 'base_method_text'."
 )
 def retrieve_paper_from_query_subgraph(state: dict) -> dict:
-    state = RetrievePaperFromQuerySubgraph(
+    # Instantiate the subgraph with predetermined configuration
+    subgraph = RetrievePaperFromQuerySubgraph(
         llm_name="o3-mini-2025-01-31",
         save_dir="/workspaces/airas/data",
         scrape_urls=["https://icml.cc/virtual/2024/papers.html?filter=title"],
-    ).run(state)
+    )
+    state = subgraph.run(state)
     return state
 
 
@@ -227,7 +229,7 @@ from airas.features.retrieve.retrieve_related_paper_subgraph.retrieve_related_pa
 
 
 @mcp.tool(
-    description="Takes a state dictionary containing base_queries, base_github_url, base_method_text, and optionally add_queries, runs the RetrieveRelatedPaperSubgraph to retrieve related paper information, and returns the updated state with generated queries, github urls, and method texts."
+    description="This tool takes a state dictionary with keys 'base_queries', 'base_github_url', 'base_method_text', and optionally 'add_queries'. It instantiates the RetrieveRelatedPaperSubgraph with fixed parameters to retrieve related paper information (including generated queries, add_github_urls, and add_method_texts) and returns the updated state."
 )
 def retrieve_related_paper_subgraph(state: dict) -> dict:
     state = RetrieveRelatedPaperSubgraph(
@@ -243,7 +245,7 @@ from airas.features.write.citation_subgraph.citation_subgraph import CitationSub
 
 
 @mcp.tool(
-    description="Takes a state dictionary containing 'paper_content' (and related fields), runs the citation subgraph to embed placeholders, generate citation queries, and fetch references, then returns the updated state."
+    description="Takes a state dict with a 'paper_content' key (a dict of paper sections) as input, processes the content to embed citation placeholders, generate citation queries, retrieve references, and cleanse the text, then returns the state with updated keys 'paper_content_with_placeholders' and 'references'."
 )
 def citation_subgraph(state: dict) -> dict:
     state = CitationSubgraph(llm_name="o3-mini-2025-01-31").run(state)
@@ -254,7 +256,7 @@ from airas.features.write.writer_subgraph.writer_subgraph import WriterSubgraph
 
 
 @mcp.tool(
-    description="This tool takes a state dictionary containing the initial inputs for the writer subgraph, instantiates the WriterSubgraph with a fixed LLM name ('o3-mini-2025-01-31') and refine_round (1), processes the state to generate a note and paper content, and returns the updated state."
+    description="Takes a state dict with keys: base_method_text, new_method, verification_policy, experiment_details, experiment_code, output_text_data, analysis_report, image_file_name_list; instantiates a WriterSubgraph with llm_name 'o3-mini-2025-01-31' and refine_round 1, runs the subgraph, and returns the updated state."
 )
 def writer_subgraph(state: dict) -> dict:
     state = WriterSubgraph(llm_name="o3-mini-2025-01-31", refine_round=1).run(state)
@@ -265,4 +267,4 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
 
     load_dotenv()
-    mcp.run(transport="stdio")
+    mcp.run()
