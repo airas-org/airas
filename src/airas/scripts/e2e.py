@@ -22,11 +22,11 @@ from airas.features import (
     WriterSubgraph,
 )
 
-scrape_urls = [
-    "https://icml.cc/virtual/2024/papers.html?filter=title",
-    # "https://iclr.cc/virtual/2024/papers.html?filter=title",
-    # "https://nips.cc/virtual/2024/papers.html?filter=title",
-    # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=title",
+JSON_URLS = [
+    "https://icml.cc/static/virtual/data/icml-2024-orals-posters.json",
+    "https://iclr.cc/static/virtual/data/iclr-2024-orals-posters.json",
+    "https://nips.cc/static/virtual/data/neurips-2024-orals-posters.json",
+    "https://cvpr.thecvf.com/static/virtual/data/cvpr-2024-orals-posters.json",
 ]
 # llm_name = "o3-mini-2025-01-31"
 llm_name = "gemini-2.0-flash-001"
@@ -34,10 +34,10 @@ save_dir = "/workspaces/airas/data"
 
 prepare = PrepareRepositorySubgraph()
 retriever = RetrievePaperFromQuerySubgraph(
-    llm_name=llm_name, save_dir=save_dir, scrape_urls=scrape_urls
+    llm_name=llm_name, save_dir=save_dir, paper_json_urls=JSON_URLS
 )
 retriever2 = RetrieveRelatedPaperSubgraph(
-    llm_name=llm_name, save_dir=save_dir, scrape_urls=scrape_urls
+    llm_name=llm_name, save_dir=save_dir, paper_json_urls=JSON_URLS
 )
 retriever3 = RetrieveCodeSubgraph(llm_name=llm_name)
 creator = CreateMethodSubgraph(llm_name="o3-mini-2025-01-31")
