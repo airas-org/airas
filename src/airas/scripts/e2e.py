@@ -178,8 +178,8 @@ def run_from_state_file(
 
 
 if __name__ == "__main__":
-    github_repository = "auto-res2/test-tanaka-v16"
-    branch_name = "test"
+    github_repository = "auto-res2/onda"
+    branch_name = "test-1"
 
     state = {
         "github_repository": github_repository,
@@ -189,8 +189,8 @@ if __name__ == "__main__":
 
     save_dir = datetime.now().strftime("%Y%m%d_%H%M%S")
     file_path = "/workspaces/airas/data/20250629_135044/latex.json"
-    run_from_state_file(github_repository, branch_name, save_dir, file_path)
-    # run_from_state_file(github_repository, branch_name, save_dir=save_dir)
+    # run_from_state_file(github_repository, branch_name, save_dir, file_path)
+    run_from_state_file(github_repository, branch_name, save_dir=save_dir)
 
     # import sys
     # if len(sys.argv) > 1:

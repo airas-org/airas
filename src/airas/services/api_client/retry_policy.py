@@ -16,7 +16,11 @@ from airas.services.api_client.response_parser import Response
 
 
 class HTTPClientError(RuntimeError): ...
+
+
 class HTTPClientRetryableError(HTTPClientError): ...
+
+
 class HTTPClientFatalError(HTTPClientError): ...
 
 
@@ -31,11 +35,12 @@ _DEFAULT_EXC: tuple[type[BaseException], ...] = (
     RequestException,
 )
 
+
 # TODO: When implementing POST requests, consider idempotency concerns.
 def make_retry_policy(
-    max_retries: int = _DEFAULT_MAX_RETRIES, 
-    wait: WaitBase = _DEFAULT_WAIT, 
-    retryable_exc: tuple[type[BaseException], ...] = _DEFAULT_EXC, 
+    max_retries: int = _DEFAULT_MAX_RETRIES,
+    wait: WaitBase = _DEFAULT_WAIT,
+    retryable_exc: tuple[type[BaseException], ...] = _DEFAULT_EXC,
 ):
     return retry(
         stop=stop_after_attempt(max_retries),

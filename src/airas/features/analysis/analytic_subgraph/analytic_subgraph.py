@@ -53,7 +53,7 @@ class AnalyticSubgraph(BaseSubgraph):
         self,
         llm_name: LLM_MODEL,
     ):
-        self.llm_name = llm_name
+        self.llm_name: LLM_MODEL = llm_name
         check_api_key(llm_api_key_check=True)
 
     @analytic_timed

@@ -27,6 +27,9 @@ dependencies = [
     "typing-extensions>=4.12.2",
     "pymupdf>=1.25.5",
     "pandas>=2.3.0",
+    "fastapi>=0.116.0",
+    "uvicorn>=0.34.2",
+    "pre-commit>=4.2.0",
 ]
 
 [project.urls]
