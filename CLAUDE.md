@@ -7,18 +7,42 @@ Please execute them **in the following order**, updating the `state` dictionary 
 
 ---
 
-# Subgraph Execution Protocol
-For **every subgraph** call (except for the initial `prepare_repository_subgraph`), you must follow this three-step sequence. 
-This is the fundamental cycle for performing any task in this workflow.
-1. Download State (`github_download_subgraph`)
-  - Before executing a main task, call this tool to load the most recent `state` from the GitHub repository.
-  - To conserve context, specify only the keys that are necessary for the upcoming subgraph.
-2. Run the Main Subgraph
-  - Execute the primary tool for the current step (e.g., `retrieve_related_paper_subgraph`).
-  - This will update the `state` dictionary in your current context.
-3. Upload State (`github_upload_subgraph`)
-  - Immediately after the main subgraph succeeds, call this tool to save the entire updated `state` back to the GitHub repository.
-  - This persists your work and prepares for the next step. Once uploaded, you can clear the `state` from your local memory, as it will be reloaded in the next cycle.
+# MANDATORY 3-Step Execution Cycle
+
+**CRITICAL WARNING:** This is a strict, unbreakable rule. For **every** main subgraph call (except the initial `prepare_repository_subgraph`), you **MUST** think and act in the following 3-step sequence.
+
+**Skipping any step, especially the final upload, WILL corrupt the state, cause permanent data loss, and FAIL the entire mission.** The GitHub repository is the **single source of truth for the `state`**.
+
+Here is the cycle you must follow for each task:
+
+### Step 1: Download State
+-   **Your Thought Process:** "Before I begin the main task, I must load the most recent `state` from GitHub. This prevents me from working with outdated data. I will now call `github_download_subgraph`."
+-   **Action:** Execute `github_download_subgraph`.
+
+### Step 2: Run the Main Subgraph
+-   **Your Thought Process:** "I have successfully loaded the latest `state`. Now I am ready to execute the main task for this step of the workflow."
+-   **Action:** Execute the primary tool (e.g., `retrieve_related_paper_subgraph`).
+
+### Step 3: Upload State
+-   **Your Thought Process:** "The main task is complete. To ensure my progress is saved and to prevent data loss, I must immediately save the entire updated `state` back to GitHub. This is the mandatory final action for this cycle."
+-   **Action:** Execute `github_upload_subgraph`.
+
+---
+
+# Planning and ToDo List Generation
+
+When you begin, you **MUST** first generate a complete ToDo list based on the `## Workflow` section. This list is your plan and checklist.
+
+**CRITICAL INSTRUCTION FOR PLANNING:**
+When you write down each ToDo item, you **MUST** format it to explicitly include the 3-Step Cycle. This forces you to remember the protocol for every single step.
+
+**Use this exact format for your ToDo list:**
+- `☐ Step 1: Prepare repository using prepare_repository_subgraph`
+- `☐ Step 2: retrieve_paper_from_query_subgraph (Cycle: Download -> Execute -> Upload)`
+- `☐ Step 3: retrieve_related_paper_subgraph (Cycle: Download -> Execute -> Upload)`
+- `...and so on for all subsequent steps.`
+
+By creating your plan this way, you are committing to follow the mandatory cycle. Do not deviate from this plan.
 
 ---
 
