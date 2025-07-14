@@ -15,7 +15,7 @@ from airas.features.execution.github_actions_executor_subgraph.nodes.retrieve_gi
     retrieve_github_actions_results,
 )
 from airas.types.github import GitHubRepository
-from airas.types.method import MLMethodData
+from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -50,7 +50,7 @@ class ExecutorSubgraphState(
     # GitHubActionsExecutorSubgraphOutputState,
     ExecutionTimeState,
 ):
-    new_method: MLMethodData
+    new_method: ResearchHypothesis
     experiment_repository: GitHubRepository
 
 

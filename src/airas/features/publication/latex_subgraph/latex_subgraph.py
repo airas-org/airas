@@ -30,8 +30,8 @@ from airas.features.publication.latex_subgraph.prompt.generate_bib_prompt import
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepository
-from airas.types.method import MLMethodData
-from airas.types.paper import PaperData
+from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -68,8 +68,8 @@ class LatexSubgraphState(
     # LatexSubgraphOutputState,
     ExecutionTimeState,
 ):
-    new_method: MLMethodData
-    generate_paper_data: PaperData
+    new_method: ResearchHypothesis
+    generate_paper_data: ResearchStudy
     experiment_repository: GitHubRepository
     references_bib: dict[str, str]
 

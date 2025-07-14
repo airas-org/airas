@@ -36,13 +36,14 @@ class PaperBody(BaseModel):
     acknowledgement: str = Field(..., description="")
 
 
+# ExperimentalDesignを使ってまとめたい
 class LLMExtractedInfo(BaseModel):
     main_contributions: str = Field(..., description="")
     methodology: str = Field(..., description="")
     experimental_setup: str = Field(..., description="")
     limitations: str = Field(..., description="")
     future_research_directions: str = Field(..., description="")
-    experimental_code: Optional[str] = Field(None, description="")
+    extracted_code: Optional[str] = Field(None, description="")
     experimental_info: Optional[str] = Field(None, description="")
 
 
@@ -70,15 +71,17 @@ class ExternalSources(BaseModel):
     # openalex_info: OpenAlexInfo
 
 
-class PaperData(BaseModel):
+class ResearchStudy(BaseModel):
     title: str = Field(..., description="")
     full_text: Optional[str] = Field(None, description="")
     paper_body: Optional[PaperBody] = Field(None, description="")
     image_data: Optional[Any] = Field(None, description="")
+    experimental_code: Optional[str] = Field(None, description="")
     citation_paper_body: Optional[PaperBody] = Field(None, description="")
     references: Optional[dict[str, dict[str, Any]]] = Field(None, description="")
     # TODO:引用論文の取得ロジックを変更し以下に変更する
     # references: Optional[list[PaperBody]] = Field(None, description="")
+
     meta_data: Optional[MetaData] = Field(None, description="")
     external_sources: Optional[ExternalSources] = Field(None, description="")
     llm_extracted_info: Optional[LLMExtractedInfo] = Field(None, description="")

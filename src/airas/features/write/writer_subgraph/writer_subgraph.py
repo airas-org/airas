@@ -12,8 +12,8 @@ from airas.features.write.writer_subgraph.input_data import (
 from airas.features.write.writer_subgraph.nodes.generate_note import generate_note
 from airas.features.write.writer_subgraph.nodes.paper_writing import WritingNode
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.method import MLMethodData
-from airas.types.paper import PaperData
+from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -49,8 +49,8 @@ class WriterSubgraphState(
     ExecutionTimeState,
 ):
     base_method_text: str
-    new_method: MLMethodData
-    generate_paper_data: PaperData
+    new_method: ResearchHypothesis
+    generate_paper_data: ResearchStudy
 
 
 class WriterSubgraph(BaseSubgraph):
@@ -91,7 +91,7 @@ class WriterSubgraph(BaseSubgraph):
         ).execute(
             note=new_method.experiment_result.notes,
         )
-        generate_paper_data = PaperData(
+        generate_paper_data = ResearchStudy(
             title=paper_content.title, paper_body=paper_content
         )
         return {"generate_paper_data": generate_paper_data}

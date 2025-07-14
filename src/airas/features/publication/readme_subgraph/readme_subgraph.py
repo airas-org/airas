@@ -10,7 +10,7 @@ from airas.features.publication.readme_subgraph.input_data import (
 )
 from airas.features.publication.readme_subgraph.nodes.readme_upload import readme_upload
 from airas.types.github import GitHubRepository
-from airas.types.paper import PaperData
+from airas.types.research_study import ResearchStudy
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -42,7 +42,7 @@ class ReadmeSubgraphState(
     ExecutionTimeState,
 ):
     experiment_repository: GitHubRepository
-    generate_paper_data: PaperData
+    generate_paper_data: ResearchStudy
     readme_upload_result: bool
 
 

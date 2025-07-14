@@ -20,7 +20,7 @@ from airas.features.retrieve.retrieve_code_subgraph.prompt.extract_experimental_
     extract_experimental_info_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.paper import CandidatePaperInfo, PaperData
+from airas.types.research_study import CandidatePaperInfo, ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -51,7 +51,7 @@ class RetrieveCodeState(
     # RetrieveCodeOutputState,
     ExecutionTimeState,
 ):
-    base_paper_data: PaperData
+    base_paper_data: ResearchStudy
     repository_content_str: str
 
 

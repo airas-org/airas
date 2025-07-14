@@ -20,7 +20,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.paper import CandidatePaperInfo
+from airas.types.research_study import CandidatePaperInfo
 
 logger = getLogger(__name__)
 

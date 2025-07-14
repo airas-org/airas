@@ -20,8 +20,8 @@ from airas.features.create.create_experimental_design_subgraph.nodes.generate_ex
     generate_experiment_details,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.method import MLMethodData
-from airas.types.paper import CandidatePaperInfo
+from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_study import CandidatePaperInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -34,7 +34,7 @@ create_experimental_design_timed = lambda f: time_node(create_str)(f)  # noqa: E
 
 
 class CreateExperimentalDesignSubgraphInputState(TypedDict):
-    new_method: MLMethodData
+    new_method: ResearchHypothesis
     base_method_text: CandidatePaperInfo
     base_experimental_code: str
     base_experimental_info: str
@@ -51,7 +51,7 @@ class CreateExperimentalDesignState(
     # CreateExperimentalDesignSubgraphOutputState,
     ExecutionTimeState,
 ):
-    new_method: MLMethodData
+    new_method: ResearchHypothesis
     base_method_text: CandidatePaperInfo
     base_experimental_code: str
     base_experimental_info: str

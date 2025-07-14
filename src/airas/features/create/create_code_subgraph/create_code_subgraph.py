@@ -14,7 +14,7 @@ from airas.features.create.nodes.check_devin_completion import (
 )
 from airas.types.devin import DevinInfo
 from airas.types.github import GitHubRepository
-from airas.types.method import MLMethodData
+from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -26,7 +26,7 @@ push_code_timed = lambda f: time_node("push_code_subgraph")(f)  # noqa: E731
 
 
 class CreateCodeSubgraphInputState(TypedDict):
-    new_method: MLMethodData
+    new_method: ResearchHypothesis
     # experiment_code: str
     experiment_repository: GitHubRepository
     # github_repository: str
@@ -49,7 +49,7 @@ class CreateCodeSubgraphState(
     # CreateCodeSubgraphOutputState,
     ExecutionTimeState,
 ):
-    new_method: MLMethodData
+    new_method: ResearchHypothesis
     experiment_repository: GitHubRepository
     devin_info: DevinInfo
 
