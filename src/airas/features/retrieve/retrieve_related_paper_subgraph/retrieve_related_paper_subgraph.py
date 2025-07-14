@@ -54,7 +54,7 @@ from airas.features.retrieve.retrieve_related_paper_subgraph.prompt.generate_que
     generate_queries_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.paper import CandidatePaperInfo
+from airas.types.research_study import CandidatePaperInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -68,7 +68,6 @@ retrieve_paper_from_query_timed = lambda f: time_node(retrieve_str)(f)  # noqa: 
 
 class RetrieveRelatedPaperInputState(TypedDict):
     base_queries: list[str]
-    base_github_url: str
     base_method_text: CandidatePaperInfo
     add_queries: list[str] | None
 
@@ -86,10 +85,10 @@ class RetrieveRelatedPaperHiddenState(TypedDict):
     candidate_add_papers_info_list: Annotated[list[CandidatePaperInfo], operator.add]
     selected_add_paper_arxiv_ids: list[str]
     selected_add_paper_info_list: list[CandidatePaperInfo]
+    generated_queries: list[str]
 
 
 class RetrieveRelatedPaperOutputState(TypedDict):
-    generated_queries: list[str]
     add_github_urls: list[str]
     add_method_texts: list[CandidatePaperInfo]
 

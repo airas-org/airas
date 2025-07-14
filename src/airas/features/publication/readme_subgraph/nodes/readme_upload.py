@@ -5,16 +5,13 @@ from airas.services.api_client.github_client import GithubClient
 logger = getLogger(__name__)
 
 
-def _build_markdown(
-    title: str, abstract: str, research_history_url: str, devin_url: str
-) -> str:
+def _build_markdown(title: str, abstract: str, research_history_url: str) -> str:
     return f"""# {title}
 > ⚠️ **NOTE:** This research is an automatic research using AIRAS.
 ## Abstract
 {abstract}
 
-- [Research history]({research_history_url})
-- [Devin execution log]({devin_url})"""
+- [Research history]({research_history_url})"""
 
 
 def readme_upload(
@@ -23,7 +20,6 @@ def readme_upload(
     branch_name: str,
     title: str,
     abstract: str,
-    devin_url: str,
     client: GithubClient | None = None,
 ) -> bool:
     if client is None:
@@ -35,12 +31,7 @@ def readme_upload(
         f"/blob/{branch_name}/.research/research_history.json"
     )
 
-    markdown = _build_markdown(
-        title,
-        abstract,
-        research_history_url,
-        devin_url,
-    )
+    markdown = _build_markdown(title, abstract, research_history_url)
     markdown_bytes = markdown.encode("utf-8")
 
     logger.info("Uploading README.md via GithubClient.commit_file_bytes")
