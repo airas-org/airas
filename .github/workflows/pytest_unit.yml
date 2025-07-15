@@ -1,0 +1,81 @@
+# name: Unit Tests 
+# on:
+#   pull_request:
+#     types: [opened, reopened, synchronize]
+#     paths: [
+#       'src/airas/**',
+#       'tests/unit/**',
+#       '.github/workflows/pytest_unit.yml'
+#     ]
+
+# defaults:
+#   run:
+#     shell: bash
+
+# jobs:
+#   unit-tests:
+#     name: ${{ matrix.module }}
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 10
+#     env:
+#       GITHUB_WORKSPACE: ${{ github.workspace }}
+#       SAVE_DIR:         ${{ github.workspace }}/save_dir
+
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         module:
+#           - analysis
+#           - create
+#           - execution
+#           - preparation
+#           - publication
+#           - retrieve
+#           - review
+#           - write
+
+#     steps:
+#       - uses: actions/checkout@v4
+      
+#       - name: Ensure pip cache dir exists
+#         run: mkdir -p ~/.cache/pip
+
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: "3.10"
+#           cache: "pip"
+
+#       - name: Install dependencies
+#         run: |
+#           curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
+#           uv --version
+
+#       - name: Set PYTHONPATH
+#         run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
+
+#       - name: Create save and  report directory
+#         run: |
+#           mkdir -p $SAVE_DIR
+#           mkdir -p test-reports/${{ matrix.module }}
+
+#       - name: Run pytest for ${{ matrix.module }}
+#         run: |
+#           uv run pytest \
+#             --cov=airas.${{ matrix.module }} \
+#             --cov-branch \
+#             --cov-report=term-missing \
+#             --disable-warnings \
+#             --junitxml=test-reports/${{ matrix.module }}/unit.xml \
+#             -v tests/unit/${{ matrix.module }} 
+
+#       - name: Upload ${{ matrix.module }} results summary
+#         if: always()
+#         uses: dorny/test-reporter@v2
+#         with:
+#           name: ${{ matrix.module }} Summary Report
+#           path: test-reports/${{ matrix.module }}/unit.xml
+#           reporter: java-junit
+#           list-suites: failed
+#           list-tests: failed
+#           fail-on-error: false
+#           only-summary: true

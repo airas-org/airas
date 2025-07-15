@@ -17,7 +17,7 @@ const config: Config = {
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'auto-res', // Usually your GitHub org/user name.
+  organizationName: 'airas-org', // Usually your GitHub org/user name.
   projectName: 'airas', // Usually your repo name.
   deploymentBranch: 'gh-pages',   
   onBrokenLinks: 'throw',
@@ -50,7 +50,7 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/auto-res/airas/tree/main/docs/',
+            'https://github.com/airs-org/airas/tree/main/docs/',
         },
         blog: {
           showReadingTime: true,
@@ -61,7 +61,7 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/auto-res/airas/tree/main/docs/',
+            'https://github.com/airas-org/airas/tree/main/docs/',
           // Useful options to enforce blogging best practices
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
@@ -105,7 +105,7 @@ const config: Config = {
           'aria-label': 'X (Twitter) link',
         },
         {
-          href: 'https://github.com/auto-res/airas',
+          href: 'https://github.com/airas-org/airas',
           label: 'GitHub',
           position: 'right',
         },
@@ -132,7 +132,7 @@ const config: Config = {
           items: [
             {
               label: 'GitHub Discussions',
-              href: 'https://github.com/auto-res/airas/discussions',
+              href: 'https://github.com/airas-org/airas/discussions',
             },
           ],
         },
@@ -145,7 +145,7 @@ const config: Config = {
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/auto-res/airas',
+              href: 'https://github.com/airas-org/airas',
             },
           ],
         },
