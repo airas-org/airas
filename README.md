@@ -37,6 +37,8 @@ Features
 
 It can be easily used by simply installing it via pip as shown below.
 
+**Note: The package is currently under preparation and will be available on PyPI soon.**
+
 ```bash
 pip install airas
 ```
