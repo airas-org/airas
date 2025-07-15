@@ -37,8 +37,6 @@ Features
 
 It can be easily used by simply installing it via pip as shown below.
 
-**Note: The package is currently under preparation and will be available on PyPI soon.**
-
 ```bash
 pip install airas
 ```
@@ -46,20 +44,16 @@ pip install airas
 It is implemented by individual research processes, allowing users to design their own automated research workflows freely.
 
 ```python
-from airas.preparation import PrepareRepository
-from airas.retrieve import (
-  RetrieveCodeSubgraph, 
-  RetrievePaperFromQuerySubgraph, 
-  RetrieveRelatedPaperSubgraph
-)
-from airas.create import (
-  CreateExperimentalDesignSubgraph, 
-  CreateMethodSubgraph
-)
-from airas.execution import (
-  ExecutorSubgraph, 
-  FixCodeSubgraph, 
-  PushCodeSubgraph
+from airas.features import (
+    PrepareRepositorySubgraph,
+    RetrieveCodeSubgraph, 
+    RetrievePaperFromQuerySubgraph, 
+    RetrieveRelatedPaperSubgraph,
+    CreateExperimentalDesignSubgraph, 
+    CreateMethodSubgraph,
+    CreateCodeSubgraph,
+    GitHubActionsExecutorSubgraph,
+    FixCodeSubgraph
 )
 
 
@@ -68,8 +62,8 @@ retriever2 = RetrieveRelatedPaperSubgraph(llm_name=llm_name, save_dir=save_dir, 
 retriever3 = RetrieveCodeSubgraph(llm_name=llm_name)
 creator = CreateMethodSubgraph(llm_name=llm_name)
 creator2 = CreateExperimentalDesignSubgraph(llm_name=llm_name)
-coder = PushCodeSubgraph()
-executor = ExecutorSubgraph()
+coder = CreateCodeSubgraph()
+executor = GitHubActionsExecutorSubgraph()
 fixer = FixCodeSubgraph(llm_name=llm_name)
 
 
