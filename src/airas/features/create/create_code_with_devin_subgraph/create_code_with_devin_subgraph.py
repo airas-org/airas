@@ -6,7 +6,7 @@ from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
-from airas.features.create.create_code_subgraph.nodes.push_code_with_devin import (
+from airas.features.create.create_code_with_devin_subgraph.nodes.push_code_with_devin import (
     push_code_with_devin,
 )
 from airas.features.create.nodes.check_devin_completion import (
@@ -22,35 +22,35 @@ logger = logging.getLogger(__name__)
 push_code_timed = lambda f: time_node("push_code_subgraph")(f)  # noqa: E731
 
 
-class CreateCodeSubgraphInputState(TypedDict):
+class CreateCodeWithDevinSubgraphInputState(TypedDict):
     new_method: str
     experiment_code: str
     github_repository: str
     branch_name: str
 
 
-class CreateCodeSubgraphHiddenState(TypedDict): ...
+class CreateCodeWithDevinSubgraphHiddenState(TypedDict): ...
 
 
-class CreateCodeSubgraphOutputState(TypedDict):
+class CreateCodeWithDevinSubgraphOutputState(TypedDict):
     push_completion: bool
     experiment_session_id: str
     experiment_devin_url: str
     experiment_iteration: int
 
 
-class CreateCodeSubgraphState(
-    CreateCodeSubgraphInputState,
-    CreateCodeSubgraphHiddenState,
-    CreateCodeSubgraphOutputState,
+class CreateCodeWithDevinSubgraphState(
+    CreateCodeWithDevinSubgraphInputState,
+    CreateCodeWithDevinSubgraphHiddenState,
+    CreateCodeWithDevinSubgraphOutputState,
     ExecutionTimeState,
 ):
     pass
 
 
-class CreateCodeSubgraph(BaseSubgraph):
-    InputState = CreateCodeSubgraphInputState
-    OutputState = CreateCodeSubgraphOutputState
+class CreateCodeWithDevinSubgraph(BaseSubgraph):
+    InputState = CreateCodeWithDevinSubgraphInputState
+    OutputState = CreateCodeWithDevinSubgraphOutputState
 
     def __init__(
         self,
@@ -61,13 +61,13 @@ class CreateCodeSubgraph(BaseSubgraph):
         )
 
     @push_code_timed
-    def _init_state(self, state: CreateCodeSubgraphState) -> dict[str, int]:
+    def _init_state(self, state: CreateCodeWithDevinSubgraphState) -> dict[str, int]:
         logger.info("---PushCodeSubgraph---")
         return {"experiment_iteration": 1}
 
     @push_code_timed
     def _push_code_with_devin_node(
-        self, state: CreateCodeSubgraphState
+        self, state: CreateCodeWithDevinSubgraphState
     ) -> dict[str, str]:
         experiment_session_id, experiment_devin_url = push_code_with_devin(
             github_repository=state["github_repository"],
@@ -83,7 +83,7 @@ class CreateCodeSubgraph(BaseSubgraph):
 
     @push_code_timed
     def _check_devin_completion_node(
-        self, state: CreateCodeSubgraphState
+        self, state: CreateCodeWithDevinSubgraphState
     ) -> dict[str, bool]:
         result = check_devin_completion(
             session_id=state["experiment_session_id"],
@@ -93,7 +93,7 @@ class CreateCodeSubgraph(BaseSubgraph):
         return {"push_completion": True}
 
     def build_graph(self) -> CompiledGraph:
-        graph_builder = StateGraph(CreateCodeSubgraphState)
+        graph_builder = StateGraph(CreateCodeWithDevinSubgraphState)
         graph_builder.add_node("init_state", self._init_state)
         graph_builder.add_node(
             "push_code_with_devin_node", self._push_code_with_devin_node
@@ -112,13 +112,13 @@ class CreateCodeSubgraph(BaseSubgraph):
 
 
 def main():
-    input = CreateCodeSubgraphInputState(
+    input = CreateCodeWithDevinSubgraphInputState(
         new_method="example_method",
         experiment_code="print('Hello, world!')",
         github_repository="auto-res2/test-tanaka-v11",
         branch_name="develop",
     )
-    result = CreateCodeSubgraph().run(input)
+    result = CreateCodeWithDevinSubgraph().run(input)
     print(f"result: {json.dumps(result, indent=2)}")
 
 

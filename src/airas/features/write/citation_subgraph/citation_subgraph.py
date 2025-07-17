@@ -6,7 +6,7 @@ from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.generate_queries import (
+from airas.features.retrieve.nodes.generate_queries import (
     generate_queries,
 )
 from airas.features.write.citation_subgraph.input_data import (

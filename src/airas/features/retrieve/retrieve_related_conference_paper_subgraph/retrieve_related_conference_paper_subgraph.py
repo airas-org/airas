@@ -11,40 +11,40 @@ from pydantic import TypeAdapter
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_github_url_from_text import (
+from airas.features.retrieve.nodes.extract_github_url_from_text import (
     extract_github_url_from_text,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.generate_queries import (
+from airas.features.retrieve.nodes.generate_queries import (
     generate_queries,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.get_filtered_papers_from_conference import (
+from airas.features.retrieve.nodes.get_filtered_papers_from_conference import (
     get_filterd_papers_from_conference,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.retrieve_arxiv_text_from_url import (
+from airas.features.retrieve.nodes.retrieve_arxiv_text_from_url import (
     retrieve_arxiv_text_from_url,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.search_arxiv import (
+from airas.features.retrieve.nodes.search_arxiv import (
     search_arxiv,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.select_best_paper import (
+from airas.features.retrieve.nodes.select_best_paper import (
     select_best_paper,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.summarize_paper import (
+from airas.features.retrieve.nodes.summarize_paper import (
     summarize_paper,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_github_url_prompt import (
+from airas.features.retrieve.prompt.extract_github_url_prompt import (
     extract_github_url_from_text_prompt,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.prompt.select_best_paper_prompt import (
+from airas.features.retrieve.prompt.select_best_paper_prompt import (
     select_related_paper_prompt,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.prompt.summarize_paper_prompt import (
+from airas.features.retrieve.prompt.summarize_paper_prompt import (
     summarize_paper_prompt,
 )
-from airas.features.retrieve.retrieve_related_paper_subgraph.input_data import (
+from airas.features.retrieve.retrieve_related_conference_paper_subgraph.input_data import (
     retrieve_related_paper_subgraph_input_data,
 )
-from airas.features.retrieve.retrieve_related_paper_subgraph.prompt.generate_queries_prompt import (
+from airas.features.retrieve.retrieve_related_conference_paper_subgraph.prompt.generate_queries_prompt import (
     generate_queries_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
@@ -60,14 +60,14 @@ retrieve_str = "retrieve_paper_from_query_subgraph"
 retrieve_paper_from_query_timed = lambda f: time_node(retrieve_str)(f)  # noqa: E731
 
 
-class RetrieveRelatedPaperInputState(TypedDict):
+class RetrieveRelatedConferencePaperInputState(TypedDict):
     base_queries: list[str]
     base_github_url: str
     base_method_text: CandidatePaperInfo
     add_queries: list[str] | None
 
 
-class RetrieveRelatedPaperHiddenState(TypedDict):
+class RetrieveRelatedConferencePaperHiddenState(TypedDict):
     selected_base_paper_info: CandidatePaperInfo
 
     extracted_paper_titles: list[str]
@@ -81,24 +81,24 @@ class RetrieveRelatedPaperHiddenState(TypedDict):
     selected_add_paper_info_list: list[CandidatePaperInfo]
 
 
-class RetrieveRelatedPaperOutputState(TypedDict):
+class RetrieveRelatedConferencePaperOutputState(TypedDict):
     generated_queries: list[str]
     add_github_urls: list[str]
     add_method_texts: list[CandidatePaperInfo]
 
 
-class RetrieveRelatedPaperState(
-    RetrieveRelatedPaperInputState,
-    RetrieveRelatedPaperHiddenState,
-    RetrieveRelatedPaperOutputState,
+class RetrieveRelatedConferencePaperState(
+    RetrieveRelatedConferencePaperInputState,
+    RetrieveRelatedConferencePaperHiddenState,
+    RetrieveRelatedConferencePaperOutputState,
     ExecutionTimeState,
 ):
     pass
 
 
-class RetrieveRelatedPaperSubgraph(BaseSubgraph):
-    InputState = RetrieveRelatedPaperInputState
-    OutputState = RetrieveRelatedPaperOutputState
+class RetrieveRelatedConferencePaperSubgraph(BaseSubgraph):
+    InputState = RetrieveRelatedConferencePaperInputState
+    OutputState = RetrieveRelatedConferencePaperOutputState
 
     def __init__(
         self,
@@ -130,7 +130,7 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
             fire_crawl_api_key_check=True,
         )
 
-    def _initialize_state(self, state: RetrieveRelatedPaperState) -> dict:
+    def _initialize_state(self, state: RetrieveRelatedConferencePaperState) -> dict:
         # selected_base_paper_info = json.loads(state["base_method_text"])
         selected_base_paper_info = TypeAdapter(CandidatePaperInfo).validate_python(
             state["base_method_text"]
@@ -143,7 +143,9 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
         }
 
     @retrieve_paper_from_query_timed
-    def _generate_queries_node(self, state: RetrieveRelatedPaperState) -> dict:
+    def _generate_queries_node(
+        self, state: RetrieveRelatedConferencePaperState
+    ) -> dict:
         add_queries = state.get("add_queries") or []
         all_queries = state["base_queries"] + add_queries + state["generated_queries"]
         new_generated_queries = generate_queries(
@@ -160,7 +162,7 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
 
     @retrieve_paper_from_query_timed
     def _get_filtered_papers_from_conference_node(
-        self, state: RetrieveRelatedPaperState
+        self, state: RetrieveRelatedConferencePaperState
     ) -> dict[str, list[str]]:
         extracted_paper_titles = get_filterd_papers_from_conference(
             json_urls=self.paper_json_urls,
@@ -168,14 +170,16 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
         )
         return {"extracted_paper_titles": extracted_paper_titles}
 
-    def _check_extracted_titles(self, state: RetrieveRelatedPaperState) -> str:
+    def _check_extracted_titles(
+        self, state: RetrieveRelatedConferencePaperState
+    ) -> str:
         logger.info("check_extracted_titles")
         if not state.get("extracted_paper_titles"):
             return "Regenerate queries"  # TODO: Add a state to loop count and define a "Stop" case
         return "Continue"
 
     @retrieve_paper_from_query_timed
-    def _search_arxiv_node(self, state: RetrieveRelatedPaperState) -> dict:
+    def _search_arxiv_node(self, state: RetrieveRelatedConferencePaperState) -> dict:
         extract_paper_titles = state["extracted_paper_titles"]
         if not extract_paper_titles:
             return {
@@ -196,7 +200,7 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
 
     @retrieve_paper_from_query_timed
     def _retrieve_arxiv_text_from_url_node(
-        self, state: RetrieveRelatedPaperState
+        self, state: RetrieveRelatedConferencePaperState
     ) -> dict:
         process_index = state["process_index"]
         logger.info(f"process_index: {process_index}")
@@ -208,7 +212,7 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
 
     @retrieve_paper_from_query_timed
     def _extract_github_url_from_text_node(
-        self, state: RetrieveRelatedPaperState
+        self, state: RetrieveRelatedConferencePaperState
     ) -> dict:
         paper_full_text = state["paper_full_text"]
         process_index = state["process_index"]
@@ -223,7 +227,7 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
         process_index = process_index + 1 if github_url == "" else process_index
         return {"github_url": github_url, "process_index": process_index}
 
-    def _check_github_urls(self, state: RetrieveRelatedPaperState) -> str:
+    def _check_github_urls(self, state: RetrieveRelatedConferencePaperState) -> str:
         if state["github_url"] == "":
             if state["process_index"] < state["search_paper_count"]:
                 return "Next paper"
@@ -232,7 +236,7 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
             return "Generate paper summary"
 
     @retrieve_paper_from_query_timed
-    def _summarize_paper_node(self, state: RetrieveRelatedPaperState) -> dict:
+    def _summarize_paper_node(self, state: RetrieveRelatedConferencePaperState) -> dict:
         paper_full_text = state["paper_full_text"]
         (
             main_contributions,
@@ -271,13 +275,15 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
             ],
         }
 
-    def _check_paper_count(self, state: RetrieveRelatedPaperState) -> str:
+    def _check_paper_count(self, state: RetrieveRelatedConferencePaperState) -> str:
         if state["process_index"] < state["search_paper_count"]:
             return "Next paper"
         return "All complete"
 
     @retrieve_paper_from_query_timed
-    def _select_best_paper_node(self, state: RetrieveRelatedPaperState) -> dict:
+    def _select_best_paper_node(
+        self, state: RetrieveRelatedConferencePaperState
+    ) -> dict:
         candidate_papers_info_list = state["candidate_add_papers_info_list"]
         base_arxiv_id = state["selected_base_paper_info"]["arxiv_id"]
         filtered_candidates = [
@@ -319,13 +325,13 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
             "selected_add_paper_info_list": selected_paper_info_list,
         }
 
-    def _check_add_paper_count(self, state: RetrieveRelatedPaperState) -> str:
+    def _check_add_paper_count(self, state: RetrieveRelatedConferencePaperState) -> str:
         if len(state["selected_add_paper_arxiv_ids"]) < self.add_paper_num:
             return "Regenerate queries"
         else:
             return "Continue"
 
-    def _prepare_state(self, state: RetrieveRelatedPaperState) -> dict:
+    def _prepare_state(self, state: RetrieveRelatedConferencePaperState) -> dict:
         add_github_urls = [
             paper_info["github_url"]
             for paper_info in state["selected_add_paper_info_list"]
@@ -340,7 +346,7 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
         }
 
     def build_graph(self) -> CompiledGraph:
-        graph_builder = StateGraph(RetrieveRelatedPaperState)
+        graph_builder = StateGraph(RetrieveRelatedConferencePaperState)
 
         graph_builder.add_node("initialize_state", self._initialize_state)
         graph_builder.add_node("generate_queries_node", self._generate_queries_node)
@@ -421,7 +427,7 @@ def main():
     save_dir = "/workspaces/airas/data"
     input = retrieve_related_paper_subgraph_input_data
 
-    result = RetrieveRelatedPaperSubgraph(
+    result = RetrieveRelatedConferencePaperSubgraph(
         llm_name=llm_name,
         save_dir=save_dir,
         paper_json_urls=JSON_URLS,

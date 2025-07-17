@@ -9,36 +9,38 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
-from airas.core.base import BaseSubgraph
+from airas.features.retrieve.nodes.extract_github_url_from_text import (
+    extract_github_url_from_text,
+)
+from airas.features.retrieve.nodes.retrieve_arxiv_text_from_url import (
+    retrieve_arxiv_text_from_url,
+)
+from airas.features.retrieve.nodes.search_arxiv import (
+    search_arxiv,
+)
+from airas.features.retrieve.nodes.select_best_paper import (
+    select_best_paper,
+)
+from airas.features.retrieve.nodes.summarize_paper import (
+    summarize_paper,
+)
+from airas.features.retrieve.prompt.extract_github_url_prompt import (
+    extract_github_url_from_text_prompt,
+)
+from airas.features.retrieve.prompt.openai_websearch_titles_prompt import (
+    openai_websearch_titles_prompt,
+)
+from airas.features.retrieve.prompt.select_best_paper_prompt import (
+    select_base_paper_prompt,
+)
+from airas.features.retrieve.prompt.summarize_paper_prompt import (
+    summarize_paper_prompt,
+)
 from airas.features.retrieve.retrieve_paper_from_query_subgraph.input_data import (
     retrieve_paper_from_query_subgraph_input_data,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_github_url_from_text import (
-    extract_github_url_from_text,
-)
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.get_filtered_papers_from_conference import (
-    get_filterd_papers_from_conference,
-)
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.retrieve_arxiv_text_from_url import (
-    retrieve_arxiv_text_from_url,
-)
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.search_arxiv import (
-    search_arxiv,
-)
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.select_best_paper import (
-    select_best_paper,
-)
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.summarize_paper import (
-    summarize_paper,
-)
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_github_url_prompt import (
-    extract_github_url_from_text_prompt,
-)
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.prompt.select_best_paper_prompt import (
-    select_base_paper_prompt,
-)
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.prompt.summarize_paper_prompt import (
-    summarize_paper_prompt,
+from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.openai_websearch_titles import (
+    openai_websearch_titles,
 )
 from airas.types.paper import CandidatePaperInfo
 from airas.utils.check_api_key import check_api_key
@@ -82,25 +84,24 @@ class RetrievePaperFromQueryState(
     pass
 
 
-class RetrievePaperFromQuerySubgraph(BaseSubgraph):
-    InputState = RetrievePaperFromQueryInputState
-    OutputState = RetrievePaperFromQueryOutputState
-
+class RetrievePaperFromQuerySubgraph:
     def __init__(
         self,
         llm_name: str,
         save_dir: str,
-        paper_json_urls: list[str],
+        scrape_urls: list,
         arxiv_query_batch_size: int = 10,
         arxiv_num_retrieve_paper: int = 1,
         arxiv_period_days: int | None = None,
+        use_openai_websearch: bool = False,
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
-        self.paper_json_urls = paper_json_urls
+        self.scrape_urls = scrape_urls
         self.arxiv_query_batch_size = arxiv_query_batch_size
         self.arxiv_num_retrieve_paper = arxiv_num_retrieve_paper
         self.arxiv_period_days = arxiv_period_days
+        self.use_openai_websearch = use_openai_websearch
 
         self.papers_dir = os.path.join(self.save_dir, "papers")
         self.selected_papers_dir = os.path.join(self.save_dir, "selected_papers")
@@ -108,7 +109,7 @@ class RetrievePaperFromQuerySubgraph(BaseSubgraph):
         os.makedirs(self.selected_papers_dir, exist_ok=True)
         check_api_key(
             llm_api_key_check=True,
-            fire_crawl_api_key_check=True,
+            fire_crawl_api_key_check=False,  # Always using OpenAI web search, no FireCrawl needed
         )
 
     def _initialize_state(
@@ -121,14 +122,17 @@ class RetrievePaperFromQuerySubgraph(BaseSubgraph):
         }
 
     @retrieve_paper_from_query_timed
-    def _get_filtered_papers_from_conference_node(
+    def _openai_websearch_titles_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, list[str]]:
-        extracted_paper_titles = get_filterd_papers_from_conference(
-            json_urls=self.paper_json_urls,
+        extracted_paper_titles = openai_websearch_titles(
             queries=state["base_queries"],
+            max_results=5,
+            sleep_sec=60.0,
+            prompt_template=openai_websearch_titles_prompt,
+            conference_preference="NeurIPS, ICML, ICLR, ICML",
         )
-        return {"extracted_paper_titles": extracted_paper_titles}
+        return {"extracted_paper_titles": extracted_paper_titles or []}
 
     def _check_extracted_titles(self, state: RetrievePaperFromQueryState) -> str:
         logger.info("check_extracted_titles")
@@ -183,7 +187,7 @@ class RetrievePaperFromQuerySubgraph(BaseSubgraph):
             llm_name="gemini-2.0-flash-001",
             prompt_template=extract_github_url_from_text_prompt,
         )
-        # GitHub URLが取得できなかった場合は次の論文を処理するためにProcess Indexを進める
+        # If GitHub URL cannot be obtained, advance Process Index to process the next paper
         process_index = process_index + 1 if github_url == "" else process_index
         return {"github_url": github_url, "process_index": process_index}
 
@@ -246,14 +250,14 @@ class RetrievePaperFromQuerySubgraph(BaseSubgraph):
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, str | CandidatePaperInfo | None]:
         candidate_papers_info_list = state["candidate_base_papers_info_list"]
-        # TODO:論文の検索数の制御がうまくいっていない気がする
+        # TODO: I feel like the control of the number of paper searches is not working well
         selected_arxiv_ids = select_best_paper(
             llm_name="gemini-2.0-flash-001",
             prompt_template=select_base_paper_prompt,
             candidate_papers=candidate_papers_info_list,
         )
 
-        # 選択された論文の情報を取得
+        # Get information of selected paper
         selected_arxiv_id = selected_arxiv_ids[0]
         selected_paper_info = next(
             (
@@ -263,7 +267,7 @@ class RetrievePaperFromQuerySubgraph(BaseSubgraph):
             ),
             None,
         )
-        # 選択された論文を別のディレクトリにコピーする
+        # Copy selected paper to a separate directory
         for ext in ["txt", "pdf"]:
             source_path = os.path.join(self.papers_dir, f"{selected_arxiv_id}.{ext}")
             if os.path.exists(source_path):
@@ -290,14 +294,14 @@ class RetrievePaperFromQuerySubgraph(BaseSubgraph):
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(RetrievePaperFromQueryState)
 
+        # Add all nodes
         graph_builder.add_node("initialize_state", self._initialize_state)
         graph_builder.add_node(
-            "get_filtered_papers_from_conference",
-            self._get_filtered_papers_from_conference_node,
+            "openai_websearch_titles_node", self._openai_websearch_titles_node
         )
         graph_builder.add_node(
             "search_arxiv_node", self._search_arxiv_node
-        )  # TODO: 検索結果が空ならEND
+        )  # TODO: END if search results are empty
         graph_builder.add_node(
             "retrieve_arxiv_text_from_url_node", self._retrieve_arxiv_text_from_url_node
         )
@@ -308,18 +312,21 @@ class RetrievePaperFromQuerySubgraph(BaseSubgraph):
         graph_builder.add_node("select_best_paper_node", self._select_best_paper_node)
         graph_builder.add_node("prepare_state", self._prepare_state)
 
+        # Add edges based on configuration
         graph_builder.add_edge(START, "initialize_state")
-        graph_builder.add_edge(
-            "initialize_state", "get_filtered_papers_from_conference"
-        )
+
+        # Always use OpenAI Web Search path (direct title search)
+        graph_builder.add_edge("initialize_state", "openai_websearch_titles_node")
         graph_builder.add_conditional_edges(
-            source="get_filtered_papers_from_conference",
+            source="openai_websearch_titles_node",
             path=self._check_extracted_titles,
             path_map={
                 "Stop": END,
                 "Continue": "search_arxiv_node",
             },
         )
+
+        # Common edges after title extraction
         graph_builder.add_edge("search_arxiv_node", "retrieve_arxiv_text_from_url_node")
         graph_builder.add_edge(
             "retrieve_arxiv_text_from_url_node", "extract_github_url_from_text_node"
@@ -345,33 +352,45 @@ class RetrievePaperFromQuerySubgraph(BaseSubgraph):
         graph_builder.add_edge("prepare_state", END)
         return graph_builder.compile()
 
+    def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
+        config = {**{"recursion_limit": 100}, **(config or {})}
+
+        input_state_keys = RetrievePaperFromQueryInputState.__annotations__.keys()
+        output_state_keys = RetrievePaperFromQueryOutputState.__annotations__.keys()
+
+        input_state = {k: state[k] for k in input_state_keys if k in state}
+        result = self.build_graph().invoke(input_state, config=config or {})
+        output_state = {k: result[k] for k in output_state_keys if k in result}
+
+        cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
+
+        return {
+            "subgraph_name": self.__class__.__name__,
+            **cleaned_state,
+            **output_state,
+        }
+
 
 def main():
-    JSON_URLS = [
-        "https://icml.cc/static/virtual/data/icml-2024-orals-posters.json",
-        "https://iclr.cc/static/virtual/data/iclr-2024-orals-posters.json",
-        "https://nips.cc/static/virtual/data/neurips-2024-orals-posters.json",
-        "https://cvpr.thecvf.com/static/virtual/data/cvpr-2024-orals-posters.json",
+    scrape_urls = [
+        "https://icml.cc/virtual/2024/papers.html?filter=title",
+        # "https://iclr.cc/virtual/2024/papers.html?filter=title",
+        # "https://nips.cc/virtual/2024/papers.html?filter=title",
+        # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=title",
     ]
-
     llm_name = "o3-mini-2025-01-31"
-    save_dir = "/workspaces/airas/data"
+    save_dir = "./data"
     input = retrieve_paper_from_query_subgraph_input_data
 
-    import time
-
-    start_time = time.perf_counter()
+    # Always using OpenAI Web Search
     result = RetrievePaperFromQuerySubgraph(
         llm_name=llm_name,
         save_dir=save_dir,
-        paper_json_urls=JSON_URLS,
+        scrape_urls=scrape_urls,  # Kept for compatibility but not used
+        use_openai_websearch=True,  # Always True
     ).run(input)
+
     print(f"result: {json.dumps(result, indent=2)}")
-
-    end_time = time.perf_counter()
-    elapsed_time = end_time - start_time
-
-    print(f"Execution time: {elapsed_time:.4f} seconds")
 
 
 if __name__ == "__main__":

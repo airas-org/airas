@@ -5,10 +5,10 @@ from datetime import datetime
 from airas.features import (
     AnalyticSubgraph,
     CitationSubgraph,
-    CreateCodeSubgraph,
+    CreateCodeWithDevinSubgraph,
     CreateExperimentalDesignSubgraph,
     CreateMethodSubgraph,
-    FixCodeSubgraph,
+    FixCodeWithDevinSubgraph,
     GitHubActionsExecutorSubgraph,
     GithubDownloadSubgraph,
     GithubUploadSubgraph,
@@ -17,34 +17,34 @@ from airas.features import (
     PrepareRepositorySubgraph,
     ReadmeSubgraph,
     RetrieveCodeSubgraph,
-    RetrievePaperFromQuerySubgraph,
-    RetrieveRelatedPaperSubgraph,
+    RetrieveConferencePaperFromQuerySubgraph,
+    RetrieveRelatedConferencePaperSubgraph,
     WriterSubgraph,
 )
 
-JSON_URLS = [
-    "https://icml.cc/static/virtual/data/icml-2024-orals-posters.json",
-    "https://iclr.cc/static/virtual/data/iclr-2024-orals-posters.json",
-    "https://nips.cc/static/virtual/data/neurips-2024-orals-posters.json",
-    "https://cvpr.thecvf.com/static/virtual/data/cvpr-2024-orals-posters.json",
+scrape_urls = [
+    "https://icml.cc/virtual/2024/papers.html?filter=title",
+    # "https://iclr.cc/virtual/2024/papers.html?filter=title",
+    # "https://nips.cc/virtual/2024/papers.html?filter=title",
+    # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=title",
 ]
 # llm_name = "o3-mini-2025-01-31"
 llm_name = "gemini-2.0-flash-001"
 save_dir = "/workspaces/airas/data"
 
 prepare = PrepareRepositorySubgraph()
-retriever = RetrievePaperFromQuerySubgraph(
-    llm_name=llm_name, save_dir=save_dir, paper_json_urls=JSON_URLS
+retriever = RetrieveConferencePaperFromQuerySubgraph(
+    llm_name=llm_name, save_dir=save_dir
 )
-retriever2 = RetrieveRelatedPaperSubgraph(
-    llm_name=llm_name, save_dir=save_dir, paper_json_urls=JSON_URLS
+retriever2 = RetrieveRelatedConferencePaperSubgraph(
+    llm_name=llm_name, save_dir=save_dir
 )
 retriever3 = RetrieveCodeSubgraph(llm_name=llm_name)
 creator = CreateMethodSubgraph(llm_name="o3-mini-2025-01-31")
 creator2 = CreateExperimentalDesignSubgraph(llm_name="o3-mini-2025-01-31")
-coder = CreateCodeSubgraph()
+coder = CreateCodeWithDevinSubgraph()
 executor = GitHubActionsExecutorSubgraph(gpu_enabled=True)
-fixer = FixCodeSubgraph(llm_name="o3-mini-2025-01-31")
+fixer = FixCodeWithDevinSubgraph(llm_name="o3-mini-2025-01-31")
 analysis = AnalyticSubgraph("o3-mini-2025-01-31")
 writer = WriterSubgraph("o3-mini-2025-01-31")
 citation = CitationSubgraph(llm_name="o3-mini-2025-01-31")
