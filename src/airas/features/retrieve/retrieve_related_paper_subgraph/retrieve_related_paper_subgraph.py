@@ -14,11 +14,11 @@ from airas.core.base import BaseSubgraph
 from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_github_url_from_text import (
     extract_github_url_from_text,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_paper_title import (
-    extract_paper_title,
-)
 from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.generate_queries import (
     generate_queries,
+)
+from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.get_filtered_papers_from_conference import (
+    get_filterd_papers_from_conference,
 )
 from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.retrieve_arxiv_text_from_url import (
     retrieve_arxiv_text_from_url,
@@ -32,14 +32,8 @@ from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.select_bes
 from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.summarize_paper import (
     summarize_paper,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.web_scrape import (
-    web_scrape,
-)
 from airas.features.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_github_url_prompt import (
     extract_github_url_from_text_prompt,
-)
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_paper_title_prompt import (
-    extract_paper_title_prompt,
 )
 from airas.features.retrieve.retrieve_paper_from_query_subgraph.prompt.select_best_paper_prompt import (
     select_related_paper_prompt,
@@ -76,7 +70,6 @@ class RetrieveRelatedPaperInputState(TypedDict):
 class RetrieveRelatedPaperHiddenState(TypedDict):
     selected_base_paper_info: CandidatePaperInfo
 
-    scraped_results: list[dict]
     extracted_paper_titles: list[str]
     search_paper_list: list[dict]
     search_paper_count: int
@@ -111,7 +104,7 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
         self,
         llm_name: str,
         save_dir: str,
-        scrape_urls: list,
+        paper_json_urls: list[str],
         add_paper_num: int = 5,
         n_query: int = 5,
         arxiv_query_batch_size: int = 10,
@@ -120,7 +113,7 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
-        self.scrape_urls = scrape_urls
+        self.paper_json_urls = paper_json_urls
         self.add_paper_num = add_paper_num
         self.n_query = n_query
 
@@ -166,24 +159,12 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
         }
 
     @retrieve_paper_from_query_timed
-    def _web_scrape_node(self, state: RetrieveRelatedPaperState) -> dict:
-        add_queries = state.get("add_queries") or []
-        all_queries = state["base_queries"] + add_queries + state["generated_queries"]
-        scraped_results = web_scrape(
-            queries=all_queries,
-            scrape_urls=self.scrape_urls,  # TODO: 2週目移行で無駄なクエリ検索が生じるため修正する
-        )
-        return {"scraped_results": scraped_results}
-
-    @retrieve_paper_from_query_timed
-    def _extract_paper_title_node(self, state: RetrieveRelatedPaperState) -> dict:
-        add_queries = state.get("add_queries") or []
-        all_queries = state["base_queries"] + add_queries + state["generated_queries"]
-        extracted_paper_titles = extract_paper_title(
-            llm_name="gemini-2.0-flash-001",
-            queries=all_queries,
-            scraped_results=state["scraped_results"],
-            prompt_template=extract_paper_title_prompt,
+    def _get_filtered_papers_from_conference_node(
+        self, state: RetrieveRelatedPaperState
+    ) -> dict[str, list[str]]:
+        extracted_paper_titles = get_filterd_papers_from_conference(
+            json_urls=self.paper_json_urls,
+            queries=state["base_queries"],
         )
         return {"extracted_paper_titles": extracted_paper_titles}
 
@@ -363,9 +344,9 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
 
         graph_builder.add_node("initialize_state", self._initialize_state)
         graph_builder.add_node("generate_queries_node", self._generate_queries_node)
-        graph_builder.add_node("web_scrape_node", self._web_scrape_node)
         graph_builder.add_node(
-            "extract_paper_title_node", self._extract_paper_title_node
+            "get_filtered_papers_from_conference",
+            self._get_filtered_papers_from_conference_node,
         )
         graph_builder.add_node(
             "search_arxiv_node", self._search_arxiv_node
@@ -382,10 +363,11 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
 
         graph_builder.add_edge(START, "initialize_state")
         graph_builder.add_edge("initialize_state", "generate_queries_node")
-        graph_builder.add_edge("generate_queries_node", "web_scrape_node")
-        graph_builder.add_edge("web_scrape_node", "extract_paper_title_node")
+        graph_builder.add_edge(
+            "generate_queries_node", "get_filtered_papers_from_conference"
+        )
         graph_builder.add_conditional_edges(
-            source="extract_paper_title_node",
+            source="get_filtered_papers_from_conference",
             path=self._check_extracted_titles,
             path_map={
                 "Regenerate queries": "generate_queries_node",
@@ -427,12 +409,13 @@ class RetrieveRelatedPaperSubgraph(BaseSubgraph):
 
 
 def main():
-    scrape_urls = [
-        "https://icml.cc/virtual/2024/papers.html?filter=title",
-        # "https://iclr.cc/virtual/2024/papers.html?filter=title",
-        # "https://nips.cc/virtual/2024/papers.html?filter=title",
-        # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=title",
+    JSON_URLS = [
+        "https://icml.cc/static/virtual/data/icml-2024-orals-posters.json",
+        "https://iclr.cc/static/virtual/data/iclr-2024-orals-posters.json",
+        "https://nips.cc/static/virtual/data/neurips-2024-orals-posters.json",
+        "https://cvpr.thecvf.com/static/virtual/data/cvpr-2024-orals-posters.json",
     ]
+
     add_paper_num = 1
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/airas/data"
@@ -441,7 +424,7 @@ def main():
     result = RetrieveRelatedPaperSubgraph(
         llm_name=llm_name,
         save_dir=save_dir,
-        scrape_urls=scrape_urls,
+        paper_json_urls=JSON_URLS,
         add_paper_num=add_paper_num,
     ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")

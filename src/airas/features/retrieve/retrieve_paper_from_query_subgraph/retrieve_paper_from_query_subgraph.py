@@ -16,8 +16,8 @@ from airas.features.retrieve.retrieve_paper_from_query_subgraph.input_data impor
 from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_github_url_from_text import (
     extract_github_url_from_text,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_paper_title import (
-    extract_paper_title,
+from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.get_filtered_papers_from_conference import (
+    get_filterd_papers_from_conference,
 )
 from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.retrieve_arxiv_text_from_url import (
     retrieve_arxiv_text_from_url,
@@ -31,14 +31,8 @@ from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.select_bes
 from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.summarize_paper import (
     summarize_paper,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.web_scrape import (
-    web_scrape,
-)
 from airas.features.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_github_url_prompt import (
     extract_github_url_from_text_prompt,
-)
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.prompt.extract_paper_title_prompt import (
-    extract_paper_title_prompt,
 )
 from airas.features.retrieve.retrieve_paper_from_query_subgraph.prompt.select_best_paper_prompt import (
     select_base_paper_prompt,
@@ -63,7 +57,6 @@ class RetrievePaperFromQueryInputState(TypedDict):
 
 
 class RetrievePaperFromQueryHiddenState(TypedDict):
-    scraped_results: list[dict]
     extracted_paper_titles: list[str]
     search_paper_list: list[dict]
     search_paper_count: int
@@ -97,14 +90,14 @@ class RetrievePaperFromQuerySubgraph(BaseSubgraph):
         self,
         llm_name: str,
         save_dir: str,
-        scrape_urls: list,
+        paper_json_urls: list[str],
         arxiv_query_batch_size: int = 10,
         arxiv_num_retrieve_paper: int = 1,
         arxiv_period_days: int | None = None,
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
-        self.scrape_urls = scrape_urls
+        self.paper_json_urls = paper_json_urls
         self.arxiv_query_batch_size = arxiv_query_batch_size
         self.arxiv_num_retrieve_paper = arxiv_num_retrieve_paper
         self.arxiv_period_days = arxiv_period_days
@@ -128,24 +121,12 @@ class RetrievePaperFromQuerySubgraph(BaseSubgraph):
         }
 
     @retrieve_paper_from_query_timed
-    def _web_scrape_node(
+    def _get_filtered_papers_from_conference_node(
         self, state: RetrievePaperFromQueryState
     ) -> dict[str, list[str]]:
-        scraped_results = web_scrape(
-            queries=state["base_queries"],  # TODO: abstractもスクレイピングする
-            scrape_urls=self.scrape_urls,
-        )
-        return {"scraped_results": scraped_results}
-
-    @retrieve_paper_from_query_timed
-    def _extract_paper_title_node(
-        self, state: RetrievePaperFromQueryState
-    ) -> dict[str, list[str]]:
-        extracted_paper_titles = extract_paper_title(
-            llm_name="gemini-2.0-flash-001",
+        extracted_paper_titles = get_filterd_papers_from_conference(
+            json_urls=self.paper_json_urls,
             queries=state["base_queries"],
-            scraped_results=state["scraped_results"],
-            prompt_template=extract_paper_title_prompt,
         )
         return {"extracted_paper_titles": extracted_paper_titles}
 
@@ -310,9 +291,9 @@ class RetrievePaperFromQuerySubgraph(BaseSubgraph):
         graph_builder = StateGraph(RetrievePaperFromQueryState)
 
         graph_builder.add_node("initialize_state", self._initialize_state)
-        graph_builder.add_node("web_scrape_node", self._web_scrape_node)
         graph_builder.add_node(
-            "extract_paper_title_node", self._extract_paper_title_node
+            "get_filtered_papers_from_conference",
+            self._get_filtered_papers_from_conference_node,
         )
         graph_builder.add_node(
             "search_arxiv_node", self._search_arxiv_node
@@ -328,10 +309,11 @@ class RetrievePaperFromQuerySubgraph(BaseSubgraph):
         graph_builder.add_node("prepare_state", self._prepare_state)
 
         graph_builder.add_edge(START, "initialize_state")
-        graph_builder.add_edge("initialize_state", "web_scrape_node")
-        graph_builder.add_edge("web_scrape_node", "extract_paper_title_node")
+        graph_builder.add_edge(
+            "initialize_state", "get_filtered_papers_from_conference"
+        )
         graph_builder.add_conditional_edges(
-            source="extract_paper_title_node",
+            source="get_filtered_papers_from_conference",
             path=self._check_extracted_titles,
             path_map={
                 "Stop": END,
@@ -365,22 +347,31 @@ class RetrievePaperFromQuerySubgraph(BaseSubgraph):
 
 
 def main():
-    scrape_urls = [
-        "https://icml.cc/virtual/2024/papers.html?filter=title",
-        # "https://iclr.cc/virtual/2024/papers.html?filter=title",
-        # "https://nips.cc/virtual/2024/papers.html?filter=title",
-        # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=title",
+    JSON_URLS = [
+        "https://icml.cc/static/virtual/data/icml-2024-orals-posters.json",
+        "https://iclr.cc/static/virtual/data/iclr-2024-orals-posters.json",
+        "https://nips.cc/static/virtual/data/neurips-2024-orals-posters.json",
+        "https://cvpr.thecvf.com/static/virtual/data/cvpr-2024-orals-posters.json",
     ]
+
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/airas/data"
     input = retrieve_paper_from_query_subgraph_input_data
 
+    import time
+
+    start_time = time.perf_counter()
     result = RetrievePaperFromQuerySubgraph(
         llm_name=llm_name,
         save_dir=save_dir,
-        scrape_urls=scrape_urls,
+        paper_json_urls=JSON_URLS,
     ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")
+
+    end_time = time.perf_counter()
+    elapsed_time = end_time - start_time
+
+    print(f"Execution time: {elapsed_time:.4f} seconds")
 
 
 if __name__ == "__main__":
