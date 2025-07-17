@@ -86,6 +86,10 @@ class GithubDownloadSubgraph(BaseSubgraph):
         sg.add_edge("github_download", END)
         return sg.compile()
 
+    def run(self, state: dict, config: dict | None = None) -> dict:
+        result = self.build_graph().invoke(state, config=config or {})
+        return result.get("research_history", {})
+
 
 if __name__ == "__main__":
     remote_dir = ".research"
@@ -103,5 +107,5 @@ if __name__ == "__main__":
         "branch_name": args.branch_name,
     }
 
-    result = GithubDownloadSubgraph().run(state)
-    print(json.dumps(result, indent=2))
+    state = GithubDownloadSubgraph().run(state)
+    print(json.dumps(state, indent=2))
