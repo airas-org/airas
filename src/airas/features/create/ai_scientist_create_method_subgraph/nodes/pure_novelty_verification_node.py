@@ -6,13 +6,13 @@ from typing import Any, Dict, List
 from airas.features.create.create_method_subgraph.prompt.PromptManager import (
     PromptManager,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.arxiv_api_node import (
+from airas.features.retrieve.retrieve_conference_paper_from_query_subgraph.nodes.arxiv_api_node import (
     ArxivNode,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.retrieve_arxiv_text_node import (
+from airas.features.retrieve.retrieve_conference_paper_from_query_subgraph.nodes.retrieve_arxiv_text_node import (
     RetrievearXivTextNode,
 )
-from airas.features.retrieve.retrieve_paper_from_query_subgraph.nodes.summarize_paper_node import (
+from airas.features.retrieve.retrieve_conference_paper_from_query_subgraph.nodes.summarize_paper_node import (
     summarize_paper_node,
     summarize_paper_prompt_add,
 )

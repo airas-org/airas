@@ -6,11 +6,13 @@ from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
-from airas.features.create.fix_code_subgraph.nodes.fix_code_with_devin import (
+from airas.features.create.fix_code_with_devin_subgraph.nodes.fix_code_with_devin import (
     fix_code_with_devin,
 )
-from airas.features.create.fix_code_subgraph.nodes.llm_decide import llm_decide
-from airas.features.create.fix_code_subgraph.prompt.llm_decide import (
+from airas.features.create.fix_code_with_devin_subgraph.nodes.llm_decide import (
+    llm_decide,
+)
+from airas.features.create.fix_code_with_devin_subgraph.prompt.llm_decide import (
     llm_decide_prompt,
 )
 from airas.features.create.nodes.check_devin_completion import (
@@ -27,7 +29,7 @@ logger = logging.getLogger(__name__)
 fix_code_timed = lambda f: time_node("fix_code_subgraph")(f)  # noqa: E731
 
 
-class FixCodeSubgraphInputState(TypedDict):
+class FixCodeWithDevinSubgraphInputState(TypedDict):
     experiment_session_id: str
     output_text_data: str
     error_text_data: str
@@ -36,28 +38,28 @@ class FixCodeSubgraphInputState(TypedDict):
     ]  # This should be True if the GitHub Actions workflow was executed successfully
 
 
-class FixCodeSubgraphHiddenState(TypedDict):
+class FixCodeWithDevinSubgraphHiddenState(TypedDict):
     judgment_result: bool
 
 
-class FixCodeSubgraphOutputState(TypedDict):
+class FixCodeWithDevinSubgraphOutputState(TypedDict):
     output_text_data: str
     push_completion: bool
     executed_flag: bool
 
 
-class FixCodeSubgraphState(
-    FixCodeSubgraphInputState,
-    FixCodeSubgraphHiddenState,
-    FixCodeSubgraphOutputState,
+class FixCodeWithDevinSubgraphState(
+    FixCodeWithDevinSubgraphInputState,
+    FixCodeWithDevinSubgraphHiddenState,
+    FixCodeWithDevinSubgraphOutputState,
     ExecutionTimeState,
 ):
     pass
 
 
-class FixCodeSubgraph(BaseSubgraph):
-    InputState = FixCodeSubgraphInputState
-    OutputState = FixCodeSubgraphOutputState
+class FixCodeWithDevinSubgraph(BaseSubgraph):
+    InputState = FixCodeWithDevinSubgraphInputState
+    OutputState = FixCodeWithDevinSubgraphOutputState
 
     def __init__(self, llm_name: str = "o3-mini-2025-01-31"):
         self.llm_name = llm_name
@@ -68,7 +70,7 @@ class FixCodeSubgraph(BaseSubgraph):
         )
 
     @fix_code_timed
-    def _llm_decide_node(self, state: FixCodeSubgraphState) -> dict[str, bool]:
+    def _llm_decide_node(self, state: FixCodeWithDevinSubgraphState) -> dict[str, bool]:
         if not state.get("executed_flag", True):
             raise ValueError(
                 "Invalid state: GitHub Actions workflow was not executed (expected executed_flag == True)"
@@ -85,7 +87,7 @@ class FixCodeSubgraph(BaseSubgraph):
         }
 
     @fix_code_timed
-    def _fix_code_with_devin_node(self, state: FixCodeSubgraphState) -> dict:
+    def _fix_code_with_devin_node(self, state: FixCodeWithDevinSubgraphState) -> dict:
         fix_code_with_devin(
             session_id=state["experiment_session_id"],
             output_text_data=state["output_text_data"],
@@ -94,7 +96,7 @@ class FixCodeSubgraph(BaseSubgraph):
         return {"executed_flag": False}
 
     def _check_devin_completion_node(
-        self, state: FixCodeSubgraphState
+        self, state: FixCodeWithDevinSubgraphState
     ) -> dict[str, bool]:
         result = check_devin_completion(
             session_id=state["experiment_session_id"],
@@ -103,13 +105,13 @@ class FixCodeSubgraph(BaseSubgraph):
             return {"push_completion": False}
         return {"push_completion": True}
 
-    def _route_fix_or_end(self, state: FixCodeSubgraphState) -> str:
+    def _route_fix_or_end(self, state: FixCodeWithDevinSubgraphState) -> str:
         if state.get("judgment_result") is True:
             return "finish"
         return "fix_code_with_devin_node"
 
     def build_graph(self) -> CompiledGraph:
-        graph_builder = StateGraph(FixCodeSubgraphState)
+        graph_builder = StateGraph(FixCodeWithDevinSubgraphState)
         graph_builder.add_node("llm_decide_node", self._llm_decide_node)
         graph_builder.add_node(
             "fix_code_with_devin_node", self._fix_code_with_devin_node
