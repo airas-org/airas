@@ -17,14 +17,14 @@ from airas.features.retrieve.nodes.extract_github_url_from_text import (
 from airas.features.retrieve.nodes.generate_queries import (
     generate_queries,
 )
-from airas.features.retrieve.nodes.get_filtered_papers_from_conference import (
-    get_filterd_papers_from_conference,
-)
 from airas.features.retrieve.nodes.retrieve_arxiv_text_from_url import (
     retrieve_arxiv_text_from_url,
 )
 from airas.features.retrieve.nodes.search_arxiv import (
     search_arxiv,
+)
+from airas.features.retrieve.nodes.search_papers_from_airas_db import (
+    search_papers_from_airas_db,
 )
 from airas.features.retrieve.nodes.select_best_paper import (
     select_best_paper,
@@ -104,7 +104,6 @@ class RetrieveRelatedConferencePaperSubgraph(BaseSubgraph):
         self,
         llm_name: str,
         save_dir: str,
-        paper_json_urls: list[str],
         add_paper_num: int = 5,
         n_query: int = 5,
         arxiv_query_batch_size: int = 10,
@@ -113,7 +112,6 @@ class RetrieveRelatedConferencePaperSubgraph(BaseSubgraph):
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
-        self.paper_json_urls = paper_json_urls
         self.add_paper_num = add_paper_num
         self.n_query = n_query
 
@@ -161,11 +159,10 @@ class RetrieveRelatedConferencePaperSubgraph(BaseSubgraph):
         }
 
     @retrieve_paper_from_query_timed
-    def _get_filtered_papers_from_conference_node(
+    def _search_papers_from_airas_db(
         self, state: RetrieveRelatedConferencePaperState
     ) -> dict[str, list[str]]:
-        extracted_paper_titles = get_filterd_papers_from_conference(
-            json_urls=self.paper_json_urls,
+        extracted_paper_titles = search_papers_from_airas_db(
             queries=state["base_queries"],
         )
         return {"extracted_paper_titles": extracted_paper_titles}
@@ -351,8 +348,8 @@ class RetrieveRelatedConferencePaperSubgraph(BaseSubgraph):
         graph_builder.add_node("initialize_state", self._initialize_state)
         graph_builder.add_node("generate_queries_node", self._generate_queries_node)
         graph_builder.add_node(
-            "get_filtered_papers_from_conference",
-            self._get_filtered_papers_from_conference_node,
+            "search_papers_from_airas_db",
+            self._search_papers_from_airas_db,
         )
         graph_builder.add_node(
             "search_arxiv_node", self._search_arxiv_node
@@ -369,11 +366,9 @@ class RetrieveRelatedConferencePaperSubgraph(BaseSubgraph):
 
         graph_builder.add_edge(START, "initialize_state")
         graph_builder.add_edge("initialize_state", "generate_queries_node")
-        graph_builder.add_edge(
-            "generate_queries_node", "get_filtered_papers_from_conference"
-        )
+        graph_builder.add_edge("generate_queries_node", "search_papers_from_airas_db")
         graph_builder.add_conditional_edges(
-            source="get_filtered_papers_from_conference",
+            source="search_papers_from_airas_db",
             path=self._check_extracted_titles,
             path_map={
                 "Regenerate queries": "generate_queries_node",
@@ -415,13 +410,6 @@ class RetrieveRelatedConferencePaperSubgraph(BaseSubgraph):
 
 
 def main():
-    JSON_URLS = [
-        "https://icml.cc/static/virtual/data/icml-2024-orals-posters.json",
-        "https://iclr.cc/static/virtual/data/iclr-2024-orals-posters.json",
-        "https://nips.cc/static/virtual/data/neurips-2024-orals-posters.json",
-        "https://cvpr.thecvf.com/static/virtual/data/cvpr-2024-orals-posters.json",
-    ]
-
     add_paper_num = 1
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/airas/data"
@@ -430,7 +418,6 @@ def main():
     result = RetrieveRelatedConferencePaperSubgraph(
         llm_name=llm_name,
         save_dir=save_dir,
-        paper_json_urls=JSON_URLS,
         add_paper_num=add_paper_num,
     ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")

@@ -22,12 +22,6 @@ from airas.features import (
     WriterSubgraph,
 )
 
-scrape_urls = [
-    "https://icml.cc/virtual/2024/papers.html?filter=title",
-    # "https://iclr.cc/virtual/2024/papers.html?filter=title",
-    # "https://nips.cc/virtual/2024/papers.html?filter=title",
-    # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=title",
-]
 # llm_name = "o3-mini-2025-01-31"
 llm_name = "gemini-2.0-flash-001"
 save_dir = "/workspaces/airas/data"
