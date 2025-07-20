@@ -47,7 +47,7 @@ def _apply_filters_by_queries(
     return filtered_list
 
 
-def get_paper_title_from_airas_db(queries: list[str]) -> list[dict[str, Any]]:
+def get_paper_titles_from_airas_db(queries: list[str]) -> list[dict[str, Any]]:
     all_papers = _fetch_all_papers()
     if not all_papers:
         return []
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     logger.info(f"Searching for papers with queries: {queries}")
     start_time = time.perf_counter()
 
-    results = get_paper_title_from_airas_db(queries)
+    results = get_paper_titles_from_airas_db(queries)
 
     end_time = time.perf_counter()
     elapsed_time = end_time - start_time

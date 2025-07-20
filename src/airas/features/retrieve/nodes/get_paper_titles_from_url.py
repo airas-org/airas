@@ -64,7 +64,7 @@ def _apply_filters_by_queries(
     return filtered_list
 
 
-def get_paper_title_from_url(json_urls: list[str], queries: list[str]) -> list[str]:
+def get_paper_titles_from_url(json_urls: list[str], queries: list[str]) -> list[str]:
     all_papers = _load_papers_from_urls(json_urls)
     if not all_papers:
         return []
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     queries = ["diffusion model"]
     start_time = time.perf_counter()
 
-    results = get_paper_title_from_url(JSON_URLS, queries)
+    results = get_paper_titles_from_url(JSON_URLS, queries)
 
     end_time = time.perf_counter()
     elapsed_time = end_time - start_time
