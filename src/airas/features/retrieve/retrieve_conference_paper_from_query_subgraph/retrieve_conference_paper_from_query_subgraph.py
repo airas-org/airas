@@ -13,14 +13,14 @@ from airas.core.base import BaseSubgraph
 from airas.features.retrieve.nodes.extract_github_url_from_text import (
     extract_github_url_from_text,
 )
+from airas.features.retrieve.nodes.get_paper_title_from_airas_db import (
+    get_paper_title_from_airas_db,
+)
 from airas.features.retrieve.nodes.retrieve_arxiv_text_from_url import (
     retrieve_arxiv_text_from_url,
 )
 from airas.features.retrieve.nodes.search_arxiv import (
     search_arxiv,
-)
-from airas.features.retrieve.nodes.search_papers_from_airas_db import (
-    search_papers_from_airas_db,
 )
 from airas.features.retrieve.nodes.select_best_paper import (
     select_best_paper,
@@ -119,10 +119,10 @@ class RetrieveConferencePaperFromQuerySubgraph(BaseSubgraph):
         }
 
     @retrieve_paper_from_query_timed
-    def _search_papers_from_airas_db(
+    def _get_paper_title_from_airas_db(
         self, state: RetrieveConferencePaperFromQueryState
     ) -> dict[str, list[str]]:
-        extracted_paper_titles = search_papers_from_airas_db(
+        extracted_paper_titles = get_paper_title_from_airas_db(
             queries=state["base_queries"],
         )
         return {"extracted_paper_titles": extracted_paper_titles}
@@ -291,8 +291,8 @@ class RetrieveConferencePaperFromQuerySubgraph(BaseSubgraph):
 
         graph_builder.add_node("initialize_state", self._initialize_state)
         graph_builder.add_node(
-            "search_papers_from_airas_db",
-            self._search_papers_from_airas_db,
+            "get_paper_title_from_airas_db",
+            self._get_paper_title_from_airas_db,
         )
         graph_builder.add_node(
             "search_arxiv_node", self._search_arxiv_node
@@ -308,9 +308,9 @@ class RetrieveConferencePaperFromQuerySubgraph(BaseSubgraph):
         graph_builder.add_node("prepare_state", self._prepare_state)
 
         graph_builder.add_edge(START, "initialize_state")
-        graph_builder.add_edge("initialize_state", "search_papers_from_airas_db")
+        graph_builder.add_edge("initialize_state", "get_paper_title_from_airas_db")
         graph_builder.add_conditional_edges(
-            source="search_papers_from_airas_db",
+            source="get_paper_title_from_airas_db",
             path=self._check_extracted_titles,
             path_map={
                 "Stop": END,

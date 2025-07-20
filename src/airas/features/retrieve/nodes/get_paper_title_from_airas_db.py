@@ -6,7 +6,7 @@ import requests
 
 logger = getLogger(__name__)
 
-UNIFIED_DB_URL = "https://raw.githubusercontent.com/airas-org/airas-papers-db/main/data/all/latest.json"
+UNIFIED_DB_URL = "https://raw.githubusercontent.com/airas-org/airas-papers-db/main/data/iclr/2024.json"
 
 
 def _fetch_all_papers() -> list[dict[str, Any]]:
@@ -47,7 +47,7 @@ def _apply_filters_by_queries(
     return filtered_list
 
 
-def search_papers_from_airas_db(queries: list[str]) -> list[dict[str, Any]]:
+def get_paper_title_from_airas_db(queries: list[str]) -> list[dict[str, Any]]:
     all_papers = _fetch_all_papers()
     if not all_papers:
         return []
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     logger.info(f"Searching for papers with queries: {queries}")
     start_time = time.perf_counter()
 
-    results = search_papers_from_airas_db(queries)
+    results = get_paper_title_from_airas_db(queries)
 
     end_time = time.perf_counter()
     elapsed_time = end_time - start_time
