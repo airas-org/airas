@@ -23,12 +23,18 @@ from .github.prepare_repository_subgraph.prepare_repository_subgraph import (
 from .publication.html_subgraph.html_subgraph import HtmlSubgraph
 from .publication.latex_subgraph.latex_subgraph import LatexSubgraph
 from .publication.readme_subgraph.readme_subgraph import ReadmeSubgraph
-from .retrieve.retrieve_code_subgraph.retrieve_code_subgraph import RetrieveCodeSubgraph
-from .retrieve.retrieve_conference_paper_from_query_subgraph.retrieve_conference_paper_from_query_subgraph import (
-    RetrieveConferencePaperFromQuerySubgraph,
+from .retrieve.generate_queries_subgraph.generate_queries_subgraph import (
+    GenerateQueriesSubgraph,
 )
-from .retrieve.retrieve_related_conference_paper_subgraph.retrieve_related_conference_paper_subgraph import (
-    RetrieveRelatedConferencePaperSubgraph,
+from .retrieve.get_paper_titles_subgraph.get_paper_titles_from_db_subgraph import (
+    GetPaperTitlesFromDBSubgraph,
+)
+from .retrieve.retrieve_code_subgraph.retrieve_code_subgraph import RetrieveCodeSubgraph
+from .retrieve.retrieve_paper_content_subgraph.retrieve_paper_content_subgraph import (
+    RetrievePaperContentSubgraph,
+)
+from .retrieve.summarize_paper_subgraph.summarize_paper_subgraph import (
+    SummarizePaperSubgraph,
 )
 from .write.citation_subgraph.citation_subgraph import CitationSubgraph
 from .write.writer_subgraph.writer_subgraph import WriterSubgraph
@@ -41,14 +47,16 @@ __all__ = [
     "FixCodeWithDevinSubgraph",
     "GitHubActionsExecutorSubgraph",
     "PrepareRepositorySubgraph",
+    "GenerateQueriesSubgraph",
+    "GetPaperTitlesFromDBSubgraph",
     "GithubDownloadSubgraph",
     "GithubUploadSubgraph",
     "HtmlSubgraph",
     "LatexSubgraph",
     "ReadmeSubgraph",
     "RetrieveCodeSubgraph",
-    "RetrieveConferencePaperFromQuerySubgraph",
-    "RetrieveRelatedConferencePaperSubgraph",
+    "RetrievePaperContentSubgraph",
+    "SummarizePaperSubgraph",
     "CitationSubgraph",
     "WriterSubgraph",
     "create_branch",
