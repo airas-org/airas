@@ -65,3 +65,7 @@ class LLMFacadeClient:
         return self.client.structured_outputs(
             model_name=self.llm_name, message=message, data_model=data_model
         )
+
+    @LLM_RETRY
+    def text_embedding(self, message: str, model_name: str = "gemini-embedding-001"):
+        return self.client.text_embedding(message=message, model_name=model_name)

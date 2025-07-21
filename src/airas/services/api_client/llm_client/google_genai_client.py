@@ -55,6 +55,7 @@ VERTEXAI_MODEL = Literal[
     "gemini-2.5-flash-lite-preview-06-17",
     "gemini-2.0-flash-001",
     "gemini-2.0-flash-lite-001",
+    "gemini-embedding-001",
 ]
 
 
@@ -139,6 +140,12 @@ class GoogelGenAIClient:
             response.usage_metadata.candidates_token_count,
         )
         return output, cost
+
+    def text_embedding(
+        self, message: str, model_name: str = "gemini-embedding-001"
+    ) -> list[float]:
+        result = self.client.models.embed_content(model=model_name, contents=message)
+        return result.embeddings[0].values
 
 
 if __name__ == "__main__":

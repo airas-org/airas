@@ -4,16 +4,21 @@ from typing import Any
 logger = getLogger(__name__)
 
 
-def _filter_papers_by_queries(
+def _match_score(text: str, query: str) -> int:
+    """Simple matching score: number of occurrences of query in text"""
+    return text.count(query)
+
+
+def _filter_papers_for_single_query(
     papers: list[dict[str, Any]],
-    queries: list[str],
-) -> list[dict[str, Any]]:
-    active_queries = [q.lower() for q in queries if q and not q.isspace()]
+    query: str,
+    max_results: int | None = None,
+) -> list[str]:
+    query = query.lower().strip()
+    if not query:
+        return []
 
-    if not active_queries:
-        return papers
-
-    filtered_list = []
+    scored_papers = []
     for paper in papers:
         searchable_text = " ".join(
             [
@@ -24,26 +29,32 @@ def _filter_papers_by_queries(
             ]
         ).lower()
 
-        if any(query in searchable_text for query in active_queries):
-            filtered_list.append(paper)
+        score = _match_score(searchable_text, query)
+        if score > 0:
+            scored_papers.append((score, paper.get("title", "No Title Found")))
 
-    return filtered_list
+    scored_papers.sort(key=lambda x: x[0], reverse=True)
+
+    return [title for _, title in scored_papers[:max_results]]
 
 
 def filter_titles_by_queries(
     papers: list[dict[str, Any]],
     queries: list[str],
-    max_results: int | None = None,
+    num_retrieve_paper: int | None = None,
 ) -> list[str]:
-    filtered_papers = _filter_papers_by_queries(
-        papers=papers,
-        queries=queries,
-    )
-    if max_results is not None and max_results >= 0:
-        filtered_papers = filtered_papers[:max_results]
+    """各クエリごとの上位マッチ結果を統合し、重複を排除したリストを返す"""
+    seen = set()
+    unique_titles: list[str] = []
 
-    filtered_titles = [
-        paper.get("title", "No Title Found") for paper in filtered_papers
-    ]
+    for query in queries:
+        if query and not query.isspace():
+            matched_titles = _filter_papers_for_single_query(
+                papers, query, max_results=num_retrieve_paper
+            )
+            for title in matched_titles:
+                if title not in seen:
+                    seen.add(title)
+                    unique_titles.append(title)
 
-    return filtered_titles
+    return unique_titles
