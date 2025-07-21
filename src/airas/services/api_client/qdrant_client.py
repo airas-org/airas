@@ -65,12 +65,14 @@ class QdrantClient(BaseHTTPClient):
     ) -> Any:
         # https://api.qdrant.tech/api-reference/search/query-points
         payload = {
-            "query": query_vector,
+            "query": {
+                "nearest": query_vector,
+            },
             "limit": limit,
             "with_payload": True,
         }
         response = self.post(
-            path=f"/collections/{collection_name}/points/search",
+            path=f"/collections/{collection_name}/points/query",
             json=payload,
             timeout=timeout,
         )
