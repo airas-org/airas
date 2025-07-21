@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import cast
+from typing import Any, cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -13,14 +13,19 @@ from airas.features.retrieve.retrieve_code_subgraph.input_data import (
 from airas.features.retrieve.retrieve_code_subgraph.node.extract_experimental_info import (
     extract_experimental_info,
 )
+from airas.features.retrieve.retrieve_code_subgraph.node.extract_github_url_from_text import (
+    extract_github_url_from_text,
+)
 from airas.features.retrieve.retrieve_code_subgraph.node.retrieve_repository_contents import (
     retrieve_repository_contents,
 )
 from airas.features.retrieve.retrieve_code_subgraph.prompt.extract_experimental_info_prompt import (
     extract_experimental_info_prompt,
 )
+from airas.features.retrieve.retrieve_code_subgraph.prompt.extract_github_url_prompt import (
+    extract_github_url_from_text_prompt,
+)
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.paper import CandidatePaperInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -32,17 +37,15 @@ retrieve_code_timed = lambda f: time_node("retrieve_code_subgraph")(f)  # noqa: 
 
 
 class RetrieveCodeInputState(TypedDict):
-    base_github_url: str
-    base_method_text: CandidatePaperInfo
+    research_study_list: list[dict[str, Any]]
 
 
 class RetrieveCodeHiddenState(TypedDict):
-    repository_content_str: str
+    code_str_list: list[str]
 
 
 class RetrieveCodeOutputState(TypedDict):
-    base_experimental_code: str
-    base_experimental_info: str
+    research_study_list: list[dict[str, Any]]
 
 
 class RetrieveCodeState(
@@ -65,36 +68,63 @@ class RetrieveCodeSubgraph(BaseSubgraph):
         check_api_key(llm_api_key_check=True)
         self.llm_name = llm_name
 
+    def _extract_github_url_from_text(self, state: RetrieveCodeState) -> dict:
+        research_study_list = state["research_study_list"]
+        for research_study in research_study_list:
+            github_url = extract_github_url_from_text(
+                paper_full_text=research_study["full_text"],
+                paper_summary=research_study["llm_extracted_info"]["methodology"],
+                llm_name=cast(LLM_MODEL, self.llm_name),
+                prompt_template=extract_github_url_from_text_prompt,
+            )
+            research_study["meta_data"] = {}
+            research_study["meta_data"]["github_url"] = github_url
+        return {
+            "research_study_list": research_study_list,
+        }
+
     @retrieve_code_timed
     def _retrieve_repository_contents(self, state: RetrieveCodeState) -> dict:
-        content_str = retrieve_repository_contents(github_url=state["base_github_url"])
+        research_study_list = state["research_study_list"]
+        code_str_list = []
+        for research_study in research_study_list:
+            code_str = retrieve_repository_contents(
+                github_url=research_study["meta_data"]["github_url"]
+            )
+            code_str_list.append(code_str)
         return {
-            "repository_content_str": content_str,
+            "code_str_list": code_str_list,
         }
 
     @retrieve_code_timed
     def _extract_experimental_info(self, state: RetrieveCodeState) -> dict:
-        if state["repository_content_str"] == "":
-            logger.warning("No repository content found. Skipping extraction.")
-            return {
-                "base_experimental_code": "",
-                "base_experimental_info": "",
-            }
+        code_str_list = state["code_str_list"]
+        research_study_list = state["research_study_list"]
+        for code_str, research_study in zip(
+            code_str_list, research_study_list, strict=True
+        ):
+            if code_str == "":
+                research_study["experimental_code"] = ""
+                research_study["experimental_info"] = ""
+            else:
+                extract_code, experimental_info = extract_experimental_info(
+                    llm_name=cast(LLM_MODEL, self.llm_name),
+                    method_text=research_study["llm_extracted_info"]["methodology"],
+                    repository_content_str=code_str,
+                    prompt_template=extract_experimental_info_prompt,
+                )
+                research_study["llm_extracted_info"]["experimental_code"] = extract_code
+                research_study["llm_extracted_info"]["experimental_info"] = (
+                    experimental_info
+                )
 
-        else:
-            extract_code, experimental_info = extract_experimental_info(
-                llm_name=cast(LLM_MODEL, self.llm_name),
-                method_text=state["base_method_text"],
-                repository_content_str=state["repository_content_str"],
-                prompt_template=extract_experimental_info_prompt,
-            )
-            return {
-                "base_experimental_code": extract_code,
-                "base_experimental_info": experimental_info,
-            }
+        return {"research_study_list": research_study_list}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(RetrieveCodeState)
+        graph_builder.add_node(
+            "extract_github_url_from_text", self._extract_github_url_from_text
+        )
         graph_builder.add_node(
             "retrieve_repository_contents", self._retrieve_repository_contents
         )
@@ -102,7 +132,10 @@ class RetrieveCodeSubgraph(BaseSubgraph):
             "extract_experimental_info", self._extract_experimental_info
         )
 
-        graph_builder.add_edge(START, "retrieve_repository_contents")
+        graph_builder.add_edge(START, "extract_github_url_from_text")
+        graph_builder.add_edge(
+            "extract_github_url_from_text", "retrieve_repository_contents"
+        )
         graph_builder.add_edge(
             "retrieve_repository_contents", "extract_experimental_info"
         )
