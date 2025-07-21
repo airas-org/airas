@@ -41,7 +41,7 @@ def _apply_filters_by_queries(
             ]
         ).lower()
 
-        if all(query in searchable_text for query in active_queries):
+        if any(query in searchable_text for query in active_queries):
             filtered_list.append(paper)
 
     return filtered_list

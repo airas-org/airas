@@ -38,13 +38,41 @@ class ArxivClient(BaseHTTPClient):
         sort_order: str = "descending",
         from_date: str | None = None,
         to_date: str | None = None,
+        search_field: str = "all",
         timeout: float = 15.0,
     ) -> str:
         sanitized = query.replace(":", "")
         if from_date and to_date:
-            search_q = f"(all:{sanitized}) AND submittedDate:[{from_date} TO {to_date}]"
+            search_q = f"({search_field}:{sanitized}) AND submittedDate:[{from_date} TO {to_date}]"
         else:
-            search_q = f"all:{sanitized}"
+            search_q = f"{search_field}:{sanitized}"
+
+        params = {
+            "search_query": search_q,
+            "start": start,
+            "max_results": max_results,
+            "sortBy": sort_by,
+            "sortOrder": sort_order,
+        }
+        response = self.get(path="query", params=params, timeout=timeout)
+        raise_for_status(response, path="query")
+
+        return self._parser.parse(response, as_="xml")
+
+    @ARXIV_RETRY
+    def search_title(
+        self,
+        *,
+        title: str,
+        start: int = 0,
+        max_results: int = 10,
+        sort_by: str = "relevance",
+        sort_order: str = "descending",
+        timeout: float = 15.0,
+    ) -> str:
+        # Use quotes to search for exact title match
+        exact_title = f'"{title}"'
+        search_q = f"ti:{exact_title}"
 
         params = {
             "search_query": search_q,
