@@ -159,6 +159,9 @@ class OpenAIClient:
         )
         return output, cost
 
+    def text_embedding(self, message: str, model_name: str = "gemini-embedding-001"):
+        return
+
 
 if __name__ == "__main__":
 
