@@ -18,9 +18,13 @@ class LLMOutput(BaseModel):
     index: int | None
 
 
-def _extract_github_urls_from_text(text: str, github_client: GithubClient) -> list[str]:
+def _extract_github_urls_from_text(
+    paper_full_text: str, github_client: GithubClient
+) -> list[str]:
     try:
-        matches = re.findall(r"https?://github\.com/[\w\-\_]+/[\w\-\_]+", text)
+        matches = re.findall(
+            r"https?://github\.com/[\w\-\_]+/[\w\-\_]+", paper_full_text
+        )
         valid_urls: list[str] = []
         for url in matches:
             url = url.replace("http://", "https://")
@@ -74,7 +78,7 @@ def _select_github_url(
 
 
 def extract_github_url_from_text(
-    text: str,
+    paper_full_text: str,
     paper_summary: str,
     llm_name: LLM_MODEL,
     prompt_template: str,
@@ -86,7 +90,7 @@ def extract_github_url_from_text(
     if github_client is None:
         github_client = GithubClient()
 
-    candidates = _extract_github_urls_from_text(text, github_client)
+    candidates = _extract_github_urls_from_text(paper_full_text, github_client)
     if not candidates:
         return ""
 
