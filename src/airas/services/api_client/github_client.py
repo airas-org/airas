@@ -376,14 +376,14 @@ class GithubClient(BaseHTTPClient):
                 return False
 
     def list_commits(
-        self, 
-        github_owner: str, 
-        repository_name: str, 
-        sha: str | None = None, 
-        per_page: int = 100, 
-        page: int = 1, 
+        self,
+        github_owner: str,
+        repository_name: str,
+        sha: str | None = None,
+        per_page: int = 100,
+        page: int = 1,
     ) -> list[dict]:
-    # https://docs.github.com/ja/rest/commits/commits?apiVersion=2022-11-28#list-commits
+        # https://docs.github.com/ja/rest/commits/commits?apiVersion=2022-11-28#list-commits
         path = f"/repos/{github_owner}/{repository_name}/commits"
         params = {
             **({"sha": sha} if sha else {}),
@@ -394,7 +394,7 @@ class GithubClient(BaseHTTPClient):
         response = self.get(path=path, params=params)
         if response.status_code == 200:
             return self._parser.parse(response, as_="json")
-        self._raise_for_status(response, path)  
+        self._raise_for_status(response, path)
 
     # --------------------------------------------------
     # Tree
@@ -429,6 +429,168 @@ class GithubClient(BaseHTTPClient):
             case _:
                 self._raise_for_status(response, path)
                 return None
+
+    # --------------------------------------------------
+    # Git Data API (for batch commits)
+    # --------------------------------------------------
+
+    @GITHUB_RETRY
+    def create_blob(
+        self,
+        github_owner: str,
+        repository_name: str,
+        content: str,
+        encoding: str = "utf-8",
+    ) -> str:
+        """Create a blob object"""
+        # https://docs.github.com/en/rest/git/blobs#create-a-blob
+        path = f"/repos/{github_owner}/{repository_name}/git/blobs"
+        payload = {
+            "content": content,
+            "encoding": encoding,
+        }
+
+        response = self.post(path=path, json=payload)
+        match response.status_code:
+            case 201:
+                result = self._parser.parse(response, as_="json")
+                return result["sha"]
+            case _:
+                self._raise_for_status(response, path)
+                raise GithubClientFatalError(f"Failed to create blob: {response.text}")
+
+    @GITHUB_RETRY
+    def create_tree(
+        self,
+        github_owner: str,
+        repository_name: str,
+        base_tree: str,
+        tree_entries: list[dict],
+    ) -> str:
+        """Create a tree object"""
+        # https://docs.github.com/en/rest/git/trees#create-a-tree
+        path = f"/repos/{github_owner}/{repository_name}/git/trees"
+        payload = {
+            "base_tree": base_tree,
+            "tree": tree_entries,
+        }
+
+        response = self.post(path=path, json=payload)
+        match response.status_code:
+            case 201:
+                result = self._parser.parse(response, as_="json")
+                return result["sha"]
+            case _:
+                self._raise_for_status(response, path)
+                raise GithubClientFatalError(f"Failed to create tree: {response.text}")
+
+    @GITHUB_RETRY
+    def create_commit(
+        self,
+        github_owner: str,
+        repository_name: str,
+        message: str,
+        tree_sha: str,
+        parent_shas: list[str],
+    ) -> str:
+        """Create a commit object"""
+        # https://docs.github.com/en/rest/git/commits#create-a-commit
+        path = f"/repos/{github_owner}/{repository_name}/git/commits"
+        payload = {
+            "message": message,
+            "tree": tree_sha,
+            "parents": parent_shas,
+        }
+
+        response = self.post(path=path, json=payload)
+        match response.status_code:
+            case 201:
+                result = self._parser.parse(response, as_="json")
+                return result["sha"]
+            case _:
+                self._raise_for_status(response, path)
+                raise GithubClientFatalError(
+                    f"Failed to create commit: {response.text}"
+                )
+
+    @GITHUB_RETRY
+    def update_ref(
+        self,
+        github_owner: str,
+        repository_name: str,
+        ref: str,
+        sha: str,
+        force: bool = False,
+    ) -> bool:
+        """Update a reference"""
+        # https://docs.github.com/en/rest/git/refs#update-a-reference
+        path = f"/repos/{github_owner}/{repository_name}/git/refs/{ref}"
+        payload = {
+            "sha": sha,
+            "force": force,
+        }
+
+        response = self.patch(path=path, json=payload)
+        match response.status_code:
+            case 200:
+                return True
+            case _:
+                self._raise_for_status(response, path)
+                return False
+
+    def commit_multiple_files(
+        self,
+        github_owner: str,
+        repository_name: str,
+        branch_name: str,
+        files: dict[str, str],  # path -> content
+        commit_message: str,
+    ) -> bool:
+        """Commit multiple files in a single commit using Git Data API"""
+        try:
+            # Get current branch info
+            branch_info = self.get_branch(github_owner, repository_name, branch_name)
+            if not branch_info:
+                raise GithubClientFatalError(f"Branch {branch_name} not found")
+
+            current_commit_sha = branch_info["commit"]["sha"]
+            base_tree_sha = branch_info["commit"]["commit"]["tree"]["sha"]
+
+            # Create blobs for all files
+            tree_entries = []
+            for file_path, content in files.items():
+                blob_sha = self.create_blob(github_owner, repository_name, content)
+                tree_entries.append(
+                    {
+                        "path": file_path,
+                        "mode": "100644",
+                        "type": "blob",
+                        "sha": blob_sha,
+                    }
+                )
+
+            # Create tree
+            tree_sha = self.create_tree(
+                github_owner, repository_name, base_tree_sha, tree_entries
+            )
+
+            # Create commit
+            commit_sha = self.create_commit(
+                github_owner,
+                repository_name,
+                commit_message,
+                tree_sha,
+                [current_commit_sha],
+            )
+
+            # Update branch reference
+            return self.update_ref(
+                github_owner, repository_name, f"heads/{branch_name}", commit_sha
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to commit multiple files: {e}")
+            raise GithubClientFatalError(f"Failed to commit multiple files: {e}") from e
 
     # --------------------------------------------------
     # Github Actions
@@ -476,12 +638,19 @@ class GithubClient(BaseHTTPClient):
         self,
         github_owner: str,
         repository_name: str,
-        branch_name: str,
+        branch_name: str | None = None,
         event: str = "workflow_dispatch",
+        status: str | None = None,
+        per_page: int = 100,
     ) -> dict | None:
         # https://docs.github.com/ja/rest/actions/workflow-runs?apiVersion=2022-11-28#list-workflow-runs-for-a-repository
         path = f"/repos/{github_owner}/{repository_name}/actions/runs"
-        params = {"branch": branch_name, "event": event}
+        params = {"event": event, "per_page": per_page}
+        if branch_name:
+            params["branch"] = branch_name
+        if status:
+            params["status"] = status
+
         response = self.get(path=path, params=params)
         match response.status_code:
             case 200:
@@ -502,6 +671,55 @@ class GithubClient(BaseHTTPClient):
                 raise GithubClientFatalError(
                     f"Validation failed, or the endpoint has been spammed (422): {path}"
                 )
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
+    @GITHUB_RETRY
+    def get_workflow_run_logs(
+        self,
+        github_owner: str,
+        repository_name: str,
+        run_id: int,
+    ) -> bytes | None:
+        """Download workflow run logs"""
+        # https://docs.github.com/en/rest/actions/workflow-runs#download-workflow-run-logs
+        path = f"/repos/{github_owner}/{repository_name}/actions/runs/{run_id}/logs"
+
+        response = self.get(path=path, allow_redirects=False)
+        match response.status_code:
+            case 302:
+                # Follow redirect to download logs
+                log_url = response.headers.get("Location")
+                if log_url:
+                    import requests
+
+                    log_response = requests.get(log_url)
+                    if log_response.status_code == 200:
+                        return log_response.content
+                return None
+            case 404:
+                logger.warning(f"Logs not found for run {run_id}")
+                return None
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
+    @GITHUB_RETRY
+    def list_workflow_run_jobs(
+        self,
+        github_owner: str,
+        repository_name: str,
+        run_id: int,
+    ) -> dict | None:
+        """List jobs for a workflow run"""
+        # https://docs.github.com/en/rest/actions/workflow-jobs#list-jobs-for-a-workflow-run
+        path = f"/repos/{github_owner}/{repository_name}/actions/runs/{run_id}/jobs"
+
+        response = self.get(path=path)
+        match response.status_code:
+            case 200:
+                return self._parser.parse(response, as_="json")
             case _:
                 self._raise_for_status(response, path)
                 return None
