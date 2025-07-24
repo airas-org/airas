@@ -31,7 +31,7 @@ class GetPaperTitlesFromWebHiddenState(TypedDict): ...
 
 
 class GetPaperTitlesFromWebOutputState(TypedDict):
-    titles: list[str]
+    research_study_list: list[dict]
 
 
 class GetPaperTitlesFromWebState(
@@ -52,11 +52,13 @@ class GetPaperTitlesFromWebSubgraph(BaseSubgraph):
     @get_paper_titles_from_web_timed
     def _openai_websearch_titles(
         self, state: GetPaperTitlesFromWebState
-    ) -> dict[str, list[str]]:
+    ) -> dict[str, list[dict]]:
         titles = openai_websearch_titles(
             queries=state["queries"],
         )
-        return {"titles": titles or []}
+        # Convert titles to research_study_list format
+        research_study_list = [{"title": title} for title in (titles or [])]
+        return {"research_study_list": research_study_list}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(GetPaperTitlesFromWebState)

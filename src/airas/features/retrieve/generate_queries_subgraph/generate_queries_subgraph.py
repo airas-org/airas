@@ -35,7 +35,7 @@ class GenerateQueriesHiddenState(TypedDict): ...
 
 
 class GenerateQueriesOutputState(TypedDict):
-    queries: list[str]
+    queries: list[str]  # TODO: 意味検索に対応させる
 
 
 class GenerateQueriesState(

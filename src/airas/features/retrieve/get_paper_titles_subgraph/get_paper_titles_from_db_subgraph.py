@@ -38,7 +38,7 @@ class GetPaperTitlesFromDBHiddenState(TypedDict):
 
 
 class GetPaperTitlesFromDBOutputState(TypedDict):
-    titles: list[str]
+    research_study_list: list[dict]
 
 
 class GetPaperTitlesFromDBState(
@@ -55,10 +55,10 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        num_retrieve_paper: int = 5,
+        max_results_per_query: int = 3,
         semantic_search: bool = False,
     ):
-        self.num_retrieve_paper = num_retrieve_paper
+        self.max_results_per_query = max_results_per_query
         self.semantic_search = semantic_search
 
     @get_paper_titles_from_db_timed
@@ -69,20 +69,22 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
     @get_paper_titles_from_db_timed
     def _filter_titles_by_queries(
         self, state: GetPaperTitlesFromDBState
-    ) -> dict[str, list[str]]:
+    ) -> dict[str, list[dict]]:
         titles = filter_titles_by_queries(
             papers=state["all_papers"],
             queries=state["queries"],
-            num_retrieve_paper=self.num_retrieve_paper,
+            max_results_per_query=self.max_results_per_query,
         )
-        return {"titles": titles or []}
+        research_study_list = [{"title": title} for title in (titles or [])]
+        return {"research_study_list": research_study_list}
 
     @get_paper_titles_from_db_timed
     def get_paper_titles_from_qdrant(self, state: GetPaperTitlesFromDBState) -> dict:
         titles = get_paper_titles_from_qdrant(
-            num_retrieve_paper=self.num_retrieve_paper, queries=state["queries"]
+            num_retrieve_paper=self.max_results_per_query, queries=state["queries"]
         )
-        return {"titles": titles or []}
+        research_study_list = [{"title": title} for title in (titles or [])]
+        return {"research_study_list": research_study_list}
 
     def select_database(self, state: GetPaperTitlesFromDBState) -> str:
         if self.semantic_search:
@@ -120,7 +122,7 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
 def main():
     input = get_paper_titles_subgraph_input_data
     result = GetPaperTitlesFromDBSubgraph(
-        num_retrieve_paper=5, semantic_search=True
+        max_results_per_query=3, semantic_search=True
     ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")
 

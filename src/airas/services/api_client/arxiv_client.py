@@ -28,10 +28,12 @@ class ArxivClient(BaseHTTPClient):
         self._parser = parser or ResponseParser()
 
     @ARXIV_RETRY
-    def search(
+    def search_papers(
         self,
+        query: str | None = None,
         *,
-        query: str,
+        title: str | None = None,
+        author: str | None = None,
         start: int = 0,
         max_results: int = 10,
         sort_by: str = "relevance",
@@ -41,11 +43,57 @@ class ArxivClient(BaseHTTPClient):
         search_field: str = "all",
         timeout: float = 15.0,
     ) -> str:
-        sanitized = query.replace(":", "")
-        if from_date and to_date:
-            search_q = f"({search_field}:{sanitized}) AND submittedDate:[{from_date} TO {to_date}]"
+        """
+        Search papers using arXiv API with flexible search options.
+
+        Args:
+            query: Free-text search query
+            title: Title-specific search (uses ti: field)
+            author: Author-specific search (uses au: field)
+            start: Starting index for pagination
+            max_results: Maximum number of results to return
+            sort_by: Sort criteria ("relevance", "lastUpdatedDate", "submittedDate")
+            sort_order: Sort order ("ascending", "descending")
+            from_date: Start date filter (YYYY-MM-DD format)
+            to_date: End date filter (YYYY-MM-DD format)
+            search_field: Field to search in for general query ("all", "ti", "au", "abs", etc.)
+            timeout: Request timeout in seconds
+
+        Returns:
+            XML string response from arXiv API
+
+        Note:
+            - If title/author are provided, structured search takes precedence over general query
+            - Either query OR title/author must be provided
+        """
+        # Build search query based on search type
+        search_parts = []
+
+        # Structured search (title/author) takes precedence
+        if title or author:
+            if title and title.strip():
+                # Use quotes for exact title matching
+                exact_title = f'"{title.strip()}"'
+                search_parts.append(f"ti:{exact_title}")
+
+            if author and author.strip():
+                # Author search without quotes for flexibility
+                sanitized_author = author.strip().replace(":", "")
+                search_parts.append(f"au:{sanitized_author}")
+
+        elif query and query.strip():
+            # Fallback to general search
+            sanitized = query.strip().replace(":", "")
+            search_parts.append(f"{search_field}:{sanitized}")
         else:
-            search_q = f"{search_field}:{sanitized}"
+            raise ValueError("Either 'query' or 'title'/'author' must be provided")
+
+        # Combine search parts
+        search_q = " AND ".join(search_parts)
+
+        # Add date filter if provided
+        if from_date and to_date:
+            search_q = f"({search_q}) AND submittedDate:[{from_date} TO {to_date}]"
 
         params = {
             "search_query": search_q,
@@ -59,37 +107,34 @@ class ArxivClient(BaseHTTPClient):
 
         return self._parser.parse(response, as_="xml")
 
-    @ARXIV_RETRY
-    def search_title(
-        self,
-        *,
-        title: str,
-        start: int = 0,
-        max_results: int = 10,
-        sort_by: str = "relevance",
-        sort_order: str = "descending",
-        timeout: float = 15.0,
-    ) -> str:
-        # Use quotes to search for exact title match
-        exact_title = f'"{title}"'
-        search_q = f"ti:{exact_title}"
 
-        params = {
-            "search_query": search_q,
-            "start": start,
-            "max_results": max_results,
-            "sortBy": sort_by,
-            "sortOrder": sort_order,
-        }
-        response = self.get(path="query", params=params, timeout=timeout)
-        raise_for_status(response, path="query")
+if __name__ == "__main__":
+    import feedparser
 
-        return self._parser.parse(response, as_="xml")
+    client = ArxivClient()
 
-    @ARXIV_RETRY
-    def fetch_pdf(self, arxiv_id: str, timeout: float = 30.0) -> requests.Response:
-        pdf_url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
+    # Example 1: General query search
+    print("1. General query search:")
+    result1 = client.search_papers(query="machine learning", max_results=2)
+    feed1 = feedparser.parse(result1)
+    print(f"   Found {len(feed1.entries)} papers")
 
-        response = requests.get(pdf_url, stream=True, timeout=timeout)
-        raise_for_status(response)
-        return response
+    # Example 2: Title search
+    print("\n2. Title search:")
+    result2 = client.search_papers(title="Attention Is All You Need", max_results=2)
+    feed2 = feedparser.parse(result2)
+    print(f"   Found {len(feed2.entries)} papers")
+    if feed2.entries:
+        print(f"   First result: {feed2.entries[0].title}")
+
+    # Example 3: Author search
+    print("\n3. Author search:")
+    result3 = client.search_papers(author="Vaswani", max_results=2)
+    feed3 = feedparser.parse(result3)
+    print(f"   Found {len(feed3.entries)} papers")
+
+    # Example 4: Title + Author search
+    print("\n4. Title + Author search:")
+    result4 = client.search_papers(title="transformer", author="Vaswani", max_results=1)
+    feed4 = feedparser.parse(result4)
+    print(f"   Found {len(feed4.entries)} papers")
