@@ -31,13 +31,6 @@ class SemanticScholarPaperNormalizer:
             doi = external_ids.get("DOI")
             arxiv_id = external_ids.get("ArXiv")
 
-            # Try to find PDF URL from openAccessPdf or external sources
-            pdf_url = None
-            if "openAccessPdf" in entry and entry["openAccessPdf"]:
-                pdf_url = entry["openAccessPdf"].get("url")
-            elif arxiv_id:
-                pdf_url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
-
             return PaperProviderSchema(
                 title=entry.get("title", "No Title"),
                 authors=authors,
@@ -46,15 +39,13 @@ class SemanticScholarPaperNormalizer:
                 doi=doi,
                 arxiv_id=arxiv_id,
                 abstract=entry.get("abstract"),
-                pdf_url=pdf_url,
+                arxiv_url=f"https://arxiv.org/abs/{arxiv_id}" if arxiv_id else None,
             )
         except ValidationError as e:
             logger.error(f"Validation error: {e}")
             return None
 
-    def search_by_title(
-        self, title: str, max_results: int | None = None
-    ) -> PaperProviderSchema | None:
+    def get_by_arxiv_id(self, arxiv_id: str) -> PaperProviderSchema | None:
         try:
             # Request only essential fields to keep response minimal like other providers
             fields = (
@@ -68,33 +59,30 @@ class SemanticScholarPaperNormalizer:
                 "openAccessPdf",
             )
 
-            response_data = self.client.search_papers(
-                query=title,
-                limit=max_results or 25,
+            response_data = self.client.get_paper_by_arxiv_id(
+                arxiv_id=arxiv_id,
                 fields=fields,
             )
         except (HTTPClientRetryableError, HTTPClientFatalError) as e:
             logger.warning(f"Semantic Scholar API request failed: {e}")
             return None
 
-        if not response_data or "data" not in response_data:
+        if not response_data:
             return None
 
-        for entry in response_data["data"]:
-            if paper := self._validate_entry(entry):
-                return paper  # Return first match
-        return None
+        # For direct lookup, response_data is the paper object, not a list
+        return self._validate_entry(response_data)
 
 
-def search_ss_by_title(
-    title: str,
+def search_ss_by_id(
+    arxiv_id: str,
     client: SemanticScholarClient | None = None,
 ) -> PaperProviderSchema | None:
-    if not title.strip():
+    if not arxiv_id.strip():
         return None
 
     normalizer = SemanticScholarPaperNormalizer(client)
-    paper = normalizer.search_by_title(title.strip())
+    paper = normalizer.get_by_arxiv_id(arxiv_id.strip())
 
     if paper:
         return paper.model_dump()
@@ -102,6 +90,6 @@ def search_ss_by_title(
 
 
 if __name__ == "__main__":
-    title = "Attention is All you need"
-    results = search_ss_by_title(title)
+    arxiv_id = "1706.03762"  # Attention is All you Need
+    results = search_ss_by_id(arxiv_id)
     print(f"results: {results}")

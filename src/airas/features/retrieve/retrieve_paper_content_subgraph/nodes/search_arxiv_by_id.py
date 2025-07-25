@@ -47,15 +47,12 @@ class ArxivPaperNormalizer:
             doi=doi,
             arxiv_id=arxiv_id,
             abstract=getattr(entry, "summary", None),
-            pdf_url=f"https://arxiv.org/pdf/{arxiv_id}.pdf",
+            arxiv_url=f"https://arxiv.org/abs/{arxiv_id}",
         )
 
-    def search(self, query: str, max_results: int = 1) -> PaperProviderSchema | None:
+    def get_by_id(self, arxiv_id: str) -> PaperProviderSchema | None:
         try:
-            xml_feed = self.client.search_papers(
-                query=query,
-                max_results=max_results,
-            )
+            xml_feed = self.client.get_paper_by_id(arxiv_id=arxiv_id)
         except (HTTPClientRetryableError, HTTPClientFatalError) as e:
             logger.warning(f"ArXiv API request failed: {e}")
             return None
@@ -67,15 +64,15 @@ class ArxivPaperNormalizer:
         return None
 
 
-def search_arxiv_by_title(
-    title: str,
+def search_arxiv_by_id(
+    arxiv_id: str,
     client: ArxivClient | None = None,
 ) -> PaperProviderSchema | None:
-    if not title.strip():
+    if not arxiv_id.strip():
         return None
 
     normalizer = ArxivPaperNormalizer(client)
-    paper = normalizer.search(title.strip())
+    paper = normalizer.get_by_id(arxiv_id.strip())
 
     if paper:
         return paper.model_dump()
@@ -83,6 +80,6 @@ def search_arxiv_by_title(
 
 
 if __name__ == "__main__":
-    title = "Attention is All you need"
-    results = search_arxiv_by_title(title)
+    arxiv_id = "1706.03762"  # Attention is All you Need
+    results = search_arxiv_by_id(arxiv_id)
     print(f"results: {results}")

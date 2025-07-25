@@ -13,14 +13,17 @@ from airas.features.retrieve.retrieve_paper_content_subgraph.input_data import (
 from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.retrieve_text_from_url import (
     retrieve_text_from_url,
 )
-from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_arxiv_by_title import (
-    search_arxiv_by_title,
+from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_arxiv_by_id import (
+    search_arxiv_by_id,
 )
-from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_openalex_by_title import (
-    search_openalex_by_title,
+from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_arxiv_id_from_title import (
+    search_arxiv_id_from_title,
 )
-from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_ss_by_title import (
-    search_ss_by_title,
+from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_ss_by_id import (
+    search_ss_by_id,
+)
+from airas.features.retrieve.retrieve_paper_content_subgraph.prompt.openai_websearch_arxiv_ids_prompt import (
+    openai_websearch_arxiv_ids_prompt,
 )
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -62,51 +65,53 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
         os.makedirs(self.papers_dir, exist_ok=True)
 
     @retrieve_paper_content_timed
-    def _search_arxiv(self, state: RetrievePaperContentState) -> dict[str, list[dict]]:
-        research_study_list = state["research_study_list"]
-
-        for research_study in research_study_list:
-            title = research_study.get("title", "")
-            if title:
-                paper_data = search_arxiv_by_title(title=title)
-                if paper_data:
-                    for key, value in paper_data.items():
-                        if key not in research_study or not research_study[key]:
-                            research_study[key] = value
-
-        return {"research_study_list": research_study_list}
-
-    @retrieve_paper_content_timed
-    def _search_openalex(
+    def _search_arxiv_id_from_title(
         self, state: RetrievePaperContentState
     ) -> dict[str, list[dict]]:
         research_study_list = state["research_study_list"]
 
         for research_study in research_study_list:
             title = research_study.get("title", "")
-            if title:
-                paper_data = search_openalex_by_title(title=title)
-                if paper_data:
-                    for key, value in paper_data.items():
-                        if key not in research_study or not research_study[key]:
-                            research_study[key] = value
+            arxiv_id = search_arxiv_id_from_title(
+                llm_name="gpt-4o-2024-11-20",
+                prompt_template=openai_websearch_arxiv_ids_prompt,
+                title=title,
+            )
+            research_study["arxiv_id"] = arxiv_id
 
         return {"research_study_list": research_study_list}
 
     @retrieve_paper_content_timed
-    def _search_semantic_scholar(
+    def _search_arxiv_by_id(
         self, state: RetrievePaperContentState
     ) -> dict[str, list[dict]]:
         research_study_list = state["research_study_list"]
 
         for research_study in research_study_list:
-            title = research_study.get("title", "")
-            if title:
-                paper_data = search_ss_by_title(title=title)
-                if paper_data:
-                    for key, value in paper_data.items():
-                        if key not in research_study or not research_study[key]:
-                            research_study[key] = value
+            if arxiv_id := research_study.get("arxiv_id", ""):
+                paper_data = search_arxiv_by_id(arxiv_id)
+
+                # NOTE: All keys are temporarily stored in each flat.
+                for key, value in paper_data.items():
+                    if key not in research_study or not research_study[key]:
+                        research_study[key] = value
+
+        return {"research_study_list": research_study_list}
+
+    @retrieve_paper_content_timed
+    def _search_ss_by_id(
+        self, state: RetrievePaperContentState
+    ) -> dict[str, list[dict]]:
+        research_study_list = state["research_study_list"]
+
+        for research_study in research_study_list:
+            if arxiv_id := research_study.get("arxiv_id", ""):
+                paper_data = search_ss_by_id(arxiv_id)
+
+                # NOTE: All keys are temporarily stored in each flat.
+                for key, value in paper_data.items():
+                    if key not in research_study or not research_study[key]:
+                        research_study[key] = value
 
         return {"research_study_list": research_study_list}
 
@@ -117,51 +122,42 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
         research_study_list = state["research_study_list"]
 
         for research_study in research_study_list:
-            # Try to get PDF URL from different fields depending on provider
-            pdf_url = (
-                research_study.get("pdf_url") or research_study.get("arxiv_url") or ""
-            )
-
-            if pdf_url:
+            if arxiv_url := research_study.get("arxiv_url", ""):
                 full_text = retrieve_text_from_url(
                     papers_dir=self.papers_dir,
-                    pdf_url=pdf_url,
+                    pdf_url=arxiv_url,
                 )
                 research_study["full_text"] = full_text
 
         return {"research_study_list": research_study_list}
 
     def select_provider(self, state: RetrievePaperContentState) -> str:
-        if self.paper_provider == "arxiv":
-            return "search_arxiv"
-        elif self.paper_provider == "openalex":
-            return "search_openalex"
-        elif self.paper_provider == "semantic_scholar":
-            return "search_semantic_scholar"
+        if self.paper_provider == "semantic_scholar":
+            return "search_ss_by_id"
         else:
-            # Default to arxiv
-            return "search_arxiv"
+            return "search_arxiv_by_id"
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(RetrievePaperContentState)
-        graph_builder.add_node("search_arxiv", self._search_arxiv)
-        graph_builder.add_node("search_openalex", self._search_openalex)
-        graph_builder.add_node("search_semantic_scholar", self._search_semantic_scholar)
+
+        graph_builder.add_node(
+            "search_arxiv_id_from_title", self._search_arxiv_id_from_title
+        )
+        graph_builder.add_node("search_arxiv_by_id", self._search_arxiv_by_id)
+        graph_builder.add_node("search_ss_by_id", self._search_ss_by_id)
         graph_builder.add_node("retrieve_text_from_url", self._retrieve_text_from_url)
 
+        graph_builder.add_edge(START, "search_arxiv_id_from_title")
         graph_builder.add_conditional_edges(
-            START,
+            "search_arxiv_id_from_title",
             self.select_provider,
             {
-                "search_arxiv": "search_arxiv",
-                "search_openalex": "search_openalex",
-                "search_semantic_scholar": "search_semantic_scholar",
+                "search_arxiv_by_id": "search_arxiv_by_id",
+                "search_ss_by_id": "search_ss_by_id",
             },
         )
-
-        graph_builder.add_edge("search_arxiv", "retrieve_text_from_url")
-        graph_builder.add_edge("search_openalex", "retrieve_text_from_url")
-        graph_builder.add_edge("search_semantic_scholar", "retrieve_text_from_url")
+        graph_builder.add_edge("search_arxiv_by_id", "retrieve_text_from_url")
+        graph_builder.add_edge("search_ss_by_id", "retrieve_text_from_url")
         graph_builder.add_edge("retrieve_text_from_url", END)
         return graph_builder.compile()
 
@@ -171,9 +167,22 @@ def main():
     input_data = retrieve_paper_content_subgraph_input_data
     result = RetrievePaperContentSubgraph(
         save_dir=save_dir,
-        paper_provider="arxiv",  # Can be "arxiv", "openalex", or "semantic_scholar"
+        paper_provider="arxiv",  # Can be "arxiv" or "semantic_scholar"
     ).run(input_data)
     print(f"result: {json.dumps(result, indent=2)}")
+
+    research_study_list = result.get("research_study_list", [])
+
+    for i, study in enumerate(research_study_list):
+        title = study.get("title", "No Title Found")
+        arxiv_url = study.get("arxiv_url", "No arXiv URL Found")
+
+        print(f"\nPaper {i + 1}:")
+        print(f"  Title: {title}")
+        print(f"  arXiv URL: {arxiv_url}")
+
+    print("\n---------------------------------")
+    print("Process finished.")
 
 
 if __name__ == "__main__":

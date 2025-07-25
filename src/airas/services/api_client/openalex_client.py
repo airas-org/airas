@@ -2,7 +2,7 @@ import os
 from logging import getLogger
 from typing import Any, Protocol, runtime_checkable
 
-import requests
+import requests  # type: ignore
 
 from airas.services.api_client.base_http_client import BaseHTTPClient
 from airas.services.api_client.response_parser import ResponseParser
@@ -107,7 +107,6 @@ class OpenAlexClient(BaseHTTPClient):
             if author and author.strip():
                 filters.append(f"raw_author_name.search:{author.strip()}")
         elif query and query.strip():
-            # Fallback to general search
             filters.append(f"default.search:{query.strip()}")
         else:
             raise ValueError("Either 'query' or 'title' must be provided")

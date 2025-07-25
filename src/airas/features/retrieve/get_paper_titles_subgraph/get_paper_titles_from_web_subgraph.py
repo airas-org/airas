@@ -12,6 +12,9 @@ from airas.features.retrieve.get_paper_titles_subgraph.input_data import (
 from airas.features.retrieve.get_paper_titles_subgraph.nodes.openai_websearch_titles import (
     openai_websearch_titles,
 )
+from airas.features.retrieve.get_paper_titles_subgraph.prompt.openai_websearch_titles_prompt import (
+    openai_websearch_titles_prompt,
+)
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -54,7 +57,7 @@ class GetPaperTitlesFromWebSubgraph(BaseSubgraph):
         self, state: GetPaperTitlesFromWebState
     ) -> dict[str, list[dict]]:
         titles = openai_websearch_titles(
-            queries=state["queries"],
+            queries=state["queries"], prompt_template=openai_websearch_titles_prompt
         )
         # Convert titles to research_study_list format
         research_study_list = [{"title": title} for title in (titles or [])]

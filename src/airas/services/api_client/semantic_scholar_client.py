@@ -89,31 +89,23 @@ class SemanticScholarClient(BaseHTTPClient):
         )
 
         fields = fields or DEFAULT_FIELDS
-        limit = max(1, min(limit, 100))  # Semantic Scholar limit is 100
+        limit = max(1, min(limit, 100))
 
-        # Build search query
         search_parts = []
-
-        # Structured search (title/author) takes precedence
         if title or author:
             if title and title.strip():
-                # Use title field for precise matching
                 search_parts.append(f"title:{title.strip()}")
 
             if author and author.strip():
-                # Use author field for author matching
                 search_parts.append(f"author:{author.strip()}")
 
         elif query and query.strip():
-            # General search - no field prefix
             search_parts.append(query.strip())
         else:
             raise ValueError("Either 'query' or 'title' must be provided")
 
-        # Combine search parts
         search_query = " ".join(search_parts)
 
-        # Add filters
         filters = []
         if year:
             if "-" in year:
@@ -132,11 +124,56 @@ class SemanticScholarClient(BaseHTTPClient):
             "fields": ",".join(fields),
         }
 
-        # Add filters to query if any
         if filters:
             params["query"] = f"{search_query} {' '.join(filters)}"
 
         path = "paper/search"
+        resp = self.get(path=path, params=params, timeout=timeout)
+        raise_for_status(resp, path=path)
+        return self._parser.parse(resp, as_="json")
+
+    @SEMANTIC_SCHOLAR_RETRY
+    def get_paper_by_arxiv_id(
+        self,
+        arxiv_id: str,
+        *,
+        fields: tuple[str, ...] | None = None,
+        timeout: float = 30.0,
+    ) -> dict[str, Any]:
+        """
+        Get paper details by arXiv ID using Semantic Scholar API.
+
+        Args:
+            arxiv_id: arXiv ID (e.g., "1706.03762")
+            fields: Fields to include in response
+            timeout: Request timeout in seconds
+
+        Returns:
+            Dictionary containing paper details
+        """
+        if not arxiv_id.strip():
+            raise ValueError("arxiv_id must be provided")
+
+        clean_id = arxiv_id.strip().split("v")[0]
+
+        DEFAULT_FIELDS = (
+            "paperId",
+            "title",
+            "abstract",
+            "year",
+            "authors",
+            "venue",
+            "externalIds",
+            "openAccessPdf",
+        )
+
+        fields = fields or DEFAULT_FIELDS
+
+        path = f"paper/ARXIV:{clean_id}"
+        params: dict[str, Any] = {
+            "fields": ",".join(fields),
+        }
+
         resp = self.get(path=path, params=params, timeout=timeout)
         raise_for_status(resp, path=path)
         return self._parser.parse(resp, as_="json")

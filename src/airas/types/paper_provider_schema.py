@@ -3,7 +3,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-# 各論文プロバイダーの出力フィールドを規格化したい
+# TODO: ArxivInfo, SemanticScholarInfoがあればそちらに変更する
 class PaperProviderSchema(BaseModel):
     title: str = Field(..., description="")
     authors: Optional[list[str]] = Field(None, description="")
@@ -15,8 +15,8 @@ class PaperProviderSchema(BaseModel):
     pages: Optional[str] = Field(None, description="")
 
     doi: Optional[str] = Field(None, description="")
-    pdf_url: Optional[str] = Field(None, description="")
     arxiv_id: Optional[str] = Field(None, description="")
+    arxiv_url: Optional[str] = Field(None, description="")
     github_url: Optional[str] = Field(None, description="")
 
     abstract: Optional[str] = Field(None, description="")

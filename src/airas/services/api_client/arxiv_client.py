@@ -66,32 +66,25 @@ class ArxivClient(BaseHTTPClient):
             - If title/author are provided, structured search takes precedence over general query
             - Either query OR title/author must be provided
         """
-        # Build search query based on search type
-        search_parts = []
 
-        # Structured search (title/author) takes precedence
+        search_parts = []
         if title or author:
             if title and title.strip():
-                # Use quotes for exact title matching
                 exact_title = f'"{title.strip()}"'
                 search_parts.append(f"ti:{exact_title}")
 
             if author and author.strip():
-                # Author search without quotes for flexibility
                 sanitized_author = author.strip().replace(":", "")
                 search_parts.append(f"au:{sanitized_author}")
 
         elif query and query.strip():
-            # Fallback to general search
             sanitized = query.strip().replace(":", "")
             search_parts.append(f"{search_field}:{sanitized}")
         else:
             raise ValueError("Either 'query' or 'title'/'author' must be provided")
 
-        # Combine search parts
         search_q = " AND ".join(search_parts)
 
-        # Add date filter if provided
         if from_date and to_date:
             search_q = f"({search_q}) AND submittedDate:[{from_date} TO {to_date}]"
 
@@ -101,6 +94,36 @@ class ArxivClient(BaseHTTPClient):
             "max_results": max_results,
             "sortBy": sort_by,
             "sortOrder": sort_order,
+        }
+        response = self.get(path="query", params=params, timeout=timeout)
+        raise_for_status(response, path="query")
+
+        return self._parser.parse(response, as_="xml")
+
+    @ARXIV_RETRY
+    def get_paper_by_id(
+        self,
+        arxiv_id: str,
+        timeout: float = 15.0,
+    ) -> str:
+        """
+        Get paper details by arXiv ID.
+
+        Args:
+            arxiv_id: arXiv ID (e.g., "1706.03762" or "1706.03762v1")
+            timeout: Request timeout in seconds
+
+        Returns:
+            XML string response from arXiv API
+        """
+        if not arxiv_id.strip():
+            raise ValueError("arxiv_id must be provided")
+
+        clean_id = arxiv_id.strip().split("v")[0]
+
+        params = {
+            "id_list": clean_id,
+            "max_results": 1,
         }
         response = self.get(path="query", params=params, timeout=timeout)
         raise_for_status(response, path="query")

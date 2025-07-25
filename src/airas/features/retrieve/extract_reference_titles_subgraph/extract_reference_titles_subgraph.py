@@ -60,8 +60,7 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
         research_study_list = state["research_study_list"]
 
         for research_study in research_study_list:
-            full_text = research_study.get("full_text", "")
-            if full_text:
+            if full_text := research_study.get("full_text", ""):
                 reference_titles = extract_reference_titles(
                     full_text=full_text,
                     llm_name=self.llm_name,

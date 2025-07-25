@@ -126,11 +126,11 @@ if __name__ == "__main__":
 
         print("\n=== Final Result ===")
         print(f"Generated queries: {result.get('queries', [])}")
-        print(f"Found titles: {result.get('titles', [])}")
         print(f"Retrieved papers: {len(result.get('research_study_list', []))}")
 
         for i, study in enumerate(result.get("research_study_list", [])):
             print(f"\nPaper {i + 1}: {study.get('title', 'Unknown title')}")
+            print(f"\narXiv url: {study.get('arxiv_url', '')}")
             if "llm_extracted_info" in study:
                 info = study["llm_extracted_info"]
                 print(
