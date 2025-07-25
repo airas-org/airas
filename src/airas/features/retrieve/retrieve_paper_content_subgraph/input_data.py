@@ -1,9 +1,17 @@
 retrieve_paper_content_subgraph_input_data = {
-    "titles": [
-        "Generalization in diffusion models arises from geometry-adaptive harmonic representations",
-        "Detecting, Explaining, and Mitigating Memorization in Diffusion Models",
-        "Ring-A-Bell! How Reliable are Concept Removal Methods For Diffusion Models?",
-        "Sin3DM: Learning a Diffusion Model from a Single 3D Textured Shape",
-        "MG-TSD: Multi-Granularity Time Series Diffusion Models with Guided Learning Process",
+    "research_study_list": [
+        {"title": "Attention Is All You Need"},
+        {"title": "TSDiT: Traffic Scene Diffusion Models With Transformers"},
+        {"title": "AdaDiff: Adaptive Step Selection for Fast Diffusion Models"},
+        {
+            "title": "Diversity-Driven Generative Dataset Distillation Based on Diffusion Model with Self-Adaptive Memory"
+        },
+        {"title": "Fast Diffusion Model"},
+        {
+            "title": "Flash Diffusion: Accelerating Any Conditional Diffusion Model for Few Steps Image Generation"
+        },
+        {
+            "title": "Patch Diffusion: Faster and More Data-Efficient Training of Diffusion Models"
+        },
     ]
 }

@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -28,14 +27,14 @@ summarize_paper_subgraph_timed = lambda f: time_node(summarize_paper_subgraph_st
 
 
 class SummarizePaperInputState(TypedDict):
-    research_study_list: list[dict[str, Any]]
+    research_study_list: list[dict]
 
 
 class SummarizePaperHiddenState(TypedDict): ...
 
 
 class SummarizePaperOutputState(TypedDict):
-    research_study_list: list[dict[str, Any]]
+    research_study_list: list[dict]
 
 
 class SummarizePaperState(
@@ -54,36 +53,37 @@ class SummarizePaperSubgraph(BaseSubgraph):
         self.llm_name = llm_name
 
     @summarize_paper_subgraph_timed
-    def _summarize_paper(
-        self, state: SummarizePaperState
-    ) -> dict[str, list[dict[str, Any]]]:
-        research_study_list = []
+    def _summarize_paper(self, state: SummarizePaperState) -> dict[str, list[dict]]:
+        research_study_list = state["research_study_list"]
 
-        for research_study in state.get("research_study_list", []):
-            (
-                main_contributions,
-                methodology,
-                experimental_setup,
-                limitations,
-                future_research_directions,
-            ) = summarize_paper(
-                llm_name=self.llm_name,
-                prompt_template=summarize_paper_prompt,
-                paper_text=research_study.get("full_text", ""),
-            )
+        for research_study in research_study_list:
+            if research_study.get("llm_extracted_info"):
+                logger.info(
+                    f"Skipping summarization for '{research_study.get('title', 'N/A')}' as info already exists."
+                )
+                continue
 
-            updated_research_study = research_study.copy()
+            full_text = research_study.get("full_text", "")
+            if full_text:
+                (
+                    main_contributions,
+                    methodology,
+                    experimental_setup,
+                    limitations,
+                    future_research_directions,
+                ) = summarize_paper(
+                    llm_name=self.llm_name,
+                    prompt_template=summarize_paper_prompt,
+                    paper_text=full_text,
+                )
 
-            llm_extracted_info = {
-                "main_contributions": main_contributions,
-                "methodology": methodology,
-                "experimental_setup": experimental_setup,
-                "limitations": limitations,
-                "future_research_directions": future_research_directions,
-            }
-
-            updated_research_study["llm_extracted_info"] = llm_extracted_info
-            research_study_list.append(updated_research_study)
+                research_study["llm_extracted_info"] = {
+                    "main_contributions": main_contributions,
+                    "methodology": methodology,
+                    "experimental_setup": experimental_setup,
+                    "limitations": limitations,
+                    "future_research_directions": future_research_directions,
+                }
 
         return {"research_study_list": research_study_list}
 

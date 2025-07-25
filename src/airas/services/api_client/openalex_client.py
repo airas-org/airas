@@ -1,63 +1,21 @@
-import logging
 import os
 from logging import getLogger
 from typing import Any, Protocol, runtime_checkable
 
 import requests  # type: ignore
-from requests.exceptions import (  # type: ignore
-    ConnectionError,
-    HTTPError,
-    RequestException,
-    Timeout,
-)
-from tenacity import (
-    before_log,
-    before_sleep_log,
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
 
 from airas.services.api_client.base_http_client import BaseHTTPClient
 from airas.services.api_client.response_parser import ResponseParser
+from airas.services.api_client.retry_policy import make_retry_policy, raise_for_status
 
 logger = getLogger(__name__)
+
+OPENALEX_RETRY = make_retry_policy()
 
 
 @runtime_checkable
 class ResponseParserProtocol(Protocol):
     def parse(self, response: requests.Response, *, as_: str) -> Any: ...
-
-
-class OpenAlexClientError(RuntimeError): ...
-
-
-class OpenAlexClientRetryableError(OpenAlexClientError): ...
-
-
-class OpenAlexClientFatalError(OpenAlexClientError): ...
-
-
-_DEFAULT_MAX_RETRIES = 10
-_WAIT_POLICY = wait_exponential(multiplier=1.0, max=180.0)
-
-_RETRY_EXC = (
-    OpenAlexClientRetryableError,
-    ConnectionError,
-    HTTPError,
-    Timeout,
-    RequestException,
-)
-
-OPENALEX_RETRY = retry(
-    stop=stop_after_attempt(_DEFAULT_MAX_RETRIES),
-    wait=_WAIT_POLICY,
-    before=before_log(logger, logging.WARNING),
-    before_sleep=before_sleep_log(logger, logging.WARNING),
-    retry=retry_if_exception_type(_RETRY_EXC),
-    reraise=True,
-)
 
 
 class OpenAlexClient(BaseHTTPClient):
@@ -89,20 +47,13 @@ class OpenAlexClient(BaseHTTPClient):
             ]
         return [f"publication_year:{year}"]
 
-    @staticmethod
-    def _raise_for_status(resp: requests.Response, path: str) -> None:
-        code = resp.status_code
-        if 200 <= code < 300:
-            return
-        if code in (408, 429) or 500 <= code < 600:
-            raise OpenAlexClientRetryableError(f"HTTP {code}: {path}")
-        raise OpenAlexClientFatalError(f"HTTP {code}: {path}")
-
     @OPENALEX_RETRY
     def search_papers(
         self,
-        query: str,
+        query: str | None = None,
         *,
+        title: str | None = None,
+        author: str | None = None,
         year: str | None = None,
         per_page: int = 20,
         page: int = 1,
@@ -110,6 +61,27 @@ class OpenAlexClient(BaseHTTPClient):
         fields: tuple[str, ...] | None = None,
         timeout: float = 30.0,
     ) -> dict[str, Any]:
+        """
+        Search papers using OpenAlex API with flexible search options.
+
+        Args:
+            query: Free-text search query (uses default.search filter)
+            title: Structured title search (uses display_name.search filter)
+            author: Author name search (uses raw_author_name.search filter)
+            year: Publication year or year range (e.g., "2020" or "2020-2023")
+            per_page: Number of results per page (1-200)
+            page: Page number for pagination
+            sort: Sort order (default: "relevance_score:desc")
+            fields: Fields to include in response
+            timeout: Request timeout in seconds
+
+        Returns:
+            Dictionary containing search results
+
+        Note:
+            - If both query and title/author are provided, structured search (title/author) takes precedence
+            - Either query OR title must be provided
+        """
         # https://docs.openalex.org/api-entities/works/search-works
         DEFAULT_FIELDS = (
             "id",
@@ -120,19 +92,34 @@ class OpenAlexClient(BaseHTTPClient):
             "authorships",
             "biblio",
             "primary_location",
+            "referenced_works",
+            "related_works",
         )
 
         fields = fields or DEFAULT_FIELDS
         per_page = max(1, min(per_page, 200))
 
+        filters = []
+
+        if title or author:
+            if title and title.strip():
+                filters.append(f"display_name.search:{title.strip()}")
+            if author and author.strip():
+                filters.append(f"raw_author_name.search:{author.strip()}")
+        elif query and query.strip():
+            filters.append(f"default.search:{query.strip()}")
+        else:
+            raise ValueError("Either 'query' or 'title' must be provided")
+
+        filters.extend(self._build_year_filters(year))
+
         params: dict[str, Any] = {
             "page": page,
             "per-page": per_page,
             "select": ",".join(fields),
-            "filter": ",".join(
-                ["default.search:" + query, *self._build_year_filters(year)]
-            ),
+            "filter": ",".join(filters),
         }
+
         if sort:
             params["sort"] = sort
         if self._key_qs:
@@ -140,13 +127,31 @@ class OpenAlexClient(BaseHTTPClient):
 
         path = "works"
         resp = self.get(path=path, params=params, timeout=timeout)
-        self._raise_for_status(resp, path)
+        raise_for_status(resp, path=path)
         return self._parser.parse(resp, as_="json")
 
 
 if __name__ == "__main__":
-    results = OpenAlexClient().search_papers(
+    client = OpenAlexClient()
+
+    # Example 1: General query search
+    results1 = client.search_papers(
         query="cnn",
         year="2020-2025",
     )
-    print(f"{results}")
+    print(f"Query search results: {len(results1.get('results', []))} papers found")
+
+    # Example 2: Title-based search
+    results2 = client.search_papers(
+        title="Attention Is All You Need",
+    )
+    print(f"Title search results: {len(results2.get('results', []))} papers found")
+
+    # Example 3: Title + Author search
+    results3 = client.search_papers(
+        title="BERT",
+        author="Devlin",
+    )
+    print(
+        f"Title+Author search results: {len(results3.get('results', []))} papers found"
+    )

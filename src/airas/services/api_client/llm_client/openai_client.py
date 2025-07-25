@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import Literal
 
 import tiktoken
@@ -161,6 +162,50 @@ class OpenAIClient:
 
     def text_embedding(self, message: str, model_name: str = "gemini-embedding-001"):
         return
+
+    def web_search(
+        self,
+        model_name: OPENAI_MODEL,
+        message: str,
+    ) -> tuple[dict | None, float]:
+        if not isinstance(message, str):
+            raise TypeError("message must be a string")
+
+        message = message.encode("utf-8", "ignore").decode("utf-8")
+        message = self._truncate_prompt(model_name, message)
+
+        response = self.client.responses.create(
+            model=model_name,
+            tools=[{"type": "web_search_preview"}],
+            input=message,
+        )
+
+        assistant_msgs = [
+            o
+            for o in response.output
+            if getattr(o, "type", None) == "message"
+            and getattr(o, "role", None) == "assistant"
+        ]
+        if not assistant_msgs:
+            self.logger.warning("No assistant response from web search")
+            return None, 0.0
+
+        assistant_content = assistant_msgs[-1].content[0].text
+
+        match = re.search(
+            r"```(?:json)?\s*\n?(.*?)\s*\n?```", assistant_content, re.DOTALL
+        )
+        if match:
+            assistant_content = match.group(1)
+
+        output = json.loads(assistant_content)
+
+        cost = self._calculate_cost(
+            model_name,
+            response.usage.input_tokens,
+            response.usage.output_tokens,
+        )
+        return output, cost
 
 
 if __name__ == "__main__":

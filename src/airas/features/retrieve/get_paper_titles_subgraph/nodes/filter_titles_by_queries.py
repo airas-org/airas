@@ -41,7 +41,7 @@ def _filter_papers_for_single_query(
 def filter_titles_by_queries(
     papers: list[dict[str, Any]],
     queries: list[str],
-    num_retrieve_paper: int | None = None,
+    max_results_per_query: int | None = None,
 ) -> list[str]:
     """各クエリごとの上位マッチ結果を統合し、重複を排除したリストを返す"""
     seen = set()
@@ -50,7 +50,7 @@ def filter_titles_by_queries(
     for query in queries:
         if query and not query.isspace():
             matched_titles = _filter_papers_for_single_query(
-                papers, query, max_results=num_retrieve_paper
+                papers, query, max_results=max_results_per_query
             )
             for title in matched_titles:
                 if title not in seen:
