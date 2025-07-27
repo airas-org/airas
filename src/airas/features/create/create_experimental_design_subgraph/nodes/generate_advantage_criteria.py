@@ -12,10 +12,8 @@ from airas.services.api_client.llm_client.llm_facade_client import (
 def generate_advantage_criteria(
     llm_name: LLM_MODEL,
     new_method: str,
-    client: LLMFacadeClient | None = None,
 ) -> str:
-    if client is None:
-        client = LLMFacadeClient(llm_name=llm_name)
+    client = LLMFacadeClient(llm_name=llm_name)
 
     env = Environment()
     template = env.from_string(generate_advantage_criteria_prompt)

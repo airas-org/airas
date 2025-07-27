@@ -3,7 +3,7 @@ import os
 from logging import getLogger
 from typing import Any, Dict, List
 
-from airas.features.create.create_method_subgraph.prompt.PromptManager import (
+from airas.features.create.ai_scientist_create_method_subgraph.prompt.PromptManager import (
     PromptManager,
 )
 from airas.features.retrieve.retrieve_conference_paper_from_query_subgraph.nodes.arxiv_api_node import (

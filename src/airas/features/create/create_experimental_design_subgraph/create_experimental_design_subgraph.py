@@ -20,7 +20,6 @@ from airas.features.create.create_experimental_design_subgraph.nodes.generate_ex
     generate_experiment_details,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.paper import CandidatePaperInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -34,9 +33,6 @@ create_experimental_design_timed = lambda f: time_node(create_str)(f)  # noqa: E
 
 class CreateExperimentalDesignSubgraphInputState(TypedDict):
     new_method: str
-    base_method_text: CandidatePaperInfo
-    base_experimental_code: str
-    base_experimental_info: str
 
 
 class CreateExperimentalDesignSubgraphOutputState(TypedDict):
@@ -66,8 +62,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         self, state: CreateExperimentalDesignState
     ) -> dict:
         verification_policy = generate_advantage_criteria(
-            llm_name=cast(LLM_MODEL, self.llm_name),
-            new_method=state["new_method"],
+            llm_name=cast(LLM_MODEL, self.llm_name), new_method=state["new_method"]
         )
         return {"verification_policy": verification_policy}
 
@@ -77,9 +72,8 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
     ) -> dict:
         experimet_details = generate_experiment_details(
             llm_name=cast(LLM_MODEL, self.llm_name),
+            new_method=state["new_method"],
             verification_policy=state["verification_policy"],
-            base_experimental_code=state["base_experimental_code"],
-            base_experimental_info=state["base_experimental_info"],
         )
         return {"experiment_details": experimet_details}
 
@@ -89,9 +83,8 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
     ) -> dict:
         experiment_code = generate_experiment_code(
             llm_name=cast(LLM_MODEL, self.llm_name),
+            new_method=state["new_method"],
             experiment_details=state["experiment_details"],
-            base_experimental_code=state["base_experimental_code"],
-            base_experimental_info=state["base_experimental_info"],
         )
         return {"experiment_code": experiment_code}
 

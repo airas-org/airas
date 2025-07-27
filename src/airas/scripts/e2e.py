@@ -9,6 +9,8 @@ from airas.features import (
     CreateExperimentalDesignSubgraph,
     CreateMethodSubgraph,
     FixCodeWithDevinSubgraph,
+    GenerateQueriesSubgraph,
+    GetPaperTitlesFromDBSubgraph,
     GitHubActionsExecutorSubgraph,
     GithubDownloadSubgraph,
     GithubUploadSubgraph,
@@ -17,25 +19,23 @@ from airas.features import (
     PrepareRepositorySubgraph,
     ReadmeSubgraph,
     RetrieveCodeSubgraph,
-    RetrieveConferencePaperFromQuerySubgraph,
-    RetrieveRelatedConferencePaperSubgraph,
+    RetrievePaperContentSubgraph,
+    SummarizePaperSubgraph,
     WriterSubgraph,
 )
 
 # llm_name = "o3-mini-2025-01-31"
-llm_name = "gemini-2.0-flash-001"
+llm_name = "gemini-2.5-flash"
 save_dir = "/workspaces/airas/data"
 
 prepare = PrepareRepositorySubgraph()
-retriever = RetrieveConferencePaperFromQuerySubgraph(
-    llm_name=llm_name, save_dir=save_dir
-)
-retriever2 = RetrieveRelatedConferencePaperSubgraph(
-    llm_name=llm_name, save_dir=save_dir
-)
-retriever3 = RetrieveCodeSubgraph(llm_name=llm_name)
-creator = CreateMethodSubgraph(llm_name="o3-mini-2025-01-31")
-creator2 = CreateExperimentalDesignSubgraph(llm_name="o3-mini-2025-01-31")
+generate_queries = GenerateQueriesSubgraph(llm_name=llm_name)
+get_paper_titles = GetPaperTitlesFromDBSubgraph(semantic_search=True)
+retrieve_paper_content = RetrievePaperContentSubgraph(save_dir=save_dir)
+summarize_paper = SummarizePaperSubgraph(llm_name=llm_name)
+retrieve_code = RetrieveCodeSubgraph(llm_name=llm_name)
+create_method = CreateMethodSubgraph(llm_name="o3-2025-04-16")
+create_experimental_design = CreateExperimentalDesignSubgraph(llm_name="o3-2025-04-16")
 coder = CreateCodeWithDevinSubgraph()
 executor = GitHubActionsExecutorSubgraph(gpu_enabled=True)
 fixer = FixCodeWithDevinSubgraph(llm_name="o3-mini-2025-01-31")
@@ -54,7 +54,7 @@ def save_state(state, step_name: str, save_dir: str):
     state_save_dir = f"/workspaces/airas/data/{save_dir}"
     os.makedirs(state_save_dir, exist_ok=True)
     filepath = os.path.join(state_save_dir, filename)
-    with open(filepath, "w", encoding="utf-8") as f:
+    with open(filepath, "w", encoding="utf-8", errors="replace") as f:
         json.dump(state, f, indent=2, ensure_ascii=False, default=str)
 
     print(f"State saved: {filepath}")
@@ -85,15 +85,17 @@ def run_from_state_file(
     filenameが指定されていればそのstateファイルから、指定されていなければ最初からsubgraphを順次実行し、各ステップの結果を保存する
     """
     subgraph_name_list = [
-        "retriever",
-        "retriever2",
-        "retriever3",
-        "creator",
-        "creator2",
+        "generate_queries",
+        "get_paper_titles",
+        "retrieve_paper_content",
+        "summarize_paper",
+        "retrieve_code",
+        "create_method",
+        "create_experimental_design",
         "coder",
         "executor",
         "fixer",
-        "anlysis",
+        "analysis",
         "writer",
         "citation",
         "latex",
@@ -111,27 +113,30 @@ def run_from_state_file(
     else:
         # 最初から実行
         state = {
-            "base_queries": ["diffusion model"],
+            "research_topic": "Research on quantization to reduce the number of parameters in LLM models",
             "github_repository": github_repository,
             "branch_name": branch_name,
         }
 
     for subgraph_name in subgraph_name_list:
-        if subgraph_name == "retriever":
-            state = retriever.run(state)
-            save_state(state, "retriever", save_dir)
-        elif subgraph_name == "retriever2":
-            state = retriever2.run(state)
-            save_state(state, "retriever2", save_dir)
-        elif subgraph_name == "retriever3":
-            state = retriever3.run(state)
-            save_state(state, "retriever3", save_dir)
-        elif subgraph_name == "creator":
-            state = creator.run(state)
-            save_state(state, "creator", save_dir)
-        elif subgraph_name == "creator2":
-            state = creator2.run(state)
-            save_state(state, "creator2", save_dir)
+        if subgraph_name == "generate_queries":
+            state = generate_queries.run(state)
+            save_state(state, "generate_queries", save_dir)
+        elif subgraph_name == "get_paper_titles":
+            state = get_paper_titles.run(state)
+            save_state(state, "get_paper_titles", save_dir)
+        elif subgraph_name == "retrieve_paper_content":
+            state = retrieve_paper_content.run(state)
+            save_state(state, "retrieve_paper_content", save_dir)
+        elif subgraph_name == "summarize_paper":
+            state = summarize_paper.run(state)
+            save_state(state, "summarize_paper", save_dir)
+        elif subgraph_name == "create_method":
+            state = create_method.run(state)
+            save_state(state, "create_method", save_dir)
+        elif subgraph_name == "create_experimental_design":
+            state = create_experimental_design.run(state)
+            save_state(state, "create_experimental_design", save_dir)
         elif subgraph_name == "coder":
             state = coder.run(state)
             save_state(state, "coder", save_dir)
@@ -171,23 +176,27 @@ def run_from_state_file(
         # state = download.run(state)
 
 
-if __name__ == "__main__":
-    github_repository = "auto-res2/test-tanaka-v16"
+def main(file_path: str | None = None):
+    """
+    E2E実行のメイン関数
+    """
+    save_dir = datetime.now().strftime("%Y%m%d_%H%M%S")
+    github_repository = "auto-res2/tanaka-20250724"
     branch_name = "test"
-
     state = {
         "github_repository": github_repository,
         "branch_name": branch_name,
+        "research_topic": "Research on quantization to reduce the number of parameters in LLM models",
     }
     prepare.run(state)
+    if file_path:
+        run_from_state_file(
+            github_repository, branch_name, save_dir=save_dir, file_path=file_path
+        )
+    else:
+        run_from_state_file(github_repository, branch_name, save_dir=save_dir)
 
-    save_dir = datetime.now().strftime("%Y%m%d_%H%M%S")
-    file_path = "/workspaces/airas/data/20250629_135044/latex.json"
-    run_from_state_file(github_repository, branch_name, save_dir, file_path)
-    # run_from_state_file(github_repository, branch_name, save_dir=save_dir)
 
-    # import sys
-    # if len(sys.argv) > 1:
-    #     run_from_state_file(sys.argv[1])
-    # else:
-    #     run_from_state_file()
+if __name__ == "__main__":
+    file_path = "/workspaces/airas/data/20250724_151856/summarize_paper.json"
+    main(file_path=file_path)

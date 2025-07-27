@@ -1,6 +1,6 @@
 generate_experiment_code_prompt = """\
-# Introduction
 Please follow the instructions below to tell us the detailed code for conducting the experiment.
+# Introduction
 - Please output the detailed experiment code for each experiment.
 - As you will be checking the results of the experiment from the standard output, please include print statements, etc. in your implementation so that the contents of the experiment and its results, etc. can be accurately understood from the standard output.
 - Please add a function to test the code to check that it is executed correctly. As the test is to check that the code is working correctly, please make it so that the test finishes immediately.
@@ -18,14 +18,15 @@ and **explicitly save all plots as `.pdf` files using `plt.savefig("filename.pdf
     - `_pairN`(optional): indicates that the figure is part of a pair (e.g., `_pair1`, `_pair2`) to be shown side by side using subfigures
     - If the figure is not part of a pair (i.e., there is only one figure), **do not include `_pairN` in the filename**.
 
+# New Methods
+-------------------------
+{{ new_method }}
+-------------------------
+# Verification Policy
+-------------------------
+{{ verification_policy }}
+-------------------------
 # Experiment Details
 -------------------------
 {{ experiment_details }}
--------------------------
-# Experimental code from the research on which it is based
----------------------------
-{{ base_experimental_code }}
----------------------------
-# Experimental information from the research on which it is based
----------------------------
-{{ base_experimental_info }}"""
+-------------------------"""
