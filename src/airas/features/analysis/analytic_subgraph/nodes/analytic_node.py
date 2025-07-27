@@ -21,7 +21,7 @@ class LLMOutput(BaseModel):
 def analytic_node(
     llm_name: LLM_MODEL,
     new_method: str,
-    verification_policy: str,
+    experiment_strategy: str,
     experiment_code: str,
     output_text_data: str,
     client: LLMFacadeClient | None = None,
@@ -33,15 +33,12 @@ def analytic_node(
     template = env.from_string(analytic_node_prompt)
     data = {
         "new_method": new_method,
-        "verification_policy": verification_policy,
+        "experiment_strategy": experiment_strategy,
         "experiment_code": experiment_code,
         "output_text_data": output_text_data,
     }
     messages = template.render(data)
     output, cost = client.structured_outputs(message=messages, data_model=LLMOutput)
     if output is None:
-        logger.error("Error: No response from LLM.")
-        return None
-    else:
-        analysis_report = output.get("analysis_report")
-        return analysis_report
+        raise ValueError("No response from LLM in analytic_node.")
+    return output["analysis_report"]

@@ -23,10 +23,9 @@ writer_timed = lambda f: time_node("writer_subgraph")(f)  # noqa: E731
 
 
 class WriterSubgraphInputState(TypedDict):
-    base_method_text: str
     new_method: str
-    verification_policy: str
-    experiment_details: str
+    experiment_strategy: str
+    experiment_specification: str
     experiment_code: str
     output_text_data: str
     analysis_report: str

@@ -17,14 +17,14 @@ def _build_generated_query_model(n_queries: int) -> type[BaseModel]:
 def generate_queries(
     llm_name: LLM_MODEL,
     prompt_template: str,
-    user_prompt: str,
+    research_topic: str,
     n_queries: Annotated[int, Field(gt=0)] = 5,
     client: LLMFacadeClient | None = None,
 ) -> list[str]:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
     data = {
-        "user_prompt": user_prompt,
+        "research_topic": research_topic,
         "n_queries": n_queries,
     }
 
