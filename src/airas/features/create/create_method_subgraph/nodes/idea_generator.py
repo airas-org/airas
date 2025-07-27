@@ -26,7 +26,6 @@ def idea_generator(
     idea_history: list[dict[str, str]],
 ) -> str:
     client = LLMFacadeClient(llm_name=llm_name)
-
     env = Environment()
 
     template = env.from_string(idea_generator_prompt)
@@ -40,6 +39,8 @@ def idea_generator(
         message=messages,
         data_model=LLMOutput,
     )
+    if output is None:
+        raise ValueError("No response from LLM in idea_generator.")
     return output["new_idea"]
 
 

@@ -10,14 +10,14 @@ from airas.core.base import BaseSubgraph
 from airas.features.create.create_experimental_design_subgraph.input_data import (
     create_experimental_design_subgraph_input_data,
 )
-from airas.features.create.create_experimental_design_subgraph.nodes.generate_advantage_criteria import (
-    generate_advantage_criteria,
-)
 from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_code import (
     generate_experiment_code,
 )
 from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_details import (
-    generate_experiment_details,
+    generate_experiment_specification,
+)
+from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_strategy import (
+    generate_experiment_strategy,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.utils.check_api_key import check_api_key
@@ -36,8 +36,8 @@ class CreateExperimentalDesignSubgraphInputState(TypedDict):
 
 
 class CreateExperimentalDesignSubgraphOutputState(TypedDict):
-    verification_policy: str
-    experiment_details: str
+    experiment_strategy: str
+    experiment_specification: str
     experiment_code: str
 
 
@@ -58,56 +58,55 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         check_api_key(llm_api_key_check=True)
 
     @create_experimental_design_timed
-    def _generate_advantage_criteria_node(
+    def _generate_experiment_strategy(
         self, state: CreateExperimentalDesignState
     ) -> dict:
-        verification_policy = generate_advantage_criteria(
+        experiment_strategy = generate_experiment_strategy(
             llm_name=cast(LLM_MODEL, self.llm_name), new_method=state["new_method"]
         )
-        return {"verification_policy": verification_policy}
+        return {"experiment_strategy": experiment_strategy}
 
     @create_experimental_design_timed
-    def _generate_experiment_details_node(
+    def _generate_experiment_specification(
         self, state: CreateExperimentalDesignState
     ) -> dict:
-        experimet_details = generate_experiment_details(
+        experiment_specification = generate_experiment_specification(
             llm_name=cast(LLM_MODEL, self.llm_name),
             new_method=state["new_method"],
-            verification_policy=state["verification_policy"],
+            experiment_strategy=state["experiment_strategy"],
         )
-        return {"experiment_details": experimet_details}
+        return {"experiment_specification": experiment_specification}
 
     @create_experimental_design_timed
-    def _generate_experiment_code_node(
-        self, state: CreateExperimentalDesignState
-    ) -> dict:
+    def _generate_experiment_code(self, state: CreateExperimentalDesignState) -> dict:
         experiment_code = generate_experiment_code(
             llm_name=cast(LLM_MODEL, self.llm_name),
             new_method=state["new_method"],
-            experiment_details=state["experiment_details"],
+            experiment_strategy=state["experiment_strategy"],
+            experiment_specification=state["experiment_specification"],
         )
         return {"experiment_code": experiment_code}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(CreateExperimentalDesignState)
         graph_builder.add_node(
-            "generate_advantage_criteria_node", self._generate_advantage_criteria_node
+            "generate_experiment_strategy", self._generate_experiment_strategy
         )
         graph_builder.add_node(
-            "generate_experiment_details_node", self._generate_experiment_details_node
+            "generate_experiment_specification", self._generate_experiment_specification
         )
         graph_builder.add_node(
-            "generate_experiment_code_node", self._generate_experiment_code_node
+            "generate_experiment_code", self._generate_experiment_code
         )
 
-        graph_builder.add_edge(START, "generate_advantage_criteria_node")
+        graph_builder.add_edge(START, "generate_experiment_strategy")
         graph_builder.add_edge(
-            "generate_advantage_criteria_node", "generate_experiment_details_node"
+            "generate_experiment_strategy", "generate_experiment_specification"
         )
         graph_builder.add_edge(
-            "generate_experiment_details_node", "generate_experiment_code_node"
+            "generate_experiment_specification", "generate_experiment_code"
         )
-        graph_builder.add_edge("generate_experiment_code_node", END)
+        graph_builder.add_edge("generate_experiment_code", END)
 
         return graph_builder.compile()
 

@@ -23,7 +23,7 @@ analytic_timed = lambda f: time_node("analytic_subgraph")(f)  # noqa: E731
 
 class AnalyticSubgraphInputState(TypedDict):
     new_method: str
-    verification_policy: str
+    experiment_strategy: str
     experiment_code: str
     output_text_data: str
 
@@ -61,7 +61,7 @@ class AnalyticSubgraph(BaseSubgraph):
         analysis_report = analytic_node(
             llm_name=self.llm_name,
             new_method=state["new_method"],
-            verification_policy=state["verification_policy"],
+            experiment_strategy=state["experiment_strategy"],
             experiment_code=state["experiment_code"],
             output_text_data=state["output_text_data"],
         )

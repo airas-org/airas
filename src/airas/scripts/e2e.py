@@ -181,7 +181,7 @@ def main(file_path: str | None = None):
     E2E実行のメイン関数
     """
     save_dir = datetime.now().strftime("%Y%m%d_%H%M%S")
-    github_repository = "auto-res2/tanaka-20250724"
+    github_repository = "auto-res2/tanaka-20250727"
     branch_name = "test"
     state = {
         "github_repository": github_repository,
@@ -198,5 +198,5 @@ def main(file_path: str | None = None):
 
 
 if __name__ == "__main__":
-    file_path = "/workspaces/airas/data/20250724_151856/summarize_paper.json"
+    file_path = "/workspaces/airas/data/20250727_113330/executor.json"
     main(file_path=file_path)
