@@ -89,12 +89,24 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
 
         for research_study in research_study_list:
             if arxiv_id := research_study.get("arxiv_id", ""):
-                paper_data = search_arxiv_by_id(arxiv_id)
+                arxiv_info = search_arxiv_by_id(arxiv_id)
 
-                # NOTE: All keys are temporarily stored in each flat.
-                for key, value in paper_data.items():
-                    if key not in research_study or not research_study[key]:
-                        research_study[key] = value
+                if arxiv_info:
+                    if "external_sources" not in research_study:
+                        research_study["external_sources"] = {}
+                    research_study["external_sources"]["arxiv_info"] = arxiv_info
+
+                    if arxiv_info.get("summary"):
+                        research_study["abstract"] = arxiv_info["summary"]
+
+                    if "meta_data" not in research_study:
+                        research_study["meta_data"] = {}
+
+                    for key, value in arxiv_info.items():
+                        if key not in ["title", "summary"]:
+                            research_study["meta_data"][key] = (
+                                value  #  TODO: Match the structure of MetaData
+                            )
 
         return {"research_study_list": research_study_list}
 
@@ -106,12 +118,26 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
 
         for research_study in research_study_list:
             if arxiv_id := research_study.get("arxiv_id", ""):
-                paper_data = search_ss_by_id(arxiv_id)
+                semantic_scholar_info = search_ss_by_id(arxiv_id)
 
-                # NOTE: All keys are temporarily stored in each flat.
-                for key, value in paper_data.items():
-                    if key not in research_study or not research_study[key]:
-                        research_study[key] = value
+                if semantic_scholar_info:
+                    if "external_sources" not in research_study:
+                        research_study["external_sources"] = {}
+                    research_study["external_sources"]["semantic_scholar_info"] = (
+                        semantic_scholar_info
+                    )
+
+                    if semantic_scholar_info.get("abstract"):
+                        research_study["abstract"] = semantic_scholar_info["abstract"]
+
+                    if "meta_data" not in research_study:
+                        research_study["meta_data"] = {}
+
+                    for key, value in semantic_scholar_info.items():
+                        if key not in ["title", "abstract"]:
+                            research_study["meta_data"][key] = (
+                                value  #  TODO: Match the structure of MetaData
+                            )
 
         return {"research_study_list": research_study_list}
 

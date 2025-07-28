@@ -32,7 +32,7 @@ class ExtractReferenceTitlesHiddenState(TypedDict): ...
 
 
 class ExtractReferenceTitlesOutputState(TypedDict):
-    research_study_list: list[dict]
+    reference_list: list[dict]
 
 
 class ExtractReferenceTitlesState(
@@ -58,6 +58,7 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
         self, state: ExtractReferenceTitlesState
     ) -> dict[str, list[dict]]:
         research_study_list = state["research_study_list"]
+        reference_list: list[dict] = []
 
         for research_study in research_study_list:
             if full_text := research_study.get("full_text", ""):
@@ -67,13 +68,13 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
                 )
 
                 for title in reference_titles:
-                    research_study_list.append(
+                    reference_list.append(
                         {
                             "title": title,
                         }
                     )
 
-        return {"research_study_list": research_study_list}
+        return {"reference_list": reference_list}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(ExtractReferenceTitlesState)
@@ -94,25 +95,13 @@ def main():
     ).run(input_data)
 
     print("\n--- Retrieved Reference Titles ---")
+    reference_list = result.get("reference_list", [])
+    total_count = len(reference_list)
+    print(f"Total reference papers found: {total_count}\n")
+    print(f"Total studies in list (references): {len(reference_list)}\n")
 
-    research_study_list = result.get("research_study_list", [])
-
-    # Filter to get only reference titles (newly added ones)
-    reference_studies = [
-        study for study in research_study_list if study.get("is_reference", False)
-    ]
-
-    if not reference_studies:
-        print("No references were found.")
-    else:
-        total_count = len(reference_studies)
-        print(f"Total reference papers found: {total_count}\n")
-        print(
-            f"Total studies in list (original + references): {len(research_study_list)}\n"
-        )
-
-        for i, study in enumerate(reference_studies):
-            print(f"{i + 1}. {study.get('title', 'No title')}")
+    for i, study in enumerate(reference_list):
+        print(f"{i + 1}. {study.get('title', 'No title')}")
 
 
 if __name__ == "__main__":
