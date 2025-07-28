@@ -14,7 +14,7 @@ class SemanticScholarInfo(BaseModel):
     journal: Optional[str] = Field(None, description="")
 
     volume: Optional[str] = Field(None, description="")
-    issue: Optional[str] = Field(None, description="")
+    number: Optional[str] = Field(None, description="")
     pages: Optional[str] = Field(None, description="")
 
     doi: Optional[str] = Field(None, description="")
