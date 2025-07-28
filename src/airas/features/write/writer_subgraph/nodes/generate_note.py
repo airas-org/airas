@@ -2,10 +2,9 @@ from jinja2 import Template
 
 note: dict[str, list[str]] = {
     "Methods": [
-        "base_method_text",
         "new_method",
-        "verification_policy",
-        "experiment_details",
+        "experiment_strategy",
+        "experiment_specification",
     ],
     "Codes": ["experiment_code"],
     "Results": ["output_text_data"],

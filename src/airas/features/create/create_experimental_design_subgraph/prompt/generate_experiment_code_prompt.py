@@ -1,13 +1,13 @@
 generate_experiment_code_prompt = """\
-# Introduction
-Please follow the instructions below to tell us the detailed code for conducting the experiment.
-- Please output the detailed experiment code for each experiment.
-- As you will be checking the results of the experiment from the standard output, please include print statements, etc. in your implementation so that the contents of the experiment and its results, etc. can be accurately understood from the standard output.
-- Please add a function to test the code to check that it is executed correctly. As the test is to check that the code is working correctly, please make it so that the test finishes immediately.
-- Please implement all frameworks used for deep learning in pytorch.
-- When conducting experiments, please prepare multiple patterns of data and create an experimental code that demonstrates the robustness of the new method.
-- Please also output the names of the python libraries that you think are necessary for running the experiment.
-- The section 'Experimental code from the research on which it is based' and 'Experimental information from the research on which it is based' includes details about the experiments conducted in the original research. Please use this information to implement the experiment as closely as possible to the original.
+You are a creative AI researcher. Based on the new method described in # New Methods, the experimental policy outlined in # Experiment Strategy, and the detailed experimental specifications provided in # Experiment Specification, please follow the instructions below and provide the detailed code for conducting the experiments.
+
+# Instructions
+- Output detailed experiment code for each experiment.
+- Since the experiment results will be checked via standard output, use print statements to ensure the experimental content and results can be clearly understood from the output.
+- Add a test function to verify that the code runs correctly. The test should complete quickly, as it is only intended to check functionality.
+- Use PyTorch exclusively for all deep learning frameworks.
+- Prepare multiple patterns of data during the experiments and design the code to demonstrate the robustness of the new method.
+- Also output the names of the Python libraries that you believe are necessary to run the experiments.
 - Please use matplotlib or seaborn to plot the results (e.g., accuracy, loss curves, confusion matrix), 
 and **explicitly save all plots as `.pdf` files using `plt.savefig("filename.pdf", bbox_inches="tight")` or equivalent.
     - Do not use `.png` or other formats—output must be `.pdf` only. These plots should be suitable for inclusion in academic papers.
@@ -18,14 +18,9 @@ and **explicitly save all plots as `.pdf` files using `plt.savefig("filename.pdf
     - `_pairN`(optional): indicates that the figure is part of a pair (e.g., `_pair1`, `_pair2`) to be shown side by side using subfigures
     - If the figure is not part of a pair (i.e., there is only one figure), **do not include `_pairN` in the filename**.
 
-# Experiment Details
--------------------------
-{{ experiment_details }}
--------------------------
-# Experimental code from the research on which it is based
----------------------------
-{{ base_experimental_code }}
----------------------------
-# Experimental information from the research on which it is based
----------------------------
-{{ base_experimental_info }}"""
+# New Methods
+{{ new_method }}
+# Experiment Strategy
+{{ experiment_strategy }}
+# Experiment Specification
+{{ experiment_specification }}"""
