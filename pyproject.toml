@@ -27,6 +27,7 @@ dependencies = [
     "typing-extensions>=4.12.2",
     "pymupdf>=1.25.5",
     "pandas>=2.3.0",
+    "bibtexparser>=1.4.3",
 ]
 
 [project.urls]
