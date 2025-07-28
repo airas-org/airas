@@ -35,7 +35,7 @@ class GenerateQueriesHiddenState(TypedDict): ...
 
 
 class GenerateQueriesOutputState(TypedDict):
-    queries: list[str]
+    queries: list[str]  # TODO: Supporting semantic search
 
 
 class GenerateQueriesState(
