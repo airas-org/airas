@@ -3,6 +3,7 @@ import logging
 from typing import Any, Dict
 
 from airas.services.api_client.github_client import GithubClient, GithubClientFatalError
+from airas.types.latex import LATEX_TEMPLATE
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ def _merge_bibtex_content(existing: str, new: str) -> str:
 def update_repository_bibfile(
     github_repository: Dict[str, Any],
     references_bib: str,
-    bibfile_path: str = ".research/latex/references.bib",
+    latex_template: LATEX_TEMPLATE,
     client: GithubClient | None = None,
 ) -> bool:
     client = GithubClient() or client
@@ -28,6 +29,7 @@ def update_repository_bibfile(
     github_owner = github_repository["github_owner"]
     repository_name = github_repository["repository_name"]
     branch_name = github_repository["branch_name"]
+    bibfile_path = f".research/latex/{latex_template}/references.bib"
 
     logger.info(
         f"Updating {bibfile_path} in {github_owner}/{repository_name}@{branch_name}"
@@ -72,30 +74,3 @@ def update_repository_bibfile(
         logger.error(f"Failed to update {bibfile_path}")
 
     return success
-
-
-def main():
-    test_github_repository = {
-        "url": "https://github.com/test-owner/test-repo.git",
-        "branch": "main",
-    }
-
-    test_references_bib = """@article{test_2024_example,
-    title = {Test Example Paper},
-    author = {Test Author},
-    year = {2024},
-    journal = {Test Journal},
-    abstract = {This is a test abstract for demonstration purposes.}
-}"""
-
-    try:
-        success = update_repository_bibfile(
-            github_repository=test_github_repository, references_bib=test_references_bib
-        )
-        print(f"Update successful: {success}")
-    except Exception as e:
-        print(f"Error: {e}")
-
-
-if __name__ == "__main__":
-    main()

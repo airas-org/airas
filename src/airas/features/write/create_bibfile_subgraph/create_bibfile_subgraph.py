@@ -3,6 +3,7 @@ from typing import Any, cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import validate_call
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -22,6 +23,7 @@ from airas.features.write.create_bibfile_subgraph.prompt.filter_references_promp
     filter_references_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.latex import LATEX_TEMPLATE
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -33,7 +35,7 @@ create_bibfile_timed = lambda f: time_node("create_bibfile_subgraph")(f)  # noqa
 
 class CreateBibfileSubgraphInputState(TypedDict):
     research_study_list: list[dict]
-    reference_list: list[dict]
+    reference_study_list: list[dict]
     research_hypothesis: dict
     github_repository: dict[str, str]
 
@@ -58,12 +60,15 @@ class CreateBibfileSubgraph(BaseSubgraph):
     InputState = CreateBibfileSubgraphInputState
     OutputState = CreateBibfileSubgraphOutputState
 
+    @validate_call
     def __init__(
         self,
-        llm_name: str,
+        llm_name: LLM_MODEL,
+        latex_template: LATEX_TEMPLATE,
         max_filtered_references: int = 30,
     ):
         self.llm_name = llm_name
+        self.latex_template = latex_template
         self.max_filtered_references = max_filtered_references
         check_api_key(llm_api_key_check=True)
 
@@ -75,15 +80,15 @@ class CreateBibfileSubgraph(BaseSubgraph):
             llm_name=cast(LLM_MODEL, self.llm_name),
             prompt_template=filter_references_prompt,
             research_study_list=state["research_study_list"],
-            reference_list=state["reference_list"],
+            reference_study_list=state["reference_study_list"],
             research_hypothesis=state["research_hypothesis"],
             max_results=self.max_filtered_references,
         )
-        return {"reference_list": filtered_references}
+        return {"reference_study_list": filtered_references}
 
     @create_bibfile_timed
     def _create_bibtex(self, state: CreateBibfileSubgraphState) -> dict[str, str]:
-        all_references = state["research_study_list"] + state["reference_list"]
+        all_references = state["research_study_list"] + state["reference_study_list"]
         references_bib = create_bibtex(all_references)
         return {"references_bib": references_bib}
 
@@ -94,6 +99,7 @@ class CreateBibfileSubgraph(BaseSubgraph):
         success = update_repository_bibfile(
             github_repository=state["github_repository"],
             references_bib=state["references_bib"],
+            latex_template=self.latex_template,
         )
         return {"update_success": success}
 
@@ -118,6 +124,7 @@ def main():
 
     result = CreateBibfileSubgraph(
         llm_name=llm_name,
+        latex_template="iclr2024",
         max_filtered_references=20,  # Example: limit to 20 references
     ).run(create_bibfile_subgraph_input_data)
     print(f"result: {result}")

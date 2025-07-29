@@ -33,7 +33,7 @@ create_bibfile_subgraph_input_data = {
             },
         },
     ],
-    "reference_list": [
+    "reference_study_list": [
         {
             "title": "Attention Is All You Need",
             "abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism.",

@@ -20,7 +20,7 @@ def filter_references(
     llm_name: LLM_MODEL,
     prompt_template: str,
     research_study_list: list[dict],
-    reference_list: list[dict],
+    reference_study_list: list[dict],
     research_hypothesis: dict,
     max_results: int = 30,
     client: LLMFacadeClient | None = None,
@@ -29,7 +29,7 @@ def filter_references(
 
     data = {
         "research_study_list": research_study_list,
-        "reference_list": reference_list,
+        "reference_study_list": reference_study_list,
         "research_hypothesis": research_hypothesis,
         "max_results": max_results,
     }
@@ -46,7 +46,9 @@ def filter_references(
 
     selected_indices = output["selected_reference_indices"]
     filtered_references = [
-        reference_list[i] for i in selected_indices if 0 <= i < len(reference_list)
+        reference_study_list[i]
+        for i in selected_indices
+        if 0 <= i < len(reference_study_list)
     ]
 
     return filtered_references
@@ -67,7 +69,7 @@ def main():
         }
     ]
 
-    reference_list = [
+    reference_study_list = [
         {
             "title": "Attention Is All You Need",
             "full_text": "The Transformer architecture has become the foundation of modern NLP models. This paper introduces the self-attention mechanism...",
@@ -98,13 +100,13 @@ def main():
             llm_name=llm_name,
             prompt_template=filter_references_prompt,
             research_study_list=research_study_list,
-            reference_list=reference_list,
+            reference_study_list=reference_study_list,
             research_hypothesis=research_hypothesis,
             max_results=2,
         )
 
         print(
-            f"Filtered {len(filtered_refs)} references from {len(reference_list)} total:"
+            f"Filtered {len(filtered_refs)} references from {len(reference_study_list)} total:"
         )
         for i, ref in enumerate(filtered_refs):
             print(f"{i + 1}. {ref.get('title', 'N/A')}")

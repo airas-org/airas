@@ -18,8 +18,8 @@ Study {{ loop.index }}:
 {{ research_hypothesis }}
 
 
-**Reference List (Candidate Papers for Citation):**
-{% for ref in reference_list %}
+**Reference Study List (Candidate Papers for Citation):**
+{% for ref in reference_study_list %}
 Reference {{ loop.index0 }}:
 - Title: {{ ref.get('title', 'N/A') }}
 {% if ref.get('full_text') %}
@@ -31,7 +31,7 @@ Reference {{ loop.index0 }}:
 
 **Instructions:**
 1. Analyze the research study list and hypothesis to understand the research context and objectives.
-2. From the reference list, select papers that are most relevant for citation based on:
+2. From the reference study list, select papers that are most relevant for citation based on:
    - Direct relevance to the research topic and hypothesis
    - Methodological relevance (similar or foundational methods)
    - Theoretical background and foundational work
