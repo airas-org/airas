@@ -31,7 +31,9 @@ save_dir = "/workspaces/airas/data"
 prepare = PrepareRepositorySubgraph()
 generate_queries = GenerateQueriesSubgraph(llm_name=llm_name)
 get_paper_titles = GetPaperTitlesFromDBSubgraph(semantic_search=True)
-retrieve_paper_content = RetrievePaperContentSubgraph(save_dir=save_dir)
+retrieve_paper_content = RetrievePaperContentSubgraph(
+    save_dir=save_dir, target_study_list_source="research_study_list"
+)
 summarize_paper = SummarizePaperSubgraph(llm_name=llm_name)
 retrieve_code = RetrieveCodeSubgraph(llm_name=llm_name)
 create_method = CreateMethodSubgraph(llm_name="o3-2025-04-16")
@@ -198,5 +200,9 @@ def main(file_path: str | None = None):
 
 
 if __name__ == "__main__":
-    file_path = "/workspaces/airas/data/20250727_113330/executor.json"
-    main(file_path=file_path)
+    # Execute from the beginning
+    main()
+
+    # If you want to run from the middle, specify the file path.
+    # file_path = "/workspaces/airas/data/20250727_113330/executor.json"
+    # main(file_path=file_path)
