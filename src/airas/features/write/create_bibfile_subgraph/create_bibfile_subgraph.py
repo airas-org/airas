@@ -88,8 +88,10 @@ class CreateBibfileSubgraph(BaseSubgraph):
 
     @create_bibfile_timed
     def _create_bibtex(self, state: CreateBibfileSubgraphState) -> dict[str, str]:
-        all_references = state["research_study_list"] + state["reference_study_list"]
-        references_bib = create_bibtex(all_references)
+        references_bib = create_bibtex(
+            research_study_list=state["research_study_list"],
+            reference_study_list=state["reference_study_list"],
+        )
         return {"references_bib": references_bib}
 
     @create_bibfile_timed
