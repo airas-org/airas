@@ -4,6 +4,11 @@ import re
 import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase
 
+from airas.features.write.constants import (
+    REFERENCE_CANDIDATES_MARKER,
+    REQUIRED_CITATIONS_MARKER,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,7 +43,7 @@ def create_bibtex(
     # Research papers section
     if research_study_list:
         bibtex_sections.append("% ===========================================")
-        bibtex_sections.append("% REQUIRED CITATIONS")
+        bibtex_sections.append(f"% {REQUIRED_CITATIONS_MARKER}")
         bibtex_sections.append("% These papers must be cited in the manuscript")
         bibtex_sections.append("% ===========================================")
         bibtex_sections.append("")
@@ -55,7 +60,7 @@ def create_bibtex(
     # Reference papers section
     if reference_study_list:
         bibtex_sections.append("% ===========================================")
-        bibtex_sections.append("% REFERENCE CANDIDATES")
+        bibtex_sections.append(f"% {REFERENCE_CANDIDATES_MARKER}")
         bibtex_sections.append("% Additional reference papers for context")
         bibtex_sections.append("% ===========================================")
         bibtex_sections.append("")
