@@ -1,5 +1,7 @@
 from jinja2 import Template
 
+from airas.features.write.constants import REQUIRED_CITATIONS_MARKER
+
 
 def generate_note(research_hypothesis: dict, references_bib: str) -> str:
     template = Template(
@@ -41,6 +43,10 @@ Images:
                         
 {% if references_bib -%}
 # References
+{% if required_citations_marker in references_bib -%}
+## Important Note: Required Citations
+The papers listed under "{{ required_citations_marker }}" section MUST be cited in the manuscript.
+{% endif -%}
 {{ references_bib }}
 {% endif -%}
     """.strip()
@@ -52,4 +58,5 @@ Images:
         experimental_information=research_hypothesis.get("experimental_information"),
         experimental_analysis=research_hypothesis.get("experimental_analysis"),
         references_bib=references_bib,
+        required_citations_marker=REQUIRED_CITATIONS_MARKER,
     ).strip()

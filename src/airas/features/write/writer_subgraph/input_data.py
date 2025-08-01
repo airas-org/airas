@@ -34,7 +34,12 @@ def train_agent(env, model, num_timesteps=1000000):
             "analysis_report": "The results demonstrate that our attention-based approach successfully captures temporal dependencies that are crucial for decision-making. The attention visualization reveals that the model learns to focus on relevant past states when making decisions. Ablation studies show that both the attention mechanism and RL components are necessary for optimal performance. The method shows consistent improvements across different environment types, suggesting good generalization capabilities.",
         },
     },
-    "references_bib": """@article{ashish_2017_attention,
+    "references_bib": """% ===========================================
+% REQUIRED CITATIONS
+% These papers must be cited in the manuscript
+% ===========================================
+
+@article{ashish_2017_attention,
  abstract = {The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism.},
  arxiv_url = {https://arxiv.org/abs/1706.03762},
  author = {Vaswani, Ashish and Shazeer, Noam and Parmar, Niki},
@@ -53,6 +58,11 @@ def train_agent(env, model, num_timesteps=1000000):
  title = {Proximal Policy Optimization Algorithms},
  year = {2017}
 }
+
+% ===========================================
+% REFERENCE CANDIDATES
+% Additional reference papers for context
+% ===========================================
 
 @article{mnih_2015_dqn,
  abstract = {We present the first deep learning model to successfully learn control policies directly from high-dimensional sensory input using reinforcement learning.},
