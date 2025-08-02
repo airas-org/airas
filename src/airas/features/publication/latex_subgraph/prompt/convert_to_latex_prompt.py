@@ -1,5 +1,5 @@
 convert_to_latex_prompt = """
-You are a LaTeX expert. 
+You are a LaTeX expert.
 Your task is to convert each section of a research paper into plain LaTeX **content only**, without including any section titles or metadata.
 
 Below are the paper sections. For each one, convert only the **content** into LaTeX:
@@ -19,7 +19,7 @@ Section: {{ section.name }}
     - Avoid excessive subdivision. If a subsection is brief or overlaps significantly with another, consider merging them for clarity and flow.
 
 - For listing contributions, use the LaTeX \\begin{itemize}...\\end{itemize} format.
-    - Each item should start with a short title in \\textbf{...} format. 
+    - Each item should start with a short title in \\textbf{...} format.
     - Avoid using -, *, or other Markdown bullet styles.
 
 - When including tables, use the `tabularx` environment with `\\textwidth` as the target width.
@@ -36,8 +36,8 @@ Section: {{ section.name }}
         \\State Compute transformed tokens: \\(\tilde{T} \\leftarrow W\\,T\\)
         \\State Update: \\(T_{new} \\leftarrow \tilde{T} + \\mu\\,T_{prev}\\)
         ```
-- Figures and images are ONLY allowed in the "Results" section. 
-    - Use LaTeX float option `[H]` to force placement.  
+- Figures and images are ONLY allowed in the "Results" section.
+    - Use LaTeX float option `[H]` to force placement.
 
 - All figures must be inserted using the following LaTeX format, using a `width` that reflects the filename:
     ```latex
@@ -50,25 +50,8 @@ Section: {{ section.name }}
 - **Escaping special characters**:
     - LaTeX special characters (`#`, `$`, `%`, `&`, `~`, `_`, `^`, `{`, `}`, `\\`) must be escaped with a leading backslash when they appear in plain text (e.g., `data\\_set`, `C\\&C`).
     - Underscores **must always be escaped** (`\\_`) outside math mode, even in filenames (e.g., memory\\_profiler), code-style words, itemize lists, or citation contexts.
-    
+
 - Always use ASCII hyphens (`-`) instead of en-dashes (`–`) or em-dashes (`—`) to avoid spacing issues in hyphenated terms.
 - Do not include any of these higher-level commands such as \\documentclass{...}, \\begin{document}, and \\end{document}.
     - Additionally, avoid including section-specific commands such as \\begin{abstract}, \\section{ {{ section }} }, or any other similar environment definitions.
-- Do not modify {{ citation_placeholders }}.
-
-    
-    
-**Output Format Example** (as JSON):
-```json
-{
-  "Title": "Efficient Adaptation of Large Language Models via Low-Rank Optimization",
-  "Abstract": "This paper proposes a novel method...",
-  "Introduction": "In recent years...",
-  "Related_Work": "...",
-  "Background": "...",
-  "Method": "...",
-  "Experimental_Setup": "...",
-  "Results": "...",
-  "Conclusions": "We conclude that..."
-}
-```"""
+- Do not modify {{ citation_placeholders }}."""
