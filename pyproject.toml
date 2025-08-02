@@ -52,8 +52,10 @@ line-length = 88
 target-version = "py311"
 
 [tool.ruff.lint]
-select = ["E", "F", "B", "I"]
+select = ["E", "F", "B", "I", "W"]
 ignore = ["E501"]
+fixable = ["E", "F", "I"]
+unfixable = ["B"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -67,6 +69,9 @@ no_implicit_optional = false
 warn_unused_configs = true
 allow_untyped_globals = true
 disable_error_code = ["misc", "valid-type", "union-attr", "assignment", "call-overload", "arg-type", "return", "return-value", "attr-defined", "import-untyped", "call-arg"]
+# display
+pretty = true
+show_error_context = true
 
 [tool.pydantic-mypy]
 init_typed = true
