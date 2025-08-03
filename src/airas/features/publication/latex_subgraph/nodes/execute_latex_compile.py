@@ -2,7 +2,7 @@ import time
 from logging import getLogger
 
 from airas.services.api_client.github_client import GithubClient
-from airas.types.latex import LATEX_TEMPLATE
+from airas.types.latex import LATEX_TEMPLATE_NAME
 
 logger = getLogger(__name__)
 
@@ -14,7 +14,7 @@ def execute_latex_compile(
     github_owner: str,
     repository_name: str,
     branch_name: str,
-    latex_template: LATEX_TEMPLATE = "iclr2024",
+    latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
 ) -> bool:
     LATEX_COMPILED_WORKFLOW_FILE = "compile_latex.yml"
     client = GithubClient()
@@ -31,7 +31,7 @@ def execute_latex_compile(
         repository_name,
         LATEX_COMPILED_WORKFLOW_FILE,
         ref=branch_name,
-        inputs={"subdir": latex_template},
+        inputs={"subdir": latex_template_name},
     )
     if not success:
         raise ValueError(
@@ -67,5 +67,5 @@ if __name__ == "__main__":
         github_owner=github_owner,
         repository_name=repository_name,
         branch_name=branch_name,
-        latex_template="iclr2024",
+        latex_template_name="iclr2024",
     )

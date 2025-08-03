@@ -21,14 +21,20 @@ from airas.features.publication.latex_subgraph.nodes.embed_in_latex_template imp
 from airas.features.publication.latex_subgraph.nodes.execute_latex_compile import (
     execute_latex_compile,
 )
-from airas.features.publication.latex_subgraph.nodes.retrieve_latex_template import (
-    retrieve_latex_template,
+from airas.features.publication.latex_subgraph.nodes.fix_latex_text import (
+    fix_latex_text,
+)
+from airas.features.publication.latex_subgraph.nodes.is_execution_successful import (
+    is_execution_successful,
+)
+from airas.features.publication.latex_subgraph.nodes.retrieve_github_repository_file import (
+    retrieve_github_repository_file,
 )
 from airas.features.publication.latex_subgraph.nodes.upload_latex_file import (
     upload_latex_file,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.latex import LATEX_TEMPLATE
+from airas.types.latex import LATEX_TEMPLATE_NAME
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -42,7 +48,6 @@ class LatexSubgraphInputState(TypedDict):
     github_repository: dict[str, str]
     references_bib: str
     paper_content_with_placeholders: dict[str, str]
-    references: dict[str, dict[str, Any]]
     image_file_name_list: list[str]
 
 
@@ -50,14 +55,14 @@ class LatexSubgraphHiddenState(TypedDict):
     github_owner: str
     repository_name: str
     branch_name: str
-    paper_tex_content: dict[str, str]
 
-    latex_template: str
+    latex_template_text: str
     latex_content: dict[str, str]
-    is_latex_compiled: bool
 
-    paper_upload: bool
-    dispatch_paper_workflow: bool
+    is_upload_successful: bool
+    is_latex_compiled: bool
+    latex_error_text: str
+    is_successful: bool
 
 
 class LatexSubgraphOutputState(TypedDict):
@@ -80,15 +85,12 @@ class LatexSubgraph(BaseSubgraph):
     def __init__(
         self,
         llm_name: str,
-        latex_template: LATEX_TEMPLATE = "iclr2024",
+        latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
         paper_name: str = "generated_paper.pdf",
     ):
         self.llm_name = llm_name
-        self.latex_template = latex_template
+        self.latex_template_name = latex_template_name
         self.paper_name = paper_name
-
-        self.upload_dir = ".research"
-        self.workflow_file = "compile_latex.yml"
         check_api_key(llm_api_key_check=True)
 
     def _initialize(self, state: LatexSubgraphState) -> dict[str, str]:
@@ -99,6 +101,7 @@ class LatexSubgraph(BaseSubgraph):
             "branch_name": github_repository["branch_name"],
         }
 
+    # latexに与えるデータに変化する処理
     @latex_timed
     def _convert_to_latex_str(self, state: LatexSubgraphState) -> dict:
         latex_content = convert_to_latex_str(
@@ -107,37 +110,40 @@ class LatexSubgraph(BaseSubgraph):
         )
         return {"latex_content": latex_content}
 
+    # latex template　ファイルを取得する
     @latex_timed
     def _retrieve_latex_template(self, state: LatexSubgraphState) -> dict:
-        latex_template = retrieve_latex_template(
+        latex_template_text = retrieve_github_repository_file(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
-            latex_template=cast(LATEX_TEMPLATE, self.latex_template),
+            file_path=f".research/latex/{self.latex_template_name}/template.tex",
         )
-        return {"latex_template": latex_template}
+        return {"latex_template_text": latex_template_text}
 
+    # latex templateに埋め込む
     @latex_timed
     def _embed_in_latex_template(self, state: LatexSubgraphState) -> dict:
         latex_text = embed_in_latex_template(
             latex_content=state["latex_content"],
-            latex_template=state["latex_template"],
+            latex_template_text=state["latex_template_text"],
             references_bib=state["references_bib"],
             figures_name=state["image_file_name_list"],
             llm_name=cast(LLM_MODEL, self.llm_name),
         )
         return {"latex_text": latex_text}
 
+    # latexファイルをアップロード
     @latex_timed
     def _upload_latex_file(self, state: LatexSubgraphState) -> dict[str, bool]:
-        ok_pdf = upload_latex_file(
+        is_upload_successful = upload_latex_file(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
             latex_text=state["latex_text"],
-            latex_template=self.latex_template,
+            latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
         )
-        return {"paper_upload": ok_pdf}
+        return {"is_upload_successful": is_upload_successful}
 
     # latexのコンパイルを行うワークフローの実行
     @latex_timed
@@ -146,13 +152,51 @@ class LatexSubgraph(BaseSubgraph):
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
-            workflow_file=self.workflow_file,
+            latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
         )
         return {"is_latex_compiled": is_latex_compiled}
 
     # latexのエラーファイルを取得する処理
+    @latex_timed
+    def _retrieve_latex_error_file(self, state: LatexSubgraphState) -> dict:
+        latex_error_text = retrieve_github_repository_file(
+            github_owner=state["github_owner"],
+            repository_name=state["repository_name"],
+            branch_name=state["branch_name"],
+            file_path=f".research/latex/{self.latex_template_name}/latex-error.log",
+        )
+        return {"latex_error_text": latex_error_text}
 
-    # latexのファイルのエラーを修正する処理
+    # latexの実行が成功したかを判定する処理
+    @latex_timed
+    def _is_execution_successful(self, state: LatexSubgraphState) -> dict:
+        is_successful = is_execution_successful(
+            llm_name=cast(LLM_MODEL, self.llm_name),
+            latex_text=state["latex_text"],
+            latex_error_text=state["latex_error_text"],
+        )
+        return {
+            "is_successful": is_successful,
+        }
+
+    # Latexのエラーを修正する処理
+    @latex_timed
+    def _fix_latex_text(self, state: LatexSubgraphState) -> dict:
+        latex_text = fix_latex_text(
+            llm_name=cast(LLM_MODEL, self.llm_name),
+            latex_text=state["latex_text"],
+            latex_error_text=state["latex_error_text"],
+        )
+        return {
+            "latex_text": latex_text,
+        }
+
+    @latex_timed
+    def _is_fix_needed(self, state: LatexSubgraphState) -> str:
+        if state["is_successful"]:
+            return "end"
+        else:
+            return "fix"
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(LatexSubgraphState)
@@ -162,6 +206,11 @@ class LatexSubgraph(BaseSubgraph):
         graph_builder.add_node("embed_in_latex_template", self._embed_in_latex_template)
         graph_builder.add_node("upload_latex_file", self._upload_latex_file)
         graph_builder.add_node("execute_latex_compile", self._execute_latex_compile)
+        graph_builder.add_node(
+            "retrieve_latex_error_file", self._retrieve_latex_error_file
+        )
+        graph_builder.add_node("is_execution_successful", self._is_execution_successful)
+        graph_builder.add_node("fix_latex_text", self._fix_latex_text)
 
         graph_builder.add_edge(START, "initialize")
         graph_builder.add_edge("initialize", "retrieve_latex_template")
@@ -171,7 +220,17 @@ class LatexSubgraph(BaseSubgraph):
         )
         graph_builder.add_edge("embed_in_latex_template", "upload_latex_file")
         graph_builder.add_edge("upload_latex_file", "execute_latex_compile")
-        graph_builder.add_edge("execute_latex_compile", END)
+        graph_builder.add_edge("execute_latex_compile", "retrieve_latex_error_file")
+        graph_builder.add_edge("retrieve_latex_error_file", "is_execution_successful")
+        graph_builder.add_conditional_edges(
+            "is_execution_successful",
+            self._is_fix_needed,
+            {
+                "fix": "fix_latex_text",
+                "end": END,
+            },
+        )
+        graph_builder.add_edge("fix_latex_text", "upload_latex_file")
 
         return graph_builder.compile()
 
