@@ -5,7 +5,7 @@ from jinja2 import Environment
 logger = logging.getLogger(__name__)
 
 
-def _wrap_in_html_template(paper_content_html: str) -> str:
+def render_html(paper_content_html: str) -> str:
     base_template = """
 <!DOCTYPE html>
 <html lang=\"en\">
@@ -78,13 +78,9 @@ def _wrap_in_html_template(paper_content_html: str) -> str:
 {{ content }}
 </body>
 </html>"""
+
     env = Environment()
     template = env.from_string(base_template)
-    return template.render(content=paper_content_html)
+    full_html = template.render(content=paper_content_html)
 
-
-def render_html(
-    paper_content_html: str,
-) -> str:
-    full_html = _wrap_in_html_template(paper_content_html)
     return full_html
