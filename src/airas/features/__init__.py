@@ -23,6 +23,9 @@ from .github.prepare_repository_subgraph.prepare_repository_subgraph import (
 from .publication.html_subgraph.html_subgraph import HtmlSubgraph
 from .publication.latex_subgraph.latex_subgraph import LatexSubgraph
 from .publication.readme_subgraph.readme_subgraph import ReadmeSubgraph
+from .retrieve.extract_reference_titles_subgraph.extract_reference_titles_subgraph import (
+    ExtractReferenceTitlesSubgraph,
+)
 from .retrieve.generate_queries_subgraph.generate_queries_subgraph import (
     GenerateQueriesSubgraph,
 )
@@ -36,7 +39,9 @@ from .retrieve.retrieve_paper_content_subgraph.retrieve_paper_content_subgraph i
 from .retrieve.summarize_paper_subgraph.summarize_paper_subgraph import (
     SummarizePaperSubgraph,
 )
-from .write.citation_subgraph.citation_subgraph import CitationSubgraph
+from .write.create_bibfile_subgraph.create_bibfile_subgraph import (
+    CreateBibfileSubgraph,
+)
 from .write.writer_subgraph.writer_subgraph import WriterSubgraph
 
 __all__ = [
@@ -57,7 +62,8 @@ __all__ = [
     "RetrieveCodeSubgraph",
     "RetrievePaperContentSubgraph",
     "SummarizePaperSubgraph",
-    "CitationSubgraph",
+    "CreateBibfileSubgraph",
     "WriterSubgraph",
     "create_branch",
+    "ExtractReferenceTitlesSubgraph",
 ]
