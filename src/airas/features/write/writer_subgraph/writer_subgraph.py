@@ -11,7 +11,8 @@ from airas.features.write.writer_subgraph.input_data import (
     writer_subgraph_input_data,
 )
 from airas.features.write.writer_subgraph.nodes.generate_note import generate_note
-from airas.features.write.writer_subgraph.nodes.paper_writing import WritingNode
+from airas.features.write.writer_subgraph.nodes.refine import refine
+from airas.features.write.writer_subgraph.nodes.write import write
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -23,13 +24,9 @@ writer_timed = lambda f: time_node("writer_subgraph")(f)  # noqa: E731
 
 
 class WriterSubgraphInputState(TypedDict):
-    new_method: str
-    experiment_strategy: str
-    experiment_specification: str
-    experiment_code: str
-    output_text_data: str
-    analysis_report: str
-    image_file_name_list: list[str]
+    research_hypothesis: dict
+    references_bib: str
+    # TODO: Enriching refenrence candidate information
 
 
 class WriterSubgraphHiddenState(TypedDict):
@@ -55,7 +52,7 @@ class WriterSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_name: str,
+        llm_name: LLM_MODEL,
         refine_round: int = 2,
     ):
         self.llm_name = llm_name
@@ -64,15 +61,25 @@ class WriterSubgraph(BaseSubgraph):
 
     @writer_timed
     def _generate_note(self, state: WriterSubgraphState) -> dict:
-        note = generate_note(state=dict(state))
+        note = generate_note(
+            research_hypothesis=state["research_hypothesis"],
+            references_bib=state["references_bib"],
+        )
         return {"note": note}
 
     @writer_timed
-    def _writeup(self, state: WriterSubgraphState) -> dict:
-        paper_content = WritingNode(
+    def _write(self, state: WriterSubgraphState) -> dict:
+        paper_content = write(
             llm_name=cast(LLM_MODEL, self.llm_name),
-            refine_round=self.refine_round,
-        ).execute(
+            note=state["note"],
+        )
+        return {"paper_content": paper_content}
+
+    @writer_timed
+    def _refine(self, state: WriterSubgraphState) -> dict:
+        paper_content = refine(
+            llm_name=cast(LLM_MODEL, self.llm_name),
+            paper_content=state["paper_content"],
             note=state["note"],
         )
         return {"paper_content": paper_content}
@@ -80,11 +87,16 @@ class WriterSubgraph(BaseSubgraph):
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(WriterSubgraphState)
         graph_builder.add_node("generate_note", self._generate_note)
-        graph_builder.add_node("writeup", self._writeup)
+        graph_builder.add_node("write", self._write)
+        for i in range(self.refine_round):
+            graph_builder.add_node(f"refine_{i + 1}", self._refine)
 
         graph_builder.add_edge(START, "generate_note")
-        graph_builder.add_edge("generate_note", "writeup")
-        graph_builder.add_edge("writeup", END)
+        graph_builder.add_edge("generate_note", "write")
+        graph_builder.add_edge("write", "refine_1")
+        for i in range(1, self.refine_round):
+            graph_builder.add_edge(f"refine_{i}", f"refine_{i + 1}")
+        graph_builder.add_edge(f"refine_{self.refine_round}", END)
 
         return graph_builder.compile()
 
