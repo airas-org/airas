@@ -23,7 +23,7 @@ from airas.features.write.create_bibfile_subgraph.prompt.filter_references_promp
     filter_references_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.latex import LATEX_TEMPLATE
+from airas.types.latex import LATEX_TEMPLATE_NAME
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -64,7 +64,7 @@ class CreateBibfileSubgraph(BaseSubgraph):
     def __init__(
         self,
         llm_name: LLM_MODEL,
-        latex_template: LATEX_TEMPLATE,
+        latex_template: LATEX_TEMPLATE_NAME,
         max_filtered_references: int = 30,
     ):
         self.llm_name = llm_name

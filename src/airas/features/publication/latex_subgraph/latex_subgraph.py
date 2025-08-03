@@ -1,8 +1,5 @@
-import argparse
 import logging
-import os
-import shutil
-from typing import Any, cast
+from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -11,6 +8,9 @@ from typing_extensions import TypedDict
 from airas.core.base import BaseSubgraph
 from airas.features.publication.latex_subgraph.input_data import (
     latex_subgraph_input_data,
+)
+from airas.features.publication.latex_subgraph.nodes.convert_placeholders_to_citations import (
+    convert_placeholders_to_citations,
 )
 from airas.features.publication.latex_subgraph.nodes.convert_to_latex import (
     convert_to_latex_str,
@@ -47,15 +47,11 @@ latex_timed = lambda f: time_node("latex_subgraph")(f)  # noqa: E731
 class LatexSubgraphInputState(TypedDict):
     github_repository: dict[str, str]
     references_bib: str
-    paper_content_with_placeholders: dict[str, str]
+    paper_content: dict[str, str]
     image_file_name_list: list[str]
 
 
 class LatexSubgraphHiddenState(TypedDict):
-    github_owner: str
-    repository_name: str
-    branch_name: str
-
     latex_template_text: str
     latex_content: dict[str, str]
 
@@ -93,20 +89,19 @@ class LatexSubgraph(BaseSubgraph):
         self.paper_name = paper_name
         check_api_key(llm_api_key_check=True)
 
-    def _initialize(self, state: LatexSubgraphState) -> dict[str, str]:
-        github_repository = state["github_repository"]
-        return {
-            "github_owner": github_repository["github_owner"],
-            "repository_name": github_repository["repository_name"],
-            "branch_name": github_repository["branch_name"],
-        }
+    def _convert_placeholders_to_citations(self, state: LatexSubgraphState) -> dict:
+        paper_content = convert_placeholders_to_citations(
+            paper_content=state["paper_content"],
+            references_bib=state["references_bib"],
+        )
+        return {"paper_content": paper_content}
 
     # latexに与えるデータに変化する処理
     @latex_timed
     def _convert_to_latex_str(self, state: LatexSubgraphState) -> dict:
         latex_content = convert_to_latex_str(
             llm_name=cast(LLM_MODEL, self.llm_name),
-            paper_content_with_placeholders=state["paper_content_with_placeholders"],
+            paper_content=state["paper_content"],
         )
         return {"latex_content": latex_content}
 
@@ -114,9 +109,7 @@ class LatexSubgraph(BaseSubgraph):
     @latex_timed
     def _retrieve_latex_template(self, state: LatexSubgraphState) -> dict:
         latex_template_text = retrieve_github_repository_file(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+            github_repository=state["github_repository"],
             file_path=f".research/latex/{self.latex_template_name}/template.tex",
         )
         return {"latex_template_text": latex_template_text}
@@ -137,9 +130,7 @@ class LatexSubgraph(BaseSubgraph):
     @latex_timed
     def _upload_latex_file(self, state: LatexSubgraphState) -> dict[str, bool]:
         is_upload_successful = upload_latex_file(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+            github_repository=state["github_repository"],
             latex_text=state["latex_text"],
             latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
         )
@@ -149,9 +140,7 @@ class LatexSubgraph(BaseSubgraph):
     @latex_timed
     def _execute_latex_compile(self, state: LatexSubgraphState) -> dict[str, bool]:
         is_latex_compiled = execute_latex_compile(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+            github_repository=state["github_repository"],
             latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
         )
         return {"is_latex_compiled": is_latex_compiled}
@@ -160,9 +149,7 @@ class LatexSubgraph(BaseSubgraph):
     @latex_timed
     def _retrieve_latex_error_file(self, state: LatexSubgraphState) -> dict:
         latex_error_text = retrieve_github_repository_file(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+            github_repository=state["github_repository"],
             file_path=f".research/latex/{self.latex_template_name}/latex-error.log",
         )
         return {"latex_error_text": latex_error_text}
@@ -200,7 +187,9 @@ class LatexSubgraph(BaseSubgraph):
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(LatexSubgraphState)
-        graph_builder.add_node("initialize", self._initialize)
+        graph_builder.add_node(
+            "convert_placeholders_to_citations", self._convert_placeholders_to_citations
+        )
         graph_builder.add_node("convert_to_latex", self._convert_to_latex_str)
         graph_builder.add_node("retrieve_latex_template", self._retrieve_latex_template)
         graph_builder.add_node("embed_in_latex_template", self._embed_in_latex_template)
@@ -212,9 +201,9 @@ class LatexSubgraph(BaseSubgraph):
         graph_builder.add_node("is_execution_successful", self._is_execution_successful)
         graph_builder.add_node("fix_latex_text", self._fix_latex_text)
 
-        graph_builder.add_edge(START, "initialize")
-        graph_builder.add_edge("initialize", "retrieve_latex_template")
-        graph_builder.add_edge("initialize", "convert_to_latex")
+        graph_builder.add_edge(START, "convert_placeholders_to_citations")
+        graph_builder.add_edge(START, "retrieve_latex_template")
+        graph_builder.add_edge("convert_placeholders_to_citations", "convert_to_latex")
         graph_builder.add_edge(
             ["retrieve_latex_template", "convert_to_latex"], "embed_in_latex_template"
         )
@@ -234,49 +223,15 @@ class LatexSubgraph(BaseSubgraph):
 
         return graph_builder.compile()
 
-    def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
-        input_state_keys = self.InputState.__annotations__.keys()
-        output_state_keys = self.OutputState.__annotations__.keys()
-        input_state = {k: state[k] for k in input_state_keys if k in state}
-
-        if os.path.exists(self.tmp_dir):
-            shutil.rmtree(self.tmp_dir)
-        os.makedirs(self.tmp_dir, exist_ok=True)
-
-        try:
-            result = self.build_graph().invoke(input_state, config=config or {})
-            output_state = {k: result[k] for k in output_state_keys if k in result}
-
-            cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
-
-            return {
-                "subgraph_name": self.__class__.__name__,
-                **cleaned_state,
-                **output_state,
-            }
-        finally:
-            if os.path.exists(self.tmp_dir):
-                shutil.rmtree(self.tmp_dir)
-
 
 def main():
-    parser = argparse.ArgumentParser(description="LatexSubgraph")
-    parser.add_argument("github_repository", help="Your GitHub repository")
-    parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
-    )
-    args = parser.parse_args()
-
     llm_name = "o3-mini-2025-01-31"
-    input = {
-        **latex_subgraph_input_data,
-        "github_repository": args.github_repository,
-        "branch_name": args.branch_name,
-    }
 
-    _ = LatexSubgraph(
+    output = LatexSubgraph(
         llm_name=llm_name,
-    ).run(input)
+    ).run(latex_subgraph_input_data)
+
+    print(output)
 
 
 if __name__ == "__main__":

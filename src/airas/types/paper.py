@@ -24,8 +24,8 @@ class PaperContent(BaseModel):
     Abstract: str
     Introduction: str
     Related_Work: str
-    Background: str
+    # Background: str
     Method: str
-    Experimental_Setup: str
+    Experiments: str
     Results: str
-    Conclusions: str
+    Conclusion: str

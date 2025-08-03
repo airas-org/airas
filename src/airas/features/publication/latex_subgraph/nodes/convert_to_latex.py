@@ -19,26 +19,9 @@ def _replace_underscores_in_keys(paper_dict: dict[str, str]) -> dict[str, str]:
     return {key.replace("_", " "): value for key, value in paper_dict.items()}
 
 
-# def _replace_placeholders(
-#     latex_text: str,
-#     references_bib: dict[str, str],  # {"[[CITATION_1]]": "@article{smith2023, ... }"}
-# ) -> str:
-#     for placeholder, bibtex_entry in references_bib.items():
-#         match = re.match(r"@\w+\{([^,]+),", bibtex_entry)
-#         if not match:
-#             logger.warning(
-#                 f"Could not extract citation key from BibTeX entry: {bibtex_entry}"
-#             )
-#             continue
-#         entry_key = match.group(1)
-#         citation = f"\\citep{{{entry_key}}}"
-#         latex_text = latex_text.replace(placeholder, citation)
-#     return latex_text
-
-
 def convert_to_latex_str(
     llm_name: LLM_MODEL,
-    paper_content_with_placeholders: dict[str, str],
+    paper_content: dict[str, str],
     figures_dir: str = "images",
 ) -> dict[str, str]:
     client = LLMFacadeClient(llm_name)
@@ -47,8 +30,8 @@ def convert_to_latex_str(
     data = {
         "figures_dir": figures_dir,
         "sections": [
-            {"name": section, "content": paper_content_with_placeholders[section]}
-            for section in paper_content_with_placeholders.keys()
+            {"name": section, "content": paper_content[section]}
+            for section in paper_content.keys()
         ],
         # "citation_placeholders": references_bib,
     }
@@ -73,10 +56,6 @@ def convert_to_latex_str(
         raise ValueError(f"Missing or empty fields in model response: {missing_fields}")
 
     output = _replace_underscores_in_keys(output)
-    # output = {
-    #     section: _replace_placeholders(content, references_bib)
-    #     for section, content in output.items()
-    # }
 
     return output
 
@@ -100,6 +79,6 @@ if __name__ == "__main__":
     result = convert_to_latex_str(
         llm_name=llm_name,
         prompt_template=convert_to_latex_prompt,
-        paper_content_with_placeholders=paper_content_with_placeholders,
+        paper_content=paper_content_with_placeholders,
     )
     print(f"result: {result}")
