@@ -131,7 +131,7 @@ def main():
         "experiment_iteration": 1,
         "push_completion": True,  # Set to True to indicate a successful code push
     }
-    result = GitHubActionsExecutorSubgraph().run(state)
+    result = GitHubActionsExecutorSubgraph(gpu_enabled=False).run(state)
     print(f"result: {json.dumps(result, indent=2, ensure_ascii=False)}")
 
 

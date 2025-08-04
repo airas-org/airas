@@ -213,8 +213,8 @@ class FixCodeLocalSubgraph(BaseSubgraph):
 
 def main():
     input_data = FixCodeLocalSubgraphInputState(
-        github_repository="auto-res2/test-tanaka-v11",
-        branch_name="develop",
+        github_repository="auto-res2/airas-test-horiguchi",
+        branch_name="main",
         output_text_data="Process started but failed",
         error_text_data="ImportError: No module named 'numpy'",
         executed_flag=True,
