@@ -376,14 +376,14 @@ class GithubClient(BaseHTTPClient):
                 return False
 
     def list_commits(
-        self, 
-        github_owner: str, 
-        repository_name: str, 
-        sha: str | None = None, 
-        per_page: int = 100, 
-        page: int = 1, 
+        self,
+        github_owner: str,
+        repository_name: str,
+        sha: str | None = None,
+        per_page: int = 100,
+        page: int = 1,
     ) -> list[dict]:
-    # https://docs.github.com/ja/rest/commits/commits?apiVersion=2022-11-28#list-commits
+        # https://docs.github.com/ja/rest/commits/commits?apiVersion=2022-11-28#list-commits
         path = f"/repos/{github_owner}/{repository_name}/commits"
         params = {
             **({"sha": sha} if sha else {}),
@@ -394,7 +394,7 @@ class GithubClient(BaseHTTPClient):
         response = self.get(path=path, params=params)
         if response.status_code == 200:
             return self._parser.parse(response, as_="json")
-        self._raise_for_status(response, path)  
+        self._raise_for_status(response, path)
 
     # --------------------------------------------------
     # Tree

@@ -2,7 +2,6 @@ import re
 from logging import getLogger
 from typing import Any
 
-import bibtexparser
 from jinja2 import Environment
 from pydantic import BaseModel
 
@@ -10,26 +9,13 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.utils.parse_bibtex_to_dict import parse_bibtex_to_dict
 
 logger = getLogger(__name__)
 
 
 class LLMOutput(BaseModel):
     generated_html_text: str
-
-
-def _parse_bibtex_to_dict(references_bib: str) -> dict[str, dict[str, Any]]:
-    try:
-        db = bibtexparser.loads(references_bib)
-        references = {}
-        for entry in db.entries:
-            citation_key = entry.get("ID", "")
-            if citation_key:
-                references[citation_key] = entry
-        return references
-    except Exception as e:
-        logger.warning(f"Failed to parse BibTeX: {e}")
-        return {}
 
 
 def _replace_citation_keys_with_links(
@@ -82,7 +68,7 @@ def convert_to_html(
     if client is None:
         client = LLMFacadeClient(llm_name=llm_name)
 
-    references = _parse_bibtex_to_dict(references_bib)
+    references = parse_bibtex_to_dict(references_bib)
     data = {
         "sections": [
             {"name": key, "content": paper_content[key]} for key in paper_content.keys()
