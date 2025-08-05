@@ -8,9 +8,11 @@ logger = logging.getLogger(__name__)
 
 
 def retrieve_github_repository_file(
-    github_repository: dict[str, str], file_path: str
+    github_repository: dict[str, str],
+    file_path: str,
+    client: GithubClient | None = None,
 ) -> str:
-    client = GithubClient()
+    client = client or GithubClient()
     file_data = client.get_repository_content(
         github_owner=github_repository["github_owner"],
         repository_name=github_repository["repository_name"],

@@ -10,8 +10,9 @@ def upload_latex_file(
     github_repository: dict[str, str],
     latex_text: str,
     latex_template_name: LATEX_TEMPLATE_NAME,
+    client: GithubClient | None = None,
 ) -> bool:
-    client = GithubClient()
+    client = client or GithubClient()
 
     is_uploaded = client.commit_file_bytes(
         github_owner=github_repository["github_owner"],

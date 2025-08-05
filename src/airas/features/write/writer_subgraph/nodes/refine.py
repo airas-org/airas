@@ -44,4 +44,4 @@ def refine(
     if missing_fields:
         raise ValueError(f"Missing or empty fields in model response: {missing_fields}")
 
-    return {key.replace("_", " "): value for key, value in output.items()}
+    return output

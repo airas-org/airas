@@ -15,15 +15,16 @@ logger = getLogger(__name__)
 
 
 class LLMOutput(BaseModel):
-    latex_text: bool
+    latex_text: str
 
 
 def fix_latex_text(
     llm_name: LLM_MODEL,
     latex_text: str,
     latex_error_text: str,
+    client: LLMFacadeClient | None = None,
 ) -> str:
-    client = LLMFacadeClient(llm_name=llm_name)
+    client = client or LLMFacadeClient(llm_name=llm_name)
 
     data = {"latex_text": latex_text, "latex_error_text": latex_error_text}
 

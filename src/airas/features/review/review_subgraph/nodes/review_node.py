@@ -68,12 +68,12 @@ class ReviewNode:
         self.dynamic_model = self._create_dynamic_model(DynamicModel)
 
         self.review_system_prompt = """
-        You are an academic peer reviewer. 
-        Your task is to evaluate research papers critically, identifying strengths and weaknesses, and suggesting improvements. 
+        You are an academic peer reviewer.
+        Your task is to evaluate research papers critically, identifying strengths and weaknesses, and suggesting improvements.
         Your feedback should be constructive, specific, and actionable.
 
         **Pipeline Overview:**
-        This system is an **automated research system** that combines existing papers to generate novel methodologies. 
+        This system is an **automated research system** that combines existing papers to generate novel methodologies.
 
         1. **retrieve_paper_subgraph**
             - Role: Retrieve base papers and patch papers as materials for generating a new methodology.
@@ -94,14 +94,14 @@ class ReviewNode:
             - 3.1～4.0 = Acceptable with revisions
             - 4.1～5.0 = High quality
 
-            **Be conservative in awarding high scores**  
+            **Be conservative in awarding high scores**
             A **5.0 rating** should be given only if the paper demonstrates **exceptional clarity, originality, methodology, and significance** with virtually no major flaws.
 
         2. For each criterion you score:
-            - **Provide specific evidence** from the text or proposal to justify the score. 
-            - Clearly explain how that evidence supports the numeric rating. 
+            - **Provide specific evidence** from the text or proposal to justify the score.
+            - Clearly explain how that evidence supports the numeric rating.
             - Include **direct references (e.g., “In Section 3, the method is vaguely described...”)** or excerpts to pinpoint strong or weak points.
-    
+
         **Feedback and Suggested Improvement:**
         1. **Identify at least three specific areas for improvement** and provide **clear revision suggestions in the `review_feedback` field**:
             - **What aspects contributed to this score?**
@@ -120,13 +120,13 @@ class ReviewNode:
 
         **Output Format:**
         Your response must be in the following JSON format:
-        { 
-        "review_score_xxx": <1.0-5.0>, 
-        "review_score_yyy": <1.0-5.0>, 
-        "review_score_zzz": <1.0-5.0>, 
-        "review_feedback": "<Your feedback here>" 
+        {
+        "review_score_xxx": <1.0-5.0>,
+        "review_score_yyy": <1.0-5.0>,
+        "review_score_zzz": <1.0-5.0>,
+        "review_feedback": "<Your feedback here>"
         "llm_return_to": "<subgraph_name to be re-executed>"
-        }   
+        }
         """
 
         self.review_prompt_dict = {

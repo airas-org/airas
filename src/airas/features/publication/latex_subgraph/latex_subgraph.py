@@ -53,12 +53,12 @@ class LatexSubgraphInputState(TypedDict):
 
 class LatexSubgraphHiddenState(TypedDict):
     latex_template_text: str
-    latex_content: dict[str, str]
-
+    latex_formatted_paper_content: dict[str, str]
     is_upload_successful: bool
     is_latex_compiled: bool
     latex_error_text: str
     is_successful: bool
+    revision_count: int
 
 
 class LatexSubgraphOutputState(TypedDict):
@@ -83,52 +83,58 @@ class LatexSubgraph(BaseSubgraph):
         llm_name: str,
         latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
         paper_name: str = "generated_paper.pdf",
+        max_revision_count: int = 3,
     ):
         self.llm_name = llm_name
         self.latex_template_name = latex_template_name
         self.paper_name = paper_name
+        self.max_revision_count = max_revision_count
         check_api_key(llm_api_key_check=True)
 
+    def _initialize(self, state: LatexSubgraphState) -> dict:
+        """Initialize the latex subgraph with default revision count."""
+        return {
+            "revision_count": 1,
+        }
+
     def _convert_placeholders_to_citations(self, state: LatexSubgraphState) -> dict:
+        """Convert placeholder citations in paper content to proper citation format."""
         paper_content = convert_placeholders_to_citations(
             paper_content=state["paper_content"],
             references_bib=state["references_bib"],
         )
         return {"paper_content": paper_content}
 
-    # latexに与えるデータに変化する処理
     @latex_timed
     def _convert_to_latex_str(self, state: LatexSubgraphState) -> dict:
-        latex_content = convert_to_latex_str(
+        """Convert paper content to LaTeX formatted string using LLM."""
+        latex_formatted_paper_content = convert_to_latex_str(
             llm_name=cast(LLM_MODEL, self.llm_name),
             paper_content=state["paper_content"],
         )
-        return {"latex_content": latex_content}
+        return {"latex_formatted_paper_content": latex_formatted_paper_content}
 
-    # latex template　ファイルを取得する
     @latex_timed
     def _retrieve_latex_template(self, state: LatexSubgraphState) -> dict:
+        """Retrieve LaTeX template file from GitHub repository."""
         latex_template_text = retrieve_github_repository_file(
             github_repository=state["github_repository"],
             file_path=f".research/latex/{self.latex_template_name}/template.tex",
         )
         return {"latex_template_text": latex_template_text}
 
-    # latex templateに埋め込む
     @latex_timed
     def _embed_in_latex_template(self, state: LatexSubgraphState) -> dict:
+        """Embed formatted paper content into LaTeX template."""
         latex_text = embed_in_latex_template(
-            latex_content=state["latex_content"],
+            latex_formatted_paper_content=state["latex_formatted_paper_content"],
             latex_template_text=state["latex_template_text"],
-            references_bib=state["references_bib"],
-            figures_name=state["image_file_name_list"],
-            llm_name=cast(LLM_MODEL, self.llm_name),
         )
         return {"latex_text": latex_text}
 
-    # latexファイルをアップロード
     @latex_timed
-    def _upload_latex_file(self, state: LatexSubgraphState) -> dict[str, bool]:
+    def _upload_latex_file(self, state: LatexSubgraphState) -> dict:
+        """Upload LaTeX file to GitHub repository."""
         is_upload_successful = upload_latex_file(
             github_repository=state["github_repository"],
             latex_text=state["latex_text"],
@@ -136,27 +142,27 @@ class LatexSubgraph(BaseSubgraph):
         )
         return {"is_upload_successful": is_upload_successful}
 
-    # latexのコンパイルを行うワークフローの実行
     @latex_timed
-    def _execute_latex_compile(self, state: LatexSubgraphState) -> dict[str, bool]:
+    def _execute_latex_compile(self, state: LatexSubgraphState) -> dict:
+        """Execute LaTeX compilation workflow in GitHub Actions."""
         is_latex_compiled = execute_latex_compile(
             github_repository=state["github_repository"],
             latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
         )
         return {"is_latex_compiled": is_latex_compiled}
 
-    # latexのエラーファイルを取得する処理
     @latex_timed
     def _retrieve_latex_error_file(self, state: LatexSubgraphState) -> dict:
+        """Retrieve LaTeX error log file from GitHub repository."""
         latex_error_text = retrieve_github_repository_file(
             github_repository=state["github_repository"],
             file_path=f".research/latex/{self.latex_template_name}/latex-error.log",
         )
         return {"latex_error_text": latex_error_text}
 
-    # latexの実行が成功したかを判定する処理
     @latex_timed
     def _is_execution_successful(self, state: LatexSubgraphState) -> dict:
+        """Determine if LaTeX compilation was successful by analyzing error log."""
         is_successful = is_execution_successful(
             llm_name=cast(LLM_MODEL, self.llm_name),
             latex_text=state["latex_text"],
@@ -166,9 +172,9 @@ class LatexSubgraph(BaseSubgraph):
             "is_successful": is_successful,
         }
 
-    # Latexのエラーを修正する処理
     @latex_timed
     def _fix_latex_text(self, state: LatexSubgraphState) -> dict:
+        """Fix LaTeX errors using LLM analysis and increment revision count."""
         latex_text = fix_latex_text(
             llm_name=cast(LLM_MODEL, self.llm_name),
             latex_text=state["latex_text"],
@@ -176,17 +182,20 @@ class LatexSubgraph(BaseSubgraph):
         )
         return {
             "latex_text": latex_text,
+            "revision_count": state["revision_count"] + 1,
         }
 
     @latex_timed
     def _is_fix_needed(self, state: LatexSubgraphState) -> str:
-        if state["is_successful"]:
+        """Determine if further LaTeX fixes are needed based on success status and revision limit."""
+        if state["is_successful"] or state["revision_count"] > self.max_revision_count:
             return "end"
         else:
             return "fix"
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(LatexSubgraphState)
+        graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node(
             "convert_placeholders_to_citations", self._convert_placeholders_to_citations
         )
@@ -201,8 +210,9 @@ class LatexSubgraph(BaseSubgraph):
         graph_builder.add_node("is_execution_successful", self._is_execution_successful)
         graph_builder.add_node("fix_latex_text", self._fix_latex_text)
 
-        graph_builder.add_edge(START, "convert_placeholders_to_citations")
-        graph_builder.add_edge(START, "retrieve_latex_template")
+        graph_builder.add_edge(START, "initialize")
+        graph_builder.add_edge("initialize", "convert_placeholders_to_citations")
+        graph_builder.add_edge("initialize", "retrieve_latex_template")
         graph_builder.add_edge("convert_placeholders_to_citations", "convert_to_latex")
         graph_builder.add_edge(
             ["retrieve_latex_template", "convert_to_latex"], "embed_in_latex_template"

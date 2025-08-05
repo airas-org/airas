@@ -13,9 +13,10 @@ _TIMEOUT_SEC = 600
 def execute_latex_compile(
     github_repository: dict[str, str],
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
+    client: GithubClient | None = None,
 ) -> bool:
     LATEX_COMPILED_WORKFLOW_FILE = "compile_latex.yml"
-    client = GithubClient()
+    client = client or GithubClient()
     github_owner = github_repository["github_owner"]
     repository_name = github_repository["repository_name"]
     branch_name = github_repository["branch_name"]

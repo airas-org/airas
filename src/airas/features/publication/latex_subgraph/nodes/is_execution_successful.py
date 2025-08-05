@@ -22,8 +22,9 @@ def is_execution_successful(
     llm_name: LLM_MODEL,
     latex_text: str,
     latex_error_text: str,
+    client: LLMFacadeClient | None = None,
 ) -> bool:
-    client = LLMFacadeClient(llm_name=llm_name)
+    client = client or LLMFacadeClient(llm_name=llm_name)
 
     data = {"latex_text": latex_text, "latex_error_text": latex_error_text}
 

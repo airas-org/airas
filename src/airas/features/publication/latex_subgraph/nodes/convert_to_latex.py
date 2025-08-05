@@ -14,17 +14,13 @@ from airas.types.paper import PaperContent
 logger = getLogger(__name__)
 
 
-# 必要か確認する
-def _replace_underscores_in_keys(paper_dict: dict[str, str]) -> dict[str, str]:
-    return {key.replace("_", " "): value for key, value in paper_dict.items()}
-
-
 def convert_to_latex_str(
     llm_name: LLM_MODEL,
     paper_content: dict[str, str],
     figures_dir: str = "images",
+    client: LLMFacadeClient | None = None,
 ) -> dict[str, str]:
-    client = LLMFacadeClient(llm_name)
+    client = client or LLMFacadeClient(llm_name)
     env = Environment()
 
     data = {
@@ -54,8 +50,6 @@ def convert_to_latex_str(
     ]
     if missing_fields:
         raise ValueError(f"Missing or empty fields in model response: {missing_fields}")
-
-    output = _replace_underscores_in_keys(output)
 
     return output
 

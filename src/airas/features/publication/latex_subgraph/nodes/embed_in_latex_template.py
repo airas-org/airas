@@ -1,20 +1,7 @@
-import os
-import re
 from logging import getLogger
 
 from jinja2 import Environment
 from pydantic import BaseModel
-
-from airas.features.publication.latex_subgraph.prompt.check_figures_prompt import (
-    check_figures_prompt,
-)
-from airas.features.publication.latex_subgraph.prompt.check_references_prompt import (
-    check_references_prompt,
-)
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
-    LLMFacadeClient,
-)
 
 logger = getLogger(__name__)
 
@@ -24,117 +11,37 @@ class LLMOutput(BaseModel):
 
 
 def embed_in_latex_template(
-    latex_content: dict[str, str],
+    latex_formatted_paper_content: dict[str, str],
     latex_template_text: str,
-    references_bib: str,
-    figures_name: list[str],
-    llm_name: LLM_MODEL,
-    max_iterations: int = 3,
 ) -> str:
-    latex_text = _fill_template(latex_content, latex_template_text)
+    data = {
+        "title": latex_formatted_paper_content["title"],
+        "abstract": latex_formatted_paper_content["abstract"],
+        "introduction": latex_formatted_paper_content["introduction"],
+        "related_work": latex_formatted_paper_content["related_work"],
+        "background": latex_formatted_paper_content["background"],
+        "method": latex_formatted_paper_content["method"],
+        "experimental_setup": latex_formatted_paper_content["experimental_setup"],
+        "results": latex_formatted_paper_content["results"],
+        "conclusion": latex_formatted_paper_content["conclusion"],
+    }
 
-    for i in range(max_iterations):
-        logger.info(f"Iteration {i + 1} of {max_iterations}")
-        updated = latex_text
-        updated = _check_references(llm_name, updated, references_bib)
-        updated = _check_figures(llm_name, updated, figures_name)
-        # updated = _check_duplicates(
-        #     updated,
-        #     {
-        #         "figure": r"\\includegraphics.*?{(.*?)}",
-        #         "section header": r"\\section{([^}]*)}",
-        #     },
-        # )
-        # updated = self._fix_latex_errors(updated)
-
-        if updated == latex_text:
-            logger.info("All checks complete.")
-            break
-        latex_text = updated
-    else:
-        logger.warning("Max iterations reached.")
-
+    env = Environment(variable_start_string="<<", variable_end_string=">>")
+    template = env.from_string(latex_template_text)
+    latex_text = template.render(data)
     return latex_text
-
-
-def _fill_template(content: dict, latex_template: str) -> str:
-    for section, value in content.items():
-        placeholder = f"{section.upper()} HERE"
-        latex_template = latex_template.replace(placeholder, value)
-    return latex_template
-
-
-def _check_references(llm_name: LLM_MODEL, latex_text: str, references_bib: str) -> str:
-    client = LLMFacadeClient(llm_name)
-    env = Environment()
-
-    cites = re.findall(r"\\cite[a-z]*{([^}]*)}", latex_text)
-
-    missing_cites = [cite for cite in cites if cite.strip() not in references_bib]
-
-    if not missing_cites:
-        logger.info("Reference check passed.")
-        return latex_text
-
-    logger.info(f"Missing references found: {missing_cites}")
-
-    data = {
-        "latex_text": latex_text,
-        "references_bib": references_bib,
-        "missing_cites": missing_cites,
-    }
-    template = env.from_string(check_references_prompt)
-    messages = template.render(data)
-    output, cost = client.structured_outputs(
-        message=messages,
-        data_model=LLMOutput,
-    )
-    if output is None:
-        raise RuntimeError(
-            f"LLM failed to respond for missing references: {missing_cites}"
-        )
-    return output["latex_text"]
-
-
-def _check_figures(
-    llm_name: LLM_MODEL,
-    latex_text: str,
-    figures_name: list[str],
-    pattern: str = r"\\includegraphics.*?{(.*?)}",
-) -> str:
-    client = LLMFacadeClient(llm_name)
-    env = Environment()
-    referenced_paths = re.findall(pattern, latex_text)
-    referenced_figs = [os.path.basename(path) for path in referenced_paths]
-
-    fig_to_use = [fig for fig in referenced_figs if fig in figures_name]
-
-    if not fig_to_use:
-        logger.info("No figures referenced in the LaTeX document.")
-        return latex_text
-
-    env = Environment()
-    data = {
-        "latex_text": latex_text,
-        "fig_to_use": fig_to_use,
-    }
-    template = env.from_string(check_figures_prompt)
-    messages = template.render(data)
-    output, cost = client.structured_outputs(
-        message=messages,
-        data_model=LLMOutput,
-    )
-    if output is None:
-        raise RuntimeError(f"LLM failed to respond for figures: {fig_to_use}")
-    return output["latex_text"]
 
 
 if __name__ == "__main__":
     llm_name = "o3-mini-2025-01-31"
-    latex_content = {
+    latex_formatted_paper_content = {
+        "title": "Sample Paper Title",
         "abstract": "This is a sample abstract.",
         "introduction": "This is a sample introduction.",
+        "related_work": "This is a sample related work.",
+        "background": "This is a sample background.",
         "method": "This is a sample method.",
+        "experimental_setup": "This is a sample experimental setup.",
         "results": "These are the sample results.",
         "conclusion": "This is a sample conclusion.",
     }
@@ -185,12 +92,9 @@ year={2025}
 
 \graphicspath{{../}} % To reference your generated figures, see below.
 
-\title{TITLE HERE}
+\title{ << title >> }
 
-\author{GPT-4o \& Claude\\
-Department of Computer Science\\
-University of LLMs\\
-}
+\author{AIRAS}
 
 \newcommand{\fix}{\marginpar{FIX}}
 \newcommand{\new}{\marginpar{NEW}}
@@ -200,13 +104,13 @@ University of LLMs\\
 \maketitle
 
 \begin{abstract}
-This is a sample abstract.
+<< abstract >>
 \end{abstract}
 
 \section{Introduction}
 \label{sec:intro}
+<< introduction >>
 
-This is a sample introduction.
 
 \begin{figure}[H]
 \centering
@@ -216,16 +120,15 @@ This is a sample introduction.
 
 \section{Related Work}
 \label{sec:related}
-RELATED WORK HERE
+<< related_work >>
 
 \section{Background}
 \label{sec:background}
-BACKGROUND HERE
+<< background >>
 
 \section{Method}
 \label{sec:method}
-
-This is a sample method section.
+<< method >>
 
 \begin{figure}[H]
 \centering
@@ -237,19 +140,16 @@ This is a sample method section.
 
 \section{Experimental Setup}
 \label{sec:experimental}
-EXPERIMENTAL SETUP HERE
+<< experimental_setup >>
 
 \section{Results}
 \label{sec:results}
+<< results >>
 
-These are the sample results.
 
-\section{Results}
-More sample results here.
-
-\section{Conclusions and Future Work}
+\section{Conclusions}
 \label{sec:conclusion}
-CONCLUSIONS HERE
+<< conclusion >>
 
 This work was generated by \textsc{AIRAS} \citep{airas2025}.
 
@@ -260,7 +160,7 @@ This work was generated by \textsc{AIRAS} \citep{airas2025}.
 """
 
     result = embed_in_latex_template(
-        latex_content=latex_content,
+        latex_formatted_paper_content=latex_formatted_paper_content,
         latex_template_text=latex_template,
         references_bib=references_bib,
         figures_name=image_file_name_list,
