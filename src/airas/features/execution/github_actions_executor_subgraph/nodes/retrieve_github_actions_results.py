@@ -94,12 +94,16 @@ def retrieve_github_actions_results(
         raise RuntimeError(f"Failed to retrieve {error_file_path} from repository")
     error_text_data = _decode_base64_content(error_text_data["content"])
 
-    image_data_list = _get_single_file_content(
-        client, github_owner, repository_name, image_directory_path, branch_name
-    )
-    image_file_name_list = [
-        image_data["name"] for image_data in cast(list[dict], image_data_list)
-    ]
+    try:
+        image_data_list = _get_single_file_content(
+            client, github_owner, repository_name, image_directory_path, branch_name
+        )
+        image_file_name_list = [
+            image_data["name"] for image_data in cast(list[dict], image_data_list)
+        ]
+    except Exception as e:
+        logger.warning(f"Images directory not found at {image_directory_path}: {e}")
+        image_file_name_list = []
 
     return output_text_data, error_text_data, image_file_name_list
 

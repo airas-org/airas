@@ -212,11 +212,12 @@ class FixCodeLocalSubgraph(BaseSubgraph):
 
 
 def main():
+    # Use actual executor results from the previous run
     input_data = FixCodeLocalSubgraphInputState(
         github_repository="auto-res2/airas-test-horiguchi",
         branch_name="main",
-        output_text_data="Process started but failed",
-        error_text_data="ImportError: No module named 'numpy'",
+        output_text_data="",
+        error_text_data="",
         executed_flag=True,
     )
 
