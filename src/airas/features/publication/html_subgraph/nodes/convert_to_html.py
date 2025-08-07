@@ -1,3 +1,4 @@
+import re
 from logging import getLogger
 from typing import Any
 
@@ -8,6 +9,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.utils.parse_bibtex_to_dict import parse_bibtex_to_dict
 
 logger = getLogger(__name__)
 
@@ -16,40 +18,69 @@ class LLMOutput(BaseModel):
     generated_html_text: str
 
 
-def _replace_placeholders(
-    html_text: str,
-    references: dict[str, dict[str, Any]],
+def _replace_citation_keys_with_links(
+    html_text: str, references: dict[str, dict[str, Any]]
 ) -> str:
-    for i, (placeholder, ref) in enumerate(references.items()):
-        link = ref.get("doi") or ref.get("id") or "#"
-        display_text = f"[{i + 1}]"
-        anchor = f'<a href="{link}" target="_blank">{display_text}</a>'
-        html_text = html_text.replace(placeholder, anchor)
+    def replace_citation(match):
+        citation_key = match.group(1)
+        if citation_key in references:
+            ref = references[citation_key]
+            if ref.get("arxiv_url"):
+                link = ref["arxiv_url"]
+            elif ref.get("doi"):
+                link = f"https://doi.org/{ref['doi']}"
+            elif ref.get("github_url"):
+                link = ref["github_url"]
+            else:
+                link = f"#ref-{citation_key}"
+
+            title = ref.get("title", citation_key)
+            author = ref.get("author", "")
+            if author:
+                first_author = author.split(" and ")[0].split(",")[0].strip()
+                display_text = f"({first_author}, {ref.get('year', 'n.d.')})"
+            else:
+                display_text = f"({citation_key})"
+
+            return (
+                f'<a href="{link}" target="_blank" title="{title}">{display_text}</a>'
+            )
+        else:
+            logger.info(
+                f"Citation key not found in references, ignoring: {citation_key}"
+            )
+            return ""
+
+    citation_pattern = r"\[([^\[\],]+)\]"
+    html_text = re.sub(citation_pattern, replace_citation, html_text)
 
     return html_text
 
 
 def convert_to_html(
     llm_name: LLM_MODEL,
+    paper_content: dict[str, str],
+    image_file_name_list: list[str],
+    references_bib: str,
     prompt_template: str,
-    paper_content_with_placeholders: dict[str, str],
-    references: dict[str, dict[str, Any]],
     client: LLMFacadeClient | None = None,
 ) -> str:
     if client is None:
         client = LLMFacadeClient(llm_name=llm_name)
 
+    references = parse_bibtex_to_dict(references_bib)
     data = {
         "sections": [
-            {"name": section, "content": paper_content_with_placeholders[section]}
-            for section in paper_content_with_placeholders.keys()
-        ]
+            {"name": key, "content": paper_content[key]} for key in paper_content.keys()
+        ],
+        "image_file_name_list": image_file_name_list,
     }
 
     env = Environment()
     template = env.from_string(prompt_template)
     messages = template.render(data)
-    output, cost = client.structured_outputs(
+
+    output, _ = client.structured_outputs(
         message=messages,
         data_model=LLMOutput,
     )
@@ -57,10 +88,12 @@ def convert_to_html(
         raise ValueError("No response from the model in convert_to_html.")
 
     if not isinstance(output, dict):
-        raise ValueError("Empty HTML content")
+        raise ValueError("Invalid output format")
 
-    generated_html_text = output["generated_html_text"]
+    generated_html_text = output.get("generated_html_text", "")
     if not generated_html_text:
         raise ValueError("Missing or empty 'generated_html_text' in output.")
 
-    return _replace_placeholders(generated_html_text, references)
+    html_with_links = _replace_citation_keys_with_links(generated_html_text, references)
+
+    return html_with_links

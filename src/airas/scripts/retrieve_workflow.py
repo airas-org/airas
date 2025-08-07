@@ -38,7 +38,7 @@ def load_state(file_path: str) -> dict:
     return state
 
 
-def run_retrieve_workflow(user_prompt: str, save_dir_suffix: str | None = None):
+def run_retrieve_workflow(research_topic: str, save_dir_suffix: str | None = None):
     generate_queries_subgraph = GenerateQueriesSubgraph(llm_name=llm_name)
     get_paper_titles_subgraph = GetPaperTitlesFromDBSubgraph()
     retrieve_paper_content_subgraph = RetrievePaperContentSubgraph(save_dir=save_dir)
@@ -52,7 +52,7 @@ def run_retrieve_workflow(user_prompt: str, save_dir_suffix: str | None = None):
         workflow_save_dir = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     print("Step 1: Generating queries...")
-    state = {"user_prompt": user_prompt}
+    state = {"research_topic": research_topic}
     state = generate_queries_subgraph.run(state)
     save_state(state, "generate_queries", workflow_save_dir)
 
@@ -121,16 +121,29 @@ if __name__ == "__main__":
         file_path = sys.argv[1]
         run_from_state_file(file_path)
     else:
-        user_prompt = "diffusion model for image generation"
-        result = run_retrieve_workflow(user_prompt, save_dir_suffix="retrieve_workflow")
+        research_topic = "diffusion model for image generation"
+        result = run_retrieve_workflow(
+            research_topic, save_dir_suffix="retrieve_workflow"
+        )
 
         print("\n=== Final Result ===")
         print(f"Generated queries: {result.get('queries', [])}")
-        print(f"Found titles: {result.get('titles', [])}")
         print(f"Retrieved papers: {len(result.get('research_study_list', []))}")
 
         for i, study in enumerate(result.get("research_study_list", [])):
             print(f"\nPaper {i + 1}: {study.get('title', 'Unknown title')}")
+
+            # Get arXiv URL from external_sources
+            arxiv_url = ""
+            if (
+                "external_sources" in study
+                and "arxiv_info" in study["external_sources"]
+            ):
+                arxiv_url = study["external_sources"]["arxiv_info"].get("url", "")
+            elif "meta_data" in study:
+                arxiv_url = study["meta_data"].get("arxiv_url", "")
+
+            print(f"\narXiv url: {arxiv_url}")
             if "llm_extracted_info" in study:
                 info = study["llm_extracted_info"]
                 print(

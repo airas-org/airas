@@ -1,0 +1,76 @@
+import base64
+import logging
+from typing import Any, Dict
+
+from airas.services.api_client.github_client import GithubClient, GithubClientFatalError
+from airas.types.latex import LATEX_TEMPLATE_NAME
+
+logger = logging.getLogger(__name__)
+
+
+def _merge_bibtex_content(existing: str, new: str) -> str:
+    if not new.strip():
+        return existing.strip()
+
+    if not existing.strip():
+        return new.strip()
+
+    return existing.strip() + "\n\n" + new.strip()
+
+
+def update_repository_bibfile(
+    github_repository: Dict[str, Any],
+    references_bib: str,
+    latex_template: LATEX_TEMPLATE_NAME,
+    client: GithubClient | None = None,
+) -> bool:
+    client = GithubClient() or client
+
+    github_owner = github_repository["github_owner"]
+    repository_name = github_repository["repository_name"]
+    branch_name = github_repository["branch_name"]
+    bibfile_path = f".research/latex/{latex_template}/references.bib"
+
+    logger.info(
+        f"Updating {bibfile_path} in {github_owner}/{repository_name}@{branch_name}"
+    )
+    try:
+        existing_content = client.get_repository_content(
+            github_owner=github_owner,
+            repository_name=repository_name,
+            file_path=bibfile_path,
+            branch_name=branch_name,
+            as_="json",
+        )
+
+        if isinstance(existing_content, dict) and "content" in existing_content:
+            existing_bib = base64.b64decode(existing_content["content"]).decode("utf-8")
+        else:
+            existing_bib = ""
+
+    except GithubClientFatalError as e:
+        if "404" in str(e):
+            logger.info(f"No existing {bibfile_path} found, creating new file")
+            existing_bib = ""
+        else:
+            logger.warning(f"Error downloading existing bibfile, starting fresh: {e}")
+            existing_bib = ""
+
+    merged_bib = _merge_bibtex_content(existing_bib, references_bib)
+
+    commit_message = f"Update {bibfile_path} with new references"
+    success = client.commit_file_bytes(
+        github_owner=github_owner,
+        repository_name=repository_name,
+        branch_name=branch_name,
+        file_path=bibfile_path,
+        file_content=merged_bib.encode("utf-8"),
+        commit_message=commit_message,
+    )
+
+    if success:
+        logger.info(f"Successfully updated {bibfile_path}")
+    else:
+        logger.error(f"Failed to update {bibfile_path}")
+
+    return success

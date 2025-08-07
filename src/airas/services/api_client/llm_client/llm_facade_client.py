@@ -69,3 +69,18 @@ class LLMFacadeClient:
     @LLM_RETRY
     def text_embedding(self, message: str, model_name: str = "gemini-embedding-001"):
         return self.client.text_embedding(message=message, model_name=model_name)
+
+    @LLM_RETRY
+    def web_search(self, message: str):
+        """
+        Perform web search using OpenAI API (only available for OpenAI models).
+
+        Args:
+            message: The search prompt
+
+        Returns:
+            Tuple of (response_text, cost)
+        """
+        if not hasattr(self.client, "web_search"):
+            raise ValueError(f"Web search not supported for {self.llm_name}")
+        return self.client.web_search(model_name=self.llm_name, message=message)

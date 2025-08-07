@@ -20,12 +20,12 @@ class CandidatePaperInfo(TypedDict):
 
 
 class PaperContent(BaseModel):
-    Title: str
-    Abstract: str
-    Introduction: str
-    Related_Work: str
-    Background: str
-    Method: str
-    Experimental_Setup: str
-    Results: str
-    Conclusions: str
+    title: str
+    abstract: str
+    introduction: str
+    related_work: str
+    background: str
+    method: str
+    experimental_setup: str
+    results: str
+    conclusion: str

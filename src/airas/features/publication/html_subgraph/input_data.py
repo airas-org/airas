@@ -1,224 +1,81 @@
 html_subgraph_input_data = {
-    "paper_content_with_placeholders": {
-        "Title": "Adaptive Multimodal Instruction and Co-Training for Edge-Efficient Language Models",
-        "Abstract": "This paper introduces Adaptive Multimodal Instruction and Co-Training (AMICT), a unified, transformer-based language model that leverages a compact 3B parameter design to support multimodal instruction-following tasks, robust long-context handling, and efficient on-device deployment. Building upon the BTLM-3B-8K architecture[[CITATION_1]] and incorporating insights from Megrez-Omni[[CITATION_2]], AMICT integrates dual-stage multimodal pretraining with aligned text, images, and audio, an enhanced instruction-tuning phase using reinforcement learning for factual alignment, dynamic context modulation to adapt attention based on semantic density, and a hardware-aware co-design strategy for quantization-friendly and resource efficient inference. Three experiments have been implemented to evaluate the performance of AMICT relative to its base method. First, a multimodal instruction-following evaluation demonstrates that the integration of visual cues produces enriched responses. Second, a long-context handling test shows that the dynamic modulation mechanism preserves performance even for inputs exceeding the standard 8K token limit. Third, an on-device inference benchmark confirms that the co-designed architecture maintains competitive latency and memory requirements for edge deployment. Overall, our results suggest that AMICT achieves superior context awareness and sustained performance while effectively reducing memory and computational footprint.",
-        "Introduction": "Recent advances in transformer-based architectures have produced models that reach competitive performance with reduced computational and memory overhead. Yet, limitations remain in these models' ability to follow complex, multimodal instructions and to handle very long contexts, challenges that are critical for real-world, edge-deployed applications. Motivated by these needs, we propose Adaptive Multimodal Instruction and Co-Training (AMICT), an enhancement of the BTLM-3B-8K architecture that merges efficiency with novel multimodal and context-adaptive capabilities. Our approach is driven by four primary innovations: \n• A dual-stage multimodal pretraining process that enriches textual representations with aligned image snippets and audio segments, \n• An enhanced instruction-tuning phase that integrates a lightweight reinforcement learning loop to improve factuality and task alignment, \n• A dynamic context modulation mechanism that adapts attention distributions based on the semantic density of the input, and \n• A hardware-software co-design strategy that ensures the model remains efficient for on-device inference. \nBy addressing the shortcomings in modality support, instruction flexibility, and long-context processing, AMICT is poised not only to match the performance of larger models on challenging tasks but also to be deployable on mobile and edge devices. The remainder of this paper describes our methodology, experimental setup, and evaluation results in detail, demonstrating how our contributions lead to improvements over the baseline BTLM-3B-8K method.",
-        "Related Work": "The literature on efficient language model design has explored a variety of methods to balance performance with computational efficiency. The BTLM-3B-8K model, introduced by Dey et al., is notable for achieving performance comparable to 7B models by utilizing techniques such as the SwiGLU nonlinearity, ALiBi positional embeddings, and maximal update parameterization (µP). Despite its efficiency, BTLM-3B-8K is limited by its text-only approach and its inability to fully support instruction-following and long-context tasks. In contrast, recent research such as Megrez-Omni has emphasized the benefits of multimodal integration and multi-stage training, enabling models to process non-textual cues. However, these methods often incur increased computational overhead or require scaling to large parameter counts. AMICT builds on these strands by synergistically combining the compact and efficient BTLM design with innovations drawn from multimodal and dynamic context frameworks. Our work differs from prior approaches by incorporating modality-specific encoders, a reinforcement learning alignment stage, and dynamic attention modulation under a unified, resource-efficient model suitable for real-world edge applications.",
-        "Background": "Understanding AMICT requires reviewing key aspects of modern transformer architectures in the context of both efficient language modeling and multimodal processing. The BTLM-3B-8K model employs a GPT-style autoregressive transformer architecture enhanced with SwiGLU nonlinearities[[CITATION_3]], ALiBi positional embeddings[[CITATION_4]], and maximal update parameterization (µP)[[CITATION_5]] to transfer hyperparameters from proxy models. Trained on 627 billion de-duplicated tokens from the SlimPajama dataset[[CITATION_6]] using both 2,048- and 8,192-token contexts, it achieves a 2-5.5% improvement on downstream tasks relative to other 3B parameter models. However, its text-only design limits its ability to process other modalities and adapt to instruction-following. Prior work in multimodal learning has introduced separate, lightweight encoders for images and audio, employing cross-modal attention to allow shared representations between modalities. Additionally, dynamic context handling has been explored as a means to adjust attention distributions according to the density and relevance of input tokens, thereby maintaining performance over extended contexts. Hardware-software co-design strategies, such as those implemented for mobile inference through quantization-friendly architectures and shared resource scheduling, further highlight the importance of efficient deployment. AMICT integrates these foundational techniques to create a model that is both versatile in its input modalities and capable of robust performance under long-context conditions.",
-        "Method": "AMICT extends the BTLM-3B-8K architecture by integrating several key components that enhance multimodal capabilities, instruction following, and long-context processing while retaining a compact model size suitable for edge deployment. The main components of our methodology include: \n1. Dual-Stage Multimodal Pretraining: \n   - Text-plus-Multimodal Corpus: In addition to the high-quality text data from the SlimPajama dataset, AMICT uses a curated corpus that includes image snippets with captions and short audio segments. This diverse input enables richer, contextually grounded representations. \n   - Modular Encoders: The core transformer, with SwiGLU activation and ALiBi positional embeddings, is complemented by lightweight parallel encoders for images and audio. Cross-modal attention blocks facilitate effective integration of multimodal features with text representations. \n2. Enhanced Instruction-Tuning and Alignment: \n   - Multi-Stage Post-Pretraining Fine-Tuning: Following multimodal pretraining, the model undergoes an instruction-tuning phase that leverages interactive scenarios (such as chat and query answering) to refine context-aware responses. \n   - Reinforcement Learning and Web-Aided Feedback: A lightweight reinforcement learning loop, inspired by Megrez-Omni, engages in comparative ranking and web-based validation to reduce hallucinations and bias, ensuring that the responses are both factual and context appropriate. \n3. Dynamic Context Modulation: \n   - Extended and Adaptive Context Windows: Building on the multi-context training approach of BTLM, AMICT introduces dynamic modules that adjust attention distributions in accordance with the semantic density of the input data. This mechanism achieves smoother performance degradation when processing inputs beyond the nominal 8K token limit. \n4. Hardware-Software Co-Design for On-Device Inference: \n   - Efficient Inference and Deployment: The model architecture is optimized for quantization and resource sharing between its textual and multimodal modules, ensuring that performance remains competitive with larger, 7B parameter models while drastically reducing memory and computational requirements for mobile and edge applications.",
-        "Experimental Setup": "To evaluate the improvements delivered by AMICT over the base BTLM-3B-8K method, we implemented three experiments using the PyTorch framework[[CITATION_7]] and Hugging Face Transformers[[CITATION_8]] on a high-performance workstation equipped with a Tesla T4 GPU[[CITATION_9]]. \n1. Multimodal Instruction-Following Evaluation: \n   A benchmark dataset comprising paired text and image inputs was used. Dummy image paths triggered synthetic image generation when necessary. The text data was processed with a GPT-2 style tokenizer[[CITATION_10]], and both AMICT and the text-only base method were evaluated through qualitative assessment and quantitative metrics such as BLEU scores and custom multimodal alignment measures. The experiment generated a bar plot comparing the response lengths as a proxy for response richness. \n2. Long-Context Handling and Dynamic Context Modulation Test: \n   To simulate long-context scenarios, text inputs of varying token lengths (2K, 8K, and 10K tokens) were generated by repeating a base sentence. Both models were tested on these inputs, and metrics such as response latency and qualitative response features were recorded. Latency was plotted against token length to illustrate the benefits of dynamic context modulation in AMICT. \n3. On-Device Inference and Resource Efficiency Benchmark: \n   Dummy models simulating the AMICT and base architectures were employed to benchmark inference latency and memory usage using PyTorch Mobile[[CITATION_11]] quantization techniques and the memory_profiler library[[CITATION_12]]. The evaluation involved measuring average latency and memory change over multiple iterations, and bar charts were generated to compare resource efficiency. \nAll experiments were implemented using Python, and the resulting figures were saved as PDFs for further analysis.",
-        "Results": "The experimental evaluations demonstrate that AMICT offers several performance advantages over the base BTLM-3B-8K method. In the multimodal instruction-following evaluation, AMICT produced enriched responses by integrating image statistics with textual instructions. A bar chart comparing response lengths (Figure 1: Response Length Comparison for Multimodal Instruction-Following, filename: experiment1_multimodal_comparison.pdf) indicates that the AMICT responses, which include visual cues, are measurably longer and more detailed than those from the text-only base method. \n\nIn the long-context handling test, AMICT maintained robust performance when processing inputs of 2000, 8000, and 10000 tokens. The latency plot (Figure 2: Long-Context Inference Latency vs. Input Token Length, filename: experiment2_long_context_latency.pdf) shows that AMICT exhibits graceful performance degradation and superior efficiency in processing extended contexts compared to the baseline. \n\nThe on-device inference benchmark further validated the benefits of the hardware-software co-design approach. A comparative bar chart (Figure 3: On-Device Inference Latency and Memory Usage Comparison, filename: experiment3_inference_benchmark.pdf) illustrates that AMICT achieves competitive average inference latency and reduced memory usage relative to the base method. \n\nAdditional figures provide further insights into the training dynamics of the two approaches. Figure 4 (Convergence of Sequential and Parallel Training Pairs, filename: convergence_sequential_parallel_pair1.pdf) and Figure 5 (Convergence Behavior of Solver Pairs, filename: convergence_solver_pair1.pdf) present convergence results, while Figures 6 (Training Loss for the Base Method, filename: training_loss_base_pair1.pdf) and 7 (Training Loss for AMICT (TAA), filename: training_loss_taa_pair1.pdf) compare the training loss curves for the base method and AMICT, respectively.",
-        "Conclusions": "In this work, we proposed Adaptive Multimodal Instruction and Co-Training (AMICT), an innovative extension of the BTLM-3B-8K architecture that enhances multimodal instruction-following, long-context handling, and edge-deployable efficiency. By incorporating dual-stage multimodal pretraining, an advanced instruction-tuning framework with reinforcement learning, dynamic context modulation, and hardware-aware design, AMICT overcomes limitations inherent in text-only models. Extensive experiments demonstrate that AMICT delivers enriched, context-aware responses, robust performance on extended inputs, and competitive resource efficiency for on-device inference. The training and convergence analyses further validate the robustness of our approach. Future work will focus on refining the dynamic modulation mechanism, extending the framework to additional modalities and multilingual settings, and exploring further optimizations for interactive, instruction-tuned applications. Our results affirm that AMICT represents a significant step towards developing versatile, high-performance language models suitable for real-world, edge-based deployments.",
+    "github_repository": {
+        "github_owner": "auto-res2",
+        "repository_name": "test_html_matsuzawa",
+        "branch_name": "develop",
     },
-    "references": {
-        "[[CITATION_1]]": {
-            "id": "https://openalex.org/W4317794926",
-            "doi": "https://doi.org/10.1109/jstsp.2023.3239189",
-            "title": "Edge Learning for B5G Networks With Distributed Signal Processing: Semantic Communication, Edge Computing, and Wireless Sensing",
-            "authors": [
-                "Wei Xu",
-                "Zhaohui Yang",
-                "Derrick Wing Kwan Ng",
-                "Marco Levorato",
-                "Yonina C. Eldar",
-                "Mérouane Debbah",
-            ],
-            "year": 2023,
-            "biblio": {
-                "volume": "17",
-                "issue": "1",
-                "first_page": "9",
-                "last_page": "39",
-            },
-            "journal": "IEEE Journal of Selected Topics in Signal Processing",
-        },
-        "[[CITATION_2]]": {
-            "id": "https://openalex.org/W2089105401",
-            "doi": "https://doi.org/10.1287/moor.23.4.769",
-            "title": "Robust Convex Optimization",
-            "authors": ["Aharon Ben‐Tal", "Arkadi Nemirovski"],
-            "year": 1998,
-            "biblio": {
-                "volume": "23",
-                "issue": "4",
-                "first_page": "769",
-                "last_page": "805",
-            },
-            "journal": "Mathematics of Operations Research",
-        },
-        "[[CITATION_3]]": {
-            "id": "https://openalex.org/W2115167851",
-            "doi": "https://doi.org/10.1109/tmi.2013.2265603",
-            "title": "Deformable Medical Image Registration: A Survey",
-            "authors": ["Aristeidis Sotiras", "Christos Davatzikos", "Nikos Paragios"],
-            "year": 2013,
-            "biblio": {
-                "volume": "32",
-                "issue": "7",
-                "first_page": "1153",
-                "last_page": "1190",
-            },
-            "journal": "IEEE Transactions on Medical Imaging",
-        },
-        "[[CITATION_4]]": {
-            "id": "https://openalex.org/W3123456921",
-            "doi": "https://doi.org/10.1109/msp.2013.2245726",
-            "title": "Monitoring and Optimization for Power Grids: A Signal Processing Perspective",
-            "authors": [
-                "Georgios B. Giannakis",
-                "Vassilis Kekatos",
-                "Nikolaos Gatsis",
-                "Seung-Jun Kim",
-                "Hao Zhu",
-                "B.F. Wollenberg",
-            ],
-            "year": 2013,
-            "biblio": {
-                "volume": "30",
-                "issue": "5",
-                "first_page": "107",
-                "last_page": "128",
-            },
-            "journal": "IEEE Signal Processing Magazine",
-        },
-        "[[CITATION_5]]": {
-            "id": "https://openalex.org/W1998564308",
-            "doi": "https://doi.org/10.1115/1.1483356",
-            "title": "Thin Plates and Shells: Theory, Analysis, and Applications",
-            "authors": ["E.S. Ventsel", "Theodor Krauthammer", "Erasmo Carrera"],
-            "year": 2002,
-            "biblio": {
-                "volume": "55",
-                "issue": "4",
-                "first_page": "B72",
-                "last_page": "B73",
-            },
-            "journal": "Applied Mechanics Reviews",
-        },
-        "[[CITATION_6]]": {
-            "id": "https://openalex.org/W4244270790",
-            "doi": "https://doi.org/10.1090/coll/065/13",
-            "title": "Semidefinite optimization",
-            "authors": ["LÃ¡szlÃ LovÃ¡sz"],
-            "year": 2019,
-            "biblio": {
-                "volume": None,
-                "issue": None,
-                "first_page": "221",
-                "last_page": "238",
-            },
-            "journal": "Colloquium Publications - American Mathematical Society/Colloquium Publications",
-        },
-        "[[CITATION_7]]": {
-            "id": "https://openalex.org/W3193498715",
-            "doi": "https://doi.org/10.22331/q-2021-08-20-529",
-            "title": "Quantum algorithms for escaping from saddle points",
-            "authors": ["Chenyi Zhang", "Jiaqi Leng", "Tongyang Li"],
-            "year": 2021,
-            "biblio": {
-                "volume": "5",
-                "issue": None,
-                "first_page": "529",
-                "last_page": "529",
-            },
-            "journal": "Quantum",
-        },
-        "[[CITATION_8]]": {
-            "id": "https://openalex.org/W3205622792",
-            "doi": "https://doi.org/10.3390/rs13204098",
-            "title": "Hyperspectral Image Mixed Noise Removal Using Subspace Representation and Deep CNN Image Prior",
-            "authors": ["Lina Zhuang", "Michael K. Ng", "Xiyou Fu"],
-            "year": 2021,
-            "biblio": {
-                "volume": "13",
-                "issue": "20",
-                "first_page": "4098",
-                "last_page": "4098",
-            },
-            "journal": "Remote Sensing",
-        },
-        "[[CITATION_9]]": {
-            "id": "https://openalex.org/W4399362961",
-            "doi": "https://doi.org/10.1016/j.ejtl.2024.100136",
-            "title": "Optimization of human-aware logistics and manufacturing systems: A comprehensive review of modeling approaches and applications",
-            "authors": [
-                "Thibault Prunet",
-                "Nabil Absi",
-                "Valeria Borodin",
-                "Diego Cattaruzza",
-            ],
-            "year": 2024,
-            "biblio": {
-                "volume": "13",
-                "issue": None,
-                "first_page": "100136",
-                "last_page": "100136",
-            },
-            "journal": "EURO Journal on Transportation and Logistics",
-        },
-        "[[CITATION_10]]": {
-            "id": "https://openalex.org/W3047057232",
-            "doi": "https://doi.org/10.1007/s11263-020-01359-2",
-            "title": "Image Matching from Handcrafted to Deep Features: A Survey",
-            "authors": [
-                "Jiayi Ma",
-                "Xingyu Jiang",
-                "Aoxiang Fan",
-                "Junjun Jiang",
-                "Junchi Yan",
-            ],
-            "year": 2020,
-            "biblio": {
-                "volume": "129",
-                "issue": "1",
-                "first_page": "23",
-                "last_page": "79",
-            },
-            "journal": "International Journal of Computer Vision",
-        },
-        "[[CITATION_11]]": {
-            "id": "https://openalex.org/W2063978378",
-            "doi": "https://doi.org/10.1214/009053604000000067",
-            "title": "Least angle regression",
-            "authors": [
-                "Bradley Efron",
-                "Trevor Hastie",
-                "Iain M. Johnstone",
-                "Robert Tibshirani",
-            ],
-            "year": 2004,
-            "biblio": {
-                "volume": "32",
-                "issue": "2",
-                "first_page": None,
-                "last_page": None,
-            },
-            "journal": "The Annals of Statistics",
-        },
-        "[[CITATION_12]]": {
-            "id": "https://openalex.org/W2943528199",
-            "doi": "https://doi.org/10.1016/j.swevo.2019.04.008",
-            "title": "Bio-inspired computation: Where we stand and what's next",
-            "authors": [
-                "Javier Del Ser",
-                "Eneko Osaba",
-                "Daniel Molina",
-                "Xin‐She Yang",
-                "Sancho Salcedo‐Sanz",
-                "David Camacho",
-                "Swagatam Das",
-                "Ponnuthurai Nagaratnam Suganthan",
-                "Carlos A. Coello Coello",
-                "Francisco Herrera",
-            ],
-            "year": 2019,
-            "biblio": {
-                "volume": "48",
-                "issue": None,
-                "first_page": "220",
-                "last_page": "250",
-            },
-            "journal": "Swarm and Evolutionary Computation",
-        },
+    "paper_content": {
+        "Title": "Advanced Neural Network Architectures for Multi-Modal Learning",
+        "Abstract": "This paper presents a novel approach to multi-modal learning that combines transformer architectures with convolutional neural networks. Our method achieves state-of-the-art performance on several benchmark datasets including ImageNet and COCO. We demonstrate significant improvements in both accuracy and computational efficiency compared to existing approaches. The proposed architecture shows particular strength in handling heterogeneous data types and can be applied to various computer vision and natural language processing tasks.",
+        "Introduction": "Multi-modal learning has become increasingly important in modern machine learning applications. Traditional approaches often struggle with integrating information from different modalities effectively [john_2023_deep]. Recent advances in transformer architectures have shown promising results in handling sequential data [ashish_2017_attention], while convolutional networks remain the gold standard for image processing tasks. Our work bridges these approaches by proposing a unified architecture that can process both visual and textual information simultaneously.",
+        "Related Work": "Previous work in multi-modal learning can be categorized into several approaches. Early fusion methods combine features at the input level, while late fusion approaches merge predictions from individual modality-specific models. [michael_2024_transformer] demonstrated the effectiveness of transformer architectures across various domains. [b_2020_gpt] showed that large-scale pre-training can significantly improve performance on downstream tasks. However, these approaches often fail to capture complex cross-modal interactions that are crucial for many real-world applications.",
+        "Method": "Our proposed architecture consists of three main components: (1) a visual encoder based on ResNet-50, (2) a textual encoder using BERT-base, and (3) a cross-modal fusion module implemented using multi-head attention. The fusion module allows for dynamic weighting of features from different modalities based on the input context. We employ a joint training strategy that optimizes both modality-specific and cross-modal objectives simultaneously.",
+        "Experiments": "We evaluate our approach on three benchmark datasets: VQA 2.0, MSCOCO Caption, and Flickr30K. Our method achieves 72.4% accuracy on VQA 2.0, surpassing the previous best result by 3.2%. On MSCOCO Caption, we obtain a BLEU-4 score of 38.6, which represents a 2.1% improvement over the baseline. Training was performed using Adam optimizer with a learning rate of 1e-4 and batch size of 32.",
+        "Results": "Figure 1 shows the convergence behavior of our model during training. The proposed method converges faster and achieves lower final loss compared to baseline approaches. Figure 2 illustrates the attention weights learned by the cross-modal fusion module, demonstrating that the model learns to focus on relevant visual regions when processing textual queries. Performance comparisons across different datasets are presented in Figure 3, showing consistent improvements over existing methods.",
+        "Conclusion": "We have presented a novel multi-modal learning architecture that effectively combines visual and textual information processing. Our experimental results demonstrate significant improvements over existing approaches across multiple benchmark datasets. The proposed cross-modal fusion mechanism shows promise for various applications including visual question answering, image captioning, and multimodal retrieval. Future work will explore extension to additional modalities such as audio and video data.",
+    },
+    "references_bib": """% ===========================================
+% REQUIRED CITATIONS
+% These papers must be cited in the manuscript
+% ===========================================
+
+@article{john_2023_deep,
+ abstract = {This paper presents a comprehensive survey of deep learning techniques applied to natural language processing tasks, including sentiment analysis, machine translation, and text classification.},
+ arxiv_url = {https://arxiv.org/abs/2301.12345},
+ author = {Smith, John and Johnson, Alice},
+ doi = {10.1038/s42256-023-00567-8},
+ github_url = {https://github.com/nlp-survey/deep-learning-nlp},
+ journal = {Nature Machine Intelligence},
+ number = {3},
+ pages = {123-145},
+ title = {Deep Learning for Natural Language Processing: A Comprehensive Survey},
+ volume = {5},
+ year = {2023}
+}
+
+@article{michael_2024_transformer,
+ abstract = {We explore the transformer architecture and its applications across various domains including computer vision and natural language processing.},
+ arxiv_url = {https://arxiv.org/abs/2401.56789},
+ author = {Brown, Michael and Davis, Sarah},
+ doi = {10.5555/3648699.3648700},
+ journal = {Journal of Machine Learning Research},
+ pages = {1-28},
+ title = {Transformer Networks: Architecture and Applications},
+ volume = {25},
+ year = {2024}
+}
+
+% ===========================================
+% REFERENCE CANDIDATES
+% Additional reference papers for context
+% ===========================================
+
+@article{ashish_2017_attention,
+ abstract = {The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism.},
+ arxiv_url = {https://arxiv.org/abs/1706.03762},
+ author = {Vaswani, Ashish and Shazeer, Noam and Parmar, Niki},
+ doi = {10.48550/arXiv.1706.03762},
+ journal = {Advances in Neural Information Processing Systems},
+ title = {Attention Is All You Need},
+ volume = {30},
+ year = {2017}
+}
+
+@article{b_2020_gpt,
+ abstract = {Recent work has demonstrated substantial gains on many NLP tasks and benchmarks by pre-training on a large corpus of text followed by fine-tuning on a specific task.},
+ arxiv_url = {https://arxiv.org/abs/2005.14165},
+ author = {Brown, Tom B. and Mann, Benjamin and Ryder, Nick},
+ journal = {Advances in Neural Information Processing Systems},
+ pages = {1877-1901},
+ title = {GPT-3: Language Models are Few-Shot Learners},
+ volume = {33},
+ year = {2020}
+}""",
+    "research_hypothesis": {
+        "image_file_name_list": [
+            "training_convergence.pdf",
+            "attention_visualization.pdf",
+            "performance_comparison.pdf",
+        ]
     },
 }

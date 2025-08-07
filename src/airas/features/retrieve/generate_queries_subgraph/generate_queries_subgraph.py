@@ -28,14 +28,14 @@ generate_queries_timed = lambda f: time_node(generate_queries_str)(f)  # noqa: E
 
 
 class GenerateQueriesInputState(TypedDict):
-    user_prompt: str
+    research_topic: str
 
 
 class GenerateQueriesHiddenState(TypedDict): ...
 
 
 class GenerateQueriesOutputState(TypedDict):
-    queries: list[str]
+    queries: list[str]  # TODO: Supporting semantic search
 
 
 class GenerateQueriesState(
@@ -59,7 +59,7 @@ class GenerateQueriesSubgraph(BaseSubgraph):
         generated_queries = generate_queries(
             llm_name=self.llm_name,
             prompt_template=generate_queries_prompt,
-            user_prompt=state["user_prompt"],
+            research_topic=state["research_topic"],
         )
         return {"queries": generated_queries}
 
