@@ -1,13 +1,14 @@
 {
     "mcpServers": {
       "airas": {
+        "__comment__": "Must use an absolute path as Cursor does not expand `${workspaceFolder}`",
         "type": "stdio",
         "command": "uv",
         "args": [
           "run",
           "python",
-          "${workspaceFolder}/src/airas/services/mcp_server/mcp_server.py"
+          "/workspaces/airas/src/airas/services/mcp_server/mcp_server.py"
         ]
       }
     }
-  }
+}
