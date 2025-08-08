@@ -24,8 +24,9 @@ def idea_generator(
     research_topic: str,
     research_study_list: list[dict[str, Any]],
     idea_history: list[dict[str, str]],
+    client: LLMFacadeClient | None = None,
 ) -> str:
-    client = LLMFacadeClient(llm_name=llm_name)
+    client = client or LLMFacadeClient(llm_name=llm_name)
     env = Environment()
 
     template = env.from_string(idea_generator_prompt)

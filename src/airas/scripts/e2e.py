@@ -194,7 +194,7 @@ def main(file_path: str | None = None):
     state = {
         "github_repository": github_repository,
         "branch_name": branch_name,
-        "research_topic": "Research on quantization to reduce the number of parameters in LLM models",
+        "research_topic": "Acceleration of diffusion models",
     }
     prepare.run(state)
     if file_path:
@@ -210,5 +210,5 @@ if __name__ == "__main__":
     main()
 
     # If you want to run from the middle, specify the file path.
-    # file_path = "/workspaces/airas/data/20250727_113330/executor.json"
+    # file_path = "/workspaces/airas/data/20250808_145304/get_paper_titles.json"
     # main(file_path=file_path)
