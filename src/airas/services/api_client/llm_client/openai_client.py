@@ -57,6 +57,12 @@ OPENAI_MODEL_INFO = {
         "input_token_cost": 0.25 * 1 / 1_000_000,
         "output_token_cost": 2.00 * 1 / 1_000_000,
     },
+    "gpt-5-nano-2025-08-07": {
+        "max_input_tokens": 400_000 - 128_000,
+        "max_output_tokens": 128_000,
+        "input_token_cost": 0.05 * 1 / 1_000_000,
+        "output_token_cost": 0.40 * 1 / 1_000_000,
+    },
     "gpt-4.1-2025-04-14": {
         "max_input_tokens": 1047576 - 32768,
         "max_output_tokens": 32768,
@@ -86,6 +92,7 @@ OPENAI_MODEL = Literal[
     "o1-2024-12-17",
     "gpt-5-2025-08-07",
     "gpt-5-mini-2025-08-07",
+    "gpt-5-nano-2025-08-07",
     "gpt-4.1-2025-04-14",
     "gpt-4o-2024-11-20",
     "gpt-4o-mini-2024-07-18",
