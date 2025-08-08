@@ -25,24 +25,4 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 {{ content }}
 ```
 
-{% endfor %}
-
-# Output Format
-Please provide the fixed code for each file that needs to be modified in the following JSON format:
-
-{
-    "file_path_1": "# Fixed code content here...",
-    "file_path_2": "# Fixed code content here...",
-    ...
-}
-
-Only include files that need to be modified. Provide the complete content for each file that needs changes.
-
-# Analysis
-First, analyze the errors:
-1. Identify the root cause of each error
-2. Determine which files need to be modified
-3. Plan the fixes needed
-
-Then provide the fixed files in the JSON format above.
-"""
+{% endfor %}"""

@@ -8,7 +8,7 @@ def generate_note(research_hypothesis: dict, references_bib: str) -> str:
         """
 # Method
 {{ method }}
-                        
+
 {% if experimental_design -%}
 # Experimental Design
 {% for key, value in experimental_design.items() -%}
@@ -17,7 +17,7 @@ def generate_note(research_hypothesis: dict, references_bib: str) -> str:
 {% endif -%}
 {% endfor -%}
 {% endif -%}
-                        
+
 {% if experimental_information -%}
 # Experimental Information
 {% for key, value in experimental_information.items() -%}
@@ -31,7 +31,7 @@ Images:
 {% endif -%}
 {% endfor -%}
 {% endif -%}
-                        
+
 {% if experimental_analysis -%}
 # Experimental Analysis
 {% for key, value in experimental_analysis.items() -%}
@@ -40,7 +40,7 @@ Images:
 {% endif -%}
 {% endfor -%}
 {% endif -%}
-                        
+
 {% if references_bib -%}
 # References
 {% if required_citations_marker in references_bib -%}

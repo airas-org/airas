@@ -1,4 +1,4 @@
-code_generation_prompt = """\
+generate_code_for_scripts_prompt = """\
 # Instructions
 The "New Method" and "Experiment Code" sections contain ideas for new machine learning research and the code associated with those ideas.
 Please follow the "Rules" section to create experimental scripts to conduct this research.
@@ -29,19 +29,4 @@ Please follow the "Rules" section to create experimental scripts to conduct this
 ----------------------------------------
 # Experiment Code
 ----------------------------------------
-{{ experiment_code }}
-
-# Output Format
-Please provide the code for each file in the following JSON format:
-
-{
-    "src/train.py": "# Training script code here...",
-    "src/evaluate.py": "# Evaluation script code here...",
-    "src/preprocess.py": "# Preprocessing script code here...",
-    "src/main.py": "# Main experiment script code here...",
-    "requirements.txt": "# Required packages list here...",
-    "config/config.yaml": "# Configuration file content here..."
-}
-
-Make sure each file contains complete, functional code that follows the requirements above.
-"""
+{{ experiment_code }}"""

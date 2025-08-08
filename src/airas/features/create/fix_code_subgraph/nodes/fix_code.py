@@ -1,9 +1,12 @@
 import json
 import logging
-from typing import Dict
 
 from jinja2 import Environment
+from pydantic import BaseModel
 
+from airas.features.create.fix_code_subgraph.prompt.code_fix_prompt import (
+    code_fix_prompt,
+)
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -12,18 +15,25 @@ from airas.services.api_client.llm_client.llm_facade_client import (
 logger = logging.getLogger(__name__)
 
 
-def analyze_and_fix_code(
+class GenerateCodeForScripts(BaseModel):
+    train_scripts_content: str
+    evaluate_scripts_content: str
+    preprocess_scripts_content: str
+    main_scripts_content: str
+    requirements_txt_content: str
+    config_yaml_content: str
+
+
+def fix_code(
     llm_name: LLM_MODEL,
     output_text_data: str,
     error_text_data: str,
-    current_files: Dict[str, str],
-    prompt_template: str,
+    current_files: dict[str, str],
+    prompt_template: str = code_fix_prompt,
     client: LLMFacadeClient | None = None,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Analyze errors and generate fixed code using LLM"""
-
-    if client is None:
-        client = LLMFacadeClient(llm_name=llm_name)
+    client = client or LLMFacadeClient(llm_name=llm_name)
 
     # Prepare template data
     data = {
@@ -38,32 +48,19 @@ def analyze_and_fix_code(
     messages = template.render(data)
 
     logger.info("Analyzing errors and generating fixed code using LLM...")
-
-    try:
-        # Use regular generate method for JSON parsing
-        response, cost = client.generate(message=messages)
-
-        # Try to extract JSON from the response
-        # Look for JSON block in the response
-        start_idx = response.find("{")
-        end_idx = response.rfind("}") + 1
-
-        if start_idx == -1 or end_idx == 0:
-            raise ValueError("No JSON found in LLM response")
-
-        json_str = response[start_idx:end_idx]
-        fixed_files = json.loads(json_str)
-
-        logger.info(f"Successfully generated fixes for {len(fixed_files)} files")
-        return fixed_files
-
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse JSON from LLM response: {e}")
-        logger.error(f"Response: {response}")
-        raise ValueError(f"Failed to parse JSON from LLM response: {e}") from e
-    except Exception as e:
-        logger.error(f"Error analyzing and fixing code: {e}")
-        raise ValueError(f"Error analyzing and fixing code: {e}") from e
+    output, cost = client.structured_outputs(
+        message=messages, data_model=GenerateCodeForScripts
+    )
+    if output is None:
+        raise ValueError("Error: No response from LLM in fix_code.")
+    return {
+        "src/train.py": output["train_scripts_content"],
+        "src/evaluate.py": output["evaluate_scripts_content"],
+        "src/preprocess.py": output["preprocess_scripts_content"],
+        "src/main.py": output["main_scripts_content"],
+        "requirements.txt": output["requirements_txt_content"],
+        "config/config.yaml": output["config_yaml_content"],
+    }
 
 
 def should_fix_code(output_text_data: str, error_text_data: str) -> bool:
@@ -105,11 +102,6 @@ def should_fix_code(output_text_data: str, error_text_data: str) -> bool:
 
 
 if __name__ == "__main__":
-    # Test the function
-    from airas.features.create.fix_code_local_subgraph.prompt.code_fix_prompt import (
-        code_fix_prompt,
-    )
-
     llm_name = "gpt-4o-mini-2024-07-18"
     output_text_data = "Process started..."
     error_text_data = "ImportError: No module named 'numpy'"
@@ -123,7 +115,7 @@ if __name__ == "__main__":
     print(f"Should fix code: {should_fix}")
 
     if should_fix:
-        result = analyze_and_fix_code(
+        result = fix_code(
             llm_name=llm_name,
             output_text_data=output_text_data,
             error_text_data=error_text_data,

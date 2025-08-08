@@ -3,6 +3,9 @@ from logging import getLogger
 from jinja2 import Environment
 from pydantic import BaseModel
 
+from airas.features.create.fix_code_with_devin_subgraph.prompt.llm_decide import (
+    llm_decide_prompt,
+)
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -12,18 +15,17 @@ logger = getLogger(__name__)
 
 
 class LLMOutput(BaseModel):
-    judgment_result: bool
+    is_code_fix_needed: bool
 
 
-def llm_decide(
+def should_fix_code(
     llm_name: LLM_MODEL,
     output_text_data: str,
     error_text_data: str,
-    prompt_template: str,
+    prompt_template: str = llm_decide_prompt,
     client: LLMFacadeClient | None = None,
-) -> bool | None:
-    if client is None:
-        client = LLMFacadeClient(llm_name=llm_name)
+) -> bool:
+    client = client or LLMFacadeClient(llm_name=llm_name)
 
     data = {"output_text_data": output_text_data, "error_text_data": error_text_data}
 
@@ -34,16 +36,14 @@ def llm_decide(
         message=messages,
         data_model=LLMOutput,
     )
-    if "judgment_result" in output:
-        judgment_result = output["judgment_result"]
-        return judgment_result
-    else:
-        raise ValueError("Error: No response from LLM in llm_decide.")
+    if output is None:
+        raise ValueError("Error: No response from LLM in should_fix_code.")
+    return output["is_code_fix_needed"]
 
 
 if __name__ == "__main__":
     llm_name = "gpt-4o-mini-2024-07-18"
     output_text_data = "No error"
     error_text_data = "Error"
-    result = llm_decide(llm_name, output_text_data, error_text_data)
+    result = should_fix_code(llm_name, output_text_data, error_text_data)
     print(result)

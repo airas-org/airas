@@ -1,7 +1,6 @@
 import argparse
 import json
 import logging
-from typing import Literal
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -30,7 +29,7 @@ class GitHubActionsExecutorSubgraphInputState(TypedDict):
     github_repository: str
     branch_name: str
     experiment_iteration: int
-    push_completion: Literal[True]
+    is_code_pushed_to_github: bool
 
 
 class GitHubActionsExecutorSubgraphHiddenState(TypedDict):
@@ -67,9 +66,9 @@ class GitHubActionsExecutorSubgraph(BaseSubgraph):
     def _execute_github_actions_workflow_node(
         self, state: ExecutorSubgraphState
     ) -> dict:
-        if not state.get("push_completion", True):
+        if not state.get("is_code_pushed_to_github", True):
             raise ValueError(
-                "ExecutorSubgraph was called without a successful code push (expected push_completion == True)"
+                "ExecutorSubgraph was called without a successful code push (expected is_code_pushed_to_github == True)"
             )
 
         executed_flag = execute_github_actions_workflow(
