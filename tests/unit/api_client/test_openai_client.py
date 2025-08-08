@@ -3,7 +3,10 @@ import os
 import pytest
 from pydantic import BaseModel
 
-from airas.utils.api_client.openai_client import OPENAI_MODEL, OpenAIClient
+from airas.services.api_client.llm_client.openai_client import (
+    OPENAI_MODEL,
+    OpenAIClient,
+)
 
 ALL_MODEL_NAMES = [t for t in OPENAI_MODEL.__args__]
 

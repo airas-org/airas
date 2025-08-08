@@ -19,7 +19,7 @@ ENV LANG=en_US.UTF-8 \
 
 RUN curl -LsSf https://astral.sh/uv/0.7.2/install.sh | sh
 
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get update && apt-get install -y nodejs && \
     npm install -g yarn && \
     rm -rf /var/lib/apt/lists/*
