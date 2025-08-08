@@ -9,11 +9,8 @@ from airas.core.base import BaseSubgraph
 from airas.features.create.fix_code_with_devin_subgraph.nodes.fix_code_with_devin import (
     fix_code_with_devin,
 )
-from airas.features.create.fix_code_with_devin_subgraph.nodes.llm_decide import (
-    llm_decide,
-)
-from airas.features.create.fix_code_with_devin_subgraph.prompt.llm_decide import (
-    llm_decide_prompt,
+from airas.features.create.fix_code_with_devin_subgraph.nodes.should_fix_code import (
+    should_fix_code,
 )
 from airas.features.create.nodes.check_devin_completion import (
     check_devin_completion,
@@ -76,11 +73,10 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
                 "Invalid state: GitHub Actions workflow was not executed (expected executed_flag == True)"
             )
 
-        judgment_result = llm_decide(
+        judgment_result = should_fix_code(
             llm_name=cast(LLM_MODEL, self.llm_name),
             output_text_data=state["output_text_data"],
             error_text_data=state["error_text_data"],
-            prompt_template=llm_decide_prompt,
         )
         return {
             "judgment_result": judgment_result,

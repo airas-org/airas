@@ -56,6 +56,9 @@ class BaseHTTPClient:
     def put(self, path: str, **kwargs) -> requests.Response:
         return self.request("PUT", path, **kwargs)
 
+    def patch(self, path: str, **kwargs) -> requests.Response:
+        return self.request("PATCH", path, **kwargs)
+
 
 class AsyncBaseHTTPClient:
     def __init__(
@@ -106,3 +109,6 @@ class AsyncBaseHTTPClient:
 
     async def put(self, path: str, **kwargs) -> requests.Response:
         return self.request("PUT", path, **kwargs)
+
+    async def patch(self, path: str, **kwargs) -> requests.Response:
+        return self.request("PATCH", path, **kwargs)

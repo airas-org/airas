@@ -4,11 +4,13 @@ from datetime import datetime
 
 from airas.features import (
     AnalyticSubgraph,
-    CitationSubgraph,
-    CreateCodeWithDevinSubgraph,
+    CreateBibfileSubgraph,
+    # CreateCodeWithDevinSubgraph,
+    CreateCodeSubgraph,
     CreateExperimentalDesignSubgraph,
     CreateMethodSubgraph,
-    FixCodeWithDevinSubgraph,
+    FixCodeSubgraph,
+    # FixCodeWithDevinSubgraph,
     GenerateQueriesSubgraph,
     GetPaperTitlesFromDBSubgraph,
     GitHubActionsExecutorSubgraph,
@@ -38,12 +40,16 @@ summarize_paper = SummarizePaperSubgraph(llm_name=llm_name)
 retrieve_code = RetrieveCodeSubgraph(llm_name=llm_name)
 create_method = CreateMethodSubgraph(llm_name="o3-2025-04-16")
 create_experimental_design = CreateExperimentalDesignSubgraph(llm_name="o3-2025-04-16")
-coder = CreateCodeWithDevinSubgraph()
+# coder = CreateCodeWithDevinSubgraph()
+coder = CreateCodeSubgraph(llm_name="o3-mini-2025-01-31")
 executor = GitHubActionsExecutorSubgraph(gpu_enabled=True)
-fixer = FixCodeWithDevinSubgraph(llm_name="o3-mini-2025-01-31")
+# fixer = FixCodeWithDevinSubgraph(llm_name="o3-mini-2025-01-31")
+fixer = FixCodeSubgraph(llm_name="o3-mini-2025-01-31")
 analysis = AnalyticSubgraph("o3-mini-2025-01-31")
 writer = WriterSubgraph("o3-mini-2025-01-31")
-citation = CitationSubgraph(llm_name="o3-mini-2025-01-31")
+citation = CreateBibfileSubgraph(
+    llm_name="o3-mini-2025-01-31", latex_template="iclr2024"
+)
 latex = LatexSubgraph("o3-mini-2025-01-31")
 readme = ReadmeSubgraph()
 html = HtmlSubgraph("o3-mini-2025-01-31")
@@ -183,12 +189,12 @@ def main(file_path: str | None = None):
     E2E実行のメイン関数
     """
     save_dir = datetime.now().strftime("%Y%m%d_%H%M%S")
-    github_repository = "auto-res2/tanaka-20250727"
-    branch_name = "test"
+    github_repository = "auto-res2/tanaka-20250808-v2"
+    branch_name = "develop"
     state = {
         "github_repository": github_repository,
         "branch_name": branch_name,
-        "research_topic": "Research on quantization to reduce the number of parameters in LLM models",
+        "research_topic": "Acceleration of diffusion models",
     }
     prepare.run(state)
     if file_path:
@@ -204,5 +210,5 @@ if __name__ == "__main__":
     main()
 
     # If you want to run from the middle, specify the file path.
-    # file_path = "/workspaces/airas/data/20250727_113330/executor.json"
+    # file_path = "/workspaces/airas/data/20250808_145304/get_paper_titles.json"
     # main(file_path=file_path)
