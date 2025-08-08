@@ -9,8 +9,8 @@ from airas.core.base import BaseSubgraph
 from airas.features.review.paper_review_subgraph.input_data import (
     paper_review_subgraph_input_data,
 )
-from airas.features.review.paper_review_subgraph.nodes.paper_review_node import (
-    paper_review_node,
+from airas.features.review.paper_review_subgraph.nodes.paper_review import (
+    paper_review,
 )
 from airas.features.review.paper_review_subgraph.prompts.paper_review_prompt import (
     paper_review_prompt,
@@ -65,8 +65,8 @@ class PaperReviewSubgraph(BaseSubgraph):
         check_api_key(llm_api_key_check=True)
 
     @paper_review_timed
-    def _paper_review_node(self, state: PaperReviewSubgraphState) -> dict[str, int]:
-        review_result = paper_review_node(
+    def _paper_review(self, state: PaperReviewSubgraphState) -> dict[str, int]:
+        review_result = paper_review(
             llm_name=self.llm_name,
             prompt_template=self.prompt_template,
             paper_content=state["paper_content"],
@@ -75,10 +75,10 @@ class PaperReviewSubgraph(BaseSubgraph):
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(PaperReviewSubgraphState)
-        graph_builder.add_node("paper_review_node", self._paper_review_node)
+        graph_builder.add_node("paper_review", self._paper_review)
 
-        graph_builder.add_edge(START, "paper_review_node")
-        graph_builder.add_edge("paper_review_node", END)
+        graph_builder.add_edge(START, "paper_review")
+        graph_builder.add_edge("paper_review", END)
         return graph_builder.compile()
 
 
