@@ -19,7 +19,7 @@ class PaperReviewOutput(BaseModel):
     experimental_quality_score: int
 
 
-def paper_review(
+def review_paper(
     llm_name: LLM_MODEL,
     prompt_template: str,
     paper_content: PaperContent,

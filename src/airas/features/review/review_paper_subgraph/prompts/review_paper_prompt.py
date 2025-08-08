@@ -1,4 +1,4 @@
-paper_review_prompt = """\
+review_paper_prompt = """\
 You are an expert reviewer for a top-tier international conference.
 Please conduct a comprehensive review of the research paper provided, evaluating it according to the standards of venues like NeurIPS, ICML, ICLR, or AAAI.
 

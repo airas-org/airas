@@ -6,14 +6,14 @@ from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
-from airas.features.review.paper_review_subgraph.input_data import (
-    paper_review_subgraph_input_data,
+from airas.features.review.review_paper_subgraph.input_data import (
+    review_paper_subgraph_input_data,
 )
-from airas.features.review.paper_review_subgraph.nodes.paper_review import (
-    paper_review,
+from airas.features.review.review_paper_subgraph.nodes.review_paper import (
+    review_paper,
 )
-from airas.features.review.paper_review_subgraph.prompts.paper_review_prompt import (
-    paper_review_prompt,
+from airas.features.review.review_paper_subgraph.prompts.review_paper_prompt import (
+    review_paper_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.paper import PaperContent
@@ -24,36 +24,36 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-paper_review_timed = lambda f: time_node("paper_review_subgraph")(f)  # noqa: E731
+review_paper_timed = lambda f: time_node("review_paper_subgraph")(f)  # noqa: E731
 
 
-class PaperReviewSubgraphInputState(TypedDict):
+class ReviewPaperSubgraphInputState(TypedDict):
     paper_content: PaperContent
 
 
-class PaperReviewSubgraphHiddenState(TypedDict):
+class ReviewPaperSubgraphHiddenState(TypedDict):
     pass
 
 
-class PaperReviewSubgraphOutputState(TypedDict):
+class ReviewPaperSubgraphOutputState(TypedDict):
     novelty_score: int
     significance_score: int
     reproducibility_score: int
     experimental_quality_score: int
 
 
-class PaperReviewSubgraphState(
-    PaperReviewSubgraphInputState,
-    PaperReviewSubgraphHiddenState,
-    PaperReviewSubgraphOutputState,
+class ReviewPaperSubgraphState(
+    ReviewPaperSubgraphInputState,
+    ReviewPaperSubgraphHiddenState,
+    ReviewPaperSubgraphOutputState,
     ExecutionTimeState,
 ):
     pass
 
 
-class PaperReviewSubgraph(BaseSubgraph):
-    InputState = PaperReviewSubgraphInputState
-    OutputState = PaperReviewSubgraphOutputState
+class ReviewPaperSubgraph(BaseSubgraph):
+    InputState = ReviewPaperSubgraphInputState
+    OutputState = ReviewPaperSubgraphOutputState
 
     def __init__(
         self,
@@ -61,12 +61,12 @@ class PaperReviewSubgraph(BaseSubgraph):
         prompt_template: str | None = None,
     ):
         self.llm_name = llm_name
-        self.prompt_template = prompt_template or paper_review_prompt
+        self.prompt_template = prompt_template or review_paper_prompt
         check_api_key(llm_api_key_check=True)
 
-    @paper_review_timed
-    def _paper_review(self, state: PaperReviewSubgraphState) -> dict[str, int]:
-        review_result = paper_review(
+    @review_paper_timed
+    def _review_paper(self, state: ReviewPaperSubgraphState) -> dict[str, int]:
+        review_result = review_paper(
             llm_name=self.llm_name,
             prompt_template=self.prompt_template,
             paper_content=state["paper_content"],
@@ -74,19 +74,19 @@ class PaperReviewSubgraph(BaseSubgraph):
         return review_result
 
     def build_graph(self) -> CompiledGraph:
-        graph_builder = StateGraph(PaperReviewSubgraphState)
-        graph_builder.add_node("paper_review", self._paper_review)
+        graph_builder = StateGraph(ReviewPaperSubgraphState)
+        graph_builder.add_node("review_paper", self._review_paper)
 
-        graph_builder.add_edge(START, "paper_review")
-        graph_builder.add_edge("paper_review", END)
+        graph_builder.add_edge(START, "review_paper")
+        graph_builder.add_edge("review_paper", END)
         return graph_builder.compile()
 
 
 def main():
     llm_name = "o3-2025-04-16"
-    input_data = paper_review_subgraph_input_data
+    input_data = review_paper_subgraph_input_data
 
-    result = PaperReviewSubgraph(
+    result = ReviewPaperSubgraph(
         llm_name=llm_name,
     ).run(input_data)
 

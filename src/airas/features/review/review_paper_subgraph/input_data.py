@@ -1,6 +1,6 @@
 from airas.types.paper import PaperContent
 
-paper_review_subgraph_input_data = {
+review_paper_subgraph_input_data = {
     "paper_content": PaperContent(
         title="Sample Research Paper: A Novel Approach to Machine Learning",
         abstract="This paper introduces a novel approach to machine learning that combines deep neural networks with reinforcement learning techniques. Our method demonstrates superior performance on benchmark datasets compared to existing approaches.",
