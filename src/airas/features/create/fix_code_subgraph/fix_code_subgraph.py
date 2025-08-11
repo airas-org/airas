@@ -4,7 +4,7 @@ from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
-from typing_extensions import NotRequired, TypedDict
+from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
 from airas.features.create.create_code_subgraph.nodes.push_files_to_github import (
@@ -20,6 +20,8 @@ from airas.features.create.fix_code_with_devin_subgraph.nodes.should_fix_code im
     should_fix_code,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
+from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import time_node
 from airas.utils.logging_utils import setup_logging
@@ -31,10 +33,9 @@ fix_code_timed = lambda f: time_node("fix_code_local_subgraph")(f)  # noqa: E731
 
 
 class FixCodeSubgraphInputState(TypedDict):
-    github_repository: dict[str, str]
+    github_repository_info: GitHubRepositoryInfo
     generated_file_contents: dict[str, str]
-    output_text_data: str
-    error_text_data: str
+    new_method: ResearchHypothesis
     executed_flag: bool  # This should be True if the GitHub Actions workflow was executed successfully
     experiment_iteration: int
 
@@ -45,8 +46,8 @@ class FixCodeSubgraphHiddenState(TypedDict):
 
 class FixCodeSubgraphOutputState(TypedDict):
     is_code_pushed_to_github: bool
-    fixed_files: dict[str, str]
     executed_flag: bool
+    generated_file_contents: dict[str, str]
 
 
 class FixCodeSubgraphState(
@@ -55,9 +56,7 @@ class FixCodeSubgraphState(
     FixCodeSubgraphOutputState,
     total=False,
 ):
-    needs_fixing: NotRequired[bool]
-    failed_run_info: NotRequired[dict | None]
-    current_files: NotRequired[dict[str, str]]
+    pass
 
 
 class FixCodeSubgraph(BaseSubgraph):
@@ -85,8 +84,8 @@ class FixCodeSubgraph(BaseSubgraph):
 
         is_code_fix_needed = should_fix_code(
             llm_name=cast(LLM_MODEL, self.llm_name),
-            output_text_data=state["output_text_data"],
-            error_text_data=state["error_text_data"],
+            output_text_data=state["new_method"].experimental_results.result,
+            error_text_data=state["new_method"].experimental_results.error,
         )
         return {
             "is_code_fix_needed": is_code_fix_needed,
@@ -95,36 +94,29 @@ class FixCodeSubgraph(BaseSubgraph):
     @fix_code_timed
     def _fix_code(self, state: FixCodeSubgraphState) -> dict:
         """Analyze errors and generate fixed code"""
-        logger.info("---Analyze and Fix Code Node---")
-
-        fixed_files = fix_code(
+        fixed_file_contents = fix_code(
             llm_name=cast(LLM_MODEL, self.llm_name),
-            output_text_data=state["output_text_data"],
-            error_text_data=state["error_text_data"],
+            output_text_data=state["new_method"].experimental_results.result,
+            error_text_data=state["new_method"].experimental_results.error,
             current_files=state["generated_file_contents"],
             experiment_iteration=state["experiment_iteration"],
         )
 
-        return {"fixed_files": fixed_files}
+        return {"generated_file_contents": fixed_file_contents}
 
     @fix_code_timed
     def _push_fixed_files_node(self, state: FixCodeSubgraphState) -> dict:
         """Push fixed files to GitHub repository"""
-        logger.info("---Push Fixed Files Node---")
-
         commit_message = "Fix code issues based on error analysis"
 
-        success = push_files_to_github(
-            github_repository=state["github_repository"],
-            files=state["fixed_files"],
+        is_code_pushed_to_github = push_files_to_github(
+            github_repository=state["github_repository_info"],
+            files=state["generated_file_contents"],
             commit_message=commit_message,
         )
 
-        fixed_file_paths = list(state["fixed_files"].keys()) if success else []
-
         return {
-            "is_code_pushed_to_github": success,
-            "fixed_files": fixed_file_paths,
+            "is_code_pushed_to_github": is_code_pushed_to_github,
             "executed_flag": False,  # Set to False after fixing, will need re-execution
         }
 

@@ -4,7 +4,7 @@ from airas.features.write.writer_subgraph.prompt.refine_prompt import refine_pro
 from airas.features.write.writer_subgraph.prompt.section_tips_prompt import (
     section_tips_prompt,
 )
-from airas.features.write.writer_subgraph.prompt.system_prompt import system_prompt
+from airas.features.write.writer_subgraph.prompt.write_prompt import write_prompt
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -12,23 +12,23 @@ from airas.services.api_client.llm_client.llm_facade_client import (
 from airas.types.paper import PaperContent
 
 
-def refine(
+def refine_paper(
     llm_name: LLM_MODEL,
     paper_content: dict[str, str],
-    note: str = "",
+    note: str,
     client: LLMFacadeClient | None = None,
 ) -> dict[str, str]:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
     env = Environment()
-    template = env.from_string(system_prompt)
-    rendered_system_prompt = template.render(
+    write_prompt_template = env.from_string(write_prompt)
+    rendered_system_prompt = write_prompt_template.render(
         note=note,
         tips_dict=section_tips_prompt,
     )
 
-    refine_template = env.from_string(refine_prompt)
-    refine_message = refine_template.render(content=paper_content)
+    refine_prompt_template = env.from_string(refine_prompt)
+    refine_message = refine_prompt_template.render(content=paper_content)
 
     messages = rendered_system_prompt + refine_message
 

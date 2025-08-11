@@ -1,13 +1,14 @@
 import logging
 
 from airas.services.api_client.github_client import GithubClient
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
 
 logger = logging.getLogger(__name__)
 
 
 def upload_latex_file(
-    github_repository: dict[str, str],
+    github_repository: GitHubRepositoryInfo,
     latex_text: str,
     latex_template_name: LATEX_TEMPLATE_NAME,
     client: GithubClient | None = None,
@@ -15,9 +16,9 @@ def upload_latex_file(
     client = client or GithubClient()
 
     is_uploaded = client.commit_file_bytes(
-        github_owner=github_repository["github_owner"],
-        repository_name=github_repository["repository_name"],
-        branch_name=github_repository["branch_name"],
+        github_owner=github_repository.github_owner,
+        repository_name=github_repository.repository_name,
+        branch_name=github_repository.branch_name,
         file_path=f".research/latex/{latex_template_name}/paper.tex",
         file_content=latex_text.encode("utf-8"),
         commit_message="Upload LaTeX file",

@@ -17,6 +17,8 @@ from airas.features.create.create_code_subgraph.nodes.push_files_to_github impor
     push_files_to_github,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
+from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import time_node
 from airas.utils.logging_utils import setup_logging
@@ -28,9 +30,9 @@ create_code_timed = lambda f: time_node("create_code_local_subgraph")(f)  # noqa
 
 
 class CreateCodeSubgraphInputState(TypedDict):
-    github_repository: dict[str, str]
-    new_method: str
-    experiment_code: str
+    github_repository_info: GitHubRepositoryInfo
+    new_method: ResearchHypothesis
+    generated_file_contents: dict[str, str]
 
 
 class CreateCodeSubgraphHiddenState(TypedDict):
@@ -38,7 +40,7 @@ class CreateCodeSubgraphHiddenState(TypedDict):
 
 
 class CreateCodeSubgraphOutputState(TypedDict):
-    generated_file_contents: dict[str, str]
+    new_method: ResearchHypothesis
     is_code_pushed_to_github: bool
     created_files: list[str]
     experiment_iteration: int
@@ -74,8 +76,10 @@ class CreateCodeSubgraph(BaseSubgraph):
     def _generate_code_for_scripts(self, state: CreateCodeSubgraphState) -> dict:
         generated_file_contents = generate_code_for_scripts(
             llm_name=cast(LLM_MODEL, self.llm_name),
-            new_method=state["new_method"],
-            experiment_code=state["experiment_code"],
+            new_method=state["new_method"].method,
+            experiment_code=cast(
+                str, state["new_method"].experimental_design.experiment_code
+            ),
             experiment_iteration=state["experiment_iteration"],
         )
 
@@ -86,7 +90,7 @@ class CreateCodeSubgraph(BaseSubgraph):
         commit_message = f"Add generated experiment files for iteration {state['experiment_iteration']}"
 
         is_code_pushed_to_github = push_files_to_github(
-            github_repository=state["github_repository"],
+            github_repository=state["github_repository_info"],
             files=state["generated_file_contents"],
             commit_message=commit_message,
         )

@@ -35,8 +35,7 @@ def extract_reference_titles(
     research_study_list: list[ResearchStudy],
     client: LLMFacadeClient | None = None,
 ) -> list[ResearchStudy]:
-    if client is None:
-        client = LLMFacadeClient(llm_name=llm_name)
+    client = client or LLMFacadeClient(llm_name=llm_name)
 
     reference_research_study_list = []
     env = Environment()

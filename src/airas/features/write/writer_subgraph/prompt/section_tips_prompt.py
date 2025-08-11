@@ -1,11 +1,11 @@
 section_tips_prompt = {
-    "Title": """
+    "Title": """\
 - Write only the title of the paper in one single line, as plain text with no quotation marks
 - Example of correct output: Efficient Adaptation of Large Language Models via Low-Rank Optimization
 - Incorrect output: "Efficient Adaptation of Large Language Models via Low-Rank Optimization"
 - The title must be concise and descriptive of the paper's concept, but try to be creative with it
 - Do not include any explanations or subsections""",
-    "Abstract": """
+    "Abstract": """\
 - Expected length: about 1000 characters
 - TL;DR of the paper covering:
   - What are we trying to do and why is it relevant?
@@ -15,7 +15,7 @@ section_tips_prompt = {
 - Avoid using itemize, subheadings, or displayed equations in the abstract; keep math in plain text and list contributions inline
 - This should be one continuous paragraph with no breaks between the lines
 - Make sure the abstract reads smoothly and is well-motivated""",
-    "Introduction": """
+    "Introduction": """\
 - Expected length: about 4000 characters (~1–1.5 pages)
 - Longer version of the Abstract, covering the entire paper scope
 - Structure should address:
@@ -26,7 +26,7 @@ section_tips_prompt = {
 - Include citations to establish context and motivate the problem
 - New trend: specifically list your contributions as bullet points
 - Extra space? Include future work discussion!""",
-    "Related Work": """
+    "Related Work": """\
 - Expected length: about 3000 characters (~1 page)
 - Academic siblings of our work, i.e. alternative attempts in literature at trying to solve the same problem
 - Goal is to "Compare and contrast" - how does their approach differ in either assumptions or method?
@@ -34,25 +34,25 @@ section_tips_prompt = {
 - If not applicable, provide a clear statement why a given method is not applicable
 - Note: Just describing what another paper is doing is not enough. We need to compare and contrast
 - Include extensive citations to related work with proper contextual discussion""",
-    "Background": """
+    "Background": """\
 - Expected length: about 3000 characters (~1 page)
 - Academic Ancestors of our work, i.e. all concepts and prior work required for understanding our method
 - Usually includes a subsection, Problem Setting, which formally introduces the problem setting and notation (Formalism) for our method
 - Highlights any specific assumptions that are made that are unusual
 - Include citations to foundational work and key concepts
 - Note: If our paper introduces a novel problem setting as part of its contributions, it's best to have a separate Section""",
-    "Method": """
+    "Method": """\
 - Expected length: about 4000 characters (~1–1.5 pages)
 - What we do. Why we do it. All described using the general Formalism introduced in the Problem Setting and building on top of the concepts/foundations introduced in Background
 - Include citations only when building upon or adapting existing methods or techniques
 - Provide clear technical descriptions with proper mathematical notation""",
-    "Experimental Setup": """
+    "Experimental Setup": """\
 - Expected length: about 4000 characters (~1–1.5 pages)
 - How do we test that our stuff works? Introduces a specific instantiation of the Problem Setting and specific implementation details of our Method for this Problem Setting
 - Do not imagine unknown hardware details
 - Includes a description of the dataset, evaluation metrics, important hyperparameters, and implementation details
 - Include citations for datasets, established evaluation metrics, and baseline methods used for comparison""",
-    "Results": """
+    "Results": """\
 - Expected length: about 4000 characters (~1–1.5 pages)
 - Shows the results of running Method on our problem described in Experimental Setup
 - Includes statements on hyperparameters and other potential issues of fairness
@@ -62,7 +62,7 @@ section_tips_prompt = {
 - Discusses limitations of the method
 - Make sure to include all the results from the experiments, and include all relevant figures
 - Include citations only when directly comparing to baseline methods or referencing related experimental results""",
-    "Conclusions": """
+    "Conclusion": """\
 - Expected length: about 2000 characters (~0.5 pages)
 - Brief recap of the entire paper
 - Summarize key contributions and their implications

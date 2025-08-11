@@ -1,4 +1,5 @@
 import logging
+from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -59,7 +60,7 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
         self, state: ExtractReferenceTitlesState
     ) -> dict[str, list[ResearchStudy]]:
         reference_research_study_list = extract_reference_titles(
-            llm_name=self.llm_name,
+            llm_name=cast(LLM_MODEL, self.llm_name),
             research_study_list=state["research_study_list"],
         )
         return {"reference_research_study_list": reference_research_study_list}

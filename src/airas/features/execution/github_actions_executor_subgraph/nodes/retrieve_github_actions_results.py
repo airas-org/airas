@@ -4,6 +4,7 @@ import sys
 from typing import cast
 
 from airas.services.api_client.github_client import GithubClient
+from airas.types.github import GitHubRepositoryInfo
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ def _get_single_file_content(
 
 
 def retrieve_github_actions_results(
-    github_repository: dict[str, str],
+    github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
     github_client: GithubClient | None = None,
 ) -> tuple[str, str, list[str]]:
@@ -74,9 +75,9 @@ def retrieve_github_actions_results(
     """
     client = github_client or GithubClient()
 
-    github_owner = github_repository["github_owner"]
-    repository_name = github_repository["repository_name"]
-    branch_name = github_repository["branch_name"]
+    github_owner = github_repository.github_owner
+    repository_name = github_repository.repository_name
+    branch_name = github_repository.branch_name
 
     output_file_path = f".research/iteration{experiment_iteration}/output.txt"
     error_file_path = f".research/iteration{experiment_iteration}/error.txt"
