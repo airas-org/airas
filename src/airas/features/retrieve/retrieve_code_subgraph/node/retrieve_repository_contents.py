@@ -1,3 +1,4 @@
+import base64
 import logging
 import re
 
@@ -11,7 +12,9 @@ logger = logging.getLogger(__name__)
 def retrieve_repository_contents(github_url: str) -> str:
     match = re.match(r"https://github\.com/([^/]+)/([^/]+)", github_url)
     if not match:
-        raise ValueError(f"Invalid GitHub URL: {github_url}")
+        logger.warning(f"Invalid GitHub URL format: {github_url}")
+        return ""
+
     github_owner, repository_name = match.group(1), match.group(2)
 
     client = GithubClient()
@@ -36,7 +39,7 @@ def retrieve_repository_contents(github_url: str) -> str:
     file_paths = [
         entry.get("path", "")
         for entry in repository_tree_info["tree"]
-        if entry.get("path", "").endswith((".py", ".ipynb"))
+        if entry.get("path", "").endswith((".py"))
     ]
 
     contents = []
@@ -49,9 +52,13 @@ def retrieve_repository_contents(github_url: str) -> str:
         if file_bytes is None:
             logger.warning(f"Failed to retrieve file data: {file_path}")
             continue
+        content_b64 = file_bytes.get("content", "")
+        content_b64 = content_b64.replace("\\n", "\n")
+        decoded_bytes = base64.b64decode(content_b64)
         try:
-            content_str = file_bytes.decode("utf-8")
-        except AttributeError:
-            content_str = str(file_bytes)
+            content_str = decoded_bytes.decode("utf-8")
+        except Exception as e:
+            logger.warning(f"Failed to decode file content: {e}")
+            content_str = ""
         contents.append(f"File Path: {file_path}\nContent:\n{content_str}")
     return "\n".join(contents)

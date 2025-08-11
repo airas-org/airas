@@ -19,9 +19,6 @@ from airas.features.retrieve.retrieve_code_subgraph.node.extract_github_url_from
 from airas.features.retrieve.retrieve_code_subgraph.node.retrieve_repository_contents import (
     retrieve_repository_contents,
 )
-from airas.features.retrieve.retrieve_code_subgraph.prompt.extract_experimental_info_prompt import (
-    extract_experimental_info_prompt,
-)
 from airas.features.retrieve.retrieve_code_subgraph.prompt.extract_github_url_prompt import (
     extract_github_url_from_text_prompt,
 )
@@ -71,6 +68,8 @@ class RetrieveCodeSubgraph(BaseSubgraph):
     def _extract_github_url_from_text(self, state: RetrieveCodeState) -> dict:
         research_study_list = state["research_study_list"]
         for research_study in research_study_list:
+            if "full_text" not in research_study:
+                continue
             github_url = extract_github_url_from_text(
                 paper_full_text=research_study["full_text"],
                 paper_summary=research_study["llm_extracted_info"]["methodology"],
@@ -88,10 +87,13 @@ class RetrieveCodeSubgraph(BaseSubgraph):
         research_study_list = state["research_study_list"]
         code_str_list = []
         for research_study in research_study_list:
-            code_str = retrieve_repository_contents(
-                github_url=research_study["meta_data"]["github_url"]
-            )
-            code_str_list.append(code_str)
+            if "github_url" in (research_study.get("meta_data") or {}):
+                code_str = retrieve_repository_contents(
+                    github_url=research_study["meta_data"]["github_url"]
+                )
+                code_str_list.append(code_str)
+            else:
+                code_str_list.append("")
         return {
             "code_str_list": code_str_list,
         }
@@ -111,7 +113,6 @@ class RetrieveCodeSubgraph(BaseSubgraph):
                     llm_name=cast(LLM_MODEL, self.llm_name),
                     method_text=research_study["llm_extracted_info"]["methodology"],
                     repository_content_str=code_str,
-                    prompt_template=extract_experimental_info_prompt,
                 )
                 research_study["llm_extracted_info"]["experimental_code"] = extract_code
                 research_study["llm_extracted_info"]["experimental_info"] = (

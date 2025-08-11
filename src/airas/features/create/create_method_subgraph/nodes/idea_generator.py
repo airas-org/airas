@@ -47,9 +47,11 @@ def idea_generator(
 
 def _parse_research_study_list(research_study_list: list[dict[str, Any]]) -> str:
     data_str = ""
-    for idx, research_study in enumerate(research_study_list, start=1):
-        data_str += f"""/
-# Research Study {idx}
+    for research_study in research_study_list:
+        info = research_study.get("llm_extracted_info")
+        if not info:
+            continue
+        data_str += f"""\
 Title:{research_study["title"]}
 Main Contributions:{research_study["llm_extracted_info"].get("main_contributions", "")}
 Methodology:{research_study["llm_extracted_info"].get("methodology", "")}

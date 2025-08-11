@@ -57,9 +57,9 @@ def _get_single_file_content(
 
 
 def retrieve_github_actions_results(
-    github_repository: str,
-    branch_name: str,
+    github_repository: dict[str, str],
     experiment_iteration: int,
+    github_client: GithubClient | None = None,
 ) -> tuple[str, str, list[str]]:
     """
     Retrieve output.txt and error.txt files from .research/iteration1/ directory in the repository.
@@ -72,8 +72,11 @@ def retrieve_github_actions_results(
     Returns:
         Tuple of (output_text_data, error_text_data)
     """
-    github_owner, repository_name = github_repository.split("/", 1)
-    client = GithubClient()
+    client = github_client or GithubClient()
+
+    github_owner = github_repository["github_owner"]
+    repository_name = github_repository["repository_name"]
+    branch_name = github_repository["branch_name"]
 
     output_file_path = f".research/iteration{experiment_iteration}/output.txt"
     error_file_path = f".research/iteration{experiment_iteration}/error.txt"
@@ -114,13 +117,15 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     # Example usage - replace with actual values
-    github_repository = "auto-res2/test-tanaka-v6"
-    branch_name = "develop-1"
+    github_repository = {
+        "github_owner": "auto-res2",
+        "repository_name": "test-tanaka-v6",
+        "branch_name": "develop-1",
+    }
 
     try:
         output_data, error_data, image_data = retrieve_github_actions_results(
             github_repository=github_repository,
-            branch_name=branch_name,
             experiment_iteration=1,  # Example iteration
         )
 

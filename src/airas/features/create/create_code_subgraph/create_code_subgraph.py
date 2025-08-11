@@ -31,7 +31,6 @@ class CreateCodeSubgraphInputState(TypedDict):
     github_repository: dict[str, str]
     new_method: str
     experiment_code: str
-    experiment_iteration: int
 
 
 class CreateCodeSubgraphHiddenState(TypedDict):
@@ -42,6 +41,7 @@ class CreateCodeSubgraphOutputState(TypedDict):
     generated_file_contents: dict[str, str]
     is_code_pushed_to_github: bool
     created_files: list[str]
+    experiment_iteration: int
 
 
 class CreateCodeSubgraphState(
@@ -63,6 +63,12 @@ class CreateCodeSubgraph(BaseSubgraph):
             llm_api_key_check=True,
             github_personal_access_token_check=True,
         )
+
+    @create_code_timed
+    def _initialize(self, state: CreateCodeSubgraphState) -> dict:
+        if "experiment_iteration" in state:
+            return {"experiment_iteration": state["experiment_iteration"]}
+        return {"experiment_iteration": 1}
 
     @create_code_timed
     def _generate_code_for_scripts(self, state: CreateCodeSubgraphState) -> dict:
@@ -98,15 +104,15 @@ class CreateCodeSubgraph(BaseSubgraph):
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(CreateCodeSubgraphState)
-
+        graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node(
             "generate_code_for_scripts", self._generate_code_for_scripts
         )
         graph_builder.add_node(
             "push_files_to_github_node", self._push_files_to_github_node
         )
-
-        graph_builder.add_edge(START, "generate_code_for_scripts")
+        graph_builder.add_edge(START, "initialize")
+        graph_builder.add_edge("initialize", "generate_code_for_scripts")
         graph_builder.add_edge("generate_code_for_scripts", "push_files_to_github_node")
         graph_builder.add_edge("push_files_to_github_node", END)
 

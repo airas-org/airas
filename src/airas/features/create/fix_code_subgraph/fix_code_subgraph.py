@@ -36,6 +36,7 @@ class FixCodeSubgraphInputState(TypedDict):
     output_text_data: str
     error_text_data: str
     executed_flag: bool  # This should be True if the GitHub Actions workflow was executed successfully
+    experiment_iteration: int
 
 
 class FixCodeSubgraphHiddenState(TypedDict):
@@ -71,6 +72,11 @@ class FixCodeSubgraph(BaseSubgraph):
         )
 
     @fix_code_timed
+    def _initialize(self, state: FixCodeSubgraphState) -> dict:
+        # NOTE: We increment the experiment_iteration here to reflect the next iteration
+        return {"experiment_iteration": state["experiment_iteration"] + 1}
+
+    @fix_code_timed
     def _should_fix_code(self, state: FixCodeSubgraphState) -> dict:
         if not state.get("executed_flag", True):
             raise ValueError(
@@ -96,6 +102,7 @@ class FixCodeSubgraph(BaseSubgraph):
             output_text_data=state["output_text_data"],
             error_text_data=state["error_text_data"],
             current_files=state["generated_file_contents"],
+            experiment_iteration=state["experiment_iteration"],
         )
 
         return {"fixed_files": fixed_files}
@@ -129,12 +136,13 @@ class FixCodeSubgraph(BaseSubgraph):
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(FixCodeSubgraphState)
-
+        graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node("should_fix_code", self._should_fix_code)
         graph_builder.add_node("fix_code", self._fix_code)
         graph_builder.add_node("push_fixed_files_node", self._push_fixed_files_node)
 
-        graph_builder.add_edge(START, "should_fix_code")
+        graph_builder.add_edge(START, "initialize")
+        graph_builder.add_edge("initialize", "should_fix_code")
         graph_builder.add_conditional_edges(
             "should_fix_code",
             self._route_fix_or_end,
