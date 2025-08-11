@@ -1,26 +1,8 @@
 from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
-from typing_extensions import TypedDict
 
 from airas.types.arxiv import ArxivInfo
-
-
-class CandidatePaperInfo(TypedDict):
-    arxiv_id: str
-    arxiv_url: str
-    title: str
-    authors: list[str]
-    published_date: str
-    journal: str
-    doi: str
-    summary: str
-    github_url: str
-    main_contributions: str
-    methodology: str
-    experimental_setup: str
-    limitations: str
-    future_research_directions: str
 
 
 class PaperBody(BaseModel):
