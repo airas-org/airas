@@ -26,8 +26,7 @@ executor_timed = lambda f: time_node("executor_subgraph")(f)  # noqa: E731
 
 
 class GitHubActionsExecutorSubgraphInputState(TypedDict):
-    github_repository: str
-    branch_name: str
+    github_repository: dict[str, str]
     experiment_iteration: int
     is_code_pushed_to_github: bool
 
@@ -73,7 +72,6 @@ class GitHubActionsExecutorSubgraph(BaseSubgraph):
 
         executed_flag = execute_github_actions_workflow(
             github_repository=state["github_repository"],
-            branch_name=state["branch_name"],
             experiment_iteration=state["experiment_iteration"],
             gpu_enabled=self.gpu_enabled,
         )
@@ -84,7 +82,6 @@ class GitHubActionsExecutorSubgraph(BaseSubgraph):
         output_text_data, error_text_data, image_file_name_list = (
             retrieve_github_actions_results(
                 github_repository=state["github_repository"],
-                branch_name=state["branch_name"],
                 experiment_iteration=state["experiment_iteration"],
             )
         )
@@ -92,8 +89,6 @@ class GitHubActionsExecutorSubgraph(BaseSubgraph):
             "output_text_data": output_text_data,
             "error_text_data": error_text_data,
             "image_file_name_list": image_file_name_list,
-            # NOTE: We increment the experiment_iteration here to reflect the next iteration
-            "experiment_iteration": state["experiment_iteration"] + 1,
         }
 
     def build_graph(self) -> CompiledGraph:

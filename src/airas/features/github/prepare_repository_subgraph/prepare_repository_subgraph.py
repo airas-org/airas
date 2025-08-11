@@ -34,13 +34,10 @@ prepare_repository_timed = lambda f: time_node("prepare_repository")(f)  # noqa:
 
 
 class PrepareRepositoryInputState(TypedDict):
-    github_repository: str
-    branch_name: str
+    github_repository: dict[str, str]
 
 
 class PrepareRepositoryHiddenState(TypedDict):
-    github_owner: str
-    repository_name: str
     target_branch_sha: str
     main_sha: str
     repository_from_template: bool
@@ -77,26 +74,13 @@ class PrepareRepositorySubgraph(BaseSubgraph):
         self.template_owner = template_owner
         self.template_repo = template_repo
 
-    def _init(self, state: PrepareRepositoryState) -> dict[str, str]:
-        try:
-            github_owner, repository_name = state["github_repository"].split("/", 1)
-            return {
-                "github_owner": github_owner,
-                "repository_name": repository_name,
-            }
-        except ValueError:
-            logger.error(
-                f"Invalid github_repository format: {state['github_repository']}"
-            )
-            raise
-
     @prepare_repository_timed
     def _check_repository_from_template(
         self, state: PrepareRepositoryState
     ) -> dict[str, Literal[True]]:
         repository_from_template = check_repository_from_template(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
+            github_owner=state["github_repository"]["github_owner"],
+            repository_name=state["github_repository"]["repository_name"],
             template_owner=self.template_owner,
             template_repo=self.template_repo,
         )
@@ -107,8 +91,8 @@ class PrepareRepositorySubgraph(BaseSubgraph):
         self, state: PrepareRepositoryState
     ) -> dict[str, bool]:
         repository_from_template = create_repository_from_template(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
+            github_owner=state["github_repository"]["github_owner"],
+            repository_name=state["github_repository"]["repository_name"],
             template_owner=self.template_owner,
             template_repo=self.template_repo,
         )
@@ -120,9 +104,9 @@ class PrepareRepositorySubgraph(BaseSubgraph):
     ) -> dict[str, str | bool]:
         time.sleep(5)
         target_branch_sha = check_branch_existence(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+            github_owner=state["github_repository"]["github_owner"],
+            repository_name=state["github_repository"]["repository_name"],
+            branch_name=state["github_repository"]["branch_name"],
         )
         return {
             "target_branch_sha": target_branch_sha,
@@ -134,17 +118,17 @@ class PrepareRepositorySubgraph(BaseSubgraph):
         self, state: PrepareRepositoryState
     ) -> dict[str, str]:
         main_sha = retrieve_main_branch_sha(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
+            github_owner=state["github_repository"]["github_owner"],
+            repository_name=state["github_repository"]["repository_name"],
         )
         return {"main_sha": main_sha}
 
     @prepare_repository_timed
     def _create_branch(self, state: PrepareRepositoryState) -> dict[str, bool]:
         branch_created = create_branch(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+            github_owner=state["github_repository"]["github_owner"],
+            repository_name=state["github_repository"]["repository_name"],
+            branch_name=state["github_repository"]["branch_name"],
             sha=state["main_sha"],
         )
         return {"branch_created": branch_created}
@@ -175,7 +159,6 @@ class PrepareRepositorySubgraph(BaseSubgraph):
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(PrepareRepositoryState)
 
-        graph_builder.add_node("init", self._init)
         graph_builder.add_node(
             "check_repository_from_template", self._check_repository_from_template
         )
@@ -189,8 +172,7 @@ class PrepareRepositorySubgraph(BaseSubgraph):
         graph_builder.add_node("create_branch", self._create_branch)
         graph_builder.add_node("finalize_state", self._finalize_state)
 
-        graph_builder.add_edge(START, "init")
-        graph_builder.add_edge("init", "check_repository_from_template")
+        graph_builder.add_edge(START, "check_repository_from_template")
         graph_builder.add_conditional_edges(
             "check_repository_from_template",
             self._should_create_from_template,

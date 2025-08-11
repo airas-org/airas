@@ -10,6 +10,8 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 - Ensure all imports are correct and available
 - Fix any syntax errors, import errors, or runtime errors
 - Make sure the code follows Python best practices
+- Please modify it so that all images output from the experiment are saved in this directory.
+  - .research/iteration{{ experiment_iteration }}/images
 
 # Error Information
 ## Output Data:

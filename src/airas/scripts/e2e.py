@@ -139,6 +139,9 @@ def run_from_state_file(
         elif subgraph_name == "summarize_paper":
             state = summarize_paper.run(state)
             save_state(state, "summarize_paper", save_dir)
+        elif subgraph_name == "retrieve_code":
+            state = retrieve_code.run(state)
+            save_state(state, "retrieve_code", save_dir)
         elif subgraph_name == "create_method":
             state = create_method.run(state)
             save_state(state, "create_method", save_dir)
@@ -153,13 +156,13 @@ def run_from_state_file(
             save_state(state, "executor", save_dir)
         elif subgraph_name == "fixer":
             while True:
-                state = fixer.run(state)
-                save_state(state, "fixer", save_dir)
                 if state.get("executed_flag") is True:
                     state = analysis.run(state)
                     save_state(state, "analysis", save_dir)
                     break
                 else:
+                    state = fixer.run(state)
+                    save_state(state, "fixer", save_dir)
                     state = executor.run(state)
                     save_state(state, "executor", save_dir)
         elif subgraph_name == "analysis":
@@ -189,11 +192,14 @@ def main(file_path: str | None = None):
     E2E実行のメイン関数
     """
     save_dir = datetime.now().strftime("%Y%m%d_%H%M%S")
-    github_repository = "auto-res2/tanaka-20250808-v2"
+    github_repository = {
+        "github_owner": "auto-res2",
+        "repository_name": "tanaka-20250811",
+        "branch_name": "develop-2",
+    }
     branch_name = "develop"
     state = {
         "github_repository": github_repository,
-        "branch_name": branch_name,
         "research_topic": "Acceleration of diffusion models",
     }
     prepare.run(state)
@@ -207,8 +213,8 @@ def main(file_path: str | None = None):
 
 if __name__ == "__main__":
     # Execute from the beginning
-    main()
+    # main()
 
     # If you want to run from the middle, specify the file path.
-    # file_path = "/workspaces/airas/data/20250808_145304/get_paper_titles.json"
-    # main(file_path=file_path)
+    file_path = "/workspaces/airas/data/20250811_092700/create_experimental_design.json"
+    main(file_path=file_path)

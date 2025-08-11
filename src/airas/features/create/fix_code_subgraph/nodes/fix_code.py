@@ -29,6 +29,7 @@ def fix_code(
     output_text_data: str,
     error_text_data: str,
     current_files: dict[str, str],
+    experiment_iteration: int,
     prompt_template: str = code_fix_prompt,
     client: LLMFacadeClient | None = None,
 ) -> dict[str, str]:
@@ -40,6 +41,7 @@ def fix_code(
         "output_text_data": output_text_data,
         "error_text_data": error_text_data,
         "current_files": current_files,
+        "experiment_iteration": experiment_iteration,
     }
 
     # Render prompt template

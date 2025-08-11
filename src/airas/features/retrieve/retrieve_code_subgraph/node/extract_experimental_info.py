@@ -1,6 +1,9 @@
 from jinja2 import Environment
 from pydantic import BaseModel
 
+from airas.features.retrieve.retrieve_code_subgraph.prompt.extract_experimental_info_prompt import (
+    extract_experimental_info_prompt,
+)
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -17,7 +20,7 @@ def extract_experimental_info(
     llm_name: LLM_MODEL,
     method_text: CandidatePaperInfo,
     repository_content_str: str,
-    prompt_template: str,
+    prompt_template: str = extract_experimental_info_prompt,
     client: LLMFacadeClient | None = None,
 ) -> tuple[str, str]:
     if client is None:
