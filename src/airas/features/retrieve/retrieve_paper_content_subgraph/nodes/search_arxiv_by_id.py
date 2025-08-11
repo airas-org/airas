@@ -1,89 +1,65 @@
 from logging import getLogger
-from typing import Any
 
 import feedparser
 
 from airas.services.api_client.arxiv_client import ArxivClient
-from airas.services.api_client.retry_policy import (
-    HTTPClientFatalError,
-    HTTPClientRetryableError,
-)
 from airas.types.arxiv import ArxivInfo
+from airas.types.research_study import MetaData, ResearchStudy
 
 logger = getLogger(__name__)
 
 
-class ArxivPaperNormalizer:
-    def __init__(self, client: ArxivClient | None = None):
-        self.client = client or ArxivClient()
+def search_arxiv_by_id(
+    research_study_list: list[ResearchStudy],
+    client: ArxivClient | None = None,
+) -> list[ResearchStudy]:
+    client = client or ArxivClient()
 
-    def _validate_entry(self, entry: Any) -> ArxivInfo | None:
+    for research_study in research_study_list:
+        arxiv_id = (
+            research_study.meta_data.arxiv_id if research_study.meta_data else None
+        )
+        if not arxiv_id:
+            continue
+
+        xml_feed = client.get_paper_by_id(arxiv_id=arxiv_id.strip())
+        feed = feedparser.parse(xml_feed)
+        if not feed.entries:
+            continue
+
+        entry = feed.entries[0]
         if not hasattr(entry, "id"):
-            return None
+            continue
 
-        arxiv_id = entry.id.split("/")[-1]
-
-        doi = None
-        if hasattr(entry, "arxiv_doi"):
-            doi = entry.arxiv_doi
-        elif hasattr(entry, "links"):
-            for link in entry.links:
-                if link.get("title") == "doi":
-                    doi = link.get("href", "").replace("http://dx.doi.org/", "")
-                    break
-
-        journal_ref = None
-        if hasattr(entry, "arxiv_journal_ref"):
-            journal_ref = entry.arxiv_journal_ref
-
-        affiliations = []
-        if hasattr(entry, "authors"):
-            for author in entry.authors:
-                if hasattr(author, "arxiv_affiliation"):
-                    affiliations.append(author.arxiv_affiliation)
-
-        return ArxivInfo(
-            id=arxiv_id,
-            url=f"https://arxiv.org/abs/{arxiv_id}",
+        arxiv_info = ArxivInfo(
+            id=entry.id.split("/")[-1],
             title=entry.title or "No Title",
             authors=[a.name for a in getattr(entry, "authors", [])],
-            published_date=entry.published if hasattr(entry, "published") else "",
+            published_date=getattr(entry, "published", ""),
             summary=getattr(entry, "summary", ""),
-            journal=journal_ref,  # Use journal_ref instead of None
-            doi=doi,
-            affiliation=", ".join(affiliations) if affiliations else None,
+            journal=getattr(entry, "arxiv_journal_ref", None),
+            doi=getattr(entry, "arxiv_doi", None),
         )
 
-    def get_by_id(self, arxiv_id: str) -> ArxivInfo | None:
-        try:
-            xml_feed = self.client.get_paper_by_id(arxiv_id=arxiv_id)
-        except (HTTPClientRetryableError, HTTPClientFatalError) as e:
-            logger.warning(f"ArXiv API request failed: {e}")
-            return None
+        if not research_study.meta_data:
+            research_study.meta_data = MetaData()
 
-        feed = feedparser.parse(xml_feed)
-        for entry in feed.entries:
-            if paper := self._validate_entry(entry):
-                return paper
-        return None
+        research_study.meta_data.arxiv_id = arxiv_info.id
+        research_study.meta_data.doi = arxiv_info.doi
+        research_study.meta_data.authors = arxiv_info.authors
+        research_study.meta_data.published_date = arxiv_info.published_date
+        research_study.meta_data.venue = arxiv_info.journal
+        research_study.meta_data.pdf_url = f"https://arxiv.org/pdf/{arxiv_info.id}.pdf"
 
+        if arxiv_info.summary:
+            research_study.abstract = arxiv_info.summary
 
-def search_arxiv_by_id(
-    arxiv_id: str,
-    client: ArxivClient | None = None,
-) -> dict | None:
-    if not arxiv_id.strip():
-        return None
-
-    normalizer = ArxivPaperNormalizer(client)
-    paper = normalizer.get_by_id(arxiv_id.strip())
-
-    if paper:
-        return paper.model_dump()
-    return None
+    return research_study_list
 
 
 if __name__ == "__main__":
-    arxiv_id = "1706.03762"  # Attention is All you Need
-    results = search_arxiv_by_id(arxiv_id)
-    print(f"results: {results}")
+    research_study = ResearchStudy(
+        title="Attention Is All You Need", meta_data=MetaData(arxiv_id="1706.03762")
+    )
+    results = search_arxiv_by_id([research_study])
+    print(f"results: {results[0].model_dump() if results else 'No results'}")

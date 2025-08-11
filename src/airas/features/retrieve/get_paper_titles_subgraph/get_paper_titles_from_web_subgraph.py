@@ -15,6 +15,7 @@ from airas.features.retrieve.get_paper_titles_subgraph.nodes.openai_websearch_ti
 from airas.features.retrieve.get_paper_titles_subgraph.prompt.openai_websearch_titles_prompt import (
     openai_websearch_titles_prompt,
 )
+from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -34,7 +35,7 @@ class GetPaperTitlesFromWebHiddenState(TypedDict): ...
 
 
 class GetPaperTitlesFromWebOutputState(TypedDict):
-    research_study_list: list[dict]
+    research_study_list: list[ResearchStudy]
 
 
 class GetPaperTitlesFromWebState(
@@ -55,7 +56,7 @@ class GetPaperTitlesFromWebSubgraph(BaseSubgraph):
     @get_paper_titles_from_web_timed
     def _openai_websearch_titles(
         self, state: GetPaperTitlesFromWebState
-    ) -> dict[str, list[dict]]:
+    ) -> dict[str, list[ResearchStudy]]:
         titles = openai_websearch_titles(
             queries=state["queries"], prompt_template=openai_websearch_titles_prompt
         )
@@ -75,7 +76,17 @@ class GetPaperTitlesFromWebSubgraph(BaseSubgraph):
 def main():
     input = get_paper_titles_subgraph_input_data
     result = GetPaperTitlesFromWebSubgraph().run(input)
-    print(f"result: {json.dumps(result, indent=2)}")
+
+    serializable_result = {}
+    for key, value in result.items():
+        if isinstance(value, list):
+            serializable_result[key] = [
+                item.model_dump() if hasattr(item, "model_dump") else item
+                for item in value
+            ]
+        else:
+            serializable_result[key] = value
+    print(f"result: {json.dumps(serializable_result, indent=2)}")
 
 
 if __name__ == "__main__":
