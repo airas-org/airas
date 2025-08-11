@@ -1,4 +1,3 @@
-import json
 import logging
 
 from langgraph.graph import END, START, StateGraph
@@ -61,7 +60,7 @@ class GetPaperTitlesFromWebSubgraph(BaseSubgraph):
             queries=state["queries"], prompt_template=openai_websearch_titles_prompt
         )
         # Convert titles to research_study_list format
-        research_study_list = [{"title": title} for title in (titles or [])]
+        research_study_list = [ResearchStudy(title=title) for title in (titles or [])]
         return {"research_study_list": research_study_list}
 
     def build_graph(self) -> CompiledGraph:
@@ -76,17 +75,7 @@ class GetPaperTitlesFromWebSubgraph(BaseSubgraph):
 def main():
     input = get_paper_titles_subgraph_input_data
     result = GetPaperTitlesFromWebSubgraph().run(input)
-
-    serializable_result = {}
-    for key, value in result.items():
-        if isinstance(value, list):
-            serializable_result[key] = [
-                item.model_dump() if hasattr(item, "model_dump") else item
-                for item in value
-            ]
-        else:
-            serializable_result[key] = value
-    print(f"result: {json.dumps(serializable_result, indent=2)}")
+    print(f"result: {result}")
 
 
 if __name__ == "__main__":

@@ -28,17 +28,29 @@ def search_arxiv_id_from_title(
                 "conference_preference": conference_preference,
             }
         )
+        try:
+            output, _ = client.web_search(message=prompt)
+        except Exception as e:
+            logger.error(
+                f"Web search failed for '{research_study.title}': {e}. Skipping to the next."
+            )
+            continue
 
-        output, _ = client.web_search(message=prompt)
-        arxiv_id = output.get("arxiv_id", "").strip() if output else ""
+        if not output:
+            logger.warning(
+                f"No output received for '{research_study.title}'. Skipping."
+            )
+            continue
 
+        arxiv_id = output.get("arxiv_id", "").strip()
         if not arxiv_id:
-            logger.error(f"Web search failed for '{research_study.title}'")
+            logger.warning(f"No arXiv ID found for '{research_study.title}'.")
             continue
 
         if not research_study.meta_data:
             research_study.meta_data = MetaData()
         research_study.meta_data.arxiv_id = arxiv_id
+        logger.info(f"Found arXiv ID for '{research_study.title}': {arxiv_id}")
 
     return research_study_list
 
