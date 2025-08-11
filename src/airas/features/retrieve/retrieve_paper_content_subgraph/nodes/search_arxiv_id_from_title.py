@@ -6,6 +6,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.research_study import MetaData, ResearchStudy
 
 logger = logging.getLogger(__name__)
 
@@ -13,40 +14,33 @@ logger = logging.getLogger(__name__)
 def search_arxiv_id_from_title(
     llm_name: LLM_MODEL,
     prompt_template: str,
-    title: str,
+    research_study_list: list[ResearchStudy],
     conference_preference: str | None = None,
     client: LLMFacadeClient | None = None,
-) -> str | None:
+) -> list[ResearchStudy]:
     client = client or LLMFacadeClient(llm_name=llm_name)
+    template = Environment().from_string(prompt_template)
 
-    env = Environment()
-    template = env.from_string(prompt_template)
+    for research_study in research_study_list:
+        prompt = template.render(
+            {
+                "title": research_study.title,
+                "conference_preference": conference_preference,
+            }
+        )
 
-    logger.info(f"OpenAI web search for title: '{title}'")
-    data = {
-        "title": title,
-        "conference_preference": conference_preference,
-    }
-    prompt = template.render(data)
+        output, _ = client.web_search(message=prompt)
+        arxiv_id = output.get("arxiv_id", "").strip() if output else ""
 
-    try:
-        output, cost = client.web_search(message=prompt)
-    except Exception as e:
-        logger.warning(f"OpenAI web search failed for '{title}': {e}")
-        return None
+        if not arxiv_id:
+            logger.error(f"Web search failed for '{research_study.title}'")
+            continue
 
-    if not output:
-        logger.warning(f"No web search response for title: '{title}'")
-        return None
+        if not research_study.meta_data:
+            research_study.meta_data = MetaData()
+        research_study.meta_data.arxiv_id = arxiv_id
 
-    arxiv_id = output["arxiv_id"].strip()
-    logger.info(f"Extracted arXiv ID: '{arxiv_id}'")
-
-    if not arxiv_id:
-        logger.warning(f"Empty arXiv ID for title: '{title}'")
-        return None
-
-    return arxiv_id
+    return research_study_list
 
 
 if __name__ == "__main__":
@@ -54,15 +48,15 @@ if __name__ == "__main__":
         openai_websearch_arxiv_ids_prompt,
     )
 
-    # test_title = "Attention Is All You Need"
-    title = "TSDiT: Traffic Scene Diffusion Models With Transformers"
+    research_study = ResearchStudy(title="Attention Is All You Need")
 
     result = search_arxiv_id_from_title(
         llm_name="gpt-4o-2024-11-20",
         prompt_template=openai_websearch_arxiv_ids_prompt,
-        title=title,
+        research_study_list=[research_study],
     )
-    if result:
-        print(f"arXiv ID: {result}")
+
+    if result and result[0].meta_data and result[0].meta_data.arxiv_id:
+        print(f"arXiv ID found: {result[0].meta_data.arxiv_id}")
     else:
         print("No arXiv ID found")

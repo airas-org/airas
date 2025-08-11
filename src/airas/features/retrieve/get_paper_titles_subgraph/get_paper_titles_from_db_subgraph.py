@@ -19,6 +19,7 @@ from airas.features.retrieve.get_paper_titles_subgraph.nodes.get_paper_title_fro
 from airas.features.retrieve.get_paper_titles_subgraph.nodes.get_paper_titles_from_airas_db import (
     get_paper_titles_from_airas_db,
 )
+from airas.types.research_study import ResearchStudy
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -38,7 +39,7 @@ class GetPaperTitlesFromDBHiddenState(TypedDict):
 
 
 class GetPaperTitlesFromDBOutputState(TypedDict):
-    research_study_list: list[dict]
+    research_study_list: list[ResearchStudy]
 
 
 class GetPaperTitlesFromDBState(
@@ -62,14 +63,16 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
         self.semantic_search = semantic_search
 
     @get_paper_titles_from_db_timed
-    def _get_paper_titles_from_airas_db(self, state: GetPaperTitlesFromDBState) -> dict:
+    def _get_paper_titles_from_airas_db(
+        self, state: GetPaperTitlesFromDBState
+    ) -> dict[str, list[dict[str, Any]]]:
         all_papers = get_paper_titles_from_airas_db()
         return {"all_papers": all_papers or []}
 
     @get_paper_titles_from_db_timed
     def _filter_titles_by_queries(
         self, state: GetPaperTitlesFromDBState
-    ) -> dict[str, list[dict]]:
+    ) -> dict[str, list[ResearchStudy]]:
         titles = filter_titles_by_queries(
             papers=state["all_papers"],
             queries=state["queries"],
@@ -79,7 +82,9 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
         return {"research_study_list": research_study_list}
 
     @get_paper_titles_from_db_timed
-    def get_paper_titles_from_qdrant(self, state: GetPaperTitlesFromDBState) -> dict:
+    def get_paper_titles_from_qdrant(
+        self, state: GetPaperTitlesFromDBState
+    ) -> dict[str, list[ResearchStudy]]:
         titles = get_paper_titles_from_qdrant(
             num_retrieve_paper=self.max_results_per_query, queries=state["queries"]
         )
@@ -124,7 +129,17 @@ def main():
     result = GetPaperTitlesFromDBSubgraph(
         max_results_per_query=3, semantic_search=True
     ).run(input)
-    print(f"result: {json.dumps(result, indent=2)}")
+
+    serializable_result = {}
+    for key, value in result.items():
+        if isinstance(value, list):
+            serializable_result[key] = [
+                item.model_dump() if hasattr(item, "model_dump") else item
+                for item in value
+            ]
+        else:
+            serializable_result[key] = value
+    print(f"result: {json.dumps(serializable_result, indent=2)}")
 
 
 if __name__ == "__main__":
