@@ -7,9 +7,9 @@ you conducted an experiment using the policy described in "Verification Policy" 
 ---------------------------------
 {{ new_method }}
 ---------------------------------
-# Verification Policy
+# Experiment Strategy
 ---------------------------------
-{{ verification_policy }}
+{{ experiment_strategy }}
 ---------------------------------
 # Experiment Code
 ---------------------------------

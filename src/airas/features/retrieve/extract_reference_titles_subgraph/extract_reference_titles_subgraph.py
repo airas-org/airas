@@ -1,4 +1,5 @@
 import logging
+from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -14,6 +15,7 @@ from airas.features.retrieve.extract_reference_titles_subgraph.nodes.extract_ref
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
 )
+from airas.types.research_study import ResearchStudy
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -25,14 +27,14 @@ extract_reference_titles_timed = lambda f: time_node(extract_reference_titles_st
 
 
 class ExtractReferenceTitlesInputState(TypedDict):
-    research_study_list: list[dict]
+    research_study_list: list[ResearchStudy]
 
 
 class ExtractReferenceTitlesHiddenState(TypedDict): ...
 
 
 class ExtractReferenceTitlesOutputState(TypedDict):
-    reference_research_study_list: list[dict]
+    reference_research_study_list: list[ResearchStudy]
 
 
 class ExtractReferenceTitlesState(
@@ -61,18 +63,17 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
         reference_research_study_list: list[dict] = []
 
         for research_study in research_study_list:
-            if full_text := research_study.get("full_text", ""):
+            if full_text := research_study.full_text:
                 reference_titles = extract_reference_titles(
                     full_text=full_text,
-                    llm_name=self.llm_name,
+                    llm_name=cast(LLM_MODEL, self.llm_name),
                 )
 
                 for title in reference_titles:
-                    reference_research_study_list.append(
-                        {
-                            "title": title,
-                        }
+                    reference_research_study = ResearchStudy(
+                        title=title,
                     )
+                    reference_research_study_list.append(reference_research_study)
 
         return {"reference_research_study_list": reference_research_study_list}
 

@@ -1,15 +1,14 @@
-refine_prompt = """
+refine_prompt = """\
 You are refining an existing research paper to improve its quality, clarity, and academic rigor.
 
-## Current Paper Content
+# Current Paper Content
 {{ content }}
 
-## Refinement Instructions
+# Refinement Instructions
 - Maintain all the original requirements and guidelines from the system instructions
 - Improve the writing quality, flow, and clarity while preserving all technical content
 - Ensure proper citation placement and format throughout the paper
 - Verify that all figures are properly referenced and captioned
 - Check for and fix any grammatical, spelling, or formatting errors
 - Enhance the academic tone and structure where needed
-- Ensure all sections have substantial content appropriate for an 8-page paper
-"""
+- Ensure all sections have substantial content appropriate for an 8-page paper"""

@@ -34,6 +34,7 @@ from airas.features.publication.latex_subgraph.nodes.upload_latex_file import (
     upload_latex_file,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -45,10 +46,9 @@ latex_timed = lambda f: time_node("latex_subgraph")(f)  # noqa: E731
 
 
 class LatexSubgraphInputState(TypedDict):
-    github_repository: dict[str, str]
+    github_repository_info: GitHubRepositoryInfo
     references_bib: str
     paper_content: dict[str, str]
-    image_file_name_list: list[str]
 
 
 class LatexSubgraphHiddenState(TypedDict):
@@ -118,7 +118,7 @@ class LatexSubgraph(BaseSubgraph):
     def _retrieve_latex_template(self, state: LatexSubgraphState) -> dict:
         """Retrieve LaTeX template file from GitHub repository."""
         latex_template_text = retrieve_github_repository_file(
-            github_repository=state["github_repository"],
+            github_repository=state["github_repository_info"],
             file_path=f".research/latex/{self.latex_template_name}/template.tex",
         )
         return {"latex_template_text": latex_template_text}
@@ -136,7 +136,7 @@ class LatexSubgraph(BaseSubgraph):
     def _upload_latex_file(self, state: LatexSubgraphState) -> dict:
         """Upload LaTeX file to GitHub repository."""
         is_upload_successful = upload_latex_file(
-            github_repository=state["github_repository"],
+            github_repository=state["github_repository_info"],
             latex_text=state["latex_text"],
             latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
         )
@@ -146,7 +146,7 @@ class LatexSubgraph(BaseSubgraph):
     def _execute_latex_compile(self, state: LatexSubgraphState) -> dict:
         """Execute LaTeX compilation workflow in GitHub Actions."""
         is_latex_compiled = execute_latex_compile(
-            github_repository=state["github_repository"],
+            github_repository=state["github_repository_info"],
             latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
         )
         return {"is_latex_compiled": is_latex_compiled}
@@ -155,7 +155,7 @@ class LatexSubgraph(BaseSubgraph):
     def _retrieve_latex_error_file(self, state: LatexSubgraphState) -> dict:
         """Retrieve LaTeX error log file from GitHub repository."""
         latex_error_text = retrieve_github_repository_file(
-            github_repository=state["github_repository"],
+            github_repository=state["github_repository_info"],
             file_path=f".research/latex/{self.latex_template_name}/latex-error.log",
         )
         return {"latex_error_text": latex_error_text}

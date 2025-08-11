@@ -15,6 +15,8 @@ from airas.features.execution.github_actions_executor_subgraph.nodes.execute_git
 from airas.features.execution.github_actions_executor_subgraph.nodes.retrieve_github_actions_results import (
     retrieve_github_actions_results,
 )
+from airas.types.github import GitHubRepositoryInfo
+from airas.types.research_hypothesis import ExperimentalResults, ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -26,7 +28,8 @@ executor_timed = lambda f: time_node("executor_subgraph")(f)  # noqa: E731
 
 
 class GitHubActionsExecutorSubgraphInputState(TypedDict):
-    github_repository: dict[str, str]
+    github_repository_info: GitHubRepositoryInfo
+    new_method: ResearchHypothesis
     experiment_iteration: int
     is_code_pushed_to_github: bool
 
@@ -36,9 +39,6 @@ class GitHubActionsExecutorSubgraphHiddenState(TypedDict):
 
 
 class GitHubActionsExecutorSubgraphOutputState(TypedDict):
-    output_text_data: str
-    error_text_data: str
-    image_file_name_list: list[str]
     executed_flag: bool
 
 
@@ -71,7 +71,7 @@ class GitHubActionsExecutorSubgraph(BaseSubgraph):
             )
 
         executed_flag = execute_github_actions_workflow(
-            github_repository=state["github_repository"],
+            github_repository=state["github_repository_info"],
             experiment_iteration=state["experiment_iteration"],
             gpu_enabled=self.gpu_enabled,
         )
@@ -81,14 +81,18 @@ class GitHubActionsExecutorSubgraph(BaseSubgraph):
     def _retrieve_github_actions_results(self, state: ExecutorSubgraphState) -> dict:
         output_text_data, error_text_data, image_file_name_list = (
             retrieve_github_actions_results(
-                github_repository=state["github_repository"],
+                github_repository=state["github_repository_info"],
                 experiment_iteration=state["experiment_iteration"],
             )
         )
+        new_method = state["new_method"]
+        new_method.experimental_results = ExperimentalResults(
+            result=output_text_data,
+            error=error_text_data,
+            image_file_name_list=image_file_name_list,
+        )
         return {
-            "output_text_data": output_text_data,
-            "error_text_data": error_text_data,
-            "image_file_name_list": image_file_name_list,
+            "new_method": new_method,
         }
 
     def build_graph(self) -> CompiledGraph:

@@ -4,6 +4,7 @@ from logging import getLogger
 from typing import Optional
 
 from airas.services.api_client.github_client import GithubClient
+from airas.types.github import GitHubRepositoryInfo
 
 logger = getLogger(__name__)
 
@@ -215,7 +216,7 @@ class WorkflowExecutor:
 
 # Legacy function wrapper for backward compatibility
 def execute_github_actions_workflow(
-    github_repository: dict[str, str],
+    github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
     gpu_enabled: bool = False,
     client: Optional[GithubClient] = None,
@@ -246,9 +247,9 @@ def execute_github_actions_workflow(
     """
     executor = WorkflowExecutor(client)
     result = executor.execute_workflow(
-        github_repository["github_owner"],
-        github_repository["repository_name"],
-        github_repository["branch_name"],
+        github_repository.github_owner,
+        github_repository.repository_name,
+        github_repository.branch_name,
         experiment_iteration,
         gpu_enabled,
     )

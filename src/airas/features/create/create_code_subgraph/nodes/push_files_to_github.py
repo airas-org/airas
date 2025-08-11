@@ -1,12 +1,13 @@
 import logging
 
 from airas.services.api_client.github_client import GithubClient
+from airas.types.github import GitHubRepositoryInfo
 
 logger = logging.getLogger(__name__)
 
 
 def push_files_to_github(
-    github_repository: dict[str, str],
+    github_repository: GitHubRepositoryInfo,
     files: dict[str, str],
     commit_message: str,
     github_client: GithubClient | None = None,
@@ -16,22 +17,22 @@ def push_files_to_github(
 
     # Use the new commit_multiple_files method
     success = github_client.commit_multiple_files(
-        github_owner=github_repository["github_owner"],
-        repository_name=github_repository["repository_name"],
-        branch_name=github_repository["branch_name"],
+        github_owner=github_repository.github_owner,
+        repository_name=github_repository.repository_name,
+        branch_name=github_repository.branch_name,
         files=files,
         commit_message=commit_message,
     )
 
     if success:
         logger.info(
-            f"Successfully pushed files to {github_repository['github_owner']}/{github_repository['repository_name']} on branch {github_repository['branch_name']}"
+            f"Successfully pushed files to {github_repository.github_owner}/{github_repository.repository_name} on branch {github_repository.branch_name}"
         )
         # created_files = list(state["generated_files"].keys()) if success else []
         return True
     else:
         logger.error(
-            f"Failed to push files to {github_repository['github_owner']}/{github_repository['repository_name']} on branch {github_repository['branch_name']}"
+            f"Failed to push files to {github_repository.github_owner}/{github_repository.repository_name} on branch {github_repository.branch_name}"
         )
         return False
 

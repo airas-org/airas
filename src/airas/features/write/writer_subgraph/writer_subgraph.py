@@ -11,9 +11,11 @@ from airas.features.write.writer_subgraph.input_data import (
     writer_subgraph_input_data,
 )
 from airas.features.write.writer_subgraph.nodes.generate_note import generate_note
-from airas.features.write.writer_subgraph.nodes.refine import refine
-from airas.features.write.writer_subgraph.nodes.write import write
+from airas.features.write.writer_subgraph.nodes.refine_paper import refine_paper
+from airas.features.write.writer_subgraph.nodes.write_paper import write_paper
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -24,13 +26,16 @@ writer_timed = lambda f: time_node("writer_subgraph")(f)  # noqa: E731
 
 
 class WriterSubgraphInputState(TypedDict):
-    research_hypothesis: dict
+    new_method: ResearchHypothesis
+    research_study_list: list[ResearchStudy]
+    reference_research_study_list: list[ResearchStudy]
     references_bib: str
     # TODO: Enriching refenrence candidate information
 
 
 class WriterSubgraphHiddenState(TypedDict):
     note: str
+    refinement_count: int
 
 
 class WriterSubgraphOutputState(TypedDict):
@@ -53,50 +58,73 @@ class WriterSubgraph(BaseSubgraph):
     def __init__(
         self,
         llm_name: LLM_MODEL,
-        refine_round: int = 2,
+        max_refinement_count: int = 2,
     ):
         self.llm_name = llm_name
-        self.refine_round = refine_round
+        self.max_refinement_count = max_refinement_count
         check_api_key(llm_api_key_check=True)
+
+    @writer_timed
+    def _initialize(self, state: WriterSubgraphState) -> dict:
+        return {
+            "refinement_count": 0,
+        }
 
     @writer_timed
     def _generate_note(self, state: WriterSubgraphState) -> dict:
         note = generate_note(
-            research_hypothesis=state["research_hypothesis"],
+            new_method=state["new_method"],
+            research_study_list=state["research_study_list"],
+            reference_research_study_list=state["reference_research_study_list"],
             references_bib=state["references_bib"],
         )
         return {"note": note}
 
     @writer_timed
-    def _write(self, state: WriterSubgraphState) -> dict:
-        paper_content = write(
+    def _write_paper(self, state: WriterSubgraphState) -> dict:
+        paper_content = write_paper(
             llm_name=cast(LLM_MODEL, self.llm_name),
             note=state["note"],
         )
         return {"paper_content": paper_content}
 
     @writer_timed
-    def _refine(self, state: WriterSubgraphState) -> dict:
-        paper_content = refine(
+    def _refine_paper(self, state: WriterSubgraphState) -> dict:
+        paper_content = refine_paper(
             llm_name=cast(LLM_MODEL, self.llm_name),
             paper_content=state["paper_content"],
             note=state["note"],
         )
-        return {"paper_content": paper_content}
+        return {
+            "paper_content": paper_content,
+            "refinement_count": state["refinement_count"] + 1,
+        }
+
+    @writer_timed
+    def should_finish_refinement(self, state: WriterSubgraphState) -> str:
+        if state["refinement_count"] >= self.max_refinement_count:
+            return "end"
+        return "refine"
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(WriterSubgraphState)
+        graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node("generate_note", self._generate_note)
-        graph_builder.add_node("write", self._write)
-        for i in range(self.refine_round):
-            graph_builder.add_node(f"refine_{i + 1}", self._refine)
+        graph_builder.add_node("write_paper", self._write_paper)
 
-        graph_builder.add_edge(START, "generate_note")
-        graph_builder.add_edge("generate_note", "write")
-        graph_builder.add_edge("write", "refine_1")
-        for i in range(1, self.refine_round):
-            graph_builder.add_edge(f"refine_{i}", f"refine_{i + 1}")
-        graph_builder.add_edge(f"refine_{self.refine_round}", END)
+        graph_builder.add_edge(START, "initialize")
+        graph_builder.add_edge("initialize", "generate_note")
+        graph_builder.add_edge("generate_note", "write_paper")
+        graph_builder.add_conditional_edges(
+            "write_paper",
+            self.should_finish_refinement,
+            {"end": END, "refine": "refine_paper"},
+        )
+        graph_builder.add_conditional_edges(
+            "refine_paper",
+            self.should_finish_refinement,
+            {"end": END, "refine": "refine_paper"},
+        )
 
         return graph_builder.compile()
 
@@ -108,7 +136,7 @@ def main():
 
     result = WriterSubgraph(
         llm_name=llm_name,
-        refine_round=refine_round,
+        max_refinement_count=refine_round,
     ).run(input)
     print(f"result: {json.dumps(result, indent=2)}")
 

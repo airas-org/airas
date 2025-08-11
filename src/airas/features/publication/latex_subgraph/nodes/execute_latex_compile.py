@@ -2,6 +2,7 @@ import time
 from logging import getLogger
 
 from airas.services.api_client.github_client import GithubClient
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
 
 logger = getLogger(__name__)
@@ -11,15 +12,15 @@ _TIMEOUT_SEC = 600
 
 
 def execute_latex_compile(
-    github_repository: dict[str, str],
+    github_repository: GitHubRepositoryInfo,
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
     client: GithubClient | None = None,
 ) -> bool:
     LATEX_COMPILED_WORKFLOW_FILE = "compile_latex.yml"
     client = client or GithubClient()
-    github_owner = github_repository["github_owner"]
-    repository_name = github_repository["repository_name"]
-    branch_name = github_repository["branch_name"]
+    github_owner = github_repository.github_owner
+    repository_name = github_repository.repository_name
+    branch_name = github_repository.branch_name
 
     # ベースラインのワークフロー実行数を取得
     workflow_runs_data = client.list_workflow_runs(
