@@ -2,6 +2,7 @@ from logging import getLogger
 from typing import Any, Iterator
 
 from airas.services.api_client.github_client import GithubClient
+from airas.types.github import GitHubRepositoryInfo
 
 logger = getLogger(__name__)
 
@@ -33,9 +34,7 @@ def _iter_commits(
 
 
 def find_commit_sha(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
+    github_repository_info: GitHubRepositoryInfo,
     subgraph_name: str,
     max_pages: int = 10,
     client: GithubClient | None = None,
@@ -46,19 +45,19 @@ def find_commit_sha(
         target_sha = next(
             commit["sha"]
             for commit in _iter_commits(
-                github_owner,
-                repository_name,
-                branch_name,
+                github_repository_info.github_owner,
+                github_repository_info.repository_name,
+                github_repository_info.branch_name,
                 max_pages,
                 client=client,
             )
             if marker in commit["commit"]["message"]
         )
         logger.info(
-            f"Found commit {target_sha} for subgraph {subgraph_name} on branch {branch_name}."
+            f"Found commit {target_sha} for subgraph {subgraph_name} on branch {github_repository_info.branch_name}."
         )
         return target_sha
     except StopIteration:
         raise RuntimeError(
-            f"Commit containing marker '{marker}' not found in branch '{branch_name}'."
+            f"Commit containing marker '{marker}' not found in branch '{github_repository_info.branch_name}'."
         ) from None

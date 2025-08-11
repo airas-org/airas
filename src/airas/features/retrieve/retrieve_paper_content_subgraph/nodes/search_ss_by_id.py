@@ -37,9 +37,15 @@ def search_ss_by_id(
             "influentialCitationCount",
             "isOpenAccess",
         )
-        response_data = client.get_paper_by_arxiv_id(
-            arxiv_id=arxiv_id.strip(), fields=fields
-        )
+        try:
+            response_data = client.get_paper_by_arxiv_id(
+                arxiv_id=arxiv_id.strip(), fields=fields
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to process arXiv ID {arxiv_id}: {e}. Skipping to the next."
+            )
+            continue
 
         if not response_data:
             continue

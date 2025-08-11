@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import Literal
 
@@ -42,7 +41,7 @@ class RetrievePaperContentInputState(TypedDict, total=False):
 
 
 class RetrievePaperContentHiddenState(TypedDict):
-    temp_research_study_list: list[ResearchStudy]
+    tmp_research_study_list: list[ResearchStudy]
 
 
 class RetrievePaperContentOutputState(TypedDict, total=False):
@@ -84,49 +83,49 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
             research_study_list = state["reference_research_study_list"]
         else:
             raise ValueError("No research study list found in the state.")
-        return {"temp_research_study_list": research_study_list}
+        return {"tmp_research_study_list": research_study_list}
 
     @retrieve_paper_content_timed
     def _search_arxiv_id_from_title(
         self, state: RetrievePaperContentState
     ) -> dict[str, list[ResearchStudy]]:
-        research_study_list = state["temp_research_study_list"]
+        research_study_list = state["tmp_research_study_list"]
 
         research_study_list = search_arxiv_id_from_title(
             llm_name="gpt-4o-2024-11-20",
             prompt_template=openai_websearch_arxiv_ids_prompt,
             research_study_list=research_study_list,
         )
-        return {"temp_research_study_list": research_study_list}
+        return {"tmp_research_study_list": research_study_list}
 
     @retrieve_paper_content_timed
     def _search_arxiv_by_id(
         self, state: RetrievePaperContentState
     ) -> dict[str, list[ResearchStudy]]:
-        research_study_list = state["temp_research_study_list"]
+        research_study_list = state["tmp_research_study_list"]
 
         research_study_list = search_arxiv_by_id(research_study_list)
-        return {"temp_research_study_list": research_study_list}
+        return {"tmp_research_study_list": research_study_list}
 
     @retrieve_paper_content_timed
     def _search_ss_by_id(
         self, state: RetrievePaperContentState
     ) -> dict[str, list[ResearchStudy]]:
-        research_study_list = state["temp_research_study_list"]
+        research_study_list = state["tmp_research_study_list"]
 
         research_study_list = search_ss_by_id(research_study_list)
-        return {"temp_research_study_list": research_study_list}
+        return {"tmp_research_study_list": research_study_list}
 
     @retrieve_paper_content_timed
     def _retrieve_text_from_url(
         self, state: RetrievePaperContentState
     ) -> dict[str, list[ResearchStudy]]:
-        research_study_list = state["temp_research_study_list"]
+        research_study_list = state["tmp_research_study_list"]
 
         research_study_list = retrieve_text_from_url(
             research_study_list=research_study_list,
         )
-        return {"temp_research_study_list": research_study_list}
+        return {"tmp_research_study_list": research_study_list}
 
     def select_provider(self, state: RetrievePaperContentState) -> str:
         if self.paper_provider == "semantic_scholar":
@@ -138,11 +137,11 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
     def _format_output(self, state: RetrievePaperContentState) -> list[ResearchStudy]:
         if self.target_study_list_source == "research_study_list":
             return {
-                "research_study_list": state["temp_research_study_list"],
+                "research_study_list": state["tmp_research_study_list"],
             }
         else:
             return {
-                "reference_research_study_list": state["temp_research_study_list"],
+                "reference_research_study_list": state["tmp_research_study_list"],
             }
 
     def build_graph(self) -> CompiledGraph:
@@ -179,17 +178,7 @@ def main():
         target_study_list_source="research_study_list",
         paper_provider="arxiv",  # Can be "arxiv" or "semantic_scholar"
     ).run(input_data)
-
-    serializable_result = {}
-    for key, value in result.items():
-        if isinstance(value, list):
-            serializable_result[key] = [
-                item.model_dump() if hasattr(item, "model_dump") else item
-                for item in value
-            ]
-        else:
-            serializable_result[key] = value
-    print(f"result: {json.dumps(serializable_result, indent=2)}")
+    print(f"result: {result}")
 
 
 if __name__ == "__main__":

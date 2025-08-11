@@ -44,11 +44,11 @@ class PrepareRepositoryHiddenState(TypedDict):
     is_repository_from_template: bool
     is_branch_already_exists: bool
     is_branch_created: bool
-
-
-class PrepareRepositoryOutputState(TypedDict):
     is_repository_ready: bool
     is_branch_ready: bool
+
+
+class PrepareRepositoryOutputState(TypedDict): ...
 
 
 class PrepareRepositoryState(
@@ -193,18 +193,14 @@ class PrepareRepositorySubgraph(BaseSubgraph):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="PreparaRepository")
-    parser.add_argument("github_owner", help="GitHub owner")
-    parser.add_argument("repository_name", help="Repository name")
-    parser.add_argument(
-        "branch_name", help="Your branch name in your GitHub repository"
-    )
-
+    parser = argparse.ArgumentParser(description="PrepareRepositorySubgraph")
+    parser.add_argument("github_repository", help="Your GitHub repository")
+    parser.add_argument("branch_name", help="Your Branch name")
     args = parser.parse_args()
 
     github_repository_info = GitHubRepositoryInfo(
-        github_owner=args.github_owner,
-        repository_name=args.repository_name,
+        github_owner=args.github_repository.split("/")[0],
+        repository_name=args.github_repository.split("/")[1],
         branch_name=args.branch_name,
     )
     state = {

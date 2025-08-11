@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import Any
 
@@ -78,7 +77,7 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
             queries=state["queries"],
             max_results_per_query=self.max_results_per_query,
         )
-        research_study_list = [{"title": title} for title in (titles or [])]
+        research_study_list = [ResearchStudy(title=title) for title in (titles or [])]
         return {"research_study_list": research_study_list}
 
     @get_paper_titles_from_db_timed
@@ -88,7 +87,7 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
         titles = get_paper_titles_from_qdrant(
             num_retrieve_paper=self.max_results_per_query, queries=state["queries"]
         )
-        research_study_list = [{"title": title} for title in (titles or [])]
+        research_study_list = [ResearchStudy(title=title) for title in (titles or [])]
         return {"research_study_list": research_study_list}
 
     def select_database(self, state: GetPaperTitlesFromDBState) -> str:
@@ -129,17 +128,7 @@ def main():
     result = GetPaperTitlesFromDBSubgraph(
         max_results_per_query=3, semantic_search=True
     ).run(input)
-
-    serializable_result = {}
-    for key, value in result.items():
-        if isinstance(value, list):
-            serializable_result[key] = [
-                item.model_dump() if hasattr(item, "model_dump") else item
-                for item in value
-            ]
-        else:
-            serializable_result[key] = value
-    print(f"result: {json.dumps(serializable_result, indent=2)}")
+    print(f"result: {result}")
 
 
 if __name__ == "__main__":

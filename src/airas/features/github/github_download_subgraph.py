@@ -1,5 +1,4 @@
 import argparse
-import json
 import logging
 from typing import Any
 
@@ -9,6 +8,7 @@ from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
 from airas.features.github.nodes.github_download import github_download
+from airas.types.github import GitHubRepositoryInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -20,13 +20,11 @@ gh_download_timed = lambda f: time_node("github_download_subgraph")(f)  # noqa: 
 
 
 class GithubDownloadInputState(TypedDict):
-    github_repository: str
-    branch_name: str
+    github_repository_info: GitHubRepositoryInfo
 
 
 class GithubDownloadHiddenState(TypedDict):
-    github_owner: str
-    repository_name: str
+    pass
 
 
 class GithubDownloadOutputState(TypedDict):
@@ -52,25 +50,10 @@ class GithubDownloadSubgraph(BaseSubgraph):
         )
         self.research_file_path = ".research/research_history.json"
 
-    def _init_state(self, state: GithubDownloadSubgraphState) -> dict[str, str]:
-        try:
-            github_owner, repository_name = state["github_repository"].split("/", 1)
-            return {
-                "github_owner": github_owner,
-                "repository_name": repository_name,
-            }
-        except ValueError:
-            logger.error(
-                f"Invalid github_repository format: {state['github_repository']}"
-            )
-            raise
-
     @gh_download_timed
     def _github_download(self, state: GithubDownloadSubgraphState) -> dict[str, Any]:
         research_history = github_download(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+            github_repository_info=state["github_repository_info"],
         )
         return {
             "research_history": research_history,
@@ -78,11 +61,9 @@ class GithubDownloadSubgraph(BaseSubgraph):
 
     def build_graph(self) -> CompiledGraph:
         sg = StateGraph(GithubDownloadSubgraphState)
-        sg.add_node("init_state", self._init_state)
         sg.add_node("github_download", self._github_download)
 
-        sg.add_edge(START, "init_state")
-        sg.add_edge("init_state", "github_download")
+        sg.add_edge(START, "github_download")
         sg.add_edge("github_download", END)
         return sg.compile()
 
@@ -98,10 +79,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    github_repository_info = GitHubRepositoryInfo(
+        github_owner=args.github_repository.split("/")[0],
+        repository_name=args.github_repository.split("/")[1],
+        branch_name=args.branch_name,
+    )
     state = {
-        "github_repository": args.github_repository,
-        "branch_name": args.branch_name,
+        "github_repository_info": github_repository_info,
     }
-
     result = GithubDownloadSubgraph().run(state)
-    print(json.dumps(result, indent=2))
+    print(f"result: {result}")

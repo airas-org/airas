@@ -24,8 +24,12 @@ def retrieve_text_from_url(
             pdf_reader = PdfReader(BytesIO(response.content))
             text = "".join(page.extract_text() for page in pdf_reader.pages)
             research_study.full_text = text.replace("\n", " ")
+            logger.info(
+                f"Successfully extracted text from '{research_study.title or 'N/A'}'"
+            )
         except Exception as e:
             logger.error(f"Failed to extract text from PDF {pdf_url}: {e}")
+            continue
 
     return research_study_list
 

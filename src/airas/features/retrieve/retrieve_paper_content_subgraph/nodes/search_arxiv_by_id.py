@@ -22,7 +22,14 @@ def search_arxiv_by_id(
         if not arxiv_id:
             continue
 
-        xml_feed = client.get_paper_by_id(arxiv_id=arxiv_id.strip())
+        try:
+            xml_feed = client.get_paper_by_id(arxiv_id=arxiv_id.strip())
+        except Exception as e:
+            logger.error(
+                f"Failed to process arXiv ID {arxiv_id}: {e}. Skipping to the next."
+            )
+            continue
+
         feed = feedparser.parse(xml_feed)
         if not feed.entries:
             continue

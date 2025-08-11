@@ -34,16 +34,3 @@ def create_branch(
         f"Branch '{github_repository_info.branch_name}' created in repository '{github_repository_info.github_owner}/{github_repository_info.repository_name}'"
     )
     return response
-
-
-if __name__ == "__main__":
-    # Example usage
-    github_repository_info = GitHubRepositoryInfo(
-        github_owner="auto-res2", repository_name="test-branch", branch_name="test"
-    )
-    sha = "0b4ffd87d989e369a03fce523be014bc6cf75ea8"
-    output = create_branch(
-        github_repository_info=github_repository_info,
-        sha=sha,
-    )
-    print(output)

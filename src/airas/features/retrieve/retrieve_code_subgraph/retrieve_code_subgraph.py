@@ -1,6 +1,5 @@
-import json
 import logging
-from typing import Any, cast
+from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -23,6 +22,7 @@ from airas.features.retrieve.retrieve_code_subgraph.prompt.extract_github_url_pr
     extract_github_url_from_text_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -34,7 +34,7 @@ retrieve_code_timed = lambda f: time_node("retrieve_code_subgraph")(f)  # noqa: 
 
 
 class RetrieveCodeInputState(TypedDict):
-    research_study_list: list[dict[str, Any]]
+    research_study_list: list[ResearchStudy]
 
 
 class RetrieveCodeHiddenState(TypedDict):
@@ -42,7 +42,7 @@ class RetrieveCodeHiddenState(TypedDict):
 
 
 class RetrieveCodeOutputState(TypedDict):
-    research_study_list: list[dict[str, Any]]
+    research_study_list: list[ResearchStudy]
 
 
 class RetrieveCodeState(
@@ -65,60 +65,39 @@ class RetrieveCodeSubgraph(BaseSubgraph):
         check_api_key(llm_api_key_check=True)
         self.llm_name = llm_name
 
-    def _extract_github_url_from_text(self, state: RetrieveCodeState) -> dict:
-        research_study_list = state["research_study_list"]
-        for research_study in research_study_list:
-            if "full_text" not in research_study:
-                continue
-            github_url = extract_github_url_from_text(
-                paper_full_text=research_study["full_text"],
-                paper_summary=research_study["llm_extracted_info"]["methodology"],
-                llm_name=cast(LLM_MODEL, self.llm_name),
-                prompt_template=extract_github_url_from_text_prompt,
-            )
-            research_study["meta_data"] = {}
-            research_study["meta_data"]["github_url"] = github_url
+    @retrieve_code_timed
+    def _extract_github_url_from_text(
+        self, state: RetrieveCodeState
+    ) -> dict[str, list[ResearchStudy]]:
+        research_study_list = extract_github_url_from_text(
+            llm_name=cast(LLM_MODEL, self.llm_name),
+            prompt_template=extract_github_url_from_text_prompt,
+            research_study_list=state["research_study_list"],
+        )
         return {
             "research_study_list": research_study_list,
         }
 
     @retrieve_code_timed
-    def _retrieve_repository_contents(self, state: RetrieveCodeState) -> dict:
-        research_study_list = state["research_study_list"]
-        code_str_list = []
-        for research_study in research_study_list:
-            if "github_url" in (research_study.get("meta_data") or {}):
-                code_str = retrieve_repository_contents(
-                    github_url=research_study["meta_data"]["github_url"]
-                )
-                code_str_list.append(code_str)
-            else:
-                code_str_list.append("")
+    def _retrieve_repository_contents(
+        self, state: RetrieveCodeState
+    ) -> dict[str, list[str]]:
+        code_str_list = retrieve_repository_contents(
+            research_study_list=state["research_study_list"]
+        )
         return {
             "code_str_list": code_str_list,
         }
 
     @retrieve_code_timed
-    def _extract_experimental_info(self, state: RetrieveCodeState) -> dict:
-        code_str_list = state["code_str_list"]
-        research_study_list = state["research_study_list"]
-        for code_str, research_study in zip(
-            code_str_list, research_study_list, strict=True
-        ):
-            if code_str == "":
-                research_study["experimental_code"] = ""
-                research_study["experimental_info"] = ""
-            else:
-                extract_code, experimental_info = extract_experimental_info(
-                    llm_name=cast(LLM_MODEL, self.llm_name),
-                    method_text=research_study["llm_extracted_info"]["methodology"],
-                    repository_content_str=code_str,
-                )
-                research_study["llm_extracted_info"]["experimental_code"] = extract_code
-                research_study["llm_extracted_info"]["experimental_info"] = (
-                    experimental_info
-                )
-
+    def _extract_experimental_info(
+        self, state: RetrieveCodeState
+    ) -> dict[str, list[ResearchStudy]]:
+        research_study_list = extract_experimental_info(
+            llm_name=cast(LLM_MODEL, self.llm_name),
+            research_study_list=state["research_study_list"],
+            code_str_list=state["code_str_list"],
+        )
         return {"research_study_list": research_study_list}
 
     def build_graph(self) -> CompiledGraph:
@@ -147,7 +126,7 @@ class RetrieveCodeSubgraph(BaseSubgraph):
 def main():
     input = retrieve_code_subgraph_input_data
     result = RetrieveCodeSubgraph().run(input)
-    print(f"result: {json.dumps(result, indent=2)}")
+    print(f"result: {result}")
 
 
 if __name__ == "__main__":
