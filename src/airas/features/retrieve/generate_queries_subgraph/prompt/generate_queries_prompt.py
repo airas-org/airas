@@ -1,9 +1,9 @@
-generate_queries_prompt = """\
+generate_queries_prompt = """
 You are an expert research assistant tasked with generating search queries for finding relevant research papers.
 Your goal is to create a set of well-structured search queries based on a user's research interest or question.
 
 **User's Research Interest:**
-{{ user_prompt }}
+{{ research_topic }}
 
 **Instructions (Important!):**
 1. Analyze the user's research interest or question.
@@ -17,7 +17,7 @@ Your goal is to create a set of well-structured search queries based on a user's
 1. **Output must be a valid Python dictionary literal that can be parsed by `ast.literal_eval`.**
    - The dictionary must have exactly **{{ n_queries }} keys**:
 {%- for i in range(1, n_queries + 1) %}
-     - `"generated_query_{{ i }}"`: string  
+     - "generated_query_{{ i }}": string
 {%- endfor %}
 2. **No extra text, no triple backticks, no markdown.** Output ONLY the dictionary.
 3. If you are unsure, only output valid Python dictionary syntax with double quotes for strings.
