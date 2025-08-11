@@ -10,6 +10,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.research_study import MetaData, ResearchStudy
 
 logger = getLogger(__name__)
 
@@ -25,12 +26,11 @@ def _extract_github_urls_from_text(
         matches = re.findall(
             r"https?://github\.com/[\w\-\_]+/[\w\-\_]+", paper_full_text
         )
-        valid_urls: list[str] = []
-        for url in matches:
-            url = url.replace("http://", "https://")
-            if _is_valid_github_url(url, github_client):
-                valid_urls.append(url)
-        return valid_urls
+        return [
+            url.replace("http://", "https://")
+            for url in matches
+            if _is_valid_github_url(url.replace("http://", "https://"), github_client)
+        ]
     except Exception as e:
         logger.warning(f"Error extracting GitHub URL: {e}")
         return []
@@ -56,45 +56,60 @@ def _select_github_url(
     prompt_template: str,
     llm_client: LLMFacadeClient,
 ) -> int | None:
-    env = Environment()
-    template = env.from_string(prompt_template)
-    data = {
-        "paper_summary": paper_summary,
-        "extract_github_url_list": candidates,
-    }
-    prompt = template.render(data)
-
     try:
-        output, cost = llm_client.structured_outputs(
-            message=prompt, data_model=LLMOutput
+        template = Environment().from_string(prompt_template)
+        prompt = template.render(
+            {"paper_summary": paper_summary, "extract_github_url_list": candidates}
         )
-        if output is None:
-            logger.warning("Error: No response from LLM.")
-            return None
-        return output["index"]
+        output, _ = llm_client.structured_outputs(message=prompt, data_model=LLMOutput)
+        return output["index"] if output else None
     except Exception as e:
         logger.warning(f"Error during LLM selection: {e}")
         return None
 
 
 def extract_github_url_from_text(
-    paper_full_text: str,
-    paper_summary: str,
     llm_name: LLM_MODEL,
     prompt_template: str,
+    research_study_list: list[ResearchStudy],
     llm_client: LLMFacadeClient | None = None,
     github_client: GithubClient | None = None,
-) -> str:
-    if llm_client is None:
-        llm_client = LLMFacadeClient(llm_name=llm_name)
-    if github_client is None:
-        github_client = GithubClient()
+) -> list[ResearchStudy]:
+    llm_client = llm_client or LLMFacadeClient(llm_name=llm_name)
+    github_client = github_client or GithubClient()
 
-    candidates = _extract_github_urls_from_text(paper_full_text, github_client)
-    if not candidates:
-        return ""
+    for research_study in research_study_list:
+        title = research_study.title or "N/A"
 
-    idx = _select_github_url(paper_summary, candidates, prompt_template, llm_client)
-    if idx is None or not (0 <= idx < len(candidates)):
-        return ""
-    return candidates[idx]
+        if not research_study.full_text or not (
+            research_study.llm_extracted_info
+            and research_study.llm_extracted_info.methodology
+        ):
+            logger.warning(
+                f"Missing full text or methodology for '{title}', skipping GitHub URL extraction."
+            )
+            continue
+
+        candidates = _extract_github_urls_from_text(
+            research_study.full_text, github_client
+        )
+        if not candidates:
+            logger.info(f"No GitHub URLs found for '{title}'")
+            continue
+
+        idx = _select_github_url(
+            research_study.llm_extracted_info.methodology,
+            candidates,
+            prompt_template,
+            llm_client,
+        )
+
+        if idx is not None and 0 <= idx < len(candidates):
+            if not research_study.meta_data:
+                research_study.meta_data = MetaData()
+            research_study.meta_data.github_url = candidates[idx]
+            logger.info(f"Selected GitHub URL for '{title}': {candidates[idx]}")
+        else:
+            logger.warning(f"Failed to select valid GitHub URL for '{title}'")
+
+    return research_study_list

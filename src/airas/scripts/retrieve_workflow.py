@@ -1,12 +1,20 @@
-import json
-import os
-from datetime import datetime
+import argparse
+from typing import Any
 
+from airas.features.github.github_upload_subgraph import (
+    GithubUploadSubgraph,
+)
+from airas.features.github.prepare_repository_subgraph.prepare_repository_subgraph import (
+    PrepareRepositorySubgraph,
+)
 from airas.features.retrieve.generate_queries_subgraph.generate_queries_subgraph import (
     GenerateQueriesSubgraph,
 )
 from airas.features.retrieve.get_paper_titles_subgraph.get_paper_titles_from_db_subgraph import (
     GetPaperTitlesFromDBSubgraph,
+)
+from airas.features.retrieve.retrieve_code_subgraph.retrieve_code_subgraph import (
+    RetrieveCodeSubgraph,
 )
 from airas.features.retrieve.retrieve_paper_content_subgraph.retrieve_paper_content_subgraph import (
     RetrievePaperContentSubgraph,
@@ -14,138 +22,96 @@ from airas.features.retrieve.retrieve_paper_content_subgraph.retrieve_paper_cont
 from airas.features.retrieve.summarize_paper_subgraph.summarize_paper_subgraph import (
     SummarizePaperSubgraph,
 )
-
-llm_name = "o3-mini-2025-01-31"
-save_dir = "/workspaces/airas/data"
+from airas.types.github import GitHubRepositoryInfo
 
 
-def save_state(state, step_name: str, save_dir: str):
-    filename = f"{step_name}.json"
-    state_save_dir = f"/workspaces/airas/data/{save_dir}"
-    os.makedirs(state_save_dir, exist_ok=True)
-    filepath = os.path.join(state_save_dir, filename)
-    with open(filepath, "w", encoding="utf-8") as f:
-        json.dump(state, f, indent=2, ensure_ascii=False, default=str)
+def run_e2e_retrieve_workflow(
+    research_topic: str,
+    github_repository: str,
+    branch_name: str,
+    llm_name: str = "o3-mini-2025-01-31",
+) -> dict[str, Any]:
+    github_owner, repository_name = github_repository.split("/", 1)
+    github_repository_info = GitHubRepositoryInfo(
+        github_owner=github_owner,
+        repository_name=repository_name,
+        branch_name=branch_name,
+    )
 
-    print(f"State saved: {filepath}")
-    return state_save_dir
+    print("Starting E2E Retrieve Workflow...")
+    print(f"Repository: {github_repository}")
+    print(f"Branch: {branch_name}")
+    print(f"LLM: {llm_name}")
 
+    state = {
+        "github_repository_info": github_repository_info,
+        "research_topic": research_topic,
+    }
 
-def load_state(file_path: str) -> dict:
-    with open(file_path, "r", encoding="utf-8") as f:
-        state = json.load(f)
-    print(f"State loaded: {file_path}")
-    return state
+    # Step 1: Prepare Repository
+    print("\nPreparing repository...")
+    state = PrepareRepositorySubgraph().run(state)
 
+    # Step 2: Generate Queries + Upload
+    print("\nGenerating queries...")
+    state = GenerateQueriesSubgraph(llm_name=llm_name).run(state)
+    print(
+        f"Generated {len(state.get('queries', []))} queries: {state.get('queries', [])}"
+    )
+    GithubUploadSubgraph().run(state)
 
-def run_retrieve_workflow(research_topic: str, save_dir_suffix: str | None = None):
-    generate_queries_subgraph = GenerateQueriesSubgraph(llm_name=llm_name)
-    get_paper_titles_subgraph = GetPaperTitlesFromDBSubgraph()
-    retrieve_paper_content_subgraph = RetrievePaperContentSubgraph(save_dir=save_dir)
-    summarize_paper_subgraph = SummarizePaperSubgraph(llm_name=llm_name)
+    # Step 3: Get Paper Titles + Upload
+    print("\nGetting paper titles from database...")
+    state = GetPaperTitlesFromDBSubgraph(
+        max_results_per_query=3, semantic_search=True
+    ).run(state)
+    print(f"Found {len(state.get('research_study_list', []))} papers")
+    GithubUploadSubgraph().run(state)
 
-    if save_dir_suffix:
-        workflow_save_dir = (
-            f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{save_dir_suffix}"
-        )
-    else:
-        workflow_save_dir = datetime.now().strftime("%Y%m%d_%H%M%S")
+    print("\nRetrieving paper content...")
+    state = RetrievePaperContentSubgraph(
+        target_study_list_source="research_study_list",
+        paper_provider="arxiv",
+    ).run(state)
+    print(f"Retrieved content for {len(state.get('research_study_list', []))} papers")
+    GithubUploadSubgraph().run(state)
 
-    print("Step 1: Generating queries...")
-    state = {"research_topic": research_topic}
-    state = generate_queries_subgraph.run(state)
-    save_state(state, "generate_queries", workflow_save_dir)
+    # Step 5: Summarize Papers + Upload
+    print("\nSummarizing papers...")
+    state = SummarizePaperSubgraph(llm_name=llm_name).run(state)
+    print(f"Summarized {len(state.get('research_study_list', []))} papers")
+    GithubUploadSubgraph().run(state)
 
-    print("Step 2: Getting paper titles from database...")
-    state = get_paper_titles_subgraph.run(state)
-    save_state(state, "get_paper_titles", workflow_save_dir)
+    # Step 6: Retrieve Code + Upload
+    print("\nRetrieving code from papers...")
+    state = RetrieveCodeSubgraph().run(state)
+    print(f"Retrieved code for {len(state.get('research_study_list', []))} papers")
+    GithubUploadSubgraph().run(state)
 
-    print("Step 3: Retrieving paper content from ArXiv...")
-    state = retrieve_paper_content_subgraph.run(state)
-    save_state(state, "retrieve_paper_content", workflow_save_dir)
-
-    print("Step 4: Summarizing paper content...")
-    state = summarize_paper_subgraph.run(state)
-    save_state(state, "summarize_paper", workflow_save_dir)
-
-    print(f"Workflow completed. Results saved in: {workflow_save_dir}")
-    return state
-
-
-def run_from_state_file(file_path: str):
-    subgraph_steps = [
-        "generate_queries",
-        "get_paper_titles",
-        "retrieve_paper_content",
-        "summarize_paper",
-    ]
-
-    state = load_state(file_path)
-
-    filename = os.path.basename(file_path)
-    step_name = os.path.splitext(filename)[0]
-
-    if step_name not in subgraph_steps:
-        print(f"Unknown step: {step_name}")
-        return
-
-    start_index = subgraph_steps.index(step_name)
-    remaining_steps = subgraph_steps[start_index + 1 :]
-
-    workflow_save_dir = os.path.basename(os.path.dirname(file_path))
-
-    get_paper_titles_subgraph = GetPaperTitlesFromDBSubgraph()
-    retrieve_paper_content_subgraph = RetrievePaperContentSubgraph(save_dir=save_dir)
-    summarize_paper_subgraph = SummarizePaperSubgraph(llm_name=llm_name)
-
-    for step in remaining_steps:
-        print(f"Executing step: {step}")
-
-        if step == "get_paper_titles":
-            state = get_paper_titles_subgraph.run(state)
-        elif step == "retrieve_paper_content":
-            state = retrieve_paper_content_subgraph.run(state)
-        elif step == "summarize_paper":
-            state = summarize_paper_subgraph.run(state)
-
-        save_state(state, step, workflow_save_dir)
-
-    print(f"Workflow resumed and completed. Results saved in: {workflow_save_dir}")
+    print("\nE2E Retrieve Workflow completed successfully!")
     return state
 
 
 if __name__ == "__main__":
-    import sys
+    parser = argparse.ArgumentParser(
+        description="E2E Retrieve Workflow with GitHub Integration"
+    )
+    parser.add_argument("github_repository", help="GitHub repository (owner/repo)")
+    parser.add_argument("branch_name", help="Branch name for GitHub uploads")
 
-    if len(sys.argv) > 1:
-        file_path = sys.argv[1]
-        run_from_state_file(file_path)
-    else:
-        research_topic = "diffusion model for image generation"
-        result = run_retrieve_workflow(
-            research_topic, save_dir_suffix="retrieve_workflow"
+    research_topic = "diffusion model for image generation"
+    llm_name = "o3-mini-2025-01-31"
+
+    args = parser.parse_args()
+
+    try:
+        result = run_e2e_retrieve_workflow(
+            research_topic=research_topic,
+            github_repository=args.github_repository,
+            branch_name=args.branch_name,
+            llm_name=llm_name,
         )
-
-        print("\n=== Final Result ===")
-        print(f"Generated queries: {result.get('queries', [])}")
-        print(f"Retrieved papers: {len(result.get('research_study_list', []))}")
-
-        for i, study in enumerate(result.get("research_study_list", [])):
-            print(f"\nPaper {i + 1}: {study.get('title', 'Unknown title')}")
-
-            # Get arXiv URL from external_sources
-            arxiv_url = ""
-            if (
-                "external_sources" in study
-                and "arxiv_info" in study["external_sources"]
-            ):
-                arxiv_url = study["external_sources"]["arxiv_info"].get("url", "")
-            elif "meta_data" in study:
-                arxiv_url = study["meta_data"].get("arxiv_url", "")
-
-            print(f"\narXiv url: {arxiv_url}")
-            if "llm_extracted_info" in study:
-                info = study["llm_extracted_info"]
-                print(
-                    f"  Main contributions: {info.get('main_contributions', 'N/A')[:100]}..."
-                )
+        print(f"result: {result}")
+    except Exception as e:
+        print(f"Workflow failed: {e}")
+        raise

@@ -1,3 +1,5 @@
+import logging
+
 from jinja2 import Environment
 from pydantic import BaseModel
 
@@ -5,6 +7,9 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.research_study import LLMExtractedInfo, ResearchStudy
+
+logger = logging.getLogger(__name__)
 
 
 class LLMOutput(BaseModel):
@@ -18,26 +23,36 @@ class LLMOutput(BaseModel):
 def summarize_paper(
     llm_name: LLM_MODEL,
     prompt_template: str,
-    paper_text: str,
+    research_study_list: list[ResearchStudy],
     client: LLMFacadeClient | None = None,
-) -> tuple[str, str, str, str, str]:
+) -> list[ResearchStudy]:
     if client is None:
         client = LLMFacadeClient(llm_name=llm_name)
 
-    data = {
-        "paper_text": paper_text,
-    }
-
     env = Environment()
     template = env.from_string(prompt_template)
-    messages = template.render(data)
 
-    output, cost = client.structured_outputs(message=messages, data_model=LLMOutput)
+    for research_study in research_study_list:
+        if not research_study.full_text:
+            logger.warning(
+                f"No full text available for '{research_study.title or 'N/A'}', skipping summarization."
+            )
+            continue
 
-    return (
-        output["main_contributions"],
-        output["methodology"],
-        output["experimental_setup"],
-        output["limitations"],
-        output["future_research_directions"],
-    )
+        data = {
+            "paper_text": research_study.full_text,
+        }
+        messages = template.render(data)
+
+        try:
+            output, _ = client.structured_outputs(
+                message=messages, data_model=LLMOutput
+            )
+            logger.info(f"Successfully summarized '{research_study.title or 'N/A'}'")
+        except Exception as e:
+            logger.error(f"Failed to summarize '{research_study.title or 'N/A'}': {e}")
+            continue
+
+        research_study.llm_extracted_info = LLMExtractedInfo(**output)
+
+    return research_study_list

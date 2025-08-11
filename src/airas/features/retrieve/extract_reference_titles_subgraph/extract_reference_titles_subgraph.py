@@ -58,23 +58,11 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
     @extract_reference_titles_timed
     def _extract_reference_titles(
         self, state: ExtractReferenceTitlesState
-    ) -> dict[str, list[dict]]:
-        research_study_list = state["research_study_list"]
-        reference_research_study_list: list[dict] = []
-
-        for research_study in research_study_list:
-            if full_text := research_study.full_text:
-                reference_titles = extract_reference_titles(
-                    full_text=full_text,
-                    llm_name=cast(LLM_MODEL, self.llm_name),
-                )
-
-                for title in reference_titles:
-                    reference_research_study = ResearchStudy(
-                        title=title,
-                    )
-                    reference_research_study_list.append(reference_research_study)
-
+    ) -> dict[str, list[ResearchStudy]]:
+        reference_research_study_list = extract_reference_titles(
+            llm_name=cast(LLM_MODEL, self.llm_name),
+            research_study_list=state["research_study_list"],
+        )
         return {"reference_research_study_list": reference_research_study_list}
 
     def build_graph(self) -> CompiledGraph:
@@ -94,15 +82,7 @@ def main():
     result = ExtractReferenceTitlesSubgraph(
         llm_name="gemini-2.0-flash-001",
     ).run(input_data)
-
-    print("\n--- Retrieved Reference Titles ---")
-    reference_research_study_list = result.get("reference_research_study_list", [])
-    total_count = len(reference_research_study_list)
-    print(f"Total reference papers found: {total_count}\n")
-    print(f"Total studies in list (references): {len(reference_research_study_list)}\n")
-
-    for i, study in enumerate(reference_research_study_list):
-        print(f"{i + 1}. {study.get('title', 'No title')}")
+    print(f"result: {result}")
 
 
 if __name__ == "__main__":

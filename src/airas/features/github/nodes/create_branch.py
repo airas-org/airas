@@ -2,6 +2,7 @@ from logging import getLogger
 from typing import Literal
 
 from airas.services.api_client.github_client import GithubClient
+from airas.types.github import GitHubRepositoryInfo
 
 logger = getLogger(__name__)
 DEVICETYPE = Literal["cpu", "gpu"]
@@ -11,9 +12,7 @@ DEVICETYPE = Literal["cpu", "gpu"]
 
 
 def create_branch(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
+    github_repository_info: GitHubRepositoryInfo,
     sha: str,
     client: GithubClient | None = None,
 ) -> Literal[True]:
@@ -21,32 +20,17 @@ def create_branch(
         client = GithubClient()
 
     response = client.create_branch(
-        github_owner=github_owner,
-        repository_name=repository_name,
-        branch_name=branch_name,
+        github_owner=github_repository_info.github_owner,
+        repository_name=github_repository_info.repository_name,
+        branch_name=github_repository_info.branch_name,
         from_sha=sha,
     )
     if not response:
         raise RuntimeError(
-            f"Failed to create branch '{branch_name}' from '{sha}' in {github_owner}/{repository_name}"
+            f"Failed to create branch '{github_repository_info.branch_name}' from '{sha}' in {github_repository_info.github_owner}/{github_repository_info.repository_name}"
         )
 
     print(
-        f"Branch '{branch_name}' created in repository '{github_owner}/{repository_name}'"
+        f"Branch '{github_repository_info.branch_name}' created in repository '{github_repository_info.github_owner}/{github_repository_info.repository_name}'"
     )
     return response
-
-
-if __name__ == "__main__":
-    # Example usage
-    github_owner = "auto-res2"
-    repository_name = "test-branch"
-    branch_name = "test"
-    sha = "0b4ffd87d989e369a03fce523be014bc6cf75ea8"
-    output = create_branch(
-        github_owner=github_owner,
-        repository_name=repository_name,
-        branch_name=branch_name,
-        main_sha=sha,  # You need to provide the SHA of the commit you want to branch from
-    )
-    print(output)

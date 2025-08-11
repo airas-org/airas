@@ -11,6 +11,7 @@ from airas.core.base import BaseSubgraph
 from airas.features.github.nodes.github_download import github_download
 from airas.features.github.nodes.github_upload import github_upload
 from airas.features.github.nodes.merge_history import merge_history
+from airas.types.github import GitHubRepositoryInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -21,14 +22,11 @@ gh_upload_timed = lambda f: time_node("github_upload_subgraph")(f)  # noqa: E731
 
 
 class GithubUploadInputState(TypedDict):
-    github_repository: str
-    branch_name: str
+    github_repository_info: GitHubRepositoryInfo
     subgraph_name: str
 
 
 class GithubUploadHiddenState(TypedDict):
-    github_owner: str
-    repository_name: str
     research_history: dict[str, Any]
     cumulative_output: dict[str, Any]
 
@@ -56,25 +54,10 @@ class GithubUploadSubgraph(BaseSubgraph):
         )
         self.research_file_path = ".research/research_history.json"
 
-    def _init_state(self, state: GithubUploadSubgraphState) -> dict[str, str]:
-        try:
-            github_owner, repository_name = state["github_repository"].split("/", 1)
-            return {
-                "github_owner": github_owner,
-                "repository_name": repository_name,
-            }
-        except ValueError:
-            logger.error(
-                f"Invalid github_repository format: {state['github_repository']}"
-            )
-            raise
-
     @gh_upload_timed
     def _github_download_node(self, state: GithubUploadSubgraphState) -> dict[str, Any]:
         research_history = github_download(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+            github_repository_info=state["github_repository_info"],
             file_path=self.research_file_path,
         )
         return {"research_history": research_history}
@@ -93,29 +76,60 @@ class GithubUploadSubgraph(BaseSubgraph):
             f"[subgraph: {state['subgraph_name']}] run at {datetime.now().isoformat()}"
         )
 
-        success = github_upload(
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+        is_github_upload_success = github_upload(
+            github_repository_info=state["github_repository_info"],
             research_history=state["research_history"],
             file_path=self.research_file_path,
             commit_message=commit_message,
         )
-        return {"github_upload_success": success}
+        return {"github_upload_success": is_github_upload_success}
 
     def build_graph(self) -> CompiledGraph:
         sg = StateGraph(GithubUploadSubgraphState)
-        sg.add_node("init_state", self._init_state)
         sg.add_node("github_download", self._github_download_node)
         sg.add_node("merge_history", self._merge_history_node)
         sg.add_node("github_upload", self._github_upload_node)
 
-        sg.add_edge(START, "init_state")
-        sg.add_edge("init_state", "github_download")
+        sg.add_edge(START, "github_download")
         sg.add_edge("github_download", "merge_history")
         sg.add_edge("merge_history", "github_upload")
         sg.add_edge("github_upload", END)
         return sg.compile()
+
+    def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
+        input_state_keys = self.InputState.__annotations__.keys()
+        output_state_keys = self.OutputState.__annotations__.keys()
+
+        input_state = {k: state[k] for k in input_state_keys if k in state}
+
+        # Use the entire state (except subgraph metadata and github_repository_info) as cumulative_output
+        def serialize_for_json(obj):
+            if hasattr(obj, "model_dump"):
+                return obj.model_dump()
+            elif isinstance(obj, list):
+                return [serialize_for_json(item) for item in obj]
+            elif isinstance(obj, dict):
+                return {key: serialize_for_json(value) for key, value in obj.items()}
+            else:
+                return obj
+
+        cumulative_output = {}
+        for k, v in state.items():
+            if k in ["subgraph_name", "github_repository_info"]:
+                continue
+            cumulative_output[k] = serialize_for_json(v)
+        input_state["cumulative_output"] = cumulative_output
+
+        config = config or {"recursion_limit": 200}
+        result = self.build_graph().invoke(input_state, config=config)
+        output_state = {k: result[k] for k in output_state_keys if k in result}
+
+        cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
+        return {
+            "subgraph_name": self.__class__.__name__,
+            **cleaned_state,
+            **output_state,
+        }
 
 
 if __name__ == "__main__":
@@ -127,12 +141,15 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    base_queries = "diffusion model"
+    queries = ["diffusion model"]
     subgraph_name = "RetrievePaperFromQuerySubgraph"
+    github_repository_info = GitHubRepositoryInfo(
+        github_owner=args.github_repository.split("/")[0],
+        repository_name=args.github_repository.split("/")[1],
+        branch_name=args.branch_name,
+    )
     state = {
-        "github_repository": args.github_repository,
-        "branch_name": args.branch_name,
-        "base_queries": base_queries,
+        "github_repository_info": github_repository_info,
         "subgraph_name": subgraph_name,
     }
 

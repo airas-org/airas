@@ -1,4 +1,3 @@
-import json
 import logging
 
 from langgraph.graph import END, START, StateGraph
@@ -50,7 +49,10 @@ class GenerateQueriesSubgraph(BaseSubgraph):
     InputState = GenerateQueriesInputState
     OutputState = GenerateQueriesOutputState
 
-    def __init__(self, llm_name: LLM_MODEL):
+    def __init__(
+        self,
+        llm_name: LLM_MODEL,
+    ):
         self.llm_name = llm_name
         check_api_key(llm_api_key_check=True)
 
@@ -77,7 +79,7 @@ def main():
     result = GenerateQueriesSubgraph(
         llm_name=llm_name,
     ).run(input)
-    print(f"result: {json.dumps(result, indent=2)}")
+    print(f"result: {result}")
 
 
 if __name__ == "__main__":
