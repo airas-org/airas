@@ -23,8 +23,8 @@ OPENAI_MODEL_INFO = {
     "o3-2025-04-16": {
         "max_input_tokens": 200000 - 100000,
         "max_output_tokens": 100000,
-        "input_token_cost": 10.00 * 1 / 1000000,
-        "output_token_cost": 40.00 * 1 / 1000000,
+        "input_token_cost": 2.00 * 1 / 1000000,
+        "output_token_cost": 8.00 * 1 / 1000000,
     },
     "o3-mini-2025-01-31": {
         "max_input_tokens": 200000 - 100000,
