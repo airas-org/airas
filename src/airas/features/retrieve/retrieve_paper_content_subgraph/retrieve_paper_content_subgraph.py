@@ -168,7 +168,7 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
         research_study_list = state["temp_research_study_list"]
 
         for research_study in research_study_list:
-            if arxiv_url := research_study.get("arxiv_url", ""):
+            if arxiv_url := research_study.get("meta_data", {}).get("url", ""):
                 full_text = retrieve_text_from_url(
                     papers_dir=self.papers_dir,
                     pdf_url=arxiv_url,
