@@ -1,5 +1,4 @@
 from logging import getLogger
-from typing import Any
 
 from jinja2 import Environment
 from pydantic import BaseModel
@@ -15,6 +14,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.research_study import ResearchStudy
 
 logger = getLogger(__name__)
 
@@ -27,11 +27,12 @@ def refine_idea(
     llm_name: LLM_MODEL,
     research_topic: str,
     new_idea: str,
-    research_study_list: list[dict[str, Any]],
+    research_study_list: list[ResearchStudy],
     idea_history: list[dict[str, str]],
     refine_iterations: int,
+    client: LLMFacadeClient | None = None,
 ) -> str:
-    client = LLMFacadeClient(llm_name=llm_name)
+    client = client or LLMFacadeClient(llm_name=llm_name)
     env = Environment()
 
     for iteration in range(refine_iterations):
@@ -48,5 +49,7 @@ def refine_idea(
             message=messages,
             data_model=LLMOutput,
         )
+        if output is None:
+            raise ValueError("No response from LLM in refine_idea.")
         new_idea = output["refine_idea"]
     return new_idea

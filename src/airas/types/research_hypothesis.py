@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class ExperimentalDesign(BaseModel):
-    verification_policy: Optional[str] = Field(None, description="")
+    experiment_strategy: Optional[str] = Field(None, description="")
     experiment_details: Optional[str] = Field(None, description="")
     experiment_code: Optional[str] = Field(
         None, description=""

@@ -17,6 +17,7 @@ from airas.features.create.create_code_subgraph.nodes.push_files_to_github impor
     push_files_to_github,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepository
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import time_node
 from airas.utils.logging_utils import setup_logging
@@ -28,7 +29,7 @@ create_code_timed = lambda f: time_node("create_code_local_subgraph")(f)  # noqa
 
 
 class CreateCodeSubgraphInputState(TypedDict):
-    github_repository: dict[str, str]
+    github_repository: GitHubRepository
     new_method: str
     experiment_code: str
 

@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, cast
+from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -20,6 +20,8 @@ from airas.features.create.create_method_subgraph.nodes.research_value_judgement
     research_value_judgement,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -32,7 +34,7 @@ create_method_timed = lambda f: time_node("create_method_subgraph")(f)  # noqa: 
 
 class CreateMethodSubgraphInputState(TypedDict):
     research_topic: str
-    research_study_list: list[dict[str, Any]]
+    research_study_list: list[ResearchStudy]
 
 
 class CreateMethodSubgraphHiddenState(TypedDict):
@@ -43,7 +45,7 @@ class CreateMethodSubgraphHiddenState(TypedDict):
 
 
 class CreateMethodSubgraphOutputState(TypedDict):
-    new_method: str
+    new_method: ResearchHypothesis
 
 
 class CreateMethodSubgraphState(
@@ -126,8 +128,10 @@ class CreateMethodSubgraph(BaseSubgraph):
             return "regenerate"
 
     def _format_method(self, state: CreateMethodSubgraphState) -> dict:
-        # TODO:Fix when supporting type hints
-        return {"new_method": state["new_idea"]}
+        new_method = ResearchHypothesis(
+            method=state["new_idea"],
+        )
+        return {"new_method": new_method}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(CreateMethodSubgraphState)

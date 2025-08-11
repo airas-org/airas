@@ -1,5 +1,4 @@
 from logging import getLogger
-from typing import Any
 
 from jinja2 import Environment
 from pydantic import BaseModel
@@ -11,6 +10,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.research_study import ResearchStudy
 
 logger = getLogger(__name__)
 
@@ -22,7 +22,7 @@ class LLMOutput(BaseModel):
 def idea_generator(
     llm_name: LLM_MODEL,
     research_topic: str,
-    research_study_list: list[dict[str, Any]],
+    research_study_list: list[ResearchStudy],
     idea_history: list[dict[str, str]],
     client: LLMFacadeClient | None = None,
 ) -> str:
@@ -45,21 +45,21 @@ def idea_generator(
     return output["new_idea"]
 
 
-def _parse_research_study_list(research_study_list: list[dict[str, Any]]) -> str:
+def _parse_research_study_list(research_study_list: list[ResearchStudy]) -> str:
     data_str = ""
     for research_study in research_study_list:
-        info = research_study.get("llm_extracted_info")
+        info = research_study.llm_extracted_info
         if not info:
             continue
         data_str += f"""\
-Title:{research_study["title"]}
-Main Contributions:{research_study["llm_extracted_info"].get("main_contributions", "")}
-Methodology:{research_study["llm_extracted_info"].get("methodology", "")}
-Experimental Setup:{research_study["llm_extracted_info"].get("experimental_setup", "")}
-Limitations:{research_study["llm_extracted_info"].get("limitations", "")}
-Future Research Directions:{research_study["llm_extracted_info"].get("future_research_directions", "")}
-Experiment:{research_study["llm_extracted_info"].get("experimental_code", "")}
-Experiment Result:{research_study["llm_extracted_info"].get("experimental_info", "")}"""
+Title:{research_study.title}
+Main Contributions:{info.main_contributions}
+Methodology:{info.methodology}
+Experimental Setup:{info.experimental_setup}
+Limitations:{info.limitations}
+Future Research Directions:{info.future_research_directions}
+Experiment:{info.experimental_code}
+Experiment Result:{info.experimental_info}"""
     return data_str
 
 

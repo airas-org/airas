@@ -23,7 +23,7 @@ class LLMExtractedInfo(BaseModel):
     experimental_setup: str = Field(..., description="")
     limitations: str = Field(..., description="")
     future_research_directions: str = Field(..., description="")
-    extracted_code: Optional[str] = Field(None, description="")
+    experimental_code: Optional[str] = Field(None, description="")
     experimental_info: Optional[str] = Field(None, description="")
 
 
@@ -67,7 +67,6 @@ class ResearchStudy(BaseModel):
     abstract: Optional[str] = Field(None, description="")
     full_text: Optional[str] = Field(None, description="")
     image_data: Optional[Any] = Field(None, description="")
-    experimental_code: Optional[str] = Field(None, description="")
     references: Optional[dict[str, dict[str, Any]]] = Field(None, description="")
     meta_data: Optional[MetaData] = Field(None, description="")
     llm_extracted_info: Optional[LLMExtractedInfo] = Field(None, description="")
