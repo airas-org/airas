@@ -16,6 +16,8 @@ from airas.features.create.nodes.check_devin_completion import (
     check_devin_completion,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.devin import DevinInfo
+from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -27,9 +29,8 @@ fix_code_timed = lambda f: time_node("fix_code_subgraph")(f)  # noqa: E731
 
 
 class FixCodeWithDevinSubgraphInputState(TypedDict):
-    experiment_session_id: str
-    output_text_data: str
-    error_text_data: str
+    devin_info: DevinInfo
+    new_method: ResearchHypothesis
     executed_flag: Literal[
         True
     ]  # This should be True if the GitHub Actions workflow was executed successfully
@@ -40,7 +41,7 @@ class FixCodeWithDevinSubgraphHiddenState(TypedDict):
 
 
 class FixCodeWithDevinSubgraphOutputState(TypedDict):
-    output_text_data: str
+    new_method: ResearchHypothesis
     push_completion: bool
     executed_flag: bool
 
@@ -58,7 +59,7 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
     InputState = FixCodeWithDevinSubgraphInputState
     OutputState = FixCodeWithDevinSubgraphOutputState
 
-    def __init__(self, llm_name: str = "o3-mini-2025-01-31"):
+    def __init__(self, llm_name: LLM_MODEL):
         self.llm_name = llm_name
         check_api_key(
             llm_api_key_check=True,
@@ -73,10 +74,20 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
                 "Invalid state: GitHub Actions workflow was not executed (expected executed_flag == True)"
             )
 
+        output_text_data = (
+            state["new_method"].experimental_results.result
+            if state["new_method"].experimental_results
+            else ""
+        )
+        error_text_data = (
+            state["new_method"].experimental_results.error
+            if state["new_method"].experimental_results
+            else ""
+        )
         judgment_result = should_fix_code(
             llm_name=cast(LLM_MODEL, self.llm_name),
-            output_text_data=state["output_text_data"],
-            error_text_data=state["error_text_data"],
+            output_text_data=output_text_data,
+            error_text_data=error_text_data,
         )
         return {
             "judgment_result": judgment_result,
@@ -84,10 +95,20 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
 
     @fix_code_timed
     def _fix_code_with_devin_node(self, state: FixCodeWithDevinSubgraphState) -> dict:
+        output_text_data = (
+            state["new_method"].experimental_results.result
+            if state["new_method"].experimental_results
+            else ""
+        )
+        error_text_data = (
+            state["new_method"].experimental_results.error
+            if state["new_method"].experimental_results
+            else ""
+        )
         fix_code_with_devin(
-            session_id=state["experiment_session_id"],
-            output_text_data=state["output_text_data"],
-            error_text_data=state["error_text_data"],
+            session_id=state["devin_info"].session_id,
+            output_text_data=output_text_data,
+            error_text_data=error_text_data,
         )
         return {"executed_flag": False}
 
@@ -95,7 +116,7 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
         self, state: FixCodeWithDevinSubgraphState
     ) -> dict[str, bool]:
         result = check_devin_completion(
-            session_id=state["experiment_session_id"],
+            session_id=state["devin_info"].session_id,
         )
         if result is None:
             return {"push_completion": False}

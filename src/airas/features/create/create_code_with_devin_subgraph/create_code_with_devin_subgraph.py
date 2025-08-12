@@ -1,4 +1,3 @@
-import json
 import logging
 
 from langgraph.graph import END, START, StateGraph
@@ -6,12 +5,18 @@ from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
+from airas.features.create.create_code_with_devin_subgraph.input_data import (
+    create_code_with_devin_subgraph_input_data,
+)
 from airas.features.create.create_code_with_devin_subgraph.nodes.push_code_with_devin import (
     push_code_with_devin,
 )
 from airas.features.create.nodes.check_devin_completion import (
     check_devin_completion,
 )
+from airas.types.devin import DevinInfo
+from airas.types.github import GitHubRepositoryInfo
+from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -23,10 +28,8 @@ push_code_timed = lambda f: time_node("push_code_subgraph")(f)  # noqa: E731
 
 
 class CreateCodeWithDevinSubgraphInputState(TypedDict):
-    new_method: str
-    experiment_code: str
-    github_repository: str
-    branch_name: str
+    new_method: ResearchHypothesis
+    github_repository_info: GitHubRepositoryInfo
 
 
 class CreateCodeWithDevinSubgraphHiddenState(TypedDict): ...
@@ -34,8 +37,7 @@ class CreateCodeWithDevinSubgraphHiddenState(TypedDict): ...
 
 class CreateCodeWithDevinSubgraphOutputState(TypedDict):
     push_completion: bool
-    experiment_session_id: str
-    experiment_devin_url: str
+    devin_info: DevinInfo
     experiment_iteration: int
 
 
@@ -68,17 +70,14 @@ class CreateCodeWithDevinSubgraph(BaseSubgraph):
     @push_code_timed
     def _push_code_with_devin_node(
         self, state: CreateCodeWithDevinSubgraphState
-    ) -> dict[str, str]:
-        experiment_session_id, experiment_devin_url = push_code_with_devin(
-            github_repository=state["github_repository"],
-            branch_name=state["branch_name"],
+    ) -> dict:
+        devin_info = push_code_with_devin(
+            github_repository_info=state["github_repository_info"],
             new_method=state["new_method"],
-            experiment_code=state["experiment_code"],
             experiment_iteration=state["experiment_iteration"],
         )
         return {
-            "experiment_session_id": experiment_session_id,
-            "experiment_devin_url": experiment_devin_url,
+            "devin_info": devin_info,
         }
 
     @push_code_timed
@@ -86,7 +85,7 @@ class CreateCodeWithDevinSubgraph(BaseSubgraph):
         self, state: CreateCodeWithDevinSubgraphState
     ) -> dict[str, bool]:
         result = check_devin_completion(
-            session_id=state["experiment_session_id"],
+            session_id=state["devin_info"].session_id,
         )
         if result is None:
             return {"push_completion": False}
@@ -112,19 +111,14 @@ class CreateCodeWithDevinSubgraph(BaseSubgraph):
 
 
 def main():
-    input = CreateCodeWithDevinSubgraphInputState(
-        new_method="example_method",
-        experiment_code="print('Hello, world!')",
-        github_repository="auto-res2/test-tanaka-v11",
-        branch_name="develop",
-    )
-    result = CreateCodeWithDevinSubgraph().run(input)
-    print(f"result: {json.dumps(result, indent=2)}")
+    input_data = create_code_with_devin_subgraph_input_data
+    result = CreateCodeWithDevinSubgraph().run(input_data)
+    print(f"result: {result}")
 
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        logger.error(f"Error running PushCodeSubgraph: {e}")
+        logger.error(f"Error running CreateCodeWithDevinSubgraph: {e}")
         raise
