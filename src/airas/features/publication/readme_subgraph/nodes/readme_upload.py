@@ -1,6 +1,7 @@
 from logging import getLogger
 
 from airas.services.api_client.github_client import GithubClient
+from airas.types.github import GitHubRepositoryInfo
 
 logger = getLogger(__name__)
 
@@ -18,9 +19,7 @@ def _build_markdown(
 
 
 def readme_upload(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
+    github_repository_info: GitHubRepositoryInfo,
     title: str,
     abstract: str,
     devin_url: str,
@@ -31,8 +30,8 @@ def readme_upload(
     logger.info("Preparing README content for upload")
 
     research_history_url = (
-        f"https://github.com/{github_owner}/{repository_name}"
-        f"/blob/{branch_name}/.research/research_history.json"
+        f"https://github.com/{github_repository_info.github_owner}/{github_repository_info.repository_name}"
+        f"/blob/{github_repository_info.branch_name}/.research/research_history.json"
     )
 
     markdown = _build_markdown(
@@ -45,9 +44,9 @@ def readme_upload(
 
     logger.info("Uploading README.md via GithubClient.commit_file_bytes")
     return client.commit_file_bytes(
-        github_owner=github_owner,
-        repository_name=repository_name,
-        branch_name=branch_name,
+        github_owner=github_repository_info.github_owner,
+        repository_name=github_repository_info.repository_name,
+        branch_name=github_repository_info.branch_name,
         file_path="README.md",
         file_content=markdown_bytes,
         commit_message="Research paper uploaded.",

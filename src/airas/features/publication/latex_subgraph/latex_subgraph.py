@@ -36,6 +36,7 @@ from airas.features.publication.latex_subgraph.nodes.upload_latex_file import (
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
+from airas.types.paper import PaperContent
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -48,12 +49,12 @@ latex_timed = lambda f: time_node("latex_subgraph")(f)  # noqa: E731
 class LatexSubgraphInputState(TypedDict):
     github_repository_info: GitHubRepositoryInfo
     references_bib: str
-    paper_content: dict[str, str]
+    paper_content: PaperContent
 
 
 class LatexSubgraphHiddenState(TypedDict):
     latex_template_text: str
-    latex_formatted_paper_content: dict[str, str]
+    latex_formatted_paper_content: PaperContent
     is_upload_successful: bool
     is_latex_compiled: bool
     latex_error_text: str

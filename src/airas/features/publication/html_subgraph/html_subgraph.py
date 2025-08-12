@@ -20,6 +20,9 @@ from airas.features.publication.html_subgraph.prompt.convert_to_html_prompt impo
     convert_to_html_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
+from airas.types.paper import PaperContent
+from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -30,10 +33,10 @@ html_timed = lambda f: time_node("html_subgraph")(f)  # noqa: E731
 
 
 class HtmlSubgraphInputState(TypedDict):
-    github_repository: dict[str, str]
-    paper_content: dict[str, str]
+    github_repository_info: GitHubRepositoryInfo
+    paper_content: PaperContent
     references_bib: str
-    research_hypothesis: dict
+    new_method: ResearchHypothesis
 
 
 class HtmlSubgraphHiddenState(TypedDict):
@@ -68,8 +71,11 @@ class HtmlSubgraph(BaseSubgraph):
 
     @html_timed
     def _convert_to_html(self, state: HtmlSubgraphState) -> dict[str, str]:
-        image_file_name_list = state["research_hypothesis"].get(
-            "image_file_name_list", []
+        image_file_name_list = (
+            getattr(
+                state["new_method"].experimental_results, "image_file_name_list", None
+            )
+            or []
         )
         paper_content_html = convert_to_html(
             llm_name=cast(LLM_MODEL, self.llm_name),
@@ -92,7 +98,7 @@ class HtmlSubgraph(BaseSubgraph):
         full_html = state["full_html"]
 
         ok = upload_html(
-            github_repository=state["github_repository"],
+            github_repository=state["github_repository_info"],
             full_html=full_html,
         )
         return {"html_upload": ok}
@@ -102,7 +108,7 @@ class HtmlSubgraph(BaseSubgraph):
         time.sleep(3)
 
         github_pages_url = dispatch_workflow(
-            github_repository=state["github_repository"],
+            github_repository=state["github_repository_info"],
         )
 
         return {

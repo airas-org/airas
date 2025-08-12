@@ -14,10 +14,10 @@ from airas.types.paper import PaperContent
 
 def refine_paper(
     llm_name: LLM_MODEL,
-    paper_content: dict[str, str],
+    paper_content: PaperContent,
     note: str,
     client: LLMFacadeClient | None = None,
-) -> dict[str, str]:
+) -> PaperContent:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
     env = Environment()
