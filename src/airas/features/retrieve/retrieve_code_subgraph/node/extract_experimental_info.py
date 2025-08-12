@@ -10,7 +10,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.research_study import ResearchStudy
+from airas.types.research_study import LLMExtractedInfo, ResearchStudy
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +36,10 @@ def extract_experimental_info(
         title = research_study.title or "N/A"
 
         if not code_str:
-            research_study.experimental_code = ""
-            if research_study.llm_extracted_info:
-                research_study.llm_extracted_info.experimental_info = ""
+            if research_study.llm_extracted_info is None:
+                research_study.llm_extracted_info = LLMExtractedInfo()
+            research_study.llm_extracted_info.experimental_code = ""
+            research_study.llm_extracted_info.experimental_info = ""
             logger.info(
                 f"No code available for '{title}', skipping experimental info extraction."
             )
@@ -65,7 +66,7 @@ def extract_experimental_info(
             )
 
             if output:
-                research_study.llm_extracted_info.extracted_code = output[
+                research_study.llm_extracted_info.experimental_code = output[
                     "extract_code"
                 ]
                 research_study.llm_extracted_info.experimental_info = output[

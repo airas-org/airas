@@ -2,27 +2,26 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
-
-class PaperBody(BaseModel):
-    title: str = Field(..., description="")
-    abstract: str = Field(..., description="")
-    introduction: str = Field(..., description="")
-    related_work: str = Field(..., description="")
-    background: str = Field(..., description="")
-    method: str = Field(..., description="")
-    experimental_setup: str = Field(..., description="")
-    results: str = Field(..., description="")
-    conclusions: str = Field(..., description="")
-    acknowledgement: str = Field(..., description="")
+# class PaperBody(BaseModel):
+#     title: str = Field(..., description="")
+#     abstract: str = Field(..., description="")
+#     introduction: str = Field(..., description="")
+#     related_work: str = Field(..., description="")
+#     background: str = Field(..., description="")
+#     method: str = Field(..., description="")
+#     experimental_setup: str = Field(..., description="")
+#     results: str = Field(..., description="")
+#     conclusions: str = Field(..., description="")
+#     acknowledgement: str = Field(..., description="")
 
 
 # ExperimentalDesignを使ってまとめたい
 class LLMExtractedInfo(BaseModel):
-    main_contributions: str = Field(..., description="")
-    methodology: str = Field(..., description="")
-    experimental_setup: str = Field(..., description="")
-    limitations: str = Field(..., description="")
-    future_research_directions: str = Field(..., description="")
+    main_contributions: Optional[str] = Field(None, description="")
+    methodology: Optional[str] = Field(None, description="")
+    experimental_setup: Optional[str] = Field(None, description="")
+    limitations: Optional[str] = Field(None, description="")
+    future_research_directions: Optional[str] = Field(None, description="")
     experimental_code: Optional[str] = Field(None, description="")
     experimental_info: Optional[str] = Field(None, description="")
 

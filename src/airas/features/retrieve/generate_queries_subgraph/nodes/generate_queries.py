@@ -1,7 +1,5 @@
-from typing import Annotated
-
 from jinja2 import Environment
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, create_model
 
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
@@ -18,7 +16,7 @@ def generate_queries(
     llm_name: LLM_MODEL,
     prompt_template: str,
     research_topic: str,
-    n_queries: Annotated[int, Field(gt=0)] = 5,
+    n_queries: int,
     client: LLMFacadeClient | None = None,
 ) -> list[str]:
     client = client or LLMFacadeClient(llm_name=llm_name)

@@ -111,6 +111,7 @@ class WriterSubgraph(BaseSubgraph):
         graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node("generate_note", self._generate_note)
         graph_builder.add_node("write_paper", self._write_paper)
+        graph_builder.add_node("refine_paper", self._refine_paper)
 
         graph_builder.add_edge(START, "initialize")
         graph_builder.add_edge("initialize", "generate_note")

@@ -21,7 +21,10 @@ def search_arxiv_id_from_title(
     client = client or LLMFacadeClient(llm_name=llm_name)
     template = Environment().from_string(prompt_template)
 
-    for research_study in research_study_list:
+    for idx, research_study in enumerate(research_study_list):
+        logger.info(
+            "Processing research study %d/%d", idx + 1, len(research_study_list)
+        )
         prompt = template.render(
             {
                 "title": research_study.title,
