@@ -58,7 +58,7 @@ def extract_experimental_info(
                 "repository_content_str": code_str,
             }
         )
-
+        output = None  # NOTE: Initialize because there is a possibility that `UnboundLocalError` will occur.
         try:
             output, _ = client.structured_outputs(
                 message=messages, data_model=LLMOutput
@@ -67,7 +67,6 @@ def extract_experimental_info(
             logger.error(f"Error extracting experimental info for '{title}': {e}")
             continue
 
-        # TODO: `UnboundLocalError`が発生する可能性がある？
         if not output or not isinstance(output, dict):
             logger.error(f"No response from LLM for '{title}'")
             continue
