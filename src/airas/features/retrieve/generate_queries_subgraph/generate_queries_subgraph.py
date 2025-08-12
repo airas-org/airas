@@ -1,7 +1,9 @@
 import logging
+from typing import Annotated, cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import Field
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -49,19 +51,18 @@ class GenerateQueriesSubgraph(BaseSubgraph):
     InputState = GenerateQueriesInputState
     OutputState = GenerateQueriesOutputState
 
-    def __init__(
-        self,
-        llm_name: LLM_MODEL,
-    ):
+    def __init__(self, llm_name: LLM_MODEL, n_queries: Annotated[int, Field(gt=0)] = 5):
         self.llm_name = llm_name
+        self.n_queries = n_queries
         check_api_key(llm_api_key_check=True)
 
     @generate_queries_timed
     def _generate_queries(self, state: GenerateQueriesState) -> dict[str, list[str]]:
         generated_queries = generate_queries(
-            llm_name=self.llm_name,
+            llm_name=cast(LLM_MODEL, self.llm_name),
             prompt_template=generate_queries_prompt,
             research_topic=state["research_topic"],
+            n_queries=self.n_queries,
         )
         return {"queries": generated_queries}
 

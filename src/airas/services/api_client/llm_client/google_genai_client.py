@@ -1,4 +1,5 @@
 import ast
+import json
 import logging
 import os
 import re
@@ -133,7 +134,11 @@ class GoogelGenAIClient:
         output = response.text
         if "null" in output:
             output = re.sub(r"(?<=[:,\s])null(?=[,\s}])", "None", output)
-        output = ast.literal_eval(output)[0]
+        try:
+            output = json.loads(output)[0]
+        except json.JSONDecodeError:
+            output = ast.literal_eval(output)[0]
+
         cost = self._calculate_cost(
             model_name,
             response.usage_metadata.prompt_token_count,

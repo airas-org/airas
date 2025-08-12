@@ -35,20 +35,18 @@ def extract_experimental_info(
     ):
         title = research_study.title or "N/A"
 
+        if not code_str:
+            logger.info(
+                f"No code available for '{title}', skipping experimental info extraction."
+            )
+            continue
+
         if not (
             research_study.llm_extracted_info
             and research_study.llm_extracted_info.methodology
         ):
             logger.warning(
                 f"No llm_extracted_info or no methodology available for '{title}', skipping experimental info extraction."
-            )
-            continue
-
-        if not code_str:
-            research_study.llm_extracted_info.experimental_code = ""
-            research_study.llm_extracted_info.experimental_info = ""
-            logger.info(
-                f"No code available for '{title}', skipping experimental info extraction."
             )
             continue
 

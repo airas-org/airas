@@ -5,11 +5,11 @@ from pydantic import BaseModel, Field
 
 # ExperimentalDesignを使ってまとめたい
 class LLMExtractedInfo(BaseModel):
-    main_contributions: str = Field(..., description="")
-    methodology: str = Field(..., description="")
-    experimental_setup: str = Field(..., description="")
-    limitations: str = Field(..., description="")
-    future_research_directions: str = Field(..., description="")
+    main_contributions: Optional[str] = Field(None, description="")
+    methodology: Optional[str] = Field(None, description="")
+    experimental_setup: Optional[str] = Field(None, description="")
+    limitations: Optional[str] = Field(None, description="")
+    future_research_directions: Optional[str] = Field(None, description="")
     experimental_code: Optional[str] = Field(None, description="")
     experimental_info: Optional[str] = Field(None, description="")
 

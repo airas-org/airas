@@ -61,6 +61,7 @@ class RetrievePaperContentState(
 UsedStudyListSource = Literal["research_study_list", "reference_research_study_list"]
 
 
+# TODO:Handle cases where there are too many citation candidates.
 class RetrievePaperContentSubgraph(BaseSubgraph):
     InputState = RetrievePaperContentInputState
     OutputState = RetrievePaperContentOutputState
@@ -81,6 +82,11 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
             research_study_list = state["research_study_list"]
         elif self.target_study_list_source == "reference_research_study_list":
             research_study_list = state["reference_research_study_list"]
+            if len(research_study_list) >= 30:
+                logger.warning(
+                    f"{len(research_study_list)} reference research studies found, limiting to 30 for processing."
+                )
+                research_study_list = research_study_list[:30]
         else:
             raise ValueError("No research study list found in the state.")
         return {"tmp_research_study_list": research_study_list}

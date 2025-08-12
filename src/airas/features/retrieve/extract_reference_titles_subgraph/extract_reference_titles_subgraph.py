@@ -52,8 +52,10 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
     def __init__(
         self,
         llm_name: LLM_MODEL,
+        paper_retrieval_limit: int | None = None,
     ):
         self.llm_name = llm_name
+        self.paper_retrieval_limit = paper_retrieval_limit
 
     @extract_reference_titles_timed
     def _extract_reference_titles(
@@ -63,6 +65,10 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
             llm_name=cast(LLM_MODEL, self.llm_name),
             research_study_list=state["research_study_list"],
         )
+        if self.paper_retrieval_limit is not None:
+            reference_research_study_list = reference_research_study_list[
+                : self.paper_retrieval_limit
+            ]
         return {"reference_research_study_list": reference_research_study_list}
 
     def build_graph(self) -> CompiledGraph:
