@@ -1,19 +1,24 @@
+from airas.types.github import GitHubRepositoryInfo
+from airas.types.paper import PaperContent
+from airas.types.research_hypothesis import ExperimentalResults, ResearchHypothesis
+
 html_subgraph_input_data = {
-    "github_repository": {
-        "github_owner": "auto-res2",
-        "repository_name": "test_html_matsuzawa",
-        "branch_name": "develop",
-    },
-    "paper_content": {
-        "Title": "Advanced Neural Network Architectures for Multi-Modal Learning",
-        "Abstract": "This paper presents a novel approach to multi-modal learning that combines transformer architectures with convolutional neural networks. Our method achieves state-of-the-art performance on several benchmark datasets including ImageNet and COCO. We demonstrate significant improvements in both accuracy and computational efficiency compared to existing approaches. The proposed architecture shows particular strength in handling heterogeneous data types and can be applied to various computer vision and natural language processing tasks.",
-        "Introduction": "Multi-modal learning has become increasingly important in modern machine learning applications. Traditional approaches often struggle with integrating information from different modalities effectively [john_2023_deep]. Recent advances in transformer architectures have shown promising results in handling sequential data [ashish_2017_attention], while convolutional networks remain the gold standard for image processing tasks. Our work bridges these approaches by proposing a unified architecture that can process both visual and textual information simultaneously.",
-        "Related Work": "Previous work in multi-modal learning can be categorized into several approaches. Early fusion methods combine features at the input level, while late fusion approaches merge predictions from individual modality-specific models. [michael_2024_transformer] demonstrated the effectiveness of transformer architectures across various domains. [b_2020_gpt] showed that large-scale pre-training can significantly improve performance on downstream tasks. However, these approaches often fail to capture complex cross-modal interactions that are crucial for many real-world applications.",
-        "Method": "Our proposed architecture consists of three main components: (1) a visual encoder based on ResNet-50, (2) a textual encoder using BERT-base, and (3) a cross-modal fusion module implemented using multi-head attention. The fusion module allows for dynamic weighting of features from different modalities based on the input context. We employ a joint training strategy that optimizes both modality-specific and cross-modal objectives simultaneously.",
-        "Experiments": "We evaluate our approach on three benchmark datasets: VQA 2.0, MSCOCO Caption, and Flickr30K. Our method achieves 72.4% accuracy on VQA 2.0, surpassing the previous best result by 3.2%. On MSCOCO Caption, we obtain a BLEU-4 score of 38.6, which represents a 2.1% improvement over the baseline. Training was performed using Adam optimizer with a learning rate of 1e-4 and batch size of 32.",
-        "Results": "Figure 1 shows the convergence behavior of our model during training. The proposed method converges faster and achieves lower final loss compared to baseline approaches. Figure 2 illustrates the attention weights learned by the cross-modal fusion module, demonstrating that the model learns to focus on relevant visual regions when processing textual queries. Performance comparisons across different datasets are presented in Figure 3, showing consistent improvements over existing methods.",
-        "Conclusion": "We have presented a novel multi-modal learning architecture that effectively combines visual and textual information processing. Our experimental results demonstrate significant improvements over existing approaches across multiple benchmark datasets. The proposed cross-modal fusion mechanism shows promise for various applications including visual question answering, image captioning, and multimodal retrieval. Future work will explore extension to additional modalities such as audio and video data.",
-    },
+    "github_repository_info": GitHubRepositoryInfo(
+        github_owner="auto-res2",
+        repository_name="experiment_matsuzawa_retrieve_test2",
+        branch_name="develop",
+    ),
+    "paper_content": PaperContent(
+        title="Advanced Neural Network Architectures for Multi-Modal Learning",
+        abstract="This paper presents a novel approach to multi-modal learning that combines transformer architectures with convolutional neural networks. Our method achieves state-of-the-art performance on several benchmark datasets including ImageNet and COCO. We demonstrate significant improvements in both accuracy and computational efficiency compared to existing approaches. The proposed architecture shows particular strength in handling heterogeneous data types and can be applied to various computer vision and natural language processing tasks.",
+        introduction="Multi-modal learning has become increasingly important in modern machine learning applications. Traditional approaches often struggle with integrating information from different modalities effectively [john_2023_deep]. Recent advances in transformer architectures have shown promising results in handling sequential data [ashish_2017_attention], while convolutional networks remain the gold standard for image processing tasks. Our work bridges these approaches by proposing a unified architecture that can process both visual and textual information simultaneously.",
+        related_work="Previous work in multi-modal learning can be categorized into several approaches. Early fusion methods combine features at the input level, while late fusion approaches merge predictions from individual modality-specific models. [michael_2024_transformer] demonstrated the effectiveness of transformer architectures across various domains. [b_2020_gpt] showed that large-scale pre-training can significantly improve performance on downstream tasks. However, these approaches often fail to capture complex cross-modal interactions that are crucial for many real-world applications.",
+        background="Multi-modal learning represents a fundamental challenge in machine learning, requiring models to effectively integrate and process information from multiple data modalities such as text, images, audio, and video. Traditional approaches have largely focused on single-modal learning, where models are designed to handle one type of data at a time. However, real-world applications often require understanding and reasoning across multiple modalities simultaneously.",
+        method="Our proposed architecture consists of three main components: (1) a visual encoder based on ResNet-50, (2) a textual encoder using BERT-base, and (3) a cross-modal fusion module implemented using multi-head attention. The fusion module allows for dynamic weighting of features from different modalities based on the input context. We employ a joint training strategy that optimizes both modality-specific and cross-modal objectives simultaneously.",
+        experimental_setup="We evaluate our approach on three benchmark datasets: VQA 2.0, MSCOCO Caption, and Flickr30K. Our method achieves 72.4% accuracy on VQA 2.0, surpassing the previous best result by 3.2%. On MSCOCO Caption, we obtain a BLEU-4 score of 38.6, which represents a 2.1% improvement over the baseline. Training was performed using Adam optimizer with a learning rate of 1e-4 and batch size of 32.",
+        results="Figure 1 shows the convergence behavior of our model during training. The proposed method converges faster and achieves lower final loss compared to baseline approaches. Figure 2 illustrates the attention weights learned by the cross-modal fusion module, demonstrating that the model learns to focus on relevant visual regions when processing textual queries. Performance comparisons across different datasets are presented in Figure 3, showing consistent improvements over existing methods.",
+        conclusion="We have presented a novel multi-modal learning architecture that effectively combines visual and textual information processing. Our experimental results demonstrate significant improvements over existing approaches across multiple benchmark datasets. The proposed cross-modal fusion mechanism shows promise for various applications including visual question answering, image captioning, and multimodal retrieval. Future work will explore extension to additional modalities such as audio and video data.",
+    ),
     "references_bib": """% ===========================================
 % REQUIRED CITATIONS
 % These papers must be cited in the manuscript
@@ -71,11 +76,14 @@ html_subgraph_input_data = {
  volume = {33},
  year = {2020}
 }""",
-    "research_hypothesis": {
-        "image_file_name_list": [
-            "training_convergence.pdf",
-            "attention_visualization.pdf",
-            "performance_comparison.pdf",
-        ]
-    },
+    "new_method": ResearchHypothesis(
+        method="A novel multi-modal learning architecture that effectively combines visual and textual information processing using cross-modal attention mechanisms.",
+        experimental_results=ExperimentalResults(
+            image_file_name_list=[
+                "training_convergence.pdf",
+                "attention_visualization.pdf",
+                "performance_comparison.pdf",
+            ]
+        ),
+    ),
 }

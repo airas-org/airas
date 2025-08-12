@@ -1,8 +1,8 @@
 import base64
 import logging
-from typing import Any, Dict
 
 from airas.services.api_client.github_client import GithubClient, GithubClientFatalError
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
 
 logger = logging.getLogger(__name__)
@@ -19,16 +19,16 @@ def _merge_bibtex_content(existing: str, new: str) -> str:
 
 
 def update_repository_bibfile(
-    github_repository: Dict[str, Any],
+    github_repository: GitHubRepositoryInfo,
     references_bib: str,
     latex_template: LATEX_TEMPLATE_NAME,
     client: GithubClient | None = None,
 ) -> bool:
     client = GithubClient() or client
 
-    github_owner = github_repository["github_owner"]
-    repository_name = github_repository["repository_name"]
-    branch_name = github_repository["branch_name"]
+    github_owner = github_repository.github_owner
+    repository_name = github_repository.repository_name
+    branch_name = github_repository.branch_name
     bibfile_path = f".research/latex/{latex_template}/references.bib"
 
     logger.info(

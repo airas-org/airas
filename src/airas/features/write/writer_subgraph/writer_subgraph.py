@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import cast
 
@@ -14,6 +13,7 @@ from airas.features.write.writer_subgraph.nodes.generate_note import generate_no
 from airas.features.write.writer_subgraph.nodes.refine_paper import refine_paper
 from airas.features.write.writer_subgraph.nodes.write_paper import write_paper
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.paper import PaperContent
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
@@ -39,7 +39,7 @@ class WriterSubgraphHiddenState(TypedDict):
 
 
 class WriterSubgraphOutputState(TypedDict):
-    paper_content: dict[str, str]
+    paper_content: PaperContent
 
 
 class WriterSubgraphState(
@@ -65,13 +65,13 @@ class WriterSubgraph(BaseSubgraph):
         check_api_key(llm_api_key_check=True)
 
     @writer_timed
-    def _initialize(self, state: WriterSubgraphState) -> dict:
+    def _initialize(self, state: WriterSubgraphState) -> dict[str, int]:
         return {
             "refinement_count": 0,
         }
 
     @writer_timed
-    def _generate_note(self, state: WriterSubgraphState) -> dict:
+    def _generate_note(self, state: WriterSubgraphState) -> dict[str, str]:
         note = generate_note(
             new_method=state["new_method"],
             research_study_list=state["research_study_list"],
@@ -81,7 +81,7 @@ class WriterSubgraph(BaseSubgraph):
         return {"note": note}
 
     @writer_timed
-    def _write_paper(self, state: WriterSubgraphState) -> dict:
+    def _write_paper(self, state: WriterSubgraphState) -> dict[str, PaperContent]:
         paper_content = write_paper(
             llm_name=cast(LLM_MODEL, self.llm_name),
             note=state["note"],
@@ -89,7 +89,9 @@ class WriterSubgraph(BaseSubgraph):
         return {"paper_content": paper_content}
 
     @writer_timed
-    def _refine_paper(self, state: WriterSubgraphState) -> dict:
+    def _refine_paper(
+        self, state: WriterSubgraphState
+    ) -> dict[str, PaperContent | int]:
         paper_content = refine_paper(
             llm_name=cast(LLM_MODEL, self.llm_name),
             paper_content=state["paper_content"],
@@ -111,6 +113,7 @@ class WriterSubgraph(BaseSubgraph):
         graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node("generate_note", self._generate_note)
         graph_builder.add_node("write_paper", self._write_paper)
+        graph_builder.add_node("refine_paper", self._refine_paper)
 
         graph_builder.add_edge(START, "initialize")
         graph_builder.add_edge("initialize", "generate_note")
@@ -138,7 +141,7 @@ def main():
         llm_name=llm_name,
         max_refinement_count=refine_round,
     ).run(input)
-    print(f"result: {json.dumps(result, indent=2)}")
+    print(f"result: {result}")
 
 
 if __name__ == "__main__":

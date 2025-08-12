@@ -1,21 +1,22 @@
 from logging import getLogger
 
 from airas.services.api_client.github_client import GithubClient
+from airas.types.github import GitHubRepositoryInfo
 
 logger = getLogger(__name__)
 
 
 def dispatch_workflow(
-    github_repository: dict[str, str],
+    github_repository: GitHubRepositoryInfo,
     workflow_file: str = "publish_html.yml",
     client: GithubClient | None = None,
 ) -> str | None:
     if client is None:
         client = GithubClient()
 
-    github_owner = github_repository["github_owner"]
-    repository_name = github_repository["repository_name"]
-    branch_name = github_repository.get("branch_name", "main")
+    github_owner = github_repository.github_owner
+    repository_name = github_repository.repository_name
+    branch_name = github_repository.branch_name or "main"
 
     try:
         success = client.create_workflow_dispatch(

@@ -1,20 +1,28 @@
 import re
 
+from airas.types.paper import PaperContent
 from airas.utils.parse_bibtex_to_dict import parse_bibtex_to_dict
 
 
 def convert_placeholders_to_citations(
-    paper_content: dict[str, str], references_bib: str
-) -> dict[str, str]:
+    paper_content: PaperContent, references_bib: str
+) -> PaperContent:
     references_bib_dict = parse_bibtex_to_dict(references_bib)
-    for key, content in paper_content.items():
-        converted_text = re.sub(
-            r"\[([^\[\]]+?)\]",
-            lambda match: _replace_citation(match, references_bib_dict),
-            content,
-        )
-        paper_content[key] = converted_text
-    return paper_content
+
+    converted_data = {}
+    for field_name in PaperContent.model_fields.keys():
+        content = getattr(paper_content, field_name)
+        if content:
+            converted_text = re.sub(
+                r"\[([^\[\]]+?)\]",
+                lambda match: _replace_citation(match, references_bib_dict),
+                content,
+            )
+            converted_data[field_name] = converted_text
+        else:
+            converted_data[field_name] = content
+
+    return PaperContent(**converted_data)
 
 
 def _replace_citation(match, references_bib_dict: dict[str, dict[str, str]]):
