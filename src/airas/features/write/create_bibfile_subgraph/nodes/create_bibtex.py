@@ -8,6 +8,7 @@ from airas.features.write.constants import (
     REFERENCE_CANDIDATES_MARKER,
     REQUIRED_CITATIONS_MARKER,
 )
+from airas.types.research_study import ResearchStudy
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ def _generate_citation_key(title: str, authors: list[str], year) -> str:
 
 
 def create_bibtex(
-    research_study_list: list[dict], reference_study_list: list[dict]
+    research_study_list: list[ResearchStudy], reference_study_list: list[ResearchStudy]
 ) -> str:
     if not research_study_list and not reference_study_list:
         return ""
@@ -76,12 +77,12 @@ def create_bibtex(
     return "\n".join(bibtex_sections)
 
 
-def _create_bibtex_entry(ref: dict, index: int) -> dict:
-    meta_data = ref.get("meta_data", {})
+def _create_bibtex_entry(ref: ResearchStudy, index: int) -> dict:
+    meta_data = ref.meta_data or {}
 
-    title = ref.get("title", f"ref{index}")
-    authors = ref.get("authors") or meta_data.get("authors", [])
-    year = ref.get("published_year") or meta_data.get("published_year")
+    title = ref.title or f"ref{index}"
+    authors = getattr(meta_data, "authors", None) or []
+    year = getattr(meta_data, "published_date", None)
 
     citation_key = _generate_citation_key(title, authors, year)
 
@@ -102,28 +103,28 @@ def _create_bibtex_entry(ref: dict, index: int) -> dict:
     if year:
         entry["year"] = str(year)
 
-    if abstract := ref.get("abstract", ""):
+    if abstract := ref.abstract or "":
         entry["abstract"] = abstract
 
-    if journal := meta_data.get("journal") or ref.get("journal"):
+    if journal := getattr(meta_data, "venue", None):
         entry["journal"] = journal
 
-    if volume := meta_data.get("volume") or ref.get("volume"):
+    if volume := getattr(meta_data, "volume", None):
         entry["volume"] = str(volume)
 
-    if number := meta_data.get("number") or ref.get("number"):
+    if number := getattr(meta_data, "issue", None):
         entry["number"] = str(number)
 
-    if pages := meta_data.get("pages") or ref.get("pages"):
+    if pages := getattr(meta_data, "pages", None):
         entry["pages"] = str(pages)
 
-    if doi := meta_data.get("doi") or ref.get("doi"):
+    if doi := getattr(meta_data, "doi", None):
         entry["doi"] = doi
 
-    if arxiv_url := meta_data.get("arxiv_url") or ref.get("arxiv_url"):
+    if arxiv_url := getattr(meta_data, "pdf_url", None):
         entry["arxiv_url"] = arxiv_url
 
-    if github_url := meta_data.get("github_url") or ref.get("github_url"):
+    if github_url := getattr(meta_data, "github_url", None):
         entry["github_url"] = github_url
 
     return entry

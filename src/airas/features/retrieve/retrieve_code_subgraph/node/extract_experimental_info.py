@@ -10,14 +10,14 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.research_study import LLMExtractedInfo, ResearchStudy
+from airas.types.research_study import ResearchStudy
 
 logger = logging.getLogger(__name__)
 
 
 class LLMOutput(BaseModel):
-    extract_code: str
-    extract_info: str
+    experimental_code: str
+    experimental_info: str
 
 
 def extract_experimental_info(
@@ -36,10 +36,6 @@ def extract_experimental_info(
         title = research_study.title or "N/A"
 
         if not code_str:
-            if research_study.llm_extracted_info is None:
-                research_study.llm_extracted_info = LLMExtractedInfo()
-            research_study.llm_extracted_info.experimental_code = ""
-            research_study.llm_extracted_info.experimental_info = ""
             logger.info(
                 f"No code available for '{title}', skipping experimental info extraction."
             )
@@ -50,32 +46,35 @@ def extract_experimental_info(
             and research_study.llm_extracted_info.methodology
         ):
             logger.warning(
-                f"No methodology available for '{title}', skipping experimental info extraction."
+                f"No llm_extracted_info or no methodology available for '{title}', skipping experimental info extraction."
             )
             continue
 
+        messages = template.render(
+            {
+                "method_text": research_study.llm_extracted_info.methodology,
+                "repository_content_str": code_str,
+            }
+        )
+        output = None  # NOTE: Initialize because there is a possibility that `UnboundLocalError` will occur.
         try:
-            messages = template.render(
-                {
-                    "method_text": research_study.llm_extracted_info.methodology,
-                    "repository_content_str": code_str,
-                }
-            )
             output, _ = client.structured_outputs(
                 message=messages, data_model=LLMOutput
             )
-
-            if output:
-                research_study.llm_extracted_info.experimental_code = output[
-                    "extract_code"
-                ]
-                research_study.llm_extracted_info.experimental_info = output[
-                    "extract_info"
-                ]
-                logger.info(f"Successfully extracted experimental info for '{title}'")
-            else:
-                logger.error(f"No response from LLM for '{title}'")
         except Exception as e:
             logger.error(f"Error extracting experimental info for '{title}': {e}")
+            continue
+
+        if not output or not isinstance(output, dict):
+            logger.error(f"No response from LLM for '{title}'")
+            continue
+
+        research_study.llm_extracted_info.experimental_code = output[
+            "experimental_code"
+        ]
+        research_study.llm_extracted_info.experimental_info = output[
+            "experimental_info"
+        ]
+        logger.info(f"Successfully extracted experimental info for '{title}'")
 
     return research_study_list

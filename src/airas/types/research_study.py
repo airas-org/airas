@@ -2,18 +2,6 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
-# class PaperBody(BaseModel):
-#     title: str = Field(..., description="")
-#     abstract: str = Field(..., description="")
-#     introduction: str = Field(..., description="")
-#     related_work: str = Field(..., description="")
-#     background: str = Field(..., description="")
-#     method: str = Field(..., description="")
-#     experimental_setup: str = Field(..., description="")
-#     results: str = Field(..., description="")
-#     conclusions: str = Field(..., description="")
-#     acknowledgement: str = Field(..., description="")
-
 
 # ExperimentalDesignを使ってまとめたい
 class LLMExtractedInfo(BaseModel):
@@ -56,11 +44,6 @@ class MetaData(BaseModel):
     h_index_relevance: Optional[float] = Field(None, description="")
 
 
-class AlternativeFormats(BaseModel):
-    tex_data: Optional[str] = Field(None, description="")
-    html_data: Optional[str] = Field(None, description="")
-
-
 class ResearchStudy(BaseModel):
     title: str = Field(..., description="")
     abstract: Optional[str] = Field(None, description="")
@@ -69,4 +52,3 @@ class ResearchStudy(BaseModel):
     references: Optional[dict[str, dict[str, Any]]] = Field(None, description="")
     meta_data: Optional[MetaData] = Field(None, description="")
     llm_extracted_info: Optional[LLMExtractedInfo] = Field(None, description="")
-    alternative_formats: Optional[AlternativeFormats] = Field(None, description="")

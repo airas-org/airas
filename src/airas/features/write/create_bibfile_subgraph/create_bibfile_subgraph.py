@@ -23,7 +23,10 @@ from airas.features.write.create_bibfile_subgraph.prompt.filter_references_promp
     filter_references_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
+from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -34,10 +37,10 @@ create_bibfile_timed = lambda f: time_node("create_bibfile_subgraph")(f)  # noqa
 
 
 class CreateBibfileSubgraphInputState(TypedDict):
-    research_study_list: list[dict]
-    reference_study_list: list[dict]
-    research_hypothesis: dict
-    github_repository: dict[str, str]
+    research_study_list: list[ResearchStudy]
+    reference_study_list: list[ResearchStudy]
+    new_method: ResearchHypothesis
+    github_repository: GitHubRepositoryInfo
 
 
 class CreateBibfileSubgraphHiddenState(TypedDict): ...
@@ -75,13 +78,13 @@ class CreateBibfileSubgraph(BaseSubgraph):
     @create_bibfile_timed
     def _filter_references(
         self, state: CreateBibfileSubgraphState
-    ) -> dict[str, list[dict]]:
+    ) -> dict[str, list[ResearchStudy]]:
         filtered_references = filter_references(
             llm_name=cast(LLM_MODEL, self.llm_name),
             prompt_template=filter_references_prompt,
             research_study_list=state["research_study_list"],
             reference_study_list=state["reference_study_list"],
-            research_hypothesis=state["research_hypothesis"],
+            new_method=state["new_method"],
             max_results=self.max_filtered_references,
         )
         return {"reference_study_list": filtered_references}

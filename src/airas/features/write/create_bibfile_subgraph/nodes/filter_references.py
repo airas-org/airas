@@ -7,6 +7,8 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_study import ResearchStudy
 
 
 class FilteredReferencesOutput(BaseModel):
@@ -19,18 +21,18 @@ class FilteredReferencesOutput(BaseModel):
 def filter_references(
     llm_name: LLM_MODEL,
     prompt_template: str,
-    research_study_list: list[dict],
-    reference_study_list: list[dict],
-    research_hypothesis: dict,
+    research_study_list: list[ResearchStudy],
+    reference_study_list: list[ResearchStudy],
+    new_method: ResearchHypothesis,
     max_results: int = 30,
     client: LLMFacadeClient | None = None,
-) -> list[dict]:
+) -> list[ResearchStudy]:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
     data = {
-        "research_study_list": research_study_list,
-        "reference_study_list": reference_study_list,
-        "research_hypothesis": research_hypothesis,
+        "research_study_list": [study.model_dump() for study in research_study_list],
+        "reference_study_list": [study.model_dump() for study in reference_study_list],
+        "research_hypothesis": new_method.model_dump(),
         "max_results": max_results,
     }
 

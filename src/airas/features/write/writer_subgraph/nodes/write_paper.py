@@ -15,7 +15,7 @@ def write_paper(
     llm_name: LLM_MODEL,
     note: str,
     client: LLMFacadeClient | None = None,
-) -> dict[str, str]:
+) -> PaperContent:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
     env = Environment()

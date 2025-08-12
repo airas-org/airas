@@ -9,6 +9,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.paper import PaperContent
 from airas.utils.parse_bibtex_to_dict import parse_bibtex_to_dict
 
 logger = getLogger(__name__)
@@ -59,7 +60,7 @@ def _replace_citation_keys_with_links(
 
 def convert_to_html(
     llm_name: LLM_MODEL,
-    paper_content: dict[str, str],
+    paper_content: PaperContent,
     image_file_name_list: list[str],
     references_bib: str,
     prompt_template: str,
@@ -71,7 +72,9 @@ def convert_to_html(
     references = parse_bibtex_to_dict(references_bib)
     data = {
         "sections": [
-            {"name": key, "content": paper_content[key]} for key in paper_content.keys()
+            {"name": field, "content": getattr(paper_content, field)}
+            for field in PaperContent.model_fields.keys()
+            if getattr(paper_content, field)
         ],
         "image_file_name_list": image_file_name_list,
     }
