@@ -102,7 +102,6 @@ class GithubUploadSubgraph(BaseSubgraph):
 
         input_state = {k: state[k] for k in input_state_keys if k in state}
 
-        # Use the entire state (except subgraph metadata and github_repository_info) as cumulative_output
         def serialize_for_json(obj):
             if hasattr(obj, "model_dump"):
                 return obj.model_dump()
@@ -118,18 +117,14 @@ class GithubUploadSubgraph(BaseSubgraph):
             if k in ["subgraph_name", "github_repository_info"]:
                 continue
             cumulative_output[k] = serialize_for_json(v)
-        input_state["cumulative_output"] = cumulative_output
 
+        input_state["cumulative_output"] = cumulative_output
         config = config or {"recursion_limit": 200}
         result = self.build_graph().invoke(input_state, config=config)
-        output_state = {k: result[k] for k in output_state_keys if k in result}
 
-        cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
-        return {
-            "subgraph_name": self.__class__.__name__,
-            **cleaned_state,
-            **output_state,
-        }
+        output_state = {k: result[k] for k in output_state_keys if k in result}
+        state["subgraph_name"] = self.__class__.__name__
+        return {**state, **output_state}
 
 
 if __name__ == "__main__":
