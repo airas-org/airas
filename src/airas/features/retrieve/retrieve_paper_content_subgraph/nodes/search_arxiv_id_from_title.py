@@ -36,7 +36,7 @@ def search_arxiv_id_from_title(
             )
             continue
 
-        if not output:
+        if not output or not isinstance(output, dict):
             logger.warning(
                 f"No output received for '{research_study.title}'. Skipping."
             )

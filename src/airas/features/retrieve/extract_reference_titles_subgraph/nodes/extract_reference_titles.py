@@ -50,7 +50,7 @@ def extract_reference_titles(
         messages = template.render(data)
 
         try:
-            output, cost = client.structured_outputs(
+            output, _ = client.structured_outputs(
                 message=messages, data_model=LLMOutput
             )
         except Exception as e:
@@ -67,7 +67,7 @@ def extract_reference_titles(
 
         reference_titles = output.get("reference_titles", [])
 
-        # Normalize and deduplicate titles
+        # NOTE: Normalize and deduplicate titles
         unique_titles = []
         seen_normalized = set()
 
@@ -77,7 +77,6 @@ def extract_reference_titles(
                 unique_titles.append(title)
                 seen_normalized.add(normalized_title)
 
-        # Create ResearchStudy objects for reference titles
         for title in unique_titles:
             reference_research_study_list.append(ResearchStudy(title=title))
 

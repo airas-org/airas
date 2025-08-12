@@ -19,11 +19,7 @@ class BaseSubgraph(ABC):
         input_state = {k: state[k] for k in input_state_keys if k in state}
         config = {"recursion_limit": 200}
         result = self.build_graph().invoke(input_state, config=config)
-        output_state = {k: result[k] for k in output_state_keys if k in result}
 
-        cleaned_state = {k: v for k, v in state.items() if k != "subgraph_name"}
-        return {
-            "subgraph_name": self.__class__.__name__,
-            **cleaned_state,
-            **output_state,
-        }
+        output_state = {k: result[k] for k in output_state_keys if k in result}
+        state["subgraph_name"] = self.__class__.__name__
+        return {**state, **output_state}

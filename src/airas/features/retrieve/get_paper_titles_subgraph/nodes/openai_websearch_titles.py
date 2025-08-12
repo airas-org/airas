@@ -51,7 +51,7 @@ def openai_websearch_titles(
             logger.warning(f"OpenAI web search failed for '{query}': {exc}")
             continue
 
-        if not output:
+        if not output or not isinstance(output, dict):
             logger.warning(f"No response for query: '{query}'")
             continue
 
