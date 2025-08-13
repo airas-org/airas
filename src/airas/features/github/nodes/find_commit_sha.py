@@ -41,23 +41,30 @@ def find_commit_sha(
 ) -> str:
     client = client or GithubClient()
     marker = f"[subgraph: {subgraph_name}]"
+
+    commits_iter = _iter_commits(
+        github_repository_info.github_owner,
+        github_repository_info.repository_name,
+        github_repository_info.branch_name,
+        max_pages,
+        client=client,
+    )
+
     try:
-        target_sha = next(
-            commit["sha"]
-            for commit in _iter_commits(
-                github_repository_info.github_owner,
-                github_repository_info.repository_name,
-                github_repository_info.branch_name,
-                max_pages,
-                client=client,
-            )
-            if marker in commit["commit"]["message"]
-        )
-        logger.info(
-            f"Found commit {target_sha} for subgraph {subgraph_name} on branch {github_repository_info.branch_name}."
-        )
-        return target_sha
-    except StopIteration:
+        # Find the commit with the marker
+        for commit in commits_iter:
+            if marker in commit["commit"]["message"]:
+                # Get the next commit (parent commit)
+                parent_commit = next(commits_iter)
+                logger.info(
+                    f"Found parent commit {parent_commit['sha']} before subgraph {subgraph_name} on branch {github_repository_info.branch_name}."
+                )
+                return parent_commit["sha"]
+
         raise RuntimeError(
             f"Commit containing marker '{marker}' not found in branch '{github_repository_info.branch_name}'."
+        )
+    except StopIteration:
+        raise RuntimeError(
+            f"No parent commit found before subgraph '{subgraph_name}' on branch '{github_repository_info.branch_name}'."
         ) from None
