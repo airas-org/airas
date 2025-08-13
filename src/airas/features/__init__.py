@@ -16,7 +16,7 @@ from .create.fix_code_with_devin_subgraph.fix_code_with_devin_subgraph import (
 from .execution.github_actions_executor_subgraph.github_actions_executor_subgraph import (
     GitHubActionsExecutorSubgraph,
 )
-from .github.create_branch_subgraph import create_branch
+from .github.create_branch_subgraph import CreateBranchSubgraph
 from .github.github_download_subgraph import GithubDownloadSubgraph
 from .github.github_upload_subgraph import GithubUploadSubgraph
 from .github.prepare_repository_subgraph.prepare_repository_subgraph import (
@@ -34,12 +34,18 @@ from .retrieve.generate_queries_subgraph.generate_queries_subgraph import (
 from .retrieve.get_paper_titles_subgraph.get_paper_titles_from_db_subgraph import (
     GetPaperTitlesFromDBSubgraph,
 )
+from .retrieve.get_paper_titles_subgraph.get_paper_titles_from_web_subgraph import (
+    GetPaperTitlesFromWebSubgraph,
+)
 from .retrieve.retrieve_code_subgraph.retrieve_code_subgraph import RetrieveCodeSubgraph
 from .retrieve.retrieve_paper_content_subgraph.retrieve_paper_content_subgraph import (
     RetrievePaperContentSubgraph,
 )
 from .retrieve.summarize_paper_subgraph.summarize_paper_subgraph import (
     SummarizePaperSubgraph,
+)
+from .review.review_paper_subgraph.review_paper_subgraph import (
+    ReviewPaperSubgraph,
 )
 from .write.create_bibfile_subgraph.create_bibfile_subgraph import (
     CreateBibfileSubgraph,
@@ -58,6 +64,7 @@ __all__ = [
     "PrepareRepositorySubgraph",
     "GenerateQueriesSubgraph",
     "GetPaperTitlesFromDBSubgraph",
+    "GetPaperTitlesFromWebSubgraph",
     "GithubDownloadSubgraph",
     "GithubUploadSubgraph",
     "HtmlSubgraph",
@@ -68,6 +75,7 @@ __all__ = [
     "SummarizePaperSubgraph",
     "CreateBibfileSubgraph",
     "WriterSubgraph",
-    "create_branch",
+    "CreateBranchSubgraph",
     "ExtractReferenceTitlesSubgraph",
+    "ReviewPaperSubgraph",
 ]

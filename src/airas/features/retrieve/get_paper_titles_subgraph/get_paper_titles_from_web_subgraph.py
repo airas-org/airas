@@ -49,15 +49,18 @@ class GetPaperTitlesFromWebSubgraph(BaseSubgraph):
     InputState = GetPaperTitlesFromWebInputState
     OutputState = GetPaperTitlesFromWebOutputState
 
-    def __init__(self):
+    def __init__(self, max_results_per_query: int = 5):
         check_api_key(llm_api_key_check=True)
+        self.max_results_per_query = max_results_per_query
 
     @get_paper_titles_from_web_timed
     def _openai_websearch_titles(
         self, state: GetPaperTitlesFromWebState
     ) -> dict[str, list[ResearchStudy]]:
         titles = openai_websearch_titles(
-            queries=state["queries"], prompt_template=openai_websearch_titles_prompt
+            queries=state["queries"],
+            prompt_template=openai_websearch_titles_prompt,
+            max_results=self.max_results_per_query,
         )
         # Convert titles to research_study_list format
         research_study_list = [ResearchStudy(title=title) for title in (titles or [])]
@@ -74,7 +77,7 @@ class GetPaperTitlesFromWebSubgraph(BaseSubgraph):
 
 def main():
     input = get_paper_titles_subgraph_input_data
-    result = GetPaperTitlesFromWebSubgraph().run(input)
+    result = GetPaperTitlesFromWebSubgraph(max_results_per_query=3).run(input)
     print(f"result: {result}")
 
 
