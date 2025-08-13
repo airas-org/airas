@@ -67,11 +67,11 @@ class CreateBibfileSubgraph(BaseSubgraph):
     def __init__(
         self,
         llm_name: LLM_MODEL,
-        latex_template: LATEX_TEMPLATE_NAME,
+        latex_template_name: LATEX_TEMPLATE_NAME,
         max_filtered_references: int = 30,
     ):
         self.llm_name = llm_name
-        self.latex_template = latex_template
+        self.latex_template_name = latex_template_name
         self.max_filtered_references = max_filtered_references
         check_api_key(llm_api_key_check=True)
 
@@ -104,7 +104,7 @@ class CreateBibfileSubgraph(BaseSubgraph):
         success = update_repository_bibfile(
             github_repository=state["github_repository"],
             references_bib=state["references_bib"],
-            latex_template=self.latex_template,
+            latex_template_name=self.latex_template_name,
         )
         return {"update_success": success}
 
@@ -129,7 +129,7 @@ def main():
 
     result = CreateBibfileSubgraph(
         llm_name=llm_name,
-        latex_template="iclr2024",
+        latex_template_name="iclr2024",
         max_filtered_references=20,  # Example: limit to 20 references
     ).run(create_bibfile_subgraph_input_data)
     print(f"result: {result}")
