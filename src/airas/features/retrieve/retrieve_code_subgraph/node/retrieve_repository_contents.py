@@ -2,7 +2,7 @@ import base64
 import logging
 import re
 
-from airas.services.api_client.github_client import GithubClient
+from airas.services.api_client.github_client import GithubClient, GithubClientFatalError
 from airas.types.research_study import ResearchStudy
 from airas.utils.logging_utils import setup_logging
 
@@ -49,31 +49,34 @@ def _get_file_content(
             repository_name=repository_name,
             file_path=file_path,
         )
-        if file_bytes is None:
-            logger.warning(f"Failed to retrieve file data: {file_path}")
-            return ""
-
-        content_b64 = file_bytes.get("content", "")
-        content_b64 = content_b64.replace("\\n", "\n")
-        decoded_bytes = base64.b64decode(content_b64)
-
-        try:
-            content_str = decoded_bytes.decode("utf-8")
-        except Exception as e:
-            logger.warning(f"Failed to decode file content: {e}")
-            return ""
-
-        return f"File Path: {file_path}\nContent:\n{content_str}"
+    except GithubClientFatalError:
+        # Re-raise fatal errors so they can be caught at repository level
+        raise
     except Exception as e:
         logger.warning(f"Error retrieving file {file_path}: {e}")
         return ""
+
+    if file_bytes is None:
+        logger.warning(f"Failed to retrieve file data: {file_path}")
+        return ""
+
+    content_b64 = file_bytes.get("content", "")
+    content_b64 = content_b64.replace("\\n", "\n")
+    decoded_bytes = base64.b64decode(content_b64)
+
+    try:
+        content_str = decoded_bytes.decode("utf-8")
+    except Exception as e:
+        logger.warning(f"Failed to decode file content: {e}")
+        return ""
+
+    return f"File Path: {file_path}\nContent:\n{content_str}"
 
 
 def _retrieve_single_repository_contents(
     client: GithubClient, github_url: str, title: str
 ) -> str:
-    url_parts = _parse_github_url(github_url)
-    if not url_parts:
+    if not (url_parts := _parse_github_url(github_url)):
         logger.warning(f"Invalid GitHub URL format for '{title}': {github_url}")
         return ""
 
@@ -81,35 +84,42 @@ def _retrieve_single_repository_contents(
 
     try:
         response = client.get_repository(github_owner, repository_name)
-        if not response:
-            logger.warning(f"Failed to get repository info for '{title}': {github_url}")
-            return ""
+    except Exception as e:
+        logger.error(f"Error retrieving repository contents for '{title}': {e}")
+        return ""
 
-        default_branch = response.get("default_branch", "master")
-        file_paths = _get_python_files(
-            client, github_owner, repository_name, default_branch
-        )
+    if not response:
+        logger.warning(f"Failed to get repository info for '{title}': {github_url}")
+        return ""
 
-        if not file_paths:
-            logger.info(f"No Python files found for '{title}': {github_url}")
-            return ""
+    default_branch = response.get("default_branch", "master")
+    file_paths = _get_python_files(
+        client, github_owner, repository_name, default_branch
+    )
+    if not file_paths:
+        logger.info(f"No Python files found for '{title}': {github_url}")
+        return ""
 
-        contents = []
-        for file_path in file_paths:
+    contents = []
+    for file_path in file_paths:
+        try:
             content = _get_file_content(
                 client, github_owner, repository_name, file_path
             )
             if content:
                 contents.append(content)
+        except GithubClientFatalError:
+            logger.warning(
+                f"Fatal error for repository '{title}': {github_url}. Skipping remaining files in repository."
+            )
+            return ""  # NOTE: Skip this repository on FatalError, as subsequent file contents cannot be retrieved.
+        except Exception as e:
+            logger.warning(f"Error retrieving file {file_path}: {e}")
 
-        logger.info(
-            f"Successfully retrieved repository contents for '{title}': {len(file_paths)} files"
-        )
-        return "\n".join(contents)
-
-    except Exception as e:
-        logger.error(f"Error retrieving repository contents for '{title}': {e}")
-        return ""
+    logger.info(
+        f"Successfully retrieved repository contents for '{title}': {len(file_paths)} files"
+    )
+    return "\n".join(contents)
 
 
 def retrieve_repository_contents(research_study_list: list[ResearchStudy]) -> list[str]:
