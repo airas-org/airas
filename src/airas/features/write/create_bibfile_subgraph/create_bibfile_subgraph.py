@@ -38,9 +38,9 @@ create_bibfile_timed = lambda f: time_node("create_bibfile_subgraph")(f)  # noqa
 
 class CreateBibfileSubgraphInputState(TypedDict):
     research_study_list: list[ResearchStudy]
-    reference_study_list: list[ResearchStudy]
+    reference_research_study_list: list[ResearchStudy]
     new_method: ResearchHypothesis
-    github_repository: GitHubRepositoryInfo
+    github_repository_info: GitHubRepositoryInfo
 
 
 class CreateBibfileSubgraphHiddenState(TypedDict): ...
@@ -83,17 +83,17 @@ class CreateBibfileSubgraph(BaseSubgraph):
             llm_name=cast(LLM_MODEL, self.llm_name),
             prompt_template=filter_references_prompt,
             research_study_list=state["research_study_list"],
-            reference_study_list=state["reference_study_list"],
+            reference_study_list=state["reference_research_study_list"],
             new_method=state["new_method"],
             max_results=self.max_filtered_references,
         )
-        return {"reference_study_list": filtered_references}
+        return {"reference_research_study_list": filtered_references}
 
     @create_bibfile_timed
     def _create_bibtex(self, state: CreateBibfileSubgraphState) -> dict[str, str]:
         references_bib = create_bibtex(
             research_study_list=state["research_study_list"],
-            reference_study_list=state["reference_study_list"],
+            reference_research_study_list=state["reference_research_study_list"],
         )
         return {"references_bib": references_bib}
 
@@ -102,7 +102,7 @@ class CreateBibfileSubgraph(BaseSubgraph):
         self, state: CreateBibfileSubgraphState
     ) -> dict[str, Any]:
         success = update_repository_bibfile(
-            github_repository=state["github_repository"],
+            github_repository_info=state["github_repository_info"],
             references_bib=state["references_bib"],
             latex_template_name=self.latex_template_name,
         )

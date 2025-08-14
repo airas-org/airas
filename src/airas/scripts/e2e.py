@@ -9,17 +9,18 @@ from pydantic import TypeAdapter
 from airas.features import (
     AnalyticSubgraph,
     CreateBibfileSubgraph,
-    # CreateCodeWithDevinSubgraph,
-    CreateCodeSubgraph,
+    # CreateBranchSubgraph,
+    # CreateCodeSubgraph,
+    CreateCodeWithDevinSubgraph,
     CreateExperimentalDesignSubgraph,
     CreateMethodSubgraph,
     ExtractReferenceTitlesSubgraph,
-    FixCodeSubgraph,
-    # FixCodeWithDevinSubgraph,
+    # FixCodeSubgraph,
+    FixCodeWithDevinSubgraph,
     GenerateQueriesSubgraph,
     GetPaperTitlesFromDBSubgraph,
     GitHubActionsExecutorSubgraph,
-    GithubDownloadSubgraph,
+    # GithubDownloadSubgraph,
     GithubUploadSubgraph,
     HtmlSubgraph,
     LatexSubgraph,
@@ -27,6 +28,7 @@ from airas.features import (
     ReadmeSubgraph,
     RetrieveCodeSubgraph,
     RetrievePaperContentSubgraph,
+    ReviewPaperSubgraph,
     SummarizePaperSubgraph,
     WriterSubgraph,
 )
@@ -34,41 +36,44 @@ from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.types.research_study import ResearchStudy
 
-# llm_name = "o3-mini-2025-01-31"
-llm_name = "gemini-2.5-flash"
-save_dir = "/workspaces/airas/data"
+llm_name = "o3-mini-2025-01-31"
 
 prepare = PrepareRepositorySubgraph()
-generate_queries = GenerateQueriesSubgraph(llm_name=llm_name, n_queries=1)
+generate_queries = GenerateQueriesSubgraph(llm_name=llm_name, n_queries=5)
 get_paper_titles = GetPaperTitlesFromDBSubgraph(
-    max_results_per_query=1, semantic_search=True
+    max_results_per_query=3, semantic_search=True
 )
+# get_paper_titles = GetPaperTitlesFromWebSubgraph(max_results_per_query=5)
 retrieve_paper_content = RetrievePaperContentSubgraph(
-    target_study_list_source="research_study_list"
+    paper_provider="arxiv", target_study_list_source="research_study_list"
 )
 summarize_paper = SummarizePaperSubgraph(llm_name=llm_name)
 retrieve_code = RetrieveCodeSubgraph(llm_name=llm_name)
-create_method = CreateMethodSubgraph(llm_name=llm_name)
-create_experimental_design = CreateExperimentalDesignSubgraph(llm_name=llm_name)
-# coder = CreateCodeWithDevinSubgraph()
-coder = CreateCodeSubgraph(llm_name=llm_name)
 reference_extractor = ExtractReferenceTitlesSubgraph(
-    llm_name=llm_name, paper_retrieval_limit=1
+    llm_name=llm_name, paper_retrieval_limit=10
 )
 retrieve_reference_paper_content = RetrievePaperContentSubgraph(
-    target_study_list_source="reference_research_study_list"
+    paper_provider="arxiv", target_study_list_source="reference_research_study_list"
 )
+create_method = CreateMethodSubgraph(llm_name=llm_name, refine_iterations=5)
+create_experimental_design = CreateExperimentalDesignSubgraph(llm_name=llm_name)
+coder = CreateCodeWithDevinSubgraph()
+# coder = CreateCodeSubgraph(llm_name=llm_name)
 executor = GitHubActionsExecutorSubgraph(gpu_enabled=True)
-# fixer = FixCodeWithDevinSubgraph(llm_name="o3-mini-2025-01-31")
-fixer = FixCodeSubgraph(llm_name=llm_name)
+fixer = FixCodeWithDevinSubgraph(llm_name=llm_name)
+# fixer = FixCodeSubgraph(llm_name=llm_name)
 analysis = AnalyticSubgraph(llm_name=llm_name)
-writer = WriterSubgraph(llm_name=llm_name)
-citation = CreateBibfileSubgraph(llm_name=llm_name, latex_template="iclr2024")
-latex = LatexSubgraph(llm_name=llm_name)
+create_bibfile = CreateBibfileSubgraph(
+    llm_name=llm_name, latex_template_name="iclr2024", max_filtered_references=30
+)
+writer = WriterSubgraph(llm_name=llm_name, max_refinement_count=2)
+review = ReviewPaperSubgraph(llm_name=llm_name)
+latex = LatexSubgraph(
+    llm_name=llm_name, latex_template_name="iclr2024", max_revision_count=3
+)
 readme = ReadmeSubgraph()
 html = HtmlSubgraph(llm_name=llm_name)
-upload = GithubUploadSubgraph()
-download = GithubDownloadSubgraph()
+uploader = GithubUploadSubgraph()
 
 
 _TA_ANY = TypeAdapter(Any)
@@ -150,8 +155,9 @@ def run_from_state_file(state: dict, save_dir: str, file_path: str | None = None
         "analysis",
         "reference_extractor",
         "retrieve_reference_paper_content",
+        "create_bibfile",
         "writer",
-        "citation",
+        "review",
         "latex",
         "readme",
         "html",
@@ -220,12 +226,15 @@ def run_from_state_file(state: dict, save_dir: str, file_path: str | None = None
         elif subgraph_name == "retrieve_reference_paper_content":
             state = retrieve_reference_paper_content.run(state)
             save_state(state, "retrieve_reference_paper_content", save_dir)
+        elif subgraph_name == "create_bibfile":
+            state = create_bibfile.run(state)
+            save_state(state, "create_bibfile", save_dir)
         elif subgraph_name == "writer":
             state = writer.run(state)
             save_state(state, "writer", save_dir)
-        elif subgraph_name == "citation":
-            state = citation.run(state)
-            save_state(state, "citation", save_dir)
+        elif subgraph_name == "review":
+            state = review.run(state)
+            save_state(state, "review", save_dir)
         elif subgraph_name == "latex":
             state = latex.run(state)
             save_state(state, "latex", save_dir)
@@ -247,8 +256,8 @@ def main(file_path: str | None = None):
     input_data = {
         "github_repository_info": GitHubRepositoryInfo(
             github_owner="auto-res2",
-            repository_name="tanaka-20250812-v4",
-            branch_name="develop-2",
+            repository_name="experiment_matsuzawa_e2e",
+            branch_name="develop",
         ),
         "research_topic": "Research on diffusion models and reinforcement learning",
     }

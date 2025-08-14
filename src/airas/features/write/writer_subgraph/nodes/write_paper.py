@@ -37,4 +37,4 @@ def write_paper(
     if missing_fields:
         raise ValueError(f"Missing or empty fields in model response: {missing_fields}")
 
-    return output
+    return PaperContent(**output)
