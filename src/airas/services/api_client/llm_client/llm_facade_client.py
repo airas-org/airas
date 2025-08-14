@@ -40,7 +40,7 @@ LLM_RETRY = retry(
     retry=retry_if_exception_type(RETRY_EXC),
     stop=stop_after_attempt(DEFAULT_MAX_RETRIES),
     wait=WAIT_POLICY,
-    before=before_log(logger, logging.WARNING),
+    before=before_log(logger, logging.INFO),
     before_sleep=before_sleep_log(logger, logging.WARNING),
     reraise=True,
 )
