@@ -9,6 +9,7 @@ from airas.features.publication.readme_subgraph.input_data import (
     readme_subgraph_input_data,
 )
 from airas.features.publication.readme_subgraph.nodes.readme_upload import readme_upload
+from airas.types.devin import DevinInfo
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -22,7 +23,7 @@ readme_timed = lambda f: time_node("readme_subgraph")(f)  # noqa: E731
 class ReadmeSubgraphInputState(TypedDict):
     github_repository_info: GitHubRepositoryInfo
     paper_content: PaperContent
-    experiment_devin_url: str
+    devin_info: DevinInfo
 
 
 class ReadmeSubgraphHiddenState(TypedDict): ...
@@ -56,7 +57,7 @@ class ReadmeSubgraph(BaseSubgraph):
             github_repository_info=state["github_repository_info"],
             title=state["paper_content"].title,
             abstract=state["paper_content"].abstract,
-            devin_url=state["experiment_devin_url"],
+            devin_url=state["devin_info"].devin_url,
         )
         return {"readme_upload_result": readme_upload_result}
 
