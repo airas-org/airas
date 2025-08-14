@@ -4,7 +4,7 @@ from airas.types.paper import PaperContent
 latex_subgraph_input_data = {
     "github_repository_info": GitHubRepositoryInfo(
         github_owner="auto-res2",
-        repository_name="experiment_matsuzawa_retrieve_test2",
+        repository_name="experiment_matsuzawa_e2e",
         branch_name="develop",
     ),
     "paper_content": PaperContent(

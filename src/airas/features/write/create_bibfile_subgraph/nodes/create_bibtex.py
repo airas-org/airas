@@ -34,9 +34,10 @@ def _generate_citation_key(title: str, authors: list[str], year) -> str:
 
 
 def create_bibtex(
-    research_study_list: list[ResearchStudy], reference_study_list: list[ResearchStudy]
+    research_study_list: list[ResearchStudy],
+    reference_research_study_list: list[ResearchStudy],
 ) -> str:
-    if not research_study_list and not reference_study_list:
+    if not research_study_list and not reference_research_study_list:
         return ""
 
     bibtex_sections = []
@@ -59,7 +60,7 @@ def create_bibtex(
         bibtex_sections.append("")
 
     # Reference papers section
-    if reference_study_list:
+    if reference_research_study_list:
         bibtex_sections.append("% ===========================================")
         bibtex_sections.append(f"% {REFERENCE_CANDIDATES_MARKER}")
         bibtex_sections.append("% Additional reference papers for context")
@@ -67,7 +68,7 @@ def create_bibtex(
         bibtex_sections.append("")
 
         db_reference = BibDatabase()
-        for i, ref in enumerate(reference_study_list):
+        for i, ref in enumerate(reference_research_study_list):
             entry = _create_bibtex_entry(ref, i + len(research_study_list))
             db_reference.entries.append(entry)
 

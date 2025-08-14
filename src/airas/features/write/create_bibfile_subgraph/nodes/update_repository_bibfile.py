@@ -19,16 +19,16 @@ def _merge_bibtex_content(existing: str, new: str) -> str:
 
 
 def update_repository_bibfile(
-    github_repository: GitHubRepositoryInfo,
+    github_repository_info: GitHubRepositoryInfo,
     references_bib: str,
     latex_template_name: LATEX_TEMPLATE_NAME,
     client: GithubClient | None = None,
 ) -> bool:
     client = GithubClient() or client
 
-    github_owner = github_repository.github_owner
-    repository_name = github_repository.repository_name
-    branch_name = github_repository.branch_name
+    github_owner = github_repository_info.github_owner
+    repository_name = github_repository_info.repository_name
+    branch_name = github_repository_info.branch_name
     bibfile_path = f".research/latex/{latex_template_name}/references.bib"
 
     logger.info(
