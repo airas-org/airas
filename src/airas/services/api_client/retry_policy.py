@@ -46,7 +46,7 @@ def make_retry_policy(
         stop=stop_after_attempt(max_retries),
         wait=wait,
         retry=retry_if_exception_type(retryable_exc),
-        before=before_log(_LOGGER, logging.WARNING),
+        before=before_log(_LOGGER, logging.INFO),
         before_sleep=before_sleep_log(_LOGGER, logging.WARNING),
         reraise=True,
     )

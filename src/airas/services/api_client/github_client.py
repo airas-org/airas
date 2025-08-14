@@ -396,6 +396,31 @@ class GithubClient(BaseHTTPClient):
             return self._parser.parse(response, as_="json")
         self._raise_for_status(response, path)
 
+    @GITHUB_RETRY
+    def download_repository_zip(
+        self, github_owner: str, repository_name: str, ref: str = "master"
+    ) -> bytes:
+        """Download repository as ZIP archive"""
+        # https://docs.github.com/en/rest/repos/contents#download-a-repository-archive-zip
+        path = f"/repos/{github_owner}/{repository_name}/zipball/{ref}"
+
+        response = self.get(path=path, stream=True)
+        match response.status_code:
+            case 200:
+                logger.info(f"Successfully downloaded ZIP: {path}")
+                return response.content
+            case 302:
+                # Handle redirect
+                location = response.headers.get("Location")
+                if location:
+                    redirect_response = requests.get(location)
+                    if redirect_response.status_code == 200:
+                        return redirect_response.content
+                logger.warning(f"Failed to follow redirect for ZIP download: {path}")
+                self._raise_for_status(response, path)
+            case _:
+                self._raise_for_status(response, path)
+
     # --------------------------------------------------
     # Tree
     # --------------------------------------------------

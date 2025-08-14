@@ -1,6 +1,7 @@
-import base64
+import io
 import logging
 import re
+import zipfile
 
 from airas.services.api_client.github_client import GithubClient, GithubClientFatalError
 from airas.types.research_study import ResearchStudy
@@ -17,60 +18,41 @@ def _parse_github_url(github_url: str) -> tuple[str, str] | None:
     return match.group(1), match.group(2)
 
 
-def _get_python_files(
-    client: GithubClient, github_owner: str, repository_name: str, default_branch: str
-) -> list[str]:
+def _extract_python_files_from_zip(zip_data: bytes, title: str, github_url: str) -> str:
     try:
-        repository_tree_info = client.get_a_tree(
-            github_owner=github_owner,
-            repository_name=repository_name,
-            tree_sha=default_branch,
-        )
+        with zipfile.ZipFile(io.BytesIO(zip_data), "r") as zip_file:
+            contents = []
 
-        if repository_tree_info is None:
-            return []
+            for file_info in zip_file.infolist():
+                if file_info.is_dir() or not file_info.filename.endswith(".py"):
+                    continue
 
-        return [
-            entry.get("path", "")
-            for entry in repository_tree_info["tree"]
-            if entry.get("path", "").endswith((".py"))
-        ]
+                file_data = zip_file.read(file_info)
+                content_str = file_data.decode("utf-8")
+
+                # NOTE: Check Git LFS pointer files
+                if content_str.strip().startswith(
+                    "version https://git-lfs.github.com/spec/v1"
+                ):
+                    logger.warning(
+                        f"Repository '{title}' ({github_url}) appears to use Git LFS, which is not supported. Skipping repository."
+                    )
+                    return ""
+
+                # NOTE: In the case of ZIP, the repository name prefix is added to the path, so remove it.
+                clean_path = (
+                    "/".join(file_info.filename.split("/")[1:])
+                    if "/" in file_info.filename
+                    else file_info.filename
+                )
+
+                contents.append(f"File Path: {clean_path}\nContent:\n{content_str}")
+
+            return "\n".join(contents)
+
     except Exception as e:
-        logger.warning(f"Failed to retrieve repository tree: {e}")
-        return []
-
-
-def _get_file_content(
-    client: GithubClient, github_owner: str, repository_name: str, file_path: str
-) -> str:
-    try:
-        file_bytes = client.get_repository_content(
-            github_owner=github_owner,
-            repository_name=repository_name,
-            file_path=file_path,
-        )
-    except GithubClientFatalError:
-        # Re-raise fatal errors so they can be caught at repository level
-        raise
-    except Exception as e:
-        logger.warning(f"Error retrieving file {file_path}: {e}")
+        logger.error(f"Error extracting ZIP contents: {e}")
         return ""
-
-    if file_bytes is None:
-        logger.warning(f"Failed to retrieve file data: {file_path}")
-        return ""
-
-    content_b64 = file_bytes.get("content", "")
-    content_b64 = content_b64.replace("\\n", "\n")
-    decoded_bytes = base64.b64decode(content_b64)
-
-    try:
-        content_str = decoded_bytes.decode("utf-8")
-    except Exception as e:
-        logger.warning(f"Failed to decode file content: {e}")
-        return ""
-
-    return f"File Path: {file_path}\nContent:\n{content_str}"
 
 
 def _retrieve_single_repository_contents(
@@ -83,48 +65,35 @@ def _retrieve_single_repository_contents(
     github_owner, repository_name = url_parts
 
     try:
-        response = client.get_repository(github_owner, repository_name)
+        repo_info = client.get_repository(github_owner, repository_name)
+        default_branch = repo_info.get("default_branch", "master")
+
+        zip_data = client.download_repository_zip(
+            github_owner, repository_name, default_branch
+        )
+        contents = _extract_python_files_from_zip(zip_data, title, github_url)
+
+        file_count = len(contents.split("File Path:")) - 1 if contents else 0
+        logger.info(
+            f"Successfully retrieved repository contents for '{title}': {file_count} files"
+        )
+        return contents
+
+    except GithubClientFatalError:
+        logger.warning(
+            f"Fatal error for repository '{title}': {github_url}. Skipping repository."
+        )
+        return ""
     except Exception as e:
-        logger.error(f"Error retrieving repository contents for '{title}': {e}")
+        logger.error(f"Error processing repository '{title}': {e}")
         return ""
 
-    if not response:
-        logger.warning(f"Failed to get repository info for '{title}': {github_url}")
-        return ""
 
-    default_branch = response.get("default_branch", "master")
-    file_paths = _get_python_files(
-        client, github_owner, repository_name, default_branch
-    )
-    if not file_paths:
-        logger.info(f"No Python files found for '{title}': {github_url}")
-        return ""
-
-    contents = []
-    for file_path in file_paths:
-        try:
-            content = _get_file_content(
-                client, github_owner, repository_name, file_path
-            )
-            if content:
-                contents.append(content)
-        except GithubClientFatalError:
-            logger.warning(
-                f"Fatal error for repository '{title}': {github_url}. Skipping remaining files in repository."
-            )
-            return ""  # NOTE: Skip this repository on FatalError, as subsequent file contents cannot be retrieved.
-        except Exception as e:
-            logger.warning(f"Error retrieving file {file_path}: {e}")
-
-    logger.info(
-        f"Successfully retrieved repository contents for '{title}': {len(file_paths)} files"
-    )
-    return "\n".join(contents)
-
-
-def retrieve_repository_contents(research_study_list: list[ResearchStudy]) -> list[str]:
+def retrieve_repository_contents(
+    research_study_list: list[ResearchStudy], client: GithubClient | None = None
+) -> list[str]:
+    client = client or GithubClient()
     code_str_list = []
-    client = GithubClient()
 
     for research_study in research_study_list:
         title = research_study.title or "N/A"
@@ -136,8 +105,9 @@ def retrieve_repository_contents(research_study_list: list[ResearchStudy]) -> li
             code_str_list.append("")
             continue
 
-        github_url = research_study.meta_data.github_url
-        content = _retrieve_single_repository_contents(client, github_url, title)
+        content = _retrieve_single_repository_contents(
+            client, research_study.meta_data.github_url, title
+        )
         code_str_list.append(content)
 
     return code_str_list
