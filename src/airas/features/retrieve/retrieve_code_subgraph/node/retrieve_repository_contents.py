@@ -99,7 +99,7 @@ def retrieve_repository_contents(
         title = research_study.title or "N/A"
 
         if not research_study.meta_data or not research_study.meta_data.github_url:
-            logger.info(
+            logger.warning(
                 f"No GitHub URL for '{title}', skipping repository content retrieval."
             )
             code_str_list.append("")

@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import cast
 
@@ -60,10 +59,7 @@ class AnalyticSubgraph(BaseSubgraph):
         new_method = state["new_method"]
         analysis_report = analytic_node(
             llm_name=cast(LLM_MODEL, self.llm_name),
-            new_method=new_method.method,
-            experiment_strategy=new_method.experimental_design.experiment_strategy,
-            experiment_code=new_method.experimental_design.experiment_code,
-            output_text_data=new_method.experimental_results.result,
+            new_method=new_method,
         )
         new_method.experimental_analysis = ExperimentalAnalysis(
             analysis_report=analysis_report
@@ -87,7 +83,7 @@ def main():
         llm_name=llm_name,
     ).run(input)
 
-    print(f"result: {json.dumps(result, indent=2)}")
+    print(f"result: {result}")
 
 
 if __name__ == "__main__":
