@@ -67,10 +67,19 @@ class GithubDownloadSubgraph(BaseSubgraph):
         sg.add_edge("github_download", END)
         return sg.compile()
 
+    def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
+        input_state_keys = self.InputState.__annotations__.keys()
+        input_state = {k: state[k] for k in input_state_keys if k in state}
+
+        config = config or {"recursion_limit": 200}
+        result = self.build_graph().invoke(input_state, config=config)
+
+        research_history = result.get("research_history", {})
+
+        return {**state, **research_history}
+
 
 if __name__ == "__main__":
-    remote_dir = ".research"
-
     parser = argparse.ArgumentParser(description="GithubDownloadSubgraph")
     parser.add_argument("github_repository", help="Your GitHub repository")
     parser.add_argument(
