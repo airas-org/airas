@@ -400,7 +400,6 @@ class GithubClient(BaseHTTPClient):
     def download_repository_zip(
         self, github_owner: str, repository_name: str, ref: str = "master"
     ) -> bytes:
-        """Download repository as ZIP archive"""
         # https://docs.github.com/en/rest/repos/contents#download-a-repository-archive-zip
         path = f"/repos/{github_owner}/{repository_name}/zipball/{ref}"
 
