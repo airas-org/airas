@@ -1,11 +1,11 @@
 import json
 import logging
-from typing import Any
 
 import requests
 
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
+from airas.types.research_history import ResearchHistory
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ def github_download(
     github_repository_info: GitHubRepositoryInfo,
     file_path: str = ".research/research_history.json",
     client: GithubClient | None = None,
-) -> dict[str, Any]:
+) -> ResearchHistory:
     if client is None:
         client = GithubClient()
     logger.info(
@@ -32,7 +32,7 @@ def github_download(
         download_url = blob.get("download_url")
         if not download_url:
             logger.error("No download_url available for file")
-            return {}
+            return ResearchHistory()
 
         logger.info(f"Downloading file directly: {download_url}")
         response = requests.get(download_url)
@@ -40,23 +40,20 @@ def github_download(
         raw = response.content
 
         if not raw:
-            logger.warning("Raw content is empty, returning empty dict")
-            return {}
+            logger.warning("Raw content is empty, returning empty ResearchHistory")
+            return ResearchHistory()
 
-        decoded_content = json.loads(raw)
-        return decoded_content
+        # Parse JSON and convert to ResearchHistory
+        try:
+            decoded_dict = json.loads(raw)
+            research_history = ResearchHistory.model_validate(decoded_dict)
+            return research_history
+        except Exception as e:
+            logger.warning(
+                f"Failed to convert to ResearchHistory: {e}, returning empty ResearchHistory"
+            )
+            return ResearchHistory()
 
     except FileNotFoundError as e:
-        logger.error(f"State file not found – start with empty dict: {e}")
-        raise
-
-
-if __name__ == "__main__":
-    github_repository_info = GitHubRepositoryInfo(
-        github_owner="auto-res2",
-        repository_name="experiment_matsuzawa_colab_2",
-        branch_name="develop_3",
-    )
-
-    result = github_download(github_repository_info)
-    print(f"result: {result.keys()}")
+        logger.error(f"State file not found – returning empty ResearchHistory: {e}")
+        return ResearchHistory()
