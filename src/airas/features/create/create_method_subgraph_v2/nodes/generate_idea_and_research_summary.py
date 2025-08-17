@@ -1,14 +1,14 @@
 from logging import getLogger
 
 from jinja2 import Environment
-from pydantic import BaseModel
 
 from airas.features.create.create_method_subgraph.nodes.idea_generator import (
     parse_research_study_list,
 )
-from airas.features.create.create_method_subgraph.prompt.research_value_judgement_prompt import (
-    research_value_judgement_prompt,
+from airas.features.create.create_method_subgraph_v2.prompt import (
+    generate_ide_and_research_summary_prompt,
 )
+from airas.features.create.create_method_subgraph_v2.types import GenerateIdea
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -18,34 +18,25 @@ from airas.types.research_study import ResearchStudy
 logger = getLogger(__name__)
 
 
-class LLMOutput(BaseModel):
-    reason: str
-    judgement_result: bool
-
-
-def research_value_judgement(
+def generate_ide_and_research_summary(
     llm_name: LLM_MODEL,
     research_topic: str,
-    new_idea: str,
     research_study_list: list[ResearchStudy],
     client: LLMFacadeClient | None = None,
-) -> tuple[str, bool]:
+) -> dict[str, str]:
     client = client or LLMFacadeClient(llm_name=llm_name)
     env = Environment()
-    template = env.from_string(research_value_judgement_prompt)
+
+    template = env.from_string(generate_ide_and_research_summary_prompt)
     data = {
         "research_topic": research_topic,
-        "new_idea": new_idea,
         "research_study_list": parse_research_study_list(research_study_list),
     }
     messages = template.render(data)
     output, cost = client.structured_outputs(
         message=messages,
-        data_model=LLMOutput,
+        data_model=GenerateIdea,
     )
     if output is None:
-        raise ValueError("No response from LLM in research_value_judgement.")
-    return (
-        output["reason"],
-        output["judgement_result"],
-    )
+        raise ValueError("No response from LLM in idea_generator.")
+    return output

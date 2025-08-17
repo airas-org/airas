@@ -32,7 +32,7 @@ def idea_generator(
     template = env.from_string(idea_generator_prompt)
     data = {
         "research_topic": research_topic,
-        "research_study_list": _parse_research_study_list(research_study_list),
+        "research_study_list": parse_research_study_list(research_study_list),
         "idea_history": _parse_idea_history(idea_history),
     }
     messages = template.render(data)
@@ -45,7 +45,7 @@ def idea_generator(
     return output["new_idea"]
 
 
-def _parse_research_study_list(research_study_list: list[ResearchStudy]) -> str:
+def parse_research_study_list(research_study_list: list[ResearchStudy]) -> str:
     data_str = ""
     for research_study in research_study_list:
         info = research_study.llm_extracted_info
