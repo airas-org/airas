@@ -1,11 +1,12 @@
 import logging
 import time
-from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.publication.html_subgraph.input_data import html_subgraph_input_data
 from airas.features.publication.html_subgraph.nodes.convert_to_html import (
@@ -30,6 +31,10 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 html_timed = lambda f: time_node("html_subgraph")(f)  # noqa: E731
+
+
+class HtmlLLMMapping(BaseModel):
+    convert_to_html: LLM_MODEL = DEFAULT_NODE_LLMS["convert_to_html"]
 
 
 class HtmlSubgraphInputState(TypedDict):
@@ -64,9 +69,9 @@ class HtmlSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_name: LLM_MODEL,
+        llm_mapping: HtmlLLMMapping | None = None,
     ):
-        self.llm_name = llm_name
+        self.llm_mapping = llm_mapping or HtmlLLMMapping()
         check_api_key(llm_api_key_check=True)
 
     @html_timed
@@ -78,7 +83,7 @@ class HtmlSubgraph(BaseSubgraph):
             or []
         )
         paper_content_html = convert_to_html(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.convert_to_html,
             paper_content=state["paper_content"],
             image_file_name_list=image_file_name_list,
             references_bib=state["references_bib"],
@@ -132,12 +137,9 @@ class HtmlSubgraph(BaseSubgraph):
 
 
 def main():
-    llm_name = "o3-mini-2025-01-31"
     input = html_subgraph_input_data
 
-    result = HtmlSubgraph(
-        llm_name=llm_name,
-    ).run(input)
+    result = HtmlSubgraph().run(input)
     print(f"Result: {result}")
 
 

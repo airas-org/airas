@@ -1,10 +1,11 @@
 import logging
-from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.retrieve.extract_reference_titles_subgraph.input_data import (
     extract_reference_titles_subgraph_input_data,
@@ -24,6 +25,10 @@ logger = logging.getLogger(__name__)
 
 extract_reference_titles_str = "extract_reference_titles_subgraph"
 extract_reference_titles_timed = lambda f: time_node(extract_reference_titles_str)(f)  # noqa: E731
+
+
+class ExtractReferenceTitlesLLMMapping(BaseModel):
+    extract_reference_titles: LLM_MODEL = DEFAULT_NODE_LLMS["extract_reference_titles"]
 
 
 class ExtractReferenceTitlesInputState(TypedDict):
@@ -51,10 +56,10 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_name: LLM_MODEL,
+        llm_mapping: ExtractReferenceTitlesLLMMapping | None = None,
         paper_retrieval_limit: int | None = None,
     ):
-        self.llm_name = llm_name
+        self.llm_mapping = llm_mapping or ExtractReferenceTitlesLLMMapping()
         self.paper_retrieval_limit = paper_retrieval_limit
 
     @extract_reference_titles_timed
@@ -62,7 +67,7 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
         self, state: ExtractReferenceTitlesState
     ) -> dict[str, list[ResearchStudy]]:
         reference_research_study_list = extract_reference_titles(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.extract_reference_titles,
             research_study_list=state["research_study_list"],
         )
         if self.paper_retrieval_limit is not None:
@@ -85,9 +90,7 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
 
 def main():
     input_data = extract_reference_titles_subgraph_input_data
-    result = ExtractReferenceTitlesSubgraph(
-        llm_name="gemini-2.0-flash-001",
-    ).run(input_data)
+    result = ExtractReferenceTitlesSubgraph().run(input_data)
     print(f"result: {result}")
 
 

@@ -1,10 +1,12 @@
 import logging
-from typing import Literal, cast
+from typing import Literal
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.create.fix_code_with_devin_subgraph.nodes.fix_code_with_devin import (
     fix_code_with_devin,
@@ -26,6 +28,10 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 fix_code_timed = lambda f: time_node("fix_code_subgraph")(f)  # noqa: E731
+
+
+class FixCodeWithDevinLLMMapping(BaseModel):
+    llm_decide_node: LLM_MODEL = DEFAULT_NODE_LLMS["llm_decide_node"]
 
 
 class FixCodeWithDevinSubgraphInputState(TypedDict):
@@ -59,8 +65,8 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
     InputState = FixCodeWithDevinSubgraphInputState
     OutputState = FixCodeWithDevinSubgraphOutputState
 
-    def __init__(self, llm_name: LLM_MODEL):
-        self.llm_name = llm_name
+    def __init__(self, llm_mapping: FixCodeWithDevinLLMMapping | None = None):
+        self.llm_mapping = llm_mapping or FixCodeWithDevinLLMMapping()
         check_api_key(
             llm_api_key_check=True,
             devin_api_key_check=True,
@@ -85,7 +91,7 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
             else ""
         )
         judgment_result = should_fix_code(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.llm_decide_node,
             output_text_data=output_text_data,
             error_text_data=error_text_data,
         )

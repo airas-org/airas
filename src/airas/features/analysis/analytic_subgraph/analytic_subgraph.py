@@ -1,10 +1,11 @@
 import logging
-from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.analysis.analytic_subgraph.input_data import (
     analytic_subgraph_input_data,
@@ -20,6 +21,10 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 analytic_timed = lambda f: time_node("analytic_subgraph")(f)  # noqa: E731
+
+
+class AnalyticLLMMapping(BaseModel):
+    analytic_node: LLM_MODEL = DEFAULT_NODE_LLMS["analytic_node"]
 
 
 class AnalyticSubgraphInputState(TypedDict):
@@ -49,16 +54,16 @@ class AnalyticSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_name: LLM_MODEL,
+        llm_mapping: AnalyticLLMMapping | None = None,
     ):
-        self.llm_name = llm_name
+        self.llm_mapping = llm_mapping or AnalyticLLMMapping()
         check_api_key(llm_api_key_check=True)
 
     @analytic_timed
     def _analytic_node(self, state: AnalyticSubgraphState) -> dict:
         new_method = state["new_method"]
         analysis_report = analytic_node(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.analytic_node,
             new_method=new_method,
         )
         new_method.experimental_analysis = ExperimentalAnalysis(
@@ -76,12 +81,9 @@ class AnalyticSubgraph(BaseSubgraph):
 
 
 def main():
-    llm_name = "o3-mini-2025-01-31"
     input = analytic_subgraph_input_data
 
-    result = AnalyticSubgraph(
-        llm_name=llm_name,
-    ).run(input)
+    result = AnalyticSubgraph().run(input)
 
     print(f"result: {result}")
 

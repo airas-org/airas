@@ -1,11 +1,12 @@
 import logging
-from typing import Annotated, cast
+from typing import Annotated
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
-from pydantic import Field
+from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.retrieve.generate_queries_subgraph.input_data import (
     generate_queries_subgraph_input_data,
@@ -26,6 +27,10 @@ logger = logging.getLogger(__name__)
 
 generate_queries_str = "generate_queries_subgraph"
 generate_queries_timed = lambda f: time_node(generate_queries_str)(f)  # noqa: E731
+
+
+class GenerateQueriesLLMMapping(BaseModel):
+    generate_queries: LLM_MODEL = DEFAULT_NODE_LLMS["generate_queries"]
 
 
 class GenerateQueriesInputState(TypedDict):
@@ -51,15 +56,19 @@ class GenerateQueriesSubgraph(BaseSubgraph):
     InputState = GenerateQueriesInputState
     OutputState = GenerateQueriesOutputState
 
-    def __init__(self, llm_name: LLM_MODEL, n_queries: Annotated[int, Field(gt=0)] = 5):
-        self.llm_name = llm_name
+    def __init__(
+        self,
+        llm_mapping: GenerateQueriesLLMMapping | None = None,
+        n_queries: Annotated[int, Field(gt=0)] = 5,
+    ):
+        self.llm_mapping = llm_mapping or GenerateQueriesLLMMapping()
         self.n_queries = n_queries
         check_api_key(llm_api_key_check=True)
 
     @generate_queries_timed
     def _generate_queries(self, state: GenerateQueriesState) -> dict[str, list[str]]:
         generated_queries = generate_queries(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.generate_queries,
             prompt_template=generate_queries_prompt,
             research_topic=state["research_topic"],
             n_queries=self.n_queries,
@@ -75,11 +84,8 @@ class GenerateQueriesSubgraph(BaseSubgraph):
 
 
 def main():
-    llm_name = "o3-mini-2025-01-31"
     input = generate_queries_subgraph_input_data
-    result = GenerateQueriesSubgraph(
-        llm_name=llm_name,
-    ).run(input)
+    result = GenerateQueriesSubgraph().run(input)
     print(f"result: {result}")
 
 

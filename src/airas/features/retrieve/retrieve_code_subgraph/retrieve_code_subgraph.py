@@ -1,10 +1,11 @@
 import logging
-from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.retrieve.retrieve_code_subgraph.input_data import (
     retrieve_code_subgraph_input_data,
@@ -31,6 +32,15 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 retrieve_code_timed = lambda f: time_node("retrieve_code_subgraph")(f)  # noqa: E731
+
+
+class RetrieveCodeLLMMapping(BaseModel):
+    extract_github_url_from_text: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "extract_github_url_from_text"
+    ]
+    extract_experimental_info: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "extract_experimental_info"
+    ]
 
 
 class RetrieveCodeInputState(TypedDict):
@@ -60,17 +70,17 @@ class RetrieveCodeSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_name: LLM_MODEL = "gemini-2.0-flash-001",
+        llm_mapping: RetrieveCodeLLMMapping | None = None,
     ):
         check_api_key(llm_api_key_check=True)
-        self.llm_name = llm_name
+        self.llm_mapping = llm_mapping or RetrieveCodeLLMMapping()
 
     @retrieve_code_timed
     def _extract_github_url_from_text(
         self, state: RetrieveCodeState
     ) -> dict[str, list[ResearchStudy]]:
         research_study_list = extract_github_url_from_text(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.extract_github_url_from_text,
             prompt_template=extract_github_url_from_text_prompt,
             research_study_list=state["research_study_list"],
         )
@@ -94,7 +104,7 @@ class RetrieveCodeSubgraph(BaseSubgraph):
         self, state: RetrieveCodeState
     ) -> dict[str, list[ResearchStudy]]:
         research_study_list = extract_experimental_info(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.extract_experimental_info,
             research_study_list=state["research_study_list"],
             code_str_list=state["code_str_list"],
         )

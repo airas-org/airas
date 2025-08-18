@@ -3,8 +3,10 @@ import logging
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.review.review_paper_subgraph.input_data import (
     review_paper_subgraph_input_data,
@@ -25,6 +27,10 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 review_paper_timed = lambda f: time_node("review_paper_subgraph")(f)  # noqa: E731
+
+
+class ReviewPaperLLMMapping(BaseModel):
+    review_paper: LLM_MODEL = DEFAULT_NODE_LLMS["review_paper"]
 
 
 class ReviewPaperSubgraphInputState(TypedDict):
@@ -57,17 +63,17 @@ class ReviewPaperSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_name: LLM_MODEL,
+        llm_mapping: ReviewPaperLLMMapping | None = None,
         prompt_template: str | None = None,
     ):
-        self.llm_name = llm_name
+        self.llm_mapping = llm_mapping or ReviewPaperLLMMapping()
         self.prompt_template = prompt_template or review_paper_prompt
         check_api_key(llm_api_key_check=True)
 
     @review_paper_timed
     def _review_paper(self, state: ReviewPaperSubgraphState) -> dict[str, int]:
         review_result = review_paper(
-            llm_name=self.llm_name,
+            llm_name=self.llm_mapping.review_paper,
             prompt_template=self.prompt_template,
             paper_content=state["paper_content"],
         )
@@ -83,12 +89,9 @@ class ReviewPaperSubgraph(BaseSubgraph):
 
 
 def main():
-    llm_name = "o3-2025-04-16"
     input_data = review_paper_subgraph_input_data
 
-    result = ReviewPaperSubgraph(
-        llm_name=llm_name,
-    ).run(input_data)
+    result = ReviewPaperSubgraph().run(input_data)
 
     serializable_result = {}
     for key, value in result.items():

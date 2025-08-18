@@ -1,10 +1,11 @@
 import logging
-from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.write.writer_subgraph.input_data import (
     writer_subgraph_input_data,
@@ -23,6 +24,11 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 writer_timed = lambda f: time_node("writer_subgraph")(f)  # noqa: E731
+
+
+class WriterLLMMapping(BaseModel):
+    write_paper: LLM_MODEL = DEFAULT_NODE_LLMS["write_paper"]
+    refine_paper: LLM_MODEL = DEFAULT_NODE_LLMS["refine_paper"]
 
 
 class WriterSubgraphInputState(TypedDict):
@@ -57,10 +63,10 @@ class WriterSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_name: LLM_MODEL,
+        llm_mapping: WriterLLMMapping | None = None,
         max_refinement_count: int = 2,
     ):
-        self.llm_name = llm_name
+        self.llm_mapping = llm_mapping or WriterLLMMapping()
         self.max_refinement_count = max_refinement_count
         check_api_key(llm_api_key_check=True)
 
@@ -83,7 +89,7 @@ class WriterSubgraph(BaseSubgraph):
     @writer_timed
     def _write_paper(self, state: WriterSubgraphState) -> dict[str, PaperContent]:
         paper_content = write_paper(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.write_paper,
             note=state["note"],
         )
         return {"paper_content": paper_content}
@@ -93,7 +99,7 @@ class WriterSubgraph(BaseSubgraph):
         self, state: WriterSubgraphState
     ) -> dict[str, PaperContent | int]:
         paper_content = refine_paper(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.refine_paper,
             paper_content=state["paper_content"],
             note=state["note"],
         )
@@ -133,12 +139,10 @@ class WriterSubgraph(BaseSubgraph):
 
 
 def main():
-    llm_name = "o3-mini-2025-01-31"
     refine_round = 1
     input = writer_subgraph_input_data
 
     result = WriterSubgraph(
-        llm_name=llm_name,
         max_refinement_count=refine_round,
     ).run(input)
     print(f"result: {result}")

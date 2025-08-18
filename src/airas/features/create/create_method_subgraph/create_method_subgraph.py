@@ -1,11 +1,12 @@
 import json
 import logging
-from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.create.create_method_subgraph.input_data import (
     create_method_subgraph_input_data,
@@ -30,6 +31,12 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 create_method_timed = lambda f: time_node("create_method_subgraph")(f)  # noqa: E731
+
+
+class CreateMethodLLMMapping(BaseModel):
+    idea_generator: LLM_MODEL = DEFAULT_NODE_LLMS["idea_generator"]
+    refine_idea: LLM_MODEL = DEFAULT_NODE_LLMS["refine_idea"]
+    research_value_judgement: LLM_MODEL = DEFAULT_NODE_LLMS["research_value_judgement"]
 
 
 class CreateMethodSubgraphInputState(TypedDict):
@@ -63,10 +70,10 @@ class CreateMethodSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_name: LLM_MODEL,
+        llm_mapping: CreateMethodLLMMapping | None = None,
         refine_iterations: int = 2,
     ):
-        self.llm_name = llm_name
+        self.llm_mapping = llm_mapping or CreateMethodLLMMapping()
         self.refine_iterations = refine_iterations
         check_api_key(llm_api_key_check=True)
 
@@ -81,7 +88,7 @@ class CreateMethodSubgraph(BaseSubgraph):
     def _idea_generator(self, state: CreateMethodSubgraphState) -> dict:
         idea_history = state["idea_history"]
         new_idea = idea_generator(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.idea_generator,
             research_topic=state["research_topic"],
             research_study_list=state["research_study_list"],
             idea_history=idea_history,
@@ -91,7 +98,7 @@ class CreateMethodSubgraph(BaseSubgraph):
     @create_method_timed
     def _refine_idea(self, state: CreateMethodSubgraphState) -> dict:
         new_idea = refine_idea(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.refine_idea,
             research_topic=state["research_topic"],
             new_idea=state["new_idea"],
             research_study_list=state["research_study_list"],
@@ -105,7 +112,7 @@ class CreateMethodSubgraph(BaseSubgraph):
     @create_method_timed
     def _research_value_judgement(self, state: CreateMethodSubgraphState) -> dict:
         reason, judgement_result = research_value_judgement(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.research_value_judgement,
             research_topic=state["research_topic"],
             new_idea=state["new_idea"],
             research_study_list=state["research_study_list"],
@@ -160,11 +167,8 @@ class CreateMethodSubgraph(BaseSubgraph):
 
 
 def main():
-    llm_name = "o3-2025-04-16"
     input = create_method_subgraph_input_data
-    result = CreateMethodSubgraph(
-        llm_name=llm_name,
-    ).run(input)
+    result = CreateMethodSubgraph().run(input)
     print(f"result: {json.dumps(result, indent=2)}")
 
 

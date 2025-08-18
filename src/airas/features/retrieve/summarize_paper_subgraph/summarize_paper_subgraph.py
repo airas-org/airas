@@ -2,8 +2,10 @@ import logging
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.retrieve.summarize_paper_subgraph.input_data import (
     summarize_paper_subgraph_input_data,
@@ -24,6 +26,10 @@ logger = logging.getLogger(__name__)
 
 summarize_paper_subgraph_str = "summarize_paper_subgraph"
 summarize_paper_subgraph_timed = lambda f: time_node(summarize_paper_subgraph_str)(f)  # noqa: E731
+
+
+class SummarizePaperLLMMapping(BaseModel):
+    summarize_paper: LLM_MODEL = DEFAULT_NODE_LLMS["summarize_paper"]
 
 
 class SummarizePaperInputState(TypedDict):
@@ -51,16 +57,16 @@ class SummarizePaperSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_name: LLM_MODEL,
+        llm_mapping: SummarizePaperLLMMapping | None = None,
     ):
-        self.llm_name = llm_name
+        self.llm_mapping = llm_mapping or SummarizePaperLLMMapping()
 
     @summarize_paper_subgraph_timed
     def _summarize_paper(
         self, state: SummarizePaperState
     ) -> dict[str, list[ResearchStudy]]:
         research_study_list = summarize_paper(
-            llm_name=self.llm_name,
+            llm_name=self.llm_mapping.summarize_paper,
             prompt_template=summarize_paper_prompt,
             research_study_list=state["research_study_list"],
         )
@@ -76,9 +82,8 @@ class SummarizePaperSubgraph(BaseSubgraph):
 
 
 def main():
-    llm_name = "o3-mini-2025-01-31"
     input_data = summarize_paper_subgraph_input_data
-    result = SummarizePaperSubgraph(llm_name=llm_name).run(input_data)
+    result = SummarizePaperSubgraph().run(input_data)
     print(f"result: {result}")
 
 

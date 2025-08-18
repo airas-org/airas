@@ -4,8 +4,10 @@ from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.create.create_code_subgraph.input_data import (
     create_code_subgraph_input_data,
@@ -27,6 +29,12 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 create_code_timed = lambda f: time_node("create_code_local_subgraph")(f)  # noqa: E731
+
+
+class CreateCodeLLMMapping(BaseModel):
+    generate_code_for_scripts: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "generate_code_for_scripts"
+    ]
 
 
 class CreateCodeSubgraphInputState(TypedDict):
@@ -59,8 +67,8 @@ class CreateCodeSubgraph(BaseSubgraph):
     InputState = CreateCodeSubgraphInputState
     OutputState = CreateCodeSubgraphOutputState
 
-    def __init__(self, llm_name: str = "o3-mini-2025-01-31"):
-        self.llm_name = llm_name
+    def __init__(self, llm_mapping: CreateCodeLLMMapping | None = None):
+        self.llm_mapping = llm_mapping or CreateCodeLLMMapping()
         check_api_key(
             llm_api_key_check=True,
             github_personal_access_token_check=True,
@@ -75,7 +83,7 @@ class CreateCodeSubgraph(BaseSubgraph):
     @create_code_timed
     def _generate_code_for_scripts(self, state: CreateCodeSubgraphState) -> dict:
         generated_file_contents = generate_code_for_scripts(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.generate_code_for_scripts,
             new_method=state["new_method"].method,
             experiment_code=cast(
                 str, state["new_method"].experimental_design.experiment_code

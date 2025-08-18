@@ -1,11 +1,12 @@
 import json
 import logging
-from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.create.create_code_subgraph.nodes.push_files_to_github import (
     push_files_to_github,
@@ -30,6 +31,11 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 fix_code_timed = lambda f: time_node("fix_code_local_subgraph")(f)  # noqa: E731
+
+
+class FixCodeLLMMapping(BaseModel):
+    should_fix_code: LLM_MODEL = DEFAULT_NODE_LLMS["should_fix_code"]
+    fix_code: LLM_MODEL = DEFAULT_NODE_LLMS["fix_code"]
 
 
 class FixCodeSubgraphInputState(TypedDict):
@@ -63,8 +69,8 @@ class FixCodeSubgraph(BaseSubgraph):
     InputState = FixCodeSubgraphInputState
     OutputState = FixCodeSubgraphOutputState
 
-    def __init__(self, llm_name: str = "o3-mini-2025-01-31"):
-        self.llm_name = llm_name
+    def __init__(self, llm_mapping: FixCodeLLMMapping | None = None):
+        self.llm_mapping = llm_mapping or FixCodeLLMMapping()
         check_api_key(
             llm_api_key_check=True,
             github_personal_access_token_check=True,
@@ -83,7 +89,7 @@ class FixCodeSubgraph(BaseSubgraph):
             )
 
         is_code_fix_needed = should_fix_code(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.should_fix_code,
             output_text_data=state["new_method"].experimental_results.result,
             error_text_data=state["new_method"].experimental_results.error,
         )
@@ -95,7 +101,7 @@ class FixCodeSubgraph(BaseSubgraph):
     def _fix_code(self, state: FixCodeSubgraphState) -> dict:
         """Analyze errors and generate fixed code"""
         fixed_file_contents = fix_code(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.fix_code,
             output_text_data=state["new_method"].experimental_results.result,
             error_text_data=state["new_method"].experimental_results.error,
             current_files=state["generated_file_contents"],
