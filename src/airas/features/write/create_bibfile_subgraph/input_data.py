@@ -9,7 +9,7 @@ create_bibfile_subgraph_input_data = {
             abstract="This paper presents a comprehensive survey of deep learning techniques applied to natural language processing tasks, including sentiment analysis, machine translation, and text classification.",
             meta_data=MetaData(
                 authors=["Smith, John", "Johnson, Alice"],
-                published_date="2023",
+                published_date="2023-01-01",
                 venue="Nature Machine Intelligence",
                 volume="5",
                 issue="3",
@@ -31,7 +31,7 @@ create_bibfile_subgraph_input_data = {
             abstract="We explore the transformer architecture and its applications across various domains including computer vision and natural language processing.",
             meta_data=MetaData(
                 authors=["Brown, Michael", "Davis, Sarah"],
-                published_date="2024",
+                published_date="2024-01-01",
                 venue="Journal of Machine Learning Research",
                 volume="25",
                 pages="1-28",
@@ -47,13 +47,13 @@ create_bibfile_subgraph_input_data = {
             ),
         ),
     ],
-    "reference_study_list": [
+    "reference_research_study_list": [
         ResearchStudy(
             title="Attention Is All You Need",
             abstract="The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism.",
             meta_data=MetaData(
                 authors=["Vaswani, Ashish", "Shazeer, Noam", "Parmar, Niki"],
-                published_date="2017",
+                published_date="2017-06-12",
                 venue="Advances in Neural Information Processing Systems",
                 volume="30",
                 doi="10.48550/arXiv.1706.03762",
@@ -72,7 +72,7 @@ create_bibfile_subgraph_input_data = {
             abstract="We introduce a new language representation model called BERT, which stands for Bidirectional Encoder Representations from Transformers.",
             meta_data=MetaData(
                 authors=["Devlin, Jacob", "Chang, Ming-Wei", "Lee, Kenton"],
-                published_date="2018",
+                published_date="2018-10-11",
                 venue="Proceedings of NAACL-HLT",
                 pages="4171-4186",
                 doi="10.18653/v1/N19-1423",
@@ -91,7 +91,7 @@ create_bibfile_subgraph_input_data = {
             abstract="Recent work has demonstrated substantial gains on many NLP tasks and benchmarks by pre-training on a large corpus of text followed by fine-tuning on a specific task.",
             meta_data=MetaData(
                 authors=["Brown, Tom B.", "Mann, Benjamin", "Ryder, Nick"],
-                published_date="2020",
+                published_date="2020-05-28",
                 venue="Advances in Neural Information Processing Systems",
                 volume="33",
                 pages="1877-1901",
@@ -110,7 +110,7 @@ create_bibfile_subgraph_input_data = {
             abstract="This paper focuses on traditional computer vision techniques for image classification and object detection without deep learning approaches.",
             meta_data=MetaData(
                 authors=["Wilson, Robert", "Taylor, Emma"],
-                published_date="2019",
+                published_date="2019-03-15",
                 venue="Computer Vision Research",
                 volume="12",
                 issue="4",
@@ -130,7 +130,7 @@ create_bibfile_subgraph_input_data = {
             abstract="Deeper neural networks are more difficult to train. We present a residual learning framework to ease the training of networks that are substantially deeper than those used previously.",
             meta_data=MetaData(
                 authors=["He, Kaiming", "Zhang, Xiangyu", "Ren, Shaoqing"],
-                published_date="2016",
+                published_date="2016-12-10",
                 venue="Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition",
                 pages="770-778",
                 doi="10.1109/CVPR.2016.90",
@@ -148,9 +148,9 @@ create_bibfile_subgraph_input_data = {
     "new_method": ResearchHypothesis(
         method="Deep learning models with attention mechanisms significantly improve performance on natural language understanding tasks compared to traditional approaches. We propose a novel attention-based architecture that combines transformer mechanisms with domain-specific adaptations for improved efficiency and accuracy."
     ),
-    "github_repository": GitHubRepositoryInfo(
+    "github_repository_info": GitHubRepositoryInfo(
         github_owner="auto-res2",
-        repository_name="create_bibfile_test_matsuzawa",
+        repository_name="create_bibfile_matsuzawa",
         branch_name="develop",
     ),
 }

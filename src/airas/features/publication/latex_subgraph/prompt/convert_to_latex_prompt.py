@@ -54,4 +54,7 @@ Section: {{ section.name }}
 - Always use ASCII hyphens (`-`) instead of en-dashes (`–`) or em-dashes (`—`) to avoid spacing issues in hyphenated terms.
 - Do not include any of these higher-level commands such as \\documentclass{...}, \\begin{document}, and \\end{document}.
     - Additionally, avoid including section-specific commands such as \\begin{abstract}, \\section{ {{ section }} }, or any other similar environment definitions.
-- Do not modify {{ citation_placeholders }}."""
+- Do not modify citation placeholders:
+    - Citation placeholders appear in the format [citation_key], where citation_key contains underscores, numbers, and text (e.g., [vaswani_2017_attention], [smith_2023_deep]).
+    - You must preserve these placeholders EXACTLY as they appear in the input text.
+"""
