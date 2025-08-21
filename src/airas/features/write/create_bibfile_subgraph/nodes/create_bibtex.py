@@ -83,7 +83,12 @@ def _create_bibtex_entry(ref: ResearchStudy, index: int) -> dict:
 
     title = ref.title or f"ref{index}"
     authors = getattr(meta_data, "authors", None) or []
-    year = getattr(meta_data, "published_date", None)
+    published_date = getattr(meta_data, "published_date", None)
+
+    year = None
+    if published_date:
+        year_match = re.match(r"(\d{4})", str(published_date))
+        year = year_match.group(1) if year_match else published_date
 
     citation_key = _generate_citation_key(title, authors, year)
 
@@ -129,55 +134,3 @@ def _create_bibtex_entry(ref: ResearchStudy, index: int) -> dict:
         entry["github_url"] = github_url
 
     return entry
-
-
-def main():
-    test_research_study_list = [
-        {
-            "title": "Attention Is All You Need",
-            "authors": ["Vaswani, Ashish", "Shazeer, Noam"],
-            "published_year": 2017,
-            "abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks.",
-            "meta_data": {
-                "authors": ["Vaswani, Ashish", "Shazeer, Noam", "Parmar, Niki"],
-                "published_year": 2017,
-                "journal": "Neural Information Processing Systems",
-                "volume": "30",
-                "pages": "5998-6008",
-                "doi": "10.48550/arXiv.1706.03762",
-                "arxiv_url": "https://arxiv.org/abs/1706.03762",
-            },
-        },
-    ]
-
-    test_reference_study_list = [
-        {
-            "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
-            "authors": ["Devlin, Jacob", "Chang, Ming-Wei"],
-            "published_year": 2018,
-            "abstract": "We introduce BERT, which stands for Bidirectional Encoder Representations from Transformers.",
-            "meta_data": {
-                "authors": ["Devlin, Jacob", "Chang, Ming-Wei", "Lee, Kenton"],
-                "published_year": 2018,
-                "journal": "arXiv preprint",
-                "volume": "abs/1810.04805",
-                "number": "1810.04805",
-                "pages": "1-16",
-                "arxiv_url": "https://arxiv.org/abs/1810.04805",
-                "github_url": "https://github.com/google-research/bert",
-            },
-        },
-    ]
-
-    try:
-        bibtex_output = create_bibtex(
-            test_research_study_list, test_reference_study_list
-        )
-        print("Generated BibTeX:")
-        print(bibtex_output)
-    except Exception as e:
-        print(f"Error: {e}")
-
-
-if __name__ == "__main__":
-    main()
