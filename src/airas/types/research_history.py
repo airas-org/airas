@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 from airas.types.devin import DevinInfo
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.paper import PaperContent
+from airas.types.paper import PaperContent, PaperReviewScores
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.types.research_study import ResearchStudy
 
@@ -46,6 +46,10 @@ class ResearchHistory(BaseModel):
     github_pages_url: Optional[str] = Field(None, description="GitHub Pages URL")
     readme_upload_result: Optional[bool] = Field(
         None, description="README upload success status"
+    )
+
+    paper_review_scores: Optional[PaperReviewScores] = Field(
+        None, description="Review scores from ReviewPaperSubgraph"
     )
 
     additional_data: Optional[dict[str, Any]] = Field(
