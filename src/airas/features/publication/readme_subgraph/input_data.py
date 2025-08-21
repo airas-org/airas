@@ -1,10 +1,11 @@
+from airas.types.devin import DevinInfo
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent
 
 readme_subgraph_input_data = {
     "github_repository_info": GitHubRepositoryInfo(
         github_owner="auto-res2",
-        repository_name="experiment_matsuzawa_retrieve_test2",
+        repository_name="experiment_matsuzawa_colab_dev54",
         branch_name="develop",
     ),
     "paper_content": PaperContent(
@@ -18,5 +19,9 @@ readme_subgraph_input_data = {
         results="AIRAS demonstrates strong performance across all evaluated domains. The system generated 45 novel research hypotheses, of which 38 were rated as scientifically valid by expert reviewers. Experimental designs produced by the system achieved 89% validity scores, and generated papers received an average quality rating of 4.2 out of 5.0. The system completed research tasks in an average of 12 hours compared to 6-8 weeks for manual research.",
         conclusion="We have presented AIRAS, a comprehensive system for automated research that demonstrates the feasibility of AI-driven scientific investigation. Our results show significant improvements in research efficiency while maintaining high quality standards. The system opens new possibilities for accelerating scientific discovery and democratizing access to research capabilities. Future work will focus on expanding to additional domains and improving the system's ability to handle complex interdisciplinary research questions.",
     ),
-    "experiment_devin_url": "https://preview.devin.ai/devin/abc123def456-automated-research-execution",
+    "devin_info": DevinInfo(
+        session_id="abc123def456",
+        devin_url="https://preview.devin.ai/devin/abc123def456-automated-research-execution",
+    ),
+    "github_pages_url": "https://auto-res2.github.io/experiment_matsuzawa_retrieve_test2",
 }

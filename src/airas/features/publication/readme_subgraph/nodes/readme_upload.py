@@ -7,22 +7,34 @@ logger = getLogger(__name__)
 
 
 def _build_markdown(
-    title: str, abstract: str, research_history_url: str, devin_url: str
+    title: str,
+    abstract: str,
+    research_history_url: str,
+    devin_url: str | None,
+    github_pages_url: str,
 ) -> str:
+    links = [
+        f"- [Research history]({research_history_url})",
+        f"- [GitHub Pages]({github_pages_url})",
+    ]
+
+    if devin_url is not None:
+        links.append(f"- [Devin execution log]({devin_url})")
+
     return f"""# {title}
 > ⚠️ **NOTE:** This research is an automatic research using AIRAS.
 ## Abstract
 {abstract}
 
-- [Research history]({research_history_url})
-- [Devin execution log]({devin_url})"""
+{chr(10).join(links)}"""
 
 
 def readme_upload(
     github_repository_info: GitHubRepositoryInfo,
     title: str,
     abstract: str,
-    devin_url: str,
+    devin_url: str | None,
+    github_pages_url: str,
     client: GithubClient | None = None,
 ) -> bool:
     if client is None:
@@ -39,6 +51,7 @@ def readme_upload(
         abstract,
         research_history_url,
         devin_url,
+        github_pages_url,
     )
     markdown_bytes = markdown.encode("utf-8")
 

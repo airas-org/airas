@@ -23,7 +23,8 @@ readme_timed = lambda f: time_node("readme_subgraph")(f)  # noqa: E731
 class ReadmeSubgraphInputState(TypedDict):
     github_repository_info: GitHubRepositoryInfo
     paper_content: PaperContent
-    devin_info: DevinInfo
+    devin_info: DevinInfo | None
+    github_pages_url: str
 
 
 class ReadmeSubgraphHiddenState(TypedDict): ...
@@ -53,11 +54,15 @@ class ReadmeSubgraph(BaseSubgraph):
 
     @readme_timed
     def _readme_upload_node(self, state: ReadmeSubgraphState) -> dict:
+        devin_url = (
+            state["devin_info"].devin_url if state["devin_info"] is not None else None
+        )
         readme_upload_result = readme_upload(
             github_repository_info=state["github_repository_info"],
             title=state["paper_content"].title,
             abstract=state["paper_content"].abstract,
-            devin_url=state["devin_info"].devin_url,
+            devin_url=devin_url,
+            github_pages_url=state["github_pages_url"],
         )
         return {"readme_upload_result": readme_upload_result}
 
