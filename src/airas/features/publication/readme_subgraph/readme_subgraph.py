@@ -55,7 +55,9 @@ class ReadmeSubgraph(BaseSubgraph):
     @readme_timed
     def _readme_upload_node(self, state: ReadmeSubgraphState) -> dict:
         devin_url = (
-            state["devin_info"].devin_url if state["devin_info"] is not None else None
+            state["devin_info"].devin_url
+            if state.get("devin_info") is not None
+            else None
         )
         readme_upload_result = readme_upload(
             github_repository_info=state["github_repository_info"],
