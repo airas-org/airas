@@ -7,7 +7,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.paper import PaperContent
+from airas.types.paper import PaperContent, PaperReviewScores
 
 logger = getLogger(__name__)
 
@@ -24,7 +24,7 @@ def review_paper(
     prompt_template: str,
     paper_content: PaperContent,
     client: LLMFacadeClient | None = None,
-) -> dict[str, int]:
+) -> dict[str, PaperReviewScores]:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
     env = Environment()
@@ -42,9 +42,11 @@ def review_paper(
     if output is None:
         raise ValueError("No response from LLM in paper_review_node.")
 
-    return {
-        "novelty_score": output["novelty_score"],
-        "significance_score": output["significance_score"],
-        "reproducibility_score": output["reproducibility_score"],
-        "experimental_quality_score": output["experimental_quality_score"],
-    }
+    paper_review_scores = PaperReviewScores(
+        novelty_score=output["novelty_score"],
+        significance_score=output["significance_score"],
+        reproducibility_score=output["reproducibility_score"],
+        experimental_quality_score=output["experimental_quality_score"],
+    )
+
+    return {"paper_review_scores": paper_review_scores}
