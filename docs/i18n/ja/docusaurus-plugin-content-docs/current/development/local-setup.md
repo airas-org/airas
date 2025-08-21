@@ -1,43 +1,38 @@
 ---
-id: local-setup
-title: ローカル環境のセットアップ
+id: api-key
+title: API キーの準備
 ---
 
-# ローカル環境のセットアップ
+## GitHub personal access token
 
-Research Graphの開発環境を構築するための手順を説明します。
+ここではAIRASの実行に必要なGitHub personal access tokenの設定方法をまとめています。tokenを発行するにはGitHubのアカウントを用意していください。
 
-## 前提条件
+- 任意のToken nameを設定してください。
+<p align="center">
+    <img src="../../static/img/github_personal_access_token/fig.png" alt="fig1" width="400">
+</p>
 
-- Python 3.9以上
-- Git
-- 各種依存ライブラリ
+- リポジトリを作成するアカウントを選択してください。
+<p align="center">
+    <img src="../../static/img/github_personal_access_token/fig1.png" alt="fig1" width="500">
+</p>
 
-## インストール手順
+- 365日未満の期間を設定してください。他のアカウントのリポジトリをフォークするのに365日以上の期限をもつGitHub personal access tokenは利用できません。
+<p align="center">
+    <img src="../../static/img/github_personal_access_token/fig2.png" alt="fig1" width="250">
+</p>
 
-1. リポジトリのクローン：
+- 「All repositories」を選択してください。
+<p align="center">
+    <img src="../../static/img/github_personal_access_token/fig3.png" alt="fig1" width="500">
+</p>
 
-```bash
-git clone https://github.com/auto-res/researchgraph.git
-cd researchgraph
-```
 
-2. 開発環境のセットアップ：
+- 以下の権限をトークンに付与してください。
+<p align="center">
+    <img src="../../static/img/github_personal_access_token/fig4.png" alt="fig1" width="500">
+    <img src="../../static/img/github_personal_access_token/fig5.png" alt="fig1" width="500">
+    <img src="../../static/img/github_personal_access_token/fig6.png" alt="fig1" width="500">
+</p>
 
-```bash
-pip install -e ".[dev]"
-```
-
-3. 開発サーバーの起動：
-
-```bash
-# 必要に応じてサービスを起動
-```
-
-## テストの実行
-
-```bash
-pytest
-```
-
-詳細な開発ガイドラインについては、GitHubのREADMEをご参照ください。
+詳細は[こちらのリンク](https://docs.github.com/ja/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#fine-grained-personal-access-token-%E3%81%AE%E4%BD%9C%E6%88%90)を参考にしてください。
