@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from airas.features.create.create_method_subgraph.nodes.idea_generator import (
     _parse_idea_history,
-    _parse_research_study_list,
+    parse_research_study_list,
 )
 from airas.features.create.create_method_subgraph.prompt.refine_method_prompt import (
     refine_method_prompt,
@@ -41,7 +41,7 @@ def refine_idea(
         data = {
             "research_topic": research_topic,
             "new_idea": new_idea,
-            "research_study_list": _parse_research_study_list(research_study_list),
+            "research_study_list": parse_research_study_list(research_study_list),
             "idea_history": _parse_idea_history(idea_history),
         }
         messages = template.render(data)

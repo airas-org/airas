@@ -94,7 +94,7 @@ wheels = [
 
 [[package]]
 name = "airas"
-version = "0.0.11.dev52"
+version = "0.0.11.dev56"
 source = { editable = "." }
 dependencies = [
     { name = "bibtexparser" },

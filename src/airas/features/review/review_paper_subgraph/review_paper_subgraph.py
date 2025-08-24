@@ -18,7 +18,7 @@ from airas.features.review.review_paper_subgraph.prompts.review_paper_prompt imp
     review_paper_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.paper import PaperContent
+from airas.types.paper import PaperContent, PaperReviewScores
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -42,10 +42,7 @@ class ReviewPaperSubgraphHiddenState(TypedDict):
 
 
 class ReviewPaperSubgraphOutputState(TypedDict):
-    novelty_score: int
-    significance_score: int
-    reproducibility_score: int
-    experimental_quality_score: int
+    paper_review_scores: PaperReviewScores
 
 
 class ReviewPaperSubgraphState(
@@ -71,7 +68,9 @@ class ReviewPaperSubgraph(BaseSubgraph):
         check_api_key(llm_api_key_check=True)
 
     @review_paper_timed
-    def _review_paper(self, state: ReviewPaperSubgraphState) -> dict[str, int]:
+    def _review_paper(
+        self, state: ReviewPaperSubgraphState
+    ) -> dict[str, PaperReviewScores]:
         review_result = review_paper(
             llm_name=self.llm_mapping.review_paper,
             prompt_template=self.prompt_template,

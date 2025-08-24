@@ -27,7 +27,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Development',
       items: [
-        'development/local-setup',
+        'development/api-key',
         'development/roadmap',
         'development/MCP'
       ],

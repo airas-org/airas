@@ -19,18 +19,39 @@ def create_branch(
     if client is None:
         client = GithubClient()
 
-    response = client.create_branch(
+    existing_branch = client.get_branch(
         github_owner=github_repository_info.github_owner,
         repository_name=github_repository_info.repository_name,
         branch_name=github_repository_info.branch_name,
-        from_sha=sha,
     )
-    if not response:
-        raise RuntimeError(
-            f"Failed to create branch '{github_repository_info.branch_name}' from '{sha}' in {github_repository_info.github_owner}/{github_repository_info.repository_name}"
-        )
 
-    print(
-        f"Branch '{github_repository_info.branch_name}' created in repository '{github_repository_info.github_owner}/{github_repository_info.repository_name}'"
-    )
-    return response
+    if existing_branch:
+        logger.info(
+            f"Branch '{github_repository_info.branch_name}' already exists in repository "
+            f"'{github_repository_info.github_owner}/{github_repository_info.repository_name}'"
+        )
+        return True
+
+    try:
+        response = client.create_branch(
+            github_owner=github_repository_info.github_owner,
+            repository_name=github_repository_info.repository_name,
+            branch_name=github_repository_info.branch_name,
+            from_sha=sha,
+        )
+        if response:
+            logger.info(
+                f"Branch '{github_repository_info.branch_name}' created in repository "
+                f"'{github_repository_info.github_owner}/{github_repository_info.repository_name}'"
+            )
+            return True
+        else:
+            raise RuntimeError(
+                f"Failed to create branch '{github_repository_info.branch_name}' from '{sha}' in "
+                f"{github_repository_info.github_owner}/{github_repository_info.repository_name}"
+            )
+    except Exception as e:
+        raise RuntimeError(
+            f"Failed to create new branch '{github_repository_info.branch_name}' from '{sha}' in "
+            f"{github_repository_info.github_owner}/{github_repository_info.repository_name}: {e}"
+        ) from e

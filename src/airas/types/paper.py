@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from typing import Optional
+
+from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
 
@@ -17,6 +19,20 @@ class CandidatePaperInfo(TypedDict):
     experimental_setup: str
     limitations: str
     future_research_directions: str
+
+
+# TODO: Move to ResearchStudy or ResearchHypothesis
+class PaperReviewScores(BaseModel):
+    novelty_score: Optional[int] = Field(None, description="Paper novelty score")
+    significance_score: Optional[int] = Field(
+        None, description="Paper significance score"
+    )
+    reproducibility_score: Optional[int] = Field(
+        None, description="Paper reproducibility score"
+    )
+    experimental_quality_score: Optional[int] = Field(
+        None, description="Paper experimental quality score"
+    )
 
 
 class PaperContent(BaseModel):

@@ -9,6 +9,7 @@ from typing_extensions import TypedDict
 from airas.core.base import BaseSubgraph
 from airas.features.github.nodes.github_download import github_download
 from airas.types.github import GitHubRepositoryInfo
+from airas.types.research_history import ResearchHistory
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -28,7 +29,7 @@ class GithubDownloadHiddenState(TypedDict):
 
 
 class GithubDownloadOutputState(TypedDict):
-    research_history: dict[str, Any]
+    research_history: ResearchHistory
 
 
 class GithubDownloadSubgraphState(
@@ -51,7 +52,9 @@ class GithubDownloadSubgraph(BaseSubgraph):
         self.research_file_path = ".research/research_history.json"
 
     @gh_download_timed
-    def _github_download(self, state: GithubDownloadSubgraphState) -> dict[str, Any]:
+    def _github_download(
+        self, state: GithubDownloadSubgraphState
+    ) -> dict[str, ResearchHistory]:
         research_history = github_download(
             github_repository_info=state["github_repository_info"],
         )
@@ -74,9 +77,13 @@ class GithubDownloadSubgraph(BaseSubgraph):
         config = config or {"recursion_limit": 200}
         result = self.build_graph().invoke(input_state, config=config)
 
-        research_history = result.get("research_history", {})
-
-        return {**state, **research_history}
+        research_history: ResearchHistory = result.get("research_history", {})
+        flat_fields = {
+            field: getattr(research_history, field)
+            for field in research_history.model_fields
+            if getattr(research_history, field) is not None
+        }
+        return {**state, **flat_fields}
 
 
 if __name__ == "__main__":
@@ -96,5 +103,5 @@ if __name__ == "__main__":
     state = {
         "github_repository_info": github_repository_info,
     }
-    result = GithubDownloadSubgraph().run(state)
-    print(f"result: {result}")
+    state = GithubDownloadSubgraph().run(state)
+    print(f"state {state.keys()}")
