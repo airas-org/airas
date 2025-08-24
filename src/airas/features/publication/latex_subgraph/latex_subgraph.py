@@ -3,8 +3,10 @@ from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.publication.latex_subgraph.input_data import (
     latex_subgraph_input_data,
@@ -46,6 +48,12 @@ logger = logging.getLogger(__name__)
 latex_timed = lambda f: time_node("latex_subgraph")(f)  # noqa: E731
 
 
+class LatexLLMMapping(BaseModel):
+    convert_to_latex: LLM_MODEL = DEFAULT_NODE_LLMS["convert_to_latex"]
+    is_execution_successful: LLM_MODEL = DEFAULT_NODE_LLMS["is_execution_successful"]
+    fix_latex_text: LLM_MODEL = DEFAULT_NODE_LLMS["fix_latex_text"]
+
+
 class LatexSubgraphInputState(TypedDict):
     github_repository_info: GitHubRepositoryInfo
     references_bib: str
@@ -81,12 +89,12 @@ class LatexSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_name: str,
+        llm_mapping: LatexLLMMapping | None = None,
         latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
         paper_name: str = "generated_paper.pdf",
         max_revision_count: int = 3,
     ):
-        self.llm_name = llm_name
+        self.llm_mapping = llm_mapping or LatexLLMMapping()
         self.latex_template_name = latex_template_name
         self.paper_name = paper_name
         self.max_revision_count = max_revision_count
@@ -110,7 +118,7 @@ class LatexSubgraph(BaseSubgraph):
     def _convert_to_latex_str(self, state: LatexSubgraphState) -> dict:
         """Convert paper content to LaTeX formatted string using LLM."""
         latex_formatted_paper_content = convert_to_latex_str(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.convert_to_latex,
             paper_content=state["paper_content"],
         )
         return {"latex_formatted_paper_content": latex_formatted_paper_content}
@@ -165,7 +173,7 @@ class LatexSubgraph(BaseSubgraph):
     def _is_execution_successful(self, state: LatexSubgraphState) -> dict:
         """Determine if LaTeX compilation was successful by analyzing error log."""
         is_successful = is_execution_successful(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.is_execution_successful,
             latex_text=state["latex_text"],
             latex_error_text=state["latex_error_text"],
         )
@@ -177,7 +185,7 @@ class LatexSubgraph(BaseSubgraph):
     def _fix_latex_text(self, state: LatexSubgraphState) -> dict:
         """Fix LaTeX errors using LLM analysis and increment revision count."""
         latex_text = fix_latex_text(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.fix_latex_text,
             latex_text=state["latex_text"],
             latex_error_text=state["latex_error_text"],
         )
@@ -236,11 +244,7 @@ class LatexSubgraph(BaseSubgraph):
 
 
 def main():
-    llm_name = "o3-mini-2025-01-31"
-
-    output = LatexSubgraph(
-        llm_name=llm_name,
-    ).run(latex_subgraph_input_data)
+    output = LatexSubgraph().run(latex_subgraph_input_data)
 
     print(output)
 

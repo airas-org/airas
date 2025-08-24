@@ -21,9 +21,9 @@ def _is_excluded_title(title: str) -> bool:
 
 
 def openai_websearch_titles(
+    llm_name: LLM_MODEL,
     prompt_template: str,
     queries: list[str],
-    llm_name: LLM_MODEL = "gpt-4o-2024-11-20",
     max_results: Annotated[int, Field(gt=0)] = 5,
     # sleep_sec: float = 60.0,
     conference_preference: str | None = None,

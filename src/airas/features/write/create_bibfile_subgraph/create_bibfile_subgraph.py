@@ -1,11 +1,12 @@
 import logging
-from typing import Any, cast
+from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
-from pydantic import validate_call
+from pydantic import BaseModel, validate_call
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.write.create_bibfile_subgraph.input_data import (
     create_bibfile_subgraph_input_data,
@@ -34,6 +35,10 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 create_bibfile_timed = lambda f: time_node("create_bibfile_subgraph")(f)  # noqa: E731
+
+
+class CreateBibfileLLMMapping(BaseModel):
+    filter_references: LLM_MODEL = DEFAULT_NODE_LLMS["filter_references"]
 
 
 class CreateBibfileSubgraphInputState(TypedDict):
@@ -66,11 +71,11 @@ class CreateBibfileSubgraph(BaseSubgraph):
     @validate_call
     def __init__(
         self,
-        llm_name: LLM_MODEL,
-        latex_template_name: LATEX_TEMPLATE_NAME,
+        llm_mapping: CreateBibfileLLMMapping | None = None,
+        latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
         max_filtered_references: int = 30,
     ):
-        self.llm_name = llm_name
+        self.llm_mapping = llm_mapping or CreateBibfileLLMMapping()
         self.latex_template_name = latex_template_name
         self.max_filtered_references = max_filtered_references
         check_api_key(llm_api_key_check=True)
@@ -80,7 +85,7 @@ class CreateBibfileSubgraph(BaseSubgraph):
         self, state: CreateBibfileSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
         filtered_references = filter_references(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.filter_references,
             prompt_template=filter_references_prompt,
             research_study_list=state["research_study_list"],
             reference_study_list=state["reference_research_study_list"],
@@ -125,12 +130,9 @@ class CreateBibfileSubgraph(BaseSubgraph):
 
 
 def main():
-    llm_name = "gemini-2.0-flash-001"
-
     result = CreateBibfileSubgraph(
-        llm_name=llm_name,
         latex_template_name="iclr2024",
-        max_filtered_references=20,  # Example: limit to 20 references
+        max_filtered_references=20,
     ).run(create_bibfile_subgraph_input_data)
     print(f"result: {result}")
 

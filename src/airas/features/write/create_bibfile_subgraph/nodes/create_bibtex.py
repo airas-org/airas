@@ -4,13 +4,13 @@ import re
 import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase
 
-from airas.features.write.constants import (
-    REFERENCE_CANDIDATES_MARKER,
-    REQUIRED_CITATIONS_MARKER,
-)
 from airas.types.research_study import ResearchStudy
 
 logger = logging.getLogger(__name__)
+
+
+REQUIRED_CITATIONS_MARKER = "REQUIRED CITATIONS"
+REFERENCE_CANDIDATES_MARKER = "REFERENCE CANDIDATES"
 
 
 def _generate_citation_key(title: str, authors: list[str], year) -> str:

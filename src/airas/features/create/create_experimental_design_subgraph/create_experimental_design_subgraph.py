@@ -1,11 +1,12 @@
 import json
 import logging
-from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.create.create_experimental_design_subgraph.input_data import (
     create_experimental_design_subgraph_input_data,
@@ -30,6 +31,16 @@ logger = logging.getLogger(__name__)
 
 create_str = "create_experimental_design_subgraph"
 create_experimental_design_timed = lambda f: time_node(create_str)(f)  # noqa: E731
+
+
+class CreateExperimentalDesignLLMMapping(BaseModel):
+    generate_experiment_strategy: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "generate_experiment_strategy"
+    ]
+    generate_experiment_specification: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "generate_experiment_specification"
+    ]
+    generate_experiment_code: LLM_MODEL = DEFAULT_NODE_LLMS["generate_experiment_code"]
 
 
 class CreateExperimentalDesignSubgraphInputState(TypedDict):
@@ -58,8 +69,8 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
     InputState = CreateExperimentalDesignSubgraphInputState
     OutputState = CreateExperimentalDesignSubgraphOutputState
 
-    def __init__(self, llm_name: LLM_MODEL = "o3-mini-2025-01-31"):
-        self.llm_name = llm_name
+    def __init__(self, llm_mapping: CreateExperimentalDesignLLMMapping | None = None):
+        self.llm_mapping = llm_mapping or CreateExperimentalDesignLLMMapping()
         check_api_key(llm_api_key_check=True)
 
     @create_experimental_design_timed
@@ -67,7 +78,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         self, state: CreateExperimentalDesignState
     ) -> dict:
         experiment_strategy = generate_experiment_strategy(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.generate_experiment_strategy,
             new_method=state["new_method"].method,
         )
         return {"experiment_strategy": experiment_strategy}
@@ -77,7 +88,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         self, state: CreateExperimentalDesignState
     ) -> dict:
         experiment_specification = generate_experiment_specification(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.generate_experiment_specification,
             new_method=state["new_method"].method,
             experiment_strategy=state["experiment_strategy"],
         )
@@ -86,7 +97,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
     @create_experimental_design_timed
     def _generate_experiment_code(self, state: CreateExperimentalDesignState) -> dict:
         experiment_code = generate_experiment_code(
-            llm_name=cast(LLM_MODEL, self.llm_name),
+            llm_name=self.llm_mapping.generate_experiment_code,
             new_method=state["new_method"].method,
             experiment_strategy=state["experiment_strategy"],
             experiment_specification=state["experiment_specification"],

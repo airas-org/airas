@@ -36,10 +36,8 @@ from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.types.research_study import ResearchStudy
 
-llm_name = "o3-mini-2025-01-31"
-
 prepare = PrepareRepositorySubgraph()
-generate_queries = GenerateQueriesSubgraph(llm_name=llm_name, n_queries=5)
+generate_queries = GenerateQueriesSubgraph(n_queries=5)
 get_paper_titles = GetPaperTitlesFromDBSubgraph(
     max_results_per_query=3, semantic_search=True
 )
@@ -47,32 +45,28 @@ get_paper_titles = GetPaperTitlesFromDBSubgraph(
 retrieve_paper_content = RetrievePaperContentSubgraph(
     paper_provider="arxiv", target_study_list_source="research_study_list"
 )
-summarize_paper = SummarizePaperSubgraph(llm_name=llm_name)
-retrieve_code = RetrieveCodeSubgraph(llm_name=llm_name)
-reference_extractor = ExtractReferenceTitlesSubgraph(
-    llm_name=llm_name, paper_retrieval_limit=10
-)
+summarize_paper = SummarizePaperSubgraph()
+retrieve_code = RetrieveCodeSubgraph()
+reference_extractor = ExtractReferenceTitlesSubgraph(paper_retrieval_limit=10)
 retrieve_reference_paper_content = RetrievePaperContentSubgraph(
     paper_provider="arxiv", target_study_list_source="reference_research_study_list"
 )
-create_method = CreateMethodSubgraph(llm_name=llm_name, refine_iterations=5)
-create_experimental_design = CreateExperimentalDesignSubgraph(llm_name=llm_name)
+create_method = CreateMethodSubgraph(refine_iterations=5)
+create_experimental_design = CreateExperimentalDesignSubgraph()
 coder = CreateCodeWithDevinSubgraph()
-# coder = CreateCodeSubgraph(llm_name=llm_name)
+# coder = CreateCodeSubgraph()
 executor = GitHubActionsExecutorSubgraph(gpu_enabled=True)
-fixer = FixCodeWithDevinSubgraph(llm_name=llm_name)
-# fixer = FixCodeSubgraph(llm_name=llm_name)
-analysis = AnalyticSubgraph(llm_name=llm_name)
+fixer = FixCodeWithDevinSubgraph()
+# fixer = FixCodeSubgraph()
+analysis = AnalyticSubgraph()
 create_bibfile = CreateBibfileSubgraph(
-    llm_name=llm_name, latex_template_name="iclr2024", max_filtered_references=30
+    latex_template_name="iclr2024", max_filtered_references=30
 )
-writer = WriterSubgraph(llm_name=llm_name, max_refinement_count=2)
-review = ReviewPaperSubgraph(llm_name=llm_name)
-latex = LatexSubgraph(
-    llm_name=llm_name, latex_template_name="iclr2024", max_revision_count=3
-)
+writer = WriterSubgraph(max_refinement_count=2)
+review = ReviewPaperSubgraph()
+latex = LatexSubgraph(latex_template_name="iclr2024", max_revision_count=3)
 readme = ReadmeSubgraph()
-html = HtmlSubgraph(llm_name=llm_name)
+html = HtmlSubgraph()
 uploader = GithubUploadSubgraph()
 
 
@@ -94,7 +88,7 @@ def save_state(
     os.makedirs(state_save_dir, exist_ok=True)
     filepath = os.path.join(state_save_dir, filename)
 
-    # ★ ここがポイント：BaseModel を含むオブジェクトを再帰的に「素のPython型」に変換
+    # BaseModel を含むオブジェクトを再帰的に「素のPython型」に変換
     plain = _TA_ANY.dump_python(state, by_alias=by_alias, exclude_none=exclude_none)
 
     # そのままJSON保存（default=str は不要）
@@ -179,6 +173,7 @@ def run_from_state_file(state: dict, save_dir: str, file_path: str | None = None
         )
 
     for subgraph_name in subgraph_name_list:
+        print(f"--- Running Subgraph: {subgraph_name} ---")
         if subgraph_name == "generate_queries":
             state = generate_queries.run(state)
             save_state(state, "generate_queries", save_dir)
@@ -244,6 +239,9 @@ def run_from_state_file(state: dict, save_dir: str, file_path: str | None = None
         elif subgraph_name == "html":
             state = html.run(state)
             save_state(state, "html", save_dir)
+
+        _ = uploader.run(state)
+        print(f"--- Finished Subgraph: {subgraph_name} ---\n")
         # state = upload.run(state)
         # state = download.run(state)
 
