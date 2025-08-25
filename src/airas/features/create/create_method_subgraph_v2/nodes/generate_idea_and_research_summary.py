@@ -23,7 +23,7 @@ def generate_idea_and_research_summary(
     research_topic: str,
     research_study_list: list[ResearchStudy],
     client: LLMFacadeClient | None = None,
-) -> dict[str, str]:
+) -> GenerateIdea:
     client = client or LLMFacadeClient(llm_name=llm_name)
     env = Environment()
 
@@ -39,4 +39,4 @@ def generate_idea_and_research_summary(
     )
     if output is None:
         raise ValueError("No response from LLM in idea_generator.")
-    return output
+    return GenerateIdea(**output)

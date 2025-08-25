@@ -22,7 +22,9 @@ from airas.features.create.create_method_subgraph_v2.nodes.generate_idea_and_res
 from airas.features.create.create_method_subgraph_v2.nodes.refine_idea_and_research_summary import (
     refine_idea_and_research_summary,
 )
-from airas.features.create.create_method_subgraph_v2.types import ResearchIdea
+from airas.features.create.create_method_subgraph_v2.types import (
+    ResearchIdea,
+)
 from airas.features.retrieve.get_paper_titles_subgraph.nodes.get_paper_title_from_qdrant import (
     get_paper_titles_from_qdrant,
 )
@@ -151,7 +153,7 @@ class CreateMethodSubgraphV2(BaseSubgraph):
     def _retrieve_related_papers(self, state: CreateMethodSubgraphV2State) -> dict:
         related_paper_title_list = get_paper_titles_from_qdrant(
             queries=[state["new_idea_info"]["idea"].methods],
-            num_retrieve_paper=20,
+            num_retrieve_paper=15,
         )
         related_research_study_list = [
             ResearchStudy(title=title) for title in (related_paper_title_list or [])
@@ -220,7 +222,7 @@ class CreateMethodSubgraphV2(BaseSubgraph):
         evaluation_results = evaluate_novelty_and_significance(
             research_topic=state["research_topic"],
             research_study_list=research_study_list + related_research_study_list,
-            new_idea_info=new_idea_info["idea"],
+            new_idea=new_idea_info["idea"],
             llm_name=self.llm_mapping.evaluate_novelty_and_significance,
         )
         # related_research_study_listを空にする
@@ -292,9 +294,7 @@ class CreateMethodSubgraphV2(BaseSubgraph):
         graph_builder.add_edge(
             "generate_ide_and_research_summary", "retrieve_related_papers"
         )
-        graph_builder.add_edge(
-            "generate_ide_and_research_summary", "search_arxiv_id_from_title"
-        )
+        graph_builder.add_edge("retrieve_related_papers", "search_arxiv_id_from_title")
         graph_builder.add_conditional_edges(
             "search_arxiv_id_from_title",
             self.select_provider,

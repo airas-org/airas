@@ -230,7 +230,7 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250825-v3"
+    repository_name = "tanaka-20250825-v7"
     research_topic_list = [
         "Architecture of a new diffusion model for memory efficiency",
     ]
