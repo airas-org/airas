@@ -63,10 +63,21 @@ class WriterSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_mapping: WriterLLMMapping | None = None,
+        llm_mapping: dict[str, str] | WriterLLMMapping | None = None,
         max_refinement_count: int = 2,
     ):
-        self.llm_mapping = llm_mapping or WriterLLMMapping()
+        if llm_mapping is None:
+            self.llm_mapping = WriterLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            self.llm_mapping = WriterLLMMapping(**llm_mapping)
+        elif isinstance(llm_mapping, WriterLLMMapping):
+            # すでに型が正しい場合も受け入れる
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or WriterLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         self.max_refinement_count = max_refinement_count
         check_api_key(llm_api_key_check=True)
 

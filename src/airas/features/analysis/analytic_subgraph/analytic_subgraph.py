@@ -54,9 +54,27 @@ class AnalyticSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_mapping: AnalyticLLMMapping | None = None,
+        llm_mapping: dict[str, str] | AnalyticLLMMapping | None = None,
     ):
-        self.llm_mapping = llm_mapping or AnalyticLLMMapping()
+        if llm_mapping is None:
+            self.llm_mapping = AnalyticLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            # dict から AnalyticLLMMapping を作成する際に型変換を行う
+            # 実行時には文字列が有効なLLM_MODELかをチェック
+            try:
+                self.llm_mapping = AnalyticLLMMapping.model_validate(llm_mapping)
+            except Exception as e:
+                raise TypeError(
+                    f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
+                ) from e
+        elif isinstance(llm_mapping, AnalyticLLMMapping):
+            # すでに型が正しい場合も受け入れる
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or AnalyticLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         check_api_key(llm_api_key_check=True)
 
     @analytic_timed

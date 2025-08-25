@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 create_method_timed = lambda f: time_node("create_method_subgraph")(f)  # noqa: E731
 
 
-class CreateMethodLLMMapping(BaseModel):
+class CreateMethodV2LLMMapping(BaseModel):
     idea_generator: LLM_MODEL = DEFAULT_NODE_LLMS["idea_generator"]
     refine_idea: LLM_MODEL = DEFAULT_NODE_LLMS["refine_idea"]
     research_value_judgement: LLM_MODEL = DEFAULT_NODE_LLMS["research_value_judgement"]
@@ -70,10 +70,25 @@ class CreateMethodSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_mapping: CreateMethodLLMMapping | None = None,
+        llm_mapping: dict[str, str] | CreateMethodV2LLMMapping | None = None,
         refine_iterations: int = 2,
     ):
-        self.llm_mapping = llm_mapping or CreateMethodLLMMapping()
+        if llm_mapping is None:
+            self.llm_mapping = CreateMethodV2LLMMapping()
+        elif isinstance(llm_mapping, dict):
+            try:
+                self.llm_mapping = CreateMethodV2LLMMapping.model_validate(llm_mapping)
+            except Exception as e:
+                raise TypeError(
+                    f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
+                ) from e
+        elif isinstance(llm_mapping, CreateMethodV2LLMMapping):
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or CreateMethodV2LLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         self.refine_iterations = refine_iterations
         check_api_key(llm_api_key_check=True)
 

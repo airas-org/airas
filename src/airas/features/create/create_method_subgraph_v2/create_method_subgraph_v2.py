@@ -7,6 +7,7 @@ from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.create.create_method_subgraph.input_data import (
     create_method_subgraph_input_data,
@@ -16,12 +17,14 @@ from airas.features.create.create_method_subgraph_v2.nodes.evaluate_novelty_and_
     parse_new_idea_info,
 )
 from airas.features.create.create_method_subgraph_v2.nodes.generate_idea_and_research_summary import (
-    generate_ide_and_research_summary,
+    generate_idea_and_research_summary,
 )
 from airas.features.create.create_method_subgraph_v2.nodes.refine_idea_and_research_summary import (
     refine_idea_and_research_summary,
 )
-from airas.features.create.create_method_subgraph_v2.types import ResearchIdea
+from airas.features.create.create_method_subgraph_v2.types import (
+    ResearchIdea,
+)
 from airas.features.retrieve.get_paper_titles_subgraph.nodes.get_paper_title_from_qdrant import (
     get_paper_titles_from_qdrant,
 )
@@ -37,7 +40,7 @@ from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_arxiv_
 from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_ss_by_id import (
     search_ss_by_id,
 )
-from airas.features.retrieve.retrieve_paper_content_subgraph.prompt import (
+from airas.features.retrieve.retrieve_paper_content_subgraph.prompt.openai_websearch_arxiv_ids_prompt import (
     openai_websearch_arxiv_ids_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
@@ -51,6 +54,21 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 create_method_timed = lambda f: time_node("create_method_subgraph")(f)  # noqa: E731
+
+
+class CreateMethodV2LLMMapping(BaseModel):
+    generate_idea_and_research_summary: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "generate_idea_and_research_summary"
+    ]
+    evaluate_novelty_and_significance: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "evaluate_novelty_and_significance"
+    ]
+    refine_idea_and_research_summary: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "refine_idea_and_research_summary"
+    ]
+    search_arxiv_id_from_title: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "search_arxiv_id_from_title"
+    ]
 
 
 class CreateMethodSubgraphV2InputState(TypedDict):
@@ -78,23 +96,32 @@ class CreateMethodSubgraphV2State(
     pass
 
 
-class CreateMethodV2LLMMapping(BaseModel):
-    generate_ide_and_research_summary: LLM_MODEL = "o3-2025-04-16"
-    evaluate_novelty_and_significance: LLM_MODEL = "o3-2025-04-16"
-    refine_idea_and_research_summary: LLM_MODEL = "o3-2025-04-16"
-
-
-class CreateMethodV2Subgraph(BaseSubgraph):
+class CreateMethodSubgraphV2(BaseSubgraph):
     InputState = CreateMethodSubgraphV2InputState
     OutputState = CreateMethodSubgraphV2OutputState
 
     def __init__(
         self,
-        llm_mapping: CreateMethodV2LLMMapping | None = None,
+        llm_mapping: dict[str, str] | CreateMethodV2LLMMapping | None = None,
         refine_iterations: int = 2,
         paper_provider: str = "arxiv",
     ):
-        self.llm_mapping = llm_mapping or CreateMethodV2LLMMapping()
+        if llm_mapping is None:
+            self.llm_mapping = CreateMethodV2LLMMapping()
+        elif isinstance(llm_mapping, dict):
+            try:
+                self.llm_mapping = CreateMethodV2LLMMapping.model_validate(llm_mapping)
+            except Exception as e:
+                raise TypeError(
+                    f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
+                ) from e
+        elif isinstance(llm_mapping, CreateMethodV2LLMMapping):
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or CreateMethodV2LLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         self.refine_iterations = refine_iterations
         self.paper_provider = paper_provider
         check_api_key(llm_api_key_check=True)
@@ -112,11 +139,13 @@ class CreateMethodV2Subgraph(BaseSubgraph):
     def _generate_ide_and_research_summary(
         self, state: CreateMethodSubgraphV2State
     ) -> dict:
-        new_idea_info = generate_ide_and_research_summary(
-            llm_name=self.llm_mapping.generate_ide_and_research_summary,
+        new_idea = generate_idea_and_research_summary(
+            llm_name=self.llm_mapping.generate_idea_and_research_summary,
             research_topic=state["research_topic"],
             research_study_list=state["research_study_list"],
         )
+        new_idea_info = {}
+        new_idea_info["idea"] = new_idea
         return {"new_idea_info": new_idea_info}
 
     # 関連論文のタイトル
@@ -124,7 +153,7 @@ class CreateMethodV2Subgraph(BaseSubgraph):
     def _retrieve_related_papers(self, state: CreateMethodSubgraphV2State) -> dict:
         related_paper_title_list = get_paper_titles_from_qdrant(
             queries=[state["new_idea_info"]["idea"].methods],
-            num_retrieve_paper=20,
+            num_retrieve_paper=15,
         )
         related_research_study_list = [
             ResearchStudy(title=title) for title in (related_paper_title_list or [])
@@ -145,7 +174,7 @@ class CreateMethodV2Subgraph(BaseSubgraph):
         related_research_study_list = state["related_research_study_list"]
 
         related_research_study_list = search_arxiv_id_from_title(
-            llm_name="gpt-4o-2024-11-20",
+            llm_name=self.llm_mapping.search_arxiv_id_from_title,
             prompt_template=openai_websearch_arxiv_ids_prompt,
             research_study_list=related_research_study_list,
         )
@@ -193,7 +222,7 @@ class CreateMethodV2Subgraph(BaseSubgraph):
         evaluation_results = evaluate_novelty_and_significance(
             research_topic=state["research_topic"],
             research_study_list=research_study_list + related_research_study_list,
-            new_idea_info=new_idea_info["idea"],
+            new_idea=new_idea_info["idea"],
             llm_name=self.llm_mapping.evaluate_novelty_and_significance,
         )
         # related_research_study_listを空にする
@@ -265,9 +294,7 @@ class CreateMethodV2Subgraph(BaseSubgraph):
         graph_builder.add_edge(
             "generate_ide_and_research_summary", "retrieve_related_papers"
         )
-        graph_builder.add_edge(
-            "generate_ide_and_research_summary", "search_arxiv_id_from_title"
-        )
+        graph_builder.add_edge("retrieve_related_papers", "search_arxiv_id_from_title")
         graph_builder.add_conditional_edges(
             "search_arxiv_id_from_title",
             self.select_provider,
@@ -296,7 +323,7 @@ class CreateMethodV2Subgraph(BaseSubgraph):
 
 def main():
     input = create_method_subgraph_input_data
-    result = CreateMethodV2Subgraph().run(input)
+    result = CreateMethodSubgraphV2().run(input)
     print(f"result: {json.dumps(result, indent=2)}")
 
 
