@@ -56,18 +56,22 @@ AVAILABLE_MODELS = [
 
 generate_queries = GenerateQueriesSubgraph(
     llm_mapping={
-        "generate_queries": "gpt-5-2025-08-07",
+        "generate_queries": "o3-2025-04-16",
     },
-    n_queries=5,
+    n_queries=2,
 )
 get_paper_titles = GetPaperTitlesFromDBSubgraph(
     max_results_per_query=3, semantic_search=True
 )
 retrieve_paper_content = RetrievePaperContentSubgraph(
-    paper_provider="arxiv", target_study_list_source="research_study_list"
+    target_study_list_source="research_study_list",
+    llm_mapping={
+        "search_arxiv_id_from_title": "gemini-2.5-flash",
+    },
+    paper_provider="arxiv",
 )
 summarize_paper = SummarizePaperSubgraph(
-    llm_mapping={"summarize_paper": "gemini-2.5-pro"}
+    llm_mapping={"summarize_paper": "gemini-2.5-flash"}
 )
 retrieve_code = RetrieveCodeSubgraph(
     llm_mapping={
@@ -77,10 +81,14 @@ retrieve_code = RetrieveCodeSubgraph(
 )
 reference_extractor = ExtractReferenceTitlesSubgraph(
     llm_mapping={"extract_reference_titles": "gemini-2.5-flash"},
-    paper_retrieval_limit=10,
+    paper_retrieval_limit=5,
 )
 retrieve_reference_paper_content = RetrievePaperContentSubgraph(
-    paper_provider="arxiv", target_study_list_source="reference_research_study_list"
+    target_study_list_source="reference_research_study_list",
+    llm_mapping={
+        "search_arxiv_id_from_title": "gemini-2.5-flash",
+    },
+    paper_provider="arxiv",
 )
 
 create_method = CreateMethodSubgraphV2(
@@ -88,8 +96,9 @@ create_method = CreateMethodSubgraphV2(
         "generate_ide_and_research_summary": "gpt-5-2025-08-07",
         "evaluate_novelty_and_significance": "gpt-5-2025-08-07",
         "refine_idea_and_research_summary": "gpt-5-2025-08-07",
+        "search_arxiv_id_from_title": "gemini-2.5-flash",
     },
-    refine_iterations=2,
+    refine_iterations=1,
 )
 create_experimental_design = CreateExperimentalDesignSubgraph(
     llm_mapping={
@@ -120,7 +129,7 @@ create_bibfile = CreateBibfileSubgraph(
         "filter_references": "gemini-2.5-flash",
     },
     latex_template_name="agents4science_2025",
-    max_filtered_references=30,
+    max_filtered_references=5,
 )
 writer = WriterSubgraph(
     llm_mapping={
@@ -221,9 +230,9 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250825-v1"
+    repository_name = "tanaka-20250825-v3"
     research_topic_list = [
-        "New architecture of diffusion model",
+        "Architecture of a new diffusion model for memory efficiency",
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list

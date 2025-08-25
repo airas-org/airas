@@ -38,7 +38,7 @@ from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_arxiv_
 from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_ss_by_id import (
     search_ss_by_id,
 )
-from airas.features.retrieve.retrieve_paper_content_subgraph.prompt import (
+from airas.features.retrieve.retrieve_paper_content_subgraph.prompt.openai_websearch_arxiv_ids_prompt import (
     openai_websearch_arxiv_ids_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
@@ -63,6 +63,9 @@ class CreateMethodV2LLMMapping(BaseModel):
     ]
     refine_idea_and_research_summary: LLM_MODEL = DEFAULT_NODE_LLMS[
         "refine_idea_and_research_summary"
+    ]
+    search_arxiv_id_from_title: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "search_arxiv_id_from_title"
     ]
 
 
@@ -134,11 +137,13 @@ class CreateMethodSubgraphV2(BaseSubgraph):
     def _generate_ide_and_research_summary(
         self, state: CreateMethodSubgraphV2State
     ) -> dict:
-        new_idea_info = generate_idea_and_research_summary(
+        new_idea = generate_idea_and_research_summary(
             llm_name=self.llm_mapping.generate_idea_and_research_summary,
             research_topic=state["research_topic"],
             research_study_list=state["research_study_list"],
         )
+        new_idea_info = {}
+        new_idea_info["idea"] = new_idea
         return {"new_idea_info": new_idea_info}
 
     # 関連論文のタイトル
@@ -167,7 +172,7 @@ class CreateMethodSubgraphV2(BaseSubgraph):
         related_research_study_list = state["related_research_study_list"]
 
         related_research_study_list = search_arxiv_id_from_title(
-            llm_name="gpt-4o-2024-11-20",
+            llm_name=self.llm_mapping.search_arxiv_id_from_title,
             prompt_template=openai_websearch_arxiv_ids_prompt,
             research_study_list=related_research_study_list,
         )

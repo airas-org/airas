@@ -34,6 +34,7 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "generate_idea_and_research_summary": BASE_MODEL,
     "evaluate_novelty_and_significance": BASE_MODEL,
     "refine_idea_and_research_summary": BASE_MODEL,
+    "search_arxiv_id_from_title": BASE_MODEL,
     # FixCodeSubgraph
     "should_fix_code": BASE_MODEL,
     "fix_code": BASE_MODEL,
