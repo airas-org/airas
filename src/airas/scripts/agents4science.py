@@ -179,8 +179,8 @@ subgraph_list = [
     writer,
     review,
     latex,
-    readme,
     html,
+    readme,
 ]
 
 
@@ -230,7 +230,7 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250825-v8"
+    repository_name = "tanaka-20250825-v9"
     research_topic_list = [
         "Architecture of a new diffusion model for memory efficiency",
     ]
