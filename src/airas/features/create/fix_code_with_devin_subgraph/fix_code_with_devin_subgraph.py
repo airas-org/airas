@@ -65,13 +65,28 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
     InputState = FixCodeWithDevinSubgraphInputState
     OutputState = FixCodeWithDevinSubgraphOutputState
 
-    def __init__(self, llm_mapping: FixCodeWithDevinLLMMapping | None = None):
-        self.llm_mapping = llm_mapping or FixCodeWithDevinLLMMapping()
-        check_api_key(
-            llm_api_key_check=True,
-            devin_api_key_check=True,
-            github_personal_access_token_check=True,
-        )
+    def __init__(
+        self, llm_mapping: dict[str, str] | FixCodeWithDevinLLMMapping | None = None
+    ):
+        if llm_mapping is None:
+            self.llm_mapping = FixCodeWithDevinLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            try:
+                self.llm_mapping = FixCodeWithDevinLLMMapping.model_validate(
+                    llm_mapping
+                )
+            except Exception as e:
+                raise TypeError(
+                    f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
+                ) from e
+        elif isinstance(llm_mapping, FixCodeWithDevinLLMMapping):
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or FixCodeWithDevinLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
+        check_api_key(llm_api_key_check=True)
 
     @fix_code_timed
     def _llm_decide_node(self, state: FixCodeWithDevinSubgraphState) -> dict[str, bool]:

@@ -69,8 +69,28 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
     InputState = CreateExperimentalDesignSubgraphInputState
     OutputState = CreateExperimentalDesignSubgraphOutputState
 
-    def __init__(self, llm_mapping: CreateExperimentalDesignLLMMapping | None = None):
-        self.llm_mapping = llm_mapping or CreateExperimentalDesignLLMMapping()
+    def __init__(
+        self,
+        llm_mapping: dict[str, str] | CreateExperimentalDesignLLMMapping | None = None,
+    ):
+        if llm_mapping is None:
+            self.llm_mapping = CreateExperimentalDesignLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            try:
+                self.llm_mapping = CreateExperimentalDesignLLMMapping.model_validate(
+                    llm_mapping
+                )
+            except Exception as e:
+                raise TypeError(
+                    f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
+                ) from e
+        elif isinstance(llm_mapping, CreateExperimentalDesignLLMMapping):
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or CreateExperimentalDesignLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         check_api_key(llm_api_key_check=True)
 
     @create_experimental_design_timed

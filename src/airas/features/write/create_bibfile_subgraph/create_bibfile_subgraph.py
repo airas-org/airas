@@ -71,11 +71,26 @@ class CreateBibfileSubgraph(BaseSubgraph):
     @validate_call
     def __init__(
         self,
-        llm_mapping: CreateBibfileLLMMapping | None = None,
+        llm_mapping: dict[str, str] | CreateBibfileLLMMapping | None = None,
         latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
         max_filtered_references: int = 30,
     ):
-        self.llm_mapping = llm_mapping or CreateBibfileLLMMapping()
+        if llm_mapping is None:
+            self.llm_mapping = CreateBibfileLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            try:
+                self.llm_mapping = CreateBibfileLLMMapping.model_validate(llm_mapping)
+            except Exception as e:
+                raise TypeError(
+                    f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
+                ) from e
+        elif isinstance(llm_mapping, CreateBibfileLLMMapping):
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or CreateBibfileLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         self.latex_template_name = latex_template_name
         self.max_filtered_references = max_filtered_references
         check_api_key(llm_api_key_check=True)

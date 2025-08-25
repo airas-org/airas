@@ -18,7 +18,7 @@ from airas.types.research_study import ResearchStudy
 logger = getLogger(__name__)
 
 
-def generate_ide_and_research_summary(
+def generate_idea_and_research_summary(
     llm_name: LLM_MODEL,
     research_topic: str,
     research_study_list: list[ResearchStudy],

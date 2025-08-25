@@ -70,10 +70,21 @@ class RetrieveCodeSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_mapping: RetrieveCodeLLMMapping | None = None,
+        llm_mapping: dict[str, str] | RetrieveCodeLLMMapping | None = None,
     ):
+        if llm_mapping is None:
+            self.llm_mapping = RetrieveCodeLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            self.llm_mapping = RetrieveCodeLLMMapping(**llm_mapping)
+        elif isinstance(llm_mapping, RetrieveCodeLLMMapping):
+            # すでに型が正しい場合も受け入れる
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or RetrieveCodeLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         check_api_key(llm_api_key_check=True)
-        self.llm_mapping = llm_mapping or RetrieveCodeLLMMapping()
 
     @retrieve_code_timed
     def _extract_github_url_from_text(

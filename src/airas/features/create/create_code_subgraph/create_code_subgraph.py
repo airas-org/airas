@@ -67,8 +67,25 @@ class CreateCodeSubgraph(BaseSubgraph):
     InputState = CreateCodeSubgraphInputState
     OutputState = CreateCodeSubgraphOutputState
 
-    def __init__(self, llm_mapping: CreateCodeLLMMapping | None = None):
-        self.llm_mapping = llm_mapping or CreateCodeLLMMapping()
+    def __init__(
+        self, llm_mapping: dict[str, str] | CreateCodeLLMMapping | None = None
+    ):
+        if llm_mapping is None:
+            self.llm_mapping = CreateCodeLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            try:
+                self.llm_mapping = CreateCodeLLMMapping.model_validate(llm_mapping)
+            except Exception as e:
+                raise TypeError(
+                    f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
+                ) from e
+        elif isinstance(llm_mapping, CreateCodeLLMMapping):
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or CreateCodeLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         check_api_key(
             llm_api_key_check=True,
             github_personal_access_token_check=True,

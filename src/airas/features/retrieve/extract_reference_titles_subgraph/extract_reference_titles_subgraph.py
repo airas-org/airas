@@ -56,10 +56,27 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_mapping: ExtractReferenceTitlesLLMMapping | None = None,
+        llm_mapping: dict[str, str] | ExtractReferenceTitlesLLMMapping | None = None,
         paper_retrieval_limit: int | None = None,
     ):
-        self.llm_mapping = llm_mapping or ExtractReferenceTitlesLLMMapping()
+        if llm_mapping is None:
+            self.llm_mapping = ExtractReferenceTitlesLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            try:
+                self.llm_mapping = ExtractReferenceTitlesLLMMapping.model_validate(
+                    llm_mapping
+                )
+            except Exception as e:
+                raise TypeError(
+                    f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
+                ) from e
+        elif isinstance(llm_mapping, ExtractReferenceTitlesLLMMapping):
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or ExtractReferenceTitlesLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         self.paper_retrieval_limit = paper_retrieval_limit
 
     @extract_reference_titles_timed

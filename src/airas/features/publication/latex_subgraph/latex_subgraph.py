@@ -89,12 +89,23 @@ class LatexSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_mapping: LatexLLMMapping | None = None,
+        llm_mapping: dict[str, str] | LatexLLMMapping | None = None,
         latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
         paper_name: str = "generated_paper.pdf",
         max_revision_count: int = 3,
     ):
-        self.llm_mapping = llm_mapping or LatexLLMMapping()
+        if llm_mapping is None:
+            self.llm_mapping = LatexLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            self.llm_mapping = LatexLLMMapping(**llm_mapping)
+        elif isinstance(llm_mapping, LatexLLMMapping):
+            # すでに型が正しい場合も受け入れる
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or LatexLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         self.latex_template_name = latex_template_name
         self.paper_name = paper_name
         self.max_revision_count = max_revision_count

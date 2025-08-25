@@ -7,6 +7,7 @@ from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.create.create_method_subgraph.input_data import (
     create_method_subgraph_input_data,
@@ -16,7 +17,7 @@ from airas.features.create.create_method_subgraph_v2.nodes.evaluate_novelty_and_
     parse_new_idea_info,
 )
 from airas.features.create.create_method_subgraph_v2.nodes.generate_idea_and_research_summary import (
-    generate_ide_and_research_summary,
+    generate_idea_and_research_summary,
 )
 from airas.features.create.create_method_subgraph_v2.nodes.refine_idea_and_research_summary import (
     refine_idea_and_research_summary,
@@ -53,6 +54,18 @@ logger = logging.getLogger(__name__)
 create_method_timed = lambda f: time_node("create_method_subgraph")(f)  # noqa: E731
 
 
+class CreateMethodV2LLMMapping(BaseModel):
+    generate_idea_and_research_summary: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "generate_idea_and_research_summary"
+    ]
+    evaluate_novelty_and_significance: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "evaluate_novelty_and_significance"
+    ]
+    refine_idea_and_research_summary: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "refine_idea_and_research_summary"
+    ]
+
+
 class CreateMethodSubgraphV2InputState(TypedDict):
     research_topic: str
     research_study_list: list[ResearchStudy]
@@ -78,23 +91,32 @@ class CreateMethodSubgraphV2State(
     pass
 
 
-class CreateMethodV2LLMMapping(BaseModel):
-    generate_ide_and_research_summary: LLM_MODEL = "o3-2025-04-16"
-    evaluate_novelty_and_significance: LLM_MODEL = "o3-2025-04-16"
-    refine_idea_and_research_summary: LLM_MODEL = "o3-2025-04-16"
-
-
-class CreateMethodV2Subgraph(BaseSubgraph):
+class CreateMethodSubgraphV2(BaseSubgraph):
     InputState = CreateMethodSubgraphV2InputState
     OutputState = CreateMethodSubgraphV2OutputState
 
     def __init__(
         self,
-        llm_mapping: CreateMethodV2LLMMapping | None = None,
+        llm_mapping: dict[str, str] | CreateMethodV2LLMMapping | None = None,
         refine_iterations: int = 2,
         paper_provider: str = "arxiv",
     ):
-        self.llm_mapping = llm_mapping or CreateMethodV2LLMMapping()
+        if llm_mapping is None:
+            self.llm_mapping = CreateMethodV2LLMMapping()
+        elif isinstance(llm_mapping, dict):
+            try:
+                self.llm_mapping = CreateMethodV2LLMMapping.model_validate(llm_mapping)
+            except Exception as e:
+                raise TypeError(
+                    f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
+                ) from e
+        elif isinstance(llm_mapping, CreateMethodV2LLMMapping):
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or CreateMethodV2LLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         self.refine_iterations = refine_iterations
         self.paper_provider = paper_provider
         check_api_key(llm_api_key_check=True)
@@ -112,8 +134,8 @@ class CreateMethodV2Subgraph(BaseSubgraph):
     def _generate_ide_and_research_summary(
         self, state: CreateMethodSubgraphV2State
     ) -> dict:
-        new_idea_info = generate_ide_and_research_summary(
-            llm_name=self.llm_mapping.generate_ide_and_research_summary,
+        new_idea_info = generate_idea_and_research_summary(
+            llm_name=self.llm_mapping.generate_idea_and_research_summary,
             research_topic=state["research_topic"],
             research_study_list=state["research_study_list"],
         )
@@ -296,7 +318,7 @@ class CreateMethodV2Subgraph(BaseSubgraph):
 
 def main():
     input = create_method_subgraph_input_data
-    result = CreateMethodV2Subgraph().run(input)
+    result = CreateMethodSubgraphV2().run(input)
     print(f"result: {json.dumps(result, indent=2)}")
 
 
