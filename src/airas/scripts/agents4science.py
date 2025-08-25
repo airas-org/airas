@@ -31,13 +31,8 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# Set the default LLM model for this session.
-llm_name = "o3-mini-2025-01-31"
-
-
-# --- Supported Models ---
-
-OPENAI_MODEL = [
+AVAILABLE_MODELS = [
+    # gpt
     "o4-mini-2025-04-16",
     "o3-2025-04-16",
     "o3-mini-2025-01-31",
@@ -49,10 +44,7 @@ OPENAI_MODEL = [
     "gpt-4.1-2025-04-14",
     "gpt-4o-2024-11-20",
     "gpt-4o-mini-2024-07-18",
-]
-
-# If GEMINI_API_KEY is available
-VERTEXAI_MODEL = [
+    # gemini
     "gemini-2.5-pro",
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite-preview-06-17",
@@ -60,6 +52,7 @@ VERTEXAI_MODEL = [
     "gemini-2.0-flash-lite-001",
     "gemini-embedding-001",
 ]
+
 
 generate_queries = GenerateQueriesSubgraph(
     llm_mapping={
@@ -89,14 +82,7 @@ reference_extractor = ExtractReferenceTitlesSubgraph(
 retrieve_reference_paper_content = RetrievePaperContentSubgraph(
     paper_provider="arxiv", target_study_list_source="reference_research_study_list"
 )
-# create_method = CreateMethodSubgraph(
-#     llm_mapping={
-#         "idea_generator": "gpt-5-2025-08-07",
-#         "refine_idea": "gpt-5-2025-08-07",
-#         "research_value_judgement": "gpt-5-2025-08-07",
-#     },
-#     refine_iterations=3
-# )
+
 create_method = CreateMethodSubgraphV2(
     llm_mapping={
         "generate_ide_and_research_summary": "gpt-5-2025-08-07",
@@ -112,14 +98,12 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
         "generate_experiment_code": "gpt-5-2025-08-07",
     }
 )
-# coder = CreateCodeWithDevinSubgraph()
 coder = CreateCodeSubgraph(
     llm_mapping={
         "generate_code_for_scripts": "gpt-5-2025-08-07",
     }
 )
 executor = GitHubActionsExecutorSubgraph(gpu_enabled=True)
-# fixer = FixCodeWithDevinSubgraph(llm_name="gemini-2.5-flash")
 fixer = FixCodeSubgraph(
     llm_mapping={
         "should_fix_code": "gpt-5-2025-08-07",
@@ -135,7 +119,7 @@ create_bibfile = CreateBibfileSubgraph(
     llm_mapping={
         "filter_references": "gemini-2.5-flash",
     },
-    latex_template_name="iclr2024",
+    latex_template_name="agents4science_2025",
     max_filtered_references=30,
 )
 writer = WriterSubgraph(
@@ -156,6 +140,7 @@ latex = LatexSubgraph(
         "is_execution_successful": "gpt-5-2025-08-07",
         "fix_latex_text": "gpt-5-2025-08-07",
     },
+    latex_template_name="agents4science_2025",
     max_revision_count=3,
 )
 readme = ReadmeSubgraph()
@@ -236,7 +221,7 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250824-v2"
+    repository_name = "tanaka-20250825-v1"
     research_topic_list = [
         "New architecture of diffusion model",
     ]

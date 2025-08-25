@@ -5,7 +5,7 @@ from jinja2 import Environment
 from airas.features.create.create_method_subgraph.nodes.idea_generator import (
     parse_research_study_list,
 )
-from airas.features.create.create_method_subgraph_v2.prompt import (
+from airas.features.create.create_method_subgraph_v2.prompt.generate_ide_and_research_summary_prompt import (
     generate_ide_and_research_summary_prompt,
 )
 from airas.features.create.create_method_subgraph_v2.types import GenerateIdea
