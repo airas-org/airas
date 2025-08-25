@@ -12,10 +12,13 @@ from airas.features.publication.html_subgraph.input_data import html_subgraph_in
 from airas.features.publication.html_subgraph.nodes.convert_to_html import (
     convert_to_html,
 )
-from airas.features.publication.html_subgraph.nodes.dispatch_workflow import (
-    dispatch_workflow,
+from airas.features.publication.html_subgraph.nodes.deploy_images_to_gh_pages import (
+    deploy_images_to_gh_pages,
 )
 from airas.features.publication.html_subgraph.nodes.render_html import render_html
+from airas.features.publication.html_subgraph.nodes.replace_citation_keys_with_links import (
+    replace_citation_keys_with_links,
+)
 from airas.features.publication.html_subgraph.nodes.upload_html import upload_html
 from airas.features.publication.html_subgraph.prompt.convert_to_html_prompt import (
     convert_to_html_prompt,
@@ -86,8 +89,17 @@ class HtmlSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.convert_to_html,
             paper_content=state["paper_content"],
             image_file_name_list=image_file_name_list,
-            references_bib=state["references_bib"],
             prompt_template=convert_to_html_prompt,
+        )
+        return {"paper_content_html": paper_content_html}
+
+    @html_timed
+    def _replace_citation_keys_with_links(
+        self, state: HtmlSubgraphState
+    ) -> dict[str, str]:
+        paper_content_html = replace_citation_keys_with_links(
+            html_text=state["paper_content_html"],
+            references_bib=state["references_bib"],
         )
         return {"paper_content_html": paper_content_html}
 
@@ -109,10 +121,12 @@ class HtmlSubgraph(BaseSubgraph):
         return {"html_upload": ok}
 
     @html_timed
-    def _dispatch_workflow(self, state: HtmlSubgraphState) -> dict[str, str | bool]:
+    def _deploy_images_to_gh_pages(
+        self, state: HtmlSubgraphState
+    ) -> dict[str, str | bool]:
         time.sleep(3)
 
-        github_pages_url = dispatch_workflow(
+        github_pages_url = deploy_images_to_gh_pages(
             github_repository=state["github_repository_info"],
         )
 
@@ -123,15 +137,21 @@ class HtmlSubgraph(BaseSubgraph):
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(HtmlSubgraphState)
         graph_builder.add_node("convert_to_html", self._convert_to_html)
+        graph_builder.add_node(
+            "replace_citation_keys_with_links", self._replace_citation_keys_with_links
+        )
         graph_builder.add_node("render_html", self._render_html)
         graph_builder.add_node("upload_html", self._upload_html)
-        graph_builder.add_node("dispatch_workflow", self._dispatch_workflow)
+        graph_builder.add_node(
+            "deploy_images_to_gh_pages", self._deploy_images_to_gh_pages
+        )
 
         graph_builder.add_edge(START, "convert_to_html")
-        graph_builder.add_edge("convert_to_html", "render_html")
+        graph_builder.add_edge("convert_to_html", "replace_citation_keys_with_links")
+        graph_builder.add_edge("replace_citation_keys_with_links", "render_html")
         graph_builder.add_edge("render_html", "upload_html")
-        graph_builder.add_edge("upload_html", "dispatch_workflow")
-        graph_builder.add_edge("dispatch_workflow", END)
+        graph_builder.add_edge("upload_html", "deploy_images_to_gh_pages")
+        graph_builder.add_edge("deploy_images_to_gh_pages", END)
 
         return graph_builder.compile()
 

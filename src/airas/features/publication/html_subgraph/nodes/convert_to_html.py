@@ -1,7 +1,3 @@
-import re
-from logging import getLogger
-from typing import Any
-
 from jinja2 import Environment
 from pydantic import BaseModel
 
@@ -10,66 +6,23 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLMFacadeClient,
 )
 from airas.types.paper import PaperContent
-from airas.utils.parse_bibtex_to_dict import parse_bibtex_to_dict
-
-logger = getLogger(__name__)
 
 
 class LLMOutput(BaseModel):
     generated_html_text: str
 
 
-def _replace_citation_keys_with_links(
-    html_text: str, references: dict[str, dict[str, Any]]
-) -> str:
-    def replace_citation(match):
-        citation_key = match.group(1)
-        if citation_key in references:
-            ref = references[citation_key]
-            if ref.get("arxiv_url"):
-                link = ref["arxiv_url"]
-            elif ref.get("doi"):
-                link = f"https://doi.org/{ref['doi']}"
-            elif ref.get("github_url"):
-                link = ref["github_url"]
-            else:
-                link = f"#ref-{citation_key}"
-
-            title = ref.get("title", citation_key)
-            author = ref.get("author", "")
-            if author:
-                first_author = author.split(" and ")[0].split(",")[0].strip()
-                display_text = f"({first_author}, {ref.get('year', 'n.d.')})"
-            else:
-                display_text = f"({citation_key})"
-
-            return (
-                f'<a href="{link}" target="_blank" title="{title}">{display_text}</a>'
-            )
-        else:
-            logger.info(
-                f"Citation key not found in references, ignoring: {citation_key}"
-            )
-            return ""
-
-    citation_pattern = r"\[([^\[\],]+)\]"
-    html_text = re.sub(citation_pattern, replace_citation, html_text)
-
-    return html_text
-
-
 def convert_to_html(
     llm_name: LLM_MODEL,
     paper_content: PaperContent,
     image_file_name_list: list[str],
-    references_bib: str,
     prompt_template: str,
     client: LLMFacadeClient | None = None,
 ) -> str:
+    """Convert paper content to HTML using LLM."""
     if client is None:
         client = LLMFacadeClient(llm_name=llm_name)
 
-    references = parse_bibtex_to_dict(references_bib)
     data = {
         "sections": [
             {"name": field, "content": getattr(paper_content, field)}
@@ -97,6 +50,4 @@ def convert_to_html(
     if not generated_html_text:
         raise ValueError("Missing or empty 'generated_html_text' in output.")
 
-    html_with_links = _replace_citation_keys_with_links(generated_html_text, references)
-
-    return html_with_links
+    return generated_html_text

@@ -28,39 +28,46 @@ def embed_in_latex_template(
         "conclusion": latex_formatted_paper_content.conclusion,
     }
 
-    env = Environment(variable_start_string="<<", variable_end_string=">>")
+    env = Environment(
+        variable_start_string="<<",
+        variable_end_string=">>",
+        block_start_string="<%",
+        block_end_string="%>",
+    )
     template = env.from_string(latex_template_text)
     latex_text = template.render(data)
     return latex_text
 
 
 if __name__ == "__main__":
-    llm_name = "o3-mini-2025-01-31"
-    latex_formatted_paper_content = {
-        "title": "Sample Paper Title",
-        "abstract": "This is a sample abstract.",
-        "introduction": "This is a sample introduction.",
-        "related_work": "This is a sample related work.",
-        "background": "This is a sample background.",
-        "method": "This is a sample method.",
-        "experimental_setup": "This is a sample experimental setup.",
-        "results": "These are the sample results.",
-        "conclusion": "This is a sample conclusion.",
-    }
+    latex_formatted_paper_content = PaperContent(
+        title="Sample Paper Title",
+        abstract="This is a sample abstract.",
+        introduction="This is a sample introduction.",
+        related_work="This is a sample related work.",
+        background="This is a sample background.",
+        method="This is a sample method.",
+        experimental_setup="This is a sample experimental setup.",
+        results="These are the sample results.",
+        conclusion="This is a sample conclusion.",
+    )
 
-    references_bib = """\
-@article{ref1,
-title={Sample Reference},
-author={Doe, John},
-journal={Sample Journal},
-year={2025}
-}"""
-
-    image_file_name_list = ["figure1.png", "figure2.jpg"]
     latex_template = r"""\
-\PassOptionsToPackage{numbers}{natbib}
-\documentclass{article} % For LaTeX2e
-\usepackage{iclr2024_conference,times}
+\documentclass{article}
+
+\usepackage{agents4science_2025}
+% to compile a preprint version, e.g., for submission to arXiv, add the
+% \usepackage[preprint]{agents4science_2025}
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+% \usepackage[final]{agents4science_2025}
+
+% For workshops, the authors should use the workshop options and add the name of the workshop.
+% The "\workshoptitle" command is used to set the workshop title.
+%
+% \usepackage[sglblindworkshop]{agents4science_2025}
+% \workshoptitle{WORKSHOP TITLE}
+
 
 \usepackage[utf8]{inputenc} % allow utf-8 input
 \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
@@ -68,94 +75,90 @@ year={2025}
 \usepackage{url}            % simple URL typesetting
 \usepackage{booktabs}       % professional-quality tables
 \usepackage{amsfonts}       % blackboard math symbols
-\usepackage{nicefrac}       % compact symbols for 1/2, etc.
-\usepackage{microtype}      % microtypography
-\usepackage{titletoc}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
 
-\usepackage{subcaption}
-\usepackage{graphicx}
-\usepackage{amsmath}
-\usepackage{multirow}
-\usepackage{color}
-\usepackage{colortbl}
-\usepackage{cleveref}
-\usepackage{algorithm}
-\usepackage{algorithmicx}
-\usepackage{algpseudocode}
-\usepackage{tikz}
-\usepackage{pgfplots}
-\usepackage{float}
-\usepackage{array}
-\usepackage{tabularx}
-\pgfplotsset{compat=newest}
 
-\DeclareMathOperator*{\argmin}{arg\,min}
-\DeclareMathOperator*{\argmax}{arg\,max}
+\title{<< title >>}
 
-\graphicspath{{../}} % To reference your generated figures, see below.
 
-\title{ << title >> }
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to break the
+% lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
+% authors names on the first line, and the last on the second line, try using
+% \AND instead of \And before the third author name.
 
-\author{AIRAS}
 
-\newcommand{\fix}{\marginpar{FIX}}
-\newcommand{\new}{\marginpar{NEW}}
+\author{%
+  David S.~Hippocampus\thanks{Use footnote for providing further information
+    about author (webpage, alternative address)---\emph{not} for acknowledging
+    funding agencies.} \\
+  Department of Computer Science\\
+  Cranberry-Lemon University\\
+  Pittsburgh, PA 15213 \\
+  \texttt{hippo@cs.cranberry-lemon.edu} \\
+  % examples of more authors
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \AND
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+}
+
 
 \begin{document}
 
+
 \maketitle
+
 
 \begin{abstract}
 << abstract >>
 \end{abstract}
 
+
+
 \section{Introduction}
-\label{sec:intro}
 << introduction >>
 
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.8\linewidth]{figure1.png}
-\caption{Sample figure 1 in introduction.}
-\end{figure}
-
 \section{Related Work}
-\label{sec:related}
 << related_work >>
 
 \section{Background}
-\label{sec:background}
 << background >>
 
 \section{Method}
-\label{sec:method}
 << method >>
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.8\linewidth]{figure2.jpg}
-\caption{Sample figure 2 in method.}
-\end{figure}
-
-% Removed figure that referenced an unavailable image (figure3.jpg).
-
 \section{Experimental Setup}
-\label{sec:experimental}
 << experimental_setup >>
 
 \section{Results}
-\label{sec:results}
 << results >>
 
-
-\section{Conclusions}
-\label{sec:conclusion}
+\section{Conclusion}
 << conclusion >>
 
-This work was generated by \textsc{AIRAS} \citep{airas2025}.
 
-\bibliographystyle{iclr2024_conference}
+\bibliographystyle{plainnat}
 \bibliography{references}
 
 \end{document}
@@ -164,9 +167,6 @@ This work was generated by \textsc{AIRAS} \citep{airas2025}.
     result = embed_in_latex_template(
         latex_formatted_paper_content=latex_formatted_paper_content,
         latex_template_text=latex_template,
-        references_bib=references_bib,
-        figures_name=image_file_name_list,
-        llm_name=llm_name,
     )
 
     print(result)

@@ -6,7 +6,7 @@ from airas.types.github import GitHubRepositoryInfo
 logger = getLogger(__name__)
 
 
-def dispatch_workflow(
+def deploy_images_to_gh_pages(
     github_repository: GitHubRepositoryInfo,
     workflow_file: str = "publish_html.yml",
     client: GithubClient | None = None,
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     github_owner = "auto-res2"
     repository_name = "experiment_script_matsuzawa"
     branch_name = "base-branch"
-    result = dispatch_workflow(
+    result = deploy_images_to_gh_pages(
         github_owner=github_owner,
         repository_name=repository_name,
         branch_name=branch_name,
