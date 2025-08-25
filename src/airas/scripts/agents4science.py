@@ -58,15 +58,15 @@ generate_queries = GenerateQueriesSubgraph(
     llm_mapping={
         "generate_queries": "o3-2025-04-16",
     },
-    n_queries=2,
+    n_queries=5,
 )
 get_paper_titles = GetPaperTitlesFromDBSubgraph(
-    max_results_per_query=3, semantic_search=True
+    max_results_per_query=5, semantic_search=True
 )
 retrieve_paper_content = RetrievePaperContentSubgraph(
     target_study_list_source="research_study_list",
     llm_mapping={
-        "search_arxiv_id_from_title": "gemini-2.5-flash",
+        "search_arxiv_id_from_title": "gpt-5-mini-2025-08-07",  # Only openAI models are available.
     },
     paper_provider="arxiv",
 )
@@ -81,12 +81,12 @@ retrieve_code = RetrieveCodeSubgraph(
 )
 reference_extractor = ExtractReferenceTitlesSubgraph(
     llm_mapping={"extract_reference_titles": "gemini-2.5-flash"},
-    paper_retrieval_limit=5,
+    paper_retrieval_limit=20,
 )
 retrieve_reference_paper_content = RetrievePaperContentSubgraph(
     target_study_list_source="reference_research_study_list",
     llm_mapping={
-        "search_arxiv_id_from_title": "gemini-2.5-flash",
+        "search_arxiv_id_from_title": "gpt-5-mini-2025-08-07",  # Only openAI models are available.
     },
     paper_provider="arxiv",
 )
@@ -96,7 +96,7 @@ create_method = CreateMethodSubgraphV2(
         "generate_ide_and_research_summary": "gpt-5-2025-08-07",
         "evaluate_novelty_and_significance": "gpt-5-2025-08-07",
         "refine_idea_and_research_summary": "gpt-5-2025-08-07",
-        "search_arxiv_id_from_title": "gemini-2.5-flash",
+        "search_arxiv_id_from_title": "gpt-5-mini-2025-08-07",  # Only openAI models are available.
     },
     refine_iterations=1,
 )
@@ -230,7 +230,7 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250825-v7"
+    repository_name = "tanaka-20250825-v8"
     research_topic_list = [
         "Architecture of a new diffusion model for memory efficiency",
     ]
