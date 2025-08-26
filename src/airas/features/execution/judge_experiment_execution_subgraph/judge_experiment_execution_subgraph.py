@@ -56,9 +56,19 @@ class JudgeExperimentExecutionSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_mapping: JudgeExperimentExecutionLLMMapping | None = None,
+        llm_mapping: dict[str, str] | JudgeExperimentExecutionLLMMapping | None = None,
     ):
-        self.llm_mapping = llm_mapping or JudgeExperimentExecutionLLMMapping()
+        if llm_mapping is None:
+            self.llm_mapping = JudgeExperimentExecutionLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            self.llm_mapping = JudgeExperimentExecutionLLMMapping(**llm_mapping)
+        elif isinstance(llm_mapping, JudgeExperimentExecutionLLMMapping):
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or JudgeExperimentExecutionLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         check_api_key(llm_api_key_check=True)
 
     @judge_experiment_execution_timed

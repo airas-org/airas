@@ -69,8 +69,13 @@ class CheckExperimentalResultsSubgraph(BaseSubgraph):
             self.llm_mapping = CheckExperimentalResultsLLMMapping()
         elif isinstance(llm_mapping, dict):
             self.llm_mapping = CheckExperimentalResultsLLMMapping(**llm_mapping)
-        else:
+        elif isinstance(llm_mapping, CheckExperimentalResultsLLMMapping):
             self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or CheckExperimentalResultsLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
 
         self.prompt_template = prompt_template or check_experimental_results_prompt
         check_api_key(llm_api_key_check=True)
