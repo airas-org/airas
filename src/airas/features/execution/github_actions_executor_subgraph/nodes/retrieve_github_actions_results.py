@@ -83,20 +83,37 @@ def retrieve_github_actions_results(
     error_file_path = f".research/iteration{experiment_iteration}/error.txt"
     image_directory_path = f".research/iteration{experiment_iteration}/images"
 
-    # Get both files using the helper function
-    output_text_response = _get_single_file_content(
-        client, github_owner, repository_name, output_file_path, branch_name
-    )
-    if not output_text_response or "content" not in output_text_response:
-        raise RuntimeError(f"Failed to retrieve {output_file_path} from repository")
-    output_text_data = _decode_base64_content(output_text_response["content"])
+    try:
+        output_text_response = _get_single_file_content(
+            client, github_owner, repository_name, output_file_path, branch_name
+        )
+        if output_text_response and "content" in output_text_response:
+            output_text_data = _decode_base64_content(output_text_response["content"])
+        else:
+            logger.warning(
+                f"Output file {output_file_path} found but content is missing or invalid."
+            )
+    except Exception as e:
+        logger.warning(
+            f"Could not retrieve output file {output_file_path}: {e}. Continuing with empty string."
+        )
+        output_text_data = ""
 
-    error_text_data = _get_single_file_content(
-        client, github_owner, repository_name, error_file_path, branch_name
-    )
-    if not error_text_data or "content" not in error_text_data:
-        raise RuntimeError(f"Failed to retrieve {error_file_path} from repository")
-    error_text_data = _decode_base64_content(error_text_data["content"])
+    try:
+        error_text_response = _get_single_file_content(
+            client, github_owner, repository_name, error_file_path, branch_name
+        )
+        if error_text_response and "content" in error_text_response:
+            error_text_data = _decode_base64_content(error_text_response["content"])
+        else:
+            logger.warning(
+                f"Error file {error_file_path} found but content is missing or invalid."
+            )
+    except Exception as e:
+        logger.warning(
+            f"Could not retrieve error file {error_file_path}: {e}. Continuing with empty string."
+        )
+        error_text_data = ""
 
     try:
         image_data_list = _get_single_file_content(

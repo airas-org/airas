@@ -32,6 +32,9 @@ class ResearchHistory(BaseModel):
     )
     push_completion: Optional[bool] = Field(None, description="Push completion status")
     executed_flag: Optional[bool] = Field(None, description="Execution completion flag")
+    is_experiment_successful: Optional[bool] = Field(
+        None, description="Execution success status"
+    )
     experiment_iteration: Optional[int] = Field(
         None, description="Current experiment iteration"
     )

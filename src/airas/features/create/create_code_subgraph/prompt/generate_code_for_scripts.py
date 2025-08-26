@@ -1,14 +1,15 @@
-generate_code_for_scripts_prompt = """\
-# Instructions
+generate_code_for_scripts_prompt = """\n# Instructions
 The "New Method" and "Experiment Code" sections contain ideas for new machine learning research and the code associated with those ideas.
 Please follow the "Rules" section to create experimental scripts to conduct this research.
 
 # Rules
 - Please create code that can run on NVIDIA Tesla T4 · 16 GB VRAM.
 - Experimental scripts should be given a simple test run to make sure they work.
-- Install and use the necessary python packages as needed.
-- Please also list the python packages required for the experiment in the requirements.txt file.
+- **Imports and Dependencies:**
+    - Inside the `src` directory, always use relative imports (e.g., `from .train import ...`).
+    - Ensure every imported package is listed in `requirements.txt`.
 - All figures and plots must be saved in high-quality PDF format suitable for academic papers.
+- Generate visualizations to verify experimental results and comparisons where applicable.
 
 ## Directory and Script Roles
 - .research/iteration{{ experiment_iteration }}/images...Please save all images output from the experiment in this directory.

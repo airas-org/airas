@@ -21,6 +21,7 @@ Please follow the "Rules" section to create an experimental script to conduct th
 - Install and use the necessary python packages as needed.
 - Please also list the python packages required for the experiment in the requirements.txt file.
 - All figures and plots (e.g., accuracy curves, loss plots, confusion matrix) must be saved in high-quality PDF format suitable for academic papers.
+- Generate visualizations to verify experimental results and comparisons where applicable.
 - The roles of directories and scripts are listed below. Follow the roles to complete your implementation.
 
 ## Directory and Script Roles

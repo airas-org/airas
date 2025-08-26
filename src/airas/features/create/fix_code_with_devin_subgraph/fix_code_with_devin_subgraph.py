@@ -6,18 +6,13 @@ from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
-from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.create.fix_code_with_devin_subgraph.nodes.fix_code_with_devin import (
     fix_code_with_devin,
 )
-from airas.features.create.fix_code_with_devin_subgraph.nodes.should_fix_code import (
-    should_fix_code,
-)
 from airas.features.create.nodes.check_devin_completion import (
     check_devin_completion,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.devin import DevinInfo
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
@@ -30,8 +25,7 @@ logger = logging.getLogger(__name__)
 fix_code_timed = lambda f: time_node("fix_code_subgraph")(f)  # noqa: E731
 
 
-class FixCodeWithDevinLLMMapping(BaseModel):
-    llm_decide_node: LLM_MODEL = DEFAULT_NODE_LLMS["llm_decide_node"]
+class FixCodeWithDevinLLMMapping(BaseModel): ...
 
 
 class FixCodeWithDevinSubgraphInputState(TypedDict):
@@ -42,8 +36,7 @@ class FixCodeWithDevinSubgraphInputState(TypedDict):
     ]  # This should be True if the GitHub Actions workflow was executed successfully
 
 
-class FixCodeWithDevinSubgraphHiddenState(TypedDict):
-    judgment_result: bool
+class FixCodeWithDevinSubgraphHiddenState(TypedDict): ...
 
 
 class FixCodeWithDevinSubgraphOutputState(TypedDict):
@@ -65,54 +58,11 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
     InputState = FixCodeWithDevinSubgraphInputState
     OutputState = FixCodeWithDevinSubgraphOutputState
 
-    def __init__(
-        self, llm_mapping: dict[str, str] | FixCodeWithDevinLLMMapping | None = None
-    ):
-        if llm_mapping is None:
-            self.llm_mapping = FixCodeWithDevinLLMMapping()
-        elif isinstance(llm_mapping, dict):
-            try:
-                self.llm_mapping = FixCodeWithDevinLLMMapping.model_validate(
-                    llm_mapping
-                )
-            except Exception as e:
-                raise TypeError(
-                    f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
-                ) from e
-        elif isinstance(llm_mapping, FixCodeWithDevinLLMMapping):
-            self.llm_mapping = llm_mapping
-        else:
-            raise TypeError(
-                f"llm_mapping must be None, dict[str, str], or FixCodeWithDevinLLMMapping, "
-                f"but got {type(llm_mapping)}"
-            )
-        check_api_key(llm_api_key_check=True)
-
-    @fix_code_timed
-    def _llm_decide_node(self, state: FixCodeWithDevinSubgraphState) -> dict[str, bool]:
-        if not state.get("executed_flag", True):
-            raise ValueError(
-                "Invalid state: GitHub Actions workflow was not executed (expected executed_flag == True)"
-            )
-
-        output_text_data = (
-            state["new_method"].experimental_results.result
-            if state["new_method"].experimental_results
-            else ""
+    def __init__(self):
+        check_api_key(
+            devin_api_key_check=True,
+            github_personal_access_token_check=True,
         )
-        error_text_data = (
-            state["new_method"].experimental_results.error
-            if state["new_method"].experimental_results
-            else ""
-        )
-        judgment_result = should_fix_code(
-            llm_name=self.llm_mapping.llm_decide_node,
-            output_text_data=output_text_data,
-            error_text_data=error_text_data,
-        )
-        return {
-            "judgment_result": judgment_result,
-        }
 
     @fix_code_timed
     def _fix_code_with_devin_node(self, state: FixCodeWithDevinSubgraphState) -> dict:
@@ -143,14 +93,8 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
             return {"push_completion": False}
         return {"push_completion": True}
 
-    def _route_fix_or_end(self, state: FixCodeWithDevinSubgraphState) -> str:
-        if state.get("judgment_result") is True:
-            return "finish"
-        return "fix_code_with_devin_node"
-
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(FixCodeWithDevinSubgraphState)
-        graph_builder.add_node("llm_decide_node", self._llm_decide_node)
         graph_builder.add_node(
             "fix_code_with_devin_node", self._fix_code_with_devin_node
         )
@@ -158,15 +102,7 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
             "check_devin_completion_node", self._check_devin_completion_node
         )
 
-        graph_builder.add_edge(START, "llm_decide_node")
-        graph_builder.add_conditional_edges(
-            "llm_decide_node",
-            self._route_fix_or_end,
-            {
-                "fix_code_with_devin_node": "fix_code_with_devin_node",
-                "finish": END,
-            },
-        )
+        graph_builder.add_edge(START, "fix_code_with_devin_node")
         graph_builder.add_edge(
             "fix_code_with_devin_node", "check_devin_completion_node"
         )
