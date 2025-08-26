@@ -58,10 +58,21 @@ class GenerateQueriesSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_mapping: GenerateQueriesLLMMapping | None = None,
+        llm_mapping: dict[str, str] | GenerateQueriesLLMMapping | None = None,
         n_queries: Annotated[int, Field(gt=0)] = 5,
     ):
-        self.llm_mapping = llm_mapping or GenerateQueriesLLMMapping()
+        if llm_mapping is None:
+            self.llm_mapping = GenerateQueriesLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            self.llm_mapping = GenerateQueriesLLMMapping(**llm_mapping)
+        elif isinstance(llm_mapping, GenerateQueriesLLMMapping):
+            # すでに型が正しい場合も受け入れる
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or GenerateQueriesLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         self.n_queries = n_queries
         check_api_key(llm_api_key_check=True)
 

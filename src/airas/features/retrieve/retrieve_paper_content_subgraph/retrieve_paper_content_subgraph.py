@@ -3,8 +3,10 @@ from typing import Literal
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
 from airas.features.retrieve.retrieve_paper_content_subgraph.input_data import (
     retrieve_paper_content_subgraph_input_data,
@@ -24,6 +26,7 @@ from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_ss_by_
 from airas.features.retrieve.retrieve_paper_content_subgraph.prompt.openai_websearch_arxiv_ids_prompt import (
     openai_websearch_arxiv_ids_prompt,
 )
+from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.research_study import ResearchStudy
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -33,6 +36,12 @@ logger = logging.getLogger(__name__)
 
 retrieve_paper_content_str = "retrieve_paper_content_subgraph"
 retrieve_paper_content_timed = lambda f: time_node(retrieve_paper_content_str)(f)  # noqa: E731
+
+
+class RetrievePaperContentLLMMapping(BaseModel):
+    search_arxiv_id_from_title: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "search_arxiv_id_from_title"
+    ]
 
 
 class RetrievePaperContentInputState(TypedDict, total=False):
@@ -69,8 +78,27 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
     def __init__(
         self,
         target_study_list_source: UsedStudyListSource,
+        llm_mapping: dict[str, str] | RetrievePaperContentLLMMapping | None = None,
         paper_provider: str = "arxiv",
     ):
+        if llm_mapping is None:
+            self.llm_mapping = RetrievePaperContentLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            try:
+                self.llm_mapping = RetrievePaperContentLLMMapping.model_validate(
+                    llm_mapping
+                )
+            except Exception as e:
+                raise TypeError(
+                    f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
+                ) from e
+        elif isinstance(llm_mapping, RetrievePaperContentLLMMapping):
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or RetrievePaperContentLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         self.paper_provider = paper_provider
         self.target_study_list_source = target_study_list_source
 
@@ -98,7 +126,7 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
         research_study_list = state["tmp_research_study_list"]
 
         research_study_list = search_arxiv_id_from_title(
-            llm_name="gpt-4o-2024-11-20",
+            llm_name=self.llm_mapping.search_arxiv_id_from_title,
             prompt_template=openai_websearch_arxiv_ids_prompt,
             research_study_list=research_study_list,
         )

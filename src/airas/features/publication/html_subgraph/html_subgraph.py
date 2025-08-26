@@ -72,9 +72,20 @@ class HtmlSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_mapping: HtmlLLMMapping | None = None,
+        llm_mapping: dict[str, str] | HtmlLLMMapping | None = None,
     ):
-        self.llm_mapping = llm_mapping or HtmlLLMMapping()
+        if llm_mapping is None:
+            self.llm_mapping = HtmlLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            self.llm_mapping = HtmlLLMMapping(**llm_mapping)
+        elif isinstance(llm_mapping, HtmlLLMMapping):
+            # すでに型が正しい場合も受け入れる
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or HtmlLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
         check_api_key(llm_api_key_check=True)
 
     @html_timed

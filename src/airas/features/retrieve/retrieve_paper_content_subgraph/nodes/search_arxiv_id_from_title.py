@@ -3,21 +3,28 @@ import logging
 from jinja2 import Environment
 
 from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.services.api_client.llm_client.openai_client import OPENAI_MODEL
 from airas.types.research_study import MetaData, ResearchStudy
 
 logger = logging.getLogger(__name__)
 
+OPENAI_MODEL_SET = set(OPENAI_MODEL.__args__)
+
 
 def search_arxiv_id_from_title(
-    llm_name: LLM_MODEL,
+    llm_name: OPENAI_MODEL,
     prompt_template: str,
     research_study_list: list[ResearchStudy],
     conference_preference: str | None = None,
     client: LLMFacadeClient | None = None,
 ) -> list[ResearchStudy]:
+    # TODO:Reflect the following judgment logic in llm_config.py.
+    if llm_name not in OPENAI_MODEL_SET:
+        raise ValueError(
+            f"It needs to be an OpenAI model. Invalid model name: {llm_name}"
+        )
     client = client or LLMFacadeClient(llm_name=llm_name)
     template = Environment().from_string(prompt_template)
 

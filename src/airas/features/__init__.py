@@ -9,6 +9,9 @@ from .create.create_experimental_design_subgraph.create_experimental_design_subg
 from .create.create_method_subgraph.create_method_subgraph import (
     CreateMethodSubgraph,
 )
+from .create.create_method_subgraph_v2.create_method_subgraph_v2 import (
+    CreateMethodSubgraphV2,
+)
 from .create.fix_code_subgraph.fix_code_subgraph import FixCodeSubgraph
 from .create.fix_code_with_devin_subgraph.fix_code_with_devin_subgraph import (
     FixCodeWithDevinSubgraph,
@@ -56,6 +59,7 @@ __all__ = [
     "AnalyticSubgraph",
     "CreateExperimentalDesignSubgraph",
     "CreateMethodSubgraph",
+    "CreateMethodSubgraphV2",
     "CreateCodeSubgraph",
     "CreateCodeWithDevinSubgraph",
     "FixCodeSubgraph",

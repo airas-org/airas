@@ -57,9 +57,20 @@ class SummarizePaperSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_mapping: SummarizePaperLLMMapping | None = None,
+        llm_mapping: dict[str, str] | SummarizePaperLLMMapping | None = None,
     ):
-        self.llm_mapping = llm_mapping or SummarizePaperLLMMapping()
+        if llm_mapping is None:
+            self.llm_mapping = SummarizePaperLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            self.llm_mapping = SummarizePaperLLMMapping(**llm_mapping)
+        elif isinstance(llm_mapping, SummarizePaperLLMMapping):
+            # すでに型が正しい場合も受け入れる
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or SummarizePaperLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
 
     @summarize_paper_subgraph_timed
     def _summarize_paper(

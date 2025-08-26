@@ -69,12 +69,24 @@ class FixCodeSubgraph(BaseSubgraph):
     InputState = FixCodeSubgraphInputState
     OutputState = FixCodeSubgraphOutputState
 
-    def __init__(self, llm_mapping: FixCodeLLMMapping | None = None):
-        self.llm_mapping = llm_mapping or FixCodeLLMMapping()
-        check_api_key(
-            llm_api_key_check=True,
-            github_personal_access_token_check=True,
-        )
+    def __init__(self, llm_mapping: dict[str, str] | FixCodeLLMMapping | None = None):
+        if llm_mapping is None:
+            self.llm_mapping = FixCodeLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            try:
+                self.llm_mapping = FixCodeLLMMapping.model_validate(llm_mapping)
+            except Exception as e:
+                raise TypeError(
+                    f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
+                ) from e
+        elif isinstance(llm_mapping, FixCodeLLMMapping):
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or FixCodeLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
+        check_api_key(llm_api_key_check=True)
 
     @fix_code_timed
     def _initialize(self, state: FixCodeSubgraphState) -> dict:
