@@ -5,11 +5,13 @@ Please follow the "Rules" section to create experimental scripts to conduct this
 # Rules
 - Please create code that can run on NVIDIA Tesla T4 · 16 GB VRAM.
 - Experimental scripts should be given a simple test run to make sure they work.
+- The experiment is run from the project root using the command `python -m src.main`.
 - **Imports and Dependencies:**
     - Inside the `src` directory, always use relative imports (e.g., `from .train import ...`).
     - Ensure every imported package is listed in `requirements.txt`.
 - All figures and plots must be saved in high-quality PDF format suitable for academic papers.
 - Generate visualizations to verify experimental results and comparisons where applicable.
+- **File Scope:** Only generate or modify the files explicitly listed in the 'Directory and Script Roles' section. Do not create, modify, or assume the existence of any other files.
 
 ## Directory and Script Roles
 - .research/iteration{{ experiment_iteration }}/images...Please save all images output from the experiment in this directory.

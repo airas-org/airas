@@ -194,7 +194,10 @@ def run_subgraphs(subgraph_list, state, max_fix_attempts=5):
         subgraph_name = subgraph.__class__.__name__
         print(f"--- Running Subgraph: {subgraph_name} ---")
 
-        if isinstance(subgraph, JudgeExperimentExecutionSubgraph):
+        if isinstance(subgraph, (FixCodeSubgraph, AnalyticSubgraph)):
+            continue
+
+        elif isinstance(subgraph, JudgeExperimentExecutionSubgraph):
             fix_attempts = 0
             while fix_attempts < max_fix_attempts:
                 state = judge_execution.run(state)
@@ -209,6 +212,7 @@ def run_subgraphs(subgraph_list, state, max_fix_attempts=5):
                 print(
                     f"!!! Max fix attempts ({max_fix_attempts}) reached for {state['research_topic']}. Moving on. !!!"
                 )
+                state = analysis.run(state)
         else:
             state = subgraph.run(state)
 
@@ -242,7 +246,7 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "experiment_matsuzawa_20250826_2"
+    repository_name = "experiment_matsuzawa_20250826_6"
     research_topic_list = [
         "Architecture of a new diffusion model for memory efficiency",
     ]

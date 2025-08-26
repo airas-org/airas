@@ -4,6 +4,7 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 
 # Rules
 - Fix all errors found in the error messages
+- If a file does not have any errors and does not need any changes, you MUST return the original content of the file exactly as provided, without any modifications, comments, or additional text like '[No changes]'.
 - Ensure the code can run on NVIDIA Tesla T4 · 16 GB VRAM
 - Make minimal changes to preserve the original functionality
 - Update requirements.txt if new packages are needed
