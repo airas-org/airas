@@ -29,7 +29,7 @@ def _generate_citation_key(title: str, authors: list[str], year) -> str:
     first_author = re.sub(r"[^a-z0-9]", "", first_author)
     first_word = re.sub(r"[^a-z0-9]", "", first_word)
 
-    citation_key = f"{first_author}_{year_str}_{first_word}"
+    citation_key = f"{first_author}-{year_str}-{first_word}"
     return citation_key
 
 
@@ -41,6 +41,7 @@ def create_bibtex(
         return ""
 
     bibtex_sections = []
+    seen_citation_keys = set()
 
     # Research papers section
     if research_study_list:
@@ -53,7 +54,10 @@ def create_bibtex(
         db_research = BibDatabase()
         for i, ref in enumerate(research_study_list):
             entry = _create_bibtex_entry(ref, i)
-            db_research.entries.append(entry)
+            citation_key = entry["ID"]
+            if citation_key not in seen_citation_keys:
+                db_research.entries.append(entry)
+                seen_citation_keys.add(citation_key)
 
         research_bibtex = bibtexparser.dumps(db_research).strip()
         bibtex_sections.append(research_bibtex)
@@ -70,7 +74,10 @@ def create_bibtex(
         db_reference = BibDatabase()
         for i, ref in enumerate(reference_research_study_list):
             entry = _create_bibtex_entry(ref, i + len(research_study_list))
-            db_reference.entries.append(entry)
+            citation_key = entry["ID"]
+            if citation_key not in seen_citation_keys:
+                db_reference.entries.append(entry)
+                seen_citation_keys.add(citation_key)
 
         reference_bibtex = bibtexparser.dumps(db_reference).strip()
         bibtex_sections.append(reference_bibtex)

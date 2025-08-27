@@ -40,7 +40,6 @@ class CreateCodeLLMMapping(BaseModel):
 class CreateCodeSubgraphInputState(TypedDict):
     github_repository_info: GitHubRepositoryInfo
     new_method: ResearchHypothesis
-    generated_file_contents: dict[str, str]
 
 
 class CreateCodeSubgraphHiddenState(TypedDict):
@@ -52,6 +51,7 @@ class CreateCodeSubgraphOutputState(TypedDict):
     is_code_pushed_to_github: bool
     created_files: list[str]
     experiment_iteration: int
+    generated_file_contents: dict[str, str]
 
 
 class CreateCodeSubgraphState(

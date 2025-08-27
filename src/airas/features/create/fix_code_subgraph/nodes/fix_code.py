@@ -24,6 +24,18 @@ class GenerateCodeForScripts(BaseModel):
     config_yaml_content: str
 
 
+def _is_code_meaningful(content: str | None) -> bool:
+    if not content or not content.strip():
+        return False
+
+    lines = content.strip().split("\n")
+    for line in lines:
+        stripped_line = line.strip()
+        if stripped_line and not stripped_line.startswith("#"):
+            return True
+    return False  # No meaningful code found
+
+
 def fix_code(
     llm_name: LLM_MODEL,
     output_text_data: str,
@@ -55,14 +67,25 @@ def fix_code(
     )
     if output is None:
         raise ValueError("Error: No response from LLM in fix_code.")
-    return {
-        "src/train.py": output["train_scripts_content"],
-        "src/evaluate.py": output["evaluate_scripts_content"],
-        "src/preprocess.py": output["preprocess_scripts_content"],
-        "src/main.py": output["main_scripts_content"],
-        "requirements.txt": output["requirements_txt_content"],
-        "config/config.yaml": output["config_yaml_content"],
+
+    # This preserves any files not touched by the LLM and prevents blanking.
+    updated_files = current_files.copy()
+
+    file_mapping = {
+        "train_scripts_content": "src/train.py",
+        "evaluate_scripts_content": "src/evaluate.py",
+        "preprocess_scripts_content": "src/preprocess.py",
+        "main_scripts_content": "src/main.py",
+        "requirements_txt_content": "requirements.txt",
+        "config_yaml_content": "config/config.yaml",
     }
+
+    for field, path in file_mapping.items():
+        new_content = output.get(field)
+        if _is_code_meaningful(new_content):
+            updated_files[path] = new_content
+
+    return updated_files
 
 
 def should_fix_code(output_text_data: str, error_text_data: str) -> bool:

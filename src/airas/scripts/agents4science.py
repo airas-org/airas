@@ -4,18 +4,19 @@ from tqdm import tqdm
 
 from airas.features import (
     AnalyticSubgraph,
+    CheckExperimentalResultsSubgraph,
     CreateBibfileSubgraph,
     CreateCodeSubgraph,
     CreateExperimentalDesignSubgraph,
     CreateMethodSubgraphV2,
     ExtractReferenceTitlesSubgraph,
     FixCodeSubgraph,
-    FixCodeWithDevinSubgraph,
     GenerateQueriesSubgraph,
     GetPaperTitlesFromDBSubgraph,
     GitHubActionsExecutorSubgraph,
     GithubUploadSubgraph,
     HtmlSubgraph,
+    JudgeExperimentExecutionSubgraph,
     LatexSubgraph,
     PrepareRepositorySubgraph,
     ReadmeSubgraph,
@@ -113,6 +114,7 @@ coder = CreateCodeSubgraph(
     }
 )
 executor = GitHubActionsExecutorSubgraph(gpu_enabled=True)
+judge_execution = JudgeExperimentExecutionSubgraph()
 fixer = FixCodeSubgraph(
     llm_mapping={
         "should_fix_code": "gpt-5-2025-08-07",
@@ -138,6 +140,7 @@ writer = WriterSubgraph(
     },
     max_refinement_count=2,
 )
+checker_results = CheckExperimentalResultsSubgraph()
 review = ReviewPaperSubgraph(
     llm_mapping={
         "review_paper": "gpt-5-2025-08-07",
@@ -171,12 +174,14 @@ subgraph_list = [
     create_experimental_design,
     coder,
     executor,
+    judge_execution,
     fixer,
     analysis,
     reference_extractor,
     retrieve_reference_paper_content,
     create_bibfile,
     writer,
+    checker_results,
     review,
     latex,
     html,
@@ -184,19 +189,30 @@ subgraph_list = [
 ]
 
 
-def run_subgraphs(subgraph_list, state):
+def run_subgraphs(subgraph_list, state, max_fix_attempts=5):
     for subgraph in tqdm(subgraph_list, desc="Executing Research Workflow"):
         subgraph_name = subgraph.__class__.__name__
         print(f"--- Running Subgraph: {subgraph_name} ---")
 
-        if isinstance(subgraph, (FixCodeSubgraph, FixCodeWithDevinSubgraph)):
-            while True:
-                if state.get("executed_flag") is True:
+        if isinstance(subgraph, (FixCodeSubgraph, AnalyticSubgraph)):
+            continue
+
+        elif isinstance(subgraph, JudgeExperimentExecutionSubgraph):
+            fix_attempts = 0
+            while fix_attempts < max_fix_attempts:
+                state = judge_execution.run(state)
+                if state.get("is_experiment_successful") is True:
                     state = analysis.run(state)
                     break
                 else:
                     state = fixer.run(state)
                     state = executor.run(state)
+                    fix_attempts += 1
+            else:
+                print(
+                    f"!!! Max fix attempts ({max_fix_attempts}) reached for {state['research_topic']}. Moving on. !!!"
+                )
+                state = analysis.run(state)
         else:
             state = subgraph.run(state)
 
@@ -230,7 +246,7 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250825-v9"
+    repository_name = "experiment_matsuzawa_20250826_6"
     research_topic_list = [
         "Architecture of a new diffusion model for memory efficiency",
     ]

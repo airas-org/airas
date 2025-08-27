@@ -19,6 +19,9 @@ from .create.fix_code_with_devin_subgraph.fix_code_with_devin_subgraph import (
 from .execution.github_actions_executor_subgraph.github_actions_executor_subgraph import (
     GitHubActionsExecutorSubgraph,
 )
+from .execution.judge_experiment_execution_subgraph.judge_experiment_execution_subgraph import (
+    JudgeExperimentExecutionSubgraph,
+)
 from .github.create_branch_subgraph import CreateBranchSubgraph
 from .github.github_download_subgraph import GithubDownloadSubgraph
 from .github.github_upload_subgraph import GithubUploadSubgraph
@@ -47,6 +50,9 @@ from .retrieve.retrieve_paper_content_subgraph.retrieve_paper_content_subgraph i
 from .retrieve.summarize_paper_subgraph.summarize_paper_subgraph import (
     SummarizePaperSubgraph,
 )
+from .review.check_experimental_results_subgraph.check_experimental_results_subgraph import (
+    CheckExperimentalResultsSubgraph,
+)
 from .review.review_paper_subgraph.review_paper_subgraph import (
     ReviewPaperSubgraph,
 )
@@ -61,11 +67,13 @@ __all__ = [
     "CreateMethodSubgraph",
     "CreateMethodSubgraphV2",
     "CreateCodeSubgraph",
+    "CheckExperimentalResultsSubgraph",
     "CreateCodeWithDevinSubgraph",
     "FixCodeSubgraph",
     "FixCodeWithDevinSubgraph",
     "GitHubActionsExecutorSubgraph",
     "PrepareRepositorySubgraph",
+    "JudgeExperimentExecutionSubgraph",
     "GenerateQueriesSubgraph",
     "GetPaperTitlesFromDBSubgraph",
     "GetPaperTitlesFromWebSubgraph",

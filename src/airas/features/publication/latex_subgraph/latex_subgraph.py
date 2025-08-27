@@ -92,7 +92,7 @@ class LatexSubgraph(BaseSubgraph):
         llm_mapping: dict[str, str] | LatexLLMMapping | None = None,
         latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
         paper_name: str = "generated_paper.pdf",
-        max_revision_count: int = 3,
+        max_revision_count: int = 5,
     ):
         if llm_mapping is None:
             self.llm_mapping = LatexLLMMapping()
@@ -255,7 +255,9 @@ class LatexSubgraph(BaseSubgraph):
 
 
 def main():
-    output = LatexSubgraph().run(latex_subgraph_input_data)
+    output = LatexSubgraph(latex_template_name="agents4science_2025").run(
+        latex_subgraph_input_data
+    )
 
     print(output)
 

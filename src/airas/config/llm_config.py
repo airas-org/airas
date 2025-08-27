@@ -4,6 +4,7 @@ LLM_CONFIG_TYPE = dict[str, LLM_MODEL]
 
 BASE_MODEL: LLM_MODEL = "o3-2025-04-16"
 
+
 # fmt:off
 DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     # --- features/retrieve ---
@@ -35,11 +36,10 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "evaluate_novelty_and_significance": BASE_MODEL,
     "refine_idea_and_research_summary": BASE_MODEL,
     "search_arxiv_id_from_title": BASE_MODEL,
-    # FixCodeSubgraph
+    # JudgeExperimentExecutionSubgraph
     "should_fix_code": BASE_MODEL,
+    # FixCodeSubgraph
     "fix_code": BASE_MODEL,
-    # FixCodeWithDevinSubgraph
-    "llm_decide_node": BASE_MODEL,
 
     # --- features/analysis ---
     # AnalyticSubgraph
@@ -53,6 +53,8 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "refine_paper": BASE_MODEL,
 
     # --- features/review ---
+    # CheckExperimentalResultsSubgraph
+    "check_experimental_results": BASE_MODEL,
     # ReviewPaperSubgraph
     "review_paper": BASE_MODEL,
 

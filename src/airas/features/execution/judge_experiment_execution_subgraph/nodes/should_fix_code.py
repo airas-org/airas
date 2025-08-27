@@ -3,7 +3,7 @@ from logging import getLogger
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.features.create.fix_code_with_devin_subgraph.prompt.llm_decide import (
+from airas.features.execution.judge_experiment_execution_subgraph.prompts.llm_decide import (
     llm_decide_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
@@ -15,7 +15,7 @@ logger = getLogger(__name__)
 
 
 class LLMOutput(BaseModel):
-    is_code_fix_needed: bool
+    is_experiment_successful: bool
 
 
 def should_fix_code(
@@ -38,12 +38,4 @@ def should_fix_code(
     )
     if output is None:
         raise ValueError("Error: No response from LLM in should_fix_code.")
-    return output["is_code_fix_needed"]
-
-
-if __name__ == "__main__":
-    llm_name = "gpt-4o-mini-2024-07-18"
-    output_text_data = "No error"
-    error_text_data = "Error"
-    result = should_fix_code(llm_name, output_text_data, error_text_data)
-    print(result)
+    return output["is_experiment_successful"]
