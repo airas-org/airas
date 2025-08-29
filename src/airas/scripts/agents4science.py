@@ -241,7 +241,9 @@ def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG)
                     state = analysis.run(state)
                     break
 
-                print("Experimental consistency failed → redesign")
+                print(
+                    f"Experimental consistency failed → redesign. Feedback: {state['consistency_feedback']}"
+                )
                 consistency_attempts += 1
 
             if consistency_attempts >= workflow_config.max_consistency_attempts:
@@ -280,7 +282,7 @@ def execute_workflow(
             "github_repository_info": GitHubRepositoryInfo(
                 github_owner=github_owner,
                 repository_name=repository_name,
-                branch_name=f"test-{index + 2}",
+                branch_name=f"test-{index}",
             ),
             "research_topic": research_topic,
         }
