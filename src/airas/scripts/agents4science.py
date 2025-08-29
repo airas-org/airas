@@ -96,7 +96,7 @@ retrieve_reference_paper_content = RetrievePaperContentSubgraph(
 
 create_method = CreateMethodSubgraphV2(
     llm_mapping={
-        "generate_ide_and_research_summary": "o3-2025-04-16",
+        "generate_idea_and_research_summary": "o3-2025-04-16",
         "evaluate_novelty_and_significance": "o3-2025-04-16",
         "refine_idea_and_research_summary": "o3-2025-04-16",
         "search_arxiv_id_from_title": "gpt-5-mini-2025-08-07",  # Only openAI models are available.
