@@ -37,14 +37,13 @@ Provide specific, actionable feedback including:
 **Experimental Design:**
 - Strategy: {{ new_method.experimental_design.experiment_strategy }}
 - Details: {{ new_method.experimental_design.experiment_details }}
+- Code: {{ new_method.experimental_design.experiment_code }}
 {% endif %}
 
 {% if new_method.experimental_results %}
 **Experimental Results:**
 - Result: {{ new_method.experimental_results.result }}
 - Error: {{ new_method.experimental_results.error }}
-- Experiment Executed: {{ new_method.experimental_results.was_experiment_executed }}
-- Better than Baseline: {{ new_method.experimental_results.is_better_than_baseline }}
 {% endif %}
 
 Focus your evaluation on the experimental results, methodology, and any statistical analyses presented.
