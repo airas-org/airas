@@ -93,9 +93,9 @@ class CreateCodeSubgraph(BaseSubgraph):
 
     @create_code_timed
     def _initialize(self, state: CreateCodeSubgraphState) -> dict:
-        if "experiment_iteration" in state:
-            return {"experiment_iteration": state["experiment_iteration"]}
-        return {"experiment_iteration": 1}
+        # Always increment experiment_iteration to create a new iteration folder
+        current_iteration = state.get("experiment_iteration", 0)
+        return {"experiment_iteration": current_iteration + 1}
 
     @create_code_timed
     def _generate_code_for_scripts(self, state: CreateCodeSubgraphState) -> dict:

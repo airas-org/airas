@@ -1,4 +1,3 @@
-import json
 import logging
 
 from langgraph.graph import END, START, StateGraph
@@ -15,13 +14,13 @@ from airas.features.create.create_experimental_design_subgraph.nodes.generate_ex
     generate_experiment_code,
 )
 from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_details import (
-    generate_experiment_specification,
+    generate_experiment_details,
 )
 from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_strategy import (
     generate_experiment_strategy,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.research_hypothesis import ExperimentalDesign, ResearchHypothesis
+from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -37,19 +36,18 @@ class CreateExperimentalDesignLLMMapping(BaseModel):
     generate_experiment_strategy: LLM_MODEL = DEFAULT_NODE_LLMS[
         "generate_experiment_strategy"
     ]
-    generate_experiment_specification: LLM_MODEL = DEFAULT_NODE_LLMS[
-        "generate_experiment_specification"
+    generate_experiment_details: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "generate_experiment_details"
     ]
     generate_experiment_code: LLM_MODEL = DEFAULT_NODE_LLMS["generate_experiment_code"]
 
 
 class CreateExperimentalDesignSubgraphInputState(TypedDict):
     new_method: ResearchHypothesis
+    consistency_feedback: str | None
 
 
-class CreateExperimentalDesignHiddenState(TypedDict):
-    experiment_strategy: str
-    experiment_specification: str
+class CreateExperimentalDesignHiddenState(TypedDict): ...
 
 
 class CreateExperimentalDesignSubgraphOutputState(TypedDict):
@@ -96,37 +94,33 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
     @create_experimental_design_timed
     def _generate_experiment_strategy(
         self, state: CreateExperimentalDesignState
-    ) -> dict:
-        experiment_strategy = generate_experiment_strategy(
+    ) -> dict[str, ResearchHypothesis]:
+        new_method = generate_experiment_strategy(
             llm_name=self.llm_mapping.generate_experiment_strategy,
-            new_method=state["new_method"].method,
+            new_method=state["new_method"],
+            consistency_feedback=state.get("consistency_feedback"),
         )
-        return {"experiment_strategy": experiment_strategy}
+        return {"new_method": new_method}
 
     @create_experimental_design_timed
-    def _generate_experiment_specification(
+    def _generate_experiment_details(
         self, state: CreateExperimentalDesignState
-    ) -> dict:
-        experiment_specification = generate_experiment_specification(
-            llm_name=self.llm_mapping.generate_experiment_specification,
-            new_method=state["new_method"].method,
-            experiment_strategy=state["experiment_strategy"],
+    ) -> dict[str, ResearchHypothesis]:
+        new_method = generate_experiment_details(
+            llm_name=self.llm_mapping.generate_experiment_details,
+            new_method=state["new_method"],
+            consistency_feedback=state.get("consistency_feedback"),
         )
-        return {"experiment_specification": experiment_specification}
+        return {"new_method": new_method}
 
     @create_experimental_design_timed
-    def _generate_experiment_code(self, state: CreateExperimentalDesignState) -> dict:
-        experiment_code = generate_experiment_code(
+    def _generate_experiment_code(
+        self, state: CreateExperimentalDesignState
+    ) -> dict[str, ResearchHypothesis]:
+        new_method = generate_experiment_code(
             llm_name=self.llm_mapping.generate_experiment_code,
-            new_method=state["new_method"].method,
-            experiment_strategy=state["experiment_strategy"],
-            experiment_specification=state["experiment_specification"],
-        )
-        new_method = state["new_method"]
-        new_method.experimental_design = ExperimentalDesign(
-            experiment_strategy=state["experiment_strategy"],
-            experiment_details=state["experiment_specification"],
-            experiment_code=experiment_code,
+            new_method=state["new_method"],
+            consistency_feedback=state.get("consistency_feedback"),
         )
         return {"new_method": new_method}
 
@@ -136,7 +130,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             "generate_experiment_strategy", self._generate_experiment_strategy
         )
         graph_builder.add_node(
-            "generate_experiment_specification", self._generate_experiment_specification
+            "generate_experiment_details", self._generate_experiment_details
         )
         graph_builder.add_node(
             "generate_experiment_code", self._generate_experiment_code
@@ -144,10 +138,10 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
 
         graph_builder.add_edge(START, "generate_experiment_strategy")
         graph_builder.add_edge(
-            "generate_experiment_strategy", "generate_experiment_specification"
+            "generate_experiment_strategy", "generate_experiment_details"
         )
         graph_builder.add_edge(
-            "generate_experiment_specification", "generate_experiment_code"
+            "generate_experiment_details", "generate_experiment_code"
         )
         graph_builder.add_edge("generate_experiment_code", END)
 
@@ -157,7 +151,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
 def main():
     input = create_experimental_design_subgraph_input_data
     result = CreateExperimentalDesignSubgraph().run(input)
-    print(f"result: {json.dumps(result, indent=2)}")
+    print(f"result: {result}")
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.research_hypothesis import ResearchHypothesis
 
 
 class LLMOutput(BaseModel):
@@ -16,18 +17,23 @@ class LLMOutput(BaseModel):
 
 def generate_experiment_code(
     llm_name: LLM_MODEL,
-    new_method: str,
-    experiment_strategy: str,
-    experiment_specification: str,
-) -> str:
+    new_method: ResearchHypothesis,
+    consistency_feedback: str | None = None,
+) -> ResearchHypothesis:
     client = LLMFacadeClient(llm_name=llm_name)
     env = Environment()
 
     template = env.from_string(generate_experiment_code_prompt)
+
+    method_text = new_method.method
+    experiment_strategy = new_method.experimental_design.experiment_strategy
+    experiment_details = new_method.experimental_design.experiment_details
+
     data = {
-        "new_method": new_method,
+        "new_method": method_text,
         "experiment_strategy": experiment_strategy,
-        "experiment_specification": experiment_specification,
+        "experiment_details": experiment_details,
+        "consistency_feedback": consistency_feedback,
     }
     messages = template.render(data)
     output, cost = client.structured_outputs(
@@ -36,4 +42,6 @@ def generate_experiment_code(
     )
     if output is None:
         raise ValueError("No response from LLM in generate_experiment_code.")
-    return output["experiment_code"]
+
+    new_method.experimental_design.experiment_code = output["experiment_code"]
+    return new_method

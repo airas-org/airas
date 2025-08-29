@@ -33,7 +33,7 @@ def github_upload(
         file_path=file_path,
         file_content=json.dumps(
             research_history_dict, ensure_ascii=False, indent=2
-        ).encode(),
+        ).encode("utf-8", errors="replace"),
         commit_message=commit_message,
     )
     if ok_json:
