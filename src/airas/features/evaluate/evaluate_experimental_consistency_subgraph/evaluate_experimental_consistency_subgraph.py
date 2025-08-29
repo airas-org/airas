@@ -85,6 +85,7 @@ class EvaluateExperimentalConsistencySubgraph(BaseSubgraph):
         )
         check_api_key(llm_api_key_check=True)
 
+    @evaluate_experimental_consistency_timed
     def _evaluate_experimental_consistency(
         self, state: EvaluateExperimentalConsistencySubgraphState
     ) -> dict[str, ResearchHypothesis]:

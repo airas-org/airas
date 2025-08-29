@@ -79,6 +79,7 @@ class EvaluatePaperResultsSubgraph(BaseSubgraph):
         self.prompt_template = prompt_template or evaluate_paper_results_prompt
         check_api_key(llm_api_key_check=True)
 
+    @evaluate_paper_results_timed
     def _evaluate_paper_results(
         self, state: EvaluatePaperResultsSubgraphState
     ) -> dict[str, bool]:
