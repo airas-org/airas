@@ -42,9 +42,9 @@ class CreateExperimentalDesignLLMMapping(BaseModel):
     generate_experiment_code: LLM_MODEL = DEFAULT_NODE_LLMS["generate_experiment_code"]
 
 
-class CreateExperimentalDesignSubgraphInputState(TypedDict):
+class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
-    consistency_feedback: str | None
+    consistency_feedback: str
 
 
 class CreateExperimentalDesignHiddenState(TypedDict): ...

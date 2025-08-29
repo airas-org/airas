@@ -37,9 +37,10 @@ class CreateCodeLLMMapping(BaseModel):
     ]
 
 
-class CreateCodeSubgraphInputState(TypedDict):
+class CreateCodeSubgraphInputState(TypedDict, total=False):
     github_repository_info: GitHubRepositoryInfo
     new_method: ResearchHypothesis
+    experiment_iteration: int
 
 
 class CreateCodeSubgraphHiddenState(TypedDict):
