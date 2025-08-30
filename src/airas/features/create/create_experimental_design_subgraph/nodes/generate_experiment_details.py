@@ -18,7 +18,7 @@ class LLMOutput(BaseModel):
 def generate_experiment_details(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
-    consistency_feedback: str | None = None,
+    consistency_feedback: list[str] | None = None,
 ) -> ResearchHypothesis:
     client = LLMFacadeClient(llm_name=llm_name)
     env = Environment()
@@ -28,10 +28,14 @@ def generate_experiment_details(
     method_text = new_method.method
     experiment_strategy = new_method.experimental_design.experiment_strategy
 
+    feedback_text = None
+    if consistency_feedback and len(consistency_feedback) > 0:
+        feedback_text = consistency_feedback[-1]
+
     data = {
         "new_method": method_text,
         "experiment_strategy": experiment_strategy,
-        "consistency_feedback": consistency_feedback,
+        "consistency_feedback": feedback_text,
     }
     messages = template.render(data)
     output, cost = client.structured_outputs(

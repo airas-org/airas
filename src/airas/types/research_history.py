@@ -43,9 +43,13 @@ class ResearchHistory(BaseModel):
         None,
         description="Are the experimental results internally consistent and can support scientific claims?",
     )
-    consistency_feedback: Optional[str] = Field(
+    consistency_feedback: Optional[list[str]] = Field(
         None,
-        description="Detailed feedback explaining the consistency evaluation and suggestions for improvement",
+        description="List of detailed feedback explaining the consistency evaluation and suggestions for improvement from all iterations",
+    )
+    consistency_score: Optional[list[int]] = Field(
+        None,
+        description="List of consistency scores (1-10) from all evaluation iterations",
     )
 
     paper_content: Optional[PaperContent] = Field(

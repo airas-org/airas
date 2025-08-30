@@ -44,7 +44,7 @@ class CreateExperimentalDesignLLMMapping(BaseModel):
 
 class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
-    consistency_feedback: str
+    consistency_feedback: list[str]
 
 
 class CreateExperimentalDesignHiddenState(TypedDict): ...

@@ -36,8 +36,10 @@ class EvaluateExperimentalConsistencyLLMMapping(BaseModel):
     ]
 
 
-class EvaluateExperimentalConsistencySubgraphInputState(TypedDict):
+class EvaluateExperimentalConsistencySubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
+    consistency_feedback: list[str]
+    consistency_score: list[int]
 
 
 class EvaluateExperimentalConsistencySubgraphHiddenState(TypedDict): ...
@@ -45,7 +47,8 @@ class EvaluateExperimentalConsistencySubgraphHiddenState(TypedDict): ...
 
 class EvaluateExperimentalConsistencySubgraphOutputState(TypedDict):
     is_experiment_consistent: bool
-    consistency_feedback: str
+    consistency_feedback: list[str]
+    consistency_score: list[int]
 
 
 class EvaluateExperimentalConsistencySubgraphState(
@@ -89,16 +92,19 @@ class EvaluateExperimentalConsistencySubgraph(BaseSubgraph):
     def _evaluate_experimental_consistency(
         self, state: EvaluateExperimentalConsistencySubgraphState
     ) -> dict[str, ResearchHypothesis]:
-        is_experiment_consistent, consistency_feedback = (
+        is_experiment_consistent, updated_feedback, updated_scores = (
             evaluate_experimental_consistency(
                 llm_name=self.llm_mapping.evaluate_experimental_consistency,
                 prompt_template=self.prompt_template,
                 new_method=state["new_method"],
+                existing_feedback=state.get("consistency_feedback"),
+                existing_scores=state.get("consistency_score"),
             )
         )
         return {
             "is_experiment_consistent": is_experiment_consistent,
-            "consistency_feedback": consistency_feedback,
+            "consistency_feedback": updated_feedback,
+            "consistency_score": updated_scores,
         }
 
     def build_graph(self) -> CompiledGraph:

@@ -101,7 +101,7 @@ create_method = CreateMethodSubgraphV2(
         "refine_idea_and_research_summary": "o3-2025-04-16",
         "search_arxiv_id_from_title": "gpt-5-mini-2025-08-07",  # Only openAI models are available.
     },
-    refine_iterations=1,
+    refine_iterations=5,
 )
 create_experimental_design = CreateExperimentalDesignSubgraph(
     llm_mapping={
@@ -296,9 +296,9 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "experiment_matsuzawa_20250829"
+    repository_name = "experiment_matsuzawa_20250830"
     research_topic_list = [
-        "Continuous Learningのメモリ効率に関して改善したい",
+        "離散拡散モデルの推論速度に関して改善したい",
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list

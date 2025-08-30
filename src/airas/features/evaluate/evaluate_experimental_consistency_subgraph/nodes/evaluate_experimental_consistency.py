@@ -15,14 +15,17 @@ logger = getLogger(__name__)
 class LLMOutput(BaseModel):
     is_experiment_consistent: bool
     consistency_feedback: str
+    consistency_score: int
 
 
 def evaluate_experimental_consistency(
     llm_name: LLM_MODEL,
     prompt_template: str,
     new_method: ResearchHypothesis,
+    existing_feedback: list[str] | None = None,
+    existing_scores: list[int] | None = None,
     client: LLMFacadeClient | None = None,
-) -> ResearchHypothesis:
+) -> tuple[bool, list[str], list[int]]:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
     env = Environment()
@@ -40,4 +43,18 @@ def evaluate_experimental_consistency(
             "No response from LLM in evaluate_experimental_consistency node."
         )
 
-    return (llm_output["is_experiment_consistent"], llm_output["consistency_feedback"])
+    if existing_feedback is None:
+        existing_feedback = []
+    if existing_scores is None:
+        existing_scores = []
+
+    consistency_score = llm_output["consistency_score"]
+    updated_scores = existing_scores + [consistency_score]
+
+    # NOTE: If score is high enough, append empty string to avoid side effectss
+    if consistency_score >= 7:
+        updated_feedback = existing_feedback + [""]
+    else:
+        updated_feedback = existing_feedback + [llm_output["consistency_feedback"]]
+
+    return (llm_output["is_experiment_consistent"], updated_feedback, updated_scores)
