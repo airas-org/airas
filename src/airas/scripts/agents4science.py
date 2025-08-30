@@ -241,8 +241,18 @@ def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG)
                     state = analysis.run(state)
                     break
 
+                latest_feedback = (
+                    state["consistency_feedback"][-1]
+                    if state.get("consistency_feedback")
+                    else ""
+                )
+                latest_score = (
+                    state["consistency_score"][-1]
+                    if state.get("consistency_score")
+                    else 0
+                )
                 print(
-                    f"Experimental consistency failed → redesign. Feedback: {state['consistency_feedback']}"
+                    f"Experimental consistency failed → redesign. Score: {latest_score}, Feedback: {latest_feedback}"
                 )
                 consistency_attempts += 1
 
