@@ -104,11 +104,12 @@ create_method = CreateMethodSubgraphV2(
     refine_iterations=5,
 )
 create_experimental_design = CreateExperimentalDesignSubgraph(
+    runtime_name="gpu-runner",
     llm_mapping={
         "generate_experiment_strategy": "o3-2025-04-16",
         "generate_experiment_specification": "o3-2025-04-16",
         "generate_experiment_code": "o3-2025-04-16",
-    }
+    },
 )
 coder = CreateCodeSubgraph(
     llm_mapping={
@@ -306,7 +307,7 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250831"
+    repository_name = "tanaka-20250831-v3"
     research_topic_list = [
         # "small language modelの学習高速化のための新しいアーキテクチャ",
         # "small language modelの推論高速化のための新しいアーキテクチャ",

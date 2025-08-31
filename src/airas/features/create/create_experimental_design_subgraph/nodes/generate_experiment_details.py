@@ -19,7 +19,7 @@ class LLMOutput(BaseModel):
 def generate_experiment_details(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
-    runtime_prompt_name: RuntimeKeyType,
+    runtime_name: RuntimeKeyType,
     consistency_feedback: list[str] | None = None,
 ) -> ResearchHypothesis:
     client = LLMFacadeClient(llm_name=llm_name)
@@ -36,7 +36,7 @@ def generate_experiment_details(
 
     data = {
         "new_method": method_text,
-        "runtime_prompt": runtime_prompt_dict[runtime_prompt_name],
+        "runtime_prompt": runtime_prompt_dict[runtime_name],
         "experiment_strategy": experiment_strategy,
         "consistency_feedback": feedback_text,
     }

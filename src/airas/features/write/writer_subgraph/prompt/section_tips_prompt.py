@@ -8,10 +8,10 @@ section_tips_prompt = {
     "Abstract": """\
 - Expected length: about 1000 characters
 - TL;DR of the paper covering:
-  - What are we trying to do and why is it relevant?
-  - Why is this hard?
-  - How do we solve it (i.e. our contribution!)
-  - How do we verify that we solved it (e.g. Experiments and results)
+    - What are we trying to do and why is it relevant?
+    - Why is this hard?
+    - How do we solve it (i.e. our contribution!)
+    - How do we verify that we solved it (e.g. Experiments and results)
 - Avoid using itemize, subheadings, or displayed equations in the abstract; keep math in plain text and list contributions inline
 - This should be one continuous paragraph with no breaks between the lines
 - Make sure the abstract reads smoothly and is well-motivated""",
@@ -19,10 +19,10 @@ section_tips_prompt = {
 - Expected length: about 4000 characters (~1–1.5 pages)
 - Longer version of the Abstract, covering the entire paper scope
 - Structure should address:
-  - What are we trying to do and why is it relevant?
-  - Why is this hard?
-  - How do we solve it (i.e. our contribution!)
-  - How do we verify that we solved it (e.g. Experiments and results)
+    - What are we trying to do and why is it relevant?
+    - Why is this hard?
+    - How do we solve it (i.e. our contribution!)
+    - How do we verify that we solved it (e.g. Experiments and results)
 - Include citations to establish context and motivate the problem
 - New trend: specifically list your contributions as bullet points
 - Extra space? Include future work discussion!""",
@@ -40,18 +40,21 @@ section_tips_prompt = {
 - Usually includes a subsection, Problem Setting, which formally introduces the problem setting and notation (Formalism) for our method
 - Highlights any specific assumptions that are made that are unusual
 - Include citations to foundational work and key concepts
-- Note: If our paper introduces a novel problem setting as part of its contributions, it's best to have a separate Section""",
+- Note: If our paper introduces a novel problem setting as part of its contributions, it's best to have a separate Section
+- If you divide it into sections, please limit them to a maximum of three.""",
     "Method": """\
 - Expected length: about 4000 characters (~1–1.5 pages)
 - What we do. Why we do it. All described using the general Formalism introduced in the Problem Setting and building on top of the concepts/foundations introduced in Background
 - Include citations only when building upon or adapting existing methods or techniques
-- Provide clear technical descriptions with proper mathematical notation""",
+- Provide clear technical descriptions with proper mathematical notation
+- If you divide it into sections, please limit them to a maximum of three.""",
     "Experimental Setup": """\
 - Expected length: about 4000 characters (~1–1.5 pages)
 - How do we test that our stuff works? Introduces a specific instantiation of the Problem Setting and specific implementation details of our Method for this Problem Setting
 - Do not imagine unknown hardware details
 - Includes a description of the dataset, evaluation metrics, important hyperparameters, and implementation details
-- Include citations for datasets, established evaluation metrics, and baseline methods used for comparison""",
+- Include citations for datasets, established evaluation metrics, and baseline methods used for comparison
+- If you divide it into sections, please limit them to a maximum of three.""",
     "Results": """\
 - Expected length: about 4000 characters (~1–1.5 pages)
 - Shows the results of running Method on our problem described in Experimental Setup
@@ -61,7 +64,8 @@ section_tips_prompt = {
 - If results exist: includes ablation studies to show that specific parts of the method are relevant
 - Discusses limitations of the method
 - Make sure to include all the results from the experiments, and include all relevant figures
-- Include citations only when directly comparing to baseline methods or referencing related experimental results""",
+- Include citations only when directly comparing to baseline methods or referencing related experimental results
+- Please organize and summarize the results by dividing them into sections for each experiment.""",
     "Conclusion": """\
 - Expected length: about 2000 characters (~0.5 pages)
 - Brief recap of the entire paper

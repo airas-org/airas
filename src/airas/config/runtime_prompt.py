@@ -1,10 +1,10 @@
 from typing import Literal
 
-RuntimeKeyType = Literal["github_actions_gpu", "github_actions_cpu"]
+RuntimeKeyType = Literal["gpu-runner", "default"]
 
 runtime_prompt_dict = {
-    "github_actions_gpu": """\
+    "gpu-runner": """\
 NVIDIA Tesla T4 · 16 GB VRAM""",
-    "github_actions_cpu": """\
+    "default": """\
 cpu 500 MB""",
 }

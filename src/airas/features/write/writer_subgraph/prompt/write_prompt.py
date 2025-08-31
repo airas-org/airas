@@ -19,7 +19,6 @@ The paper should contain the following sections with specific requirements:
 ## Content Fidelity Requirements
 - Use ONLY the information provided in the context above
 - DO NOT add any assumptions, invented data, or details that are not explicitly mentioned in the context
-- Ensure that ALL relevant details from the context are included
 - You are free to organize and structure the content in a natural and logical way, rather than directly following the order or format of the context
 - You must include all relevant details of methods, experiments, and results—including mathematical equations, pseudocode (if applicable), experimental setups, configurations, numerical results, and figures/tables
 
@@ -28,10 +27,10 @@ The paper should contain the following sections with specific requirements:
 - Citation format: [citation_key] (e.g., [ashish_2017_attention], [b_2020_gpt])
 - Extract citation keys from the @article{key, ...} format in the references
 - Cite relevant papers when:
-  - Discussing related work and comparing approaches
-  - Introducing methods or techniques from other papers
-  - Presenting comparative results or baselines
-  - Supporting claims with prior research
+    - Discussing related work and comparing approaches
+    - Introducing methods or techniques from other papers
+    - Presenting comparative results or baselines
+    - Supporting claims with prior research
 - Use multiple citations where appropriate (e.g., [ashish_2017_attention, b_2020_gpt])
 - Ensure citations are contextually relevant and enhance the academic rigor of the paper
 
@@ -46,6 +45,7 @@ The paper should contain the following sections with specific requirements:
 - Each figure may be referred to multiple times in the text, but the **actual image (filename)** must be embedded **exactly once**, in the appropriate location with a caption that explicitly includes its filename (e.g., "Figure 1: ... (filename: figure1.pdf)")
 - If image filenames (e.g., figure1.pdf) are listed in the Figures: section of the note, refer to them by filename only and do not describe their content unless explicitly provided in the note
 - Do not invent or assume the existence of any figures or visual content. If no figure is provided, you must not fabricate or imply the existence of one
+- In the figure captions, please specify whether a higher value or a lower value indicates better performance.
 
 ## Figure Caption and Reference Standards
 - Include a **caption with a descriptive title** (not just the filename)
