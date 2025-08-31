@@ -1,4 +1,4 @@
-check_experimental_results_prompt = """
+evaluate_paper_results_prompt = """
 # Instructions
 You are an automated fact checker. Your task is to determine two facts based on the provided paper content:
 1.  Was an experiment actually executed and results reported?

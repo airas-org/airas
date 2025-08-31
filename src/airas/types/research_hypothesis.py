@@ -16,8 +16,6 @@ class ExperimentalResults(BaseModel):
     error: Optional[str] = Field(None, description="")
     image_file_name_list: Optional[list[str]] = Field(None, description="")
     notes: Optional[str] = Field(None, description="")  # 外部で持たなくていい気がする
-    was_experiment_executed: Optional[bool] = Field(None, description="")
-    is_better_than_baseline: Optional[bool] = Field(None, description="")
 
 
 class ExperimentalAnalysis(BaseModel):

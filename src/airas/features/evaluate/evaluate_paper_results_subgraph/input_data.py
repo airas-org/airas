@@ -1,7 +1,7 @@
 from airas.types.paper import PaperContent
 from airas.types.research_hypothesis import ExperimentalDesign, ResearchHypothesis
 
-check_experimental_results_subgraph_input_data = {
+evaluate_paper_results_subgraph_input_data = {
     "paper_content": PaperContent(
         title="Test Paper Title",
         abstract="This is a test abstract. The experiment was executed and showed results better than baseline.",

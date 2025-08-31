@@ -32,17 +32,33 @@ class ResearchHistory(BaseModel):
     )
     push_completion: Optional[bool] = Field(None, description="Push completion status")
     executed_flag: Optional[bool] = Field(None, description="Execution completion flag")
+
     is_experiment_successful: Optional[bool] = Field(
         None, description="Execution success status"
     )
     experiment_iteration: Optional[int] = Field(
         None, description="Current experiment iteration"
     )
+    is_experiment_consistent: Optional[bool] = Field(
+        None,
+        description="Are the experimental results internally consistent and can support scientific claims?",
+    )
+    consistency_feedback: Optional[list[str]] = Field(
+        None,
+        description="List of detailed feedback explaining the consistency evaluation and suggestions for improvement from all iterations",
+    )
+    consistency_score: Optional[list[int]] = Field(
+        None,
+        description="List of consistency scores (1-10) from all evaluation iterations",
+    )
 
     paper_content: Optional[PaperContent] = Field(
         None, description="Generated paper content"
     )
     references_bib: Optional[str] = Field(None, description="Bibliography references")
+
+    was_experiment_executed: Optional[bool] = Field(None, description="")
+    is_better_than_baseline: Optional[bool] = Field(None, description="")
 
     latex_text: Optional[str] = Field(None, description="LaTeX formatted text")
     full_html: Optional[str] = Field(None, description="Full HTML content")

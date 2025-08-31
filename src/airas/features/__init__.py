@@ -16,11 +16,20 @@ from .create.fix_code_subgraph.fix_code_subgraph import FixCodeSubgraph
 from .create.fix_code_with_devin_subgraph.fix_code_with_devin_subgraph import (
     FixCodeWithDevinSubgraph,
 )
+from .evaluate.evaluate_experimental_consistency_subgraph.evaluate_experimental_consistency_subgraph import (
+    EvaluateExperimentalConsistencySubgraph,
+)
+from .evaluate.evaluate_paper_results_subgraph.evaluate_paper_results_subgraph import (
+    EvaluatePaperResultsSubgraph,
+)
+from .evaluate.judge_execution_subgraph.judge_execution_subgraph import (
+    JudgeExecutionSubgraph,
+)
+from .evaluate.review_paper_subgraph.review_paper_subgraph import (
+    ReviewPaperSubgraph,
+)
 from .execution.github_actions_executor_subgraph.github_actions_executor_subgraph import (
     GitHubActionsExecutorSubgraph,
-)
-from .execution.judge_experiment_execution_subgraph.judge_experiment_execution_subgraph import (
-    JudgeExperimentExecutionSubgraph,
 )
 from .github.create_branch_subgraph import CreateBranchSubgraph
 from .github.github_download_subgraph import GithubDownloadSubgraph
@@ -50,12 +59,6 @@ from .retrieve.retrieve_paper_content_subgraph.retrieve_paper_content_subgraph i
 from .retrieve.summarize_paper_subgraph.summarize_paper_subgraph import (
     SummarizePaperSubgraph,
 )
-from .review.check_experimental_results_subgraph.check_experimental_results_subgraph import (
-    CheckExperimentalResultsSubgraph,
-)
-from .review.review_paper_subgraph.review_paper_subgraph import (
-    ReviewPaperSubgraph,
-)
 from .write.create_bibfile_subgraph.create_bibfile_subgraph import (
     CreateBibfileSubgraph,
 )
@@ -63,31 +66,32 @@ from .write.writer_subgraph.writer_subgraph import WriterSubgraph
 
 __all__ = [
     "AnalyticSubgraph",
+    "CreateBibfileSubgraph",
+    "CreateBranchSubgraph",
+    "CreateCodeSubgraph",
+    "CreateCodeWithDevinSubgraph",
     "CreateExperimentalDesignSubgraph",
     "CreateMethodSubgraph",
     "CreateMethodSubgraphV2",
-    "CreateCodeSubgraph",
-    "CheckExperimentalResultsSubgraph",
-    "CreateCodeWithDevinSubgraph",
+    "EvaluateExperimentalConsistencySubgraph",
+    "EvaluatePaperResultsSubgraph",
+    "ExtractReferenceTitlesSubgraph",
     "FixCodeSubgraph",
     "FixCodeWithDevinSubgraph",
-    "GitHubActionsExecutorSubgraph",
-    "PrepareRepositorySubgraph",
-    "JudgeExperimentExecutionSubgraph",
     "GenerateQueriesSubgraph",
     "GetPaperTitlesFromDBSubgraph",
     "GetPaperTitlesFromWebSubgraph",
+    "GitHubActionsExecutorSubgraph",
     "GithubDownloadSubgraph",
     "GithubUploadSubgraph",
     "HtmlSubgraph",
+    "JudgeExecutionSubgraph",
     "LatexSubgraph",
+    "PrepareRepositorySubgraph",
     "ReadmeSubgraph",
     "RetrieveCodeSubgraph",
     "RetrievePaperContentSubgraph",
-    "SummarizePaperSubgraph",
-    "CreateBibfileSubgraph",
-    "WriterSubgraph",
-    "CreateBranchSubgraph",
-    "ExtractReferenceTitlesSubgraph",
     "ReviewPaperSubgraph",
+    "SummarizePaperSubgraph",
+    "WriterSubgraph",
 ]
