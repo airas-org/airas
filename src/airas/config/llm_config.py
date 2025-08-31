@@ -25,7 +25,7 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "generate_code_for_scripts": BASE_MODEL,
     # CreateExperimentalDesignSubgraph
     "generate_experiment_strategy": BASE_MODEL,
-    "generate_experiment_specification": BASE_MODEL,
+    "generate_experiment_details": BASE_MODEL,
     "generate_experiment_code": BASE_MODEL,
     # CreateMethodSubgraph
     "idea_generator": BASE_MODEL,
@@ -36,8 +36,6 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "evaluate_novelty_and_significance": BASE_MODEL,
     "refine_idea_and_research_summary": BASE_MODEL,
     "search_arxiv_id_from_title": BASE_MODEL,
-    # JudgeExperimentExecutionSubgraph
-    "should_fix_code": BASE_MODEL,
     # FixCodeSubgraph
     "fix_code": BASE_MODEL,
 
@@ -52,9 +50,13 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "write_paper": BASE_MODEL,
     "refine_paper": BASE_MODEL,
 
-    # --- features/review ---
-    # CheckExperimentalResultsSubgraph
-    "check_experimental_results": BASE_MODEL,
+    # --- features/evaluate ---
+    # JudgeExecutionSubgraph
+    "judge_execution": BASE_MODEL,
+    # EvaluateExperimentalConsistencySubgraph
+    "evaluate_experimental_consistency": BASE_MODEL,
+    # EvaluatePaperResultsSubgraph
+    "evaluate_paper_results": BASE_MODEL,
     # ReviewPaperSubgraph
     "review_paper": BASE_MODEL,
 

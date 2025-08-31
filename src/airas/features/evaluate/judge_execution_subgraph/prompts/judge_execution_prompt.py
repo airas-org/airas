@@ -1,4 +1,4 @@
-llm_decide_prompt = """\
+judge_execution_prompt = """\
 # Instructions:
 You determine whether the Python script has succeeded or failed based on the given information.
 Output True if the script SUCCEEDED, False if it FAILED.

@@ -2,13 +2,15 @@ import logging
 
 from tqdm import tqdm
 
+from airas.config.workflow_config import DEFAULT_WORKFLOW_CONFIG
 from airas.features import (
     AnalyticSubgraph,
-    CheckExperimentalResultsSubgraph,
     CreateBibfileSubgraph,
     CreateCodeSubgraph,
     CreateExperimentalDesignSubgraph,
     CreateMethodSubgraphV2,
+    EvaluateExperimentalConsistencySubgraph,
+    EvaluatePaperResultsSubgraph,
     ExtractReferenceTitlesSubgraph,
     FixCodeSubgraph,
     GenerateQueriesSubgraph,
@@ -16,7 +18,7 @@ from airas.features import (
     GitHubActionsExecutorSubgraph,
     GithubUploadSubgraph,
     HtmlSubgraph,
-    JudgeExperimentExecutionSubgraph,
+    JudgeExecutionSubgraph,
     LatexSubgraph,
     PrepareRepositorySubgraph,
     ReadmeSubgraph,
@@ -94,12 +96,12 @@ retrieve_reference_paper_content = RetrievePaperContentSubgraph(
 
 create_method = CreateMethodSubgraphV2(
     llm_mapping={
-        "generate_ide_and_research_summary": "gpt-5-2025-08-07",
-        "evaluate_novelty_and_significance": "gpt-5-2025-08-07",
-        "refine_idea_and_research_summary": "gpt-5-2025-08-07",
+        "generate_idea_and_research_summary": "o3-2025-04-16",
+        "evaluate_novelty_and_significance": "o3-2025-04-16",
+        "refine_idea_and_research_summary": "o3-2025-04-16",
         "search_arxiv_id_from_title": "gpt-5-mini-2025-08-07",  # Only openAI models are available.
     },
-    refine_iterations=1,
+    refine_iterations=5,
 )
 create_experimental_design = CreateExperimentalDesignSubgraph(
     llm_mapping={
@@ -114,11 +116,20 @@ coder = CreateCodeSubgraph(
     }
 )
 executor = GitHubActionsExecutorSubgraph(gpu_enabled=True)
-judge_execution = JudgeExperimentExecutionSubgraph()
+judge_execution = JudgeExecutionSubgraph(
+    llm_mapping={
+        "judge_execution": "gpt-5-2025-08-07",
+    }
+)
 fixer = FixCodeSubgraph(
     llm_mapping={
         "should_fix_code": "gpt-5-2025-08-07",
         "fix_code": "gpt-5-2025-08-07",
+    }
+)
+evaluate_consistency = EvaluateExperimentalConsistencySubgraph(
+    llm_mapping={
+        "evaluate_experimental_consistency": "gpt-5-2025-08-07",
     }
 )
 analysis = AnalyticSubgraph(
@@ -140,7 +151,11 @@ writer = WriterSubgraph(
     },
     max_refinement_count=2,
 )
-checker_results = CheckExperimentalResultsSubgraph()
+evaluate_paper = EvaluatePaperResultsSubgraph(
+    llm_mapping={
+        "evaluate_paper_results": "gpt-5-2025-08-07",
+    }
+)
 review = ReviewPaperSubgraph(
     llm_mapping={
         "review_paper": "gpt-5-2025-08-07",
@@ -176,12 +191,13 @@ subgraph_list = [
     executor,
     judge_execution,
     fixer,
+    evaluate_consistency,
     analysis,
     reference_extractor,
     retrieve_reference_paper_content,
     create_bibfile,
     writer,
-    checker_results,
+    evaluate_paper,
     review,
     latex,
     html,
@@ -189,30 +205,74 @@ subgraph_list = [
 ]
 
 
-def run_subgraphs(subgraph_list, state, max_fix_attempts=5):
+def _run_fix_loop(state, workflow_config):
+    fix_attempts = 0
+    while fix_attempts < workflow_config.max_fix_attempts:
+        state = executor.run(state)
+        state = judge_execution.run(state)
+
+        if state.get("is_experiment_successful"):
+            return state
+
+        state = fixer.run(state)
+        fix_attempts += 1
+    return state
+
+
+def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG):
     for subgraph in tqdm(subgraph_list, desc="Executing Research Workflow"):
         subgraph_name = subgraph.__class__.__name__
         print(f"--- Running Subgraph: {subgraph_name} ---")
 
-        if isinstance(subgraph, (FixCodeSubgraph, AnalyticSubgraph)):
-            continue
+        if isinstance(subgraph, CreateExperimentalDesignSubgraph):
+            consistency_attempts = 0
+            while consistency_attempts < workflow_config.max_consistency_attempts:
+                state = create_experimental_design.run(state)
+                state = coder.run(state)
 
-        elif isinstance(subgraph, JudgeExperimentExecutionSubgraph):
-            fix_attempts = 0
-            while fix_attempts < max_fix_attempts:
-                state = judge_execution.run(state)
-                if state.get("is_experiment_successful") is True:
+                state = _run_fix_loop(state, workflow_config)
+                if not state.get("is_experiment_successful"):
+                    print("Fix attempts exhausted → redesign")
+                    consistency_attempts += 1
+                    continue
+
+                state = evaluate_consistency.run(state)
+                if state.get("is_experiment_consistent"):
                     state = analysis.run(state)
                     break
-                else:
-                    state = fixer.run(state)
-                    state = executor.run(state)
-                    fix_attempts += 1
-            else:
-                print(
-                    f"!!! Max fix attempts ({max_fix_attempts}) reached for {state['research_topic']}. Moving on. !!!"
+
+                latest_feedback = (
+                    state["consistency_feedback"][-1]
+                    if state.get("consistency_feedback")
+                    else ""
                 )
+                latest_score = (
+                    state["consistency_score"][-1]
+                    if state.get("consistency_score")
+                    else 0
+                )
+                print(
+                    f"Experimental consistency failed → redesign. Score: {latest_score}, Feedback: {latest_feedback}"
+                )
+                consistency_attempts += 1
+
+            if consistency_attempts >= workflow_config.max_consistency_attempts:
+                print("Max consistency attempts reached, fallback to analysis.")
                 state = analysis.run(state)
+
+        elif isinstance(
+            subgraph,
+            (
+                JudgeExecutionSubgraph,
+                FixCodeSubgraph,
+                AnalyticSubgraph,
+                CreateExperimentalDesignSubgraph,
+                CreateCodeSubgraph,
+                GitHubActionsExecutorSubgraph,
+            ),
+        ):
+            continue
+
         else:
             state = subgraph.run(state)
 
@@ -246,9 +306,9 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "experiment_matsuzawa_20250826_6"
+    repository_name = "experiment_matsuzawa_20250830"
     research_topic_list = [
-        "Architecture of a new diffusion model for memory efficiency",
+        "離散拡散モデルの推論速度に関して改善したい",
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list

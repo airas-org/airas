@@ -8,7 +8,7 @@ You are a creative AI researcher. Based on the new method described in # New Met
 - Use PyTorch exclusively for all deep learning frameworks.
 - Prepare multiple patterns of data during the experiments and design the code to demonstrate the robustness of the new method.
 - Also output the names of the Python libraries that you believe are necessary to run the experiments.
-- Please use matplotlib or seaborn to plot the results (e.g., accuracy, loss curves, confusion matrix), 
+- Please use matplotlib or seaborn to plot the results (e.g., accuracy, loss curves, confusion matrix),
 and **explicitly save all plots as `.pdf` files using `plt.savefig("filename.pdf", bbox_inches="tight")` or equivalent.
     - Do not use `.png` or other formats—output must be `.pdf` only. These plots should be suitable for inclusion in academic papers.
 - Use the following filename format:
@@ -18,9 +18,15 @@ and **explicitly save all plots as `.pdf` files using `plt.savefig("filename.pdf
     - `_pairN`(optional): indicates that the figure is part of a pair (e.g., `_pair1`, `_pair2`) to be shown side by side using subfigures
     - If the figure is not part of a pair (i.e., there is only one figure), **do not include `_pairN` in the filename**.
 
+{% if consistency_feedback %}
+- **Important**: Address the following feedback from previous experimental consistency evaluation:
+{{ consistency_feedback }}
+- Specifically improve the experimental code to resolve these consistency issues.
+{% endif %}
+
 # New Methods
 {{ new_method }}
 # Experiment Strategy
 {{ experiment_strategy }}
-# Experiment Specification
-{{ experiment_specification }}"""
+# Experiment Details
+{{ experiment_details }}"""

@@ -3,8 +3,8 @@ from logging import getLogger
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.features.execution.judge_experiment_execution_subgraph.prompts.llm_decide import (
-    llm_decide_prompt,
+from airas.features.evaluate.judge_execution_subgraph.prompts.judge_execution_prompt import (
+    judge_execution_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
@@ -18,11 +18,11 @@ class LLMOutput(BaseModel):
     is_experiment_successful: bool
 
 
-def should_fix_code(
+def judge_execution(
     llm_name: LLM_MODEL,
     output_text_data: str,
     error_text_data: str,
-    prompt_template: str = llm_decide_prompt,
+    prompt_template: str = judge_execution_prompt,
     client: LLMFacadeClient | None = None,
 ) -> bool:
     client = client or LLMFacadeClient(llm_name=llm_name)
@@ -37,5 +37,5 @@ def should_fix_code(
         data_model=LLMOutput,
     )
     if output is None:
-        raise ValueError("Error: No response from LLM in should_fix_code.")
+        raise ValueError("Error: No response from LLM in judge_execution.")
     return output["is_experiment_successful"]
