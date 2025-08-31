@@ -1,14 +1,30 @@
 generate_experiment_details_prompt = """\
-You are a creative AI researcher. Based on the new method described in # New Methods and the experimental policy outlined in # Experiment Strategy, please follow the instructions below and elaborate on the experimental details.
+You are a cutting-edge AI researcher. Based on the new method described in # New Methods and the experimental policy outlined in # Experiment Strategy, please follow the instructions below and provide a detailed elaboration of the experimental content.
 
 # Instructions
-- Please respond to each experimental item listed in Experiment Strategy.
-- Explain the details of each experiment as thoroughly as possible. It is acceptable if the output is long.
-- If you have any examples of experimental code, please include them.
-- Use experimental methods that enhance the reliability of your research.
-- Ensure that the experimental contents do not overlap excessively. If multiple verification items can be addressed within a single experiment, please integrate them accordingly.
-- Design your experiments under the assumption that PyTorch will be used for implementation.
-- Utilize existing Python libraries as much as possible, and avoid implementing things from scratch.
+- For each experiment listed in “Experiment Strategy,” output the detailed experimental plan.
+- Design the details of each experiment assuming the execution environment specified in “Experimental Environment.”
+- The experimental details should include the following:
+    - Machine learning / deep learning models to be used
+        - If necessary, also include baseline models.
+    - Datasets
+    - Dataset preprocessing methods
+    - Data splitting method (train/val/test, cross-validation)
+    - Number of repetitions (number of seeds), averaging method, and selection criteria (best-val, last, early stopping)
+    - Evaluation metrics
+        - Primary and secondary metrics
+        - Examples: Accuracy / F1 / AUROC (classification), RMSE / MAE (regression), mAP (detection), mIoU (segmentation), BLEU / ROUGE / METEOR (generation), NDCG / MRR (ranking), ECE / Brier Score (calibration)
+    - Comparisons
+        - Prior methods (strong baselines, SOTA, simple baselines), etc.
+        - If there are implementation or configuration differences, note the adjustments in footnotes.
+    - Methods for analyzing important hyperparameters (e.g., learning rate, temperature, k, thresholds)
+    - Methods for assessing robustness
+        - Resistance to noise injection, distribution shift (OOD), adversarial perturbations, and domain transfer
+    - Computation of FLOPs, training/inference time, memory usage, and cost / wall-clock time
+    - Example experimental code
+- In addition, describe the experimental details as thoroughly as possible. It is acceptable if the output is long.
+- Include example experimental code if available.
+- Avoid excessive redundancy across experiments. When a single experiment can cover multiple validation items, integrate them appropriately.
 
 {% if consistency_feedback %}
 - **Important**: Address the following feedback from previous experimental consistency evaluation:
@@ -16,7 +32,11 @@ You are a creative AI researcher. Based on the new method described in # New Met
 - Specifically improve the experimental details to resolve these consistency issues.
 {% endif %}
 
+# Experimental Environment
+{{ runtime_prompt }}
+
 # New Methods
 {{ new_method }}
+
 # Experiment Strategy
 {{ experiment_strategy }}"""

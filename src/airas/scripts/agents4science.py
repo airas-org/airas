@@ -129,7 +129,7 @@ fixer = FixCodeSubgraph(
 )
 evaluate_consistency = EvaluateExperimentalConsistencySubgraph(
     llm_mapping={
-        "evaluate_experimental_consistency": "gpt-5-2025-08-07",
+        "evaluate_experimental_consistency": "o3-2025-04-16",
     }
 )
 analysis = AnalyticSubgraph(
@@ -306,15 +306,15 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250828-diffusion-model"
+    repository_name = "tanaka-20250831"
     research_topic_list = [
-        "small language modelの学習高速化のための新しいアーキテクチャ",
-        "small language modelの推論高速化のための新しいアーキテクチャ",
-        "small language modelのメモリを抑えた学習方法",
-        "small language modelの学習でメモリを抑えられるアーキテクチャ",
-        "small language modelの推論でメモリを抑えられるアーキテクチャ",
-        "diffusion modelの学習高速化のための新しいアーキテクチャ",
-        "diffusion modelの推論高速化のための新しいアーキテクチャ",
+        # "small language modelの学習高速化のための新しいアーキテクチャ",
+        # "small language modelの推論高速化のための新しいアーキテクチャ",
+        # "small language modelのメモリを抑えた学習方法",
+        # "small language modelの学習でメモリを抑えられるアーキテクチャ",
+        # "small language modelの推論でメモリを抑えられるアーキテクチャ",
+        # "diffusion modelの学習高速化のための新しいアーキテクチャ",
+        # "diffusion modelの推論高速化のための新しいアーキテクチャ",
         "diffusion modelのメモリを抑えた学習方法",
         "diffusion modelの学習でメモリを抑えられるアーキテクチャ",
         "diffusion modelの推論でメモリを抑えられるアーキテクチャ",

@@ -1,26 +1,31 @@
 generate_experiment_code_prompt = """\
-You are a creative AI researcher. Based on the new method described in # New Methods, the experimental policy outlined in # Experiment Strategy, and the detailed experimental specifications provided in # Experiment Specification, please follow the instructions below and provide the detailed code for conducting the experiments.
+You are a cutting-edge AI researcher. Based on the new method described in # New Methods, the experimental policy outlined in # Experiment Strategy, and the detailed experimental specifications provided in # Experiment Specification, please present detailed code for conducting the experiments according to the instructions below.
 
 # Instructions
-- Output detailed experiment code for each experiment.
-- Since the experiment results will be checked via standard output, use print statements to ensure the experimental content and results can be clearly understood from the output.
-- Add a test function to verify that the code runs correctly. The test should complete quickly, as it is only intended to check functionality.
-- Use PyTorch exclusively for all deep learning frameworks.
-- Prepare multiple patterns of data during the experiments and design the code to demonstrate the robustness of the new method.
-- Also output the names of the Python libraries that you believe are necessary to run the experiments.
-<<<<<<< HEAD
-- Please use matplotlib or seaborn to plot the results (e.g., accuracy, loss curves, confusion matrix),and **explicitly save all plots as `.pdf` files using `plt.savefig("filename.pdf", bbox_inches="tight")` or equivalent.
-=======
-- Please use matplotlib or seaborn to plot the results (e.g., accuracy, loss curves, confusion matrix),
-and **explicitly save all plots as `.pdf` files using `plt.savefig("filename.pdf", bbox_inches="tight")` or equivalent.
->>>>>>> develop
-    - Do not use `.png` or other formats—output must be `.pdf` only. These plots should be suitable for inclusion in academic papers.
-- Use the following filename format:
-    <figure_topic>[_<condition>][_pairN].pdf
-    - `<figure_topic>`: the main subject of the figure (e.g., `training_loss`, `accuracy`, `inference_latency`)
-    - `_<condition>`(optional): a specific model, setting, or comparison (e.g., `amict`, `baseline`, `tokens`, `multimodal_vs_text`)
-    - `_pairN`(optional): indicates that the figure is part of a pair (e.g., `_pair1`, `_pair2`) to be shown side by side using subfigures
-    - If the figure is not part of a pair (i.e., there is only one figure), **do not include `_pairN` in the filename**.
+- Output Python code to conduct each experiment based on the detailed information provided in "Experiment Specification".
+- At the beginning, output the names of the Python libraries that you believe are necessary to run the experiments.
+- Use PyTorch exclusively as the deep learning framework.
+- Make full use of existing Python libraries where possible and avoid implementing from scratch.
+- The implementation must ensure that all experiment executions include the following in the standard output:
+    - Experiment description
+        - Before printing experimental results, the standard output must include a detailed description of the experiment.
+    - Experimental numerical data
+        - All experimental data obtained in the experiments must be output to the standard output.
+    - Names of figures summarizing the numerical data
+- Regarding figure outputs:
+    - Experimental results must be presented in clear and interpretable figures.
+    - Use matplotlib or seaborn to output the results (e.g., accuracy, loss curves, confusion matrix).
+    - Numeric values must be annotated on the axes of the graphs.
+    - For line graphs, annotate values on the plot; for bar graphs, annotate values above each bar.
+    - Include legends in the figures.
+    - All figures must be saved in .pdf format (e.g., using plt.savefig("filename.pdf", bbox_inches="tight")).
+        - Do not use .png or any other formats—only .pdf is acceptable for publication quality.
+    - File names must follow the format below:
+        - <figure_topic>[_<condition>][_pairN].pdf
+            - <figure_topic>: The main subject of the figure (e.g., training_loss, accuracy, inference_latency)
+            - _<condition> (optional): Indicates model, setting, or comparison condition (e.g., amict, baseline, tokens, multimodal_vs_text)
+            - _pairN (optional): Used when presenting figures in pairs (e.g., _pair1, _pair2)
+            - For standalone figures, do not include _pairN.
 
 {% if consistency_feedback %}
 - **Important**: Address the following feedback from previous experimental consistency evaluation:
@@ -28,9 +33,14 @@ and **explicitly save all plots as `.pdf` files using `plt.savefig("filename.pdf
 - Specifically improve the experimental code to resolve these consistency issues.
 {% endif %}
 
+# Experimental Environment
+{{ runtime_prompt }}
+
 # New Methods
 {{ new_method }}
+
 # Experiment Strategy
 {{ experiment_strategy }}
-# Experiment Details
+
+# Experiment Specification
 {{ experiment_details }}"""
