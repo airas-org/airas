@@ -38,9 +38,10 @@ Preparing. Please wait a moment.
 
 ## Roadmap
 
-- [ ] Complete automation of machine learning research with code-based experimentation
-- [ ] Autonomous research in robotics
-- [ ] Autonomous research in various fields
+- [x] Complete automation of machine learning research with code-based experimentation
+- [ ] Autonomous research in Research in simulated robotic environments
+- [ ] Autonomous research in Real-world robotics research.
+- [ ] Laboratory Automation and autonomous research in various fields
 
 ## Contact
 
