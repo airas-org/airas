@@ -78,13 +78,13 @@ class CreateMethodSubgraphV2InputState(TypedDict):
 
 class CreateMethodSubgraphV2HiddenState(TypedDict):
     new_idea_info: ResearchIdea
-    idea_info_history: list[ResearchIdea]
     related_research_study_list: list[ResearchStudy]
     refine_iterations: int
 
 
 class CreateMethodSubgraphV2OutputState(TypedDict):
     new_method: ResearchHypothesis
+    idea_info_history: list[ResearchIdea]
 
 
 class CreateMethodSubgraphV2State(

@@ -59,7 +59,7 @@ AVAILABLE_MODELS = [
 
 generate_queries = GenerateQueriesSubgraph(
     llm_mapping={
-        "generate_queries": "o3-2025-04-16",
+        "generate_queries": "o4-mini-2025-04-16",
     },
     n_queries=5,
 )
@@ -96,7 +96,7 @@ retrieve_reference_paper_content = RetrievePaperContentSubgraph(
 
 create_method = CreateMethodSubgraphV2(
     llm_mapping={
-        "generate_idea_and_research_summary": "o3-2025-04-16",
+        "generate_ide_and_research_summary": "o3-2025-04-16",
         "evaluate_novelty_and_significance": "o3-2025-04-16",
         "refine_idea_and_research_summary": "o3-2025-04-16",
         "search_arxiv_id_from_title": "gpt-5-mini-2025-08-07",  # Only openAI models are available.
@@ -104,16 +104,18 @@ create_method = CreateMethodSubgraphV2(
     refine_iterations=5,
 )
 create_experimental_design = CreateExperimentalDesignSubgraph(
+    runtime_name="gpu-runner",
     llm_mapping={
-        "generate_experiment_strategy": "gpt-5-2025-08-07",
-        "generate_experiment_specification": "gpt-5-2025-08-07",
-        "generate_experiment_code": "gpt-5-2025-08-07",
-    }
+        "generate_experiment_strategy": "o3-2025-04-16",
+        "generate_experiment_specification": "o3-2025-04-16",
+        "generate_experiment_code": "o3-2025-04-16",
+    },
 )
 coder = CreateCodeSubgraph(
+    runtime_name="gpu-runner",
     llm_mapping={
-        "generate_code_for_scripts": "gpt-5-2025-08-07",
-    }
+        "generate_code_for_scripts": "o3-2025-04-16",
+    },
 )
 executor = GitHubActionsExecutorSubgraph(gpu_enabled=True)
 judge_execution = JudgeExecutionSubgraph(
@@ -123,18 +125,18 @@ judge_execution = JudgeExecutionSubgraph(
 )
 fixer = FixCodeSubgraph(
     llm_mapping={
-        "should_fix_code": "gpt-5-2025-08-07",
-        "fix_code": "gpt-5-2025-08-07",
+        "should_fix_code": "gpt-5-mini-2025-08-07",
+        "fix_code": "o3-2025-04-16",
     }
 )
 evaluate_consistency = EvaluateExperimentalConsistencySubgraph(
     llm_mapping={
-        "evaluate_experimental_consistency": "gpt-5-2025-08-07",
+        "evaluate_experimental_consistency": "o3-2025-04-16",
     }
 )
 analysis = AnalyticSubgraph(
     llm_mapping={
-        "analytic_node": "gpt-5-2025-08-07",
+        "analytic_node": "o3-2025-04-16",
     }
 )
 create_bibfile = CreateBibfileSubgraph(
@@ -146,8 +148,8 @@ create_bibfile = CreateBibfileSubgraph(
 )
 writer = WriterSubgraph(
     llm_mapping={
-        "write_paper": "gpt-5-2025-08-07",
-        "refine_paper": "gpt-5-2025-08-07",
+        "write_paper": "o3-2025-04-16",
+        "refine_paper": "o3-2025-04-16",
     },
     max_refinement_count=2,
 )
@@ -158,14 +160,14 @@ evaluate_paper = EvaluatePaperResultsSubgraph(
 )
 review = ReviewPaperSubgraph(
     llm_mapping={
-        "review_paper": "gpt-5-2025-08-07",
+        "review_paper": "o3-2025-04-16",
     }
 )
 latex = LatexSubgraph(
     llm_mapping={
         "convert_to_latex": "gpt-5-2025-08-07",
         "is_execution_successful": "gpt-5-2025-08-07",
-        "fix_latex_text": "gpt-5-2025-08-07",
+        "fix_latex_text": "o3-2025-04-16",
     },
     latex_template_name="agents4science_2025",
     max_revision_count=3,
@@ -306,9 +308,18 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "experiment_matsuzawa_20250830"
+    repository_name = "tanaka-20250831-v3"
     research_topic_list = [
-        "離散拡散モデルの推論速度に関して改善したい",
+        # "small language modelの学習高速化のための新しいアーキテクチャ",
+        # "small language modelの推論高速化のための新しいアーキテクチャ",
+        # "small language modelのメモリを抑えた学習方法",
+        # "small language modelの学習でメモリを抑えられるアーキテクチャ",
+        # "small language modelの推論でメモリを抑えられるアーキテクチャ",
+        # "diffusion modelの学習高速化のための新しいアーキテクチャ",
+        # "diffusion modelの推論高速化のための新しいアーキテクチャ",
+        "diffusion modelのメモリを抑えた学習方法",
+        "diffusion modelの学習でメモリを抑えられるアーキテクチャ",
+        "diffusion modelの推論でメモリを抑えられるアーキテクチャ",
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list

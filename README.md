@@ -22,7 +22,7 @@
 </p>
 
 
-AIRAS is an open-source software framework for automated research, being developed to support the entire research workflow. It aims to integrate all of the necessary functions for automating research—from literature search and method generation to experimentation and paper writing—and is designed with the aim of enabling as many individuals and organizations as possible to contribute to open innovation in research automation. 
+AIRAS is an open-source software framework for automated research, being developed to support the entire research workflow. It aims to integrate all of the necessary functions for automating research—from literature search and method generation to experimentation and paper writing—and is designed with the aim of enabling as many individuals and organizations as possible to contribute to open innovation in research automation.
 
 Currently, it focuses on the automation of machine learning research.
 
@@ -34,62 +34,14 @@ Features
 - Allows users to add their own original research processes
 
 ## Quick Start
-
-It can be easily used by simply installing it via pip as shown below.
-
-**Note: The package is currently under preparation and will be available on PyPI soon.**
-
-```bash
-pip install airas
-```
-
-It is implemented by individual research processes, allowing users to design their own automated research workflows freely.
-
-```python
-from airas.features import (
-    PrepareRepositorySubgraph,
-    RetrieveCodeSubgraph, 
-    RetrievePaperFromQuerySubgraph, 
-    RetrieveRelatedPaperSubgraph,
-    CreateExperimentalDesignSubgraph, 
-    CreateMethodSubgraph,
-    CreateCodeSubgraph,
-    GitHubActionsExecutorSubgraph,
-    FixCodeSubgraph
-)
-
-
-retriever = RetrievePaperFromQuerySubgraph(llm_name=llm_name, save_dir=save_dir, scrape_urls=scrape_urls)
-retriever2 = RetrieveRelatedPaperSubgraph(llm_name=llm_name, save_dir=save_dir, scrape_urls=scrape_urls)
-retriever3 = RetrieveCodeSubgraph(llm_name=llm_name)
-creator = CreateMethodSubgraph(llm_name=llm_name)
-creator2 = CreateExperimentalDesignSubgraph(llm_name=llm_name)
-coder = CreateCodeSubgraph()
-executor = GitHubActionsExecutorSubgraph()
-fixer = FixCodeSubgraph(llm_name=llm_name)
-
-
-state = {
-    "base_queries": "diffusion model",
-    "gpu_enabled": True,
-    "experiment_iteration": 1
-}
-
-state = retriever.run(state)
-state = retriever2.run(state)
-state = retriever3.run(state)
-state = creator.run(state)
-state = creator2.run(state)
-state = coder.run(state)
-state = executor.run(state)
-state = fixer.run(state)
-```
+Preparing. Please wait a moment.
 
 ## Roadmap
 
-- [ ] Complete automation of machine learning research with code-based experimentation
-- [ ] Autonomous research in robotics
-- [ ] Autonomous research in various fields
+- [x] Complete automation of machine learning research with code-based experimentation
+- [ ] Autonomous research in Research in simulated robotic environments
+- [ ] Autonomous research in Real-world robotics research.
+- [ ] Laboratory Automation and autonomous research in various fields
 
 ## Contact
 
