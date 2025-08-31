@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
+from airas.config.runtime_prompt import RuntimeKeyType
 from airas.core.base import BaseSubgraph
 from airas.features.create.create_code_subgraph.input_data import (
     create_code_subgraph_input_data,
@@ -69,8 +70,11 @@ class CreateCodeSubgraph(BaseSubgraph):
     OutputState = CreateCodeSubgraphOutputState
 
     def __init__(
-        self, llm_mapping: dict[str, str] | CreateCodeLLMMapping | None = None
+        self,
+        runtime_name: RuntimeKeyType = "default",
+        llm_mapping: dict[str, str] | CreateCodeLLMMapping | None = None,
     ):
+        self.runtime_name = runtime_name
         if llm_mapping is None:
             self.llm_mapping = CreateCodeLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -106,6 +110,7 @@ class CreateCodeSubgraph(BaseSubgraph):
             experiment_code=cast(
                 str, state["new_method"].experimental_design.experiment_code
             ),
+            runtime_name=self.runtime_name,
             experiment_iteration=state["experiment_iteration"],
         )
 

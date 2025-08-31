@@ -4,6 +4,7 @@ import logging
 from jinja2 import Environment
 from pydantic import BaseModel
 
+from airas.config.runtime_prompt import RuntimeKeyType, runtime_prompt_dict
 from airas.features.create.create_code_subgraph.input_data import (
     create_code_subgraph_input_data,
 )
@@ -32,6 +33,7 @@ def generate_code_for_scripts(
     new_method: str,
     experiment_code: str,
     experiment_iteration: int,
+    runtime_name: RuntimeKeyType,
     prompt_template: str = generate_code_for_scripts_prompt,
     client: LLMFacadeClient | None = None,
 ) -> dict[str, str]:
@@ -41,6 +43,7 @@ def generate_code_for_scripts(
 
     # Prepare template data
     data = {
+        "runtime_prompt": runtime_prompt_dict[runtime_name],
         "new_method": new_method,
         "experiment_code": experiment_code,
         "experiment_iteration": experiment_iteration,

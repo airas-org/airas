@@ -112,9 +112,10 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
     },
 )
 coder = CreateCodeSubgraph(
+    runtime_name="gpu-runner",
     llm_mapping={
         "generate_code_for_scripts": "o3-2025-04-16",
-    }
+    },
 )
 executor = GitHubActionsExecutorSubgraph(gpu_enabled=True)
 judge_execution = JudgeExecutionSubgraph(
