@@ -4,7 +4,6 @@ Please follow the "Rules" section to create experimental scripts to conduct this
 
 # Rules
 - Please create code that can run on NVIDIA Tesla T4 · 16 GB VRAM.
-- Experimental scripts should be given a simple test run to make sure they work.
 - The experiment is run from the project root using the command `python -m src.main`.
 - **Imports and Dependencies:**
     - Inside the `src` directory, always use relative imports (e.g., `from .train import ...`).
