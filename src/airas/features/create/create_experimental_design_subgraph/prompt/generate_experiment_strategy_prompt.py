@@ -24,7 +24,6 @@ You are a cutting-edge AI researcher. Based on the instructions below, please de
 {% if previous_method.experimental_results %}
 **Previous Results**:
 - Result: {{ previous_method.experimental_results.result }}
-- Error: {{ previous_method.experimental_results.error }}
 {% endif %}
 
 Build upon what worked and address what didn't work to improve the consistency score.
