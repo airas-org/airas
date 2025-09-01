@@ -109,6 +109,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
 
         if current_method.experimental_design is not None:
             previous_method = current_method.model_copy(deep=True)
+            previous_method.iteration_history = None
 
             current_method.iteration_history = current_method.iteration_history or []
             current_method.iteration_history.append(previous_method)
