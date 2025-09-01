@@ -20,27 +20,19 @@ def generate_experiment_code(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
     runtime_name: RuntimeKeyType,
-    consistency_feedback: list[str] | None = None,
+    feedback_text: str | None = None,
+    previous_method: ResearchHypothesis | None = None,
 ) -> ResearchHypothesis:
     client = LLMFacadeClient(llm_name=llm_name)
     env = Environment()
 
     template = env.from_string(generate_experiment_code_prompt)
 
-    method_text = new_method.method
-    experiment_strategy = new_method.experimental_design.experiment_strategy
-    experiment_details = new_method.experimental_design.experiment_details
-
-    feedback_text = None
-    if consistency_feedback and len(consistency_feedback) > 0:
-        feedback_text = consistency_feedback[-1]
-
     data = {
-        "new_method": method_text,
+        "new_method": new_method.model_dump(),
         "runtime_prompt": runtime_prompt_dict[runtime_name],
-        "experiment_strategy": experiment_strategy,
-        "experiment_details": experiment_details,
         "consistency_feedback": feedback_text,
+        "previous_method": previous_method.model_dump() if previous_method else None,
     }
     messages = template.render(data)
     output, cost = client.structured_outputs(

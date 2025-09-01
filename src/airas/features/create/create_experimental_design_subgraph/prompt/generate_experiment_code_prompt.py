@@ -33,14 +33,30 @@ You are a cutting-edge AI researcher. Based on the new method described in # New
 - Specifically improve the experimental code to resolve these consistency issues.
 {% endif %}
 
+{% if previous_method and previous_method.experimental_design %}
+# Previous Iteration Reference
+**Previous Experimental Design**:
+- Strategy: {{ previous_method.experimental_design.experiment_strategy }}
+- Details: {{ previous_method.experimental_design.experiment_details }}
+- Code Approach: {{ previous_method.experimental_design.experiment_code }}
+
+{% if previous_method.experimental_results %}
+**Previous Results**:
+- Result: {{ previous_method.experimental_results.result }}
+- Error: {{ previous_method.experimental_results.error }}
+{% endif %}
+
+Build upon what worked and address what didn't work to improve the consistency score.
+{% endif %}
+
 # Experimental Environment
 {{ runtime_prompt }}
 
 # New Methods
-{{ new_method }}
+{{ new_method.method }}
 
 # Experiment Strategy
-{{ experiment_strategy }}
+{{ new_method.experimental_design.experiment_strategy }}
 
 # Experiment Specification
-{{ experiment_details }}"""
+{{ new_method.experimental_design.experiment_details }}"""

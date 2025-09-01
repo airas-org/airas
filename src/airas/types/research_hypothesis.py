@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -27,3 +29,6 @@ class ResearchHypothesis(BaseModel):
     experimental_design: Optional[ExperimentalDesign] = Field(None, description="")
     experimental_results: Optional[ExperimentalResults] = Field(None, description="")
     experimental_analysis: Optional[ExperimentalAnalysis] = Field(None, description="")
+    iteration_history: Optional[list[ResearchHypothesis]] = Field(
+        None, description="Previous iterations of this research hypothesis"
+    )

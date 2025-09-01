@@ -24,12 +24,13 @@ Based on your analysis, provide:
   - Major contradictions or inconsistencies in the results
 
 ### consistency_feedback (str)
-Provide specific, actionable feedback including:
-- Statistical analysis concerns (p-values, confidence intervals, effect sizes)
-- Experimental design issues (sample sizes, controls, confounding variables)
-- Data quality concerns (outliers, missing data, measurement errors)
-- Suggestions for improving experimental design or analysis
-- Recommendations for additional experiments or controls
+Provide specific, actionable feedback focused on **improving the consistency_score**:
+- How to strengthen statistical analysis to increase consistency_score (p-values, confidence intervals, effect sizes)
+- Experimental design improvements needed to achieve higher consistency_score (sample sizes, controls, confounding variables)
+- Data quality enhancements that will boost consistency_score (outliers handling, missing data, measurement precision)
+- Concrete suggestions to redesign experiments for better consistency_score
+- Additional experiments or controls that would increase consistency_score
+- Clear roadmap to achieve consistency_score of 8-10
 
 ### consistency_score (int)
 Provide a numerical score (1-10) based on:
@@ -54,5 +55,5 @@ Provide a numerical score (1-10) based on:
 - Error: {{ new_method.experimental_results.error }}
 {% endif %}
 
-Focus your evaluation on the experimental results, methodology, and any statistical analyses presented.
+**Primary Goal**: Provide feedback that helps improve the consistency_score in future iterations. Focus on actionable steps that would transform a low-scoring experiment into a high-scoring (8-10) experiment with strong consistency and scientific rigor.
 """

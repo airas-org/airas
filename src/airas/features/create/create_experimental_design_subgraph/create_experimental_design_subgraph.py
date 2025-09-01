@@ -48,7 +48,9 @@ class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
     consistency_feedback: list[str]
 
 
-class CreateExperimentalDesignHiddenState(TypedDict): ...
+class CreateExperimentalDesignHiddenState(TypedDict):
+    previous_method: ResearchHypothesis | None
+    feedback_text: str | None
 
 
 class CreateExperimentalDesignSubgraphOutputState(TypedDict):
@@ -95,14 +97,45 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         check_api_key(llm_api_key_check=True)
 
     @create_experimental_design_timed
+    def _prepare_iteration_history(
+        self, state: CreateExperimentalDesignState
+    ) -> dict[str, ResearchHypothesis | str | None]:
+        current_method = state["new_method"]
+        previous_method = None
+        feedback_text = None
+
+        if consistency_feedback := state.get("consistency_feedback"):
+            feedback_text = consistency_feedback[-1]
+
+        if current_method.experimental_design is not None:
+            previous_method = current_method.model_copy(deep=True)
+
+            current_method.iteration_history = current_method.iteration_history or []
+            current_method.iteration_history.append(previous_method)
+
+            for field in (
+                "experimental_design",
+                "experimental_results",
+                "experimental_analysis",
+            ):
+                setattr(current_method, field, None)
+
+        return {
+            "new_method": current_method,
+            "previous_method": previous_method,
+            "feedback_text": feedback_text,
+        }
+
+    @create_experimental_design_timed
     def _generate_experiment_strategy(
         self, state: CreateExperimentalDesignState
     ) -> dict[str, ResearchHypothesis]:
         new_method = generate_experiment_strategy(
             llm_name=self.llm_mapping.generate_experiment_strategy,
             new_method=state["new_method"],
+            previous_method=state.get("previous_method"),
             runtime_name=self.runtime_name,
-            consistency_feedback=state.get("consistency_feedback"),
+            feedback_text=state.get("feedback_text"),
         )
         return {"new_method": new_method}
 
@@ -113,8 +146,9 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         new_method = generate_experiment_details(
             llm_name=self.llm_mapping.generate_experiment_details,
             new_method=state["new_method"],
+            previous_method=state.get("previous_method"),
             runtime_name=self.runtime_name,
-            consistency_feedback=state.get("consistency_feedback"),
+            feedback_text=state.get("feedback_text"),
         )
         return {"new_method": new_method}
 
@@ -125,13 +159,17 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         new_method = generate_experiment_code(
             llm_name=self.llm_mapping.generate_experiment_code,
             new_method=state["new_method"],
+            previous_method=state.get("previous_method"),
             runtime_name=self.runtime_name,
-            consistency_feedback=state.get("consistency_feedback"),
+            feedback_text=state.get("feedback_text"),
         )
         return {"new_method": new_method}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(CreateExperimentalDesignState)
+        graph_builder.add_node(
+            "prepare_iteration_history", self._prepare_iteration_history
+        )
         graph_builder.add_node(
             "generate_experiment_strategy", self._generate_experiment_strategy
         )
@@ -142,7 +180,10 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             "generate_experiment_code", self._generate_experiment_code
         )
 
-        graph_builder.add_edge(START, "generate_experiment_strategy")
+        graph_builder.add_edge(START, "prepare_iteration_history")
+        graph_builder.add_edge(
+            "prepare_iteration_history", "generate_experiment_strategy"
+        )
         graph_builder.add_edge(
             "generate_experiment_strategy", "generate_experiment_details"
         )
