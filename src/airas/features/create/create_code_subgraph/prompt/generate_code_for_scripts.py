@@ -16,7 +16,7 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
     - **Error handling**: Add appropriate try-catch blocks for common failure points like file I/O and model operations.
 
 - Directory and Script Roles
-    - .research/iteration{{ experiment_iteration }}/images...This directory is for image outputs. You do not need to generate content for it.
+    - .research/iteration{{ experiment_iteration }}/images...This directory is for image outputs. You do not need to generate content for it. Ensure all figure/plot save paths in the code are modified to use this exact directory path.
     - config...If the "Experiment Code" implies a YAML configuration, extract it into a `config.yaml` file. Otherwise, this should be empty.
     - data...This directory is for data. You do not need to generate content for it.
     - models...This directory is for models. You do not need to generate content for it.

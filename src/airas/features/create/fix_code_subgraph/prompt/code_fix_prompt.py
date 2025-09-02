@@ -28,7 +28,7 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 - If a file has no errors, return original content exactly as provided
 - Ensure code runs on NVIDIA Tesla T4 · 16 GB VRAM
 - Update requirements.txt if new packages needed
-- Save all experiment images to: .research/iteration{{ experiment_iteration }}/images
+- Save all experiment images to: .research/iteration{{ experiment_iteration }}/images (modify any existing image save paths to use this exact directory)
 
 # Error Information
 ## Output Data:
