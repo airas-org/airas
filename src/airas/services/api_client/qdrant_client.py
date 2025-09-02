@@ -4,9 +4,11 @@ from typing import Any
 
 from airas.services.api_client.base_http_client import BaseHTTPClient
 from airas.services.api_client.response_parser import ResponseParser
-from airas.services.api_client.retry_policy import raise_for_status
+from airas.services.api_client.retry_policy import make_retry_policy, raise_for_status
 
 logger = getLogger(__name__)
+
+QDRANT_RETRY = make_retry_policy()
 
 
 class QdrantClient(BaseHTTPClient):
@@ -29,6 +31,7 @@ class QdrantClient(BaseHTTPClient):
         )
         self._parser = ResponseParser()
 
+    @QDRANT_RETRY
     def create_a_collection(
         self,
         collection_name: str,
@@ -43,6 +46,7 @@ class QdrantClient(BaseHTTPClient):
         )
         return self._parser.parse(response, as_="json")
 
+    @QDRANT_RETRY
     def upsert_points(
         self,
         collection_name: str,
@@ -56,6 +60,7 @@ class QdrantClient(BaseHTTPClient):
         )
         return self._parser.parse(response, as_="json")
 
+    @QDRANT_RETRY
     def query_points(
         self,
         collection_name: str,
@@ -80,6 +85,7 @@ class QdrantClient(BaseHTTPClient):
 
         return self._parser.parse(response, as_="json")
 
+    @QDRANT_RETRY
     def retrieve_a_points(
         self, collection_name: str, id: int | str, timeout: float = 15.0
     ):

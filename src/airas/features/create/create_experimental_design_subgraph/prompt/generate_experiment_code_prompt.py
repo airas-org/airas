@@ -2,10 +2,13 @@ generate_experiment_code_prompt = """\
 You are a cutting-edge AI researcher. Based on the new method described in # New Methods, the experimental policy outlined in # Experiment Strategy, and the detailed experimental specifications provided in # Experiment Specification, please present detailed code for conducting the experiments according to the instructions below.
 
 # Instructions
+- The generated code will be executed as `python -m src.main` without any command-line arguments.
 - Output Python code to conduct each experiment based on the detailed information provided in "Experiment Specification".
 - At the beginning, output the names of the Python libraries that you believe are necessary to run the experiments.
 - Use PyTorch exclusively as the deep learning framework.
 - Make full use of existing Python libraries where possible and avoid implementing from scratch.
+- **Complete data pipeline**: Implement full data acquisition from URLs, including downloading, extraction, and organizing into data/ directory. Do not assume existing local data.
+- **Fail-fast, no silent fallbacks**: Add assert statements or exceptions for critical operations, remove default values or mock data that hide real issues.
 - The implementation must ensure that all experiment executions include the following in the standard output:
     - Experiment description
         - Before printing experimental results, the standard output must include a detailed description of the experiment.
@@ -50,6 +53,11 @@ Build upon what worked and address what didn't work to improve the consistency s
 
 # Experimental Environment
 {{ runtime_prompt }}
+
+{% if new_method.experimental_design.external_resources %}
+# External Resources
+{{ new_method.experimental_design.external_resources }}
+{% endif %}
 
 # New Methods
 {{ new_method.method }}

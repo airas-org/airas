@@ -40,7 +40,7 @@ def generate_experiment_details(
         data_model=LLMOutput,
     )
     if output is None:
-        raise ValueError("No response from LLM in generate_experiment_specification.")
+        raise ValueError("No response from LLM in generate_experiment_details.")
 
     new_method.experimental_design.experiment_details = output["experiment_details"]
     return new_method

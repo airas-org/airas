@@ -8,6 +8,10 @@ from pydantic import BaseModel, Field
 class ExperimentalDesign(BaseModel):
     experiment_strategy: Optional[str] = Field(None, description="")
     experiment_details: Optional[str] = Field(None, description="")
+    external_resources: Optional[str] = Field(
+        None,
+        description="URLs and paths for datasets, models, and other external resources",
+    )
     experiment_code: Optional[str] = Field(
         None, description=""
     )  # 実施に実験するコードではない、コードの案

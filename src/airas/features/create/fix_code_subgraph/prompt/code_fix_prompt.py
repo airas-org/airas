@@ -2,17 +2,33 @@ code_fix_prompt = """\
 # Instructions
 You are tasked with fixing Python code that failed during execution. Analyze the error messages and output data to identify and fix the issues in the provided files.
 
+# Problem-Solving Approach
+1. **Root Cause Analysis**: Identify the underlying cause, not just the symptom
+   - Trace error messages to their source in the code
+   - Understand the context and expected behavior
+   - Consider data flow and dependencies
+
+2. **Systematic Debugging**:
+   - Import/Environment: Library availability, versions, installation
+   - Data Type/Shape: Input/output formats, dimensions, type compatibility
+   - Logic/Algorithm: Algorithmic assumptions and edge cases
+   - Resource: Memory, compute, hardware constraints
+
+3. **Solution Strategy**:
+   - Apply minimal, targeted fixes rather than wholesale rewrites
+   - Use defensive programming (bounds checking, error handling)
+   - Consider alternative approaches if original method is flawed
+   - Preserve intended functionality and backward compatibility
+   - **Data pipeline fixes**: Ensure complete data acquisition (download, extract, organize into data/)
+   - **Dependency resolution fixes**: Check requirements.txt for circular dependencies, version conflicts, and proper ordering
+   - **Fail-fast, no silent fallbacks**: Add assert statements or exceptions for critical operations, remove default values or mock data that hide real issues
+
 # Rules
 - Fix all errors found in the error messages
-- If a file does not have any errors and does not need any changes, you MUST return the original content of the file exactly as provided, without any modifications, comments, or additional text like '[No changes]'.
-- Ensure the code can run on NVIDIA Tesla T4 · 16 GB VRAM
-- Make minimal changes to preserve the original functionality
-- Update requirements.txt if new packages are needed
-- Ensure all imports are correct and available
-- Fix any syntax errors, import errors, or runtime errors
-- Make sure the code follows Python best practices
-- Please modify it so that all images output from the experiment are saved in this directory.
-  - .research/iteration{{ experiment_iteration }}/images
+- If a file has no errors, return original content exactly as provided
+- Ensure code runs on NVIDIA Tesla T4 · 16 GB VRAM
+- Update requirements.txt if new packages needed
+- Save all experiment images to: .research/iteration{{ experiment_iteration }}/images
 
 # Error Information
 ## Output Data:

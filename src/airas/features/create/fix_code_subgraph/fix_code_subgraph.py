@@ -27,7 +27,7 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-fix_code_timed = lambda f: time_node("fix_code_local_subgraph")(f)  # noqa: E731
+fix_code_timed = lambda f: time_node("fix_code_subgraph")(f)  # noqa: E731
 
 
 class FixCodeLLMMapping(BaseModel):

@@ -107,7 +107,8 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
     runtime_name="gpu-runner",
     llm_mapping={
         "generate_experiment_strategy": "o3-2025-04-16",
-        "generate_experiment_specification": "o3-2025-04-16",
+        "generate_experiment_details": "o3-2025-04-16",
+        "search_external_resources": "gpt-5-mini-2025-08-07",  # Only openAI models are available.
         "generate_experiment_code": "o3-2025-04-16",
     },
 )
@@ -144,7 +145,7 @@ create_bibfile = CreateBibfileSubgraph(
         "filter_references": "gemini-2.5-flash",
     },
     latex_template_name="agents4science_2025",
-    max_filtered_references=5,
+    max_filtered_references=20,
 )
 writer = WriterSubgraph(
     llm_mapping={
@@ -243,19 +244,7 @@ def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG)
                     state = analysis.run(state)
                     break
 
-                latest_feedback = (
-                    state["consistency_feedback"][-1]
-                    if state.get("consistency_feedback")
-                    else ""
-                )
-                latest_score = (
-                    state["consistency_score"][-1]
-                    if state.get("consistency_score")
-                    else 0
-                )
-                print(
-                    f"Experimental consistency failed → redesign. Score: {latest_score}, Feedback: {latest_feedback}"
-                )
+                print("Experimental consistency failed → redesign.")
                 consistency_attempts += 1
 
             if consistency_attempts >= workflow_config.max_consistency_attempts:
@@ -308,18 +297,9 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250831-v3"
+    repository_name = "experiment_matsuzawa_20250902"
     research_topic_list = [
-        # "small language modelの学習高速化のための新しいアーキテクチャ",
-        # "small language modelの推論高速化のための新しいアーキテクチャ",
-        # "small language modelのメモリを抑えた学習方法",
-        # "small language modelの学習でメモリを抑えられるアーキテクチャ",
-        # "small language modelの推論でメモリを抑えられるアーキテクチャ",
-        # "diffusion modelの学習高速化のための新しいアーキテクチャ",
-        # "diffusion modelの推論高速化のための新しいアーキテクチャ",
-        "diffusion modelのメモリを抑えた学習方法",
-        "diffusion modelの学習でメモリを抑えられるアーキテクチャ",
-        "diffusion modelの推論でメモリを抑えられるアーキテクチャ",
+        "Continuous Learningのメモリ効率に関して改善したい",
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list

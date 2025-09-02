@@ -9,7 +9,7 @@ from airas.types.github import GitHubRepositoryInfo
 logger = getLogger(__name__)
 
 _POLL_INTERVAL_SEC = 10
-_TIMEOUT_SEC = 600
+_TIMEOUT_SEC = 12000  # NOTE: 200 minutes (slightly longer than GitHub Actions timeout of 180 minutes)
 
 
 @dataclass

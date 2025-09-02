@@ -20,6 +20,9 @@ from airas.features.create.create_experimental_design_subgraph.nodes.generate_ex
 from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_strategy import (
     generate_experiment_strategy,
 )
+from airas.features.create.create_experimental_design_subgraph.nodes.search_external_resources import (
+    search_external_resources,
+)
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
@@ -39,6 +42,9 @@ class CreateExperimentalDesignLLMMapping(BaseModel):
     ]
     generate_experiment_details: LLM_MODEL = DEFAULT_NODE_LLMS[
         "generate_experiment_details"
+    ]
+    search_external_resources: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "search_external_resources"
     ]
     generate_experiment_code: LLM_MODEL = DEFAULT_NODE_LLMS["generate_experiment_code"]
 
@@ -154,6 +160,16 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         return {"new_method": new_method}
 
     @create_experimental_design_timed
+    def _search_external_resources(
+        self, state: CreateExperimentalDesignState
+    ) -> dict[str, ResearchHypothesis]:
+        new_method = search_external_resources(
+            llm_name=self.llm_mapping.search_external_resources,
+            new_method=state["new_method"],
+        )
+        return {"new_method": new_method}
+
+    @create_experimental_design_timed
     def _generate_experiment_code(
         self, state: CreateExperimentalDesignState
     ) -> dict[str, ResearchHypothesis]:
@@ -178,6 +194,9 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             "generate_experiment_details", self._generate_experiment_details
         )
         graph_builder.add_node(
+            "search_external_resources", self._search_external_resources
+        )
+        graph_builder.add_node(
             "generate_experiment_code", self._generate_experiment_code
         )
 
@@ -189,8 +208,9 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             "generate_experiment_strategy", "generate_experiment_details"
         )
         graph_builder.add_edge(
-            "generate_experiment_details", "generate_experiment_code"
+            "generate_experiment_details", "search_external_resources"
         )
+        graph_builder.add_edge("search_external_resources", "generate_experiment_code")
         graph_builder.add_edge("generate_experiment_code", END)
 
         return graph_builder.compile()
