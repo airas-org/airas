@@ -21,27 +21,54 @@ You are tasked with fixing Python code that failed during execution. Analyze the
    - Preserve intended functionality and backward compatibility
    - **Data pipeline fixes**: Ensure complete data acquisition (download, extract, organize into data/)
    - **Dependency resolution fixes**: Check requirements.txt for circular dependencies, version conflicts, and proper ordering
-   - **Fail-fast, no silent fallbacks**: Add assert statements or exceptions for critical operations, remove default values or mock data that hide real issues
+   - **Fail-fast, no silent fallbacks**: If real datasets or models cannot be accessed, terminate execution immediately with clear error messages rather than using synthetic alternatives.
 
 # Rules
 - Fix all errors found in the error messages
-- If a file has no errors, return original content exactly as provided
+- If a file has no errors, return the complete original file content exactly as provided (do not just write "original")
 - Ensure code runs on NVIDIA Tesla T4 · 16 GB VRAM
 - Update requirements.txt if new packages needed
 - Save all experiment images to: .research/iteration{{ experiment_iteration }}/images (modify any existing image save paths to use this exact directory)
 
-# Error Information
+# ========================================
+# ERROR INFORMATION TO FIX
+# ========================================
+
 ## Output Data:
-{{ output_text_data }}
+{{ new_method.experimental_results.result }}
 
 ## Error Data:
-{{ error_text_data }}
+{{ new_method.experimental_results.error }}
 
-# Current Files
+# ========================================
+# CURRENT FILES TO FIX
+# ========================================
+The following files contain errors and need to be fixed:
 {% for file_path, content in current_files.items() %}
 ## {{ file_path }}
 ```python
 {{ content }}
 ```
 
-{% endfor %}"""
+{% endfor %}
+
+# ========================================
+# REFERENCE INFORMATION
+# ========================================
+
+## Experimental Environment
+{{ runtime_prompt }}
+
+## Original Method Description
+{{ new_method.method }}
+
+{% if new_method.experimental_design %}
+## Original Experiment Strategy
+{{ new_method.experimental_design.experiment_strategy }}
+
+## Original Experiment Details
+{{ new_method.experimental_design.experiment_details }}
+
+## Original Experiment Code (for reference only)
+{{ new_method.experimental_design.experiment_code }}
+{% endif %}"""

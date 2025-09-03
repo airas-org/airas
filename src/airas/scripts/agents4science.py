@@ -126,7 +126,6 @@ judge_execution = JudgeExecutionSubgraph(
 )
 fixer = FixCodeSubgraph(
     llm_mapping={
-        "should_fix_code": "gpt-5-mini-2025-08-07",
         "fix_code": "o3-2025-04-16",
     }
 )

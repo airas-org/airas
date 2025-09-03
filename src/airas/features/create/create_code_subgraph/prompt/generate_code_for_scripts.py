@@ -17,14 +17,14 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
 
 - Directory and Script Roles
     - .research/iteration{{ experiment_iteration }}/images...This directory is for image outputs. You do not need to generate content for it. Ensure all figure/plot save paths in the code are modified to use this exact directory path.
-    - config...If the "Experiment Code" implies a YAML configuration, extract it into a `config.yaml` file. Otherwise, this should be empty.
+    - config...Extract dataset URLs, model specifications, hyperparameters, and experiment settings.
     - data...This directory is for data. You do not need to generate content for it.
     - models...This directory is for models. You do not need to generate content for it.
     - src
         - train.py...Extract all functions and classes related to model.
         - evaluate.py...Extract all functions and classes related to model evaluation, statistical analysis, and plotting.
         - preprocess.py...Extract any data loading or preprocessing logic.
-        - main.py...Create the main execution script using relative imports (e.g., `from .train import ...`) to orchestrate the experimental workflow.
+        - main.py...Create the main execution script using relative imports (e.g., `from .train import ...`) to orchestrate the experimental workflow. Load configuration from `../config/config.yaml` using PyYAML.
     - requirements.txt...Analyze the "Experiment Code" header and import statements. List all required Python packages here, one per line.
 
 # Experimental Environment

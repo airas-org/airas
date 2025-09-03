@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
+from airas.config.runtime_prompt import RuntimeKeyType
 from airas.core.base import BaseSubgraph
 from airas.features.create.create_code_subgraph.nodes.push_files_to_github import (
     push_files_to_github,
@@ -65,7 +66,12 @@ class FixCodeSubgraph(BaseSubgraph):
     InputState = FixCodeSubgraphInputState
     OutputState = FixCodeSubgraphOutputState
 
-    def __init__(self, llm_mapping: dict[str, str] | FixCodeLLMMapping | None = None):
+    def __init__(
+        self,
+        runtime_name: RuntimeKeyType = "default",
+        llm_mapping: dict[str, str] | FixCodeLLMMapping | None = None,
+    ):
+        self.runtime_name = runtime_name
         if llm_mapping is None:
             self.llm_mapping = FixCodeLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -93,10 +99,10 @@ class FixCodeSubgraph(BaseSubgraph):
     def _fix_code(self, state: FixCodeSubgraphState) -> dict:
         fixed_file_contents = fix_code(
             llm_name=self.llm_mapping.fix_code,
-            output_text_data=state["new_method"].experimental_results.result,
-            error_text_data=state["new_method"].experimental_results.error,
+            new_method=state["new_method"],
             current_files=state["generated_file_contents"],
             experiment_iteration=state["experiment_iteration"],
+            runtime_name=self.runtime_name,
         )
 
         return {"generated_file_contents": fixed_file_contents}

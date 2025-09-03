@@ -6,14 +6,15 @@ You are a cutting-edge AI researcher. Based on the new method described in # New
 ## Basic Requirements
 - The generated code will be executed as `python -m src.main` without any command-line arguments.
 - Output Python code to conduct each experiment based on the detailed information provided in "Experiment Specification".
-- At the beginning, output the names of the Python libraries that you believe are necessary to run the experiments.
+- Include dataset URLs, model specifications, and hyperparameters as structured configuration that can be extracted into YAML.
 - Use PyTorch exclusively as the deep learning framework.
 - Make full use of existing Python libraries where possible and avoid implementing from scratch.
+- Use version constraints for PyTorch and related packages (e.g., torch>=2.2.0, torch_geometric>=2.5.0) to avoid version conflicts.
 
 ## Implementation Guidelines
 - Complete data pipeline: Implement full data acquisition from URLs, including downloading, extraction, and organizing into data/ directory. Do not assume existing local data.
 - Comprehensive experiments: Implement full-scale experiments, not quick tests or prototypes. Include sufficient training epochs, proper validation splits, and thorough evaluation metrics.
-- Fail-fast, no silent fallbacks: Add assert statements or exceptions for critical operations, remove default values or mock data that hide real issues.
+- Fail-fast, no silent fallbacks: If real datasets or models cannot be accessed, terminate execution immediately with clear error messages rather than using synthetic alternatives.
 
 ## Output Requirements
 The implementation must ensure that all experiment executions include the following in the standard output:
