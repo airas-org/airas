@@ -9,7 +9,6 @@ You are a cutting-edge AI researcher. Based on the new method described in # New
 - Include dataset URLs, model specifications, and hyperparameters as structured configuration that can be extracted into YAML.
 - Use PyTorch exclusively as the deep learning framework.
 - Make full use of existing Python libraries where possible and avoid implementing from scratch.
-- Use version constraints for PyTorch and related packages (e.g., torch>=2.2.0, torch_geometric>=2.5.0) to avoid version conflicts.
 
 ## Implementation Guidelines
 - Complete data pipeline: Implement full data acquisition from URLs, including downloading, extraction, and organizing into data/ directory. Do not assume existing local data.

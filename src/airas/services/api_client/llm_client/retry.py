@@ -1,3 +1,4 @@
+import json
 import logging
 from logging import getLogger
 
@@ -25,6 +26,7 @@ RETRY_EXC = (
     Timeout,
     RequestException,
     genai_errors.APIError,
+    json.JSONDecodeError,
 )
 
 

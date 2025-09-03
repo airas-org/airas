@@ -1,4 +1,5 @@
 import logging
+import re
 
 from jinja2 import Environment
 from pydantic import BaseModel
@@ -27,6 +28,9 @@ class GenerateCodeForScripts(BaseModel):
 
 def _is_code_meaningful(content: str | None) -> bool:
     if not content or not content.strip():
+        return False
+
+    if re.search(r".*\[KEEP_ORIGINAL_FILE\].*", content.strip()):
         return False
 
     lines = content.strip().split("\n")

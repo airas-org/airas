@@ -208,16 +208,12 @@ subgraph_list = [
 
 
 def _run_fix_loop(state, workflow_config):
-    fix_attempts = 0
-    while fix_attempts < workflow_config.max_fix_attempts:
+    for _ in range(workflow_config.max_fix_attempts):
         state = executor.run(state)
         state = judge_execution.run(state)
-
         if state.get("is_experiment_successful"):
             return state
-
         state = fixer.run(state)
-        fix_attempts += 1
     return state
 
 
@@ -227,26 +223,21 @@ def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG)
         print(f"--- Running Subgraph: {subgraph_name} ---")
 
         if isinstance(subgraph, CreateExperimentalDesignSubgraph):
-            consistency_attempts = 0
-            while consistency_attempts < workflow_config.max_consistency_attempts:
+            for _ in range(workflow_config.max_consistency_attempts):
                 state = create_experimental_design.run(state)
                 state = coder.run(state)
-
                 state = _run_fix_loop(state, workflow_config)
+
                 if not state.get("is_experiment_successful"):
                     print("Fix attempts exhausted → redesign")
-                    consistency_attempts += 1
                     continue
 
                 state = evaluate_consistency.run(state)
                 if state.get("is_experiment_consistent"):
                     state = analysis.run(state)
                     break
-
                 print("Experimental consistency failed → redesign.")
-                consistency_attempts += 1
-
-            if consistency_attempts >= workflow_config.max_consistency_attempts:
+            else:
                 print("Max consistency attempts reached, fallback to analysis.")
                 state = analysis.run(state)
 
@@ -296,9 +287,9 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "experiment_matsuzawa_20250902"
+    repository_name = "experiment_matsuzawa_20250903-2"
     research_topic_list = [
-        "Continuous Learningのメモリ効率に関して改善したい",
+        "グラフニューラルネットワークの過平滑化に関して改善したい",
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list
