@@ -214,6 +214,8 @@ def _run_fix_loop(state, workflow_config):
         if state.get("is_experiment_successful"):
             return state
         state = fixer.run(state)
+
+    print("Fix attempts exhausted, proceeding with current state")
     return state
 
 
@@ -227,10 +229,6 @@ def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG)
                 state = create_experimental_design.run(state)
                 state = coder.run(state)
                 state = _run_fix_loop(state, workflow_config)
-
-                if not state.get("is_experiment_successful"):
-                    print("Fix attempts exhausted → redesign")
-                    continue
 
                 state = evaluate_consistency.run(state)
                 if state.get("is_experiment_consistent"):
