@@ -16,10 +16,10 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
     - **Error handling**: Add appropriate try-catch blocks for common failure points like file I/O and model operations.
 
 - Directory and Script Roles
-    - .research/iteration{{ experiment_iteration }}/images...This directory is for image outputs. You do not need to generate content for it. Ensure all figure/plot save paths in the code are modified to use this exact directory path.
+    - .research/iteration{{ experiment_iteration }}/images...Please save all images output from the experiment in this directory.
     - config...Extract dataset URLs, model specifications, hyperparameters, and experiment settings.
-    - data...This directory is for data. You do not need to generate content for it.
-    - models...This directory is for models. You do not need to generate content for it.
+    - data...This directory is used to store data used for model training and evaluation.
+    - models...This directory is used to store pre-trained and trained models.
     - src
         - train.py...Extract all functions and classes related to model.
         - evaluate.py...Extract all functions and classes related to model evaluation, statistical analysis, and plotting.
