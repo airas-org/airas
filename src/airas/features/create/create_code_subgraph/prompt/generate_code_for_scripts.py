@@ -12,7 +12,7 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
     - **Data type consistency**: Verify compatible data types across operations and add necessary type conversions.
     - **Dimension compatibility**: Check tensor/array shapes and add reshaping operations where needed.
     - **Import dependencies**: Verify all required libraries are properly imported and available.
-    - **Dependency resolution**: Ensure requirements.txt has proper dependency ordering to avoid circular dependencies.
+    - **Dependency resolution**: Ensure requirements.txt has proper dependency ordering to avoid circular dependencies and compatible version constraints (e.g., torch>=1.13.0,<2.0.0, torchdata>=0.5.0,<0.8.0, dgl>=1.1.0,<2.0.0).
     - **Error handling**: Add appropriate try-catch blocks for common failure points like file I/O and model operations.
 
 - Directory and Script Roles
