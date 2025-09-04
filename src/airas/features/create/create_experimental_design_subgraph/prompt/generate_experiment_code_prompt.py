@@ -1,11 +1,11 @@
 generate_experiment_code_prompt = """\
-You are a cutting-edge AI researcher. Based on the new method described in # New Methods, the experimental policy outlined in # Experiment Strategy, and the detailed experimental specifications provided in # Experiment Specification, please present detailed code for conducting the experiments according to the instructions below.
+You are a cutting-edge AI researcher. Based on the new method described in # New Methods, the experimental policy outlined in # Experiment Strategy, and the detailed experimental specifications provided in # Experiment Details, please present detailed code for conducting the experiments according to the instructions below.
 
 # Instructions
 
 ## Basic Requirements
 - The generated code will be executed as `python -m src.main` without any command-line arguments.
-- Output Python code to conduct each experiment based on the detailed information provided in "Experiment Specification".
+- Output Python code to conduct each experiment based on the detailed information provided in "Experiment Details".
 - Include dataset URLs, model specifications, and hyperparameters as structured configuration that can be extracted into YAML.
 - Use PyTorch exclusively as the deep learning framework.
 - Make full use of existing Python libraries where possible and avoid implementing from scratch.
@@ -61,7 +61,7 @@ Specifically improve the experimental code to resolve these consistency issues.
 # Experiment Strategy
 {{ new_method.experimental_design.experiment_strategy }}
 
-# Experiment Specification
+# Experiment Details
 {{ new_method.experimental_design.experiment_details }}
 
 ---

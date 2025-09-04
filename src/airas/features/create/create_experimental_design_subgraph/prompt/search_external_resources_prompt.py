@@ -7,7 +7,7 @@ Based on the experimental strategy and details, identify and find specific URLs 
 - Datasets (download links, GitHub repositories)
 - Pretrained models (PyTorch model URLs, Hugging Face links)
 - Additional resources (configuration files, auxiliary data)
-- Python package compatibility: Search for compatible versions of Python packages that will be needed for this experiment, ensuring they work together in the specified environment
+- Python package compatibility: Search for recent stable versions of Python packages needed for this experiment, using modern version ranges rather than outdated pinned versions or historical versions mentioned in papers
 
 # Experimental Environment
 {{ runtime_prompt }}
