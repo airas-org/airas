@@ -19,9 +19,9 @@ You are tasked with fixing Python code that failed during execution. Analyze the
    - Use defensive programming (bounds checking, error handling)
    - Consider alternative approaches if original method is flawed
    - Preserve intended functionality and backward compatibility
-   - **Data pipeline fixes**: Ensure complete data acquisition (download, extract, organize into data/)
-   - **Dependency resolution fixes**: Check requirements.txt for circular dependencies, proper ordering, and compatible version constraints (e.g., torch>=1.13.0,<2.0.0, torchdata>=0.5.0,<0.8.0, dgl>=1.1.0,<2.0.0)
-   - **Fail-fast, no silent fallbacks**: If real datasets or models cannot be accessed, terminate execution immediately with clear error messages rather than using synthetic alternatives.
+   - Data pipeline fixes: Ensure complete data acquisition (download, extract, organize into data/)
+   - Dependency resolution fixes: Check requirements.txt for circular dependencies, proper ordering, and compatible version constraints (e.g., torch>=1.13.0,<2.0.0, torchdata>=0.5.0,<0.8.0, dgl>=1.1.0,<2.0.0)
+   - Fail-fast, no silent fallbacks: If real datasets or models cannot be accessed, terminate execution immediately with clear error messages rather than using synthetic alternatives.
 
 # Rules
 - Fix all errors found in the error messages

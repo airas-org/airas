@@ -2,6 +2,7 @@ import logging
 
 from jinja2 import Environment
 
+from airas.config.runtime_prompt import runtime_prompt_dict
 from airas.features.create.create_experimental_design_subgraph.prompt.search_external_resources_prompt import (
     search_external_resources_prompt,
 )
@@ -19,6 +20,7 @@ OPENAI_MODEL_SET = set(OPENAI_MODEL.__args__)
 def search_external_resources(
     llm_name: OPENAI_MODEL,
     new_method: ResearchHypothesis,
+    runtime_name: str = "default",
     prompt_template: str = search_external_resources_prompt,
 ) -> ResearchHypothesis:
     if llm_name not in OPENAI_MODEL_SET:
@@ -33,6 +35,7 @@ def search_external_resources(
     messages = template.render(
         {
             "new_method": new_method.model_dump(),
+            "runtime_prompt": runtime_prompt_dict[runtime_name],
         }
     )
 

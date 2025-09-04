@@ -7,8 +7,10 @@ Based on the experimental strategy and details, identify and find specific URLs 
 - Datasets (download links, GitHub repositories)
 - Pretrained models (PyTorch model URLs, Hugging Face links)
 - Additional resources (configuration files, auxiliary data)
+- Python package compatibility: Search for compatible versions of Python packages that will be needed for this experiment, ensuring they work together in the specified environment
 
-Return the results in a clear, structured format listing resource names and their URLs.
+# Experimental Environment
+{{ runtime_prompt }}
 
 # Experimental Information
 **Strategy:** {{ new_method.experimental_design.experiment_strategy }}
@@ -19,7 +21,7 @@ Return the results in a clear, structured format listing resource names and thei
 Return your response in this exact JSON format:
 ```json
 {
-  "external_resources": "Dataset: [Dataset Name]\nURL: [Direct download URL or repository URL]\n\nModel: [Model Name]\nURL: [Download URL or model hub URL]\n\nAdditional: [Resource Name]\nURL: [URL or documentation link]"
+  "external_resources": "Dataset: [Dataset Name]\nURL: [Direct download URL or repository URL]\n\nModel: [Model Name]\nURL: [Download URL or model hub URL]\n\nAdditional: [Resource Name]\nURL: [URL or documentation link]\n\nPackage Compatibility:\n[Package Name]: [Recommended version range based on search results]"
 }
 ```
 """

@@ -169,6 +169,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         new_method = search_external_resources(
             llm_name=self.llm_mapping.search_external_resources,
             new_method=state["new_method"],
+            runtime_name=self.runtime_name,
         )
         return {"new_method": new_method}
 
