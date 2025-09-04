@@ -52,6 +52,7 @@ class CreateExperimentalDesignLLMMapping(BaseModel):
 class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
     consistency_feedback: list[str]
+    generated_file_contents: dict[str, str]
 
 
 class CreateExperimentalDesignHiddenState(TypedDict):
@@ -140,9 +141,10 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         new_method = generate_experiment_strategy(
             llm_name=self.llm_mapping.generate_experiment_strategy,
             new_method=state["new_method"],
-            previous_method=state.get("previous_method"),
             runtime_name=self.runtime_name,
+            previous_method=state.get("previous_method"),
             feedback_text=state.get("feedback_text"),
+            generated_file_contents=state.get("generated_file_contents"),
         )
         return {"new_method": new_method}
 
@@ -153,9 +155,10 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         new_method = generate_experiment_details(
             llm_name=self.llm_mapping.generate_experiment_details,
             new_method=state["new_method"],
-            previous_method=state.get("previous_method"),
             runtime_name=self.runtime_name,
+            previous_method=state.get("previous_method"),
             feedback_text=state.get("feedback_text"),
+            generated_file_contents=state.get("generated_file_contents"),
         )
         return {"new_method": new_method}
 
@@ -176,9 +179,10 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         new_method = generate_experiment_code(
             llm_name=self.llm_mapping.generate_experiment_code,
             new_method=state["new_method"],
-            previous_method=state.get("previous_method"),
             runtime_name=self.runtime_name,
+            previous_method=state.get("previous_method"),
             feedback_text=state.get("feedback_text"),
+            generated_file_contents=state.get("generated_file_contents"),
         )
         return {"new_method": new_method}
 

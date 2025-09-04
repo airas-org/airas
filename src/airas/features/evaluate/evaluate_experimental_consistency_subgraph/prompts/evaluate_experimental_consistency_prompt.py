@@ -42,19 +42,19 @@ Provide a numerical score (1-10) based on:
 ## Current Method and Results:
 **Method:** {{ new_method.method }}
 
-{% if new_method.experimental_design %}
 **Experimental Design:**
 - Strategy: {{ new_method.experimental_design.experiment_strategy }}
 - Details: {{ new_method.experimental_design.experiment_details }}
 - External Resources: {{ new_method.experimental_design.external_resources }}
-- Code: {{ new_method.experimental_design.experiment_code }}
-{% endif %}
+- Generated Files:
+{% for filename, content in generated_file_contents.items() %}
+  - {{ filename }}:
+{{ content }}
+{% endfor %}
 
-{% if new_method.experimental_results %}
 **Experimental Results:**
 - Result: {{ new_method.experimental_results.result }}
 - Error: {{ new_method.experimental_results.error }}
-{% endif %}
 
 **Primary Goal**: Provide feedback that helps improve the consistency_score in future iterations. Focus on actionable steps that would transform a low-scoring experiment into a high-scoring (8-10) experiment with strong consistency and scientific rigor.
 """
