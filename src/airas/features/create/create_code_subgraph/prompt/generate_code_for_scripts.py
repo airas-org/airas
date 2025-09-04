@@ -26,6 +26,7 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
         - preprocess.py...Extract any data loading or preprocessing logic.
         - main.py...Create the main execution script using relative imports (e.g., `from .train import ...`) to orchestrate the experimental workflow. Load configuration from `config/config.yaml` using PyYAML.
     - requirements.txt...Analyze the "Experiment Code" header and import statements. List all required Python packages here, one per line.
+- Only these files exist. If the experiment code references other modules, consolidate their functionality into these existing files rather than assuming additional files exist.
 
 # Experimental Environment
 {{ runtime_prompt }}

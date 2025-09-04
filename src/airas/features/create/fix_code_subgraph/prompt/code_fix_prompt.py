@@ -26,7 +26,7 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 # Rules
 - Fix all errors found in the error messages
 - If a file has no errors, return exactly: `[KEEP_ORIGINAL_FILE]`
-- Only reference files that exist in the "Current Files" section - do not import or reference non-existent files
+- Only reference files that exist in the "CURRENT FILES" section - do not import or reference non-existent files
 - Ensure code runs on NVIDIA Tesla T4 · 16 GB VRAM
 - Update requirements.txt if new packages needed
 - Save all experiment images to: .research/iteration{{ experiment_iteration }}/images (modify any existing image save paths to use this exact directory)
@@ -40,6 +40,9 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 
 ## Error Data:
 {{ new_method.experimental_results.error }}
+
+## External Resources (for reference):
+{{ new_method.experimental_design.external_resources }}
 
 # ========================================
 # CURRENT FILES TO FIX
