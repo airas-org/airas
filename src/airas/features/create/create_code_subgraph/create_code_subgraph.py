@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -29,7 +28,7 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-create_code_timed = lambda f: time_node("create_code_local_subgraph")(f)  # noqa: E731
+create_code_timed = lambda f: time_node("create_code_subgraph")(f)  # noqa: E731
 
 
 class CreateCodeLLMMapping(BaseModel):
@@ -106,10 +105,7 @@ class CreateCodeSubgraph(BaseSubgraph):
     def _generate_code_for_scripts(self, state: CreateCodeSubgraphState) -> dict:
         generated_file_contents = generate_code_for_scripts(
             llm_name=self.llm_mapping.generate_code_for_scripts,
-            new_method=state["new_method"].method,
-            experiment_code=cast(
-                str, state["new_method"].experimental_design.experiment_code
-            ),
+            new_method=state["new_method"],
             runtime_name=self.runtime_name,
             experiment_iteration=state["experiment_iteration"],
         )

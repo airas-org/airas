@@ -107,7 +107,8 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
     runtime_name="gpu-runner",
     llm_mapping={
         "generate_experiment_strategy": "o3-2025-04-16",
-        "generate_experiment_specification": "o3-2025-04-16",
+        "generate_experiment_details": "o3-2025-04-16",
+        "search_external_resources": "gpt-5-mini-2025-08-07",  # Only openAI models are available.
         "generate_experiment_code": "o3-2025-04-16",
     },
 )
@@ -125,7 +126,6 @@ judge_execution = JudgeExecutionSubgraph(
 )
 fixer = FixCodeSubgraph(
     llm_mapping={
-        "should_fix_code": "gpt-5-mini-2025-08-07",
         "fix_code": "o3-2025-04-16",
     }
 )
@@ -144,7 +144,7 @@ create_bibfile = CreateBibfileSubgraph(
         "filter_references": "gemini-2.5-flash",
     },
     latex_template_name="agents4science_2025",
-    max_filtered_references=5,
+    max_filtered_references=20,
 )
 writer = WriterSubgraph(
     llm_mapping={
@@ -208,16 +208,14 @@ subgraph_list = [
 
 
 def _run_fix_loop(state, workflow_config):
-    fix_attempts = 0
-    while fix_attempts < workflow_config.max_fix_attempts:
+    for _ in range(workflow_config.max_fix_attempts):
         state = executor.run(state)
         state = judge_execution.run(state)
-
         if state.get("is_experiment_successful"):
             return state
-
         state = fixer.run(state)
-        fix_attempts += 1
+
+    print("Fix attempts exhausted, proceeding with current state")
     return state
 
 
@@ -227,38 +225,17 @@ def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG)
         print(f"--- Running Subgraph: {subgraph_name} ---")
 
         if isinstance(subgraph, CreateExperimentalDesignSubgraph):
-            consistency_attempts = 0
-            while consistency_attempts < workflow_config.max_consistency_attempts:
+            for _ in range(workflow_config.max_consistency_attempts):
                 state = create_experimental_design.run(state)
                 state = coder.run(state)
-
                 state = _run_fix_loop(state, workflow_config)
-                if not state.get("is_experiment_successful"):
-                    print("Fix attempts exhausted → redesign")
-                    consistency_attempts += 1
-                    continue
 
                 state = evaluate_consistency.run(state)
                 if state.get("is_experiment_consistent"):
                     state = analysis.run(state)
                     break
-
-                latest_feedback = (
-                    state["consistency_feedback"][-1]
-                    if state.get("consistency_feedback")
-                    else ""
-                )
-                latest_score = (
-                    state["consistency_score"][-1]
-                    if state.get("consistency_score")
-                    else 0
-                )
-                print(
-                    f"Experimental consistency failed → redesign. Score: {latest_score}, Feedback: {latest_feedback}"
-                )
-                consistency_attempts += 1
-
-            if consistency_attempts >= workflow_config.max_consistency_attempts:
+                print("Experimental consistency failed → redesign.")
+            else:
                 print("Max consistency attempts reached, fallback to analysis.")
                 state = analysis.run(state)
 
@@ -308,18 +285,9 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250831-v3"
+    repository_name = "experiment_matsuzawa_20250903-2"
     research_topic_list = [
-        # "small language modelの学習高速化のための新しいアーキテクチャ",
-        # "small language modelの推論高速化のための新しいアーキテクチャ",
-        # "small language modelのメモリを抑えた学習方法",
-        # "small language modelの学習でメモリを抑えられるアーキテクチャ",
-        # "small language modelの推論でメモリを抑えられるアーキテクチャ",
-        # "diffusion modelの学習高速化のための新しいアーキテクチャ",
-        # "diffusion modelの推論高速化のための新しいアーキテクチャ",
-        "diffusion modelのメモリを抑えた学習方法",
-        "diffusion modelの学習でメモリを抑えられるアーキテクチャ",
-        "diffusion modelの推論でメモリを抑えられるアーキテクチャ",
+        "グラフニューラルネットワークの過平滑化に関して改善したい",
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list

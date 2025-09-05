@@ -1,13 +1,9 @@
-import json
 import logging
 
 from jinja2 import Environment
 from pydantic import BaseModel
 
 from airas.config.runtime_prompt import RuntimeKeyType, runtime_prompt_dict
-from airas.features.create.create_code_subgraph.input_data import (
-    create_code_subgraph_input_data,
-)
 from airas.features.create.create_code_subgraph.prompt.generate_code_for_scripts import (
     generate_code_for_scripts_prompt,
 )
@@ -15,6 +11,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.research_hypothesis import ResearchHypothesis
 
 logger = logging.getLogger(__name__)
 
@@ -30,22 +27,17 @@ class GenerateCodeForScripts(BaseModel):
 
 def generate_code_for_scripts(
     llm_name: LLM_MODEL,
-    new_method: str,
-    experiment_code: str,
+    new_method: ResearchHypothesis,
     experiment_iteration: int,
     runtime_name: RuntimeKeyType,
     prompt_template: str = generate_code_for_scripts_prompt,
     client: LLMFacadeClient | None = None,
 ) -> dict[str, str]:
-    """Generate code files using LLM based on new method and experiment code"""
-
     client = client or LLMFacadeClient(llm_name=llm_name)
 
-    # Prepare template data
     data = {
         "runtime_prompt": runtime_prompt_dict[runtime_name],
-        "new_method": new_method,
-        "experiment_code": experiment_code,
+        "new_method": new_method.model_dump(),
         "experiment_iteration": experiment_iteration,
     }
 
@@ -68,18 +60,3 @@ def generate_code_for_scripts(
         "requirements.txt": output["requirements_txt_content"],
         "config/config.yaml": output["config_yaml_content"],
     }
-
-
-if __name__ == "__main__":
-    llm_name = "gpt-4o-mini-2024-07-18"
-    new_method = create_code_subgraph_input_data["new_method"]
-    experiment_code = create_code_subgraph_input_data["experiment_code"]
-    experiment_iteration = 1
-
-    result = generate_code_for_scripts(
-        llm_name=llm_name,
-        new_method=new_method,
-        experiment_code=experiment_code,
-        experiment_iteration=experiment_iteration,
-    )
-    print(json.dumps(result, indent=2))

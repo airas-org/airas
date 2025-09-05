@@ -22,6 +22,7 @@ def evaluate_experimental_consistency(
     llm_name: LLM_MODEL,
     prompt_template: str,
     new_method: ResearchHypothesis,
+    generated_file_contents: dict[str, str],
     existing_feedback: list[str] | None = None,
     existing_scores: list[int] | None = None,
     client: LLMFacadeClient | None = None,
@@ -31,7 +32,10 @@ def evaluate_experimental_consistency(
     env = Environment()
     template = env.from_string(prompt_template)
 
-    data = {"new_method": new_method.model_dump()}
+    data = {
+        "new_method": new_method.model_dump(),
+        "generated_file_contents": generated_file_contents,
+    }
 
     messages = template.render(data)
     llm_output, _cost = client.structured_outputs(

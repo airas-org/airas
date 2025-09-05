@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -6,6 +8,10 @@ from pydantic import BaseModel, Field
 class ExperimentalDesign(BaseModel):
     experiment_strategy: Optional[str] = Field(None, description="")
     experiment_details: Optional[str] = Field(None, description="")
+    external_resources: Optional[str] = Field(
+        None,
+        description="URLs and paths for datasets, models, and other external resources",
+    )
     experiment_code: Optional[str] = Field(
         None, description=""
     )  # 実施に実験するコードではない、コードの案
@@ -27,3 +33,6 @@ class ResearchHypothesis(BaseModel):
     experimental_design: Optional[ExperimentalDesign] = Field(None, description="")
     experimental_results: Optional[ExperimentalResults] = Field(None, description="")
     experimental_analysis: Optional[ExperimentalAnalysis] = Field(None, description="")
+    iteration_history: Optional[list[ResearchHypothesis]] = Field(
+        None, description="Previous iterations of this research hypothesis"
+    )

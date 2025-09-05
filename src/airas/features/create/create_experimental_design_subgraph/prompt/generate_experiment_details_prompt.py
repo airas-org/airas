@@ -35,8 +35,31 @@ You are a cutting-edge AI researcher. Based on the new method described in # New
 # Experimental Environment
 {{ runtime_prompt }}
 
-# New Methods
-{{ new_method }}
+# Current Research Method (Target for Experiment Design)
+{{ new_method.method }}
 
 # Experiment Strategy
-{{ experiment_strategy }}"""
+{{ new_method.experimental_design.experiment_strategy }}
+
+---
+# Reference Information from Previous Iteration
+{% if previous_method and previous_method.experimental_design %}
+**Previous Experimental Design**:
+- Strategy: {{ previous_method.experimental_design.experiment_strategy }}
+- Details: {{ previous_method.experimental_design.experiment_details }}
+
+{% if generated_file_contents %}
+**Previous Generated Code Files**:
+{% for filename, content in generated_file_contents.items() %}
+### {{ filename }}
+```python
+{{ content }}
+```
+{% endfor %}
+{% endif %}
+
+Build upon what worked and address what didn't work to improve the consistency score.
+{% else %}
+*No previous iteration available*
+{% endif %}
+---"""

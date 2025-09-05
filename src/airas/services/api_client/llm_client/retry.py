@@ -1,8 +1,10 @@
+import json
 import logging
 from logging import getLogger
 
 from google.genai import errors as genai_errors
 from httpx import HTTPStatusError
+from pydantic import ValidationError
 from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 from tenacity import (
     before_log,
@@ -25,6 +27,8 @@ RETRY_EXC = (
     Timeout,
     RequestException,
     genai_errors.APIError,
+    json.JSONDecodeError,
+    ValidationError,
 )
 
 
