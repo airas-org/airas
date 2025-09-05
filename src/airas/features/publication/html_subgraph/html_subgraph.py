@@ -12,8 +12,8 @@ from airas.features.publication.html_subgraph.input_data import html_subgraph_in
 from airas.features.publication.html_subgraph.nodes.convert_to_html import (
     convert_to_html,
 )
-from airas.features.publication.html_subgraph.nodes.deploy_images_to_gh_pages import (
-    deploy_images_to_gh_pages,
+from airas.features.publication.html_subgraph.nodes.prepare_images_for_html import (
+    prepare_images_for_html,
 )
 from airas.features.publication.html_subgraph.nodes.render_html import render_html
 from airas.features.publication.html_subgraph.nodes.replace_citation_keys_with_links import (
@@ -132,12 +132,12 @@ class HtmlSubgraph(BaseSubgraph):
         return {"html_upload": ok}
 
     @html_timed
-    def _deploy_images_to_gh_pages(
+    def _prepare_images_for_html(
         self, state: HtmlSubgraphState
     ) -> dict[str, str | bool]:
         time.sleep(3)
 
-        github_pages_url = deploy_images_to_gh_pages(
+        github_pages_url = prepare_images_for_html(
             github_repository=state["github_repository_info"],
         )
 
@@ -153,16 +153,14 @@ class HtmlSubgraph(BaseSubgraph):
         )
         graph_builder.add_node("render_html", self._render_html)
         graph_builder.add_node("upload_html", self._upload_html)
-        graph_builder.add_node(
-            "deploy_images_to_gh_pages", self._deploy_images_to_gh_pages
-        )
+        graph_builder.add_node("prepare_images_for_html", self._prepare_images_for_html)
 
         graph_builder.add_edge(START, "convert_to_html")
         graph_builder.add_edge("convert_to_html", "replace_citation_keys_with_links")
         graph_builder.add_edge("replace_citation_keys_with_links", "render_html")
         graph_builder.add_edge("render_html", "upload_html")
-        graph_builder.add_edge("upload_html", "deploy_images_to_gh_pages")
-        graph_builder.add_edge("deploy_images_to_gh_pages", END)
+        graph_builder.add_edge("upload_html", "prepare_images_for_html")
+        graph_builder.add_edge("prepare_images_for_html", END)
 
         return graph_builder.compile()
 

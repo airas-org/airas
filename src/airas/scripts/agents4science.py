@@ -104,7 +104,7 @@ create_method = CreateMethodSubgraphV2(
     refine_iterations=5,
 )
 create_experimental_design = CreateExperimentalDesignSubgraph(
-    runtime_name="gpu-runner",
+    runner_type="gpu-runner",
     llm_mapping={
         "generate_experiment_strategy": "o3-2025-04-16",
         "generate_experiment_details": "o3-2025-04-16",
@@ -113,7 +113,7 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
     },
 )
 coder = CreateCodeSubgraph(
-    runtime_name="gpu-runner",
+    runner_type="gpu-runner",
     llm_mapping={
         "generate_code_for_scripts": "o3-2025-04-16",
     },
