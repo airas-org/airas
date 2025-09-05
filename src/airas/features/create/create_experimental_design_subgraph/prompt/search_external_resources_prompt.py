@@ -10,7 +10,7 @@ Based on the experimental strategy and details, identify and find specific URLs 
 - Python package compatibility: Search for recent stable versions of Python packages needed for this experiment, using modern version ranges rather than outdated pinned versions or historical versions mentioned in papers
 
 # Experimental Environment
-{{ runtime_prompt }}
+{{ runner_type_prompt }}
 
 # Experimental Information
 **Strategy:** {{ new_method.experimental_design.experiment_strategy }}

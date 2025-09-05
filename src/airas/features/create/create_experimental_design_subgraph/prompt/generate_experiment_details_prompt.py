@@ -33,7 +33,7 @@ You are a cutting-edge AI researcher. Based on the new method described in # New
 {% endif %}
 
 # Experimental Environment
-{{ runtime_prompt }}
+{{ runner_type_prompt }}
 
 # Current Research Method (Target for Experiment Design)
 {{ new_method.method }}

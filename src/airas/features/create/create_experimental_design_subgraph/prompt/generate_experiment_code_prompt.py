@@ -48,7 +48,7 @@ Specifically improve the experimental code to resolve these consistency issues.
 {% endif %}
 
 # Experimental Environment
-{{ runtime_prompt }}
+{{ runner_type_prompt }}
 
 {% if new_method.experimental_design.external_resources %}
 # External Resources

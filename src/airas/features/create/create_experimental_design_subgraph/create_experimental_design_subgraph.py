@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
-from airas.config.runtime_prompt import RuntimeKeyType
+from airas.config.runner_type_prompt import RunnerTypeKey
 from airas.core.base import BaseSubgraph
 from airas.features.create.create_experimental_design_subgraph.input_data import (
     create_experimental_design_subgraph_input_data,
@@ -79,10 +79,10 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        runtime_name: RuntimeKeyType = "default",
+        runner_type: RunnerTypeKey = "default",
         llm_mapping: dict[str, str] | CreateExperimentalDesignLLMMapping | None = None,
     ):
-        self.runtime_name = runtime_name
+        self.runner_type = runner_type
         if llm_mapping is None:
             self.llm_mapping = CreateExperimentalDesignLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -141,7 +141,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         new_method = generate_experiment_strategy(
             llm_name=self.llm_mapping.generate_experiment_strategy,
             new_method=state["new_method"],
-            runtime_name=self.runtime_name,
+            runner_type=self.runner_type,
             previous_method=state.get("previous_method"),
             feedback_text=state.get("feedback_text"),
             generated_file_contents=state.get("generated_file_contents"),
@@ -155,7 +155,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         new_method = generate_experiment_details(
             llm_name=self.llm_mapping.generate_experiment_details,
             new_method=state["new_method"],
-            runtime_name=self.runtime_name,
+            runner_type=self.runner_type,
             previous_method=state.get("previous_method"),
             feedback_text=state.get("feedback_text"),
             generated_file_contents=state.get("generated_file_contents"),
@@ -169,7 +169,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         new_method = search_external_resources(
             llm_name=self.llm_mapping.search_external_resources,
             new_method=state["new_method"],
-            runtime_name=self.runtime_name,
+            runner_type=self.runner_type,
         )
         return {"new_method": new_method}
 
@@ -180,7 +180,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         new_method = generate_experiment_code(
             llm_name=self.llm_mapping.generate_experiment_code,
             new_method=state["new_method"],
-            runtime_name=self.runtime_name,
+            runner_type=self.runner_type,
             previous_method=state.get("previous_method"),
             feedback_text=state.get("feedback_text"),
             generated_file_contents=state.get("generated_file_contents"),

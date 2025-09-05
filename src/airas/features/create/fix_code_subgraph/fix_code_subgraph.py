@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
-from airas.config.runtime_prompt import RuntimeKeyType
+from airas.config.runner_type_prompt import RunnerTypeKey
 from airas.core.base import BaseSubgraph
 from airas.features.create.create_code_subgraph.nodes.push_files_to_github import (
     push_files_to_github,
@@ -68,10 +68,10 @@ class FixCodeSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        runtime_name: RuntimeKeyType = "default",
+        runner_type: RunnerTypeKey = "ubuntu-latest",
         llm_mapping: dict[str, str] | FixCodeLLMMapping | None = None,
     ):
-        self.runtime_name = runtime_name
+        self.runner_type = runner_type
         if llm_mapping is None:
             self.llm_mapping = FixCodeLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -102,7 +102,7 @@ class FixCodeSubgraph(BaseSubgraph):
             new_method=state["new_method"],
             current_files=state["generated_file_contents"],
             experiment_iteration=state["experiment_iteration"],
-            runtime_name=self.runtime_name,
+            runner_type=self.runner_type,
         )
 
         return {"generated_file_contents": fixed_file_contents}

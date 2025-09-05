@@ -29,7 +29,7 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
 - Only these files exist. If the experiment code references other modules, consolidate their functionality into these existing files rather than assuming additional files exist.
 
 # Experimental Environment
-{{ runtime_prompt }}
+{{ runner_type_prompt }}
 
 # New Method
 {{ new_method.method }}
