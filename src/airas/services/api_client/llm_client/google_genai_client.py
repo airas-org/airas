@@ -60,7 +60,7 @@ VERTEXAI_MODEL = Literal[
 ]
 
 
-class GoogelGenAIClient:
+class GoogleGenAIClient:
     def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
         self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -165,7 +165,7 @@ if __name__ == "__main__":
 以下の文章から，名前，年齢，メールアドレスを抽出してください。
 「田中太郎さん（35歳）は、東京在住のソフトウェアエンジニアです。現在、新しいAI技術の研究に取り組んでおり、業界内でも注目を集めています。お問い合わせは、taro.tanaka@example.com までお願いします。」
 """
-    genai_client = GoogelGenAIClient()
+    genai_client = GoogleGenAIClient()
     output, cost = genai_client.generate(
         model_name=model_name,
         message=message,

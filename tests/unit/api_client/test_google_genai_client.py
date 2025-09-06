@@ -5,10 +5,11 @@ from pydantic import BaseModel
 
 from airas.services.api_client.llm_client.google_genai_client import (
     VERTEXAI_MODEL,
-    GoogelGenAIClient,
+    GoogleGenAIClient,
 )
 
 ALL_VERTEXAI_MODEL_NAMES = [t for t in VERTEXAI_MODEL.__args__]
+ALL_VERTEXAI_MODEL_NAMES.remove("gemini-embedding-001")
 
 
 @pytest.mark.parametrize("model_name", ALL_VERTEXAI_MODEL_NAMES)
@@ -16,7 +17,7 @@ def test_real_generate_all_models(model_name):
     if "GEMINI_API_KEY" not in os.environ:
         pytest.skip("GEMINI_API_KEY is not set. Skipping real API test.")
 
-    client = GoogelGenAIClient()
+    client = GoogleGenAIClient()
     message = "こんにちは、自己紹介をしてください。"
 
     try:
@@ -41,7 +42,7 @@ def test_real_structured_outputs_all_models(model_name):
     if "GEMINI_API_KEY" not in os.environ:
         pytest.skip("GEMINI_API_KEY is not set. Skipping real API test.")
 
-    client = GoogelGenAIClient()
+    client = GoogleGenAIClient()
     message = (
         "私の名前は田中です．エンジニアをしています．"
         "次の形式で出力してください。"

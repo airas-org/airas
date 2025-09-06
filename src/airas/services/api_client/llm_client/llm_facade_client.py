@@ -1,8 +1,12 @@
 from typing import Literal
 
+from airas.services.api_client.llm_client.anthropic_client import (
+    CLAUDE_MODEL,
+    AnthropicClient,
+)
 from airas.services.api_client.llm_client.google_genai_client import (
     VERTEXAI_MODEL,
-    GoogelGenAIClient,
+    GoogleGenAIClient,
 )
 from airas.services.api_client.llm_client.openai_client import (
     OPENAI_MODEL,
@@ -19,7 +23,9 @@ class LLMFacadeClient:
         if llm_name in OPENAI_MODEL.__args__:
             self.client = OpenAIClient()
         elif llm_name in VERTEXAI_MODEL.__args__:
-            self.client = GoogelGenAIClient()
+            self.client = GoogleGenAIClient()
+        elif llm_name in CLAUDE_MODEL.__args__:
+            self.client = AnthropicClient()
         else:
             raise ValueError(f"Unsupported LLM model: {llm_name}")
 
@@ -29,6 +35,11 @@ class LLMFacadeClient:
 
     @LLM_RETRY
     def structured_outputs(self, message: str, data_model):
+        # NOTE:The Anthropic model does not support structured output.
+        if self.llm_name in CLAUDE_MODEL.__args__:
+            raise NotImplementedError(
+                "Structured output is not supported for Anthropic models."
+            )
         return self.client.structured_outputs(
             model_name=self.llm_name, message=message, data_model=data_model
         )
