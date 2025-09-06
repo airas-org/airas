@@ -304,9 +304,9 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka_20250906"
+    repository_name = "tanaka-20250906-v1"
     research_topic_list = [
-        "LLMの新しい学習方法に関する研究",
+        "LLMの高速な新しい学習方法に関する研究",
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list
