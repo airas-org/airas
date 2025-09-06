@@ -3,7 +3,7 @@ import logging
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.config.runtime_prompt import RuntimeKeyType, runtime_prompt_dict
+from airas.config.runner_type_prompt import RunnerTypeKey, runner_type_prompt_dict
 from airas.features.create.create_code_subgraph.prompt.generate_code_for_scripts import (
     generate_code_for_scripts_prompt,
 )
@@ -21,7 +21,7 @@ class GenerateCodeForScripts(BaseModel):
     evaluate_scripts_content: str
     preprocess_scripts_content: str
     main_scripts_content: str
-    requirements_txt_content: str
+    pyproject_toml_content: str
     config_yaml_content: str
 
 
@@ -29,14 +29,14 @@ def generate_code_for_scripts(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
     experiment_iteration: int,
-    runtime_name: RuntimeKeyType,
+    runner_type_prompt: RunnerTypeKey,
     prompt_template: str = generate_code_for_scripts_prompt,
     client: LLMFacadeClient | None = None,
 ) -> dict[str, str]:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
     data = {
-        "runtime_prompt": runtime_prompt_dict[runtime_name],
+        "runner_type_prompt": runner_type_prompt_dict[runner_type_prompt],
         "new_method": new_method.model_dump(),
         "experiment_iteration": experiment_iteration,
     }
@@ -57,6 +57,6 @@ def generate_code_for_scripts(
         "src/evaluate.py": output["evaluate_scripts_content"],
         "src/preprocess.py": output["preprocess_scripts_content"],
         "src/main.py": output["main_scripts_content"],
-        "requirements.txt": output["requirements_txt_content"],
+        "pyproject.toml": output["pyproject_toml_content"],
         "config/config.yaml": output["config_yaml_content"],
     }

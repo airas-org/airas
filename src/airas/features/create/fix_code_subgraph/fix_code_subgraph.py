@@ -1,4 +1,3 @@
-import json
 import logging
 
 from langgraph.graph import END, START, StateGraph
@@ -7,7 +6,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
-from airas.config.runtime_prompt import RuntimeKeyType
+from airas.config.runner_type_prompt import RunnerTypeKey
 from airas.core.base import BaseSubgraph
 from airas.features.create.create_code_subgraph.nodes.push_files_to_github import (
     push_files_to_github,
@@ -37,20 +36,22 @@ class FixCodeLLMMapping(BaseModel):
 
 class FixCodeSubgraphInputState(TypedDict):
     github_repository_info: GitHubRepositoryInfo
-    generated_file_contents: dict[str, str]
     new_method: ResearchHypothesis
     executed_flag: bool  # This should be True if the GitHub Actions workflow was executed successfully
     experiment_iteration: int
+    generated_file_contents: dict[str, str]
 
 
-class FixCodeSubgraphHiddenState(TypedDict): ...
+class FixCodeSubgraphHiddenState(TypedDict):
+    pass
 
 
 class FixCodeSubgraphOutputState(TypedDict):
-    is_code_pushed_to_github: bool
     executed_flag: bool
-    generated_file_contents: dict[str, str]
     experiment_iteration: int
+    is_code_pushed_to_github: bool
+    generated_file_contents: dict[str, str]
+    error_list: list[str]
 
 
 class FixCodeSubgraphState(
@@ -68,10 +69,10 @@ class FixCodeSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        runtime_name: RuntimeKeyType = "default",
+        runner_type_prompt: RunnerTypeKey = "ubuntu-latest",
         llm_mapping: dict[str, str] | FixCodeLLMMapping | None = None,
     ):
-        self.runtime_name = runtime_name
+        self.runner_type_prompt = runner_type_prompt
         if llm_mapping is None:
             self.llm_mapping = FixCodeLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -91,24 +92,30 @@ class FixCodeSubgraph(BaseSubgraph):
         check_api_key(llm_api_key_check=True)
 
     @fix_code_timed
-    def _initialize(self, state: FixCodeSubgraphState) -> dict:
+    def _initialize(self, state: FixCodeSubgraphState) -> dict[str, int]:
         # NOTE: We increment the experiment_iteration here to reflect the next iteration
         return {"experiment_iteration": state["experiment_iteration"] + 1}
 
     @fix_code_timed
-    def _fix_code(self, state: FixCodeSubgraphState) -> dict:
-        fixed_file_contents = fix_code(
+    def _fix_code(
+        self, state: FixCodeSubgraphState
+    ) -> dict[str, dict[str, str] | list[str]]:
+        result = fix_code(
             llm_name=self.llm_mapping.fix_code,
             new_method=state["new_method"],
-            current_files=state["generated_file_contents"],
+            generated_file_contents=state["generated_file_contents"],
             experiment_iteration=state["experiment_iteration"],
-            runtime_name=self.runtime_name,
+            runner_type_prompt=self.runner_type_prompt,
+            error_list=state.get("error_list", []),
         )
 
-        return {"generated_file_contents": fixed_file_contents}
+        return {
+            "generated_file_contents": result["generated_file_contents"],
+            "error_list": result["error_list"],
+        }
 
     @fix_code_timed
-    def _push_fixed_files_node(self, state: FixCodeSubgraphState) -> dict:
+    def _push_fixed_files_node(self, state: FixCodeSubgraphState) -> dict[str, bool]:
         commit_message = (
             f"Fix code issues for iteration {state['experiment_iteration']}"
         )
@@ -140,12 +147,12 @@ class FixCodeSubgraph(BaseSubgraph):
 
 def main():
     result = FixCodeSubgraph().run(fix_code_subgraph_input_data)
-    print(f"result: {json.dumps(result, indent=2)}")
+    print(f"result: {result}")
 
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        logger.error(f"Error running FixCodeLocalSubgraph: {e}")
+        logger.error(f"Error running FixCodeSubgraph: {e}")
         raise

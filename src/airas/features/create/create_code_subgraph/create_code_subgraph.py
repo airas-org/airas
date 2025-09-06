@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
-from airas.config.runtime_prompt import RuntimeKeyType
+from airas.config.runner_type_prompt import RunnerTypeKey
 from airas.core.base import BaseSubgraph
 from airas.features.create.create_code_subgraph.input_data import (
     create_code_subgraph_input_data,
@@ -70,10 +70,10 @@ class CreateCodeSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        runtime_name: RuntimeKeyType = "default",
+        runner_type_prompt: RunnerTypeKey = "ubuntu-latest",
         llm_mapping: dict[str, str] | CreateCodeLLMMapping | None = None,
     ):
-        self.runtime_name = runtime_name
+        self.runner_type_prompt = runner_type_prompt
         if llm_mapping is None:
             self.llm_mapping = CreateCodeLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -106,7 +106,7 @@ class CreateCodeSubgraph(BaseSubgraph):
         generated_file_contents = generate_code_for_scripts(
             llm_name=self.llm_mapping.generate_code_for_scripts,
             new_method=state["new_method"],
-            runtime_name=self.runtime_name,
+            runner_type_prompt=self.runner_type_prompt,
             experiment_iteration=state["experiment_iteration"],
         )
 

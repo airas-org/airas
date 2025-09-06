@@ -55,8 +55,8 @@ class GitHubActionsExecutorSubgraph(BaseSubgraph):
     InputState = GitHubActionsExecutorSubgraphInputState
     OutputState = GitHubActionsExecutorSubgraphOutputState
 
-    def __init__(self, gpu_enabled: bool):
-        self.gpu_enabled = gpu_enabled
+    def __init__(self, runner_type: str = "ubuntu-latest"):
+        self.runner_type = runner_type
         check_api_key(
             github_personal_access_token_check=True,
         )
@@ -73,7 +73,7 @@ class GitHubActionsExecutorSubgraph(BaseSubgraph):
         executed_flag = execute_github_actions_workflow(
             github_repository=state["github_repository_info"],
             experiment_iteration=state["experiment_iteration"],
-            gpu_enabled=self.gpu_enabled,
+            runner_type=self.runner_type,
         )
         return {"executed_flag": executed_flag}
 
@@ -129,7 +129,7 @@ def main():
         "experiment_iteration": 1,
         "push_completion": True,  # Set to True to indicate a successful code push
     }
-    result = GitHubActionsExecutorSubgraph(gpu_enabled=False).run(state)
+    result = GitHubActionsExecutorSubgraph(runner_type="ubuntu-latest").run(state)
     print(f"result: {json.dumps(result, indent=2, ensure_ascii=False)}")
 
 

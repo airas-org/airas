@@ -4,7 +4,7 @@ You are a cutting-edge AI researcher. Based on the new method described in # New
 # Instructions
 
 ## Basic Requirements
-- The generated code will be executed as `python -m src.main` without any command-line arguments.
+- The generated code will be executed as `uv run python -m src.main` without any command-line arguments.
 - Output Python code to conduct each experiment based on the detailed information provided in "Experiment Details".
 - Include dataset URLs, model specifications, and hyperparameters as structured configuration that can be extracted into YAML.
 - Use PyTorch exclusively as the deep learning framework.
@@ -13,15 +13,18 @@ You are a cutting-edge AI researcher. Based on the new method described in # New
 ## Implementation Guidelines
 - Complete data pipeline: Implement full data acquisition from URLs, including downloading, extraction, and organizing into data/ directory. Do not assume existing local data.
 - Comprehensive experiments: Implement full-scale experiments, not quick tests or prototypes. Include sufficient training epochs, proper validation splits, and thorough evaluation metrics.
-- Fail-fast, no silent fallbacks: If real datasets or models cannot be accessed, terminate execution immediately with clear error messages rather than using synthetic alternatives.
+- STRICT NO-FALLBACK RULE: If real datasets or models cannot be accessed, terminate execution immediately with clear error messages - NEVER use synthetic/dummy/placeholder data under any circumstances.
 
 ## Output Requirements
 The implementation must ensure that all experiment executions include the following in the standard output:
 
+### Results Documentation
+- Save each experiment's results as separate JSON files and print each JSON contents to standard output for verification.
+
 ### Standard Output Content
-- **Experiment description**: Before printing experimental results, the standard output must include a detailed description of the experiment.
-- **Experimental numerical data**: All experimental data obtained in the experiments must be output to the standard output.
-- **Names of figures summarizing the numerical data**
+- Experiment description: Before printing experimental results, the standard output must include a detailed description of the experiment.
+- Experimental numerical data: All experimental data obtained in the experiments must be output to the standard output.
+- Names of figures summarizing the numerical data
 
 ### Figure Output Requirements
 - Experimental results must be presented in clear and interpretable figures.
@@ -48,7 +51,7 @@ Specifically improve the experimental code to resolve these consistency issues.
 {% endif %}
 
 # Experimental Environment
-{{ runtime_prompt }}
+{{ runner_type_prompt }}
 
 {% if new_method.experimental_design.external_resources %}
 # External Resources

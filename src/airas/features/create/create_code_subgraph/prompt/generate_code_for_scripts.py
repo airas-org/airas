@@ -12,11 +12,12 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
     - Data type consistency: Verify compatible data types across operations and add necessary type conversions.
     - Dimension compatibility: Check tensor/array shapes and add reshaping operations where needed.
     - Import dependencies: Verify all required libraries are properly imported and available.
-    - Dependency resolution: Ensure requirements.txt has proper dependency ordering to avoid circular dependencies.
+    - Dependency resolution: Ensure pyproject.toml has proper dependency ordering to avoid circular dependencies.
     - Error handling: Add appropriate try-catch blocks for common failure points like file I/O and model operations.
 
 - Directory and Script Roles
     - .research/iteration{{ experiment_iteration }}/images...Please save all images output from the experiment in this directory.
+    - .research/iteration{{ experiment_iteration }}/...Save each experiment's results as separate JSON files in this directory and print each JSON contents to standard output for verification.
     - config...Extract dataset URLs, model specifications, hyperparameters, and experiment settings.
     - data...This directory is used to store data used for model training and evaluation.
     - models...This directory is used to store pre-trained and trained models.
@@ -25,11 +26,11 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
         - evaluate.py...Extract all functions and classes related to model evaluation, statistical analysis, and plotting.
         - preprocess.py...Extract any data loading or preprocessing logic.
         - main.py...Create the main execution script using relative imports (e.g., `from .train import ...`) to orchestrate the experimental workflow. Load configuration from `config/config.yaml` using PyYAML.
-    - requirements.txt...Analyze the "Experiment Code" header and import statements. List all required Python packages here, one per line.
-- Only these files exist. If the experiment code references other modules, consolidate their functionality into these existing files rather than assuming additional files exist.
+    - pyproject.toml...Analyze the "Experiment Code" header and import statements. Configure the project dependencies and package information in TOML format.
+- STRICT FILE CONSTRAINT: Only these 6 files exist - never import or reference any other modules/files. If experiment code references missing modules (e.g., `src.models`), consolidate all functionality into the existing files.
 
 # Experimental Environment
-{{ runtime_prompt }}
+{{ runner_type_prompt }}
 
 # New Method
 {{ new_method.method }}

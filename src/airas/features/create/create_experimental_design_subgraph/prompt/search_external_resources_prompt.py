@@ -3,6 +3,8 @@ search_external_resources_prompt = """
 Search for URLs and download links for external resources needed for the experiment described below.
 
 # Task
+ACCESSIBILITY CONSTRAINT: Only suggest publicly accessible resources with unrestricted download - NEVER suggest gated/restricted resources requiring authentication or approval.
+
 Based on the experimental strategy and details, identify and find specific URLs for:
 - Datasets (download links, GitHub repositories)
 - Pretrained models (PyTorch model URLs, Hugging Face links)
@@ -10,7 +12,7 @@ Based on the experimental strategy and details, identify and find specific URLs 
 - Python package compatibility: Search for recent stable versions of Python packages needed for this experiment, using modern version ranges rather than outdated pinned versions or historical versions mentioned in papers
 
 # Experimental Environment
-{{ runtime_prompt }}
+{{ runner_type_prompt }}
 
 # Experimental Information
 **Strategy:** {{ new_method.experimental_design.experiment_strategy }}
