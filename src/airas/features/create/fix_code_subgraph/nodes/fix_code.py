@@ -22,7 +22,7 @@ class GenerateCodeForScripts(BaseModel):
     evaluate_scripts_content: str
     preprocess_scripts_content: str
     main_scripts_content: str
-    requirements_txt_content: str
+    pyproject_toml_content: str
     config_yaml_content: str
 
 
@@ -44,45 +44,55 @@ def _is_code_meaningful(content: str | None) -> bool:
 def fix_code(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
-    current_files: dict[str, str],
+    generated_file_contents: dict[str, str],
     experiment_iteration: int,
-    runner_type: RunnerTypeKey,
+    runner_type_prompt: RunnerTypeKey,
+    error_list: list[str],
     prompt_template: str = code_fix_prompt,
     client: LLMFacadeClient | None = None,
-) -> dict[str, str]:
+) -> dict[str, dict[str, str] | list[str]]:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
     data = {
-        "current_files": current_files,
+        "generated_file_contents": generated_file_contents,
         "experiment_iteration": experiment_iteration,
         "new_method": new_method.model_dump(),
-        "runner_type_prompt": runner_type_prompt_dict[runner_type],
+        "runner_type_prompt": runner_type_prompt_dict[runner_type_prompt],
+        "error_list": error_list,  # Previous errors for analysis
     }
     env = Environment()
     template = env.from_string(prompt_template)
     messages = template.render(data)
 
-    logger.info("Analyzing errors and generating fixed code using LLM...")
+    logger.info("Fixing code using LLM...")
     output, cost = client.structured_outputs(
         message=messages, data_model=GenerateCodeForScripts
     )
     if output is None:
         raise ValueError("Error: No response from LLM in fix_code.")
 
-    updated_files = current_files.copy()
-
     file_mapping = {
         "train_scripts_content": "src/train.py",
         "evaluate_scripts_content": "src/evaluate.py",
         "preprocess_scripts_content": "src/preprocess.py",
         "main_scripts_content": "src/main.py",
-        "requirements_txt_content": "requirements.txt",
+        "pyproject_toml_content": "pyproject.toml",
         "config_yaml_content": "config/config.yaml",
     }
 
     for field, path in file_mapping.items():
         new_content = output.get(field)
         if _is_code_meaningful(new_content):
-            updated_files[path] = new_content
+            generated_file_contents[path] = new_content
 
-    return updated_files
+    if (
+        hasattr(new_method, "experimental_results")
+        and new_method.experimental_results
+        and new_method.experimental_results.error
+    ):
+        error_list.append(new_method.experimental_results.error)
+
+    return {
+        "generated_file_contents": generated_file_contents,
+        "error_list": error_list[-3:],  # Keep only last 3 errors
+    }

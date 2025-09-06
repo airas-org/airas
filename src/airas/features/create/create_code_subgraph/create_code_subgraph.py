@@ -70,10 +70,10 @@ class CreateCodeSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        runner_type: RunnerTypeKey = "ubuntu-latest",
+        runner_type_prompt: RunnerTypeKey = "ubuntu-latest",
         llm_mapping: dict[str, str] | CreateCodeLLMMapping | None = None,
     ):
-        self.runner_type = runner_type
+        self.runner_type_prompt = runner_type_prompt
         if llm_mapping is None:
             self.llm_mapping = CreateCodeLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -106,7 +106,7 @@ class CreateCodeSubgraph(BaseSubgraph):
         generated_file_contents = generate_code_for_scripts(
             llm_name=self.llm_mapping.generate_code_for_scripts,
             new_method=state["new_method"],
-            runner_type=self.runner_type,
+            runner_type_prompt=self.runner_type_prompt,
             experiment_iteration=state["experiment_iteration"],
         )
 

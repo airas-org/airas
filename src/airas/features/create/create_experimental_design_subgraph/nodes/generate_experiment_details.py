@@ -19,7 +19,7 @@ class LLMOutput(BaseModel):
 def generate_experiment_details(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
-    runner_type: RunnerTypeKey,
+    runner_type_prompt: RunnerTypeKey,
     feedback_text: str | None = None,
     previous_method: ResearchHypothesis | None = None,
     generated_file_contents: dict[str, str] | None = None,
@@ -31,7 +31,7 @@ def generate_experiment_details(
 
     data = {
         "new_method": new_method.model_dump(),
-        "runner_type_prompt": runner_type_prompt_dict[runner_type],
+        "runner_type_prompt": runner_type_prompt_dict[runner_type_prompt],
         "consistency_feedback": feedback_text,
         "previous_method": previous_method.model_dump() if previous_method else None,
         "generated_file_contents": generated_file_contents,

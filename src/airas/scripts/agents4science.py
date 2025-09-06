@@ -104,7 +104,7 @@ create_method = CreateMethodSubgraphV2(
     refine_iterations=5,
 )
 create_experimental_design = CreateExperimentalDesignSubgraph(
-    runner_type="gpu-runner",
+    runner_type_prompt="gpu-runner",
     llm_mapping={
         "generate_experiment_strategy": "o3-2025-04-16",
         "generate_experiment_details": "o3-2025-04-16",
@@ -113,21 +113,22 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
     },
 )
 coder = CreateCodeSubgraph(
-    runner_type="gpu-runner",
+    runner_type_prompt="gpu-runner",
     llm_mapping={
         "generate_code_for_scripts": "o3-2025-04-16",
     },
 )
-executor = GitHubActionsExecutorSubgraph(gpu_enabled=True)
+executor = GitHubActionsExecutorSubgraph(runner_type="gpu-runner")
 judge_execution = JudgeExecutionSubgraph(
     llm_mapping={
         "judge_execution": "gpt-5-2025-08-07",
     }
 )
 fixer = FixCodeSubgraph(
+    runner_type_prompt="gpu-runner",
     llm_mapping={
         "fix_code": "o3-2025-04-16",
-    }
+    },
 )
 evaluate_consistency = EvaluateExperimentalConsistencySubgraph(
     llm_mapping={
