@@ -54,6 +54,13 @@ AVAILABLE_MODELS = [
     "gemini-2.0-flash-001",
     "gemini-2.0-flash-lite-001",
     "gemini-embedding-001",
+    # claude
+    # NOTE: Claude cannot be used for processing that requires structured output.
+    "claude-opus-4-1-20250805",
+    "claude-opus-4-20250514",
+    "claude-sonnet-4-20250514",
+    "claude-3-7-sonnet-20250219",
+    "claude-3-5-haiku-20241022",
 ]
 
 
