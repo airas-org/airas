@@ -116,7 +116,7 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
         "generate_experiment_strategy": "o3-2025-04-16",
         "generate_experiment_details": "o3-2025-04-16",
         "search_external_resources": "gpt-5-mini-2025-08-07",  # Only openAI models are available.
-        "generate_experiment_code": "o3-2025-04-16",
+        "generate_experiment_code": "claude-opus-4-1-20250805",
     },
 )
 coder = CreateCodeSubgraph(
@@ -293,7 +293,7 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "experiment_matsuzawa_20250903-2"
+    repository_name = "tanaka-20250906"
     research_topic_list = [
         "グラフニューラルネットワークの過平滑化に関して改善したい",
     ]
