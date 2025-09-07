@@ -1,7 +1,7 @@
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.config.runner_type_prompt import RunnerTypeKey, runner_type_prompt_dict
+from airas.config.runner_type_info import RunnerType, runner_info_dict
 from airas.features.create.create_experimental_design_subgraph.prompt.generate_experiment_strategy_prompt import (
     generate_experiment_strategy_prompt,
 )
@@ -19,7 +19,7 @@ class LLMOutput(BaseModel):
 def generate_experiment_strategy(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
-    runner_type_prompt: RunnerTypeKey,
+    runner_type: RunnerType,
     feedback_text: str | None = None,
     previous_method: ResearchHypothesis | None = None,
     generated_file_contents: dict[str, str] | None = None,
@@ -31,7 +31,7 @@ def generate_experiment_strategy(
 
     data = {
         "new_method": new_method.model_dump(),
-        "runner_type_prompt": runner_type_prompt_dict[runner_type_prompt],
+        "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "consistency_feedback": feedback_text,
         "previous_method": previous_method.model_dump() if previous_method else None,
         "generated_file_contents": generated_file_contents,

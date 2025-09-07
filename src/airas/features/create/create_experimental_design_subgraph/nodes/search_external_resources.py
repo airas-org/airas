@@ -2,7 +2,7 @@ import logging
 
 from jinja2 import Environment
 
-from airas.config.runner_type_prompt import RunnerTypeKey, runner_type_prompt_dict
+from airas.config.runner_type_info import RunnerType, runner_info_dict
 from airas.features.create.create_experimental_design_subgraph.prompt.search_external_resources_prompt import (
     search_external_resources_prompt,
 )
@@ -20,7 +20,7 @@ OPENAI_MODEL_SET = set(OPENAI_MODEL.__args__)
 def search_external_resources(
     llm_name: OPENAI_MODEL,
     new_method: ResearchHypothesis,
-    runner_type_prompt: RunnerTypeKey,
+    runner_type: RunnerType,
     prompt_template: str = search_external_resources_prompt,
 ) -> ResearchHypothesis:
     if llm_name not in OPENAI_MODEL_SET:
@@ -35,7 +35,7 @@ def search_external_resources(
     messages = template.render(
         {
             "new_method": new_method.model_dump(),
-            "runner_type_prompt": runner_type_prompt_dict[runner_type_prompt],
+            "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         }
     )
 

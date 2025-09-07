@@ -108,7 +108,7 @@ class OpenAIClient:
         """Shorten the prompt so that it does not exceed the maximum number of tokens."""
         max_tokens = OPENAI_MODEL_INFO[model_name].get("max_input_tokens", 4096)
         enc = tiktoken.get_encoding("cl100k_base")
-        encode_tokens = enc.encode(message)
+        encode_tokens = enc.encode(message, disallowed_special=())
 
         if len(encode_tokens) > max_tokens:
             self.logger.warning(
