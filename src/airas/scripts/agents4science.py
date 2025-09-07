@@ -115,14 +115,13 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
     llm_mapping={
         "generate_experiment_strategy": "o3-2025-04-16",
         "generate_experiment_details": "o3-2025-04-16",
-        "search_external_resources": "gpt-5-mini-2025-08-07",  # Only openAI models are available.
-        "generate_experiment_code": "o3-2025-04-16",
     },
 )
 coder = CreateCodeSubgraph(
     runner_type_prompt="gpu-runner",
     llm_mapping={
-        "generate_code_for_scripts": "o3-2025-04-16",
+        "generate_experiment_code": "o3-2025-04-16",
+        "convert_code_to_scripts": "o3-2025-04-16",
     },
 )
 executor = GitHubActionsExecutorSubgraph(runner_type="gpu-runner")

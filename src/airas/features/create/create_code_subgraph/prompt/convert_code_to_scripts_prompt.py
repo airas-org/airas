@@ -1,4 +1,4 @@
-generate_code_for_scripts_prompt = """
+convert_code_to_scripts_prompt = """
 You are a machine learning researcher with strong development skills, tasked with refactoring a single, complete experimental script into a structured multi-file project.
 The “Experiment Code” section contains a finished, runnable script. Your task is to **split this script into the separate files** as described in the "Instructions" and "Directory and Script Roles" sections.
 

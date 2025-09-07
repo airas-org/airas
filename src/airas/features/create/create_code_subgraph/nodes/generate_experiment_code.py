@@ -2,7 +2,7 @@ from jinja2 import Environment
 from pydantic import BaseModel
 
 from airas.config.runner_type_prompt import RunnerTypeKey, runner_type_prompt_dict
-from airas.features.create.create_experimental_design_subgraph.prompt.generate_experiment_code_prompt import (
+from airas.features.create.create_code_subgraph.prompt.generate_experiment_code_prompt import (
     generate_experiment_code_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (

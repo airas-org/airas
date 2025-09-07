@@ -22,12 +22,11 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
 
     # --- features/create ---
     # CreateCodeSubgraph
-    "generate_code_for_scripts": BASE_MODEL,
+    "generate_experiment_code": BASE_MODEL,
+    "convert_code_to_scripts": BASE_MODEL,
     # CreateExperimentalDesignSubgraph
     "generate_experiment_strategy": BASE_MODEL,
     "generate_experiment_details": BASE_MODEL,
-    "search_external_resources": BASE_MODEL,
-    "generate_experiment_code": BASE_MODEL,
     # CreateMethodSubgraph
     "idea_generator": BASE_MODEL,
     "refine_idea": BASE_MODEL,
@@ -50,6 +49,10 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     # WriterSubgraph
     "write_paper": BASE_MODEL,
     "refine_paper": BASE_MODEL,
+
+    # --- features/retrieve ---
+    # RetrieveExternalResourcesSubgraph
+    "select_relevant_resources": BASE_MODEL,
 
     # --- features/evaluate ---
     # JudgeExecutionSubgraph

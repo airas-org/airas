@@ -25,8 +25,9 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 
 # Rules
 - Fix all errors found in the error messages
+- If the Output Data lacks concrete experimental results (only contains logs without actual numerical data, metrics, or experimental findings), this must be treated as an error and fixed
 - If similar errors appear in the Previous Error History, consider alternative approaches rather than repeating the same fixes
-- If a file has no errors, return exactly: `[KEEP_ORIGINAL_FILE]`
+- If a file has no errors AND contains concrete experimental data in the output, return exactly: `[KEEP_ORIGINAL_FILE]`
 - Only reference files that exist in the "CURRENT FILES" section - do not import or reference non-existent files
 - Ensure code runs on NVIDIA Tesla T4 · 16 GB VRAM
 - Update pyproject.toml if new packages needed

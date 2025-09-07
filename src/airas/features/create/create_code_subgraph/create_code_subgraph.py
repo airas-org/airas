@@ -12,8 +12,11 @@ from airas.core.base import BaseSubgraph
 from airas.features.create.create_code_subgraph.input_data import (
     create_code_subgraph_input_data,
 )
-from airas.features.create.create_code_subgraph.nodes.generate_code_for_scripts import (
-    generate_code_for_scripts,
+from airas.features.create.create_code_subgraph.nodes.convert_code_to_scripts import (
+    convert_code_to_scripts,
+)
+from airas.features.create.create_code_subgraph.nodes.generate_experiment_code import (
+    generate_experiment_code,
 )
 from airas.features.create.create_code_subgraph.nodes.push_files_to_github import (
     push_files_to_github,
@@ -32,9 +35,8 @@ create_code_timed = lambda f: time_node("create_code_subgraph")(f)  # noqa: E731
 
 
 class CreateCodeLLMMapping(BaseModel):
-    generate_code_for_scripts: LLM_MODEL = DEFAULT_NODE_LLMS[
-        "generate_code_for_scripts"
-    ]
+    generate_experiment_code: LLM_MODEL = DEFAULT_NODE_LLMS["generate_experiment_code"]
+    convert_code_to_scripts: LLM_MODEL = DEFAULT_NODE_LLMS["convert_code_to_scripts"]
 
 
 class CreateCodeSubgraphInputState(TypedDict, total=False):
@@ -102,9 +104,18 @@ class CreateCodeSubgraph(BaseSubgraph):
         return {"experiment_iteration": current_iteration + 1}
 
     @create_code_timed
-    def _generate_code_for_scripts(self, state: CreateCodeSubgraphState) -> dict:
-        generated_file_contents = generate_code_for_scripts(
-            llm_name=self.llm_mapping.generate_code_for_scripts,
+    def _generate_experiment_code(self, state: CreateCodeSubgraphState) -> dict:
+        new_method = generate_experiment_code(
+            llm_name=self.llm_mapping.generate_experiment_code,
+            new_method=state["new_method"],
+            runner_type_prompt=self.runner_type_prompt,
+        )
+        return {"new_method": new_method}
+
+    @create_code_timed
+    def _convert_code_to_scripts(self, state: CreateCodeSubgraphState) -> dict:
+        generated_file_contents = convert_code_to_scripts(
+            llm_name=self.llm_mapping.convert_code_to_scripts,
             new_method=state["new_method"],
             runner_type_prompt=self.runner_type_prompt,
             experiment_iteration=state["experiment_iteration"],
@@ -137,14 +148,16 @@ class CreateCodeSubgraph(BaseSubgraph):
         graph_builder = StateGraph(CreateCodeSubgraphState)
         graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node(
-            "generate_code_for_scripts", self._generate_code_for_scripts
+            "generate_experiment_code", self._generate_experiment_code
         )
+        graph_builder.add_node("convert_code_to_scripts", self._convert_code_to_scripts)
         graph_builder.add_node(
             "push_files_to_github_node", self._push_files_to_github_node
         )
         graph_builder.add_edge(START, "initialize")
-        graph_builder.add_edge("initialize", "generate_code_for_scripts")
-        graph_builder.add_edge("generate_code_for_scripts", "push_files_to_github_node")
+        graph_builder.add_edge("initialize", "generate_experiment_code")
+        graph_builder.add_edge("generate_experiment_code", "convert_code_to_scripts")
+        graph_builder.add_edge("convert_code_to_scripts", "push_files_to_github_node")
         graph_builder.add_edge("push_files_to_github_node", END)
 
         return graph_builder.compile()

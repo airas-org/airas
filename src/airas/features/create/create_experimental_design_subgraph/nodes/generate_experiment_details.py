@@ -14,6 +14,8 @@ from airas.types.research_hypothesis import ResearchHypothesis
 
 class LLMOutput(BaseModel):
     experiment_details: str
+    expected_models: list[str]
+    expected_datasets: list[str]
 
 
 def generate_experiment_details(
@@ -45,4 +47,6 @@ def generate_experiment_details(
         raise ValueError("No response from LLM in generate_experiment_details.")
 
     new_method.experimental_design.experiment_details = output["experiment_details"]
+    new_method.experimental_design.expected_models = output["expected_models"]
+    new_method.experimental_design.expected_datasets = output["expected_datasets"]
     return new_method

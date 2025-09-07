@@ -4,8 +4,8 @@ from jinja2 import Environment
 from pydantic import BaseModel
 
 from airas.config.runner_type_prompt import RunnerTypeKey, runner_type_prompt_dict
-from airas.features.create.create_code_subgraph.prompt.generate_code_for_scripts import (
-    generate_code_for_scripts_prompt,
+from airas.features.create.create_code_subgraph.prompt.convert_code_to_scripts_prompt import (
+    convert_code_to_scripts_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
@@ -16,7 +16,7 @@ from airas.types.research_hypothesis import ResearchHypothesis
 logger = logging.getLogger(__name__)
 
 
-class GenerateCodeForScripts(BaseModel):
+class ConvertCodeToScripts(BaseModel):
     train_scripts_content: str
     evaluate_scripts_content: str
     preprocess_scripts_content: str
@@ -25,12 +25,12 @@ class GenerateCodeForScripts(BaseModel):
     config_yaml_content: str
 
 
-def generate_code_for_scripts(
+def convert_code_to_scripts(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
     experiment_iteration: int,
     runner_type_prompt: RunnerTypeKey,
-    prompt_template: str = generate_code_for_scripts_prompt,
+    prompt_template: str = convert_code_to_scripts_prompt,
     client: LLMFacadeClient | None = None,
 ) -> dict[str, str]:
     client = client or LLMFacadeClient(llm_name=llm_name)
@@ -45,13 +45,13 @@ def generate_code_for_scripts(
     template = env.from_string(prompt_template)
     messages = template.render(data)
 
-    logger.info("Generating code files using LLM...")
+    logger.info("Converting experiment code to script files using LLM...")
 
     output, cost = client.structured_outputs(
-        message=messages, data_model=GenerateCodeForScripts
+        message=messages, data_model=ConvertCodeToScripts
     )
     if output is None:
-        raise ValueError("Error: No response from LLM in generate_code_for_scripts.")
+        raise ValueError("Error: No response from LLM in convert_code_to_scripts.")
     return {
         "src/train.py": output["train_scripts_content"],
         "src/evaluate.py": output["evaluate_scripts_content"],

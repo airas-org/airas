@@ -11,17 +11,11 @@ from airas.core.base import BaseSubgraph
 from airas.features.create.create_experimental_design_subgraph.input_data import (
     create_experimental_design_subgraph_input_data,
 )
-from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_code import (
-    generate_experiment_code,
-)
 from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_details import (
     generate_experiment_details,
 )
 from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_strategy import (
     generate_experiment_strategy,
-)
-from airas.features.create.create_experimental_design_subgraph.nodes.search_external_resources import (
-    search_external_resources,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.research_hypothesis import ResearchHypothesis
@@ -43,10 +37,6 @@ class CreateExperimentalDesignLLMMapping(BaseModel):
     generate_experiment_details: LLM_MODEL = DEFAULT_NODE_LLMS[
         "generate_experiment_details"
     ]
-    search_external_resources: LLM_MODEL = DEFAULT_NODE_LLMS[
-        "search_external_resources"
-    ]
-    generate_experiment_code: LLM_MODEL = DEFAULT_NODE_LLMS["generate_experiment_code"]
 
 
 class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
@@ -162,31 +152,6 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         )
         return {"new_method": new_method}
 
-    @create_experimental_design_timed
-    def _search_external_resources(
-        self, state: CreateExperimentalDesignState
-    ) -> dict[str, ResearchHypothesis]:
-        new_method = search_external_resources(
-            llm_name=self.llm_mapping.search_external_resources,
-            new_method=state["new_method"],
-            runner_type_prompt=self.runner_type_prompt,
-        )
-        return {"new_method": new_method}
-
-    @create_experimental_design_timed
-    def _generate_experiment_code(
-        self, state: CreateExperimentalDesignState
-    ) -> dict[str, ResearchHypothesis]:
-        new_method = generate_experiment_code(
-            llm_name=self.llm_mapping.generate_experiment_code,
-            new_method=state["new_method"],
-            runner_type_prompt=self.runner_type_prompt,
-            previous_method=state.get("previous_method"),
-            feedback_text=state.get("feedback_text"),
-            generated_file_contents=state.get("generated_file_contents"),
-        )
-        return {"new_method": new_method}
-
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(CreateExperimentalDesignState)
         graph_builder.add_node(
@@ -198,12 +163,6 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         graph_builder.add_node(
             "generate_experiment_details", self._generate_experiment_details
         )
-        graph_builder.add_node(
-            "search_external_resources", self._search_external_resources
-        )
-        graph_builder.add_node(
-            "generate_experiment_code", self._generate_experiment_code
-        )
 
         graph_builder.add_edge(START, "prepare_iteration_history")
         graph_builder.add_edge(
@@ -212,11 +171,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         graph_builder.add_edge(
             "generate_experiment_strategy", "generate_experiment_details"
         )
-        graph_builder.add_edge(
-            "generate_experiment_details", "search_external_resources"
-        )
-        graph_builder.add_edge("search_external_resources", "generate_experiment_code")
-        graph_builder.add_edge("generate_experiment_code", END)
+        graph_builder.add_edge("generate_experiment_details", END)
 
         return graph_builder.compile()
 
