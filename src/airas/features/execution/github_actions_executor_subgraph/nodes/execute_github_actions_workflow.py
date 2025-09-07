@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from logging import getLogger
 from typing import Optional
 
+from airas.config.runner_type_info import RunnerType, runner_info_dict
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 
@@ -185,7 +186,7 @@ class WorkflowExecutor:
 def execute_github_actions_workflow(
     github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
-    runner_type: str = "ubuntu-latest",
+    runner_type: RunnerType,  # noqa: F821
     workflow_file: str = "run_experiment.yml",
     client: Optional[GithubClient] = None,
 ) -> bool:
@@ -195,7 +196,7 @@ def execute_github_actions_workflow(
         github_repository.repository_name,
         github_repository.branch_name,
         experiment_iteration,
-        runner_type,
+        runner_info_dict[runner_type]["runner_setting"],
         workflow_file,
     )
     return result.success

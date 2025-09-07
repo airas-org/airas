@@ -3,7 +3,7 @@ import logging
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.config.runner_type_prompt import RunnerTypeKey, runner_type_prompt_dict
+from airas.config.runner_type_info import RunnerType, runner_info_dict
 from airas.features.create.create_code_subgraph.prompt.generate_code_for_scripts import (
     generate_code_for_scripts_prompt,
 )
@@ -29,14 +29,14 @@ def generate_code_for_scripts(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
     experiment_iteration: int,
-    runner_type_prompt: RunnerTypeKey,
+    runner_type: RunnerType,
     prompt_template: str = generate_code_for_scripts_prompt,
     client: LLMFacadeClient | None = None,
 ) -> dict[str, str]:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
     data = {
-        "runner_type_prompt": runner_type_prompt_dict[runner_type_prompt],
+        "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "new_method": new_method.model_dump(),
         "experiment_iteration": experiment_iteration,
     }

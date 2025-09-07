@@ -4,7 +4,7 @@ import re
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.config.runner_type_prompt import RunnerTypeKey, runner_type_prompt_dict
+from airas.config.runner_type_info import RunnerType, runner_info_dict
 from airas.features.create.fix_code_subgraph.prompt.code_fix_prompt import (
     code_fix_prompt,
 )
@@ -46,7 +46,7 @@ def fix_code(
     new_method: ResearchHypothesis,
     generated_file_contents: dict[str, str],
     experiment_iteration: int,
-    runner_type_prompt: RunnerTypeKey,
+    runner_type: RunnerType,
     error_list: list[str],
     prompt_template: str = code_fix_prompt,
     client: LLMFacadeClient | None = None,
@@ -57,7 +57,7 @@ def fix_code(
         "generated_file_contents": generated_file_contents,
         "experiment_iteration": experiment_iteration,
         "new_method": new_method.model_dump(),
-        "runner_type_prompt": runner_type_prompt_dict[runner_type_prompt],
+        "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "error_list": error_list,  # Previous errors for analysis
     }
     env = Environment()

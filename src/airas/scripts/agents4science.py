@@ -63,16 +63,10 @@ AVAILABLE_MODELS = [
     "claude-3-5-haiku-20241022",
 ]
 
-RUNNER_TYPE = [
-    "ubuntu-latest",
-    "gpu-runner",
-    "pt80-1-a-25",
-    "t-80-8-b-01",
-    "t-80-8-b-03",
-]
+RUNNER_TYPE = ["ubuntu-latest", "gpu-runner", "A100_80GM×8"]
 
 
-runner_type_prompt = "t-80-8-b-03"
+runner_type = "A100_80GM×8"
 
 
 generate_queries = GenerateQueriesSubgraph(
@@ -122,28 +116,28 @@ create_method = CreateMethodSubgraphV2(
     refine_iterations=5,
 )
 create_experimental_design = CreateExperimentalDesignSubgraph(
-    runner_type_prompt=runner_type_prompt,
+    runner_type=runner_type,
     llm_mapping={
         "generate_experiment_strategy": "o3-2025-04-16",
         "generate_experiment_details": "o3-2025-04-16",
         "search_external_resources": "gpt-5-mini-2025-08-07",  # Only openAI models are available.
-        "generate_experiment_code": "claude-opus-4-1-20250805",
+        "generate_experiment_code": "o3-2025-04-16",
     },
 )
 coder = CreateCodeSubgraph(
-    runner_type_prompt=runner_type_prompt,
+    runner_type=runner_type,
     llm_mapping={
         "generate_code_for_scripts": "o3-2025-04-16",
     },
 )
-executor = GitHubActionsExecutorSubgraph(runner_type=runner_type_prompt)
+executor = GitHubActionsExecutorSubgraph(runner_type=runner_type)
 judge_execution = JudgeExecutionSubgraph(
     llm_mapping={
         "judge_execution": "gpt-5-2025-08-07",
     }
 )
 fixer = FixCodeSubgraph(
-    runner_type_prompt=runner_type_prompt,
+    runner_type=runner_type,
     llm_mapping={
         "fix_code": "o3-2025-04-16",
     },
@@ -304,9 +298,9 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250906-v1"
+    repository_name = "tanaka-20250907"
     research_topic_list = [
-        "LLMの高速な新しい学習方法に関する研究",
+        "拡散モデルの高速な学習が可能な新しいアーキテクチャに関する研究",
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list
