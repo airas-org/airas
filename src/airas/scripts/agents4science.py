@@ -63,6 +63,11 @@ AVAILABLE_MODELS = [
     "claude-3-5-haiku-20241022",
 ]
 
+RUNNER_TYPE = ["ubuntu-latest", "gpu-runner", "A100_80GM×8"]
+
+
+runner_type = "A100_80GM×8"
+
 
 generate_queries = GenerateQueriesSubgraph(
     llm_mapping={
@@ -111,27 +116,27 @@ create_method = CreateMethodSubgraphV2(
     refine_iterations=5,
 )
 create_experimental_design = CreateExperimentalDesignSubgraph(
-    runner_type_prompt="gpu-runner",
+    runner_type=runner_type,
     llm_mapping={
         "generate_experiment_strategy": "o3-2025-04-16",
         "generate_experiment_details": "o3-2025-04-16",
     },
 )
 coder = CreateCodeSubgraph(
-    runner_type_prompt="gpu-runner",
+    runner_type=runner_type,
     llm_mapping={
         "generate_experiment_code": "o3-2025-04-16",
         "convert_code_to_scripts": "o3-2025-04-16",
     },
 )
-executor = GitHubActionsExecutorSubgraph(runner_type="gpu-runner")
+executor = GitHubActionsExecutorSubgraph(runner_type=runner_type)
 judge_execution = JudgeExecutionSubgraph(
     llm_mapping={
         "judge_execution": "gpt-5-2025-08-07",
     }
 )
 fixer = FixCodeSubgraph(
-    runner_type_prompt="gpu-runner",
+    runner_type=runner_type,
     llm_mapping={
         "fix_code": "o3-2025-04-16",
     },
@@ -292,9 +297,9 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "experiment_matsuzawa_20250903-2"
+    repository_name = "tanaka-20250907"
     research_topic_list = [
-        "グラフニューラルネットワークの過平滑化に関して改善したい",
+        "拡散モデルの高速な学習が可能な新しいアーキテクチャに関する研究",
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list

@@ -14,7 +14,7 @@ from airas.services.api_client.llm_client.openai_client import (
 )
 from airas.services.api_client.llm_client.retry import LLM_RETRY
 
-LLM_MODEL = Literal[OPENAI_MODEL, VERTEXAI_MODEL]
+LLM_MODEL = Literal[OPENAI_MODEL, VERTEXAI_MODEL, CLAUDE_MODEL]
 
 
 class LLMFacadeClient:
