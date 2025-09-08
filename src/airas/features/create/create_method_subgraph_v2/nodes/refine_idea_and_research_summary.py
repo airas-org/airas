@@ -1,3 +1,5 @@
+from typing import cast
+
 from jinja2 import Environment
 
 from airas.features.create.create_method_subgraph.nodes.idea_generator import (
@@ -27,7 +29,7 @@ def refine_idea_and_research_summary(
     research_study_list: list[ResearchStudy],
     idea_info_history: list[ResearchIdea],
     client: LLMFacadeClient | None = None,
-) -> tuple[dict[str, str], list[dict[str, str]]]:
+) -> tuple[GenerateIdea, list[ResearchIdea]]:
     client = client or LLMFacadeClient(llm_name=llm_name)
     env = Environment()
 
@@ -49,7 +51,7 @@ def refine_idea_and_research_summary(
         raise ValueError("No response from LLM in idea_generator.")
 
     idea_info_history.append(evaluated_idea_info)
-    return output, idea_info_history
+    return cast(GenerateIdea, output), idea_info_history
 
 
 def parse_idea_info_history(idea_info_history: list[ResearchIdea]) -> str:

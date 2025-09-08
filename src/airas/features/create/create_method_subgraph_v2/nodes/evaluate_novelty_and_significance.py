@@ -48,5 +48,5 @@ def parse_new_idea_info(new_idea: GenerateIdea) -> str:
 Open Problems: {new_idea.open_problems}
 Methods: {new_idea.methods}
 Experimental Setup: {new_idea.experimental_setup}
-Result: {new_idea.result}
-Conclusion: {new_idea.conclusion}"""
+Expected Result: {new_idea.expected_result}
+Expected Conclusion: {new_idea.expected_conclusion}"""
