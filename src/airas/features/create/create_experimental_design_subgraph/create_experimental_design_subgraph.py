@@ -46,7 +46,6 @@ class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
 
 
 class CreateExperimentalDesignHiddenState(TypedDict):
-    previous_method: ResearchHypothesis | None
     feedback_text: str | None
 
 
@@ -98,7 +97,6 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         self, state: CreateExperimentalDesignState
     ) -> dict[str, ResearchHypothesis | str | None]:
         current_method = state["new_method"]
-        previous_method = None
         feedback_text = None
 
         if consistency_feedback := state.get("consistency_feedback"):
@@ -120,7 +118,6 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
 
         return {
             "new_method": current_method,
-            "previous_method": previous_method,
             "feedback_text": feedback_text,
         }
 
@@ -132,7 +129,6 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.generate_experiment_strategy,
             new_method=state["new_method"],
             runner_type=self.runner_type,
-            previous_method=state.get("previous_method"),
             feedback_text=state.get("feedback_text"),
             generated_file_contents=state.get("generated_file_contents"),
         )
@@ -146,7 +142,6 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.generate_experiment_details,
             new_method=state["new_method"],
             runner_type=self.runner_type,
-            previous_method=state.get("previous_method"),
             feedback_text=state.get("feedback_text"),
             generated_file_contents=state.get("generated_file_contents"),
         )

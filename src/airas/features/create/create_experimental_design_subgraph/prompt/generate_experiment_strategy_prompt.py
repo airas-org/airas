@@ -22,10 +22,10 @@ You are a cutting-edge AI researcher. Based on the instructions below, please de
 
 ---
 # Reference Information from Previous Iteration
-{% if previous_method and previous_method.experimental_design %}
+{% if new_method.iteration_history %}
 **Previous Experimental Design**:
-- Strategy: {{ previous_method.experimental_design.experiment_strategy }}
-- Details: {{ previous_method.experimental_design.experiment_details }}
+- Strategy: {{ new_method.iteration_history[-1].experimental_design.experiment_strategy }}
+- Details: {{ new_method.iteration_history[-1].experimental_design.experiment_details }}
 
 {% if generated_file_contents %}
 **Previous Generated Code Files**:
