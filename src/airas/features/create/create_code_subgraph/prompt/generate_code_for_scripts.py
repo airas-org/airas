@@ -5,6 +5,7 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
 # Instructions
 - **Your primary task is to refactor the existing code, not to write new code from scratch.**
 - You MUST extract the relevant logic from the "Experiment Code" section for each file. Do not introduce new logic or fall back to placeholder examples.
+- Under no circumstances should you make significant changes to the code provided in the "Experiment Code".
 - Ensure that imports are correctly handled in each file.
 
 - Error Prevention: While refactoring, proactively identify and fix potential runtime issues:
@@ -37,5 +38,4 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
 
 # Experiment Code
 # This is the source script you must split into the file structure above.
-{{ new_method.experimental_design.experiment_code }}
-"""
+{{ new_method.experimental_design.experiment_code }}"""
