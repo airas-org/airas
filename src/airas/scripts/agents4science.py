@@ -256,19 +256,6 @@ def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG)
         if isinstance(subgraph, CreateExperimentalDesignSubgraph):
             state = _run_experiment_consistent_loop(state, workflow_config)
             state = analysis.run(state)
-            # for _ in range(workflow_config.max_consistency_attempts):
-            #     state = create_experimental_design.run(state)
-            #     state = coder.run(state)
-            #     state = _run_fix_loop(state, workflow_config)
-
-            #     state = evaluate_consistency.run(state)
-            #     if state.get("is_experiment_consistent"):
-            #         state = analysis.run(state)
-            #         break
-            #     print("Experimental consistency failed → redesign.")
-            # else:
-            #     print("Max consistency attempts reached, fallback to analysis.")
-            #     state = analysis.run(state)
 
         elif isinstance(
             subgraph,
