@@ -6,6 +6,7 @@ from airas.types.devin import DevinInfo
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent, PaperReviewScores
 from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_idea import ResearchIdea
 from airas.types.research_study import ResearchStudy
 
 
@@ -25,6 +26,9 @@ class ResearchHistory(BaseModel):
     )
     new_method: Optional[ResearchHypothesis] = Field(
         None, description="Proposed new research method"
+    )
+    idea_info_history: Optional[list[ResearchIdea]] = Field(
+        None, description="new research method history"
     )
 
     devin_info: Optional[DevinInfo] = Field(

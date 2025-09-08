@@ -8,11 +8,11 @@ from airas.features.create.create_method_subgraph.nodes.idea_generator import (
 from airas.features.create.create_method_subgraph_v2.prompt.generate_ide_and_research_summary_prompt import (
     generate_ide_and_research_summary_prompt,
 )
-from airas.features.create.create_method_subgraph_v2.types import GenerateIdea
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.research_idea import GenerateIdea
 from airas.types.research_study import ResearchStudy
 
 logger = getLogger(__name__)

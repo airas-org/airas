@@ -22,9 +22,6 @@ from airas.features.create.create_method_subgraph_v2.nodes.generate_idea_and_res
 from airas.features.create.create_method_subgraph_v2.nodes.refine_idea_and_research_summary import (
     refine_idea_and_research_summary,
 )
-from airas.features.create.create_method_subgraph_v2.types import (
-    ResearchIdea,
-)
 from airas.features.retrieve.get_paper_titles_subgraph.nodes.get_paper_title_from_qdrant import (
     get_paper_titles_from_qdrant,
 )
@@ -45,6 +42,9 @@ from airas.features.retrieve.retrieve_paper_content_subgraph.prompt.openai_webse
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_idea import (
+    ResearchIdea,
+)
 from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node

@@ -11,13 +11,13 @@ from airas.features.create.create_method_subgraph_v2.nodes.evaluate_novelty_and_
 from airas.features.create.create_method_subgraph_v2.prompt.refine_ide_and_research_summary_prompt import (
     refine_ide_and_research_summary_prompt,
 )
-from airas.features.create.create_method_subgraph_v2.types import (
-    GenerateIdea,
-    ResearchIdea,
-)
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
+)
+from airas.types.research_idea import (
+    GenerateIdea,
+    ResearchIdea,
 )
 from airas.types.research_study import ResearchStudy
 
