@@ -23,6 +23,7 @@ from airas.features import (
     PrepareRepositorySubgraph,
     ReadmeSubgraph,
     RetrieveCodeSubgraph,
+    RetrieveExternalResourcesSubgraph,
     RetrievePaperContentSubgraph,
     ReviewPaperSubgraph,
     SummarizePaperSubgraph,
@@ -122,10 +123,13 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
         "generate_experiment_details": "o3-2025-04-16",
     },
 )
+retrieve_external_resources = RetrieveExternalResourcesSubgraph(
+    llm_mapping={"select_external_resources": "gpt-5-mini-2025-08-07"},
+)
 coder = CreateCodeSubgraph(
     runner_type=runner_type,
     llm_mapping={
-        "generate_experiment_code": "o3-2025-04-16",
+        "generate_experiment_code": "claude-opus-4-1-20250805",
         "convert_code_to_scripts": "o3-2025-04-16",
     },
 )
@@ -201,6 +205,7 @@ subgraph_list = [
     retrieve_code,
     create_method,
     create_experimental_design,
+    retrieve_external_resources,
     coder,
     executor,
     judge_execution,
@@ -239,6 +244,7 @@ def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG)
         if isinstance(subgraph, CreateExperimentalDesignSubgraph):
             for _ in range(workflow_config.max_consistency_attempts):
                 state = create_experimental_design.run(state)
+                state = retrieve_external_resources.run(state)
                 state = coder.run(state)
                 state = _run_fix_loop(state, workflow_config)
 
@@ -254,12 +260,13 @@ def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG)
         elif isinstance(
             subgraph,
             (
+                CreateExperimentalDesignSubgraph,
+                RetrieveExternalResourcesSubgraph,
+                CreateCodeSubgraph,
+                GitHubActionsExecutorSubgraph,
                 JudgeExecutionSubgraph,
                 FixCodeSubgraph,
                 AnalyticSubgraph,
-                CreateExperimentalDesignSubgraph,
-                CreateCodeSubgraph,
-                GitHubActionsExecutorSubgraph,
             ),
         ):
             continue
@@ -297,9 +304,9 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250907"
+    repository_name = "experiment_matsuzwa-20250908"
     research_topic_list = [
-        "拡散モデルの高速な学習が可能な新しいアーキテクチャに関する研究",
+        "グラフニューラルネットワークの過平滑化に関して改善したい",
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list

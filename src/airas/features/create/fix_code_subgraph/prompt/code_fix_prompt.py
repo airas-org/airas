@@ -31,6 +31,7 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 - Only reference files that exist in the "CURRENT FILES" section - do not import or reference non-existent files
 - Ensure code runs on NVIDIA Tesla T4 · 16 GB VRAM
 - Update pyproject.toml if new packages needed
+- Do not shorten or omit any code. Always provide the full and complete code for each file.
 - MANDATORY: You must update paths before saving. The following paths are required:
 - Image paths: .research/iteration{{ experiment_iteration }}/images (modify any existing image save paths to use this exact directory)
 - JSON paths: .research/iteration{{ experiment_iteration }}/ (Save each experiment's results as separate JSON files in this directory and print each JSON contents to standard output for verification)

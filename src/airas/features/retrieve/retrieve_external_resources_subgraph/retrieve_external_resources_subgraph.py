@@ -10,14 +10,11 @@ from airas.core.base import BaseSubgraph
 from airas.features.retrieve.retrieve_external_resources_subgraph.input_data import (
     retrieve_external_resources_subgraph_input_data,
 )
-from airas.features.retrieve.retrieve_external_resources_subgraph.nodes.fetch_resource_details import (
-    fetch_resource_details,
-)
 from airas.features.retrieve.retrieve_external_resources_subgraph.nodes.search_huggingface_resources import (
     search_huggingface_resources,
 )
-from airas.features.retrieve.retrieve_external_resources_subgraph.nodes.select_relevant_resources import (
-    select_relevant_resources,
+from airas.features.retrieve.retrieve_external_resources_subgraph.nodes.select_external_resources import (
+    select_external_resources,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.research_hypothesis import ResearchHypothesis
@@ -36,8 +33,8 @@ def retrieve_external_resources_timed(f):
 
 
 class RetrieveExternalResourcesLLMMapping(BaseModel):
-    select_relevant_resources: LLM_MODEL = DEFAULT_NODE_LLMS.get(
-        "select_relevant_resources", "o3-2025-04-16"
+    select_external_resources: LLM_MODEL = DEFAULT_NODE_LLMS.get(
+        "select_external_resources", "o3-2025-04-16"
     )
 
 
@@ -47,7 +44,6 @@ class RetrieveExternalResourcesInputState(TypedDict):
 
 class RetrieveExternalResourcesHiddenState(TypedDict):
     huggingface_search_results: dict[str, list[dict[str, str]]]
-    selected_resources: dict[str, list[dict[str, str]]]
 
 
 class RetrieveExternalResourcesOutputState(TypedDict):
@@ -91,31 +87,21 @@ class RetrieveExternalResourcesSubgraph(BaseSubgraph):
             )
         check_api_key()
 
-    @retrieve_external_resources_timed
-    def _search_huggingface_resources(
+    async def _search_huggingface_resources(
         self, state: RetrieveExternalResourcesState
-    ) -> dict:
-        huggingface_search_results = search_huggingface_resources(
+    ) -> dict[str, dict[str, list[dict[str, str]]]]:
+        huggingface_search_results = await search_huggingface_resources(
             new_method=state["new_method"]
         )
         return {"huggingface_search_results": huggingface_search_results}
 
-    @retrieve_external_resources_timed
-    def _select_relevant_resources(self, state: RetrieveExternalResourcesState) -> dict:
-        selected_resources = select_relevant_resources(
-            llm_name=self.llm_mapping.select_relevant_resources,
+    def _select_external_resources(self, state: RetrieveExternalResourcesState) -> dict:
+        updated_method = select_external_resources(
+            llm_name=self.llm_mapping.select_external_resources,
             new_method=state["new_method"],
             huggingface_search_results=state["huggingface_search_results"],
         )
-        return {"selected_resources": selected_resources}
-
-    @retrieve_external_resources_timed
-    def _fetch_resource_details(self, state: RetrieveExternalResourcesState) -> dict:
-        new_method = fetch_resource_details(
-            new_method=state["new_method"],
-            selected_resources=state["selected_resources"],
-        )
-        return {"new_method": new_method}
+        return {"new_method": updated_method}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(RetrieveExternalResourcesState)
@@ -123,17 +109,14 @@ class RetrieveExternalResourcesSubgraph(BaseSubgraph):
             "search_huggingface_resources", self._search_huggingface_resources
         )
         graph_builder.add_node(
-            "select_relevant_resources", self._select_relevant_resources
+            "select_external_resources", self._select_external_resources
         )
-        graph_builder.add_node("fetch_resource_details", self._fetch_resource_details)
 
-        # Build the pipeline: search -> select -> fetch
         graph_builder.add_edge(START, "search_huggingface_resources")
         graph_builder.add_edge(
-            "search_huggingface_resources", "select_relevant_resources"
+            "search_huggingface_resources", "select_external_resources"
         )
-        graph_builder.add_edge("select_relevant_resources", "fetch_resource_details")
-        graph_builder.add_edge("fetch_resource_details", END)
+        graph_builder.add_edge("select_external_resources", END)
 
         return graph_builder.compile()
 

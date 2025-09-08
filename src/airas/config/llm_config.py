@@ -52,7 +52,7 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
 
     # --- features/retrieve ---
     # RetrieveExternalResourcesSubgraph
-    "select_relevant_resources": BASE_MODEL,
+    "select_external_resources": BASE_MODEL,
 
     # --- features/evaluate ---
     # JudgeExecutionSubgraph

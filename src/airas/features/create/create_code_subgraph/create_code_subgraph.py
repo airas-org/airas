@@ -108,7 +108,7 @@ class CreateCodeSubgraph(BaseSubgraph):
         new_method = generate_experiment_code(
             llm_name=self.llm_mapping.generate_experiment_code,
             new_method=state["new_method"],
-            runner_type_prompt=self.runner_type_prompt,
+            runner_type=self.runner_type,
         )
         return {"new_method": new_method}
 

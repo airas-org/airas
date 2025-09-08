@@ -1,4 +1,4 @@
-select_relevant_resources_prompt = """\
+select_external_resources_prompt = """\
 You are a machine learning researcher tasked with selecting the most relevant models and datasets from HuggingFace search results for a specific research experiment.
 
 # Instructions
@@ -6,14 +6,13 @@ You are a machine learning researcher tasked with selecting the most relevant mo
 - Select the most relevant models and datasets that would be suitable for the described experiment
 - Focus on resources that are:
   - Directly applicable to the research method
-  - Well-maintained and popular (based on descriptions and titles)
+  - Well-maintained and popular
   - Compatible with the experimental setup
   - Likely to provide good baseline comparisons or be useful for the proposed method
 
 # Output Format
-Select up to 3 most relevant models and up to 3 most relevant datasets. For each selected resource, provide:
-- The exact title from the search results
-- The HuggingFace URL
+Select up to 3 most relevant models and up to 3 most relevant datasets. For each selected resource, provide only:
+- The exact title from the search results (this will be used to retrieve the complete resource information)
 
 # Current Research Method
 {{ new_method.method }}
@@ -30,15 +29,19 @@ Select up to 3 most relevant models and up to 3 most relevant datasets. For each
 {% for result in huggingface_search_results.models %}
 - **{{ result.title }}**
   - URL: {{ result.link }}
-  - Description: {{ result.description }}
   - Search Query: {{ result.search_query }}
+  {% if result.readme -%}
+  - README: {{ result.readme }}
+  {% endif -%}
 {% endfor %}
 
 ## Datasets Search Results:
 {% for result in huggingface_search_results.datasets %}
 - **{{ result.title }}**
   - URL: {{ result.link }}
-  - Description: {{ result.description }}
   - Search Query: {{ result.search_query }}
+  {% if result.readme -%}
+  - README: {{ result.readme }}
+  {% endif -%}
 {% endfor %}
 """
