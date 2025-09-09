@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import logging
 from typing import Any
 
@@ -71,11 +72,16 @@ class GithubDownloadSubgraph(BaseSubgraph):
         return sg.compile()
 
     def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
+        return asyncio.run(self.arun(state, config=config))
+
+    async def arun(
+        self, state: dict[str, Any], config: dict | None = None
+    ) -> dict[str, Any]:
         input_state_keys = self.InputState.__annotations__.keys()
         input_state = {k: state[k] for k in input_state_keys if k in state}
 
         config = config or {"recursion_limit": 200}
-        result = self.build_graph().invoke(input_state, config=config)
+        result = await self.build_graph().ainvoke(input_state, config=config)
 
         research_history: ResearchHistory = result.get("research_history", {})
         flat_fields = {

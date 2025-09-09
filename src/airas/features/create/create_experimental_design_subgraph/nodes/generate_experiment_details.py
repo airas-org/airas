@@ -14,6 +14,8 @@ from airas.types.research_hypothesis import ResearchHypothesis
 
 class LLMOutput(BaseModel):
     experiment_details: str
+    expected_models: list[str]
+    expected_datasets: list[str]
 
 
 def generate_experiment_details(
@@ -21,7 +23,6 @@ def generate_experiment_details(
     new_method: ResearchHypothesis,
     runner_type: RunnerType,
     feedback_text: str | None = None,
-    previous_method: ResearchHypothesis | None = None,
     generated_file_contents: dict[str, str] | None = None,
 ) -> ResearchHypothesis:
     client = LLMFacadeClient(llm_name=llm_name)
@@ -33,7 +34,6 @@ def generate_experiment_details(
         "new_method": new_method.model_dump(),
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "consistency_feedback": feedback_text,
-        "previous_method": previous_method.model_dump() if previous_method else None,
         "generated_file_contents": generated_file_contents,
     }
     messages = template.render(data)
@@ -45,4 +45,6 @@ def generate_experiment_details(
         raise ValueError("No response from LLM in generate_experiment_details.")
 
     new_method.experimental_design.experiment_details = output["experiment_details"]
+    new_method.experimental_design.expected_models = output["expected_models"]
+    new_method.experimental_design.expected_datasets = output["expected_datasets"]
     return new_method

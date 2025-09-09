@@ -2,9 +2,10 @@ from jinja2 import Environment
 from pydantic import BaseModel
 
 from airas.config.runner_type_info import RunnerType, runner_info_dict
-from airas.features.create.create_experimental_design_subgraph.prompt.generate_experiment_code_prompt import (
+from airas.features.create.create_code_subgraph.prompt.generate_experiment_code_prompt import (
     generate_experiment_code_prompt,
 )
+from airas.services.api_client.llm_client.anthropic_client import CLAUDE_MODEL
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -37,10 +38,17 @@ def generate_experiment_code(
         "generated_file_contents": generated_file_contents,
     }
     messages = template.render(data)
-    output, cost = client.structured_outputs(
-        message=messages,
-        data_model=LLMOutput,
-    )
+
+    # NOTE: The Claude model does not support structured output.
+    if llm_name in CLAUDE_MODEL.__args__:
+        output, cost = client.generate(message=messages)
+        output = {"experiment_code": output} if output is not None else None
+    else:
+        output, cost = client.structured_outputs(
+            message=messages,
+            data_model=LLMOutput,
+        )
+
     if output is None:
         raise ValueError("No response from LLM in generate_experiment_code.")
 

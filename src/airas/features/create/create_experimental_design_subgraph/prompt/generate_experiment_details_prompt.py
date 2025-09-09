@@ -27,6 +27,12 @@ You are a cutting-edge AI researcher. Based on the new method described in # New
 - Avoid excessive redundancy across experiments. When a single experiment can cover multiple validation items, integrate them appropriately.
 - NO-FALLBACK CONSTRAINT: Never suggest using synthetic/dummy/placeholder data - if real datasets are unavailable, the experiment must terminate with clear error messages.
 
+## Output Format
+Please provide:
+- experiment_details: Detailed experimental plan following all the instructions above
+- expected_models: A list of specific model names/architectures that will be used in the experiments (e.g., ["ResNet-50", "BERT-base", "GPT-3.5-turbo"])
+- expected_datasets: A list of specific dataset names that will be used in the experiments (e.g., ["CIFAR-10", "ImageNet", "IMDB Reviews"])
+
 {% if consistency_feedback %}
 - **Important**: Address the following feedback from previous experimental consistency evaluation:
 {{ consistency_feedback }}
@@ -44,10 +50,10 @@ You are a cutting-edge AI researcher. Based on the new method described in # New
 
 ---
 # Reference Information from Previous Iteration
-{% if previous_method and previous_method.experimental_design %}
+{% if new_method.iteration_history %}
 **Previous Experimental Design**:
-- Strategy: {{ previous_method.experimental_design.experiment_strategy }}
-- Details: {{ previous_method.experimental_design.experiment_details }}
+- Strategy: {{ new_method.iteration_history[-1].experimental_design.experiment_strategy }}
+- Details: {{ new_method.iteration_history[-1].experimental_design.experiment_details }}
 
 {% if generated_file_contents %}
 **Previous Generated Code Files**:

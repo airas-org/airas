@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import logging
 from datetime import datetime
 from typing import Any
@@ -102,6 +103,11 @@ class GithubUploadSubgraph(BaseSubgraph):
         return sg.compile()
 
     def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
+        return asyncio.run(self.arun(state, config=config))
+
+    async def arun(
+        self, state: dict[str, Any], config: dict | None = None
+    ) -> dict[str, Any]:
         input_state_keys = self.InputState.__annotations__.keys()
         input_state = {k: state[k] for k in input_state_keys if k in state}
 
@@ -115,7 +121,7 @@ class GithubUploadSubgraph(BaseSubgraph):
         input_state["cumulative_data"] = cumulative_data
 
         config = config or {"recursion_limit": 200}
-        _ = self.build_graph().invoke(input_state, config=config)
+        _ = await self.build_graph().ainvoke(input_state, config=config)
 
         state["subgraph_name"] = self.__class__.__name__
         return state
