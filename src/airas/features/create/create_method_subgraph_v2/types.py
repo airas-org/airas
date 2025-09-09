@@ -7,8 +7,8 @@ class GenerateIdea(BaseModel):
     open_problems: str
     methods: str
     experimental_setup: str
-    result: str
-    conclusion: str
+    expected_result: str
+    expected_conclusion: str
 
 
 class IdeaEvaluationResults(BaseModel):

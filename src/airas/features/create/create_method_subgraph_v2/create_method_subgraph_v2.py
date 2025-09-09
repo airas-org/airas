@@ -264,10 +264,15 @@ class CreateMethodSubgraphV2(BaseSubgraph):
         }
 
     def _format_method(self, state: CreateMethodSubgraphV2State) -> dict:
+        idea_info_history = state["idea_info_history"]
+        idea_info_history.append(state["new_idea_info"])
         new_method = ResearchHypothesis(
             method=parse_new_idea_info(state["new_idea_info"]["idea"]),
         )
-        return {"new_method": new_method}
+        return {
+            "new_method": new_method,
+            "idea_info_history": idea_info_history,
+        }
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(CreateMethodSubgraphV2State)

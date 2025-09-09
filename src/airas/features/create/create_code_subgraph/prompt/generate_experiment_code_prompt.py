@@ -16,10 +16,10 @@ You are a cutting-edge AI researcher. Based on the new method described in # New
 - STRICT NO-FALLBACK RULE: If real datasets or models cannot be accessed, terminate execution immediately with clear error messages - NEVER use synthetic/dummy/placeholder data under any circumstances.
 
 ## Output Requirements
-The implementation must ensure that all experiment executions include the following in the standard output:
+When implementing the code, ensure that the output strictly adheres to the following rules.:
 
 ### Results Documentation
-- Save each experiment's results as separate JSON files and print each JSON contents to standard output for verification.
+- Save the results of each experiment as separate JSON files and modify the code to print the contents of the JSON files to standard output using a print statement.
 
 ### Standard Output Content
 - Experiment description: Before printing experimental results, the standard output must include a detailed description of the experiment.
@@ -27,7 +27,7 @@ The implementation must ensure that all experiment executions include the follow
 - Names of figures summarizing the numerical data
 
 ### Figure Output Requirements
-- Experimental results must be presented in clear and interpretable figures.
+- Experimental results must always be presented in clear and interpretable figures without exception.
 - Use matplotlib or seaborn to output the results (e.g., accuracy, loss curves, confusion matrix).
 - Numeric values must be annotated on the axes of the graphs.
 - For line graphs, annotate values on the plot; for bar graphs, annotate values above each bar.

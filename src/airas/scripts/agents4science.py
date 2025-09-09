@@ -229,10 +229,26 @@ def _run_fix_loop(state, workflow_config):
         state = executor.run(state)
         state = judge_execution.run(state)
         if state.get("is_experiment_successful"):
+            _ = uploader.run(state)
             return state
         state = fixer.run(state)
-
+    _ = uploader.run(state)
     print("Fix attempts exhausted, proceeding with current state")
+    return state
+
+
+def _run_experiment_consistent_loop(state, workflow_config):
+    for _ in range(workflow_config.max_consistency_attempts):
+        state = create_experimental_design.run(state)
+        state = coder.run(state)
+        state = _run_fix_loop(state, workflow_config)
+
+        state = evaluate_consistency.run(state)
+        if state.get("is_experiment_consistent"):
+            _ = uploader.run(state)
+            return state
+        print("Experimental consistency failed → redesign.")
+    _ = uploader.run(state)
     return state
 
 
@@ -242,20 +258,8 @@ def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG)
         print(f"--- Running Subgraph: {subgraph_name} ---")
 
         if isinstance(subgraph, CreateExperimentalDesignSubgraph):
-            for _ in range(workflow_config.max_consistency_attempts):
-                state = create_experimental_design.run(state)
-                state = retrieve_external_resources.run(state)
-                state = coder.run(state)
-                state = _run_fix_loop(state, workflow_config)
-
-                state = evaluate_consistency.run(state)
-                if state.get("is_experiment_consistent"):
-                    state = analysis.run(state)
-                    break
-                print("Experimental consistency failed → redesign.")
-            else:
-                print("Max consistency attempts reached, fallback to analysis.")
-                state = analysis.run(state)
+            state = _run_experiment_consistent_loop(state, workflow_config)
+            state = analysis.run(state)
 
         elif isinstance(
             subgraph,
