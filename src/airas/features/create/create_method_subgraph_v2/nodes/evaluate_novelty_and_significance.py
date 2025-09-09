@@ -6,13 +6,13 @@ from airas.features.create.create_method_subgraph.nodes.idea_generator import (
 from airas.features.create.create_method_subgraph_v2.prompt.evaluate_novelty_and_significance_prompt import (
     evaluate_novelty_and_significance_prompt,
 )
-from airas.features.create.create_method_subgraph_v2.types import (
-    GenerateIdea,
-    IdeaEvaluationResults,
-)
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
+)
+from airas.types.research_idea import (
+    GenerateIdea,
+    IdeaEvaluationResults,
 )
 from airas.types.research_study import ResearchStudy
 
