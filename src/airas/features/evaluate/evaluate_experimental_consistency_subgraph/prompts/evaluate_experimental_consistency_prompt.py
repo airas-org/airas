@@ -3,9 +3,12 @@ evaluate_experimental_consistency_prompt = """
 You are a scientific research consistency evaluator. Your task is to evaluate the consistency and coherence of experimental results to determine if they can support meaningful scientific claims.
 
 ## Scope Constraints
-- Focus only on experimental consistency evaluation
+- Focus ONLY on evaluating consistency between the proposed method and experimental results
 - Do not suggest infrastructure changes (Docker, lock files, etc.)
-- Do not recommend testing procedures outside of experimental validation
+- Do not recommend development/testing procedures (unit tests, synthetic graphs, etc.)
+- Do not suggest implementation details or code improvements
+- Do not recommend data release or reproducibility practices
+- Evaluate only: method-result alignment, experimental design adequacy, and result interpretation validity
 
 Based on your analysis, provide:
 1. `is_experiment_consistent` (bool): Whether the experimental results are internally consistent and can support scientific claims
@@ -28,13 +31,13 @@ Based on your analysis, provide:
   - Major contradictions or inconsistencies in the results
 
 ### consistency_feedback (str)
-Provide specific, actionable feedback focused on **improving the consistency_score**:
-- How to improve result validity and interpretability
-- Basic experimental design improvements (clearer metrics, better baselines)
-- Data quality enhancements (handling edge cases, improving data flow)
-- Concrete suggestions to make experiments more reliable
-- Simple additional checks or comparisons that would strengthen results
-- Clear steps to achieve higher consistency
+Provide specific feedback focused on **scientific consistency evaluation**:
+- Assess alignment between claimed method and actual experimental results
+- Evaluate whether experimental scope adequately validates the proposed approach
+- Identify gaps between theoretical claims and empirical evidence
+- Analyze whether metrics and baselines appropriately measure the research question
+- Point out contradictions between expected and observed outcomes
+- Focus purely on method-result consistency, not implementation or development practices
 
 ### consistency_score (int)
 Provide a numerical score (1-10) based on:

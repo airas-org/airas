@@ -16,20 +16,18 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 
 3. **Solution Strategy**:
    - Apply minimal, targeted fixes rather than wholesale rewrites
-   - Use defensive programming (bounds checking, error handling)
    - Consider alternative approaches if original method is flawed
-   - Preserve intended functionality and backward compatibility
+   - Fail-fast policy: All error handling must result in immediate program termination with clear error messages. No silent fallbacks or synthetic alternatives
    - Data pipeline fixes: Ensure complete data acquisition (download, extract, organize into data/)
-   - Dependency resolution fixes: Check pyproject.toml for circular dependencies and proper ordering.
-   - Fail-fast, no silent fallbacks: If real datasets or models cannot be accessed, terminate execution immediately with clear error messages rather than using synthetic alternatives.
+   - Dependency resolution fixes: Check pyproject.toml for circular dependencies and proper ordering
 
 # Rules
 - Fix all errors found in the error messages
+- Proactive Error Detection: Beyond fixing reported errors, use the Systematic Debugging approach above to inspect code for potential issues
 - If the Output Data lacks concrete experimental results (only contains logs without actual numerical data, metrics, or experimental findings), this must be treated as an error and fixed
 - If similar errors appear in the Previous Error History, consider alternative approaches rather than repeating the same fixes
 - If a file has no errors AND contains concrete experimental data in the output, return exactly: `[KEEP_ORIGINAL_FILE]`
 - Only reference files that exist in the "CURRENT FILES" section - do not import or reference non-existent files
-- Ensure code runs on NVIDIA Tesla T4 · 16 GB VRAM
 - Update pyproject.toml if new packages needed
 - Do not shorten or omit any code. Always provide the full and complete code for each file.
 - MANDATORY: You must update paths before saving. The following paths are required:
