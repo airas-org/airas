@@ -235,8 +235,8 @@ class CreateMethodSubgraphV2(BaseSubgraph):
     # スコアを判定する関数
     def _evaluate_score(self, state: CreateMethodSubgraphV2State) -> str:
         if (
-            cast(int, state["new_idea_info"]["evaluate"].novelty_score) >= 8
-            and cast(int, state["new_idea_info"]["evaluate"].significance_score) >= 8
+            cast(int, state["new_idea_info"]["evaluate"].novelty_score) >= 9
+            and cast(int, state["new_idea_info"]["evaluate"].significance_score) >= 9
         ):
             return "end"
         elif state["refine_iterations"] < self.refine_iterations:

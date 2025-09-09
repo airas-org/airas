@@ -12,7 +12,8 @@ Based on the following instructions, output the reasons for the novelty and sign
 {{ research_study_list }}
 
 # Instructions
-Following the instructions below, output the following regarding the new method:
+Following the instructions below, please provide an evaluation of the new method.
+Since I aim to pursue research of high academic significance, I request that the assessment be conducted with rigorous standards.
 - output
     - novelty_reason
         - Determine whether the new method has novelty, and output the reason.
