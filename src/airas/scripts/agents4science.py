@@ -182,11 +182,12 @@ review = ReviewPaperSubgraph(
 latex = LatexSubgraph(
     llm_mapping={
         "convert_to_latex": "gpt-5-2025-08-07",
-        "is_execution_successful": "gpt-5-2025-08-07",
+        "check_execution_successful": "gpt-5-2025-08-07",
         "fix_latex_text": "o3-2025-04-16",
     },
     latex_template_name="agents4science_2025",
-    max_revision_count=3,
+    max_chktex_revisions=3,
+    max_compile_revisions=3,
 )
 readme = ReadmeSubgraph()
 html = HtmlSubgraph(
