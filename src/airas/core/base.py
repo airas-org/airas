@@ -23,7 +23,7 @@ class BaseSubgraph(ABC):
         output_state_keys = self.OutputState.__annotations__.keys()
 
         input_state = {k: state[k] for k in input_state_keys if k in state}
-        config = config or {"recursion_limit": 200}
+        config = config or {"recursion_limit": 1000}
         result = await self.build_graph().ainvoke(input_state, config=config)
         output_state = {k: result[k] for k in output_state_keys if k in result}
 
