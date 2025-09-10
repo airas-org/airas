@@ -151,14 +151,8 @@ class CreateMethodSubgraphV2(BaseSubgraph):
     # 関連論文のタイトル
     @create_method_timed
     def _retrieve_related_papers(self, state: CreateMethodSubgraphV2State) -> dict:
-        idea = state["new_idea_info"]["idea"]
-        # TODO: For some reason, methods are sometimes accessed as dict, so handle both cases
-        if isinstance(idea, dict):
-            methods = idea["methods"]
-        else:
-            methods = idea.methods
         related_paper_title_list = get_paper_titles_from_qdrant(
-            queries=[methods],
+            queries=[state["new_idea_info"]["idea"].methods],
             num_retrieve_paper=15,
         )
         related_research_study_list = [
@@ -263,10 +257,8 @@ class CreateMethodSubgraphV2(BaseSubgraph):
             research_study_list=state["research_study_list"],
             idea_info_history=state["idea_info_history"],
         )
-        new_idea_info = {}
-        new_idea_info["idea"] = new_idea
         return {
-            "new_idea_info": new_idea_info,
+            "new_idea": new_idea,  # new_idea_info?
             "idea_info_history": idea_info_history,
             "refine_iterations": state["refine_iterations"] + 1,
         }
