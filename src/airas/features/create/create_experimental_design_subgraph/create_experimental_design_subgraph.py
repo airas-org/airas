@@ -1,4 +1,5 @@
 import logging
+from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -128,7 +129,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         new_method = generate_experiment_strategy(
             llm_name=self.llm_mapping.generate_experiment_strategy,
             new_method=state["new_method"],
-            runner_type=self.runner_type,
+            runner_type=cast(RunnerType, self.runner_type),
             feedback_text=state.get("feedback_text"),
             generated_file_contents=state.get("generated_file_contents"),
         )
@@ -141,7 +142,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         new_method = generate_experiment_details(
             llm_name=self.llm_mapping.generate_experiment_details,
             new_method=state["new_method"],
-            runner_type=self.runner_type,
+            runner_type=cast(RunnerType, self.runner_type),
             feedback_text=state.get("feedback_text"),
             generated_file_contents=state.get("generated_file_contents"),
         )

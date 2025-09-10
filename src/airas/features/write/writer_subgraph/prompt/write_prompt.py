@@ -53,6 +53,7 @@ The paper should contain the following sections with specific requirements:
 - Reference figures in the body text using these numbers (e.g., "As shown in Figure 2...")
 
 ## Content Quality and Formatting Standards
+- Please structure each section into no more than two or three subsections, rather than dividing it into too many smaller parts.
 - Avoid editor instructions, placeholders, speculative text, or comments like "details are missing"
 - Remove phrases like "Here's a refined version of this section," as they are not part of the final document
 - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content

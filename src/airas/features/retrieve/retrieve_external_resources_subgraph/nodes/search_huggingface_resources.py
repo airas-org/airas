@@ -105,7 +105,7 @@ async def _search_huggingface_page(
     try:
         base_url = f"https://huggingface.co/{search_type}"
         encoded_query = quote(query)
-        search_url = f"{base_url}?sort=trending&search={encoded_query}"
+        search_url = f"{base_url}?sort=likes&search={encoded_query}"
 
         logger.info(
             f"Searching HuggingFace {search_type} for: {query} (max_results={max_results})"

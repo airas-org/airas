@@ -41,20 +41,20 @@ section_tips_prompt = {
 - Highlights any specific assumptions that are made that are unusual
 - Include citations to foundational work and key concepts
 - Note: If our paper introduces a novel problem setting as part of its contributions, it's best to have a separate Section
-- If you divide it into sections, please limit them to a maximum of three.""",
+- Please avoid dividing the text into too many subsections, and instead present it as a coherent, well-connected narrative.""",
     "Method": """\
 - Expected length: about 4000 characters (~1–1.5 pages)
 - What we do. Why we do it. All described using the general Formalism introduced in the Problem Setting and building on top of the concepts/foundations introduced in Background
 - Include citations only when building upon or adapting existing methods or techniques
 - Provide clear technical descriptions with proper mathematical notation
-- If you divide it into sections, please limit them to a maximum of three.""",
+- Please avoid dividing the text into too many subsections, and instead present it as a coherent, well-connected narrative.""",
     "Experimental Setup": """\
 - Expected length: about 4000 characters (~1–1.5 pages)
 - How do we test that our stuff works? Introduces a specific instantiation of the Problem Setting and specific implementation details of our Method for this Problem Setting
 - Do not imagine unknown hardware details
 - Includes a description of the dataset, evaluation metrics, important hyperparameters, and implementation details
 - Include citations for datasets, established evaluation metrics, and baseline methods used for comparison
-- If you divide it into sections, please limit them to a maximum of three.""",
+- Please avoid dividing the text into too many subsections, and instead present it as a coherent, well-connected narrative.""",
     "Results": """\
 - Expected length: about 4000 characters (~1–1.5 pages)
 - Shows the results of running Method on our problem described in Experimental Setup
