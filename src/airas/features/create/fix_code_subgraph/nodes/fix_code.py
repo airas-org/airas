@@ -48,6 +48,7 @@ def fix_code(
     experiment_iteration: int,
     runner_type: RunnerType,
     error_list: list[str],
+    file_validations: dict[str, dict[str, list[str]]],
     prompt_template: str = code_fix_prompt,
     client: LLMFacadeClient | None = None,
 ) -> dict[str, dict[str, str] | list[str]]:
@@ -59,6 +60,7 @@ def fix_code(
         "new_method": new_method.model_dump(),
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "error_list": error_list,  # Previous errors for analysis
+        "file_validations": file_validations,  # Static validation results
     }
     env = Environment()
     template = env.from_string(prompt_template)
@@ -85,8 +87,10 @@ def fix_code(
         if _is_code_meaningful(new_content):
             generated_file_contents[path] = new_content
 
+    # Only add experimental_results.error on first iteration (when no file_validations)
     if (
-        hasattr(new_method, "experimental_results")
+        not file_validations  # First iteration - no static validation yet
+        and hasattr(new_method, "experimental_results")
         and new_method.experimental_results
         and new_method.experimental_results.error
     ):

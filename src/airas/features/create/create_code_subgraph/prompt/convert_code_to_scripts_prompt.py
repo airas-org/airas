@@ -31,6 +31,43 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
                         Dependencies must be an array format like `dependencies = ["numpy>=1.21.0", "torch>=1.9.0"]`, NOT a mapping format like `[project.dependencies]` with key-value pairs.
 - STRICT FILE CONSTRAINT: Only these 6 files exist - never import or reference any other modules/files. If experiment code references missing modules (e.g., `src.models`), consolidate all functionality into the existing files.
 
+
+{% if generated_file_contents %}
+# ========================================
+# CURRENT FILES TO FIX
+# ========================================
+Focus on fixing the static validation issues below. Apply the same file structure rules while correcting the issues:
+
+{% for file_path, content in generated_file_contents.items() %}
+## {{ file_path }}
+```python
+{{ content }}
+```
+{% endfor %}
+{% endif %}
+
+{% if file_validations %}
+# ========================================
+# STATIC VALIDATION RESULTS - FIX THESE ISSUES
+# ========================================
+
+## All Static Validation Issues:
+{% for file_path, file_validation in file_validations.items() %}
+{% if file_validation.errors %}
+### Errors in {{ file_path }}:
+{% for error in file_validation.errors %}
+- {{ error }}
+{% endfor %}
+{% endif %}
+{% if file_validation.warnings %}
+### Warnings in {{ file_path }}:
+{% for warning in file_validation.warnings %}
+- {{ warning }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
 # Experimental Environment
 {{ runner_type_prompt }}
 

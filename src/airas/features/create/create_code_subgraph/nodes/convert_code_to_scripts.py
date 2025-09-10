@@ -30,8 +30,10 @@ def convert_code_to_scripts(
     new_method: ResearchHypothesis,
     experiment_iteration: int,
     runner_type: RunnerType,
+    file_validations: dict[str, dict[str, list[str]]],
     prompt_template: str = convert_code_to_scripts_prompt,
     client: LLMFacadeClient | None = None,
+    generated_file_contents: dict[str, str] | None = None,
 ) -> dict[str, str]:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
@@ -39,6 +41,8 @@ def convert_code_to_scripts(
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "new_method": new_method.model_dump(),
         "experiment_iteration": experiment_iteration,
+        "file_validations": file_validations,
+        "generated_file_contents": generated_file_contents,
     }
 
     env = Environment()

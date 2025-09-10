@@ -21,6 +21,9 @@ from airas.features.create.create_code_subgraph.nodes.generate_experiment_code i
 from airas.features.create.create_code_subgraph.nodes.push_files_to_github import (
     push_files_to_github,
 )
+from airas.features.create.fix_code_subgraph.nodes.static_validate_code import (
+    static_validate_code,
+)
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
@@ -46,7 +49,7 @@ class CreateCodeSubgraphInputState(TypedDict, total=False):
 
 
 class CreateCodeSubgraphHiddenState(TypedDict):
-    pass
+    file_validations: dict[str, dict[str, list[str]]]
 
 
 class CreateCodeSubgraphOutputState(TypedDict):
@@ -98,10 +101,16 @@ class CreateCodeSubgraph(BaseSubgraph):
         )
 
     @create_code_timed
-    def _initialize(self, state: CreateCodeSubgraphState) -> dict:
+    def _initialize(
+        self, state: CreateCodeSubgraphState
+    ) -> dict[str, int | dict[str, str] | dict[str, dict[str, list[str]]]]:
         # Always increment experiment_iteration to create a new iteration folder
         current_iteration = state.get("experiment_iteration", 0)
-        return {"experiment_iteration": current_iteration + 1}
+        return {
+            "experiment_iteration": current_iteration + 1,
+            "generated_file_contents": {},
+            "file_validations": {},
+        }
 
     @create_code_timed
     def _generate_experiment_code(self, state: CreateCodeSubgraphState) -> dict:
@@ -119,9 +128,41 @@ class CreateCodeSubgraph(BaseSubgraph):
             new_method=state["new_method"],
             runner_type=self.runner_type,
             experiment_iteration=state["experiment_iteration"],
+            file_validations=state["file_validations"],
+            generated_file_contents=state["generated_file_contents"],
+        )
+        return {"generated_file_contents": generated_file_contents}
+
+    @create_code_timed
+    def _static_validate_code(
+        self, state: CreateCodeSubgraphState
+    ) -> dict[str, dict[str, dict[str, list[str]]]]:
+        file_validations = static_validate_code(
+            generated_file_contents=state["generated_file_contents"]
+        )
+        print(f"Validation: {file_validations}")
+        return {
+            "file_validations": file_validations,
+        }
+
+    def _should_reconvert_code(self, state: CreateCodeSubgraphState) -> str:
+        file_validations = state["file_validations"]
+        if file_validations is None:
+            return "push_files_to_github_node"
+
+        has_errors = any(
+            len(file_val.get("errors", [])) > 0
+            for file_val in file_validations.values()
         )
 
-        return {"generated_file_contents": generated_file_contents}
+        if has_errors:
+            logger.warning(
+                "Static validation found errors. Re-running convert_code_to_scripts..."
+            )
+            return "convert_code_to_scripts"
+        else:
+            logger.info("Static validation passed. Proceeding to push files...")
+            return "push_files_to_github_node"
 
     @create_code_timed
     def _push_files_to_github_node(self, state: CreateCodeSubgraphState) -> dict:
@@ -151,13 +192,23 @@ class CreateCodeSubgraph(BaseSubgraph):
             "generate_experiment_code", self._generate_experiment_code
         )
         graph_builder.add_node("convert_code_to_scripts", self._convert_code_to_scripts)
+        graph_builder.add_node("static_validate_code", self._static_validate_code)
         graph_builder.add_node(
             "push_files_to_github_node", self._push_files_to_github_node
         )
+
         graph_builder.add_edge(START, "initialize")
         graph_builder.add_edge("initialize", "generate_experiment_code")
         graph_builder.add_edge("generate_experiment_code", "convert_code_to_scripts")
-        graph_builder.add_edge("convert_code_to_scripts", "push_files_to_github_node")
+        graph_builder.add_edge("convert_code_to_scripts", "static_validate_code")
+        graph_builder.add_conditional_edges(
+            "static_validate_code",
+            self._should_reconvert_code,
+            {
+                "convert_code_to_scripts": "convert_code_to_scripts",
+                "push_files_to_github_node": "push_files_to_github_node",
+            },
+        )
         graph_builder.add_edge("push_files_to_github_node", END)
 
         return graph_builder.compile()
