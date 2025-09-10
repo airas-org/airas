@@ -11,6 +11,9 @@ from airas.core.base import BaseSubgraph
 from airas.features.publication.latex_subgraph.input_data import (
     latex_subgraph_input_data,
 )
+from airas.features.publication.latex_subgraph.nodes.check_execution_successful import (
+    check_execution_successful,
+)
 from airas.features.publication.latex_subgraph.nodes.convert_placeholders_to_citations import (
     convert_placeholders_to_citations,
 )
@@ -20,14 +23,11 @@ from airas.features.publication.latex_subgraph.nodes.convert_to_latex import (
 from airas.features.publication.latex_subgraph.nodes.embed_in_latex_template import (
     embed_in_latex_template,
 )
-from airas.features.publication.latex_subgraph.nodes.execute_latex_compile import (
-    execute_latex_compile,
+from airas.features.publication.latex_subgraph.nodes.execute_workflow import (
+    execute_workflow,
 )
 from airas.features.publication.latex_subgraph.nodes.fix_latex_text import (
     fix_latex_text,
-)
-from airas.features.publication.latex_subgraph.nodes.is_execution_successful import (
-    is_execution_successful,
 )
 from airas.features.publication.latex_subgraph.nodes.retrieve_github_repository_file import (
     retrieve_github_repository_file,
@@ -50,7 +50,9 @@ latex_timed = lambda f: time_node("latex_subgraph")(f)  # noqa: E731
 
 class LatexLLMMapping(BaseModel):
     convert_to_latex: LLM_MODEL = DEFAULT_NODE_LLMS["convert_to_latex"]
-    is_execution_successful: LLM_MODEL = DEFAULT_NODE_LLMS["is_execution_successful"]
+    check_execution_successful: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "check_execution_successful"
+    ]
     fix_latex_text: LLM_MODEL = DEFAULT_NODE_LLMS["fix_latex_text"]
 
 
@@ -64,10 +66,16 @@ class LatexSubgraphHiddenState(TypedDict):
     latex_template_text: str
     latex_formatted_paper_content: PaperContent
     is_upload_successful: bool
+
+    is_chktex_executed: bool
+    chktex_log: str
+    is_chktex_successful: bool
+    chktex_revision_count: int
+
     is_latex_compiled: bool
-    latex_error_text: str
-    is_successful: bool
-    revision_count: int
+    compile_log: str
+    is_compile_successful: bool
+    compile_revision_count: int
 
 
 class LatexSubgraphOutputState(TypedDict):
@@ -92,7 +100,8 @@ class LatexSubgraph(BaseSubgraph):
         llm_mapping: dict[str, str] | LatexLLMMapping | None = None,
         latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
         paper_name: str = "generated_paper.pdf",
-        max_revision_count: int = 5,
+        max_chktex_revisions: int = 3,
+        max_compile_revisions: int = 3,
     ):
         if llm_mapping is None:
             self.llm_mapping = LatexLLMMapping()
@@ -108,17 +117,17 @@ class LatexSubgraph(BaseSubgraph):
             )
         self.latex_template_name = latex_template_name
         self.paper_name = paper_name
-        self.max_revision_count = max_revision_count
+        self.max_chktex_revisions = max_chktex_revisions
+        self.max_compile_revisions = max_compile_revisions
         check_api_key(llm_api_key_check=True)
 
     def _initialize(self, state: LatexSubgraphState) -> dict:
-        """Initialize the latex subgraph with default revision count."""
         return {
-            "revision_count": 1,
+            "chktex_revision_count": 0,
+            "compile_revision_count": 0,
         }
 
     def _convert_placeholders_to_citations(self, state: LatexSubgraphState) -> dict:
-        """Convert placeholder citations in paper content to proper citation format."""
         paper_content = convert_placeholders_to_citations(
             paper_content=state["paper_content"],
             references_bib=state["references_bib"],
@@ -127,7 +136,6 @@ class LatexSubgraph(BaseSubgraph):
 
     @latex_timed
     def _convert_to_latex_str(self, state: LatexSubgraphState) -> dict:
-        """Convert paper content to LaTeX formatted string using LLM."""
         latex_formatted_paper_content = convert_to_latex_str(
             llm_name=self.llm_mapping.convert_to_latex,
             paper_content=state["paper_content"],
@@ -136,7 +144,6 @@ class LatexSubgraph(BaseSubgraph):
 
     @latex_timed
     def _retrieve_latex_template(self, state: LatexSubgraphState) -> dict:
-        """Retrieve LaTeX template file from GitHub repository."""
         latex_template_text = retrieve_github_repository_file(
             github_repository=state["github_repository_info"],
             file_path=f".research/latex/{self.latex_template_name}/template.tex",
@@ -145,7 +152,6 @@ class LatexSubgraph(BaseSubgraph):
 
     @latex_timed
     def _embed_in_latex_template(self, state: LatexSubgraphState) -> dict:
-        """Embed formatted paper content into LaTeX template."""
         latex_text = embed_in_latex_template(
             latex_formatted_paper_content=state["latex_formatted_paper_content"],
             latex_template_text=state["latex_template_text"],
@@ -154,7 +160,6 @@ class LatexSubgraph(BaseSubgraph):
 
     @latex_timed
     def _upload_latex_file(self, state: LatexSubgraphState) -> dict:
-        """Upload LaTeX file to GitHub repository."""
         is_upload_successful = upload_latex_file(
             github_repository=state["github_repository_info"],
             latex_text=state["latex_text"],
@@ -163,52 +168,102 @@ class LatexSubgraph(BaseSubgraph):
         return {"is_upload_successful": is_upload_successful}
 
     @latex_timed
-    def _execute_latex_compile(self, state: LatexSubgraphState) -> dict:
-        """Execute LaTeX compilation workflow in GitHub Actions."""
-        is_latex_compiled = execute_latex_compile(
+    def _execute_chktex(self, state: LatexSubgraphState) -> dict:
+        is_chktex_executed = execute_workflow(
             github_repository=state["github_repository_info"],
+            workflow_file_name="run_chktex.yml",
+            latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
+        )
+        return {"is_chktex_executed": is_chktex_executed}
+
+    @latex_timed
+    def _retrieve_chktex_log(self, state: LatexSubgraphState) -> dict:
+        chktex_log = retrieve_github_repository_file(
+            github_repository=state["github_repository_info"],
+            file_path=f".research/latex/{self.latex_template_name}/chktex.log",
+        )
+        return {"chktex_log": chktex_log}
+
+    @latex_timed
+    def _check_chktex_successful(self, state: LatexSubgraphState) -> dict:
+        is_chktex_successful = check_execution_successful(
+            llm_name=self.llm_mapping.check_execution_successful,
+            latex_text=state["latex_text"],
+            latex_error_text=state["chktex_log"],
+        )
+        return {
+            "is_chktex_successful": is_chktex_successful,
+        }
+
+    @latex_timed
+    def _fix_latex_from_chktex_log(self, state: LatexSubgraphState) -> dict:
+        latex_text = fix_latex_text(
+            llm_name=self.llm_mapping.fix_latex_text,
+            latex_text=state["latex_text"],
+            latex_error_text=state["chktex_log"],
+        )
+        return {
+            "latex_text": latex_text,
+            "chktex_revision_count": state["chktex_revision_count"] + 1,
+        }
+
+    @latex_timed
+    def _execute_latex_compile(self, state: LatexSubgraphState) -> dict:
+        is_latex_compiled = execute_workflow(
+            github_repository=state["github_repository_info"],
+            workflow_file_name="compile_latex.yml",
             latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
         )
         return {"is_latex_compiled": is_latex_compiled}
 
     @latex_timed
-    def _retrieve_latex_error_file(self, state: LatexSubgraphState) -> dict:
-        """Retrieve LaTeX error log file from GitHub repository."""
-        latex_error_text = retrieve_github_repository_file(
+    def _retrieve_compile_log(self, state: LatexSubgraphState) -> dict:
+        compile_log = retrieve_github_repository_file(
             github_repository=state["github_repository_info"],
-            file_path=f".research/latex/{self.latex_template_name}/latex-error.log",
+            file_path=f".research/latex/{self.latex_template_name}/compile.log",
         )
-        return {"latex_error_text": latex_error_text}
+        return {"compile_log": compile_log}
 
     @latex_timed
-    def _is_execution_successful(self, state: LatexSubgraphState) -> dict:
-        """Determine if LaTeX compilation was successful by analyzing error log."""
-        is_successful = is_execution_successful(
-            llm_name=self.llm_mapping.is_execution_successful,
+    def _check_compile_successful(self, state: LatexSubgraphState) -> dict:
+        is_compile_successful = check_execution_successful(
+            llm_name=self.llm_mapping.check_execution_successful,
             latex_text=state["latex_text"],
-            latex_error_text=state["latex_error_text"],
+            latex_error_text=state["compile_log"],
         )
         return {
-            "is_successful": is_successful,
+            "is_compile_successful": is_compile_successful,
         }
 
     @latex_timed
-    def _fix_latex_text(self, state: LatexSubgraphState) -> dict:
-        """Fix LaTeX errors using LLM analysis and increment revision count."""
+    def _fix_latex_from_compile_log(self, state: LatexSubgraphState) -> dict:
         latex_text = fix_latex_text(
             llm_name=self.llm_mapping.fix_latex_text,
             latex_text=state["latex_text"],
-            latex_error_text=state["latex_error_text"],
+            latex_error_text=state["compile_log"],
         )
         return {
             "latex_text": latex_text,
-            "revision_count": state["revision_count"] + 1,
+            "compile_revision_count": state["compile_revision_count"] + 1,
+            "chktex_revision_count": 0,
         }
 
     @latex_timed
-    def _is_fix_needed(self, state: LatexSubgraphState) -> str:
-        """Determine if further LaTeX fixes are needed based on success status and revision limit."""
-        if state["is_successful"] or state["revision_count"] > self.max_revision_count:
+    def _should_fix_chktex(self, state: LatexSubgraphState) -> str:
+        if (
+            state.get("is_chktex_successful")
+            or state.get("chktex_revision_count", 0) >= self.max_chktex_revisions
+        ):
+            return "compile"
+        else:
+            return "fix"
+
+    @latex_timed
+    def _should_fix_compile(self, state: LatexSubgraphState) -> str:
+        if (
+            state.get("is_compile_successful")
+            or state.get("compile_revision_count", 0) >= self.max_compile_revisions
+        ):
             return "end"
         else:
             return "fix"
@@ -223,12 +278,21 @@ class LatexSubgraph(BaseSubgraph):
         graph_builder.add_node("retrieve_latex_template", self._retrieve_latex_template)
         graph_builder.add_node("embed_in_latex_template", self._embed_in_latex_template)
         graph_builder.add_node("upload_latex_file", self._upload_latex_file)
+        graph_builder.add_node("execute_chktex", self._execute_chktex)
+        graph_builder.add_node("retrieve_chktex_log", self._retrieve_chktex_log)
+        graph_builder.add_node("check_chktex_successful", self._check_chktex_successful)
         graph_builder.add_node("execute_latex_compile", self._execute_latex_compile)
+        graph_builder.add_node("retrieve_compile_log", self._retrieve_compile_log)
         graph_builder.add_node(
-            "retrieve_latex_error_file", self._retrieve_latex_error_file
+            "check_compile_successful", self._check_compile_successful
         )
-        graph_builder.add_node("is_execution_successful", self._is_execution_successful)
-        graph_builder.add_node("fix_latex_text", self._fix_latex_text)
+
+        graph_builder.add_node(
+            "fix_latex_from_chktex_log", self._fix_latex_from_chktex_log
+        )
+        graph_builder.add_node(
+            "fix_latex_from_compile_log", self._fix_latex_from_compile_log
+        )
 
         graph_builder.add_edge(START, "initialize")
         graph_builder.add_edge("initialize", "convert_placeholders_to_citations")
@@ -238,18 +302,33 @@ class LatexSubgraph(BaseSubgraph):
             ["retrieve_latex_template", "convert_to_latex"], "embed_in_latex_template"
         )
         graph_builder.add_edge("embed_in_latex_template", "upload_latex_file")
-        graph_builder.add_edge("upload_latex_file", "execute_latex_compile")
-        graph_builder.add_edge("execute_latex_compile", "retrieve_latex_error_file")
-        graph_builder.add_edge("retrieve_latex_error_file", "is_execution_successful")
+        # First stage: chktex validation loop
+        graph_builder.add_edge("upload_latex_file", "execute_chktex")
+        graph_builder.add_edge("execute_chktex", "retrieve_chktex_log")
+        graph_builder.add_edge("retrieve_chktex_log", "check_chktex_successful")
         graph_builder.add_conditional_edges(
-            "is_execution_successful",
-            self._is_fix_needed,
+            "check_chktex_successful",
+            self._should_fix_chktex,
             {
-                "fix": "fix_latex_text",
+                "compile": "execute_latex_compile",
+                "fix": "fix_latex_from_chktex_log",
+            },
+        )
+        graph_builder.add_edge("fix_latex_from_chktex_log", "upload_latex_file")
+
+        # Second stage: latex compilation loop
+        graph_builder.add_edge("execute_latex_compile", "retrieve_compile_log")
+        graph_builder.add_edge("retrieve_compile_log", "check_compile_successful")
+        graph_builder.add_conditional_edges(
+            "check_compile_successful",
+            self._should_fix_compile,
+            {
+                "fix": "fix_latex_from_compile_log",
                 "end": END,
             },
         )
-        graph_builder.add_edge("fix_latex_text", "upload_latex_file")
+        # Fix loop goes back to chktex (restart from chktex validation)
+        graph_builder.add_edge("fix_latex_from_compile_log", "upload_latex_file")
 
         return graph_builder.compile()
 
@@ -258,7 +337,6 @@ def main():
     output = LatexSubgraph(latex_template_name="agents4science_2025").run(
         latex_subgraph_input_data
     )
-
     print(output)
 
 
