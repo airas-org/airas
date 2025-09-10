@@ -240,7 +240,6 @@ class CreateMethodSubgraphV2(BaseSubgraph):
         ):
             return "end"
         elif state["refine_iterations"] < self.refine_iterations:
-            state["refine_iterations"] += 1
             return "regenerate"
         else:
             logger.info("Refinement iterations exceeded, passing.")
@@ -259,8 +258,9 @@ class CreateMethodSubgraphV2(BaseSubgraph):
             idea_info_history=state["idea_info_history"],
         )
         return {
-            "new_idea": new_idea,
+            "new_idea": new_idea,  # new_idea_info?
             "idea_info_history": idea_info_history,
+            "refine_iterations": state["refine_iterations"] + 1,
         }
 
     def _format_method(self, state: CreateMethodSubgraphV2State) -> dict:

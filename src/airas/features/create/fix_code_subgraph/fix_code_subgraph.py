@@ -17,6 +17,9 @@ from airas.features.create.fix_code_subgraph.input_data import (
 from airas.features.create.fix_code_subgraph.nodes.fix_code import (
     fix_code,
 )
+from airas.features.create.fix_code_subgraph.nodes.static_validate_code import (
+    static_validate_code,
+)
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
@@ -43,7 +46,7 @@ class FixCodeSubgraphInputState(TypedDict):
 
 
 class FixCodeSubgraphHiddenState(TypedDict):
-    pass
+    file_validations: dict[str, dict[str, list[str]]]
 
 
 class FixCodeSubgraphOutputState(TypedDict):
@@ -92,9 +95,15 @@ class FixCodeSubgraph(BaseSubgraph):
         check_api_key(llm_api_key_check=True)
 
     @fix_code_timed
-    def _initialize(self, state: FixCodeSubgraphState) -> dict[str, int]:
+    def _initialize(
+        self, state: FixCodeSubgraphState
+    ) -> dict[str, int | list[str] | dict[str, dict[str, list[str]]]]:
         # NOTE: We increment the experiment_iteration here to reflect the next iteration
-        return {"experiment_iteration": state["experiment_iteration"] + 1}
+        return {
+            "experiment_iteration": state["experiment_iteration"] + 1,
+            "error_list": [],
+            "file_validations": {},
+        }
 
     @fix_code_timed
     def _fix_code(
@@ -106,13 +115,42 @@ class FixCodeSubgraph(BaseSubgraph):
             generated_file_contents=state["generated_file_contents"],
             experiment_iteration=state["experiment_iteration"],
             runner_type=self.runner_type,
-            error_list=state.get("error_list", []),
+            error_list=state["error_list"],
+            file_validations=state["file_validations"],
         )
-
         return {
             "generated_file_contents": result["generated_file_contents"],
             "error_list": result["error_list"],
         }
+
+    @fix_code_timed
+    def _static_validate_code(
+        self, state: FixCodeSubgraphState
+    ) -> dict[str, dict[str, dict[str, list[str]]]]:
+        file_validations = static_validate_code(
+            generated_file_contents=state["generated_file_contents"]
+        )
+        print(f"Validation: {file_validations}")
+        return {
+            "file_validations": file_validations,
+        }
+
+    def _should_refix_code(self, state: FixCodeSubgraphState) -> str:
+        file_validations = state.get("file_validations")
+        if file_validations is None:
+            return "push_fixed_files_node"
+
+        has_errors = any(
+            len(file_val.get("errors", [])) > 0
+            for file_val in file_validations.values()
+        )
+
+        if has_errors:
+            logger.info("Static validation found errors. Running fix_code...")
+            return "fix_code"
+        else:
+            logger.info("Static validation passed. Skipping fix_code...")
+            return "push_fixed_files_node"
 
     @fix_code_timed
     def _push_fixed_files_node(self, state: FixCodeSubgraphState) -> dict[str, bool]:
@@ -135,11 +173,20 @@ class FixCodeSubgraph(BaseSubgraph):
         graph_builder = StateGraph(FixCodeSubgraphState)
         graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node("fix_code", self._fix_code)
+        graph_builder.add_node("static_validate_code", self._static_validate_code)
         graph_builder.add_node("push_fixed_files_node", self._push_fixed_files_node)
 
         graph_builder.add_edge(START, "initialize")
         graph_builder.add_edge("initialize", "fix_code")
-        graph_builder.add_edge("fix_code", "push_fixed_files_node")
+        graph_builder.add_edge("fix_code", "static_validate_code")
+        graph_builder.add_conditional_edges(
+            "static_validate_code",
+            self._should_refix_code,
+            {
+                "fix_code": "fix_code",
+                "push_fixed_files_node": "push_fixed_files_node",
+            },
+        )
         graph_builder.add_edge("push_fixed_files_node", END)
 
         return graph_builder.compile()

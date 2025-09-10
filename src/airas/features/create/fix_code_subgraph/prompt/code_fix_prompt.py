@@ -24,7 +24,8 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 # Rules
 - Fix all errors found in the error messages
 - Proactive Error Detection: Beyond fixing reported errors, use the Systematic Debugging approach above to inspect code for potential issues
-- If the Output Data lacks concrete experimental results (only contains logs without actual numerical data, metrics, or experimental findings), this must be treated as an error and fixed
+- If the Output Data lacks concrete experimental results (only contains logs without actual numerical data, metrics, or experimental findings), this must be treated as an error and fixed.
+  - When this happens, it is absolutely not acceptable to leave the code unmodified, as the lack of clear results indicates a failure in the experiment itself.
 - If similar errors appear in the Previous Error History, consider alternative approaches rather than repeating the same fixes
 - If a file has no errors AND contains concrete experimental data in the output, return exactly: `[KEEP_ORIGINAL_FILE]`
 - Only reference files that exist in the "CURRENT FILES" section - do not import or reference non-existent files
@@ -33,6 +34,24 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 - MANDATORY: You must update paths before saving. The following paths are required:
 - Image paths: .research/iteration{{ experiment_iteration }}/images (modify any existing image save paths to use this exact directory)
 - JSON paths: .research/iteration{{ experiment_iteration }}/ (Save each experiment's results as separate JSON files in this directory and print each JSON contents to standard output for verification)
+
+
+# ========================================
+# EXPERIMENTAL CONTEXT
+# ========================================
+# The following experimental context is provided to prevent the solution from diverging in the wrong direction during fix iterations.
+
+# Current Research Method (Target for Experiment Design)
+{{ new_method.method }}
+
+# Experiment Strategy
+{{ new_method.experimental_design.experiment_strategy }}
+
+# Experiment Details
+{{ new_method.experimental_design.experiment_details }}
+
+## External Resources (for reference):
+{{ new_method.experimental_design.external_resources }}
 
 # ========================================
 # ERROR INFORMATION TO FIX
@@ -44,13 +63,10 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 ## Error Data:
 {{ new_method.experimental_results.error }}
 
-## External Resources (for reference):
-{{ new_method.experimental_design.external_resources }}
-
 # ========================================
 # CURRENT FILES TO FIX
 # ========================================
-The following files contain errors and need to be fixed:
+The following files contain issues and need to be fixed:
 {% for file_path, content in generated_file_contents.items() %}
 ## {{ file_path }}
 ```python
@@ -58,10 +74,29 @@ The following files contain errors and need to be fixed:
 ```
 {% endfor %}
 
+{% if file_validations %}
 # ========================================
-# COMMON ERROR PATTERNS & SOLUTIONS
+# STATIC VALIDATION RESULTS - FIX THESE ISSUES
 # ========================================
-- ModuleNotFoundError Fix: If encountering `No module named 'src.xyz'`, consolidate missing functionality into existing files rather than assuming external modules exist
+Focus on fixing the static validation issues below. Ignore any previous execution errors as these validation results are more current and relevant.
+
+## All Static Validation Issues:
+{% for file_path, file_validation in file_validations.items() %}
+{% if file_validation.errors %}
+### Errors in {{ file_path }}:
+{% for error in file_validation.errors %}
+- {{ error }}
+{% endfor %}
+{% endif %}
+
+{% if file_validation.warnings %}
+### Warnings in {{ file_path }}:
+{% for warning in file_validation.warnings %}
+- {{ warning }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
 
 # ========================================
 # Previous Error History (for reference - avoid repeating same fixes)
@@ -70,5 +105,4 @@ The following files contain errors and need to be fixed:
 {% for error in error_list %}
 ### {{ loop.index }}. {{ error }}
 {% endfor %}
-{% endif %}
-"""
+{% endif %}"""

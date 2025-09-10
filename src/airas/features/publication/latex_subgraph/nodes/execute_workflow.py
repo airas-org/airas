@@ -11,12 +11,24 @@ _POLL_INTERVAL_SEC = 10
 _TIMEOUT_SEC = 600
 
 
-def execute_latex_compile(
+def execute_workflow(
     github_repository: GitHubRepositoryInfo,
+    workflow_file_name: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
     client: GithubClient | None = None,
 ) -> bool:
-    LATEX_COMPILED_WORKFLOW_FILE = "compile_latex.yml"
+    """
+    Execute a GitHub Actions workflow and wait for completion.
+
+    Args:
+        github_repository: GitHub repository information
+        workflow_file_name: Name of the workflow YAML file (e.g., "compile_latex.yml", "run_chktex.yml")
+        latex_template_name: LaTeX template name to pass as input
+        client: Optional GitHub client instance
+
+    Returns:
+        True if workflow completed successfully, False otherwise
+    """
     client = client or GithubClient()
     github_owner = github_repository.github_owner
     repository_name = github_repository.repository_name
@@ -39,16 +51,16 @@ def execute_latex_compile(
     success = client.create_workflow_dispatch(
         github_owner=github_owner,
         repository_name=repository_name,
-        workflow_file_name=LATEX_COMPILED_WORKFLOW_FILE,
+        workflow_file_name=workflow_file_name,
         ref=branch_name,
         inputs={"subdir": latex_template_name},
     )
     if not success:
         raise ValueError(
-            f"Failed to dispatch workflow {LATEX_COMPILED_WORKFLOW_FILE} for {github_owner}/{repository_name} on branch {branch_name}"
+            f"Failed to dispatch workflow {workflow_file_name} for {github_owner}/{repository_name} on branch {branch_name}"
         )
 
-    logger.info(f"Workflow {LATEX_COMPILED_WORKFLOW_FILE} dispatched successfully")
+    logger.info(f"Workflow {workflow_file_name} dispatched successfully")
 
     # ワークフローの完了を待機
     start_time = time.time()
@@ -86,30 +98,46 @@ def execute_latex_compile(
                 status = latest_run.get("status")
                 conclusion = latest_run.get("conclusion")
 
-                logger.info(f"Workflow status: {status}, conclusion: {conclusion}")
+                logger.info(
+                    f"Workflow {workflow_file_name} status: {status}, conclusion: {conclusion}"
+                )
 
                 if status == "completed":
                     if conclusion == "success":
-                        logger.info("Workflow completed successfully")
+                        logger.info(
+                            f"Workflow {workflow_file_name} completed successfully"
+                        )
                         return True
                     else:
                         raise ValueError(
-                            f"Workflow completed with conclusion: {conclusion}"
+                            f"Workflow {workflow_file_name} completed with conclusion: {conclusion}"
                         )
 
         logger.debug(
-            f"Waiting for workflow completion... ({time.time() - start_time:.1f}s elapsed)"
+            f"Waiting for {workflow_file_name} completion... ({time.time() - start_time:.1f}s elapsed)"
         )
         continue
 
 
 if __name__ == "__main__":
-    github_repository = {
-        "github_owner": "auto-res2",
-        "repository_name": "tanaka-20250803-v3",
-        "branch_name": "main",
-    }
-    result = execute_latex_compile(
+    github_repository = GitHubRepositoryInfo(
+        github_owner="auto-res2",
+        repository_name="tanaka-20250803-v3",
+        branch_name="main",
+    )
+
+    # Test LaTeX compilation workflow
+    result = execute_workflow(
         github_repository=github_repository,
+        workflow_file_name="compile_latex.yml",
         latex_template_name="iclr2024",
     )
+    print(f"LaTeX compilation result: {result}")
+
+    # Test chktex workflow
+    result = execute_workflow(
+        github_repository=github_repository,
+        workflow_file_name="run_chktex.yml",
+        latex_template_name="iclr2024",
+    )
+    print(f"chktex execution result: {result}")
