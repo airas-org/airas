@@ -104,6 +104,7 @@ class CreateMethodSubgraphV2(BaseSubgraph):
         llm_mapping: dict[str, str] | CreateMethodV2LLMMapping | None = None,
         refine_iterations: int = 2,
         paper_provider: str = "arxiv",
+        num_retrieve_related_papers: int = 10,
     ):
         if llm_mapping is None:
             self.llm_mapping = CreateMethodV2LLMMapping()
@@ -123,6 +124,7 @@ class CreateMethodSubgraphV2(BaseSubgraph):
             )
         self.refine_iterations = refine_iterations
         self.paper_provider = paper_provider
+        self.num_retrieve_related_papers = num_retrieve_related_papers
         check_api_key(llm_api_key_check=True)
 
     @create_method_timed
@@ -153,7 +155,7 @@ class CreateMethodSubgraphV2(BaseSubgraph):
     ) -> dict[str, list[ResearchStudy]]:
         related_paper_title_list = get_paper_titles_from_qdrant(
             queries=[state["new_idea_info"].idea.methods],
-            num_retrieve_paper=15,
+            num_retrieve_paper=self.num_retrieve_related_papers,
         )
         related_research_study_list = [
             ResearchStudy(title=title) for title in (related_paper_title_list or [])

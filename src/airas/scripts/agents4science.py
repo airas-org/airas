@@ -77,7 +77,7 @@ generate_queries = GenerateQueriesSubgraph(
     n_queries=5,
 )
 get_paper_titles = GetPaperTitlesFromDBSubgraph(
-    max_results_per_query=5, semantic_search=True
+    max_results_per_query=10, semantic_search=True
 )
 retrieve_paper_content = RetrievePaperContentSubgraph(
     target_study_list_source="research_study_list",
@@ -97,7 +97,7 @@ retrieve_code = RetrieveCodeSubgraph(
 )
 reference_extractor = ExtractReferenceTitlesSubgraph(
     llm_mapping={"extract_reference_titles": "gemini-2.5-flash"},
-    paper_retrieval_limit=20,
+    paper_retrieval_limit=15,
 )
 retrieve_reference_paper_content = RetrievePaperContentSubgraph(
     target_study_list_source="reference_research_study_list",
@@ -115,6 +115,7 @@ create_method = CreateMethodSubgraphV2(
         "search_arxiv_id_from_title": "gpt-5-mini-2025-08-07",  # Only openAI models are available.
     },
     refine_iterations=5,
+    num_retrieve_related_papers=15,
 )
 create_experimental_design = CreateExperimentalDesignSubgraph(
     runner_type=runner_type,
@@ -124,12 +125,13 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
     },
 )
 retrieve_external_resources = RetrieveExternalResourcesSubgraph(
-    llm_mapping={"select_external_resources": "gpt-5-mini-2025-08-07"},
+    llm_mapping={"select_external_resources": "gemini-2.5-flash"},
+    max_huggingface_results_per_search=30,
 )
 coder = CreateCodeSubgraph(
     runner_type=runner_type,
     llm_mapping={
-        "generate_experiment_code": "claude-opus-4-1-20250805",
+        "generate_experiment_code": "o3-2025-04-16",
         "convert_code_to_scripts": "o3-2025-04-16",
     },
 )
@@ -309,9 +311,12 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "experiment_matsuzwa-20250908"
+    repository_name = "tanaka-20250911-v4"
     research_topic_list = [
-        "グラフニューラルネットワークの過平滑化に関して改善したい",
+        # "Graph Attention Networkの学習の高速化",
+        # "Transformerを用いた時系列データの新規手法",
+        # "Diffusion Transformersの速度改善",
+        "Diffusion Transformersの学習時のメモリ改善"
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list

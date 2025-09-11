@@ -66,6 +66,7 @@ class RetrieveExternalResourcesSubgraph(BaseSubgraph):
     def __init__(
         self,
         llm_mapping: dict[str, str] | RetrieveExternalResourcesLLMMapping | None = None,
+        max_huggingface_results_per_search: int = 10,
     ):
         if llm_mapping is None:
             self.llm_mapping = RetrieveExternalResourcesLLMMapping()
@@ -86,12 +87,14 @@ class RetrieveExternalResourcesSubgraph(BaseSubgraph):
                 f"but got {type(llm_mapping)}"
             )
         check_api_key()
+        self.max_huggingface_results_per_search = max_huggingface_results_per_search
 
     async def _search_huggingface_resources(
         self, state: RetrieveExternalResourcesState
     ) -> dict[str, dict[str, list[dict[str, str]]]]:
         huggingface_search_results = await search_huggingface_resources(
-            new_method=state["new_method"]
+            new_method=state["new_method"],
+            max_results_per_search=self.max_huggingface_results_per_search,
         )
         return {"huggingface_search_results": huggingface_search_results}
 

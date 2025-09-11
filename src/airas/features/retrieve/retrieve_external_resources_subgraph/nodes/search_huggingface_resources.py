@@ -100,7 +100,7 @@ async def _get_readme(results: list[dict[str, str]]) -> list[dict[str, str]]:
 
 
 async def _search_huggingface_page(
-    search_type: str, query: str, max_results: int = 10
+    search_type: str, query: str, max_results: int = 30
 ) -> list[dict[str, str]]:
     try:
         base_url = f"https://huggingface.co/{search_type}"
@@ -134,7 +134,7 @@ async def _search_huggingface_page(
 
 
 async def search_huggingface_resources(
-    new_method: ResearchHypothesis, max_results_per_search: int = 10
+    new_method: ResearchHypothesis, max_results_per_search: int
 ) -> dict[str, list[dict[str, str]]]:
     if not new_method.experimental_design or (
         not new_method.experimental_design.expected_models
