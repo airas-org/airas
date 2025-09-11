@@ -1,19 +1,24 @@
 import logging
-from typing import Literal
+from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.runner_type_info import RunnerType
 from airas.core.base import BaseSubgraph
 from airas.features.create.fix_code_with_devin_subgraph.nodes.fix_code_with_devin import (
     fix_code_with_devin,
+)
+from airas.features.create.fix_code_with_devin_subgraph.nodes.initial_session_fix_code_with_devin import (
+    initial_session_fix_code_with_devin,
 )
 from airas.features.create.nodes.check_devin_completion import (
     check_devin_completion,
 )
 from airas.types.devin import DevinInfo
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -31,18 +36,21 @@ class FixCodeWithDevinLLMMapping(BaseModel): ...
 class FixCodeWithDevinSubgraphInputState(TypedDict):
     devin_info: DevinInfo
     new_method: ResearchHypothesis
-    executed_flag: Literal[
-        True
-    ]  # This should be True if the GitHub Actions workflow was executed successfully
+    executed_flag: bool  # This should be True if the GitHub Actions workflow was executed successfully
+    experiment_iteration: int
+    github_repository_info: GitHubRepositoryInfo
 
 
-class FixCodeWithDevinSubgraphHiddenState(TypedDict): ...
+class FixCodeWithDevinSubgraphHiddenState(TypedDict):
+    push_completion: bool
 
 
 class FixCodeWithDevinSubgraphOutputState(TypedDict):
-    new_method: ResearchHypothesis
-    push_completion: bool
     executed_flag: bool
+    experiment_iteration: int
+    is_code_pushed_to_github: bool
+    error_list: list[str]
+    devin_info: DevinInfo
 
 
 class FixCodeWithDevinSubgraphState(
@@ -58,28 +66,56 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
     InputState = FixCodeWithDevinSubgraphInputState
     OutputState = FixCodeWithDevinSubgraphOutputState
 
-    def __init__(self):
+    def __init__(self, runner_type: RunnerType = "ubuntu-latest"):
+        self.runner_type = runner_type
         check_api_key(
             devin_api_key_check=True,
             github_personal_access_token_check=True,
         )
 
+    def _initialize(
+        self, state: FixCodeWithDevinSubgraphState
+    ) -> dict[str, int | list[str] | dict[str, dict[str, list[str]]]]:
+        # NOTE: We increment the experiment_iteration here to reflect the next iteration
+        if state["error_list"]:
+            error_list = state["error_list"]
+        else:
+            error_list = []
+        return {
+            "experiment_iteration": state["experiment_iteration"] + 1,
+            "error_list": error_list,
+        }
+
+    # Devinのセッションがあるか確認
+    def _check_devin_session(self, state: FixCodeWithDevinSubgraphState):
+        if state["devin_info"]:
+            return "pass"
+        else:
+            return "create_devin_session"
+
     @fix_code_timed
-    def _fix_code_with_devin_node(self, state: FixCodeWithDevinSubgraphState) -> dict:
-        output_text_data = (
-            state["new_method"].experimental_results.result
-            if state["new_method"].experimental_results
-            else ""
+    def _initial_session_fix_code_with_devin(
+        self, state: FixCodeWithDevinSubgraphState
+    ) -> dict:
+        devin_info = initial_session_fix_code_with_devin(
+            github_repository_info=state["github_repository_info"],
+            new_method=state["new_method"],
+            experiment_iteration=state["experiment_iteration"],
+            runner_type=cast(RunnerType, self.runner_type),
+            error_list=state["error_list"],
         )
-        error_text_data = (
-            state["new_method"].experimental_results.error
-            if state["new_method"].experimental_results
-            else ""
-        )
+        return {
+            "devin_info": devin_info,
+        }
+
+    @fix_code_timed
+    def _fix_code_with_devin(self, state: FixCodeWithDevinSubgraphState) -> dict:
         fix_code_with_devin(
-            session_id=state["devin_info"].session_id,
-            output_text_data=output_text_data,
-            error_text_data=error_text_data,
+            new_method=state["new_method"],
+            experiment_iteration=state["experiment_iteration"],
+            runner_type=cast(RunnerType, self.runner_type),
+            devin_info=state["devin_info"],
+            error_list=state["error_list"],
         )
         return {"executed_flag": False}
 
@@ -95,14 +131,28 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(FixCodeWithDevinSubgraphState)
+        graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node(
-            "fix_code_with_devin_node", self._fix_code_with_devin_node
+            "initial_session_fix_code_with_devin",
+            self._initial_session_fix_code_with_devin,
         )
+        graph_builder.add_node("fix_code_with_devin_node", self._fix_code_with_devin)
         graph_builder.add_node(
             "check_devin_completion_node", self._check_devin_completion_node
         )
 
-        graph_builder.add_edge(START, "fix_code_with_devin_node")
+        graph_builder.add_edge(START, "initialize")
+        graph_builder.add_conditional_edges(
+            "initialize",
+            self._check_devin_session,
+            {
+                "pass": "fix_code_with_devin_node",
+                "create_devin_session": "initial_session_fix_code_with_devin",
+            },
+        )
+        graph_builder.add_edge(
+            "initial_session_fix_code_with_devin", "check_devin_completion_node"
+        )
         graph_builder.add_edge(
             "fix_code_with_devin_node", "check_devin_completion_node"
         )

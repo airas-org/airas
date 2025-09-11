@@ -13,6 +13,7 @@ from airas.features import (
     EvaluatePaperResultsSubgraph,
     ExtractReferenceTitlesSubgraph,
     FixCodeSubgraph,
+    FixCodeWithDevinSubgraph,
     GenerateQueriesSubgraph,
     GetPaperTitlesFromDBSubgraph,
     GitHubActionsExecutorSubgraph,
@@ -69,15 +70,28 @@ RUNNER_TYPE = ["ubuntu-latest", "gpu-runner", "A100_80GM×1", "A100_80GM×8"]
 
 runner_type = "A100_80GM×1"
 
+n_queries = 2  # 論文検索時のサブクエリの数
+max_results_per_query = 3  # 論文検索時の各サブクエリに対する論文数
+num_reference_paper = 5  # 論文作成時に追加で参照する論文数
+method_refinement_rounds = 2  # 新規手法の改良回数
+num_retrieve_related_papers = 3  # 新規手法作成時に新規性を確認するのに取得する論文数
+max_huggingface_results_per_search = (
+    10  # modelやdatasetごとのHuggingFaceからの候補の取得数
+)
+writing_refinement_rounds = 2  # 論文の改良回数
+max_filtered_references = 5  # 論文中で引用する参考文献の最大数
+max_chktex_revisions = 3  # LaTeXの文法チェックの修正回数
+max_compile_revisions = 3  # LaTeXのコンパイルエラー修正
+
 
 generate_queries = GenerateQueriesSubgraph(
     llm_mapping={
         "generate_queries": "o4-mini-2025-04-16",
     },
-    n_queries=5,
+    n_queries=n_queries,
 )
 get_paper_titles = GetPaperTitlesFromDBSubgraph(
-    max_results_per_query=10, semantic_search=True
+    max_results_per_query=max_results_per_query, semantic_search=True
 )
 retrieve_paper_content = RetrievePaperContentSubgraph(
     target_study_list_source="research_study_list",
@@ -97,7 +111,7 @@ retrieve_code = RetrieveCodeSubgraph(
 )
 reference_extractor = ExtractReferenceTitlesSubgraph(
     llm_mapping={"extract_reference_titles": "gemini-2.5-flash"},
-    paper_retrieval_limit=15,
+    num_reference_paper=num_reference_paper,
 )
 retrieve_reference_paper_content = RetrievePaperContentSubgraph(
     target_study_list_source="reference_research_study_list",
@@ -114,8 +128,8 @@ create_method = CreateMethodSubgraphV2(
         "refine_idea_and_research_summary": "o3-2025-04-16",
         "search_arxiv_id_from_title": "gpt-5-mini-2025-08-07",  # Only openAI models are available.
     },
-    refine_iterations=5,
-    num_retrieve_related_papers=15,
+    method_refinement_rounds=method_refinement_rounds,
+    num_retrieve_related_papers=num_retrieve_related_papers,
 )
 create_experimental_design = CreateExperimentalDesignSubgraph(
     runner_type=runner_type,
@@ -126,7 +140,7 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
 )
 retrieve_external_resources = RetrieveExternalResourcesSubgraph(
     llm_mapping={"select_external_resources": "gemini-2.5-flash"},
-    max_huggingface_results_per_search=30,
+    max_huggingface_results_per_search=max_huggingface_results_per_search,
 )
 coder = CreateCodeSubgraph(
     runner_type=runner_type,
@@ -141,12 +155,13 @@ judge_execution = JudgeExecutionSubgraph(
         "judge_execution": "gpt-5-2025-08-07",
     }
 )
-fixer = FixCodeSubgraph(
-    runner_type=runner_type,
-    llm_mapping={
-        "fix_code": "o3-2025-04-16",
-    },
-)
+fixer = FixCodeWithDevinSubgraph(runner_type=runner_type)
+# fixer = FixCodeSubgraph(
+#     runner_type=runner_type,
+#     llm_mapping={
+#         "fix_code": "o3-2025-04-16",
+#     },
+# )
 evaluate_consistency = EvaluateExperimentalConsistencySubgraph(
     llm_mapping={
         "evaluate_experimental_consistency": "o3-2025-04-16",
@@ -162,14 +177,14 @@ create_bibfile = CreateBibfileSubgraph(
         "filter_references": "gemini-2.5-flash",
     },
     latex_template_name="agents4science_2025",
-    max_filtered_references=20,
+    max_filtered_references=max_filtered_references,
 )
 writer = WriterSubgraph(
     llm_mapping={
-        "write_paper": "o3-2025-04-16",
+        "write_paper": "gpt-5-2025-08-07",
         "refine_paper": "o3-2025-04-16",
     },
-    max_refinement_count=2,
+    writing_refinement_rounds=writing_refinement_rounds,
 )
 evaluate_paper = EvaluatePaperResultsSubgraph(
     llm_mapping={
@@ -188,8 +203,8 @@ latex = LatexSubgraph(
         "fix_latex_text": "o3-2025-04-16",
     },
     latex_template_name="agents4science_2025",
-    max_chktex_revisions=3,
-    max_compile_revisions=3,
+    max_chktex_revisions=max_chktex_revisions,
+    max_compile_revisions=max_compile_revisions,
 )
 readme = ReadmeSubgraph()
 html = HtmlSubgraph(
@@ -311,12 +326,12 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250911-v4"
+    repository_name = "tanaka-20250912"
     research_topic_list = [
         # "Graph Attention Networkの学習の高速化",
         # "Transformerを用いた時系列データの新規手法",
         # "Diffusion Transformersの速度改善",
-        "Diffusion Transformersの学習時のメモリ改善"
+        "Diffusion Transformersの改善"
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list

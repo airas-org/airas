@@ -99,9 +99,13 @@ class FixCodeSubgraph(BaseSubgraph):
         self, state: FixCodeSubgraphState
     ) -> dict[str, int | list[str] | dict[str, dict[str, list[str]]]]:
         # NOTE: We increment the experiment_iteration here to reflect the next iteration
+        if state["error_list"]:
+            error_list = state["error_list"]
+        else:
+            error_list = []
         return {
             "experiment_iteration": state["experiment_iteration"] + 1,
-            "error_list": [],
+            "error_list": error_list,
             "file_validations": {},
         }
 

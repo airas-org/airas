@@ -102,7 +102,7 @@ class CreateMethodSubgraphV2(BaseSubgraph):
     def __init__(
         self,
         llm_mapping: dict[str, str] | CreateMethodV2LLMMapping | None = None,
-        refine_iterations: int = 2,
+        method_refinement_rounds: int = 2,
         paper_provider: str = "arxiv",
         num_retrieve_related_papers: int = 10,
     ):
@@ -122,7 +122,7 @@ class CreateMethodSubgraphV2(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or CreateMethodV2LLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
-        self.refine_iterations = refine_iterations
+        self.method_refinement_rounds = method_refinement_rounds
         self.paper_provider = paper_provider
         self.num_retrieve_related_papers = num_retrieve_related_papers
         check_api_key(llm_api_key_check=True)
@@ -241,7 +241,7 @@ class CreateMethodSubgraphV2(BaseSubgraph):
             and cast(int, state["new_idea_info"].evaluate.significance_score) >= 9
         ):
             return "end"
-        elif state["refine_iterations"] < self.refine_iterations:
+        elif state["refine_iterations"] < self.method_refinement_rounds:
             return "regenerate"
         else:
             logger.info("Refinement iterations exceeded, passing.")

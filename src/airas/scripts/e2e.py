@@ -47,7 +47,7 @@ retrieve_paper_content = RetrievePaperContentSubgraph(
 )
 summarize_paper = SummarizePaperSubgraph()
 retrieve_code = RetrieveCodeSubgraph()
-reference_extractor = ExtractReferenceTitlesSubgraph(paper_retrieval_limit=10)
+reference_extractor = ExtractReferenceTitlesSubgraph(num_reference_paper=10)
 retrieve_reference_paper_content = RetrievePaperContentSubgraph(
     paper_provider="arxiv", target_study_list_source="reference_research_study_list"
 )
@@ -62,7 +62,7 @@ analysis = AnalyticSubgraph()
 create_bibfile = CreateBibfileSubgraph(
     latex_template_name="iclr2024", max_filtered_references=30
 )
-writer = WriterSubgraph(max_refinement_count=2)
+writer = WriterSubgraph(writing_refinement_rounds=2)
 review = ReviewPaperSubgraph()
 latex = LatexSubgraph(latex_template_name="iclr2024", max_revision_count=3)
 readme = ReadmeSubgraph()

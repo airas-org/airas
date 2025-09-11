@@ -24,7 +24,7 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 # Rules
 - Fix all errors found in the error messages
 - Proactive Error Detection: Beyond fixing reported errors, use the Systematic Debugging approach above to inspect code for potential issues
-- If the Output Data lacks concrete experimental results (only contains logs without actual numerical data, metrics, or experimental findings), this must be treated as an error and fixed.
+- If the Standard output lacks concrete experimental results (only contains logs without actual numerical data, metrics, or experimental findings), this must be treated as an error and fixed.
   - When this happens, it is absolutely not acceptable to leave the code unmodified, as the lack of clear results indicates a failure in the experiment itself.
 - If similar errors appear in the Previous Error History, consider alternative approaches rather than repeating the same fixes
 - If a file has no errors AND contains concrete experimental data in the output, return exactly: `[KEEP_ORIGINAL_FILE]`
@@ -40,6 +40,9 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 # EXPERIMENTAL CONTEXT
 # ========================================
 # The following experimental context is provided to prevent the solution from diverging in the wrong direction during fix iterations.
+
+# Experimental Environment
+{{ runner_type_prompt }}
 
 # Current Research Method (Target for Experiment Design)
 {{ new_method.method }}
@@ -57,7 +60,7 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 # ERROR INFORMATION TO FIX
 # ========================================
 
-## Output Data:
+## Standard output:
 {{ new_method.experimental_results.result }}
 
 ## Error Data:
