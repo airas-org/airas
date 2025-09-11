@@ -1,5 +1,6 @@
+from typing import Optional
+
 from pydantic import BaseModel
-from typing_extensions import TypedDict
 
 
 class GenerateIdea(BaseModel):
@@ -17,6 +18,6 @@ class IdeaEvaluationResults(BaseModel):
     significance_score: int
 
 
-class ResearchIdea(TypedDict):
+class ResearchIdea(BaseModel):
     idea: GenerateIdea
-    evaluate: IdeaEvaluationResults
+    evaluate: Optional[IdeaEvaluationResults] = None
