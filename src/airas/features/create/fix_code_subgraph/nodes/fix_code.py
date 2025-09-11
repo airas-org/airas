@@ -23,7 +23,8 @@ class GenerateCodeForScripts(BaseModel):
     preprocess_scripts_content: str
     main_scripts_content: str
     pyproject_toml_content: str
-    config_yaml_content: str
+    smoke_test_yaml_content: str
+    full_experiment_yaml_content: str
 
 
 def _is_code_meaningful(content: str | None) -> bool:
@@ -79,7 +80,8 @@ def fix_code(
         "preprocess_scripts_content": "src/preprocess.py",
         "main_scripts_content": "src/main.py",
         "pyproject_toml_content": "pyproject.toml",
-        "config_yaml_content": "config/config.yaml",
+        "smoke_test_yaml_content": "config/smoke_test.yaml",
+        "full_experiment_yaml_content": "config/full_experiment.yaml",
     }
 
     for field, path in file_mapping.items():

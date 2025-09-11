@@ -22,7 +22,8 @@ class ConvertCodeToScripts(BaseModel):
     preprocess_scripts_content: str
     main_scripts_content: str
     pyproject_toml_content: str
-    config_yaml_content: str
+    smoke_test_yaml_content: str
+    full_experiment_yaml_content: str
 
 
 def convert_code_to_scripts(
@@ -62,5 +63,6 @@ def convert_code_to_scripts(
         "src/preprocess.py": output["preprocess_scripts_content"],
         "src/main.py": output["main_scripts_content"],
         "pyproject.toml": output["pyproject_toml_content"],
-        "config/config.yaml": output["config_yaml_content"],
+        "config/smoke_test.yaml": output["smoke_test_yaml_content"],
+        "config/full_experiment.yaml": output["full_experiment_yaml_content"],
     }

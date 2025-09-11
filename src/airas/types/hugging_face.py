@@ -32,7 +32,7 @@ class HuggingFaceCardData(BaseModel):
     model_type: Optional[str] = Field(
         None, description="Type of the model (bert, gpt2, etc.)"
     )
-    base_model: Optional[str] = Field(
+    base_model: Optional[str | list[str]] = Field(
         None, description="Base model if this is a fine-tuned model"
     )
 
@@ -84,7 +84,10 @@ class HuggingFaceResource(BaseModel):
     )
     library_name: Optional[str] = Field(None, description="Primary library name")
 
-    readme: str = Field("", description="README content")
+    readme: str = Field(
+        "",
+        description="Enriched by a separate README fetch; not part of the main API response",
+    )
     model_index: Optional[list[dict[str, Any]]] = Field(
         None, description="Model index information", alias="model-index"
     )

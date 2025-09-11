@@ -35,6 +35,15 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 - Image paths: .research/iteration{{ experiment_iteration }}/images (modify any existing image save paths to use this exact directory)
 - JSON paths: .research/iteration{{ experiment_iteration }}/ (Save each experiment's results as separate JSON files in this directory and print each JSON contents to standard output for verification)
 
+# Configuration Files Requirements
+- Generate TWO separate configuration files:
+  - config/smoke_test.yaml: Small-scale configuration for quick validation (reduced epochs like 1-2, smaller datasets, limited iterations)
+  - config/full_experiment.yaml: Full-scale configuration for complete experimental runs
+- Ensure main.py supports command-line arguments:
+  - --smoke-test flag: loads smoke_test.yaml
+  - --full-experiment flag: loads full_experiment.yaml
+- Use PyYAML for configuration loading in main.py
+
 
 # ========================================
 # EXPERIMENTAL CONTEXT
