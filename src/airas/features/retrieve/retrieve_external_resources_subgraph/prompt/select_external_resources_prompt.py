@@ -9,9 +9,10 @@ You are a machine learning researcher tasked with selecting the most relevant mo
   - Well-maintained and popular
   - Compatible with the experimental setup
   - Likely to provide good baseline comparisons or be useful for the proposed method
+  - Have detailed README with usage examples, installation steps, and clear documentation
 
 # Output Format
-Select up to 3 most relevant models and up to 3 most relevant datasets. For each selected resource, provide only:
+Select up to 5 most relevant models and up to 5 most relevant datasets. For each selected resource, provide only:
 - The exact title from the search results (this will be used to retrieve the complete resource information)
 
 # Current Research Method
