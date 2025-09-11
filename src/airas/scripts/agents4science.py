@@ -64,10 +64,10 @@ AVAILABLE_MODELS = [
     "claude-3-5-haiku-20241022",
 ]
 
-RUNNER_TYPE = ["ubuntu-latest", "gpu-runner", "A100_80GM×8"]
+RUNNER_TYPE = ["ubuntu-latest", "gpu-runner", "A100_80GM×1", "A100_80GM×8"]
 
 
-runner_type = "A100_80GM×8"
+runner_type = "A100_80GM×1"
 
 
 generate_queries = GenerateQueriesSubgraph(
