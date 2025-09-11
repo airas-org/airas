@@ -23,7 +23,7 @@ from airas.features import (
     PrepareRepositorySubgraph,
     ReadmeSubgraph,
     RetrieveCodeSubgraph,
-    RetrieveExternalResourcesSubgraph,
+    RetrieveHuggingFaceSubgraph,
     RetrievePaperContentSubgraph,
     ReviewPaperSubgraph,
     SummarizePaperSubgraph,
@@ -123,8 +123,8 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
         "generate_experiment_details": "o3-2025-04-16",
     },
 )
-retrieve_external_resources = RetrieveExternalResourcesSubgraph(
-    llm_mapping={"select_external_resources": "gpt-5-mini-2025-08-07"},
+retrieve_hugging_face = RetrieveHuggingFaceSubgraph(
+    llm_mapping={"select_resources": "gpt-5-mini-2025-08-07"},
 )
 coder = CreateCodeSubgraph(
     runner_type=runner_type,
@@ -206,7 +206,7 @@ subgraph_list = [
     retrieve_code,
     create_method,
     create_experimental_design,
-    retrieve_external_resources,
+    retrieve_hugging_face,
     coder,
     executor,
     judge_execution,
@@ -266,7 +266,7 @@ def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG)
             subgraph,
             (
                 CreateExperimentalDesignSubgraph,
-                RetrieveExternalResourcesSubgraph,
+                RetrieveHuggingFaceSubgraph,
                 CreateCodeSubgraph,
                 GitHubActionsExecutorSubgraph,
                 JudgeExecutionSubgraph,

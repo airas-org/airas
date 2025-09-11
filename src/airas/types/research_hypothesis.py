@@ -4,6 +4,14 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from airas.types.hugging_face import HuggingFace
+
+
+class ExternalResources(BaseModel):
+    hugging_face: Optional[HuggingFace] = Field(
+        None, description="Hugging Face models and datasets"
+    )
+
 
 class ExperimentalDesign(BaseModel):
     experiment_strategy: Optional[str] = Field(None, description="")
@@ -14,9 +22,9 @@ class ExperimentalDesign(BaseModel):
     expected_datasets: Optional[list[str]] = Field(
         None, description="List of expected datasets to be used in the experiment"
     )
-    external_resources: Optional[str] = Field(
+    external_resources: Optional[ExternalResources] = Field(
         None,
-        description="URLs and paths for datasets, models, and other external resources",
+        description="External resources including models, datasets, and other resources",
     )
     experiment_code: Optional[str] = Field(None, description="")
 

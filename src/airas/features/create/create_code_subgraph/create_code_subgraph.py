@@ -140,7 +140,6 @@ class CreateCodeSubgraph(BaseSubgraph):
         file_validations = static_validate_code(
             generated_file_contents=state["generated_file_contents"]
         )
-        print(f"Validation: {file_validations}")
         return {
             "file_validations": file_validations,
         }

@@ -18,7 +18,7 @@ class BaseHTTPClient:
         self.base_url = base_url.rstrip("/")
         self.default_headers = default_headers or {}
         self.sync_session = sync_session or requests.Session()
-        self.async_session = async_session or httpx.AsyncClient()
+        self.async_session = async_session or httpx.AsyncClient(follow_redirects=True)
 
     def request(
         self,
@@ -30,9 +30,13 @@ class BaseHTTPClient:
         json: dict | None = None,
         stream: bool = False,
         timeout: float = 10.0,
+        full_url: str | None = None,
     ) -> requests.Response:
         """Synchronous HTTP request."""
-        url = f"{self.base_url}/{path.lstrip('/')}"
+        if full_url:
+            url = full_url
+        else:
+            url = f"{self.base_url}/{path.lstrip('/')}"
         headers = {**self.default_headers, **(headers or {})}
 
         try:
@@ -58,11 +62,14 @@ class BaseHTTPClient:
         headers: dict[str, str] | None = None,
         params: dict | None = None,
         json: dict | None = None,
-        stream: bool = False,
         timeout: float = 10.0,
+        full_url: str | None = None,
     ) -> httpx.Response:
         """Asynchronous HTTP request."""
-        url = f"{self.base_url}/{path.lstrip('/')}"
+        if full_url:
+            url = full_url
+        else:
+            url = f"{self.base_url}/{path.lstrip('/')}"
         headers = {**self.default_headers, **(headers or {})}
 
         try:
@@ -72,7 +79,6 @@ class BaseHTTPClient:
                 headers=headers,
                 params=params,
                 json=json,
-                stream=stream,
                 timeout=timeout,
             )
             return response

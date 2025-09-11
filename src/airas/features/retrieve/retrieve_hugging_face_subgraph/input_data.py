@@ -1,6 +1,6 @@
 from airas.types.research_hypothesis import ExperimentalDesign, ResearchHypothesis
 
-retrieve_external_resources_subgraph_input_data = {
+retrieve_hugging_face_subgraph_input_data = {
     "new_method": ResearchHypothesis(
         method="A novel approach to image classification using vision transformers",
         experimental_design=ExperimentalDesign(
