@@ -1,5 +1,3 @@
-from typing import cast
-
 from jinja2 import Environment
 
 from airas.features.create.create_method_subgraph.nodes.idea_generator import (
@@ -29,16 +27,16 @@ def refine_idea_and_research_summary(
     research_study_list: list[ResearchStudy],
     idea_info_history: list[ResearchIdea],
     client: LLMFacadeClient | None = None,
-) -> tuple[GenerateIdea, list[ResearchIdea]]:
+) -> tuple[ResearchIdea, list[ResearchIdea]]:
     client = client or LLMFacadeClient(llm_name=llm_name)
     env = Environment()
 
     template = env.from_string(refine_ide_and_research_summary_prompt)
     data = {
         "research_topic": research_topic,
-        "evaluated_idea_info": parse_new_idea_info(evaluated_idea_info["idea"]),
-        "novelty_reason": evaluated_idea_info["evaluate"].novelty_reason,
-        "significance_reason": evaluated_idea_info["evaluate"].significance_reason,
+        "evaluated_idea_info": parse_new_idea_info(evaluated_idea_info.idea),
+        "novelty_reason": evaluated_idea_info.evaluate.novelty_reason,
+        "significance_reason": evaluated_idea_info.evaluate.significance_reason,
         "idea_info_history": parse_idea_info_history(idea_info_history),
         "research_study_list": parse_research_study_list(research_study_list),
     }
@@ -50,17 +48,18 @@ def refine_idea_and_research_summary(
     if output is None:
         raise ValueError("No response from LLM in idea_generator.")
 
+    new_idea_info = ResearchIdea(idea=GenerateIdea(**output))
     idea_info_history.append(evaluated_idea_info)
-    return cast(GenerateIdea, output), idea_info_history
+    return new_idea_info, idea_info_history
 
 
 def parse_idea_info_history(idea_info_history: list[ResearchIdea]) -> str:
     idea_info_history_str = ""
     for idea_info in idea_info_history:
-        idea_info_str = parse_new_idea_info(idea_info["idea"])
+        idea_info_str = parse_new_idea_info(idea_info.idea)
         idea_eval_str = f"""\
-Novelty: {idea_info["evaluate"].novelty_reason}
-Significance: {idea_info["evaluate"].significance_reason}
+Novelty: {idea_info.evaluate.novelty_reason}
+Significance: {idea_info.evaluate.significance_reason}
 """
         idea_info_history_str += f"Idea Info:\n{idea_info_str}\n{idea_eval_str}\n"
     return idea_info_history_str

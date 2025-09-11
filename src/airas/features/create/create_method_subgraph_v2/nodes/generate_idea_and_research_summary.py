@@ -12,7 +12,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.research_idea import GenerateIdea
+from airas.types.research_idea import GenerateIdea, ResearchIdea
 from airas.types.research_study import ResearchStudy
 
 logger = getLogger(__name__)
@@ -23,7 +23,7 @@ def generate_idea_and_research_summary(
     research_topic: str,
     research_study_list: list[ResearchStudy],
     client: LLMFacadeClient | None = None,
-) -> GenerateIdea:
+) -> ResearchIdea:
     client = client or LLMFacadeClient(llm_name=llm_name)
     env = Environment()
 
@@ -39,4 +39,5 @@ def generate_idea_and_research_summary(
     )
     if output is None:
         raise ValueError("No response from LLM in idea_generator.")
-    return GenerateIdea(**output)
+    new_idea_info = ResearchIdea(idea=GenerateIdea(**output))
+    return new_idea_info
