@@ -49,6 +49,7 @@ class CreateCodeSubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
     experiment_iteration: int
     consistency_feedback: list[str]
+    generated_file_contents: dict[str, str]
 
 
 class CreateCodeSubgraphHiddenState(TypedDict):
@@ -113,7 +114,7 @@ class CreateCodeSubgraph(BaseSubgraph):
         current_iteration = state.get("experiment_iteration", 0)
         return {
             "experiment_iteration": current_iteration + 1,
-            "generated_file_contents": {},
+            "generated_file_contents": state.get("generated_file_contents", {}),
             "file_validations": {},
         }
 

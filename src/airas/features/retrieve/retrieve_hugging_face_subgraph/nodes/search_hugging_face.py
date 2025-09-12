@@ -40,6 +40,10 @@ async def search_hugging_face(
         for dataset in new_method.experimental_design.expected_datasets
     ]
 
+    if not search_tasks:
+        logger.info("No search tasks to perform.")
+        return HuggingFace(models=[], datasets=[])
+
     logger.info(f"Starting {len(search_tasks)} Hugging Face API searches")
 
     # Execute all searches in parallel
@@ -55,12 +59,10 @@ async def search_hugging_face(
 
     results_list = await asyncio.gather(*tasks, return_exceptions=True)
 
-    for i, result in enumerate(results_list):
-        search_type, query = search_tasks[i]
-
+    for (search_type, query), result in zip(search_tasks, results_list, strict=True):
         if isinstance(result, Exception):
             logger.error(f"Error in search task for {search_type}:{query}: {result}")
-        else:
+        elif result:
             if search_type == "models":
                 models_list.extend(result)
             else:
@@ -92,43 +94,31 @@ async def _search_resources(
             sort="downloads",
         )
 
-        if not search_response:
+        if not search_response or not isinstance(search_response, list):
             logger.warning(f"No search results found for {search_type}: {query}")
             return []
 
-        resources = search_response if isinstance(search_response, list) else []
-        if not resources:
-            logger.warning(f"Empty results for {search_type}: {query}")
-            return []
+        logger.info(f"Found {len(search_response)} {search_type} for query: {query}")
 
-        logger.info(f"Found {len(resources)} {search_type} for query: {query}")
+        enrich_tasks = [
+            _enrich_resource(hf_client, search_type, resource, include_gated)
+            for resource in search_response
+        ]
 
-        enriched_resources = []
+        enriched_results = await asyncio.gather(*enrich_tasks, return_exceptions=True)
 
-        for resource in resources:
-            try:
-                enriched_resource = await _enrich_resource(
-                    hf_client, search_type, resource, include_gated
-                )
-                if enriched_resource:
-                    enriched_resources.append(enriched_resource)
-            except Exception as e:
-                logger.warning(
-                    f"Failed to enrich resource {resource.get('id', 'unknown')}: {e}"
-                )
-                basic_resource = HuggingFaceResource(
-                    id=resource.get("id", "unknown"),
-                    author=resource.get("author"),
-                    downloads=resource.get("downloads", 0),
-                    likes=resource.get("likes", 0),
-                    readme=f"Error during enrichment: {str(e)}",
-                )
-                enriched_resources.append(basic_resource)
+        final_resources = []
+        for i, result in enumerate(enriched_results):
+            if isinstance(result, Exception):
+                resource_id = search_response[i].get("id", "unknown")
+                logger.warning(f"Enrichment task failed for {resource_id}: {result}")
+            elif result is not None:
+                final_resources.append(result)
 
-        return enriched_resources
+        return final_resources
 
     except Exception as e:
-        logger.error(f"Error searching {search_type} for '{query}': {e}")
+        logger.error(f"Critical error during search for {search_type} '{query}': {e}")
         return []
 
 
@@ -138,8 +128,7 @@ async def _enrich_resource(
     resource: dict[str, Any],
     include_gated: bool = False,
 ) -> HuggingFaceResource | None:
-    resource_id = resource.get("id")
-    if not resource_id:
+    if not (resource_id := resource.get("id")):
         logger.warning(f"Resource missing ID: {resource}")
         return None
 
@@ -150,24 +139,24 @@ async def _enrich_resource(
             details_task, readme_task, return_exceptions=True
         )
 
-        detailed_resource: dict[str, Any] = {}
-        readme_content = ""
-
-        if not isinstance(results[0], Exception):
-            detailed_resource = results[0]
-        else:
+        if isinstance(results[0], Exception):
             logger.warning(f"Failed to get details for {resource_id}: {results[0]}")
+            return None
+        detailed_resource = results[0]
 
-        if not isinstance(results[1], Exception):
-            readme_content = results[1]
-        else:
+        if isinstance(results[1], Exception):
             logger.warning(f"Failed to get README for {resource_id}: {results[1]}")
+            return None
+        readme_content = results[1]
+
+        if not readme_content or not readme_content.strip():
+            logger.info(f"Skipping resource without README: {resource_id}")
+            return None
 
         hf_resource = _apply_hf_resource_type(
             resource, detailed_resource, readme_content
         )
 
-        # Filter out inaccessible resources based on include_gated setting
         if hf_resource.private or hf_resource.disabled:
             logger.info(
                 f"Skipping inaccessible resource: {resource_id} (private={hf_resource.private}, disabled={hf_resource.disabled})"

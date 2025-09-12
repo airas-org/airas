@@ -37,12 +37,13 @@ class FixCodeLLMMapping(BaseModel):
     fix_code: LLM_MODEL = DEFAULT_NODE_LLMS["fix_code"]
 
 
-class FixCodeSubgraphInputState(TypedDict):
+class FixCodeSubgraphInputState(TypedDict, total=False):
     github_repository_info: GitHubRepositoryInfo
     new_method: ResearchHypothesis
     executed_flag: bool  # This should be True if the GitHub Actions workflow was executed successfully
     experiment_iteration: int
     generated_file_contents: dict[str, str]
+    error_list: list[str]
 
 
 class FixCodeSubgraphHiddenState(TypedDict):
