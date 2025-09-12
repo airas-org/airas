@@ -103,7 +103,7 @@ class FixCodeSubgraph(BaseSubgraph):
         # NOTE: We increment the experiment_iteration here to reflect the next iteration
         return {
             "experiment_iteration": state["experiment_iteration"] + 1,
-            "error_list": [],
+            "error_list": state.get("error_list", []),
             "file_validations": {},
         }
 
