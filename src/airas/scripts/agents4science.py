@@ -24,7 +24,7 @@ from airas.features import (
     PrepareRepositorySubgraph,
     ReadmeSubgraph,
     RetrieveCodeSubgraph,
-    RetrieveExternalResourcesSubgraph,
+    RetrieveHuggingFaceSubgraph,
     RetrievePaperContentSubgraph,
     ReviewPaperSubgraph,
     SummarizePaperSubgraph,
@@ -69,6 +69,7 @@ RUNNER_TYPE = ["ubuntu-latest", "gpu-runner", "A100_80GM×1", "A100_80GM×8"]
 
 
 runner_type = "A100_80GM×1"
+secret_names = ["HF_TOKEN"]
 
 n_queries = 2  # 論文検索時のサブクエリの数
 max_results_per_query = 3  # 論文検索時の各サブクエリに対する論文数
@@ -138,12 +139,13 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
         "generate_experiment_details": "o3-2025-04-16",
     },
 )
-retrieve_external_resources = RetrieveExternalResourcesSubgraph(
-    llm_mapping={"select_external_resources": "gemini-2.5-flash"},
-    max_huggingface_results_per_search=max_huggingface_results_per_search,
+retrieve_hugging_face = RetrieveHuggingFaceSubgraph(
+    include_gated=False,
+    llm_mapping={"select_resources": "gpt-5-mini-2025-08-07"},
 )
 coder = CreateCodeSubgraph(
     runner_type=runner_type,
+    secret_names=secret_names,
     llm_mapping={
         "generate_experiment_code": "o3-2025-04-16",
         "convert_code_to_scripts": "o3-2025-04-16",
@@ -158,6 +160,7 @@ judge_execution = JudgeExecutionSubgraph(
 fixer = FixCodeWithDevinSubgraph(runner_type=runner_type)
 # fixer = FixCodeSubgraph(
 #     runner_type=runner_type,
+#     secret_names=secret_names,
 #     llm_mapping={
 #         "fix_code": "o3-2025-04-16",
 #     },
@@ -223,7 +226,7 @@ subgraph_list = [
     retrieve_code,
     create_method,
     create_experimental_design,
-    retrieve_external_resources,
+    retrieve_hugging_face,
     coder,
     executor,
     judge_execution,
@@ -283,7 +286,7 @@ def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG)
             subgraph,
             (
                 CreateExperimentalDesignSubgraph,
-                RetrieveExternalResourcesSubgraph,
+                RetrieveHuggingFaceSubgraph,
                 CreateCodeSubgraph,
                 GitHubActionsExecutorSubgraph,
                 JudgeExecutionSubgraph,

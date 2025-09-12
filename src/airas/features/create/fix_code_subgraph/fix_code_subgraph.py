@@ -37,12 +37,13 @@ class FixCodeLLMMapping(BaseModel):
     fix_code: LLM_MODEL = DEFAULT_NODE_LLMS["fix_code"]
 
 
-class FixCodeSubgraphInputState(TypedDict):
+class FixCodeSubgraphInputState(TypedDict, total=False):
     github_repository_info: GitHubRepositoryInfo
     new_method: ResearchHypothesis
     executed_flag: bool  # This should be True if the GitHub Actions workflow was executed successfully
     experiment_iteration: int
     generated_file_contents: dict[str, str]
+    error_list: list[str]
 
 
 class FixCodeSubgraphHiddenState(TypedDict):
@@ -74,8 +75,10 @@ class FixCodeSubgraph(BaseSubgraph):
         self,
         runner_type: RunnerType = "ubuntu-latest",
         llm_mapping: dict[str, str] | FixCodeLLMMapping | None = None,
+        secret_names: list[str] | None = None,
     ):
         self.runner_type = runner_type
+        self.secret_names = secret_names or []
         if llm_mapping is None:
             self.llm_mapping = FixCodeLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -99,13 +102,9 @@ class FixCodeSubgraph(BaseSubgraph):
         self, state: FixCodeSubgraphState
     ) -> dict[str, int | list[str] | dict[str, dict[str, list[str]]]]:
         # NOTE: We increment the experiment_iteration here to reflect the next iteration
-        if "error_list" in state.keys():
-            error_list = state["error_list"]
-        else:
-            error_list = []
         return {
             "experiment_iteration": state["experiment_iteration"] + 1,
-            "error_list": error_list,
+            "error_list": state.get("error_list", []),
             "file_validations": {},
         }
 
@@ -119,6 +118,7 @@ class FixCodeSubgraph(BaseSubgraph):
             generated_file_contents=state["generated_file_contents"],
             experiment_iteration=state["experiment_iteration"],
             runner_type=self.runner_type,
+            secret_names=self.secret_names,
             error_list=state["error_list"],
             file_validations=state["file_validations"],
         )
@@ -163,7 +163,7 @@ class FixCodeSubgraph(BaseSubgraph):
         )
 
         is_code_pushed_to_github = push_files_to_github(
-            github_repository=state["github_repository_info"],
+            github_repository_info=state["github_repository_info"],
             files=state["generated_file_contents"],
             commit_message=commit_message,
         )

@@ -23,7 +23,8 @@ class GenerateCodeForScripts(BaseModel):
     preprocess_scripts_content: str
     main_scripts_content: str
     pyproject_toml_content: str
-    config_yaml_content: str
+    smoke_test_yaml_content: str
+    full_experiment_yaml_content: str
 
 
 def _is_code_meaningful(content: str | None) -> bool:
@@ -47,6 +48,7 @@ def fix_code(
     generated_file_contents: dict[str, str],
     experiment_iteration: int,
     runner_type: RunnerType,
+    secret_names: list[str],
     error_list: list[str],
     file_validations: dict[str, dict[str, list[str]]],
     prompt_template: str = code_fix_prompt,
@@ -59,6 +61,7 @@ def fix_code(
         "experiment_iteration": experiment_iteration,
         "new_method": new_method.model_dump(),
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
+        "secret_names": secret_names,
         "error_list": error_list,  # Previous errors for analysis
         "file_validations": file_validations,  # Static validation results
     }
@@ -79,7 +82,8 @@ def fix_code(
         "preprocess_scripts_content": "src/preprocess.py",
         "main_scripts_content": "src/main.py",
         "pyproject_toml_content": "pyproject.toml",
-        "config_yaml_content": "config/config.yaml",
+        "smoke_test_yaml_content": "config/smoke_test.yaml",
+        "full_experiment_yaml_content": "config/full_experiment.yaml",
     }
 
     for field, path in file_mapping.items():

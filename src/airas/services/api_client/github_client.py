@@ -4,7 +4,8 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Literal, Protocol, runtime_checkable
 
-import requests  # type: ignore
+import requests
+from nacl import public
 from tenacity import (
     before_sleep_log,
     retry,
@@ -805,30 +806,66 @@ class GithubClient(BaseHTTPClient):
                 self._raise_for_status(response, path)
                 return None
 
-    # @GITHUB_RETRY
-    # def get_repository_content(
-    #     self,
-    #     github_owner: str,
-    #     repository_name: str,
-    #     path: str,
-    #     ):
-    #     # https://docs.github.com/ja/rest/repos/contents?apiVersion=2022-11-28#get-repository-content
-    #     path = f"/repos/{github_owner}/{repository_name}/contents/{path}"
+    # --------------------------------------------------
+    # Secrets (Actions)
+    # --------------------------------------------------
 
-    #     response = self.get(path=path, stream=True)
-    #     match response.status_code:
-    #         case 200:
-    #             logger.info(f"Success (200): {path}")
-    #             return self._parser.parse(response, as_="bytes")
-    #         case 302:
-    #             logger.info(f"Found (302): {path}")
-    #             return self._parser.parse(response, as_="bytes")
-    #         case 304:
-    #             logger.info(f"Found (304): {path}")
-    #             return self._parser.parse(response, as_="bytes")
-    #         case 404:
-    #             logger.error("Contents not found: (404)")
-    #             raise GithubClientFatalError("Contents not found: (404)")
-    #         case _:
-    #             self._raise_for_status(response, path)
-    #             return None
+    @GITHUB_RETRY
+    def get_repository_public_key(
+        self,
+        github_owner: str,
+        repository_name: str,
+    ) -> dict[str, str] | None:
+        # https://docs.github.com/en/rest/actions/secrets#get-a-repository-public-key
+        path = f"/repos/{github_owner}/{repository_name}/actions/secrets/public-key"
+
+        response = self.get(path=path)
+        match response.status_code:
+            case 200:
+                logger.info(f"Successfully retrieved repository public key: {path}")
+                return self._parser.parse(response, as_="json")
+            case 404:
+                logger.error(f"Repository not found (404): {path}")
+                raise GithubClientFatalError(f"Repository not found (404): {path}")
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
+    def _encrypt_secret(self, public_key: str, secret_value: str) -> str:
+        public_key_bytes = base64.b64decode(public_key)
+        public_key_obj = public.PublicKey(public_key_bytes)
+        sealed_box = public.SealedBox(public_key_obj)
+        encrypted = sealed_box.encrypt(secret_value.encode("utf-8"))
+        return base64.b64encode(encrypted).decode("utf-8")
+
+    @GITHUB_RETRY
+    def create_or_update_repository_secret(
+        self,
+        github_owner: str,
+        repository_name: str,
+        secret_name: str,
+        secret_value: str,
+        public_key_info: dict[str, str],
+    ) -> bool:
+        # https://docs.github.com/en/rest/actions/secrets#create-or-update-a-repository-secret
+        encrypted_value = self._encrypt_secret(public_key_info["key"], secret_value)
+
+        path = f"/repos/{github_owner}/{repository_name}/actions/secrets/{secret_name}"
+        payload = {
+            "encrypted_value": encrypted_value,
+            "key_id": public_key_info["key_id"],
+        }
+
+        response = self.put(path=path, json=payload)
+        match response.status_code:
+            case 201 | 204:
+                logger.info(
+                    f"Successfully created/updated repository secret: {secret_name}"
+                )
+                return True
+            case 404:
+                logger.error(f"Repository not found (404): {path}")
+                raise GithubClientFatalError(f"Repository not found (404): {path}")
+            case _:
+                self._raise_for_status(response, path)
+                return False

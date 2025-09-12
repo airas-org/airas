@@ -42,12 +42,11 @@ class CreateExperimentalDesignLLMMapping(BaseModel):
 
 class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
-    consistency_feedback: list[str]
     generated_file_contents: dict[str, str]
+    consistency_feedback: list[str]
 
 
-class CreateExperimentalDesignHiddenState(TypedDict):
-    feedback_text: str | None
+class CreateExperimentalDesignHiddenState(TypedDict): ...
 
 
 class CreateExperimentalDesignSubgraphOutputState(TypedDict):
@@ -98,11 +97,6 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         self, state: CreateExperimentalDesignState
     ) -> dict[str, ResearchHypothesis | str | None]:
         current_method = state["new_method"]
-        feedback_text = None
-
-        if consistency_feedback := state.get("consistency_feedback"):
-            feedback_text = consistency_feedback[-1]
-
         if current_method.experimental_design is not None:
             previous_method = current_method.model_copy(deep=True)
             previous_method.iteration_history = None
@@ -119,7 +113,6 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
 
         return {
             "new_method": current_method,
-            "feedback_text": feedback_text,
         }
 
     @create_experimental_design_timed
@@ -130,7 +123,9 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.generate_experiment_strategy,
             new_method=state["new_method"],
             runner_type=cast(RunnerType, self.runner_type),
-            feedback_text=state.get("feedback_text"),
+            feedback_text=feedback[-1]
+            if (feedback := state.get("consistency_feedback"))
+            else None,
             generated_file_contents=state.get("generated_file_contents"),
         )
         return {"new_method": new_method}
@@ -143,7 +138,9 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.generate_experiment_details,
             new_method=state["new_method"],
             runner_type=cast(RunnerType, self.runner_type),
-            feedback_text=state.get("feedback_text"),
+            feedback_text=feedback[-1]
+            if (feedback := state.get("consistency_feedback"))
+            else None,
             generated_file_contents=state.get("generated_file_contents"),
         )
         return {"new_method": new_method}

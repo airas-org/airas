@@ -21,11 +21,14 @@ class BaseSubgraph(ABC):
     ) -> dict[str, Any]:
         input_state_keys = self.InputState.__annotations__.keys()
         output_state_keys = self.OutputState.__annotations__.keys()
+        # NOTE: This is a temporary workaround to automatically include updated InputState values in the subgraph's output.
+        unique_keys = set(input_state_keys) | set(output_state_keys)
+        merged_keys = dict.fromkeys(unique_keys).keys()
 
         input_state = {k: state[k] for k in input_state_keys if k in state}
         config = config or {"recursion_limit": 1000}
         result = await self.build_graph().ainvoke(input_state, config=config)
-        output_state = {k: result[k] for k in output_state_keys if k in result}
+        output_state = {k: result[k] for k in merged_keys if k in result}
 
         state["subgraph_name"] = self.__class__.__name__
         return {**state, **output_state}

@@ -10,5 +10,6 @@ Adaptive Curvature Momentum (ACM) Optimizer Overview Existing adaptive optimizer
             was_experiment_executed=True,
             is_better_than_baseline=True,
         ),
-    )
+    ),
+    "generated_file_contents": {"sample.py": "print('Hello world!')"},
 }

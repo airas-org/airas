@@ -51,8 +51,8 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "refine_paper": BASE_MODEL,
 
     # --- features/retrieve ---
-    # RetrieveExternalResourcesSubgraph
-    "select_external_resources": BASE_MODEL,
+    # RetrieveHuggingFaceSubgraph
+    "select_resources": BASE_MODEL,
 
     # --- features/evaluate ---
     # JudgeExecutionSubgraph

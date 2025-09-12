@@ -20,6 +20,9 @@ You are tasked with fixing Python code that failed during execution. Analyze the
    - Fail-fast policy: All error handling must result in immediate program termination with clear error messages. No silent fallbacks or synthetic alternatives
    - Data pipeline fixes: Ensure complete data acquisition (download, extract, organize into data/)
    - Dependency resolution fixes: Check pyproject.toml for circular dependencies and proper ordering
+{% if secret_names %}
+   - Environment Variables: The following environment variables are available for use: {{ secret_names|join(', ') }}. Use os.getenv() to access them in your code for authentication tokens and API keys.
+{% endif %}
 
 # Rules
 - Fix all errors found in the error messages
@@ -34,6 +37,15 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 - MANDATORY: You must update paths before saving. The following paths are required:
 - Image paths: .research/iteration{{ experiment_iteration }}/images (modify any existing image save paths to use this exact directory)
 - JSON paths: .research/iteration{{ experiment_iteration }}/ (Save each experiment's results as separate JSON files in this directory and print each JSON contents to standard output for verification)
+
+# Configuration Files Requirements
+- Generate TWO separate configuration files:
+  - config/smoke_test.yaml: Small-scale configuration for quick validation (reduced epochs like 1-2, smaller datasets, limited iterations)
+  - config/full_experiment.yaml: Full-scale configuration for complete experimental runs
+- Ensure main.py supports command-line arguments:
+  - --smoke-test flag: loads smoke_test.yaml
+  - --full-experiment flag: loads full_experiment.yaml
+- Use PyYAML for configuration loading in main.py
 
 
 # ========================================

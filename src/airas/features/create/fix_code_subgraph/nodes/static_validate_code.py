@@ -202,12 +202,23 @@ dependencies = [
     "pandas>=2.0.0"
 ]
 """,
-                "config/config.yaml": """
+                "config/smoke_test.yaml": """
 model:
   type: "linear"
   hidden_size: 128
 data:
   batch_size: 32
+training:
+  epochs: 1
+""",
+                "config/full_experiment.yaml": """
+model:
+  type: "linear"
+  hidden_size: 128
+data:
+  batch_size: 32
+training:
+  epochs: 50
 """,
             },
         },
@@ -246,7 +257,7 @@ dependencies = [
         {
             "name": "Invalid YAML",
             "files": {
-                "config.yaml": """
+                "config/smoke_test.yaml": """
 invalid_yaml:
   key1: value1
   key2: [

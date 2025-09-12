@@ -22,7 +22,8 @@ class ConvertCodeToScripts(BaseModel):
     preprocess_scripts_content: str
     main_scripts_content: str
     pyproject_toml_content: str
-    config_yaml_content: str
+    smoke_test_yaml_content: str
+    full_experiment_yaml_content: str
 
 
 def convert_code_to_scripts(
@@ -30,6 +31,7 @@ def convert_code_to_scripts(
     new_method: ResearchHypothesis,
     experiment_iteration: int,
     runner_type: RunnerType,
+    secret_names: list[str],
     file_validations: dict[str, dict[str, list[str]]],
     prompt_template: str = convert_code_to_scripts_prompt,
     client: LLMFacadeClient | None = None,
@@ -41,6 +43,7 @@ def convert_code_to_scripts(
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "new_method": new_method.model_dump(),
         "experiment_iteration": experiment_iteration,
+        "secret_names": secret_names,
         "file_validations": file_validations,
         "generated_file_contents": generated_file_contents,
     }
@@ -62,5 +65,6 @@ def convert_code_to_scripts(
         "src/preprocess.py": output["preprocess_scripts_content"],
         "src/main.py": output["main_scripts_content"],
         "pyproject.toml": output["pyproject_toml_content"],
-        "config/config.yaml": output["config_yaml_content"],
+        "config/smoke_test.yaml": output["smoke_test_yaml_content"],
+        "config/full_experiment.yaml": output["full_experiment_yaml_content"],
     }

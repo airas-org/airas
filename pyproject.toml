@@ -30,6 +30,7 @@ dependencies = [
     "bibtexparser>=1.4.3",
     "anthropic>=0.66.0",
     "toml>=0.10.2",
+    "pynacl>=1.6.0",
 ]
 
 [project.urls]
