@@ -12,6 +12,7 @@ HF_RETRY = make_retry_policy()
 HF_RESOURCE_TYPE = Literal["models", "datasets"]
 
 
+# https://huggingface.co/docs/hub/api
 class HuggingFaceClient(BaseHTTPClient):
     def __init__(
         self,

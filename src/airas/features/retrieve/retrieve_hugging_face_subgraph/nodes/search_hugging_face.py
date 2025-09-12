@@ -174,7 +174,7 @@ async def _enrich_resource(
             )
             return None
 
-        if hf_resource.gated and not include_gated:
+        if bool(hf_resource.gated) and not include_gated:
             logger.info(
                 f"Skipping gated resource: {resource_id} (gated={hf_resource.gated}, include_gated={include_gated})"
             )

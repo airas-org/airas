@@ -162,7 +162,7 @@ class FixCodeSubgraph(BaseSubgraph):
         )
 
         is_code_pushed_to_github = push_files_to_github(
-            github_repository=state["github_repository_info"],
+            github_repository_info=state["github_repository_info"],
             files=state["generated_file_contents"],
             commit_message=commit_message,
         )

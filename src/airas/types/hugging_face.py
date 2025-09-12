@@ -24,8 +24,10 @@ class HuggingFaceCardData(BaseModel):
         None, description="Associated library (transformers, datasets, etc.)"
     )
     pipeline_tag: Optional[str] = Field(None, description="Pipeline task tag")
-    tags: Optional[list[str]] = Field(default_factory=list, description="General tags")
-    datasets: Optional[list[str]] = Field(
+    tags: Optional[str | list[str]] = Field(
+        default_factory=list, description="General tags"
+    )
+    datasets: Optional[str | list[str]] = Field(
         default_factory=list, description="Associated datasets"
     )
 
@@ -36,14 +38,14 @@ class HuggingFaceCardData(BaseModel):
         None, description="Base model if this is a fine-tuned model"
     )
 
-    task_categories: Optional[list[str]] = Field(
+    task_categories: Optional[str | list[str]] = Field(
         default_factory=list, description="Task categories for datasets"
     )
-    size_categories: Optional[list[str]] = Field(
+    size_categories: Optional[str | list[str]] = Field(
         default_factory=list, description="Size categories for datasets"
     )
 
-    metrics: Optional[list[str]] = Field(
+    metrics: Optional[str | list[str]] = Field(
         default_factory=list, description="Evaluation metrics"
     )
     widget: Optional[list[dict[str, Any]]] = Field(
@@ -63,7 +65,7 @@ class HuggingFaceResource(BaseModel):
         None, description="Last modification timestamp", alias="lastModified"
     )
     private: bool = Field(False, description="Whether the repository is private")
-    gated: bool = Field(
+    gated: str | bool = Field(
         False, description="Whether the resource requires access approval"
     )
     disabled: bool = Field(False, description="Whether the resource is disabled")
@@ -78,7 +80,7 @@ class HuggingFaceResource(BaseModel):
         None, description="Structured card metadata", alias="cardData"
     )
 
-    tags: list[str] = Field(default_factory=list, description="Repository tags")
+    tags: str | list[str] = Field(default_factory=list, description="Repository tags")
     pipeline_tag: Optional[str] = Field(
         None, description="Primary pipeline task", alias="pipeline-tag"
     )
@@ -90,6 +92,25 @@ class HuggingFaceResource(BaseModel):
     )
     model_index: Optional[list[dict[str, Any]]] = Field(
         None, description="Model index information", alias="model-index"
+    )
+
+    widget_data: Optional[list[dict[str, Any]]] = Field(
+        None, description="Widget examples data", alias="widgetData"
+    )
+    config: Optional[dict[str, Any]] = Field(
+        None, description="Model configuration information"
+    )
+    transformers_info: Optional[dict[str, Any]] = Field(
+        None,
+        description="Transformers library specific information",
+        alias="transformersInfo",
+    )
+    spaces: Optional[list[str]] = Field(None, description="Related Hugging Face Spaces")
+    safetensors: Optional[dict[str, Any]] = Field(
+        None, description="Safetensors metadata"
+    )
+    used_storage: Optional[int] = Field(
+        None, description="Used storage in bytes", alias="usedStorage"
     )
 
     class Config:
