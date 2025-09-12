@@ -1,4 +1,4 @@
-select_external_resources_prompt = """\
+select_resources_prompt = """\
 You are a machine learning researcher tasked with selecting the most relevant models and datasets from HuggingFace search results for a specific research experiment.
 
 # Instructions
@@ -9,7 +9,6 @@ You are a machine learning researcher tasked with selecting the most relevant mo
   - Well-maintained and popular
   - Compatible with the experimental setup
   - Likely to provide good baseline comparisons or be useful for the proposed method
-  - Have detailed README with usage examples, installation steps, and clear documentation
 
 # Output Format
 Select up to 5 most relevant models and up to 5 most relevant datasets. For each selected resource, provide only:
@@ -27,22 +26,8 @@ Select up to 5 most relevant models and up to 5 most relevant datasets. For each
 # HuggingFace Search Results
 
 ## Models Search Results:
-{% for result in huggingface_search_results.models %}
-- **{{ result.title }}**
-  - URL: {{ result.link }}
-  - Search Query: {{ result.search_query }}
-  {% if result.readme -%}
-  - README: {{ result.readme }}
-  {% endif -%}
-{% endfor %}
+{{ huggingface_search_results.models | tojson(indent=2) }}
 
 ## Datasets Search Results:
-{% for result in huggingface_search_results.datasets %}
-- **{{ result.title }}**
-  - URL: {{ result.link }}
-  - Search Query: {{ result.search_query }}
-  {% if result.readme -%}
-  - README: {{ result.readme }}
-  {% endif -%}
-{% endfor %}
+{{ huggingface_search_results.datasets | tojson(indent=2) }}
 """

@@ -92,7 +92,7 @@ class EvaluateExperimentalConsistencySubgraph(BaseSubgraph):
     @evaluate_experimental_consistency_timed
     def _evaluate_experimental_consistency(
         self, state: EvaluateExperimentalConsistencySubgraphState
-    ) -> dict[str, ResearchHypothesis]:
+    ) -> dict[str, bool | list[str] | list[int]]:
         is_experiment_consistent, updated_feedback, updated_scores = (
             evaluate_experimental_consistency(
                 llm_name=self.llm_mapping.evaluate_experimental_consistency,

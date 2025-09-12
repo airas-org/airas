@@ -13,7 +13,6 @@ logger = getLogger(__name__)
 
 
 class LLMOutput(BaseModel):
-    is_experiment_consistent: bool
     consistency_feedback: str
     consistency_score: int
 
@@ -32,12 +31,13 @@ def evaluate_experimental_consistency(
     env = Environment()
     template = env.from_string(prompt_template)
 
-    data = {
-        "new_method": new_method.model_dump(),
-        "generated_file_contents": generated_file_contents,
-    }
+    messages = template.render(
+        {
+            "new_method": new_method.model_dump(),
+            "generated_file_contents": generated_file_contents,
+        }
+    )
 
-    messages = template.render(data)
     llm_output, _cost = client.structured_outputs(
         message=messages, data_model=LLMOutput
     )
@@ -55,10 +55,12 @@ def evaluate_experimental_consistency(
     consistency_score = llm_output["consistency_score"]
     updated_scores = existing_scores + [consistency_score]
 
-    # NOTE: If score is high enough, append empty string to avoid side effectss
+    # NOTE: If score is high enough, append empty string to avoid side effects
     if consistency_score >= 7:
+        is_experiment_consistent = True
         updated_feedback = existing_feedback + [""]
     else:
+        is_experiment_consistent = False
         updated_feedback = existing_feedback + [llm_output["consistency_feedback"]]
 
-    return (llm_output["is_experiment_consistent"], updated_feedback, updated_scores)
+    return (is_experiment_consistent, updated_feedback, updated_scores)

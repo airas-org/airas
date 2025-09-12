@@ -53,8 +53,8 @@ from .retrieve.get_paper_titles_subgraph.get_paper_titles_from_web_subgraph impo
     GetPaperTitlesFromWebSubgraph,
 )
 from .retrieve.retrieve_code_subgraph.retrieve_code_subgraph import RetrieveCodeSubgraph
-from .retrieve.retrieve_external_resources_subgraph.retrieve_external_resources_subgraph import (
-    RetrieveExternalResourcesSubgraph,
+from .retrieve.retrieve_hugging_face_subgraph.retrieve_hugging_face_subgraph import (
+    RetrieveHuggingFaceSubgraph,
 )
 from .retrieve.retrieve_paper_content_subgraph.retrieve_paper_content_subgraph import (
     RetrievePaperContentSubgraph,
@@ -93,7 +93,7 @@ __all__ = [
     "PrepareRepositorySubgraph",
     "ReadmeSubgraph",
     "RetrieveCodeSubgraph",
-    "RetrieveExternalResourcesSubgraph",
+    "RetrieveHuggingFaceSubgraph",
     "RetrievePaperContentSubgraph",
     "ReviewPaperSubgraph",
     "SummarizePaperSubgraph",

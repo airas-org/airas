@@ -15,21 +15,47 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
     - Import dependencies: Verify all required libraries are properly imported and available.
     - Dependency resolution: Ensure pyproject.toml has proper dependency ordering to avoid circular dependencies.
     - Error handling: Add appropriate try-catch blocks for common failure points like file I/O and model operations.
+{% if secret_names %}
+    - Environment Variables: The following environment variables are available for use: {{ secret_names|join(', ') }}. Use os.getenv() to access them in your code.
+{% endif %}
 
 - Directory and Script Roles
     - .research/iteration{{ experiment_iteration }}/images...Please save all images output from the experiment in this directory.
     - .research/iteration{{ experiment_iteration }}/...Save each experiment's results as separate JSON files in this directory and print each JSON contents to standard output for verification.
-    - config...Extract dataset URLs, model specifications, hyperparameters, and experiment settings.
+    - config...Create two configuration files:
+        - smoke_test.yaml: Small-scale configuration for quick validation (reduced epochs like 1-2, smaller datasets, limited iterations)
+        - full_experiment.yaml: Full-scale configuration for complete experimental runs
     - data...This directory is used to store data used for model training and evaluation.
     - models...This directory is used to store pre-trained and trained models.
     - src
         - train.py...Extract all functions and classes related to model.
         - evaluate.py...Extract all functions and classes related to model evaluation, statistical analysis, and plotting.
         - preprocess.py...Extract any data loading or preprocessing logic.
-        - main.py...Create the main execution script using relative imports (e.g., `from .train import ...`) to orchestrate the experimental workflow. Load configuration from `config/config.yaml` using PyYAML.
+        - main.py...Create the main execution script with command-line argument support:
+            - Add argparse to handle --smoke-test and --full-experiment flags
+            - Load appropriate config file based on the flag (smoke_test.yaml or full_experiment.yaml)
+            - Use relative imports (e.g., `from .train import ...`) to orchestrate the experimental workflow
+            - Implement two-phase execution: smoke test first, then full experiment if smoke test passes
+            - Use PyYAML for configuration loading
     - pyproject.toml...Analyze the "Experiment Code" header and import statements. Configure the project dependencies and package information in TOML format.
                         Dependencies must be an array format like `dependencies = ["numpy>=1.21.0", "torch>=1.9.0"]`, NOT a mapping format like `[project.dependencies]` with key-value pairs.
-- STRICT FILE CONSTRAINT: Only these 6 files exist - never import or reference any other modules/files. If experiment code references missing modules (e.g., `src.models`), consolidate all functionality into the existing files.
+- STRICT FILE CONSTRAINT: Only these 7 files exist (6 Python files + 2 config files) - never import or reference any other modules/files. If experiment code references missing modules (e.g., `src.models`), consolidate all functionality into the existing files.
+
+## Command Line Execution Requirements
+The generated main.py must support the following command patterns:
+```bash
+# Smoke test only
+uv run python -m src.main --smoke-test
+
+# Full experiment only
+uv run python -m src.main --full-experiment
+```
+
+The main.py should:
+1. Parse command line arguments using argparse
+2. Load the appropriate config file based on the flag
+3. Execute the experiment workflow accordingly
+4. Handle both smoke test and full experiment modes properly
 
 
 {% if generated_file_contents %}
