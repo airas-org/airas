@@ -15,6 +15,9 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
     - Import dependencies: Verify all required libraries are properly imported and available.
     - Dependency resolution: Ensure pyproject.toml has proper dependency ordering to avoid circular dependencies.
     - Error handling: Add appropriate try-catch blocks for common failure points like file I/O and model operations.
+{% if secret_names %}
+    - Environment Variables: The following environment variables are available for use: {{ secret_names|join(', ') }}. Use os.getenv() to access them in your code.
+{% endif %}
 
 - Directory and Script Roles
     - .research/iteration{{ experiment_iteration }}/images...Please save all images output from the experiment in this directory.

@@ -19,7 +19,7 @@ class HuggingFaceClient(BaseHTTPClient):
         default_headers: dict[str, str] | None = None,
     ):
         # HuggingFace API token is optional for public models/datasets
-        api_key = os.getenv("HUGGINGFACE_API_TOKEN")
+        api_key = os.getenv("HF_TOKEN")
         auth_headers = {
             "Content-Type": "application/json",
         }

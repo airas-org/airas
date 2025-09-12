@@ -74,8 +74,10 @@ class FixCodeSubgraph(BaseSubgraph):
         self,
         runner_type: RunnerType = "ubuntu-latest",
         llm_mapping: dict[str, str] | FixCodeLLMMapping | None = None,
+        secret_names: list[str] | None = None,
     ):
         self.runner_type = runner_type
+        self.secret_names = secret_names or []
         if llm_mapping is None:
             self.llm_mapping = FixCodeLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -115,6 +117,7 @@ class FixCodeSubgraph(BaseSubgraph):
             generated_file_contents=state["generated_file_contents"],
             experiment_iteration=state["experiment_iteration"],
             runner_type=self.runner_type,
+            secret_names=self.secret_names,
             error_list=state["error_list"],
             file_validations=state["file_validations"],
         )

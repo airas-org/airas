@@ -68,6 +68,7 @@ RUNNER_TYPE = ["ubuntu-latest", "gpu-runner", "A100_80GM×1", "A100_80GM×8"]
 
 
 runner_type = "A100_80GM×1"
+secret_names = ["HF_TOKEN"]
 
 
 generate_queries = GenerateQueriesSubgraph(
@@ -125,10 +126,12 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
     },
 )
 retrieve_hugging_face = RetrieveHuggingFaceSubgraph(
+    include_gated=False,
     llm_mapping={"select_resources": "gpt-5-mini-2025-08-07"},
 )
 coder = CreateCodeSubgraph(
     runner_type=runner_type,
+    secret_names=secret_names,
     llm_mapping={
         "generate_experiment_code": "o3-2025-04-16",
         "convert_code_to_scripts": "o3-2025-04-16",
@@ -142,6 +145,7 @@ judge_execution = JudgeExecutionSubgraph(
 )
 fixer = FixCodeSubgraph(
     runner_type=runner_type,
+    secret_names=secret_names,
     llm_mapping={
         "fix_code": "o3-2025-04-16",
     },
@@ -310,7 +314,7 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250911-v4"
+    repository_name = "experiment_matsuzawa_250912"
     research_topic_list = [
         # "Graph Attention Networkの学習の高速化",
         # "Transformerを用いた時系列データの新規手法",

@@ -66,8 +66,11 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        max_results_per_search: int = 20,
         llm_mapping: dict[str, str] | RetrieveHuggingFaceLLMMapping | None = None,
+        include_gated: bool = False,
     ):
+        self.max_results_per_search = max_results_per_search
         if llm_mapping is None:
             self.llm_mapping = RetrieveHuggingFaceLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -86,13 +89,16 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or RetrieveHuggingFaceLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
+        self.include_gated = include_gated
         check_api_key()
 
     async def _search_hugging_face(
         self, state: RetrieveHuggingFaceState
     ) -> dict[str, HuggingFace]:
         huggingface_search_results = await search_hugging_face(
-            new_method=state["new_method"]
+            new_method=state["new_method"],
+            max_results_per_search=self.max_results_per_search,
+            include_gated=self.include_gated,
         )
         return {"huggingface_search_results": huggingface_search_results}
 

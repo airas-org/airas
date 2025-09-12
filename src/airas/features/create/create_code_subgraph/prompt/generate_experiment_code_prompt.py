@@ -7,6 +7,7 @@ You are a cutting-edge AI researcher. Based on the new method described in # New
 - The generated code will be executed as `uv run python -m src.main` without any command-line arguments.
 - Output Python code to conduct each experiment based on the detailed information provided in "Experiment Details".
 - Include dataset URLs, model specifications, and hyperparameters as structured configuration that can be extracted into YAML.
+- Generate two YAML configuration files: one for smoke testing (quick validation with minimal resources) and one for full experiments (complete evaluation with full datasets).
 - Use PyTorch exclusively as the deep learning framework.
 - Make full use of existing Python libraries where possible and avoid implementing from scratch.
 
@@ -14,6 +15,9 @@ You are a cutting-edge AI researcher. Based on the new method described in # New
 - Complete data pipeline: Implement full data acquisition from URLs, including downloading, extraction, and organizing into data/ directory. Do not assume existing local data.
 - Comprehensive experiments: Implement full-scale experiments, not quick tests or prototypes. Include sufficient training epochs, proper validation splits, and thorough evaluation metrics.
 - STRICT NO-FALLBACK RULE: If real datasets or models cannot be accessed, terminate execution immediately with clear error messages - NEVER use synthetic/dummy/placeholder data under any circumstances.
+{% if secret_names %}
+- Environment Variables: The following environment variables are available for use in your experiments: {{ secret_names|join(', ') }}. These can be accessed using os.getenv() in your Python code.
+{% endif %}
 
 ## Output Requirements
 When implementing the code, ensure that the output strictly adheres to the following rules.:

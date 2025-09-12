@@ -48,6 +48,7 @@ def fix_code(
     generated_file_contents: dict[str, str],
     experiment_iteration: int,
     runner_type: RunnerType,
+    secret_names: list[str],
     error_list: list[str],
     file_validations: dict[str, dict[str, list[str]]],
     prompt_template: str = code_fix_prompt,
@@ -60,6 +61,7 @@ def fix_code(
         "experiment_iteration": experiment_iteration,
         "new_method": new_method.model_dump(),
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
+        "secret_names": secret_names,
         "error_list": error_list,  # Previous errors for analysis
         "file_validations": file_validations,  # Static validation results
     }

@@ -19,8 +19,9 @@ logger = logging.getLogger(__name__)
 
 async def search_hugging_face(
     new_method: ResearchHypothesis,
-    max_results_per_search: int = 10,
+    max_results_per_search: int = 20,  # TODO: Add logic to rescan if no resources meeting the conditions are found.
     hf_client: HuggingFaceClient | None = None,
+    include_gated: bool = False,
 ) -> HuggingFace:
     if not new_method.experimental_design or (
         not new_method.experimental_design.expected_models
@@ -46,7 +47,9 @@ async def search_hugging_face(
     datasets_list: list[HuggingFaceResource] = []
 
     tasks = [
-        _search_resources(hf_client, search_type, query, max_results_per_search)
+        _search_resources(
+            hf_client, search_type, query, max_results_per_search, include_gated
+        )
         for search_type, query in search_tasks
     ]
 
@@ -79,6 +82,7 @@ async def _search_resources(
     search_type: HF_RESOURCE_TYPE,
     query: str,
     max_results: int,
+    include_gated: bool = False,
 ) -> list[HuggingFaceResource]:
     try:
         search_response = await hf_client.asearch(
@@ -104,7 +108,7 @@ async def _search_resources(
         for resource in resources:
             try:
                 enriched_resource = await _enrich_resource(
-                    hf_client, search_type, resource
+                    hf_client, search_type, resource, include_gated
                 )
                 if enriched_resource:
                     enriched_resources.append(enriched_resource)
@@ -132,6 +136,7 @@ async def _enrich_resource(
     hf_client: HuggingFaceClient,
     search_type: HF_RESOURCE_TYPE,
     resource: dict[str, Any],
+    include_gated: bool = False,
 ) -> HuggingFaceResource | None:
     resource_id = resource.get("id")
     if not resource_id:
@@ -162,10 +167,16 @@ async def _enrich_resource(
             resource, detailed_resource, readme_content
         )
 
-        # Filter out inaccessible resources - only return accessible ones
-        if hf_resource.private or hf_resource.gated or hf_resource.disabled:
+        # Filter out inaccessible resources based on include_gated setting
+        if hf_resource.private or hf_resource.disabled:
             logger.info(
-                f"Skipping inaccessible resource: {resource_id} (private={hf_resource.private}, gated={hf_resource.gated}, disabled={hf_resource.disabled})"
+                f"Skipping inaccessible resource: {resource_id} (private={hf_resource.private}, disabled={hf_resource.disabled})"
+            )
+            return None
+
+        if hf_resource.gated and not include_gated:
+            logger.info(
+                f"Skipping gated resource: {resource_id} (gated={hf_resource.gated}, include_gated={include_gated})"
             )
             return None
 

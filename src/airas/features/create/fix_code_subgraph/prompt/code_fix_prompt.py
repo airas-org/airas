@@ -20,6 +20,9 @@ You are tasked with fixing Python code that failed during execution. Analyze the
    - Fail-fast policy: All error handling must result in immediate program termination with clear error messages. No silent fallbacks or synthetic alternatives
    - Data pipeline fixes: Ensure complete data acquisition (download, extract, organize into data/)
    - Dependency resolution fixes: Check pyproject.toml for circular dependencies and proper ordering
+{% if secret_names %}
+   - Environment Variables: The following environment variables are available for use: {{ secret_names|join(', ') }}. Use os.getenv() to access them in your code for authentication tokens and API keys.
+{% endif %}
 
 # Rules
 - Fix all errors found in the error messages
