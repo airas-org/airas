@@ -77,7 +77,7 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
         self, state: FixCodeWithDevinSubgraphState
     ) -> dict[str, int | list[str] | dict[str, dict[str, list[str]]]]:
         # NOTE: We increment the experiment_iteration here to reflect the next iteration
-        if state["error_list"]:
+        if "error_list" in state.keys():
             error_list = state["error_list"]
         else:
             error_list = []
@@ -88,7 +88,7 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
 
     # Devinのセッションがあるか確認
     def _check_devin_session(self, state: FixCodeWithDevinSubgraphState):
-        if state["devin_info"]:
+        if "devin_info" in state.keys():
             return "pass"
         else:
             return "create_devin_session"

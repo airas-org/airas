@@ -307,6 +307,7 @@ def execute_workflow(
     subgraph_list: list = subgraph_list,
 ):
     for index, research_topic in enumerate(research_topic_list):
+        index = index
         print(f"index:{index}")
         state = {
             "github_repository_info": GitHubRepositoryInfo(
@@ -330,8 +331,8 @@ if __name__ == "__main__":
     research_topic_list = [
         # "Graph Attention Networkの学習の高速化",
         # "Transformerを用いた時系列データの新規手法",
-        # "Diffusion Transformersの速度改善",
-        "Diffusion Transformersの改善"
+        "Diffusion modelの速度改善",
+        # "Diffusion Transformersの改善"
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list

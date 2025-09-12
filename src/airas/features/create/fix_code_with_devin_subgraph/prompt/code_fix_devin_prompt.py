@@ -6,6 +6,8 @@ Perform the modifications with reference to the rules specified in "# Rules".
 Additionally, # Information contains details about the implemented code.
 Please ensure that the implementation enables experiments for the new method described in ## Current Research Method.
 
+Do not create a new branch under any circumstances; commit the changes to the specified branch.
+
 # Rules
 - Fix all errors found in the error messages
 - When executing the script, ensure that the following information is always printed to standard output.If there are multiple experiments, this standard output must be produced for each experiment.

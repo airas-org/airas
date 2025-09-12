@@ -45,6 +45,7 @@ def initial_session_fix_code_with_devin(
     env = Environment()
     template = env.from_string(initial_session_fix_code_with_devin_prompt)
     prompt = template.render(data)
+    # NOTE:適切にトリミングを行う、現状だと出力が長すぎて他の情報が与えられていない
     prompt = _adjust_string_length(prompt)
 
     try:

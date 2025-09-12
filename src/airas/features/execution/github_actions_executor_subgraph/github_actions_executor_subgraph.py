@@ -40,6 +40,7 @@ class GitHubActionsExecutorSubgraphHiddenState(TypedDict):
 
 class GitHubActionsExecutorSubgraphOutputState(TypedDict):
     executed_flag: bool
+    new_method: ResearchHypothesis
 
 
 class ExecutorSubgraphState(

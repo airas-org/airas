@@ -99,7 +99,7 @@ class FixCodeSubgraph(BaseSubgraph):
         self, state: FixCodeSubgraphState
     ) -> dict[str, int | list[str] | dict[str, dict[str, list[str]]]]:
         # NOTE: We increment the experiment_iteration here to reflect the next iteration
-        if state["error_list"]:
+        if "error_list" in state.keys():
             error_list = state["error_list"]
         else:
             error_list = []
