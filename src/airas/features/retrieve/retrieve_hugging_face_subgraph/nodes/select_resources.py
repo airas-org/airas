@@ -31,6 +31,8 @@ def select_resources(
     huggingface_search_results: HuggingFace,
     prompt_template: str = select_resources_prompt,
     client: LLMFacadeClient | None = None,
+    max_models: int = 10,
+    max_datasets: int = 10,
 ) -> ResearchHypothesis:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
@@ -42,6 +44,8 @@ def select_resources(
             "huggingface_search_results": huggingface_search_results.model_dump(
                 mode="json"
             ),
+            "max_models": max_models,
+            "max_datasets": max_datasets,
         }
     )
 

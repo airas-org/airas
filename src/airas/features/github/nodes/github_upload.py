@@ -23,8 +23,8 @@ def github_upload(
     logger.info(
         f"[GitHub I/O] Upload: {github_repository_info.github_owner}/{github_repository_info.repository_name}@{github_repository_info.branch_name}:{file_path}"
     )
-    # Convert ResearchHistory to dict for JSON serialization
-    research_history_dict = research_history.model_dump(exclude_none=True)
+    # Convert ResearchHistory to dict for JSON serialization with datetime handling
+    research_history_dict = research_history.model_dump(exclude_none=True, mode="json")
 
     ok_json = client.commit_file_bytes(
         github_owner=github_repository_info.github_owner,
