@@ -40,13 +40,13 @@ Generate a complete experiment implementation organized into the following Pytho
 
 ### Script Structure (ExperimentCode format)
 Your output must contain exactly these files with the specified content:
-- `src/train_py`: Training script with model definition, training loop, and model saving
-- `src/evaluate_py`: Evaluation script with metrics calculation and result visualization
-- `src/preprocess_py`: Data loading and preprocessing pipeline
-- `src/main_py`: Main execution script with command-line interface (--smoke-test, --full-experiment)
-- `pyproject_toml`: Project dependencies and package configuration
-- `config/smoke_test_yaml`: Quick validation configuration (minimal resources)
-- `config/full_experiment_yaml`: Full experimental configuration (production settings)
+- `src/train.py`: Training script with model definition, training loop, and model saving
+- `src/evaluate.py`: Evaluation script with metrics calculation and result visualization
+- `src/preprocess.py`: Data loading and preprocessing pipeline
+- `src/main.py`: Main execution script with command-line interface (--smoke-test, --full-experiment)
+- `pyproject.toml`: Project dependencies and package configuration
+- `config/smoke_test.yaml`: Quick validation configuration (minimal resources)
+- `config/full_experiment.yaml`: Full experimental configuration (production settings)
 
 When implementing the code, ensure that the output strictly adheres to the following rules:
 
