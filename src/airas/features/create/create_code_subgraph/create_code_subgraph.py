@@ -247,7 +247,7 @@ class CreateCodeSubgraph(BaseSubgraph):
         self, state: CreateCodeSubgraphState
     ) -> dict[str, bool | list[str]]:
         commit_message = f"Add generated experiment files for iteration {state['experiment_iteration']}"
-        files = state["new_method"].experimental_design.experiment_code.model_dump()
+        files = state["new_method"].experimental_design.experiment_code.to_file_dict()
 
         is_code_pushed_to_github = push_files_to_github(
             github_repository_info=state["github_repository_info"],

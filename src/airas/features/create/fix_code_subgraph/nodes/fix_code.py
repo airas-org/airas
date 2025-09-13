@@ -63,15 +63,15 @@ def fix_code(
     if output is None:
         raise ValueError("Error: No response from LLM in fix_code.")
 
-    new_method.experimental_design.experiment_code = ExperimentCode(
-        train_py=output["train_py"],
-        evaluate_py=output["evaluate_py"],
-        preprocess_py=output["preprocess_py"],
-        main_py=output["main_py"],
-        pyproject_toml=output["pyproject_toml"],
-        smoke_test_yaml=output["smoke_test_yaml"],
-        full_experiment_yaml=output["full_experiment_yaml"],
-    )
+    original_code = new_method.experimental_design.experiment_code.model_dump()
+    updated_code = {}
+    for field_name, new_content in output.items():
+        if _is_code_meaningful(new_content):
+            updated_code[field_name] = new_content
+        else:
+            updated_code[field_name] = original_code[field_name]
+
+    new_method.experimental_design.experiment_code = ExperimentCode(**updated_code)
 
     # Only add experimental_results.error on first iteration (when no file_static_validations)
     if (

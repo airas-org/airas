@@ -49,14 +49,6 @@ def convert_code_to_scripts(
     if output is None:
         raise ValueError("Error: No response from LLM in convert_code_to_scripts.")
 
-    new_method.experimental_design.experiment_code = ExperimentCode(
-        train_py=output["train_py"],
-        evaluate_py=output["evaluate_py"],
-        preprocess_py=output["preprocess_py"],
-        main_py=output["main_py"],
-        pyproject_toml=output["pyproject_toml"],
-        smoke_test_yaml=output["smoke_test_yaml"],
-        full_experiment_yaml=output["full_experiment_yaml"],
-    )
+    new_method.experimental_design.experiment_code = ExperimentCode(**output)
 
     return new_method
