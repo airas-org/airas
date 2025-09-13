@@ -33,7 +33,19 @@ uv run python -m src.main --full-experiment
 ```
 
 ## Output Requirements
-When implementing the code, ensure that the output strictly adheres to the following rules.:
+Generate a complete experiment implementation organized into the following Python scripts:
+
+### Script Structure (ExperimentCode format)
+Your output must contain exactly these files with the specified content:
+- `src/train_py`: Training script with model definition, training loop, and model saving
+- `src/evaluate_py`: Evaluation script with metrics calculation and result visualization
+- `src/preprocess_py`: Data loading and preprocessing pipeline
+- `src/main_py`: Main execution script with command-line interface (--smoke-test, --full-experiment)
+- `pyproject_toml`: Project dependencies and package configuration
+- `config/smoke_test_yaml`: Quick validation configuration (minimal resources)
+- `config/full_experiment_yaml`: Full experimental configuration (production settings)
+
+When implementing the code, ensure that the output strictly adheres to the following rules:
 
 ### Results Documentation
 - Save the results of each experiment as separate JSON files and modify the code to print the contents of the JSON files to standard output using a print statement.
@@ -100,5 +112,5 @@ Specifically improve the experimental code to resolve these consistency issues.
 ## Previous Experimental Design
 - Strategy: {{ new_method.iteration_history[-1].experimental_design.experiment_strategy }}
 - Details: {{ new_method.iteration_history[-1].experimental_design.experiment_details }}
-- Code: {{ new_method.iteration_history[-1].experimental_design.experiment_code | tojson }}
+- Code: {{ new_method.iteration_history[-1].experimental_design.experiment_code.model_dump() | tojson }}
 {% endif %}"""

@@ -32,7 +32,7 @@ Respond with a JSON object containing:
 {% endif %}
 
 # Generated Experiment Code Files
-{{ new_method.experimental_design.experiment_code | tojson }}
+{{ new_method.experimental_design.experiment_code.model_dump() | tojson }}
 
 Analyze the code thoroughly and provide your validation result.
 """

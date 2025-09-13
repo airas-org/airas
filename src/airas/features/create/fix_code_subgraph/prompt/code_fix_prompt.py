@@ -59,7 +59,7 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 # CURRENT FILES TO FIX
 # ========================================
 The following files contain issues and need to be fixed:
-{{ new_method.experimental_design.experiment_code | tojson }}
+{{ new_method.experimental_design.experiment_code.model_dump() | tojson }}
 
 {% if file_static_validations %}
 # ========================================

@@ -37,8 +37,9 @@ def analytic_node(
         else ""
     )
     experiment_code = (
-        new_method.experimental_design.experiment_code
+        new_method.experimental_design.experiment_code.model_dump()
         if new_method.experimental_design
+        and new_method.experimental_design.experiment_code
         else ""
     )
     output_text_data = (

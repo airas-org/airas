@@ -25,12 +25,10 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
 - Directory and Script Roles
     - .research/iteration{{ experiment_iteration }}/images...Please save all images output from the experiment in this directory.
     - .research/iteration{{ experiment_iteration }}/...Save each experiment's results as separate JSON files in this directory and print each JSON contents to standard output for verification.
-    - config...Create two configuration files:
+    - config/...Create two configuration files:
         - smoke_test.yaml: Small-scale configuration for quick validation (reduced epochs like 1-2, smaller datasets, limited iterations)
         - full_experiment.yaml: Full-scale configuration for complete experimental runs
-    - data...This directory is used to store data used for model training and evaluation.
-    - models...This directory is used to store pre-trained and trained models.
-    - src
+    - src/
         - train.py...Extract all functions and classes related to model.
         - evaluate.py...Extract all functions and classes related to model evaluation, statistical analysis, and plotting.
         - preprocess.py...Extract any data loading or preprocessing logic.
