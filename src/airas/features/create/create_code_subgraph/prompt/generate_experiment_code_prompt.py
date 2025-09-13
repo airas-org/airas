@@ -10,6 +10,7 @@ please present detailed code for conducting rigorous experiments that will gener
 - Output Python code to conduct each experiment based on the detailed information provided in "Experiment Details".
 - Include dataset URLs, model specifications, and hyperparameters as structured configuration that can be extracted into YAML.
 - Generate two YAML configuration files: one for smoke testing (quick validation with minimal resources) and one for full experiments (complete evaluation with full datasets).
+- For full experiment configurations, use the datasets and models provided in External Resources section.
 - Use PyTorch exclusively as the deep learning framework.
 - Make full use of existing Python libraries where possible and avoid implementing from scratch.
 
@@ -64,6 +65,17 @@ File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`
 {{ consistency_feedback }}
 
 Specifically improve the experimental code to resolve these consistency issues.
+{% endif %}
+
+{% if full_experiment_validation %}
+## Full Experiment Validation Feedback
+{% set is_ready, issue = full_experiment_validation %}
+{% if not is_ready and issue %}
+**Critical Issue Detected**: The previous code generation failed full experiment validation:
+{{ issue }}
+
+**Required Action**: Address this validation failure by ensuring your generated code strictly follows the External Resources requirements and implements genuine full experiments using real datasets and models.
+{% endif %}
 {% endif %}
 
 # Experimental Environment
