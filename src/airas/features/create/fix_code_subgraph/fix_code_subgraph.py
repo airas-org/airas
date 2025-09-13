@@ -135,7 +135,6 @@ class FixCodeSubgraph(BaseSubgraph):
         file_static_validations = static_validate_code(
             new_method=state["new_method"],
         )
-        print(f"Validation: {file_static_validations}")
         return {
             "file_static_validations": file_static_validations,
             "static_validation_count": state["static_validation_count"] + 1,

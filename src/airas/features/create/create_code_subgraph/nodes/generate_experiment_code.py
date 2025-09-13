@@ -52,5 +52,4 @@ def generate_experiment_code(
     if output is None:
         raise ValueError("No response from LLM in generate_experiment_code.")
 
-    print(f"Experiment Code: {output['experiment_code']}")
     return output["experiment_code"]
