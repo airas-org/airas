@@ -59,13 +59,6 @@ File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`
 - `_pairN` (optional): Used when presenting figures in pairs (e.g., _pair1, _pair2)
 - For standalone figures, do not include _pairN.
 
-{% if consistency_feedback %}
-## Consistency Feedback
-**Important**: Address the following feedback from previous experimental consistency evaluation:
-{{ consistency_feedback }}
-
-Specifically improve the experimental code to resolve these consistency issues.
-{% endif %}
 
 {% if full_experiment_validation %}
 ## Full Experiment Validation Feedback
@@ -81,39 +74,31 @@ Specifically improve the experimental code to resolve these consistency issues.
 # Experimental Environment
 {{ runner_type_prompt }}
 
+# Current Research Method (Target for Experiment Design)
+{{ new_method.method }}
+
+# Experimental Design
+- Strategy: {{ new_method.experimental_design.experiment_strategy }}
+- Details: {{ new_method.experimental_design.experiment_details }}
+
 {% if new_method.experimental_design.external_resources %}
 # External Resources
 {{ new_method.experimental_design.external_resources }}
 {% endif %}
 
-# Current Research Method (Target for Experiment Design)
-{{ new_method.method }}
-
-# Experiment Strategy
-{{ new_method.experimental_design.experiment_strategy }}
-
-# Experiment Details
-{{ new_method.experimental_design.experiment_details }}
-
 ---
+{% if consistency_feedback %}
+## Consistency Feedback
+**Important**: Address the following feedback from previous experimental consistency evaluation:
+{{ consistency_feedback }}
+
+Specifically improve the experimental code to resolve these consistency issues.
+{% endif %}
+
 # Reference Information from Previous Iteration
 {% if new_method.iteration_history %}
 ## Previous Experimental Design
-- **Strategy**: {{ new_method.iteration_history[-1].experimental_design.experiment_strategy }}
-- **Details**: {{ new_method.iteration_history[-1].experimental_design.experiment_details }}
-
-{% if generated_file_contents %}
-## Previous Generated Code Files
-{% for filename, content in generated_file_contents.items() %}
-### {{ filename }}
-```python
-{{ content }}
-```
-{% endfor %}
-{% endif %}
-
-Build upon what worked and address what didn't work to improve the consistency score.
-{% else %}
-*No previous iteration available*
-{% endif %}
----"""
+- Strategy: {{ new_method.iteration_history[-1].experimental_design.experiment_strategy }}
+- Details: {{ new_method.iteration_history[-1].experimental_design.experiment_details }}
+- Code: {{ new_method.iteration_history[-1].experimental_design.experiment_code | tojson }}
+{% endif %}"""

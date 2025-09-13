@@ -42,19 +42,18 @@ class FixCodeSubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
     executed_flag: bool  # This should be True if the GitHub Actions workflow was executed successfully
     experiment_iteration: int
-    generated_file_contents: dict[str, str]
     error_list: list[str]
 
 
 class FixCodeSubgraphHiddenState(TypedDict):
-    file_validations: dict[str, dict[str, list[str]]]
+    file_static_validations: dict[str, dict[str, list[str]]]
+    static_validation_count: int
 
 
 class FixCodeSubgraphOutputState(TypedDict):
     executed_flag: bool
     experiment_iteration: int
     is_code_pushed_to_github: bool
-    generated_file_contents: dict[str, str]
     error_list: list[str]
 
 
@@ -76,9 +75,11 @@ class FixCodeSubgraph(BaseSubgraph):
         runner_type: RunnerType = "ubuntu-latest",
         llm_mapping: dict[str, str] | FixCodeLLMMapping | None = None,
         secret_names: list[str] | None = None,
+        max_static_validations: int = 3,
     ):
         self.runner_type = runner_type
         self.secret_names = secret_names or []
+        self.max_static_validations = max_static_validations
         if llm_mapping is None:
             self.llm_mapping = FixCodeLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -105,56 +106,67 @@ class FixCodeSubgraph(BaseSubgraph):
         return {
             "experiment_iteration": state["experiment_iteration"] + 1,
             "error_list": state.get("error_list", []),
-            "file_validations": {},
+            "file_static_validations": {},
+            "static_validation_count": 0,
         }
 
     @fix_code_timed
     def _fix_code(
         self, state: FixCodeSubgraphState
-    ) -> dict[str, dict[str, str] | list[str]]:
+    ) -> dict[str, ResearchHypothesis | list[str]]:
         result = fix_code(
             llm_name=self.llm_mapping.fix_code,
             new_method=state["new_method"],
-            generated_file_contents=state["generated_file_contents"],
             experiment_iteration=state["experiment_iteration"],
             runner_type=self.runner_type,
             secret_names=self.secret_names,
             error_list=state["error_list"],
-            file_validations=state["file_validations"],
+            file_static_validations=state["file_static_validations"],
         )
         return {
-            "generated_file_contents": result["generated_file_contents"],
+            "new_method": result["new_method"],
             "error_list": result["error_list"],
         }
 
     @fix_code_timed
     def _static_validate_code(
         self, state: FixCodeSubgraphState
-    ) -> dict[str, dict[str, dict[str, list[str]]]]:
-        file_validations = static_validate_code(
-            generated_file_contents=state["generated_file_contents"]
+    ) -> dict[str, dict[str, dict[str, list[str]]] | int]:
+        file_static_validations = static_validate_code(
+            new_method=state["new_method"],
         )
-        print(f"Validation: {file_validations}")
+        print(f"Validation: {file_static_validations}")
         return {
-            "file_validations": file_validations,
+            "file_static_validations": file_static_validations,
+            "static_validation_count": state["static_validation_count"] + 1,
         }
 
     def _should_refix_code(self, state: FixCodeSubgraphState) -> str:
-        file_validations = state.get("file_validations")
-        if file_validations is None:
+        file_static_validations = state["file_static_validations"]
+        static_validation_count = state["static_validation_count"]
+
+        if file_static_validations is None:
             return "push_fixed_files_node"
 
         has_errors = any(
             len(file_val.get("errors", [])) > 0
-            for file_val in file_validations.values()
+            for file_val in file_static_validations.values()
         )
 
-        if has_errors:
-            logger.info("Static validation found errors. Running fix_code...")
-            return "fix_code"
-        else:
+        if not has_errors:
             logger.info("Static validation passed. Skipping fix_code...")
             return "push_fixed_files_node"
+
+        if static_validation_count >= self.max_static_validations:
+            logger.warning(
+                f"Maximum static validation attempts ({self.max_static_validations}) reached. Proceeding to push files..."
+            )
+            return "push_fixed_files_node"
+
+        logger.info(
+            f"Static validation found errors. Running fix_code... (attempt {static_validation_count}/{self.max_static_validations})"
+        )
+        return "fix_code"
 
     @fix_code_timed
     def _push_fixed_files_node(self, state: FixCodeSubgraphState) -> dict[str, bool]:
@@ -164,7 +176,7 @@ class FixCodeSubgraph(BaseSubgraph):
 
         is_code_pushed_to_github = push_files_to_github(
             github_repository_info=state["github_repository_info"],
-            files=state["generated_file_contents"],
+            files=state["new_method"].experimental_design.experiment_code,
             commit_message=commit_message,
         )
 

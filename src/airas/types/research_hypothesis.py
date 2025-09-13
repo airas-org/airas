@@ -13,6 +13,16 @@ class ExternalResources(BaseModel):
     )
 
 
+class ExperimentCode(BaseModel):
+    train_py: str
+    evaluate_py: str
+    preprocess_py: str
+    main_py: str
+    pyproject_toml: str
+    smoke_test_yaml: str
+    full_experiment_yaml: str
+
+
 class ExperimentalDesign(BaseModel):
     experiment_strategy: Optional[str] = Field(None, description="")
     experiment_details: Optional[str] = Field(None, description="")
@@ -26,7 +36,7 @@ class ExperimentalDesign(BaseModel):
         None,
         description="External resources including models, datasets, and other resources",
     )
-    experiment_code: Optional[str] = Field(None, description="")
+    experiment_code: Optional[ExperimentCode] = Field(None, description="")
 
 
 class ExperimentalResults(BaseModel):

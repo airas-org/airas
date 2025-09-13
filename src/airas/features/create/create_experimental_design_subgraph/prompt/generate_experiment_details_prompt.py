@@ -33,11 +33,6 @@ Please provide:
 - expected_models: A list of specific model names/architectures that will be used in the experiments (e.g., ["ResNet-50", "BERT-base", "GPT-3.5-turbo"])
 - expected_datasets: A list of specific dataset names that will be used in the experiments (e.g., ["CIFAR-10", "ImageNet", "IMDB Reviews"])
 
-{% if consistency_feedback %}
-- **Important**: Address the following feedback from previous experimental consistency evaluation:
-{{ consistency_feedback }}
-- Specifically improve the experimental details to resolve these consistency issues.
-{% endif %}
 
 # Experimental Environment
 {{ runner_type_prompt }}
@@ -49,24 +44,18 @@ Please provide:
 {{ new_method.experimental_design.experiment_strategy }}
 
 ---
+{% if consistency_feedback %}
+- **Important**: Address the following feedback from previous experimental consistency evaluation:
+{{ consistency_feedback }}
+- Specifically improve the experimental design to resolve these consistency issues.
+{% endif %}
+
 # Reference Information from Previous Iteration
 {% if new_method.iteration_history %}
 **Previous Experimental Design**:
 - Strategy: {{ new_method.iteration_history[-1].experimental_design.experiment_strategy }}
 - Details: {{ new_method.iteration_history[-1].experimental_design.experiment_details }}
-
-{% if generated_file_contents %}
-**Previous Generated Code Files**:
-{% for filename, content in generated_file_contents.items() %}
-### {{ filename }}
-```python
-{{ content }}
-```
-{% endfor %}
-{% endif %}
+- Code: {{ new_method.iteration_history[-1].experimental_design.experiment_code | tojson }}
 
 Build upon what worked and address what didn't work to improve the consistency score.
-{% else %}
-*No previous iteration available*
-{% endif %}
----"""
+{% endif %}"""

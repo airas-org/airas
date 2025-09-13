@@ -2,7 +2,6 @@ import logging
 import re
 
 from jinja2 import Environment
-from pydantic import BaseModel
 
 from airas.config.runner_type_info import RunnerType, runner_info_dict
 from airas.features.create.fix_code_subgraph.prompt.code_fix_prompt import (
@@ -12,19 +11,9 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_hypothesis import ExperimentCode, ResearchHypothesis
 
 logger = logging.getLogger(__name__)
-
-
-class GenerateCodeForScripts(BaseModel):
-    train_scripts_content: str
-    evaluate_scripts_content: str
-    preprocess_scripts_content: str
-    main_scripts_content: str
-    pyproject_toml_content: str
-    smoke_test_yaml_content: str
-    full_experiment_yaml_content: str
 
 
 def _is_code_meaningful(content: str | None) -> bool:
@@ -45,25 +34,23 @@ def _is_code_meaningful(content: str | None) -> bool:
 def fix_code(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
-    generated_file_contents: dict[str, str],
     experiment_iteration: int,
     runner_type: RunnerType,
     secret_names: list[str],
     error_list: list[str],
-    file_validations: dict[str, dict[str, list[str]]],
+    file_static_validations: dict[str, dict[str, list[str]]],
     prompt_template: str = code_fix_prompt,
     client: LLMFacadeClient | None = None,
-) -> dict[str, dict[str, str] | list[str]]:
+) -> dict[str, ResearchHypothesis | list[str]]:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
     data = {
-        "generated_file_contents": generated_file_contents,
         "experiment_iteration": experiment_iteration,
         "new_method": new_method.model_dump(),
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "secret_names": secret_names,
         "error_list": error_list,  # Previous errors for analysis
-        "file_validations": file_validations,  # Static validation results
+        "file_static_validations": file_static_validations,  # Static validation results
     }
     env = Environment()
     template = env.from_string(prompt_template)
@@ -71,29 +58,24 @@ def fix_code(
 
     logger.info("Fixing code using LLM...")
     output, cost = client.structured_outputs(
-        message=messages, data_model=GenerateCodeForScripts
+        message=messages, data_model=ExperimentCode
     )
     if output is None:
         raise ValueError("Error: No response from LLM in fix_code.")
 
-    file_mapping = {
-        "train_scripts_content": "src/train.py",
-        "evaluate_scripts_content": "src/evaluate.py",
-        "preprocess_scripts_content": "src/preprocess.py",
-        "main_scripts_content": "src/main.py",
-        "pyproject_toml_content": "pyproject.toml",
-        "smoke_test_yaml_content": "config/smoke_test.yaml",
-        "full_experiment_yaml_content": "config/full_experiment.yaml",
-    }
+    new_method.experimental_design.experiment_code = ExperimentCode(
+        train_py=output["train_py"],
+        evaluate_py=output["evaluate_py"],
+        preprocess_py=output["preprocess_py"],
+        main_py=output["main_py"],
+        pyproject_toml=output["pyproject_toml"],
+        smoke_test_yaml=output["smoke_test_yaml"],
+        full_experiment_yaml=output["full_experiment_yaml"],
+    )
 
-    for field, path in file_mapping.items():
-        new_content = output.get(field)
-        if _is_code_meaningful(new_content):
-            generated_file_contents[path] = new_content
-
-    # Only add experimental_results.error on first iteration (when no file_validations)
+    # Only add experimental_results.error on first iteration (when no file_static_validations)
     if (
-        not file_validations  # First iteration - no static validation yet
+        not file_static_validations  # First iteration - no static validation yet
         and hasattr(new_method, "experimental_results")
         and new_method.experimental_results
         and new_method.experimental_results.error
@@ -101,6 +83,6 @@ def fix_code(
         error_list.append(new_method.experimental_results.error)
 
     return {
-        "generated_file_contents": generated_file_contents,
+        "new_method": new_method,
         "error_list": error_list[-3:],  # Keep only last 3 errors
     }
