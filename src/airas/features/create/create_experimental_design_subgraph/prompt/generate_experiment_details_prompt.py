@@ -55,7 +55,7 @@ Please provide:
 **Previous Experimental Design**:
 - Strategy: {{ new_method.iteration_history[-1].experimental_design.experiment_strategy }}
 - Details: {{ new_method.iteration_history[-1].experimental_design.experiment_details }}
-- Code: {{ new_method.iteration_history[-1].experimental_design.experiment_code.model_dump() | tojson }}
+- Code: {{ new_method.iteration_history[-1].experimental_design.experiment_code | tojson }}
 
 Build upon what worked and address what didn't work to improve the consistency score.
 {% endif %}"""

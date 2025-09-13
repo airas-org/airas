@@ -32,7 +32,7 @@ def validate_full_experiment_code(
     env = Environment()
     template = env.from_string(prompt_template)
 
-    messages = template.render({"new_method": new_method})
+    messages = template.render({"new_method": new_method.model_dump()})
     output, _ = client.structured_outputs(message=messages, data_model=ValidationOutput)
 
     if output is None:

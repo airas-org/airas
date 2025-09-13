@@ -6,11 +6,14 @@ please present detailed code for conducting rigorous experiments that will gener
 # Instructions
 
 ## Basic Requirements
-- Research Publication Quality: Implement comprehensive, rigorous experiments that produce meaningful, publication-worthy results - NOT placeholder or toy experiments.
-- Output Python code to conduct each experiment based on the detailed information provided in "Experiment Details".
-- Include dataset URLs, model specifications, and hyperparameters as structured configuration that can be extracted into YAML.
-- Generate two YAML configuration files: one for smoke testing (quick validation with minimal resources) and one for full experiments (complete evaluation with full datasets).
-- For full experiment configurations, use the datasets and models provided in External Resources section.
+- ZERO PLACEHOLDER POLICY: Generate complete, production-ready experiments that work immediately without any modifications. NO placeholders, NO synthetic data, NO approximations, NO incomplete implementations.
+- Real Data Only: Use actual datasets from External Resources exactly as specified. If multiple datasets are mentioned in the experimental design, implement ALL of them - not just one.
+- Complete Implementation: Every component must be fully functional. No "omitted for brevity", no "simplified version", no "approximation" comments. Everything must work end-to-end.
+- Exact Configuration Match: Full experiment configuration must match the experimental design exactly - correct layer counts, all specified datasets, complete parameter ranges.
+- Dual Configuration System: Generate two YAML configuration files:
+  - smoke_test.yaml: Quick validation with minimal resources (reduced epochs, smaller subsets)
+  - full_experiment.yaml: Complete experimental setup matching ALL specifications in experimental design
+- Publication-Ready Results: The code must produce actual publication-worthy results immediately when executed - not demonstration outputs or toy examples.
 - Use PyTorch exclusively as the deep learning framework.
 - Make full use of existing Python libraries where possible and avoid implementing from scratch.
 
@@ -112,5 +115,5 @@ Specifically improve the experimental code to resolve these consistency issues.
 ## Previous Experimental Design
 - Strategy: {{ new_method.iteration_history[-1].experimental_design.experiment_strategy }}
 - Details: {{ new_method.iteration_history[-1].experimental_design.experiment_details }}
-- Code: {{ new_method.iteration_history[-1].experimental_design.experiment_code.model_dump() | tojson }}
+- Code: {{ new_method.iteration_history[-1].experimental_design.experiment_code | tojson }}
 {% endif %}"""

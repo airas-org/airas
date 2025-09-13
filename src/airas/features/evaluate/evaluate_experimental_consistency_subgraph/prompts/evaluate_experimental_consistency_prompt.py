@@ -60,7 +60,7 @@ Provide a numerical score (1-10) based on:
 - Strategy: {{ new_method.experimental_design.experiment_strategy }}
 - Details: {{ new_method.experimental_design.experiment_details }}
 - External Resources: {{ new_method.experimental_design.external_resources }}
-- Generated Files: {{ new_method.experimental_design.experiment_code.model_dump() | tojson }}
+- Generated Files: {{ new_method.experimental_design.experiment_code | tojson }}
 
 **Experimental Results:**
 - Result: {{ new_method.experimental_results.result }}
