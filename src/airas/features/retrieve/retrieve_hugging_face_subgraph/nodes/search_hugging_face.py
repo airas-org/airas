@@ -211,8 +211,6 @@ def _apply_hf_resource_type(
         tags=merged_data.get("tags", []),
         pipeline_tag=merged_data.get("pipeline_tag"),
         library_name=merged_data.get("library_name"),
-        readme=readme_content[:5000]
-        if readme_content
-        else "",  # NOTE: Limit README to first 5k to prevent huge data
+        readme=readme_content,
         model_index=merged_data.get("model_index"),
     )
