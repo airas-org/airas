@@ -151,7 +151,12 @@ coder = CreateCodeSubgraph(
         "convert_code_to_scripts": "o3-2025-04-16",
     },
 )
-executor = GitHubActionsExecutorSubgraph(runner_type=runner_type)
+executor = GitHubActionsExecutorSubgraph(
+    runner_type=runner_type,
+    llm_mapping={
+        "extract_required_info": "gemini-2.5-flash",
+    },
+)
 judge_execution = JudgeExecutionSubgraph(
     llm_mapping={
         "judge_execution": "gpt-5-2025-08-07",
@@ -330,7 +335,7 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250912"
+    repository_name = "tanaka-20250914"
     research_topic_list = [
         # "Graph Attention Networkの学習の高速化",
         # "Transformerを用いた時系列データの新規手法",

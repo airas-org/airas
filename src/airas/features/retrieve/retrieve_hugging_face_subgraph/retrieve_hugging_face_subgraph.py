@@ -94,7 +94,9 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
                 f"but got {type(llm_mapping)}"
             )
         self.include_gated = include_gated
-        check_api_key()
+        check_api_key(
+            huggingface_api_key_check=True,
+        )
 
     async def _search_hugging_face(
         self, state: RetrieveHuggingFaceState
