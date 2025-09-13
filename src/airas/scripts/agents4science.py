@@ -141,7 +141,7 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
 )
 retrieve_hugging_face = RetrieveHuggingFaceSubgraph(
     include_gated=False,
-    llm_mapping={"select_resources": "gpt-5-mini-2025-08-07"},
+    llm_mapping={"select_resources": "gemini-2.5-flash"},
 )
 coder = CreateCodeSubgraph(
     runner_type=runner_type,

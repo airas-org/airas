@@ -66,11 +66,15 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        max_results_per_search: int = 20,
         llm_mapping: dict[str, str] | RetrieveHuggingFaceLLMMapping | None = None,
         include_gated: bool = False,
+        max_results_per_search: int = 10,
+        max_models: int = 10,
+        max_datasets: int = 10,
     ):
         self.max_results_per_search = max_results_per_search
+        self.max_models = max_models
+        self.max_datasets = max_datasets
         if llm_mapping is None:
             self.llm_mapping = RetrieveHuggingFaceLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -109,6 +113,8 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.select_resources,
             new_method=state["new_method"],
             huggingface_search_results=state["huggingface_search_results"],
+            max_models=self.max_models,
+            max_datasets=self.max_datasets,
         )
         return {"new_method": updated_method}
 
