@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from typing import Literal
+from typing import Any, Literal
 
 import tiktoken
 from openai import OpenAI
@@ -98,11 +98,15 @@ OPENAI_MODEL = Literal[
     "gpt-4o-mini-2024-07-18",
 ]
 
+ReasoningEffort = Literal["low", "medium", "high"]
+# TODO?: Add error handling for models that do not support reasoning effort
+
 
 class OpenAIClient:
-    def __init__(self) -> None:
+    def __init__(self, reasoning_effort: ReasoningEffort | None = None) -> None:
         self.logger = logging.getLogger(__name__)
         self.client = OpenAI()
+        self.reasoning_effort = reasoning_effort
 
     def _truncate_prompt(self, model_name: OPENAI_MODEL, message: str) -> str:
         """Shorten the prompt so that it does not exceed the maximum number of tokens."""
@@ -125,6 +129,12 @@ class OpenAIClient:
         output_cost = output_tokens * OPENAI_MODEL_INFO[model_name]["output_token_cost"]
         return input_cost + output_cost
 
+    def _get_params(self) -> dict[str, Any]:
+        params: dict[str, Any] = {}
+        if self.reasoning_effort:
+            params["reasoning"] = {"effort": self.reasoning_effort}
+        return params
+
     def generate(
         self,
         model_name: OPENAI_MODEL,
@@ -134,10 +144,12 @@ class OpenAIClient:
             raise TypeError("message must be a string")
         message = message.encode("utf-8", "ignore").decode("utf-8")
         message = self._truncate_prompt(model_name, message)
+        params = self._get_params()
 
         response = self.client.responses.create(
             model=model_name,
             input=message,
+            **params,
         )
         output = response.output_text
         cost = self._calculate_cost(
@@ -157,11 +169,10 @@ class OpenAIClient:
             raise TypeError("message must be a string")
         message = message.encode("utf-8", "ignore").decode("utf-8")
         message = self._truncate_prompt(model_name, message)
+        params = self._get_params()
 
         response = self.client.responses.parse(
-            model=model_name,
-            input=message,
-            text_format=data_model,
+            model=model_name, input=message, text_format=data_model, **params
         )
         output = response.output_text
         output = json.loads(output)

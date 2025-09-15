@@ -92,11 +92,13 @@ class CreateCodeSubgraph(BaseSubgraph):
         secret_names: list[str] | None = None,
         max_static_validations: int = 3,
         max_full_experiment_validations: int = 3,
+        use_structured_output_for_coding: bool = True,
     ):
         self.runner_type = runner_type
         self.secret_names = secret_names or []
         self.max_static_validations = max_static_validations
         self.max_full_experiment_validations = max_full_experiment_validations
+        self.use_structured_output_for_coding = use_structured_output_for_coding
         if llm_mapping is None:
             self.llm_mapping = CreateCodeLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -146,6 +148,7 @@ class CreateCodeSubgraph(BaseSubgraph):
             feedback_text=feedback[-1]
             if (feedback := state.get("consistency_feedback"))
             else None,
+            use_structured_outputs=self.use_structured_output_for_coding,
         )
         return {"experiment_code_str": experiment_code_str}
 
