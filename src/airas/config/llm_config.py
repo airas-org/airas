@@ -53,7 +53,7 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
 
     # --- features/retrieve ---
     # RetrieveHuggingFaceSubgraph
-    "select_resources": BASE_MODEL,
+    "select_resources": "gemini-2.5-flash",
 
     # --- features/evaluate ---
     # JudgeExecutionSubgraph

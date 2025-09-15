@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class SelectedResource(BaseModel):
-    title: str
+    id: str
 
 
 class LLMOutput(BaseModel):
@@ -49,16 +49,12 @@ def select_resources(
         }
     )
 
-    logger.info("Selecting relevant resources using LLM...")
-
     output, _cost = client.structured_outputs(message=messages, data_model=LLMOutput)
     if output is None:
         raise ValueError("Error: No response from LLM in select_resources.")
 
-    selected_model_ids = {resource["title"] for resource in output["selected_models"]}
-    selected_dataset_ids = {
-        resource["title"] for resource in output["selected_datasets"]
-    }
+    selected_model_ids = {resource["id"] for resource in output["selected_models"]}
+    selected_dataset_ids = {resource["id"] for resource in output["selected_datasets"]}
 
     selected_models = [
         model
