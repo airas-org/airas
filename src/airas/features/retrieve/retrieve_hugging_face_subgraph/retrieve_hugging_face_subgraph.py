@@ -34,9 +34,7 @@ def retrieve_hugging_face_timed(f):
 
 
 class RetrieveHuggingFaceLLMMapping(BaseModel):
-    select_resources: LLM_MODEL = DEFAULT_NODE_LLMS.get(
-        "select_resources", "o3-2025-04-16"
-    )
+    select_resources: LLM_MODEL = DEFAULT_NODE_LLMS["select_resources"]
 
 
 class RetrieveHuggingFaceInputState(TypedDict):
