@@ -25,30 +25,6 @@ please present detailed code for conducting rigorous experiments that will gener
 - Environment Variables: The following environment variables are available for use in your experiments: {{ secret_names|join(', ') }}. These can be accessed using os.getenv() in your Python code.
 {% endif %}
 
-## Command Line Execution Requirements
-The generated main.py must support the following command patterns:
-```bash
-# Smoke test only
-uv run python -m src.main --smoke-test
-
-# Full experiment only
-uv run python -m src.main --full-experiment
-```
-
-## Output Requirements
-Generate a complete experiment implementation organized into the following Python scripts:
-
-### Script Structure (ExperimentCode format)
-Your output must contain exactly these files with the specified content:
-- `src/train.py`: Training script with model definition, training loop, and model saving
-- `src/evaluate.py`: Evaluation script with metrics calculation and result visualization
-- `src/preprocess.py`: Data loading and preprocessing pipeline
-- `src/main.py`: Main execution script with command-line interface (--smoke-test, --full-experiment)
-- `pyproject.toml`: Project dependencies and package configuration
-- `config/smoke_test.yaml`: Quick validation configuration (minimal resources)
-- `config/full_experiment.yaml`: Full experimental configuration (production settings)
-
-When implementing the code, ensure that the output strictly adheres to the following rules:
 
 ### Results Documentation
 - Save the results of each experiment as separate JSON files and modify the code to print the contents of the JSON files to standard output using a print statement.
@@ -74,6 +50,24 @@ File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`
 - `_pairN` (optional): Used when presenting figures in pairs (e.g., _pair1, _pair2)
 - For standalone figures, do not include _pairN.
 
+
+## Planning-Guided Implementation
+The following planning information provides structured guidance for implementation:
+
+{% if architecture_design %}
+### Architecture Design
+{{ architecture_design }}
+{% endif %}
+
+{% if logic_design %}
+### Logic Design
+{{ logic_design }}
+{% endif %}
+
+{% if file_details %}
+### File Implementation Details
+{{ file_details }}
+{% endif %}
 
 {% if full_experiment_validation %}
 ## Full Experiment Validation Feedback

@@ -17,6 +17,18 @@ from airas.features.create.create_code_subgraph.nodes.convert_code_to_scripts im
 from airas.features.create.create_code_subgraph.nodes.generate_experiment_code import (
     generate_experiment_code,
 )
+from airas.features.create.create_code_subgraph.nodes.plan_architecture_design import (
+    ArchitectureDesign,
+    plan_architecture_design,
+)
+from airas.features.create.create_code_subgraph.nodes.plan_file_details import (
+    FileDetails,
+    plan_file_details,
+)
+from airas.features.create.create_code_subgraph.nodes.plan_logic_design import (
+    LogicDesign,
+    plan_logic_design,
+)
 from airas.features.create.create_code_subgraph.nodes.push_files_to_github import (
     push_files_to_github,
 )
@@ -43,6 +55,15 @@ create_code_timed = lambda f: time_node("create_code_subgraph")(f)  # noqa: E731
 
 
 class CreateCodeLLMMapping(BaseModel):
+    plan_architecture_design: LLM_MODEL = DEFAULT_NODE_LLMS.get(
+        "plan_architecture_design", "o3-2025-04-16"
+    )
+    plan_logic_design: LLM_MODEL = DEFAULT_NODE_LLMS.get(
+        "plan_logic_design", "o3-2025-04-16"
+    )
+    plan_file_details: LLM_MODEL = DEFAULT_NODE_LLMS.get(
+        "plan_file_details", "o3-2025-04-16"
+    )
     generate_experiment_code: LLM_MODEL = DEFAULT_NODE_LLMS["generate_experiment_code"]
     convert_code_to_scripts: LLM_MODEL = DEFAULT_NODE_LLMS["convert_code_to_scripts"]
     validate_full_experiment_code: LLM_MODEL = DEFAULT_NODE_LLMS[
@@ -58,6 +79,10 @@ class CreateCodeSubgraphInputState(TypedDict, total=False):
 
 
 class CreateCodeSubgraphHiddenState(TypedDict):
+    architecture_design: dict[str, ArchitectureDesign]
+    logic_design: dict[str, LogicDesign]
+    file_details: dict[str, FileDetails]
+
     experiment_code_str: str
     full_experiment_validation: tuple[bool, str]
     full_experiment_validation_count: int
@@ -136,6 +161,45 @@ class CreateCodeSubgraph(BaseSubgraph):
         }
 
     @create_code_timed
+    def _plan_architecture_design(
+        self, state: CreateCodeSubgraphState
+    ) -> dict[str, ArchitectureDesign]:
+        architecture_design = plan_architecture_design(
+            llm_name=self.llm_mapping.plan_architecture_design,
+            new_method=state["new_method"],
+            runner_type=self.runner_type,
+        )
+        print(f"Architecture_design: {architecture_design}")
+        return {"architecture_design": architecture_design}
+
+    @create_code_timed
+    def _plan_logic_design(
+        self, state: CreateCodeSubgraphState
+    ) -> dict[str, LogicDesign]:
+        logic_design = plan_logic_design(
+            llm_name=self.llm_mapping.plan_logic_design,
+            new_method=state["new_method"],
+            runner_type=self.runner_type,
+            architecture_design=state["architecture_design"],
+        )
+        print(f"Logic_design: {logic_design}")
+        return {"logic_design": logic_design}
+
+    @create_code_timed
+    def _plan_file_details(
+        self, state: CreateCodeSubgraphState
+    ) -> dict[str, FileDetails]:
+        file_details = plan_file_details(
+            llm_name=self.llm_mapping.plan_file_details,
+            new_method=state["new_method"],
+            runner_type=self.runner_type,
+            architecture_design=state["architecture_design"],
+            logic_design=state["logic_design"],
+        )
+        print(f"File details: {file_details}")
+        return {"file_details": file_details}
+
+    @create_code_timed
     def _generate_experiment_code(
         self, state: CreateCodeSubgraphState
     ) -> dict[str, str]:
@@ -149,7 +213,11 @@ class CreateCodeSubgraph(BaseSubgraph):
             if (feedback := state.get("consistency_feedback"))
             else None,
             use_structured_outputs=self.use_structured_output_for_coding,
+            architecture_design=state["architecture_design"],
+            logic_design=state["logic_design"],
+            file_details=state["file_details"],
         )
+        print(f"Code_str: {experiment_code_str}")
         return {"experiment_code_str": experiment_code_str}
 
     @create_code_timed
@@ -281,6 +349,11 @@ class CreateCodeSubgraph(BaseSubgraph):
         graph_builder = StateGraph(CreateCodeSubgraphState)
         graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node(
+            "plan_architecture_design", self._plan_architecture_design
+        )
+        graph_builder.add_node("plan_logic_design", self._plan_logic_design)
+        graph_builder.add_node("plan_file_details", self._plan_file_details)
+        graph_builder.add_node(
             "generate_experiment_code", self._generate_experiment_code
         )
         graph_builder.add_node("convert_code_to_scripts", self._convert_code_to_scripts)
@@ -293,8 +366,12 @@ class CreateCodeSubgraph(BaseSubgraph):
             "set_github_actions_secrets", self._set_github_actions_secrets
         )
 
+        # Graph edges with planning phase
         graph_builder.add_edge(START, "initialize")
-        graph_builder.add_edge("initialize", "generate_experiment_code")
+        graph_builder.add_edge("initialize", "plan_architecture_design")
+        graph_builder.add_edge("plan_architecture_design", "plan_logic_design")
+        graph_builder.add_edge("plan_logic_design", "plan_file_details")
+        graph_builder.add_edge("plan_file_details", "generate_experiment_code")
         graph_builder.add_edge("generate_experiment_code", "convert_code_to_scripts")
         graph_builder.add_edge(
             "convert_code_to_scripts", "validate_full_experiment_code"

@@ -2,6 +2,15 @@ from jinja2 import Environment
 from pydantic import BaseModel
 
 from airas.config.runner_type_info import RunnerType, runner_info_dict
+from airas.features.create.create_code_subgraph.nodes.plan_architecture_design import (
+    ArchitectureDesign,
+)
+from airas.features.create.create_code_subgraph.nodes.plan_file_details import (
+    FileDetails,
+)
+from airas.features.create.create_code_subgraph.nodes.plan_logic_design import (
+    LogicDesign,
+)
 from airas.features.create.create_code_subgraph.prompt.generate_experiment_code_prompt import (
     generate_experiment_code_prompt,
 )
@@ -28,6 +37,9 @@ def generate_experiment_code(
     runner_type: RunnerType,
     secret_names: list[str],
     full_experiment_validation: tuple[bool, str],
+    architecture_design: ArchitectureDesign,
+    logic_design: LogicDesign,
+    file_details: FileDetails,
     feedback_text: str | None = None,
     use_structured_outputs: bool = True,
 ) -> str:
@@ -44,6 +56,9 @@ def generate_experiment_code(
         "secret_names": secret_names,
         "consistency_feedback": feedback_text,
         "full_experiment_validation": full_experiment_validation,
+        "architecture_design": architecture_design.model_dump(),
+        "logic_design": logic_design.model_dump(),
+        "file_details": file_details.model_dump(),
     }
     messages = template.render(data)
 
