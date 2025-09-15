@@ -45,8 +45,6 @@ def select_resources(
         }
     )
 
-    logger.info("Selecting relevant resources using LLM...")
-
     output, _cost = client.structured_outputs(message=messages, data_model=LLMOutput)
     if output is None:
         raise ValueError("Error: No response from LLM in select_resources.")
