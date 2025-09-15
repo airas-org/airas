@@ -13,6 +13,27 @@ class ExternalResources(BaseModel):
     )
 
 
+class ExperimentCode(BaseModel):
+    train_py: str
+    evaluate_py: str
+    preprocess_py: str
+    main_py: str
+    pyproject_toml: str
+    smoke_test_yaml: str
+    full_experiment_yaml: str
+
+    def to_file_dict(self) -> dict[str, str]:
+        return {
+            "src/train.py": self.train_py,
+            "src/evaluate.py": self.evaluate_py,
+            "src/preprocess.py": self.preprocess_py,
+            "src/main.py": self.main_py,
+            "pyproject.toml": self.pyproject_toml,
+            "config/smoke_test.yaml": self.smoke_test_yaml,
+            "config/full_experiment.yaml": self.full_experiment_yaml,
+        }
+
+
 class ExperimentalDesign(BaseModel):
     experiment_strategy: Optional[str] = Field(None, description="")
     experiment_details: Optional[str] = Field(None, description="")
@@ -26,7 +47,7 @@ class ExperimentalDesign(BaseModel):
         None,
         description="External resources including models, datasets, and other resources",
     )
-    experiment_code: Optional[str] = Field(None, description="")
+    experiment_code: Optional[ExperimentCode] = Field(None, description="")
 
 
 class ExperimentalResults(BaseModel):

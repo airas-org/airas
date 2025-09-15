@@ -18,7 +18,6 @@ evaluate_paper_results_subgraph_input_data = {
         experimental_design=ExperimentalDesign(
             experiment_strategy="Strategy A",
             experiment_details="Details of experiment A",
-            experiment_code="print('hello world')",
         ),
         experimental_results=None,
         experimental_analysis=None,

@@ -6,11 +6,14 @@ please present detailed code for conducting rigorous experiments that will gener
 # Instructions
 
 ## Basic Requirements
-- Research Publication Quality: Implement comprehensive, rigorous experiments that produce meaningful, publication-worthy results - NOT placeholder or toy experiments.
-- Output Python code to conduct each experiment based on the detailed information provided in "Experiment Details".
-- Include dataset URLs, model specifications, and hyperparameters as structured configuration that can be extracted into YAML.
-- Generate two YAML configuration files: one for smoke testing (quick validation with minimal resources) and one for full experiments (complete evaluation with full datasets).
-- For full experiment configurations, use the datasets and models provided in External Resources section.
+- ZERO PLACEHOLDER POLICY: Generate complete, production-ready experiments that work immediately without any modifications. NO placeholders, NO synthetic data, NO approximations, NO incomplete implementations.
+- Real Data Only: Use actual datasets from External Resources exactly as specified. If multiple datasets are mentioned in the experimental design, implement ALL of them - not just one.
+- Complete Implementation: Every component must be fully functional. No "omitted for brevity", no "simplified version", no "approximation" comments. Everything must work end-to-end.
+- Exact Configuration Match: Full experiment configuration must match the experimental design exactly - correct layer counts, all specified datasets, complete parameter ranges.
+- Dual Configuration System: Generate two YAML configuration files:
+  - smoke_test.yaml: Quick validation with minimal resources (reduced epochs, smaller subsets)
+  - full_experiment.yaml: Complete experimental setup matching ALL specifications in experimental design
+- Publication-Ready Results: The code must produce actual publication-worthy results immediately when executed - not demonstration outputs or toy examples.
 - Use PyTorch exclusively as the deep learning framework.
 - Make full use of existing Python libraries where possible and avoid implementing from scratch.
 
@@ -33,7 +36,19 @@ uv run python -m src.main --full-experiment
 ```
 
 ## Output Requirements
-When implementing the code, ensure that the output strictly adheres to the following rules.:
+Generate a complete experiment implementation organized into the following Python scripts:
+
+### Script Structure (ExperimentCode format)
+Your output must contain exactly these files with the specified content:
+- `src/train.py`: Training script with model definition, training loop, and model saving
+- `src/evaluate.py`: Evaluation script with metrics calculation and result visualization
+- `src/preprocess.py`: Data loading and preprocessing pipeline
+- `src/main.py`: Main execution script with command-line interface (--smoke-test, --full-experiment)
+- `pyproject.toml`: Project dependencies and package configuration
+- `config/smoke_test.yaml`: Quick validation configuration (minimal resources)
+- `config/full_experiment.yaml`: Full experimental configuration (production settings)
+
+When implementing the code, ensure that the output strictly adheres to the following rules:
 
 ### Results Documentation
 - Save the results of each experiment as separate JSON files and modify the code to print the contents of the JSON files to standard output using a print statement.
@@ -59,13 +74,6 @@ File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`
 - `_pairN` (optional): Used when presenting figures in pairs (e.g., _pair1, _pair2)
 - For standalone figures, do not include _pairN.
 
-{% if consistency_feedback %}
-## Consistency Feedback
-**Important**: Address the following feedback from previous experimental consistency evaluation:
-{{ consistency_feedback }}
-
-Specifically improve the experimental code to resolve these consistency issues.
-{% endif %}
 
 {% if full_experiment_validation %}
 ## Full Experiment Validation Feedback
@@ -81,39 +89,31 @@ Specifically improve the experimental code to resolve these consistency issues.
 # Experimental Environment
 {{ runner_type_prompt }}
 
+# Current Research Method (Target for Experiment Design)
+{{ new_method.method }}
+
+# Experimental Design
+- Strategy: {{ new_method.experimental_design.experiment_strategy }}
+- Details: {{ new_method.experimental_design.experiment_details }}
+
 {% if new_method.experimental_design.external_resources %}
 # External Resources
 {{ new_method.experimental_design.external_resources }}
 {% endif %}
 
-# Current Research Method (Target for Experiment Design)
-{{ new_method.method }}
-
-# Experiment Strategy
-{{ new_method.experimental_design.experiment_strategy }}
-
-# Experiment Details
-{{ new_method.experimental_design.experiment_details }}
-
 ---
+{% if consistency_feedback %}
+## Consistency Feedback
+**Important**: Address the following feedback from previous experimental consistency evaluation:
+{{ consistency_feedback }}
+
+Specifically improve the experimental code to resolve these consistency issues.
+{% endif %}
+
 # Reference Information from Previous Iteration
 {% if new_method.iteration_history %}
 ## Previous Experimental Design
-- **Strategy**: {{ new_method.iteration_history[-1].experimental_design.experiment_strategy }}
-- **Details**: {{ new_method.iteration_history[-1].experimental_design.experiment_details }}
-
-{% if generated_file_contents %}
-## Previous Generated Code Files
-{% for filename, content in generated_file_contents.items() %}
-### {{ filename }}
-```python
-{{ content }}
-```
-{% endfor %}
-{% endif %}
-
-Build upon what worked and address what didn't work to improve the consistency score.
-{% else %}
-*No previous iteration available*
-{% endif %}
----"""
+- Strategy: {{ new_method.iteration_history[-1].experimental_design.experiment_strategy }}
+- Details: {{ new_method.iteration_history[-1].experimental_design.experiment_details }}
+- Code: {{ new_method.iteration_history[-1].experimental_design.experiment_code | tojson }}
+{% endif %}"""

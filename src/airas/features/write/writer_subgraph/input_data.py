@@ -12,21 +12,6 @@ writer_subgraph_input_data = {
         experimental_design=ExperimentalDesign(
             experiment_strategy="We compare our method against state-of-the-art baselines using standard benchmarks including Atari games and continuous control tasks. Performance is measured using average cumulative reward over 100 episodes.",
             experiment_details="Experiments are conducted on 5 different environments with 3 random seeds each. Training runs for 1M timesteps with evaluation every 10K steps. We use Adam optimizer with learning rate 3e-4 and batch size 256.",
-            experiment_code="""
-def train_agent(env, model, num_timesteps=1000000):
-    optimizer = Adam(model.parameters(), lr=3e-4)
-    for step in range(num_timesteps):
-        state = env.reset()
-        episode_reward = 0
-        while not done:
-            action = model.select_action(state)
-            next_state, reward, done, _ = env.step(action)
-            model.update(state, action, reward, next_state)
-            state = next_state
-            episode_reward += reward
-        if step % 10000 == 0:
-            evaluate_model(model, env)
-""",
         ),
         experimental_results=ExperimentalResults(
             result="Our method achieves 15% higher average reward compared to the best baseline (PPO) across all environments. Specifically, we obtain 520+/-25 points on Breakout, 1840+/-67 points on SpaceInvaders, and 95+/-8 points on CartPole.",

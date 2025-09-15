@@ -22,9 +22,9 @@ def generate_experiment_code(
     new_method: ResearchHypothesis,
     runner_type: RunnerType,
     secret_names: list[str],
-    generated_file_contents: dict[str, str] | None = None,
+    full_experiment_validation: tuple[bool, str],
     feedback_text: str | None = None,
-) -> ResearchHypothesis:
+) -> str:
     client = LLMFacadeClient(llm_name=llm_name)
     env = Environment()
 
@@ -35,7 +35,7 @@ def generate_experiment_code(
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "secret_names": secret_names,
         "consistency_feedback": feedback_text,
-        "generated_file_contents": generated_file_contents,
+        "full_experiment_validation": full_experiment_validation,
     }
     messages = template.render(data)
 
@@ -52,5 +52,4 @@ def generate_experiment_code(
     if output is None:
         raise ValueError("No response from LLM in generate_experiment_code.")
 
-    new_method.experimental_design.experiment_code = output["experiment_code"]
-    return new_method
+    return output["experiment_code"]

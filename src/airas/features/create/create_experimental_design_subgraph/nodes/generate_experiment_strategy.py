@@ -21,7 +21,6 @@ def generate_experiment_strategy(
     new_method: ResearchHypothesis,
     runner_type: RunnerType,
     feedback_text: str | None = None,
-    generated_file_contents: dict[str, str] | None = None,
 ) -> ResearchHypothesis:
     client = LLMFacadeClient(llm_name=llm_name)
     env = Environment()
@@ -32,7 +31,6 @@ def generate_experiment_strategy(
         "new_method": new_method.model_dump(),
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "consistency_feedback": feedback_text,
-        "generated_file_contents": generated_file_contents,
     }
     messages = template.render(data)
     output, cost = client.structured_outputs(

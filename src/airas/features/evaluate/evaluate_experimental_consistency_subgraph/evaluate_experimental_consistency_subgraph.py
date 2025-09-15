@@ -40,7 +40,6 @@ class EvaluateExperimentalConsistencySubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
     consistency_feedback: list[str]
     consistency_score: list[int]
-    generated_file_contents: dict[str, str]
 
 
 class EvaluateExperimentalConsistencySubgraphHiddenState(TypedDict): ...
@@ -98,7 +97,6 @@ class EvaluateExperimentalConsistencySubgraph(BaseSubgraph):
                 llm_name=self.llm_mapping.evaluate_experimental_consistency,
                 prompt_template=self.prompt_template,
                 new_method=state["new_method"],
-                generated_file_contents=state["generated_file_contents"],
                 existing_feedback=state.get("consistency_feedback"),
                 existing_scores=state.get("consistency_score"),
             )

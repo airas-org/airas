@@ -42,7 +42,6 @@ class CreateExperimentalDesignLLMMapping(BaseModel):
 
 class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
-    generated_file_contents: dict[str, str]
     consistency_feedback: list[str]
 
 
@@ -126,7 +125,6 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             feedback_text=feedback[-1]
             if (feedback := state.get("consistency_feedback"))
             else None,
-            generated_file_contents=state.get("generated_file_contents"),
         )
         return {"new_method": new_method}
 
@@ -141,7 +139,6 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             feedback_text=feedback[-1]
             if (feedback := state.get("consistency_feedback"))
             else None,
-            generated_file_contents=state.get("generated_file_contents"),
         )
         return {"new_method": new_method}
 

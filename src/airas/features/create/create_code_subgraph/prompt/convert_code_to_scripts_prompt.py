@@ -5,8 +5,11 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
 # Instructions
 - **Your primary task is to refactor the existing code, not to write new code from scratch.**
 - You MUST extract the relevant logic from the "Experiment Code" section for each file. Do not introduce new logic or fall back to placeholder examples.
-- Under no circumstances should you make significant changes to the code provided in the "Experiment Code".
 - Ensure that imports are correctly handled in each file.
+- Full Experiment Production Readiness
+  - Eliminate ALL placeholders, TODOs, dummy values, and synthetic data in configuration files
+  - Use actual dataset names, real model parameters, and concrete hyperparameters from External Resources
+  - Code logic should remain faithful to "Experiment Code" but configurations must be production-ready
 
 - Error Prevention: While refactoring, proactively identify and fix potential runtime issues:
     - Environment compatibility: Ensure proper device/platform handling and resource availability checks.
@@ -22,12 +25,10 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
 - Directory and Script Roles
     - .research/iteration{{ experiment_iteration }}/images...Please save all images output from the experiment in this directory.
     - .research/iteration{{ experiment_iteration }}/...Save each experiment's results as separate JSON files in this directory and print each JSON contents to standard output for verification.
-    - config...Create two configuration files:
+    - config/...Create two configuration files:
         - smoke_test.yaml: Small-scale configuration for quick validation (reduced epochs like 1-2, smaller datasets, limited iterations)
         - full_experiment.yaml: Full-scale configuration for complete experimental runs
-    - data...This directory is used to store data used for model training and evaluation.
-    - models...This directory is used to store pre-trained and trained models.
-    - src
+    - src/
         - train.py...Extract all functions and classes related to model.
         - evaluate.py...Extract all functions and classes related to model evaluation, statistical analysis, and plotting. Please implement the code so that the evaluation results are always output to standard output.
         - preprocess.py...Extract any data loading or preprocessing logic.
@@ -58,37 +59,22 @@ The main.py should:
 3. Execute the experiment workflow accordingly
 4. Handle both smoke test and full experiment modes properly
 
-
-{% if generated_file_contents %}
-# ========================================
-# CURRENT FILES TO FIX
-# ========================================
-Focus on fixing the static validation issues below. Apply the same file structure rules while correcting the issues:
-
-{% for file_path, content in generated_file_contents.items() %}
-## {{ file_path }}
-```python
-{{ content }}
-```
-{% endfor %}
-{% endif %}
-
-{% if file_validations %}
+{% if file_static_validations %}
 # ========================================
 # STATIC VALIDATION RESULTS - FIX THESE ISSUES
 # ========================================
 
 ## All Static Validation Issues:
-{% for file_path, file_validation in file_validations.items() %}
-{% if file_validation.errors %}
+{% for file_path, file_static_validation in file_static_validations.items() %}
+{% if file_static_validation.errors %}
 ### Errors in {{ file_path }}:
-{% for error in file_validation.errors %}
+{% for error in file_static_validation.errors %}
 - {{ error }}
 {% endfor %}
 {% endif %}
-{% if file_validation.warnings %}
+{% if file_static_validation.warnings %}
 ### Warnings in {{ file_path }}:
-{% for warning in file_validation.warnings %}
+{% for warning in file_static_validation.warnings %}
 - {{ warning }}
 {% endfor %}
 {% endif %}
@@ -98,9 +84,18 @@ Focus on fixing the static validation issues below. Apply the same file structur
 # Experimental Environment
 {{ runner_type_prompt }}
 
-# New Method
+# Current Research Method (Target for Experiment Design)
 {{ new_method.method }}
+
+# Experimental Design
+- Strategy: {{ new_method.experimental_design.experiment_strategy }}
+- Details: {{ new_method.experimental_design.experiment_details }}
+
+{% if new_method.experimental_design.external_resources %}
+# External Resources
+{{ new_method.experimental_design.external_resources }}
+{% endif %}
 
 # Experiment Code
 # This is the source script you must split into the file structure above.
-{{ new_method.experimental_design.experiment_code }}"""
+{{ experiment_code_str }}"""
