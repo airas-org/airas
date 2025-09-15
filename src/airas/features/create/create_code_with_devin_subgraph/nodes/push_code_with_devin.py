@@ -81,7 +81,9 @@ def push_code_with_devin(
         new_method.experimental_design
         and new_method.experimental_design.experiment_code
     ):
-        experiment_code = new_method.experimental_design.experiment_code
+        experiment_code = str(
+            new_method.experimental_design.experiment_code.model_dump()
+        )
 
     try:
         response = _request_create_session(

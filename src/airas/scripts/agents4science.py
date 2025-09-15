@@ -133,8 +133,9 @@ coder = CreateCodeSubgraph(
     runner_type=runner_type,
     secret_names=secret_names,
     llm_mapping={
-        "generate_experiment_code": "o3-2025-04-16",
+        "generate_experiment_code": "claude-opus-4-1-20250805",
         "convert_code_to_scripts": "o3-2025-04-16",
+        "validate_full_experiment_code": "o3-2025-04-16",
     },
 )
 executor = GitHubActionsExecutorSubgraph(runner_type=runner_type)

@@ -12,13 +12,14 @@ logger = logging.getLogger(__name__)
 
 
 def static_validate_code(
-    generated_file_contents: dict[str, str],
+    new_method,
 ) -> dict[str, dict[str, list[str]]]:
     file_validations: dict[str, dict[str, list[str]]] = {}
 
     logger.info("Starting static code validation...")
 
-    for file_path, content in generated_file_contents.items():
+    experiment_code = new_method.experimental_design.experiment_code
+    for file_path, content in experiment_code.model_dump().items():
         logger.info(f"Validating {file_path}")
 
         try:
@@ -175,119 +176,3 @@ def _validate_yaml_file(content: str) -> tuple[list[str], list[str]]:
         return [], []
     except yaml.YAMLError as e:
         return [f"YAML parse error: {e}"], []
-
-
-if __name__ == "__main__":
-    test_cases = [
-        # Test case 1: Valid files
-        {
-            "name": "Valid files",
-            "files": {
-                "src/main.py": """import numpy as np
-import pandas as pd
-
-def main():
-    data = np.array([1, 2, 3])
-    df = pd.DataFrame(data)
-    print("Processing complete")
-
-if __name__ == "__main__":
-    main()
-""",
-                "pyproject.toml": """[project]
-name = "test-project"
-version = "0.1.0"
-dependencies = [
-    "numpy>=1.21.0",
-    "pandas>=2.0.0"
-]
-""",
-                "config/smoke_test.yaml": """
-model:
-  type: "linear"
-  hidden_size: 128
-data:
-  batch_size: 32
-training:
-  epochs: 1
-""",
-                "config/full_experiment.yaml": """
-model:
-  type: "linear"
-  hidden_size: 128
-data:
-  batch_size: 32
-training:
-  epochs: 50
-""",
-            },
-        },
-        # Test case 2: Python syntax errors
-        {
-            "name": "Python syntax errors",
-            "files": {
-                "src/broken.py": """import numpy as np
-
-def broken_function(:  # Syntax error: missing parameter
-    data = np.array([1, 2, 3])
-    return data
-""",
-                "pyproject.toml": """[project]
-name = "test-project"
-version = "0.1.0"
-dependencies = ["numpy>=1.21.0"]
-""",
-            },
-        },
-        # Test case 3: Invalid requirements
-        {
-            "name": "Invalid requirements",
-            "files": {
-                "src/main.py": """print("Hello World")""",
-                "pyproject.toml": """[project]
-name = "test-project"
-version = "0.1.0"
-dependencies = [
-    "invalid-requirement->>><1.0.0"
-]
-""",
-            },
-        },
-        # Test case 6: Invalid YAML
-        {
-            "name": "Invalid YAML",
-            "files": {
-                "config/smoke_test.yaml": """
-invalid_yaml:
-  key1: value1
-  key2: [
-    - item1
-    - item2  # Invalid: mixing array syntax
-"""
-            },
-        },
-    ]
-
-    print("=== Static Code Validation Test ===\n")
-    for i, test_case in enumerate(test_cases, 1):
-        print(f"Test {i}: {test_case['name']}")
-        print("-" * 50)
-        result = static_validate_code(test_case["files"])
-
-        total_errors = sum(len(fv.get("errors", [])) for fv in result.values())
-        total_warnings = sum(len(fv.get("warnings", [])) for fv in result.values())
-
-        print(f"Total errors: {total_errors}, Total warnings: {total_warnings}")
-
-        for file_path, validation in result.items():
-            if validation["errors"] or validation["warnings"]:
-                print(f"\n{file_path}:")
-                for error in validation["errors"]:
-                    print(f"  ERROR: {error}")
-                for warning in validation["warnings"]:
-                    print(f"  WARNING: {warning}")
-
-        if total_errors == 0 and total_warnings == 0:
-            print("✅ No issues found")
-
-        print()

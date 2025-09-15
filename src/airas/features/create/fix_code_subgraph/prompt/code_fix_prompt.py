@@ -49,6 +49,43 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 
 
 # ========================================
+# ERROR INFORMATION TO FIX
+# ========================================
+
+- Output Data: {{ new_method.experimental_results.result }}
+- Error Data: {{ new_method.experimental_results.error }}
+
+# ========================================
+# CURRENT FILES TO FIX
+# ========================================
+The following files contain issues and need to be fixed:
+{{ new_method.experimental_design.experiment_code | tojson }}
+
+{% if file_static_validations %}
+# ========================================
+# STATIC VALIDATION RESULTS - FIX THESE ISSUES
+# ========================================
+Focus on fixing the static validation issues below. Ignore any previous execution errors as these validation results are more current and relevant.
+
+## All Static Validation Issues:
+{% for file_path, file_static_validation in file_static_validations.items() %}
+{% if file_static_validation.errors %}
+### Errors in {{ file_path }}:
+{% for error in file_static_validation.errors %}
+- {{ error }}
+{% endfor %}
+{% endif %}
+
+{% if file_static_validation.warnings %}
+### Warnings in {{ file_path }}:
+{% for warning in file_static_validation.warnings %}
+- {{ warning }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+# ========================================
 # EXPERIMENTAL CONTEXT
 # ========================================
 # The following experimental context is provided to prevent the solution from diverging in the wrong direction during fix iterations.
@@ -56,59 +93,12 @@ You are tasked with fixing Python code that failed during execution. Analyze the
 # Current Research Method (Target for Experiment Design)
 {{ new_method.method }}
 
-# Experiment Strategy
-{{ new_method.experimental_design.experiment_strategy }}
-
-# Experiment Details
-{{ new_method.experimental_design.experiment_details }}
+# Experimental Design
+- Strategy: {{ new_method.experimental_design.experiment_strategy }}
+- Details: {{ new_method.experimental_design.experiment_details }}
 
 ## External Resources (for reference):
 {{ new_method.experimental_design.external_resources }}
-
-# ========================================
-# ERROR INFORMATION TO FIX
-# ========================================
-
-## Output Data:
-{{ new_method.experimental_results.result }}
-
-## Error Data:
-{{ new_method.experimental_results.error }}
-
-# ========================================
-# CURRENT FILES TO FIX
-# ========================================
-The following files contain issues and need to be fixed:
-{% for file_path, content in generated_file_contents.items() %}
-## {{ file_path }}
-```python
-{{ content }}
-```
-{% endfor %}
-
-{% if file_validations %}
-# ========================================
-# STATIC VALIDATION RESULTS - FIX THESE ISSUES
-# ========================================
-Focus on fixing the static validation issues below. Ignore any previous execution errors as these validation results are more current and relevant.
-
-## All Static Validation Issues:
-{% for file_path, file_validation in file_validations.items() %}
-{% if file_validation.errors %}
-### Errors in {{ file_path }}:
-{% for error in file_validation.errors %}
-- {{ error }}
-{% endfor %}
-{% endif %}
-
-{% if file_validation.warnings %}
-### Warnings in {{ file_path }}:
-{% for warning in file_validation.warnings %}
-- {{ warning }}
-{% endfor %}
-{% endif %}
-{% endfor %}
-{% endif %}
 
 # ========================================
 # Previous Error History (for reference - avoid repeating same fixes)
