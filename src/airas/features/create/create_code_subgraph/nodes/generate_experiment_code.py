@@ -56,11 +56,15 @@ def generate_experiment_code(
 
     if use_structured_outputs:
         output, cost = client.structured_outputs(
+            model_name=llm_name,
             message=messages,
             data_model=LLMOutput,
         )
     else:
-        raw_output, cost = client.generate(message=messages)
+        raw_output, cost = client.generate(
+            model_name=llm_name,
+            message=messages,
+        )
         output = {"experiment_code": raw_output} if raw_output is not None else None
 
     if output is None:
