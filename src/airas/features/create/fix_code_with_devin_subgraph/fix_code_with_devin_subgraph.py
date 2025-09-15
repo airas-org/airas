@@ -98,7 +98,6 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
             new_method=state["new_method"],
             experiment_iteration=state["experiment_iteration"],
             runner_type=cast(RunnerType, self.runner_type),
-            error_list=state["error_list"],
         )
         return {
             "devin_info": devin_info,

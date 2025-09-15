@@ -155,13 +155,19 @@ class GitHubActionsExecutorSubgraph(BaseSubgraph):
             "retrieve_github_actions_artifacts_node",
             self._retrieve_github_actions_results,
         )
+        graph_builder.add_node(
+            "extract_required_info_node", self._extract_required_info
+        )
 
         graph_builder.add_edge(START, "execute_github_actions_workflow_node")
         graph_builder.add_edge(
             "execute_github_actions_workflow_node",
             "retrieve_github_actions_artifacts_node",
         )
-        graph_builder.add_edge("retrieve_github_actions_artifacts_node", END)
+        graph_builder.add_edge(
+            "retrieve_github_actions_artifacts_node", "extract_required_info_node"
+        )
+        graph_builder.add_edge("extract_required_info_node", END)
         return graph_builder.compile()
 
 

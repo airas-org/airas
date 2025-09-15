@@ -10,6 +10,26 @@ Do not create a new branch under any circumstances; commit the changes to the sp
 
 # Rules
 - Fix all errors found in the error messages
+-The following files used in the experiment are listed along with their descriptions. Under no circumstances should you modify any files other than these or add new files.
+    - config...Create two configuration files:
+        - smoke_test.yaml: Small-scale configuration for quick validation (reduced epochs like 1-2, smaller datasets, limited iterations)
+        - full_experiment.yaml: Full-scale configuration for complete experimental runs
+    - data...This directory is used to store data used for model training and evaluation.
+    - models...This directory is used to store pre-trained and trained models.
+    - src
+        - train.py...Extract all functions and classes related to model.
+        - evaluate.py...Extract all functions and classes related to model evaluation, statistical analysis, and plotting. Please implement the code so that the evaluation results are always output to standard output.
+        - preprocess.py...Extract any data loading or preprocessing logic.
+        - main.py...Create the main execution script with command-line argument support:
+            - Please make sure to always create main.py.
+            - Add argparse to handle --smoke-test and --full-experiment flags
+            - Load appropriate config file based on the flag (smoke_test.yaml or full_experiment.yaml)
+            - Use relative imports (e.g., `from .train import ...`) to orchestrate the experimental workflow
+            - Implement two-phase execution: smoke test first, then full experiment if smoke test passes
+            - Use PyYAML for configuration loading
+    - pyproject.toml...Analyze the "Experiment Code" header and import statements. Configure the project dependencies and package information in TOML format.
+                        Dependencies must be an array format like `dependencies = ["numpy>=1.21.0", "torch>=1.9.0"]`, NOT a mapping format like `[project.dependencies]` with key-value pairs.
+- Ensure that the code can be executed without errors after the fixes.
 - When executing the script, ensure that the following information is always printed to standard output.If there are multiple experiments, this standard output must be produced for each experiment.
     - Experiment details
     - Concrete numerical data
@@ -27,13 +47,6 @@ Do not create a new branch under any circumstances; commit the changes to the sp
 
 # Standard output:
 {{ new_method.experimental_results.result }}
-
-# Previous Error History (for reference - avoid repeating same fixes)
-{% if error_list %}
-{% for error in error_list %}
-### {{ loop.index }}. {{ error }}
-{% endfor %}
-{% endif %}
 
 # Information
 

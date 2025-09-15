@@ -19,7 +19,6 @@ def initial_session_fix_code_with_devin(
     new_method: ResearchHypothesis,
     experiment_iteration: int,
     runner_type: RunnerType,
-    error_list: list[str],
     client: DevinClient | None = None,
 ) -> DevinInfo:
     client = client or DevinClient()
@@ -39,7 +38,6 @@ def initial_session_fix_code_with_devin(
         "new_method": new_method,
         "experiment_iteration": experiment_iteration,
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
-        "error_list": error_list,  # Previous errors for analysis
     }
 
     env = Environment()

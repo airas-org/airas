@@ -1,4 +1,5 @@
 import logging
+from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -125,7 +126,7 @@ class CreateCodeSubgraph(BaseSubgraph):
         new_method = generate_experiment_code(
             llm_name=self.llm_mapping.generate_experiment_code,
             new_method=state["new_method"],
-            runner_type=self.runner_type,
+            runner_type=cast(RunnerType, self.runner_type),
             secret_names=self.secret_names,
             feedback_text=feedback[-1]
             if (feedback := state.get("consistency_feedback"))
@@ -141,7 +142,7 @@ class CreateCodeSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.convert_code_to_scripts,
             new_method=state["new_method"],
             secret_names=self.secret_names,
-            runner_type=self.runner_type,
+            runner_type=cast(RunnerType, self.runner_type),
             experiment_iteration=state["experiment_iteration"],
             file_validations=state["file_validations"],
             generated_file_contents=state["generated_file_contents"],
