@@ -13,7 +13,7 @@ You are a machine learning researcher tasked with selecting the most relevant mo
 
 # Output Format
 Select up to {{ max_models }} most relevant models and up to {{ max_datasets }} most relevant datasets. For each selected resource, provide only:
-- The exact title from the search results (this will be used to retrieve the complete resource information)
+- The exact "Model Name" and "Dataset Name" from the search results (this will be used to retrieve the complete resource information)
 
 # Current Research Method
 {{ new_method.method }}
@@ -27,8 +27,4 @@ Select up to {{ max_models }} most relevant models and up to {{ max_datasets }} 
 # HuggingFace Search Results
 
 ## Models Search Results:
-{{ huggingface_search_results.models | tojson(indent=2) }}
-
-## Datasets Search Results:
-{{ huggingface_search_results.datasets | tojson(indent=2) }}
-"""
+{{ huggingface_search_results }}"""

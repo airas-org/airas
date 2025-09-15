@@ -31,13 +31,6 @@ Do not create a new branch under any circumstances; commit the changes to the sp
 # Standard output:
 {{ new_method.experimental_results.result }}
 
-# Previous Error History (for reference - avoid repeating same fixes)
-{% if error_list %}
-{% for error in error_list %}
-### {{ loop.index }}. {{ error }}
-{% endfor %}
-{% endif %}
-
 # Information
 
 ## Experimental Environment
@@ -50,4 +43,4 @@ Do not create a new branch under any circumstances; commit the changes to the sp
 {{ new_method.experimental_design.experiment_details }}
 
 ## External Resources:
-{{ new_method.experimental_design.external_resources }}"""
+{{ huggingface_data }}"""

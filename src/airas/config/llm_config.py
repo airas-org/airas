@@ -58,6 +58,7 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     # --- features/retrieve ---
     # RetrieveHuggingFaceSubgraph
     "select_resources": BASE_MODEL,
+    "extract_code_in_readme": BASE_MODEL,
 
     # --- features/evaluate ---
     # JudgeExecutionSubgraph

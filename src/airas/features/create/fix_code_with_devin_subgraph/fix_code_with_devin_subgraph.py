@@ -117,12 +117,10 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
     def _check_devin_completion_node(
         self, state: FixCodeWithDevinSubgraphState
     ) -> dict[str, bool]:
-        result = check_devin_completion(
+        is_completed = check_devin_completion(
             session_id=state["devin_info"].session_id,
         )
-        if result is None:
-            return {"push_completion": False}
-        return {"push_completion": True}
+        return {"push_completion": is_completed}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(FixCodeWithDevinSubgraphState)

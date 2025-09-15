@@ -9,7 +9,7 @@ from airas.features.create.fix_code_with_devin_subgraph.prompt.initial_session_f
 from airas.services.api_client.devin_client import DevinClient
 from airas.types.devin import DevinInfo
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_hypothesis import ExternalResources, ResearchHypothesis
 
 logger = getLogger(__name__)
 
@@ -38,6 +38,9 @@ def initial_session_fix_code_with_devin(
         "new_method": new_method,
         "experiment_iteration": experiment_iteration,
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
+        "huggingface_data": _retrieve_huggingface_data(
+            new_method.experimental_design.external_resources
+        ),
     }
 
     env = Environment()
@@ -66,3 +69,25 @@ def _adjust_string_length(prompt: str) -> str:
         prompt = prompt[:MAX_LENGTH] + "...\n[Content truncated due to length limit]"
         logger.warning(f"prompt truncated to {MAX_LENGTH} characters")
     return prompt
+
+
+def _retrieve_huggingface_data(external_resources: ExternalResources) -> str:
+    hugging_face_data = external_resources.hugging_face.model_dump()
+    hugging_face_data_str = ""
+    model_list = hugging_face_data.get("model_data", [])
+    for model in model_list:
+        if model.get("readme", "") == "":
+            continue
+        hugging_face_data_str += f"""\
+Model Name: {model["id"]}
+README:{model["extracted_code"]}
+"""
+    dataset_data = hugging_face_data.get("dataset_data", [])
+    for dataset in dataset_data:
+        if dataset.get("readme", "") == "":
+            continue
+        hugging_face_data_str += f"""\
+Dataset Name: {dataset["id"]}
+README:{dataset["extracted_code"]}
+"""
+    return hugging_face_data_str

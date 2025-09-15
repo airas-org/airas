@@ -16,13 +16,9 @@ from airas.types.research_hypothesis import ExternalResources, ResearchHypothesi
 logger = logging.getLogger(__name__)
 
 
-class SelectedResource(BaseModel):
-    title: str
-
-
 class LLMOutput(BaseModel):
-    selected_models: list[SelectedResource]
-    selected_datasets: list[SelectedResource]
+    selected_models: list[str]
+    selected_datasets: list[str]
 
 
 def select_resources(
@@ -41,8 +37,8 @@ def select_resources(
     messages = template.render(
         {
             "new_method": new_method.model_dump(),
-            "huggingface_search_results": huggingface_search_results.model_dump(
-                mode="json"
+            "huggingface_search_results": _format_huggingface_data(
+                huggingface_search_results
             ),
             "max_models": max_models,
             "max_datasets": max_datasets,
@@ -55,20 +51,15 @@ def select_resources(
     if output is None:
         raise ValueError("Error: No response from LLM in select_resources.")
 
-    selected_model_ids = {resource["title"] for resource in output["selected_models"]}
-    selected_dataset_ids = {
-        resource["title"] for resource in output["selected_datasets"]
-    }
-
     selected_models = [
         model
         for model in huggingface_search_results.models
-        if model.id in selected_model_ids
+        if model.id in output["selected_models"]
     ]
     selected_datasets = [
         dataset
         for dataset in huggingface_search_results.datasets
-        if dataset.id in selected_dataset_ids
+        if dataset.id in output["selected_datasets"]
     ]
 
     logger.info(
@@ -81,3 +72,21 @@ def select_resources(
     )
 
     return new_method
+
+
+def _format_huggingface_data(huggingface_search_results: HuggingFace) -> str:
+    hugging_face_data = huggingface_search_results.model_dump()
+    hugging_face_data_str = ""
+    hugging_face_data_str += "## Models"
+    for model in hugging_face_data["models"]:
+        hugging_face_data_str += f"""
+- Model Name: {model["id"]}
+- README:
+  {model["readme"][:3000]}\n"""
+    hugging_face_data_str += "\n## Datasets"
+    for dataset in hugging_face_data["datasets"]:
+        hugging_face_data_str += f"""
+- Dataset Name: {dataset["id"]}
+- README:
+  {dataset["readme"][:3000]}\n"""
+    return hugging_face_data_str

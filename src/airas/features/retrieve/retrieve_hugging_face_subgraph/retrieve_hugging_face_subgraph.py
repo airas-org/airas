@@ -10,6 +10,9 @@ from airas.core.base import BaseSubgraph
 from airas.features.retrieve.retrieve_hugging_face_subgraph.input_data import (
     retrieve_hugging_face_subgraph_input_data,
 )
+from airas.features.retrieve.retrieve_hugging_face_subgraph.nodes.extract_code_in_readme import (
+    extract_code_in_readme,
+)
 from airas.features.retrieve.retrieve_hugging_face_subgraph.nodes.search_hugging_face import (
     search_hugging_face,
 )
@@ -36,6 +39,9 @@ def retrieve_hugging_face_timed(f):
 class RetrieveHuggingFaceLLMMapping(BaseModel):
     select_resources: LLM_MODEL = DEFAULT_NODE_LLMS.get(
         "select_resources", "o3-2025-04-16"
+    )
+    extract_code_in_readme: LLM_MODEL = DEFAULT_NODE_LLMS.get(
+        "extract_code_in_readme", "o3-2025-04-16"
     )
 
 
@@ -120,21 +126,36 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
         )
         return {"new_method": updated_method}
 
+    def _extract_code_in_readme(self, state: RetrieveHuggingFaceState) -> dict:
+        updated_method = extract_code_in_readme(
+            llm_name=self.llm_mapping.extract_code_in_readme,
+            new_method=state["new_method"],
+        )
+        return {"new_method": updated_method}
+
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(RetrieveHuggingFaceState)
         graph_builder.add_node("search_hugging_face", self._search_hugging_face)
         graph_builder.add_node("select_resources", self._select_resources)
+        graph_builder.add_node("extract_code_in_readme", self._extract_code_in_readme)
 
         graph_builder.add_edge(START, "search_hugging_face")
         graph_builder.add_edge("search_hugging_face", "select_resources")
-        graph_builder.add_edge("select_resources", END)
+        graph_builder.add_edge("select_resources", "extract_code_in_readme")
+        graph_builder.add_edge("extract_code_in_readme", END)
 
         return graph_builder.compile()
 
 
 def main():
     input_data = retrieve_hugging_face_subgraph_input_data
-    result = RetrieveHuggingFaceSubgraph().run(input_data)
+    result = RetrieveHuggingFaceSubgraph(
+        include_gated=False,
+        llm_mapping={
+            "select_resources": "gemini-2.5-flash",
+            "extract_code_in_readme": "gemini-2.5-flash-lite-preview-06-17",
+        },
+    ).run(input_data)
     print(f"result: {result}")
 
 

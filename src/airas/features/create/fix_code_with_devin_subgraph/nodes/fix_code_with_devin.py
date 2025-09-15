@@ -5,6 +5,7 @@ from jinja2 import Environment
 from airas.config.runner_type_info import RunnerType, runner_info_dict
 from airas.features.create.fix_code_with_devin_subgraph.nodes.initial_session_fix_code_with_devin import (
     _adjust_string_length,
+    _retrieve_huggingface_data,
 )
 from airas.features.create.fix_code_with_devin_subgraph.prompt.code_fix_devin_prompt import (
     code_fix_devin_prompt,
@@ -31,6 +32,9 @@ def fix_code_with_devin(
         "experiment_iteration": experiment_iteration,
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "error_list": error_list,  # Previous errors for analysis
+        "huggingface_data": _retrieve_huggingface_data(
+            new_method.experimental_design.external_resources
+        ),
     }
 
     env = Environment()
