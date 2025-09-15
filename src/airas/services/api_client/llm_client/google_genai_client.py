@@ -6,6 +6,7 @@ import re
 from typing import Any, Literal
 
 from google import genai
+from google.genai import types
 from pydantic import BaseModel
 
 from airas.utils.logging_utils import setup_logging
@@ -61,9 +62,10 @@ VERTEXAI_MODEL = Literal[
 
 
 class GoogleGenAIClient:
-    def __init__(self) -> None:
+    def __init__(self, thinking_budget: int | None = None) -> None:
         self.logger = logging.getLogger(__name__)
         self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        self.thinking_budget = thinking_budget
 
     def _truncate_prompt(self, model_name: VERTEXAI_MODEL, message: str) -> str:
         """Shorten the prompt so that it does not exceed the maximum number of tokens."""
@@ -90,6 +92,21 @@ class GoogleGenAIClient:
         output_cost = output_tokens * model_info["output_token_cost"]
         return input_cost + output_cost
 
+    def _get_params(self) -> dict[str, Any]:
+        params: dict[str, Any] = {}
+        # TODO: The following line currently causes a `pydantic.ValidationError` when running tests.
+
+        # TODO: Add error handling for models that support thinking_config and validate thinking_budget ranges
+        # Currently supports gemini-2.5-pro with thinking_budget: 0 (off), 1024-32768 (fixed), -1 (dynamic)
+        if self.thinking_budget is not None:
+            params["config"] = types.GenerateContentConfig(
+                thinking_config=types.ThinkingConfig(
+                    thinking_budget=self.thinking_budget
+                )
+            )
+
+        return params
+
     def generate(
         self,
         model_name: VERTEXAI_MODEL,
@@ -99,10 +116,12 @@ class GoogleGenAIClient:
             raise TypeError("message must be a string")
         message = message.encode("utf-8", "ignore").decode("utf-8")
         message = self._truncate_prompt(model_name, message)
+        params = self._get_params()
 
         response = self.client.models.generate_content(
             model=model_name,
             contents=message,
+            **params,
         )
         output = response.text
         cost = self._calculate_cost(
@@ -122,14 +141,21 @@ class GoogleGenAIClient:
             raise TypeError("message must be a string")
         message = message.encode("utf-8", "ignore").decode("utf-8")
         message = self._truncate_prompt(model_name, message)
+        params = self._get_params()
+
+        config = {
+            "response_mime_type": "application/json",
+            "response_schema": list[data_model],
+        }
+
+        # Add thinking config if present
+        if "config" in params:
+            config.update(params["config"].model_dump(exclude_none=True))
 
         response = self.client.models.generate_content(
             model=model_name,
             contents=message,
-            config={
-                "response_mime_type": "application/json",
-                "response_schema": list[data_model],
-            },
+            config=config,
         )
         output = response.text
         if "null" in output:
