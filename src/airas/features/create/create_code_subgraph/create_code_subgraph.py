@@ -150,7 +150,6 @@ class CreateCodeSubgraph(BaseSubgraph):
             else None,
             use_structured_outputs=self.use_structured_output_for_coding,
         )
-        print(f"Code_str: {experiment_code_str}")
         return {"experiment_code_str": experiment_code_str}
 
     @create_code_timed
