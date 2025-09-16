@@ -1,4 +1,4 @@
-select_resources_prompt = """\
+select_resources_prompt = """
 You are a machine learning researcher tasked with selecting the most relevant models and datasets from HuggingFace search results for a specific research experiment.
 
 # Instructions
@@ -11,9 +11,10 @@ You are a machine learning researcher tasked with selecting the most relevant mo
   - Have clear usage instructions in their README or documentation
   - Likely to provide good baseline comparisons or be useful for the proposed method
 
-# Output Format
-Select up to {{ max_models }} most relevant models and up to {{ max_datasets }} most relevant datasets. For each selected resource, provide only:
-- The exact title from the search results (this will be used to retrieve the complete resource information)
+# Requirements
+- Select {{ max_models }} models and {{ max_datasets }} datasets.
+- For each, return the 'id' field.
+- The 'id' MUST be an exact, unmodified copy from the search results.
 
 # Current Research Method
 {{ new_method.method }}
