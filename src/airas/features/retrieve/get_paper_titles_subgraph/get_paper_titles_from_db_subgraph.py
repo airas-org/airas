@@ -19,6 +19,7 @@ from airas.features.retrieve.get_paper_titles_subgraph.nodes.get_paper_titles_fr
     get_paper_titles_from_airas_db,
 )
 from airas.types.research_study import ResearchStudy
+from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -60,6 +61,8 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
     ):
         self.max_results_per_query = max_results_per_query
         self.semantic_search = semantic_search
+        if semantic_search:
+            check_api_key(qdrant_api_key_check=True)
 
     @get_paper_titles_from_db_timed
     def _get_paper_titles_from_airas_db(

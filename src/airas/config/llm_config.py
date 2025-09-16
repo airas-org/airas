@@ -41,6 +41,10 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "fix_code": BASE_MODEL,
 
     # --- features/analysis ---
+    # GitHubActionsExecutorSubgraph
+    "extract_required_info": BASE_MODEL,
+
+    # --- features/analysis ---
     # AnalyticSubgraph
     "analytic_node": BASE_MODEL,
 
@@ -53,7 +57,8 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
 
     # --- features/retrieve ---
     # RetrieveHuggingFaceSubgraph
-    "select_resources": "gemini-2.5-flash",
+    "select_resources": BASE_MODEL,
+    "extract_code_in_readme": BASE_MODEL,
 
     # --- features/evaluate ---
     # JudgeExecutionSubgraph

@@ -1,36 +1,51 @@
 from logging import getLogger
 
+from jinja2 import Environment
+
+from airas.config.runner_type_info import RunnerType, runner_info_dict
+from airas.features.create.fix_code_with_devin_subgraph.nodes.initial_session_fix_code_with_devin import (
+    _adjust_string_length,
+    _retrieve_huggingface_data,
+)
+from airas.features.create.fix_code_with_devin_subgraph.prompt.code_fix_devin_prompt import (
+    code_fix_devin_prompt,
+)
 from airas.services.api_client.devin_client import DevinClient
+from airas.types.devin import DevinInfo
+from airas.types.research_hypothesis import ResearchHypothesis
 
 logger = getLogger(__name__)
 
 
-def _request_revision_to_devin(
-    session_id: str, output_text_data: str, error_text_data: str
-):
-    message = f"""
-# Instruction
-The following error occurred when executing the code in main.py. Please modify the code and push the modified code to the remote repository.
-Also, if there is no or little content in “Standard Output”, please modify main.py to make the standard output content richer.
-- "Error” contains errors that occur when main.py is run.
-- "Standard Output” contains the standard output of the main.py run.
-# Error
-{error_text_data}
-# Standard Output
-{output_text_data}"""
-
-    client = DevinClient()
-    return client.send_message(
-        session_id=session_id,
-        message=message,
-    )
-
-
 def fix_code_with_devin(
-    session_id: str,
-    output_text_data: str,
-    error_text_data: str,
+    new_method: ResearchHypothesis,
+    experiment_iteration: int,
+    runner_type: RunnerType,
+    devin_info: DevinInfo,
+    error_list: list[str],
+    client: DevinClient | None = None,
 ):
-    response = _request_revision_to_devin(session_id, output_text_data, error_text_data)
-    if response is not None:
-        raise RuntimeError("Failed to request revision to Devin")
+    client = client or DevinClient()
+
+    data = {
+        "new_method": new_method,
+        "experiment_iteration": experiment_iteration,
+        "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
+        "error_list": error_list,  # Previous errors for analysis
+        "huggingface_data": _retrieve_huggingface_data(
+            new_method.experimental_design.external_resources
+        ),
+    }
+
+    env = Environment()
+    template = env.from_string(code_fix_devin_prompt)
+    prompt = template.render(data)
+    prompt = _adjust_string_length(prompt)
+
+    try:
+        client.send_message(
+            session_id=devin_info.session_id,
+            message=prompt,
+        )
+    except Exception as e:
+        raise RuntimeError("Failed to send message to Devin") from e

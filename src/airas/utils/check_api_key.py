@@ -9,6 +9,8 @@ def check_api_key(
     devin_api_key_check: bool = False,
     fire_crawl_api_key_check: bool = False,
     github_personal_access_token_check: bool = False,
+    qdrant_api_key_check: bool = False,
+    huggingface_api_key_check: bool = False,
 ) -> None:
     missing_keys = []
 
@@ -54,6 +56,26 @@ def check_api_key(
                     "name": "GitHub Personal Access Token",
                     "env": "GITHUB_PERSONAL_ACCESS_TOKEN",
                     "url": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token",
+                }
+            )
+
+    if qdrant_api_key_check:
+        if not os.getenv("QDRANT_API_KEY"):
+            missing_keys.append(
+                {
+                    "name": "Qdrant API Key",
+                    "env": "QDRANT_API_KEY",
+                    "url": "If you require a qdrant key, please contact the AIRAS administrator.",
+                }
+            )
+
+    if huggingface_api_key_check:
+        if not os.getenv("HF_TOKEN"):
+            missing_keys.append(
+                {
+                    "name": "Hugging Face API Key",
+                    "env": "HF_TOKEN",
+                    "url": "https://huggingface.co/settings/tokens",
                 }
             )
 

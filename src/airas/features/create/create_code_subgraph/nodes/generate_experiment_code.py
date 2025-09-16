@@ -33,7 +33,9 @@ def generate_experiment_code(
 ) -> str:
     # TODO: We will first verify openAI's reasoning.
     # client = LLMFacedeClient(llm_name=llm_name, reasoning_effort="high", thinking_budget=32768)
-    client = OpenAIClient(reasoning_effort="high")
+    # client = OpenAIClient(reasoning_effort="high")
+    # TODO: プロンプト調整後に上記で検証
+    client = OpenAIClient()
     env = Environment()
 
     template = env.from_string(generate_experiment_code_prompt)

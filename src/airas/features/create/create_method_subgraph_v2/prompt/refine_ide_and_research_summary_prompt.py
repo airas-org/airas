@@ -10,6 +10,7 @@ You are an accomplished researcher in the field of machine learning. Based on th
 - Pay close attention to how each prior study builds upon earlier work and which limitations remain unresolved. Organize this information to form a clear understanding of the current research landscape.
 - Identify the key gaps, challenges, or unmet needs that persist across these studies. Also, consider whether methods or concepts from other domains could help address these limitations.
 - Reflect on unexplored aspects or areas for improvement (e.g., new techniques, new evaluation metrics, novel datasets, or methods for generalizing findings). Ensure that the refined idea is broadly applicable and not overly dependent on a specific dataset or model.
+- Please limit research ideas to those that can be validated with a Python script.
 
 # Research Topic
 {{ research_topic }}

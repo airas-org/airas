@@ -57,7 +57,7 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
     def __init__(
         self,
         llm_mapping: dict[str, str] | ExtractReferenceTitlesLLMMapping | None = None,
-        paper_retrieval_limit: int | None = None,
+        num_reference_paper: int | None = None,
     ):
         if llm_mapping is None:
             self.llm_mapping = ExtractReferenceTitlesLLMMapping()
@@ -77,7 +77,7 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or ExtractReferenceTitlesLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
-        self.paper_retrieval_limit = paper_retrieval_limit
+        self.num_reference_paper = num_reference_paper
 
     @extract_reference_titles_timed
     def _extract_reference_titles(
@@ -87,9 +87,9 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.extract_reference_titles,
             research_study_list=state["research_study_list"],
         )
-        if self.paper_retrieval_limit is not None:
+        if self.num_reference_paper is not None:
             reference_research_study_list = reference_research_study_list[
-                : self.paper_retrieval_limit
+                : self.num_reference_paper
             ]
         return {"reference_research_study_list": reference_research_study_list}
 

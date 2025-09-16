@@ -8,6 +8,7 @@ You are an accomplished researcher in machine learning. Based on the instruction
 - Pay attention to how each study builds upon previous work and which limitations remain unresolved. Organize this information to form a clear picture of the current research landscape.
 - Identify significant gaps, challenges, or unmet needs that persist across these studies. Consider whether there are opportunities to apply methods or concepts from other domains to overcome these limitations.
 - Reflect on aspects that have not yet been explored or could be improved (e.g., new techniques, new evaluation metrics, novel datasets, or approaches to generalizing findings). Ensure that your idea is broadly applicable and not overly dependent on a specific dataset or model.
+- Please limit research ideas to those that can be validated with a Python script.
 - Output content:
     Based on the above analysis, propose a new research idea that meaningfully advances the field. Your output should include:
     - open_problems
