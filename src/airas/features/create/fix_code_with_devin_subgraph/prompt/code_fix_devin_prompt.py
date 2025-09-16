@@ -33,6 +33,7 @@ Do not create a new branch under any circumstances; commit the changes to the sp
     - Experiment details
     - Concrete numerical data
     - File path of the figure visualizing the experimental results
+- If the required Python packages are missing, modify the pyproject.toml file so that they can be installed.
 - Be sure to perform a test run and confirm that it executes successfully. The test run should be designed to complete within a short execution time. Implement the test execution so that it can be run as a smoke test.
 - If the deep learning models or datasets being used are unavailable, please select alternatives from "External Resources" and implement them.
 - If similar errors appear in the Previous Error History, consider alternative approaches rather than repeating the same fixes
