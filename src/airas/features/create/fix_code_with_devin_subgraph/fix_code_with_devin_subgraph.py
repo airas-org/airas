@@ -129,7 +129,7 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
             "initial_session_fix_code_with_devin",
             self._initial_session_fix_code_with_devin,
         )
-        graph_builder.add_node("fix_code_with_devin_node", self._fix_code_with_devin)
+        graph_builder.add_node("fix_code_with_devin", self._fix_code_with_devin)
         graph_builder.add_node(
             "check_devin_completion_node", self._check_devin_completion_node
         )
@@ -139,16 +139,14 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
             "initialize",
             self._check_devin_session,
             {
-                "pass": "fix_code_with_devin_node",
+                "pass": "fix_code_with_devin",
                 "create_devin_session": "initial_session_fix_code_with_devin",
             },
         )
         graph_builder.add_edge(
             "initial_session_fix_code_with_devin", "check_devin_completion_node"
         )
-        graph_builder.add_edge(
-            "fix_code_with_devin_node", "check_devin_completion_node"
-        )
+        graph_builder.add_edge("fix_code_with_devin", "check_devin_completion_node")
         graph_builder.add_edge("check_devin_completion_node", END)
         return graph_builder.compile()
 

@@ -74,7 +74,8 @@ def _adjust_string_length(prompt: str) -> str:
 def _retrieve_huggingface_data(external_resources: ExternalResources) -> str:
     hugging_face_data = external_resources.hugging_face.model_dump()
     hugging_face_data_str = ""
-    model_list = hugging_face_data.get("model_data", [])
+    hugging_face_data_str += "## Model\n"
+    model_list = hugging_face_data.get("models", [])
     for model in model_list:
         if model.get("readme", "") == "":
             continue
@@ -82,7 +83,8 @@ def _retrieve_huggingface_data(external_resources: ExternalResources) -> str:
 Model Name: {model["id"]}
 README:{model["extracted_code"]}
 """
-    dataset_data = hugging_face_data.get("dataset_data", [])
+    hugging_face_data_str += "\n## Dataset\n"
+    dataset_data = hugging_face_data.get("datasets", [])
     for dataset in dataset_data:
         if dataset.get("readme", "") == "":
             continue

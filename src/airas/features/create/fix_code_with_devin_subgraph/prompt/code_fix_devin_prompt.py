@@ -29,18 +29,28 @@ Do not create a new branch under any circumstances; commit the changes to the sp
             - Use PyYAML for configuration loading
     - pyproject.toml...Analyze the "Experiment Code" header and import statements. Configure the project dependencies and package information in TOML format.
                         Dependencies must be an array format like `dependencies = ["numpy>=1.21.0", "torch>=1.9.0"]`, NOT a mapping format like `[project.dependencies]` with key-value pairs.
-- Ensure that the code can be executed without errors after the fixes.
 - When executing the script, ensure that the following information is always printed to standard output.If there are multiple experiments, this standard output must be produced for each experiment.
     - Experiment details
     - Concrete numerical data
     - File path of the figure visualizing the experimental results
-- Be sure to perform a test run and confirm that it executes successfully. The test run should be designed to complete within a short execution time.
+- Be sure to perform a test run and confirm that it executes successfully. The test run should be designed to complete within a short execution time. Implement the test execution so that it can be run as a smoke test.
 - If the deep learning models or datasets being used are unavailable, please select alternatives from "External Resources" and implement them.
 - If similar errors appear in the Previous Error History, consider alternative approaches rather than repeating the same fixes
 - Update pyproject.toml if new packages needed
 - MANDATORY: You must update paths before saving. The following paths are required:
     - Image paths: .research/iteration{{ experiment_iteration }}/images (modify any existing image save paths to use this exact directory)
     - JSON paths: .research/iteration{{ experiment_iteration }}/ (Save each experiment's results as separate JSON files in this directory and print each JSON contents to standard output for verification)
+    - Do not push the .research/iteration{{ experiment_iteration }}/ directory containing the test execution results to the remote repository; only update the implementation paths.
+
+## Command Line Execution Requirements
+The generated main.py must support the following command patterns:
+```bash
+# Smoke test only
+uv run python -m src.main --smoke-test
+
+# Full experiment only
+uv run python -m src.main --full-experiment
+```
 
 # Error:
 {{ new_method.experimental_results.error }}
