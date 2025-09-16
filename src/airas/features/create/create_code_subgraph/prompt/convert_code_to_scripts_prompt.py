@@ -30,9 +30,10 @@ The “Experiment Code” section contains a finished, runnable script. Your tas
         - full_experiment.yaml: Full-scale configuration for complete experimental runs
     - src/
         - train.py...Extract all functions and classes related to model.
-        - evaluate.py...Extract all functions and classes related to model evaluation, statistical analysis, and plotting.
+        - evaluate.py...Extract all functions and classes related to model evaluation, statistical analysis, and plotting. Please implement the code so that the evaluation results are always output to standard output.
         - preprocess.py...Extract any data loading or preprocessing logic.
         - main.py...Create the main execution script with command-line argument support:
+            - Please make sure to always create main.py.
             - Add argparse to handle --smoke-test and --full-experiment flags
             - Load appropriate config file based on the flag (smoke_test.yaml or full_experiment.yaml)
             - Use relative imports (e.g., `from .train import ...`) to orchestrate the experimental workflow

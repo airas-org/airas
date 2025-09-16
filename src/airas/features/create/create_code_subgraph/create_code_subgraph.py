@@ -1,4 +1,5 @@
 import logging
+from typing import cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -206,7 +207,7 @@ class CreateCodeSubgraph(BaseSubgraph):
         experiment_code_str = generate_experiment_code(
             llm_name=self.llm_mapping.generate_experiment_code,
             new_method=state["new_method"],
-            runner_type=self.runner_type,
+            runner_type=cast(RunnerType, self.runner_type),
             secret_names=self.secret_names,
             full_experiment_validation=state["full_experiment_validation"],
             feedback_text=feedback[-1]
@@ -229,7 +230,7 @@ class CreateCodeSubgraph(BaseSubgraph):
             experiment_code_str=state["experiment_code_str"],
             new_method=state["new_method"],
             secret_names=self.secret_names,
-            runner_type=self.runner_type,
+            runner_type=cast(RunnerType, self.runner_type),
             experiment_iteration=state["experiment_iteration"],
             file_static_validations=state["file_static_validations"],
         )

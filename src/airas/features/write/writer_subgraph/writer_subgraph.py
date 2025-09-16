@@ -64,7 +64,7 @@ class WriterSubgraph(BaseSubgraph):
     def __init__(
         self,
         llm_mapping: dict[str, str] | WriterLLMMapping | None = None,
-        max_refinement_count: int = 2,
+        writing_refinement_rounds: int = 2,
     ):
         if llm_mapping is None:
             self.llm_mapping = WriterLLMMapping()
@@ -78,7 +78,7 @@ class WriterSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or WriterLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
-        self.max_refinement_count = max_refinement_count
+        self.writing_refinement_rounds = writing_refinement_rounds
         check_api_key(llm_api_key_check=True)
 
     @writer_timed
@@ -121,7 +121,7 @@ class WriterSubgraph(BaseSubgraph):
 
     @writer_timed
     def should_finish_refinement(self, state: WriterSubgraphState) -> str:
-        if state["refinement_count"] >= self.max_refinement_count:
+        if state["refinement_count"] >= self.writing_refinement_rounds:
             return "end"
         return "refine"
 
@@ -154,7 +154,7 @@ def main():
     input = writer_subgraph_input_data
 
     result = WriterSubgraph(
-        max_refinement_count=refine_round,
+        writing_refinement_rounds=refine_round,
     ).run(input)
     print(f"result: {result}")
 

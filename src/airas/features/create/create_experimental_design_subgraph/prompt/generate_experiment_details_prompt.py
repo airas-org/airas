@@ -23,9 +23,9 @@ You are a cutting-edge AI researcher. Based on the new method described in # New
     - Computation of FLOPs, training/inference time, memory usage, and cost / wall-clock time
     - Example experimental code
 - In addition, describe the experimental details as thoroughly as possible. It is acceptable if the output is long.
-- Include example experimental code if available.
 - Avoid excessive redundancy across experiments. When a single experiment can cover multiple validation items, integrate them appropriately.
 - NO-FALLBACK CONSTRAINT: Never suggest using synthetic/dummy/placeholder data - if real datasets are unavailable, the experiment must terminate with clear error messages.
+- "Reference Information from Previous Iteration"
 
 ## Output Format
 Please provide:

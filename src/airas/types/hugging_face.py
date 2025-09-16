@@ -112,6 +112,9 @@ class HuggingFaceResource(BaseModel):
     used_storage: Optional[int] = Field(
         None, description="Used storage in bytes", alias="usedStorage"
     )
+    extracted_code: Optional[str] = Field(
+        None, description="Code snippets extracted from the README"
+    )
 
     class Config:
         populate_by_name = True
