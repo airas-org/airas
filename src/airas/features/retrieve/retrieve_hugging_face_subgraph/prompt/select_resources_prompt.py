@@ -1,4 +1,4 @@
-select_resources_prompt = """\
+select_resources_prompt = """
 You are a machine learning researcher tasked with selecting the most relevant models and datasets from HuggingFace search results for a specific research experiment.
 
 # Instructions
