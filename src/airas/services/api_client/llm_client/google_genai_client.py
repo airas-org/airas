@@ -94,8 +94,6 @@ class GoogleGenAIClient:
 
     def _get_params(self) -> dict[str, Any]:
         params: dict[str, Any] = {}
-        # TODO: The following line currently causes a `pydantic.ValidationError` when running tests.
-
         # TODO: Add error handling for models that support thinking_config and validate thinking_budget ranges
         # Currently supports gemini-2.5-pro with thinking_budget: 0 (off), 1024-32768 (fixed), -1 (dynamic)
         if self.thinking_budget is not None:
