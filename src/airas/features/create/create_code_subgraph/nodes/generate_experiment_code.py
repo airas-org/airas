@@ -5,12 +5,15 @@ from airas.config.runner_type_info import RunnerType, runner_info_dict
 from airas.features.create.create_code_subgraph.prompt.generate_experiment_code_prompt import (
     generate_experiment_code_prompt,
 )
-from airas.services.api_client.llm_client.anthropic_client import CLAUDE_MODEL
 
 # from airas.services.api_client.llm_client.llm_facade_client import (
 #     LLM_MODEL,
 #     LLMFacadeClient,
 # )
+from airas.features.create.fix_code_with_devin_subgraph.nodes.initial_session_fix_code_with_devin import (
+    _retrieve_huggingface_data,
+)
+from airas.services.api_client.llm_client.anthropic_client import CLAUDE_MODEL
 from airas.services.api_client.llm_client.openai_client import (
     OPENAI_MODEL,
     OpenAIClient,
@@ -45,6 +48,9 @@ def generate_experiment_code(
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "secret_names": secret_names,
         "consistency_feedback": feedback_text,
+        "huggingface_data": _retrieve_huggingface_data(
+            new_method.experimental_design.external_resources
+        ),
         "full_experiment_validation": full_experiment_validation,
     }
     messages = template.render(data)
