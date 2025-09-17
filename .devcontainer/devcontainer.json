@@ -4,6 +4,9 @@
 	"service": "airas",
 	"workspaceFolder": "/workspaces/airas",
     "overrideCommand": true,
+    "mounts": [
+        "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind"
+    ],
 	"customizations": {
 		"vscode": {
 			"extensions": [

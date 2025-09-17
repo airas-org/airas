@@ -90,10 +90,8 @@ The following planning information provides structured guidance for implementati
 - Strategy: {{ new_method.experimental_design.experiment_strategy }}
 - Details: {{ new_method.experimental_design.experiment_details }}
 
-{% if new_method.experimental_design.external_resources %}
 # External Resources
-{{ new_method.experimental_design.external_resources }}
-{% endif %}
+{{ huggingface_data }}
 
 ---
 {% if consistency_feedback %}

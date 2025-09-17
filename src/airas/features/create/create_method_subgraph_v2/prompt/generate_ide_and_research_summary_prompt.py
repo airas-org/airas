@@ -8,6 +8,7 @@ You are an accomplished researcher in machine learning. Based on the instruction
 - Pay attention to how each study builds upon previous work and which limitations remain unresolved. Organize this information to form a clear picture of the current research landscape.
 - Identify significant gaps, challenges, or unmet needs that persist across these studies. Consider whether there are opportunities to apply methods or concepts from other domains to overcome these limitations.
 - Reflect on aspects that have not yet been explored or could be improved (e.g., new techniques, new evaluation metrics, novel datasets, or approaches to generalizing findings). Ensure that your idea is broadly applicable and not overly dependent on a specific dataset or model.
+- When selecting existing studies as the basis for the new method, please prioritize those that have Python implementations available.
 - Please limit research ideas to those that can be validated with a Python script.
 - Output content:
     Based on the above analysis, propose a new research idea that meaningfully advances the field. Your output should include:
@@ -21,8 +22,11 @@ You are an accomplished researcher in machine learning. Based on the instruction
         - Provide a concrete description of the experiments to demonstrate the effectiveness of the proposed method.
         - Specify which models and datasets will be used, the evaluation metrics for quantitative assessment, and how comparisons will be made with baseline methods.
         - Design experiments to evaluate robustness from multiple perspectives.
-    - result
+    - experimental_code
+        - Output the core Python code of the new research idea to be used in the experiment.
+        - Create it based on the experimental code of the study used as the foundation.
+    - expected_result
         - Describe the expected experimental results based on the "experimental_setup."
-    - conclusion
+    - expected_conclusion
         - Summarize the academic and practical value of the new method based on the experimental results.
         - Discuss its potential for future development."""
