@@ -12,8 +12,10 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_idea import GenerateIdea, ResearchIdea
 from airas.types.research_study import ResearchStudy
+from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -22,6 +24,7 @@ def generate_idea_and_research_summary(
     llm_name: LLM_MODEL,
     research_topic: str,
     research_study_list: list[ResearchStudy],
+    github_repository_info: GitHubRepositoryInfo,
     client: LLMFacadeClient | None = None,
 ) -> ResearchIdea:
     client = client or LLMFacadeClient(llm_name=llm_name)
@@ -39,5 +42,12 @@ def generate_idea_and_research_summary(
     )
     if output is None:
         raise ValueError("No response from LLM in idea_generator.")
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=output["new_idea"],
+        subgraph_name="create_method_subgraph_v2",
+        node_name="generate_idea_and_research_summary",
+    )
     new_idea_info = ResearchIdea(idea=GenerateIdea(**output))
     return new_idea_info
