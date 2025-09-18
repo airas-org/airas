@@ -10,6 +10,7 @@ from airas.services.api_client.devin_client import DevinClient
 from airas.types.devin import DevinInfo
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ExternalResources, ResearchHypothesis
+from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -45,12 +46,18 @@ def initial_session_fix_code_with_devin(
 
     env = Environment()
     template = env.from_string(initial_session_fix_code_with_devin_prompt)
-    prompt = template.render(data)
+    messages = template.render(data)
     # NOTE:適切にトリミングを行う、現状だと出力が長すぎて他の情報が与えられていない
-    prompt = _adjust_string_length(prompt)
-
+    messages = _adjust_string_length(messages)
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output="Devin session",
+        subgraph_name="fix_code_with_devin_subgraph",
+        node_name="initial_session_fix_code_with_devin",
+    )
     try:
-        response = client.create_session(prompt_template=prompt)
+        response = client.create_session(prompt_template=messages)
     except Exception as e:
         raise RuntimeError("Failed to create Devin session") from e
 

@@ -12,6 +12,7 @@ from airas.features.analysis.analytic_subgraph.input_data import (
 )
 from airas.features.analysis.analytic_subgraph.nodes.analytic_node import analytic_node
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ExperimentalAnalysis, ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -29,6 +30,7 @@ class AnalyticLLMMapping(BaseModel):
 
 class AnalyticSubgraphInputState(TypedDict):
     new_method: ResearchHypothesis
+    github_repository_info: GitHubRepositoryInfo
 
 
 class AnalyticSubgraphHiddenState(TypedDict):
@@ -83,6 +85,7 @@ class AnalyticSubgraph(BaseSubgraph):
         analysis_report = analytic_node(
             llm_name=self.llm_mapping.analytic_node,
             new_method=new_method,
+            github_repository_info=state["github_repository_info"],
         )
         new_method.experimental_analysis = ExperimentalAnalysis(
             analysis_report=analysis_report

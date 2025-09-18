@@ -10,6 +10,9 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.github import GitHubRepositoryInfo
+from airas.types.research_hypothesis import ResearchHypothesis
+from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -20,7 +23,8 @@ class LLMOutput(BaseModel):
 
 def analytic_node(
     llm_name: LLM_MODEL,
-    new_method,
+    new_method: ResearchHypothesis,
+    github_repository_info: GitHubRepositoryInfo,
     client: LLMFacadeClient | None = None,
 ) -> str | None:
     if client is None:
@@ -58,4 +62,11 @@ def analytic_node(
     output, cost = client.structured_outputs(message=messages, data_model=LLMOutput)
     if output is None:
         raise ValueError("No response from LLM in analytic_node.")
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=str(output),
+        subgraph_name="analytic_subgraph",
+        node_name="analytic_node",
+    )
     return output["analysis_report"]

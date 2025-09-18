@@ -9,7 +9,9 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ExperimentalDesign, ResearchHypothesis
+from airas.utils.save_prompt import save_io_on_github
 
 
 class LLMOutput(BaseModel):
@@ -20,6 +22,7 @@ def generate_experiment_strategy(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
     runner_type: RunnerType,
+    github_repository_info: GitHubRepositoryInfo,
     feedback_text: str | None = None,
 ) -> ResearchHypothesis:
     client = LLMFacadeClient(llm_name=llm_name)
@@ -39,7 +42,13 @@ def generate_experiment_strategy(
     )
     if output is None:
         raise ValueError("No response from LLM in generate_experiment_strategy.")
-
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=str(output),
+        subgraph_name="create_experimental_design_subgraph",
+        node_name="generate_experiment_strategy",
+    )
     if new_method.experimental_design is None:
         new_method.experimental_design = ExperimentalDesign()
     new_method.experimental_design.experiment_strategy = output["experiment_strategy"]

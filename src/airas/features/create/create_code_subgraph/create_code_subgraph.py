@@ -146,6 +146,7 @@ class CreateCodeSubgraph(BaseSubgraph):
             runner_type=cast(RunnerType, self.runner_type),
             secret_names=self.secret_names,
             full_experiment_validation=state["full_experiment_validation"],
+            github_repository_info=state["github_repository_info"],
             feedback_text=feedback[-1]
             if (feedback := state.get("consistency_feedback"))
             else None,
@@ -165,6 +166,7 @@ class CreateCodeSubgraph(BaseSubgraph):
             runner_type=cast(RunnerType, self.runner_type),
             experiment_iteration=state["experiment_iteration"],
             file_static_validations=state["file_static_validations"],
+            github_repository_info=state["github_repository_info"],
         )
         return {"new_method": new_method}
 
@@ -175,6 +177,7 @@ class CreateCodeSubgraph(BaseSubgraph):
         full_experiment_validation = validate_full_experiment_code(
             llm_name=self.llm_mapping.validate_full_experiment_code,
             new_method=state["new_method"],
+            github_repository_info=state["github_repository_info"],
         )
         return {
             "full_experiment_validation": full_experiment_validation,
