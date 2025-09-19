@@ -1,3 +1,4 @@
+import json
 from logging import getLogger
 
 from jinja2 import Environment
@@ -45,7 +46,7 @@ def generate_idea_and_research_summary(
     save_io_on_github(
         github_repository_info=github_repository_info,
         input=messages,
-        output=output["new_idea"],
+        output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_method_subgraph_v2",
         node_name="generate_idea_and_research_summary",
     )

@@ -14,6 +14,7 @@ from airas.features.write.writer_subgraph.nodes.generate_note import generate_no
 from airas.features.write.writer_subgraph.nodes.refine_paper import refine_paper
 from airas.features.write.writer_subgraph.nodes.write_paper import write_paper
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.types.research_study import ResearchStudy
@@ -37,6 +38,7 @@ class WriterSubgraphInputState(TypedDict):
     reference_research_study_list: list[ResearchStudy]
     references_bib: str
     # TODO: Enriching refenrence candidate information
+    github_repository_info: GitHubRepositoryInfo
 
 
 class WriterSubgraphHiddenState(TypedDict):

@@ -1,3 +1,4 @@
+import json
 from logging import getLogger
 
 from jinja2 import Environment
@@ -5,6 +6,9 @@ from pydantic import BaseModel
 
 from airas.features.create.create_code_subgraph.prompt.validate_full_experiment_prompt import (
     validate_full_experiment_prompt,
+)
+from airas.features.create.fix_code_with_devin_subgraph.nodes.initial_session_fix_code_with_devin import (
+    _retrieve_huggingface_data,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
@@ -35,7 +39,14 @@ def validate_full_experiment_code(
     env = Environment()
     template = env.from_string(prompt_template)
 
-    messages = template.render({"new_method": new_method.model_dump()})
+    messages = template.render(
+        {
+            "new_method": new_method.model_dump(),
+            "huggingface_data": _retrieve_huggingface_data(
+                new_method.experimental_design.external_resources
+            ),
+        }
+    )
     output, _ = client.structured_outputs(message=messages, data_model=ValidationOutput)
 
     if output is None:
@@ -46,7 +57,7 @@ def validate_full_experiment_code(
     save_io_on_github(
         github_repository_info=github_repository_info,
         input=messages,
-        output=str(output),
+        output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_code_subgraph",
         node_name="validate_full_experiment_code",
     )

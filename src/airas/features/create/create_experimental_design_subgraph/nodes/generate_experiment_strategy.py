@@ -1,3 +1,5 @@
+import json
+
 from jinja2 import Environment
 from pydantic import BaseModel
 
@@ -45,7 +47,7 @@ def generate_experiment_strategy(
     save_io_on_github(
         github_repository_info=github_repository_info,
         input=messages,
-        output=str(output),
+        output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_experimental_design_subgraph",
         node_name="generate_experiment_strategy",
     )

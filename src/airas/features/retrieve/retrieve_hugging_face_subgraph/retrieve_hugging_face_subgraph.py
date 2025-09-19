@@ -20,6 +20,7 @@ from airas.features.retrieve.retrieve_hugging_face_subgraph.nodes.select_resourc
     select_resources,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.hugging_face import HuggingFace
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
@@ -47,6 +48,7 @@ class RetrieveHuggingFaceLLMMapping(BaseModel):
 
 class RetrieveHuggingFaceInputState(TypedDict):
     new_method: ResearchHypothesis
+    github_repository_info: GitHubRepositoryInfo
 
 
 class RetrieveHuggingFaceHiddenState(TypedDict):
@@ -130,6 +132,7 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
         updated_method = extract_code_in_readme(
             llm_name=self.llm_mapping.extract_code_in_readme,
             new_method=state["new_method"],
+            github_repository_info=state["github_repository_info"],
         )
         return {"new_method": updated_method}
 

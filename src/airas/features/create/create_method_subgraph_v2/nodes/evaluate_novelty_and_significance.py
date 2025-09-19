@@ -1,3 +1,5 @@
+import json
+
 from jinja2 import Environment
 
 from airas.features.create.create_method_subgraph.nodes.idea_generator import (
@@ -54,10 +56,12 @@ def evaluate_novelty_and_significance(
 
 
 def parse_new_idea_info(new_idea: GenerateIdea) -> str:
-    return f"""\
-Open Problems: {new_idea.open_problems}
-Methods: {new_idea.methods}
-Experimental Setup: {new_idea.experimental_setup}
-Experimental Code: {new_idea.experimental_code}
-Expected Result: {new_idea.expected_result}
-Expected Conclusion: {new_idea.expected_conclusion}"""
+    data_dict = {
+        "Open Problems": new_idea.open_problems,
+        "Methods": new_idea.methods,
+        "Experimental Setup": new_idea.experimental_setup,
+        "Experimental Code": new_idea.experimental_code,
+        "Expected Result": new_idea.expected_result,
+        "Expected Conclusion": new_idea.expected_conclusion,
+    }
+    return json.dumps(data_dict, ensure_ascii=False, indent=4)

@@ -1,4 +1,5 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 from tqdm import tqdm
 
@@ -71,13 +72,13 @@ RUNNER_TYPE = ["ubuntu-latest", "gpu-runner", "A100_80GM×1", "A100_80GM×8"]
 runner_type = "A100_80GM×1"
 secret_names = ["HF_TOKEN"]
 
-n_queries = 3  # 論文検索時のサブクエリの数
-max_results_per_query = 8  # 論文検索時の各サブクエリに対する論文数
-num_reference_paper = 5  # 論文作成時に追加で参照する論文数
-method_refinement_rounds = 4  # 新規手法の改良回数
-num_retrieve_related_papers = 4  # 新規手法作成時に新規性を確認するのに取得する論文数
+n_queries = 2  # 論文検索時のサブクエリの数
+max_results_per_query = 2  # 論文検索時の各サブクエリに対する論文数
+num_reference_paper = 2  # 論文作成時に追加で参照する論文数
+method_refinement_rounds = 1  # 新規手法の改良回数
+num_retrieve_related_papers = 2  # 新規手法作成時に新規性を確認するのに取得する論文数
 max_huggingface_results_per_search = (
-    20  # modelやdatasetごとのHuggingFaceからの候補の取得数
+    10  # modelやdatasetごとのHuggingFaceからの候補の取得数
 )
 # CreateCodeSubgraph parameters
 max_static_validations = 2  # 静的解析の最大実行回数
@@ -85,7 +86,7 @@ max_full_experiment_validations = 2
 use_structured_output_for_coding = False  # コード生成に構造化出力を使用するか
 
 writing_refinement_rounds = 3  # 論文の改良回数
-max_filtered_references = 10  # 論文中で引用する参考文献の最大数
+max_filtered_references = 5  # 論文中で引用する参考文献の最大数
 max_chktex_revisions = 3  # LaTeXの文法チェックの修正回数
 max_compile_revisions = 3  # LaTeXのコンパイルエラー修正
 
@@ -303,7 +304,7 @@ def execute_workflow(
     subgraph_list: list = subgraph_list,
 ):
     for index, research_topic in enumerate(research_topic_list):
-        index = index + 1
+        # index = index + 1
         print(f"index:{index}")
         state = {
             "github_repository_info": GitHubRepositoryInfo(
@@ -322,20 +323,31 @@ def execute_workflow(
 
 
 if __name__ == "__main__":
-    github_owner = "auto-res2"
-    repository_name = "tanaka-20250917-v3"
+    # github_owner = "auto-res2"
+    # repository_name = "tanaka-20250919-v2"
+    # research_topic_list = [
+    #     "LLMのfine-tuningの新しい損失関数の提案",
+    #     "Diffusion modelの学習時の損失関数の改善"
+    # ]
+    # execute_workflow(
+    #     github_owner, repository_name, research_topic_list=research_topic_list
+    # )
+    max_workers = 5
+    github_owner = ["auto-res2"] * max_workers
+    repository_name = ["tanaka-20250919-v2-{i}".format(i=i) for i in range(max_workers)]
     research_topic_list = [
-        "Diffusion modelの学習時の損失関数の改善",
-        # "LLMのfine-tuningの新しい損失関数の提案",
-        # "Diffusion modelの学習時の損失関数の改善",
-        # "LLMのfine-tuningの新しい損失関数の提案"
-        # "Variational Autoencoderを使った新しい異常検知方法",
-        # "Diffusion Transformerの新しい知識蒸留"
-        # "Variational Autoencoderを使った新しい異常検知方法",
-        # "Transformerを用いた時系列データの新規手法",
-        # "Diffusion modelの速度改善",
-        "Diffusion Transformersの改善",
+        [
+            "LLMのfine-tuningの新しい損失関数の提案",
+            "Diffusion modelの学習時の損失関数の改善",
+        ]
+        for _ in range(max_workers)
     ]
-    execute_workflow(
-        github_owner, repository_name, research_topic_list=research_topic_list
-    )
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        results = list(
+            executor.map(
+                execute_workflow, github_owner, repository_name, research_topic_list
+            )
+        )
+
+    print("Results:", results)

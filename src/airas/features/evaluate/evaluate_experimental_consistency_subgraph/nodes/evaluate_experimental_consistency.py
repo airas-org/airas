@@ -1,3 +1,4 @@
+import json
 from logging import getLogger
 
 from jinja2 import Environment
@@ -44,7 +45,7 @@ def evaluate_experimental_consistency(
     save_io_on_github(
         github_repository_info=github_repository_info,
         input=messages,
-        output=str(output),
+        output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="evaluate_experimental_consistency_subgraph",
         node_name="evaluate_experimental_consistency",
     )

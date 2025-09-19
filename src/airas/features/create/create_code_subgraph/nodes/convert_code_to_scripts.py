@@ -1,3 +1,4 @@
+import json
 import logging
 
 from jinja2 import Environment
@@ -54,7 +55,7 @@ def convert_code_to_scripts(
     save_io_on_github(
         github_repository_info=github_repository_info,
         input=messages,
-        output=str(output),
+        output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_code_subgraph",
         node_name="convert_code_to_scripts",
     )

@@ -17,6 +17,7 @@ from airas.features.retrieve.summarize_paper_subgraph.prompt.summarize_paper_pro
     summarize_paper_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import ResearchStudy
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -34,6 +35,7 @@ class SummarizePaperLLMMapping(BaseModel):
 
 class SummarizePaperInputState(TypedDict):
     research_study_list: list[ResearchStudy]
+    github_repository_info: GitHubRepositoryInfo
 
 
 class SummarizePaperHiddenState(TypedDict): ...
@@ -80,6 +82,7 @@ class SummarizePaperSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.summarize_paper,
             prompt_template=summarize_paper_prompt,
             research_study_list=state["research_study_list"],
+            github_repository_info=state["github_repository_info"],
         )
         return {"research_study_list": research_study_list}
 

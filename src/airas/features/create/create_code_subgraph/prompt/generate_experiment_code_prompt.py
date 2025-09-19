@@ -4,10 +4,9 @@ Based on the new method described in # Current Research Method, the experimental
 please present detailed code for conducting rigorous experiments that will generate publication-worthy results according to the instructions below.
 
 # Instructions
-
 ## Basic Requirements
 - ZERO PLACEHOLDER POLICY: Generate complete, production-ready experiments that work immediately without any modifications. NO placeholders, NO synthetic data, NO approximations, NO incomplete implementations.
-- Real Data Only: Use actual datasets from External Resources exactly as specified. If multiple datasets are mentioned in the experimental design, implement ALL of them - not just one.
+- Real Data Only: Use actual datasets from Hugging Face code exactly as specified. If multiple datasets are mentioned in the experimental design, implement ALL of them - not just one.
 - Complete Implementation: Every component must be fully functional. No "omitted for brevity", no "simplified version", no "approximation" comments. Everything must work end-to-end.
 - Exact Configuration Match: Full experiment configuration must match the experimental design exactly - correct layer counts, all specified datasets, complete parameter ranges.
 - Dual Configuration System: Generate two YAML configuration files:
@@ -82,7 +81,7 @@ File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`
 **Critical Issue Detected**: The previous code generation failed full experiment validation:
 {{ issue }}
 
-**Required Action**: Address this validation failure by ensuring your generated code strictly follows the External Resources requirements and implements genuine full experiments using real datasets and models.
+**Required Action**: Address this validation failure by ensuring your generated code strictly follows the Hugging Face code requirements and implements genuine full experiments using real datasets and models.
 {% endif %}
 {% endif %}
 
@@ -96,10 +95,9 @@ File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`
 - Strategy: {{ new_method.experimental_design.experiment_strategy }}
 - Details: {{ new_method.experimental_design.experiment_details }}
 
-# External Resources
+# Hugging Face code
 {{ huggingface_data }}
 
----
 {% if consistency_feedback %}
 ## Consistency Feedback
 **Important**: Address the following feedback from previous experimental consistency evaluation:

@@ -1,3 +1,4 @@
+import json
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -11,7 +12,9 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import ResearchStudy
+from airas.utils.save_prompt import save_io_on_github
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +29,8 @@ def _extract_experimental_info_from_study(
     code_str: str,
     template: str,
     client: LLMFacadeClient,
+    github_repository_info: GitHubRepositoryInfo,
+    index: int,
 ) -> ResearchStudy:
     title = research_study.title or "N/A"
 
@@ -62,7 +67,13 @@ def _extract_experimental_info_from_study(
     if not output or not isinstance(output, dict):
         logger.error(f"No response from LLM for '{title}'")
         return research_study
-
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=json.dumps(output, ensure_ascii=False, indent=4),
+        subgraph_name="retrieve_code_subgraph",
+        node_name=f"extract_experimental_info_{index}",
+    )
     research_study.llm_extracted_info.experimental_code = output["experimental_code"]
     research_study.llm_extracted_info.experimental_info = output["experimental_info"]
     logger.info(f"Successfully extracted experimental info for '{title}'")
@@ -74,6 +85,7 @@ def extract_experimental_info(
     llm_name: LLM_MODEL,
     research_study_list: list[ResearchStudy],
     code_str_list: list[str],
+    github_repository_info: GitHubRepositoryInfo,
     prompt_template: str = extract_experimental_info_prompt,
     client: LLMFacadeClient | None = None,
     max_workers: int = 3,
@@ -97,6 +109,8 @@ def extract_experimental_info(
                 code_str,
                 prompt_template,
                 client,
+                github_repository_info,
+                i,
             ): i
             for i, (study, code_str) in enumerate(
                 zip(research_study_list, code_str_list)  # noqa: B905

@@ -1,3 +1,4 @@
+import json
 from logging import getLogger
 
 from jinja2 import Environment
@@ -86,17 +87,23 @@ def _retrieve_huggingface_data(external_resources: ExternalResources) -> str:
     for model in model_list:
         if model.get("readme", "") == "":
             continue
-        hugging_face_data_str += f"""\
-Model Name: {model["id"]}
-README:{model["extracted_code"]}
-"""
+        hugging_face_model_dict = {
+            "Model Name": model["id"],
+            "Code": model["extracted_code"],
+        }
+        hugging_face_data_str += json.dumps(
+            hugging_face_model_dict, ensure_ascii=False, indent=4
+        )
     hugging_face_data_str += "\n## Dataset\n"
     dataset_data = hugging_face_data.get("datasets", [])
     for dataset in dataset_data:
         if dataset.get("readme", "") == "":
             continue
-        hugging_face_data_str += f"""\
-Dataset Name: {dataset["id"]}
-README:{dataset["extracted_code"]}
-"""
+        hugging_face_dataset_dict = {
+            "Dataset Name": dataset["id"],
+            "Code": dataset["extracted_code"],
+        }
+        hugging_face_data_str += json.dumps(
+            hugging_face_dataset_dict, ensure_ascii=False, indent=4
+        )
     return hugging_face_data_str

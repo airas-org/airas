@@ -49,7 +49,7 @@ def fix_code_with_devin(
         input=message,
         output="Devin session",
         subgraph_name="fix_code_with_devin_subgraph",
-        node_name="fix_code_with_devin",
+        node_name=f"fix_code_with_devin_{experiment_iteration}",
     )
     try:
         client.send_message(
