@@ -101,6 +101,7 @@ class HtmlSubgraph(BaseSubgraph):
             paper_content=state["paper_content"],
             image_file_name_list=image_file_name_list,
             prompt_template=convert_to_html_prompt,
+            github_repository_info=state["github_repository_info"],
         )
         return {"paper_content_html": paper_content_html}
 

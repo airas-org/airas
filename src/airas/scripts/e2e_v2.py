@@ -1,5 +1,4 @@
 import logging
-from concurrent.futures import ThreadPoolExecutor
 
 from tqdm import tqdm
 
@@ -323,31 +322,31 @@ def execute_workflow(
 
 
 if __name__ == "__main__":
-    # github_owner = "auto-res2"
-    # repository_name = "tanaka-20250919-v2"
-    # research_topic_list = [
-    #     "LLMのfine-tuningの新しい損失関数の提案",
-    #     "Diffusion modelの学習時の損失関数の改善"
-    # ]
-    # execute_workflow(
-    #     github_owner, repository_name, research_topic_list=research_topic_list
-    # )
-    max_workers = 5
-    github_owner = ["auto-res2"] * max_workers
-    repository_name = ["tanaka-20250919-v2-{i}".format(i=i) for i in range(max_workers)]
+    github_owner = "auto-res2"
+    repository_name = "tanaka-20250920-v5"
     research_topic_list = [
-        [
-            "LLMのfine-tuningの新しい損失関数の提案",
-            "Diffusion modelの学習時の損失関数の改善",
-        ]
-        for _ in range(max_workers)
+        "LLMのfine-tuningの新しい損失関数の提案",
+        "Diffusion modelの学習時の損失関数の改善",
     ]
+    execute_workflow(
+        github_owner, repository_name, research_topic_list=research_topic_list
+    )
+    # max_workers = 5
+    # github_owner = ["auto-res2"] * max_workers
+    # repository_name = ["tanaka-20250919-v2-{i}".format(i=i) for i in range(max_workers)]
+    # research_topic_list = [
+    #     [
+    #         "Proposal of a new loss function for LLM fine-tuning",
+    #         "Improvement of the loss function during diffusion model training",
+    #     ]
+    #     for _ in range(max_workers)
+    # ]
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        results = list(
-            executor.map(
-                execute_workflow, github_owner, repository_name, research_topic_list
-            )
-        )
+    # with ThreadPoolExecutor(max_workers=5) as executor:
+    #     results = list(
+    #         executor.map(
+    #             execute_workflow, github_owner, repository_name, research_topic_list
+    #         )
+    #     )
 
-    print("Results:", results)
+    # print("Results:", results)

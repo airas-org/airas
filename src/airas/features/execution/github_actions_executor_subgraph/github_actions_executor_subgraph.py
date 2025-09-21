@@ -135,6 +135,7 @@ class GitHubActionsExecutorSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.extract_required_info,
             output_text_data=state["output_text_data"],
             error_text_data=state["error_text_data"],
+            github_repository_info=state["github_repository_info"],
         )
         new_method.experimental_results = ExperimentalResults(
             result=extract_output,

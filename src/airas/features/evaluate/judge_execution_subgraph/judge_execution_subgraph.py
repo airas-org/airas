@@ -15,6 +15,7 @@ from airas.features.evaluate.judge_execution_subgraph.nodes.judge_execution impo
     judge_execution,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -35,6 +36,7 @@ class JudgeExecutionLLMMapping(BaseModel):
 class JudgeExecutionSubgraphInputState(TypedDict):
     new_method: ResearchHypothesis
     executed_flag: bool
+    github_repository_info: GitHubRepositoryInfo
 
 
 class JudgeExecutionSubgraphHiddenState(TypedDict): ...
@@ -85,6 +87,7 @@ class JudgeExecutionSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.judge_execution,
             output_text_data=state["new_method"].experimental_results.result,
             error_text_data=state["new_method"].experimental_results.error,
+            github_repository_info=state["github_repository_info"],
         )
         return {
             "is_experiment_successful": is_experiment_successful,

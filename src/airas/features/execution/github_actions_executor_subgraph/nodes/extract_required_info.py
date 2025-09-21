@@ -1,3 +1,4 @@
+import json
 from logging import getLogger
 
 from jinja2 import Environment
@@ -10,6 +11,8 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.github import GitHubRepositoryInfo
+from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -23,6 +26,7 @@ def extract_required_info(
     llm_name: LLM_MODEL,
     output_text_data: str,
     error_text_data: str,
+    github_repository_info: GitHubRepositoryInfo,
     client: LLMFacadeClient | None = None,
 ) -> tuple[str, str]:
     client = client or LLMFacadeClient(llm_name=llm_name)
@@ -39,5 +43,11 @@ def extract_required_info(
     )
     if output is None:
         raise ValueError("No response from LLM in idea_generator.")
-
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=json.dumps(output, ensure_ascii=False, indent=4),
+        subgraph_name="github_actions_executor_subgraph",
+        node_name="extract_required_info",
+    )
     return output["extracted_output"], output["extracted_error"]

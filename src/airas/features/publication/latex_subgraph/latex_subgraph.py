@@ -139,6 +139,7 @@ class LatexSubgraph(BaseSubgraph):
         latex_formatted_paper_content = convert_to_latex_str(
             llm_name=self.llm_mapping.convert_to_latex,
             paper_content=state["paper_content"],
+            github_repository_info=state["github_repository_info"],
         )
         return {"latex_formatted_paper_content": latex_formatted_paper_content}
 
@@ -201,6 +202,8 @@ class LatexSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.fix_latex_text,
             latex_text=state["latex_text"],
             latex_error_text=state["chktex_log"],
+            github_repository_info=state["github_repository_info"],
+            node_name="fix_latex_from_chktex_log",
         )
         return {
             "latex_text": latex_text,
@@ -241,6 +244,8 @@ class LatexSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.fix_latex_text,
             latex_text=state["latex_text"],
             latex_error_text=state["compile_log"],
+            github_repository_info=state["github_repository_info"],
+            node_name="fix_latex_from_compile_log",
         )
         return {
             "latex_text": latex_text,

@@ -1,3 +1,4 @@
+import json
 from logging import getLogger
 
 from jinja2 import Environment
@@ -9,7 +10,9 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent
+from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -17,6 +20,7 @@ logger = getLogger(__name__)
 def convert_to_latex_str(
     llm_name: LLM_MODEL,
     paper_content: PaperContent,
+    github_repository_info: GitHubRepositoryInfo,
     figures_dir: str = "images",
     client: LLMFacadeClient | None = None,
 ) -> PaperContent:
@@ -43,7 +47,13 @@ def convert_to_latex_str(
     )
     if output is None:
         raise ValueError("Error: No response from the model in convert_to_latex.")
-
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=json.dumps(output, ensure_ascii=False, indent=4),
+        subgraph_name="latex_subgraph",
+        node_name="convert_to_latex_str",
+    )
     missing_fields = [
         field
         for field in PaperContent.model_fields

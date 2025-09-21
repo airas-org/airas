@@ -17,6 +17,7 @@ from airas.features.evaluate.evaluate_paper_results_subgraph.prompts.evaluate_pa
     evaluate_paper_results_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
@@ -36,6 +37,7 @@ class EvaluatePaperResultsLLMMapping(BaseModel):
 class EvaluatePaperResultsSubgraphInputState(TypedDict):
     paper_content: PaperContent
     new_method: ResearchHypothesis
+    github_repository_info: GitHubRepositoryInfo
 
 
 class EvaluatePaperResultsSubgraphHiddenState(TypedDict): ...
@@ -87,6 +89,7 @@ class EvaluatePaperResultsSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.evaluate_paper_results,
             prompt_template=self.prompt_template,
             paper_content=state["paper_content"],
+            github_repository_info=state["github_repository_info"],
         )
         return {
             "was_experiment_executed": was_experiment_executed,
