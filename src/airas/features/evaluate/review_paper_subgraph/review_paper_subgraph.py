@@ -18,6 +18,7 @@ from airas.features.evaluate.review_paper_subgraph.prompts.review_paper_prompt i
     review_paper_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent, PaperReviewScores
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -35,6 +36,7 @@ class ReviewPaperLLMMapping(BaseModel):
 
 class ReviewPaperSubgraphInputState(TypedDict):
     paper_content: PaperContent
+    github_repository_info: GitHubRepositoryInfo
 
 
 class ReviewPaperSubgraphHiddenState(TypedDict):
@@ -86,6 +88,7 @@ class ReviewPaperSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.review_paper,
             prompt_template=self.prompt_template,
             paper_content=state["paper_content"],
+            github_repository_info=state["github_repository_info"],
         )
         return review_result
 

@@ -23,6 +23,7 @@ from airas.features.retrieve.retrieve_code_subgraph.prompt.extract_github_url_pr
     extract_github_url_from_text_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -45,6 +46,7 @@ class RetrieveCodeLLMMapping(BaseModel):
 
 class RetrieveCodeInputState(TypedDict):
     research_study_list: list[ResearchStudy]
+    github_repository_info: GitHubRepositoryInfo
 
 
 class RetrieveCodeHiddenState(TypedDict):
@@ -94,6 +96,7 @@ class RetrieveCodeSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.extract_github_url_from_text,
             prompt_template=extract_github_url_from_text_prompt,
             research_study_list=state["research_study_list"],
+            github_repository_info=state["github_repository_info"],
         )
         return {
             "research_study_list": research_study_list,
@@ -118,6 +121,7 @@ class RetrieveCodeSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.extract_experimental_info,
             research_study_list=state["research_study_list"],
             code_str_list=state["code_str_list"],
+            github_repository_info=state["github_repository_info"],
         )
         return {"research_study_list": research_study_list}
 

@@ -105,6 +105,7 @@ class CreateBibfileSubgraph(BaseSubgraph):
             research_study_list=state["research_study_list"],
             reference_study_list=state["reference_research_study_list"],
             new_method=state["new_method"],
+            github_repository_info=state["github_repository_info"],
             max_results=self.max_filtered_references,
         )
         return {"reference_research_study_list": filtered_references}

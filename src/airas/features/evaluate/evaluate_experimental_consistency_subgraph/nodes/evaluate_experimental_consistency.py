@@ -1,3 +1,4 @@
+import json
 from logging import getLogger
 
 from jinja2 import Environment
@@ -7,7 +8,9 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
+from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -21,6 +24,7 @@ def evaluate_experimental_consistency(
     llm_name: LLM_MODEL,
     prompt_template: str,
     new_method: ResearchHypothesis,
+    github_repository_info: GitHubRepositoryInfo,
     existing_feedback: list[str] | None = None,
     existing_scores: list[int] | None = None,
     client: LLMFacadeClient | None = None,
@@ -32,21 +36,25 @@ def evaluate_experimental_consistency(
 
     messages = template.render({"new_method": new_method.model_dump()})
 
-    llm_output, _cost = client.structured_outputs(
-        message=messages, data_model=LLMOutput
-    )
+    output, _cost = client.structured_outputs(message=messages, data_model=LLMOutput)
 
-    if llm_output is None:
+    if output is None:
         raise ValueError(
             "No response from LLM in evaluate_experimental_consistency node."
         )
-
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=json.dumps(output, ensure_ascii=False, indent=4),
+        subgraph_name="evaluate_experimental_consistency_subgraph",
+        node_name="evaluate_experimental_consistency",
+    )
     if existing_feedback is None:
         existing_feedback = []
     if existing_scores is None:
         existing_scores = []
 
-    consistency_score = llm_output["consistency_score"]
+    consistency_score = output["consistency_score"]
     updated_scores = existing_scores + [consistency_score]
 
     # NOTE: If score is high enough, append empty string to avoid side effects
@@ -55,6 +63,6 @@ def evaluate_experimental_consistency(
         updated_feedback = existing_feedback + [""]
     else:
         is_experiment_consistent = False
-        updated_feedback = existing_feedback + [llm_output["consistency_feedback"]]
+        updated_feedback = existing_feedback + [output["consistency_feedback"]]
 
     return (is_experiment_consistent, updated_feedback, updated_scores)

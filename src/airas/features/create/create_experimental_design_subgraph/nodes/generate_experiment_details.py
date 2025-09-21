@@ -1,3 +1,5 @@
+import json
+
 from jinja2 import Environment
 from pydantic import BaseModel
 
@@ -9,7 +11,9 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
+from airas.utils.save_prompt import save_io_on_github
 
 
 class LLMOutput(BaseModel):
@@ -22,6 +26,7 @@ def generate_experiment_details(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
     runner_type: RunnerType,
+    github_repository_info: GitHubRepositoryInfo,
     feedback_text: str | None = None,
 ) -> ResearchHypothesis:
     client = LLMFacadeClient(llm_name=llm_name)
@@ -41,7 +46,13 @@ def generate_experiment_details(
     )
     if output is None:
         raise ValueError("No response from LLM in generate_experiment_details.")
-
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=json.dumps(output, ensure_ascii=False, indent=4),
+        subgraph_name="create_experimental_design_subgraph",
+        node_name="generate_experiment_details",
+    )
     new_method.experimental_design.experiment_details = output["experiment_details"]
     new_method.experimental_design.expected_models = output["expected_models"]
     new_method.experimental_design.expected_datasets = output["expected_datasets"]

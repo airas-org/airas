@@ -40,6 +40,7 @@ from airas.features.retrieve.retrieve_paper_content_subgraph.prompt.openai_webse
     openai_websearch_arxiv_ids_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.types.research_idea import (
     ResearchIdea,
@@ -73,6 +74,7 @@ class CreateMethodV2LLMMapping(BaseModel):
 class CreateMethodSubgraphV2InputState(TypedDict):
     research_topic: str
     research_study_list: list[ResearchStudy]
+    github_repository_info: GitHubRepositoryInfo
 
 
 class CreateMethodSubgraphV2HiddenState(TypedDict):
@@ -145,6 +147,7 @@ class CreateMethodSubgraphV2(BaseSubgraph):
             llm_name=self.llm_mapping.generate_idea_and_research_summary,
             research_topic=state["research_topic"],
             research_study_list=state["research_study_list"],
+            github_repository_info=state["github_repository_info"],
         )
         return {"new_idea_info": new_idea_info}
 
@@ -226,6 +229,7 @@ class CreateMethodSubgraphV2(BaseSubgraph):
             research_study_list=research_study_list + related_research_study_list,
             new_idea=new_idea_info.idea,
             llm_name=self.llm_mapping.evaluate_novelty_and_significance,
+            github_repository_info=state["github_repository_info"],
         )
         # related_research_study_listを空にする
         new_idea_info.evaluate = evaluation_results
@@ -258,6 +262,8 @@ class CreateMethodSubgraphV2(BaseSubgraph):
             evaluated_idea_info=state["new_idea_info"],
             research_study_list=state["research_study_list"],
             idea_info_history=state["idea_info_history"],
+            refine_iterations=state["refine_iterations"],
+            github_repository_info=state["github_repository_info"],
         )
         return {
             "new_idea_info": new_idea_info,

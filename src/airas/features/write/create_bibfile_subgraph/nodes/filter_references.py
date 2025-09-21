@@ -1,3 +1,4 @@
+import json
 from typing import Annotated
 
 from jinja2 import Environment
@@ -7,8 +8,10 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.types.research_study import ResearchStudy
+from airas.utils.save_prompt import save_io_on_github
 
 
 class FilteredReferencesOutput(BaseModel):
@@ -24,6 +27,7 @@ def filter_references(
     research_study_list: list[ResearchStudy],
     reference_study_list: list[ResearchStudy],
     new_method: ResearchHypothesis,
+    github_repository_info: GitHubRepositoryInfo,
     max_results: int = 30,
     client: LLMFacadeClient | None = None,
 ) -> list[ResearchStudy]:
@@ -45,7 +49,13 @@ def filter_references(
     )
     if output is None:
         raise ValueError("Error: No response from LLM in filter_references.")
-
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=json.dumps(output, ensure_ascii=False, indent=4),
+        subgraph_name="create_bibfile_subgraph",
+        node_name="filter_references",
+    )
     selected_indices = output["selected_reference_indices"]
     filtered_references = [
         reference_study_list[i]

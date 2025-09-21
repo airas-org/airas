@@ -19,6 +19,7 @@ from airas.features.create.create_experimental_design_subgraph.nodes.generate_ex
     generate_experiment_strategy,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -43,6 +44,7 @@ class CreateExperimentalDesignLLMMapping(BaseModel):
 class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
     consistency_feedback: list[str]
+    github_repository_info: GitHubRepositoryInfo
 
 
 class CreateExperimentalDesignHiddenState(TypedDict): ...
@@ -122,6 +124,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.generate_experiment_strategy,
             new_method=state["new_method"],
             runner_type=cast(RunnerType, self.runner_type),
+            github_repository_info=state["github_repository_info"],
             feedback_text=feedback[-1]
             if (feedback := state.get("consistency_feedback"))
             else None,
@@ -136,6 +139,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.generate_experiment_details,
             new_method=state["new_method"],
             runner_type=cast(RunnerType, self.runner_type),
+            github_repository_info=state["github_repository_info"],
             feedback_text=feedback[-1]
             if (feedback := state.get("consistency_feedback"))
             else None,

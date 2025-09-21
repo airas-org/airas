@@ -1,3 +1,4 @@
+import json
 from logging import getLogger
 
 from jinja2 import Environment
@@ -51,15 +52,17 @@ def parse_research_study_list(research_study_list: list[ResearchStudy]) -> str:
         info = research_study.llm_extracted_info
         if not info:
             continue
-        data_str += f"""\
-Title:{research_study.title}
-Main Contributions:{info.main_contributions}
-Methodology:{info.methodology}
-Experimental Setup:{info.experimental_setup}
-Limitations:{info.limitations}
-Future Research Directions:{info.future_research_directions}
-Experiment:{info.experimental_code}
-Experiment Result:{info.experimental_info}"""
+        data_dict = {
+            "Title": research_study.title,
+            "Main Contributions": info.main_contributions,
+            "Methodology": info.methodology,
+            "Experimental Setup": info.experimental_setup,
+            "Limitations": info.limitations,
+            "Future Research Directions": info.future_research_directions,
+            "Experiment Code": info.experimental_code,
+            "Experiment Result": info.experimental_info,
+        }
+        data_str += json.dumps(data_dict, ensure_ascii=False, indent=4)
     return data_str
 
 

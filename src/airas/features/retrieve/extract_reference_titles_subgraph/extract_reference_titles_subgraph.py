@@ -16,6 +16,7 @@ from airas.features.retrieve.extract_reference_titles_subgraph.nodes.extract_ref
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
 )
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import ResearchStudy
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -33,6 +34,7 @@ class ExtractReferenceTitlesLLMMapping(BaseModel):
 
 class ExtractReferenceTitlesInputState(TypedDict):
     research_study_list: list[ResearchStudy]
+    github_repository_info: GitHubRepositoryInfo
 
 
 class ExtractReferenceTitlesHiddenState(TypedDict): ...
@@ -86,6 +88,7 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
         reference_research_study_list = extract_reference_titles(
             llm_name=self.llm_mapping.extract_reference_titles,
             research_study_list=state["research_study_list"],
+            github_repository_info=state["github_repository_info"],
         )
         if self.num_reference_paper is not None:
             reference_research_study_list = reference_research_study_list[

@@ -1,3 +1,5 @@
+import json
+
 from jinja2 import Environment
 from pydantic import BaseModel
 
@@ -18,7 +20,9 @@ from airas.services.api_client.llm_client.openai_client import (
     OPENAI_MODEL,
     OpenAIClient,
 )
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
+from airas.utils.save_prompt import save_io_on_github
 
 
 class LLMOutput(BaseModel):
@@ -31,6 +35,7 @@ def generate_experiment_code(
     runner_type: RunnerType,
     secret_names: list[str],
     full_experiment_validation: tuple[bool, str],
+    github_repository_info: GitHubRepositoryInfo,
     feedback_text: str | None = None,
     use_structured_outputs: bool = True,
 ) -> str:
@@ -77,5 +82,11 @@ def generate_experiment_code(
 
     if output is None:
         raise ValueError("No response from LLM in generate_experiment_code.")
-
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=json.dumps(output, ensure_ascii=False, indent=4),
+        subgraph_name="create_code_subgraph",
+        node_name="generate_experiment_code",
+    )
     return output["experiment_code"]

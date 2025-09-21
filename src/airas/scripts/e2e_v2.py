@@ -68,14 +68,14 @@ AVAILABLE_MODELS = [
 RUNNER_TYPE = ["ubuntu-latest", "gpu-runner", "A100_80GM×1", "A100_80GM×8"]
 
 
-runner_type = "A100_80GM×8"
+runner_type = "A100_80GM×1"
 secret_names = ["HF_TOKEN"]
 
 n_queries = 2  # 論文検索時のサブクエリの数
 max_results_per_query = 2  # 論文検索時の各サブクエリに対する論文数
-num_reference_paper = 5  # 論文作成時に追加で参照する論文数
-method_refinement_rounds = 2  # 新規手法の改良回数
-num_retrieve_related_papers = 3  # 新規手法作成時に新規性を確認するのに取得する論文数
+num_reference_paper = 2  # 論文作成時に追加で参照する論文数
+method_refinement_rounds = 1  # 新規手法の改良回数
+num_retrieve_related_papers = 2  # 新規手法作成時に新規性を確認するのに取得する論文数
 max_huggingface_results_per_search = (
     10  # modelやdatasetごとのHuggingFaceからの候補の取得数
 )
@@ -84,7 +84,7 @@ max_static_validations = 2  # 静的解析の最大実行回数
 max_full_experiment_validations = 2
 use_structured_output_for_coding = False  # コード生成に構造化出力を使用するか
 
-writing_refinement_rounds = 2  # 論文の改良回数
+writing_refinement_rounds = 3  # 論文の改良回数
 max_filtered_references = 5  # 論文中で引用する参考文献の最大数
 max_chktex_revisions = 3  # LaTeXの文法チェックの修正回数
 max_compile_revisions = 3  # LaTeXのコンパイルエラー修正
@@ -156,7 +156,7 @@ coder = CreateCodeSubgraph(
     secret_names=secret_names,
     llm_mapping={
         "generate_experiment_code": "o3-2025-04-16",
-        "convert_code_to_scripts": "o3-2025-04-16",
+        "convert_code_to_scripts": "gemini-2.5-pro",
         "validate_full_experiment_code": "o3-2025-04-16",
     },
     max_static_validations=max_static_validations,
@@ -269,47 +269,22 @@ def _run_fix_loop(state, workflow_config):
     return state
 
 
-# def _run_experiment_consistent_loop(state, workflow_config):
-#     for _ in range(workflow_config.max_consistency_attempts):
-#         state = create_experimental_design.run(state)
-#         state = coder.run(state)
-#         state = _run_fix_loop(state, workflow_config)
-
-#         state = evaluate_consistency.run(state)
-#         if state.get("is_experiment_consistent"):
-#             _ = uploader.run(state)
-#             return state
-#         print("Experimental consistency failed → redesign.")
-#     _ = uploader.run(state)
-#     return state
-
-
 def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG):
     for subgraph in tqdm(subgraph_list, desc="Executing Research Workflow"):
         subgraph_name = subgraph.__class__.__name__
         print(f"--- Running Subgraph: {subgraph_name} ---")
 
         if isinstance(subgraph, CreateCodeSubgraph):
-            # state = create_experimental_design.run(state)
             state = coder.run(state)
             state = _run_fix_loop(state, workflow_config)
-
-            # state = evaluate_consistency.run(state)
-            # if state.get("is_experiment_consistent"):
-            #     _ = uploader.run(state)
-            # return state
-            # state = analysis.run(state)
 
         elif isinstance(
             subgraph,
             (
-                # CreateExperimentalDesignSubgraph,
-                # RetrieveHuggingFaceSubgraph,
                 CreateCodeSubgraph,
                 GitHubActionsExecutorSubgraph,
                 JudgeExecutionSubgraph,
                 FixCodeSubgraph,
-                # AnalyticSubgraph,
             ),
         ):
             continue
@@ -348,13 +323,30 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "tanaka-20250916-v5"
+    repository_name = "tanaka-20250920-v5"
     research_topic_list = [
-        "Graph Attention Networkの学習の高速化",
-        # "Transformerを用いた時系列データの新規手法",
-        # "Diffusion modelの速度改善",
-        # "Diffusion Transformersの改善"
+        "LLMのfine-tuningの新しい損失関数の提案",
+        "Diffusion modelの学習時の損失関数の改善",
     ]
     execute_workflow(
         github_owner, repository_name, research_topic_list=research_topic_list
     )
+    # max_workers = 5
+    # github_owner = ["auto-res2"] * max_workers
+    # repository_name = ["tanaka-20250919-v2-{i}".format(i=i) for i in range(max_workers)]
+    # research_topic_list = [
+    #     [
+    #         "Proposal of a new loss function for LLM fine-tuning",
+    #         "Improvement of the loss function during diffusion model training",
+    #     ]
+    #     for _ in range(max_workers)
+    # ]
+
+    # with ThreadPoolExecutor(max_workers=5) as executor:
+    #     results = list(
+    #         executor.map(
+    #             execute_workflow, github_owner, repository_name, research_topic_list
+    #         )
+    #     )
+
+    # print("Results:", results)

@@ -1,3 +1,4 @@
+import json
 import re
 from logging import getLogger
 from urllib.parse import urlparse
@@ -10,7 +11,9 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import MetaData, ResearchStudy
+from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -54,31 +57,40 @@ def _select_github_url(
     paper_summary: str,
     candidates: list[str],
     prompt_template: str,
+    github_repository_info: GitHubRepositoryInfo,
     llm_client: LLMFacadeClient,
+    index: int,
 ) -> int | None:
-    try:
-        template = Environment().from_string(prompt_template)
-        prompt = template.render(
-            {"paper_summary": paper_summary, "extract_github_url_list": candidates}
-        )
-        output, _ = llm_client.structured_outputs(message=prompt, data_model=LLMOutput)
-        return output["index"] if output else None
-    except Exception as e:
-        logger.warning(f"Error during LLM selection: {e}")
+    template = Environment().from_string(prompt_template)
+    messages = template.render(
+        {"paper_summary": paper_summary, "extract_github_url_list": candidates}
+    )
+    output, _ = llm_client.structured_outputs(message=messages, data_model=LLMOutput)
+    if output is None:
+        logger.warning("Error during LLM selection")
         return None
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=json.dumps(output, ensure_ascii=False, indent=4),
+        subgraph_name="retrieve_code_subgraph",
+        node_name=f"extract_github_url_from_text_{index}",
+    )
+    return output["index"] if output else None
 
 
 def extract_github_url_from_text(
     llm_name: LLM_MODEL,
     prompt_template: str,
     research_study_list: list[ResearchStudy],
+    github_repository_info: GitHubRepositoryInfo,
     llm_client: LLMFacadeClient | None = None,
     github_client: GithubClient | None = None,
 ) -> list[ResearchStudy]:
     llm_client = llm_client or LLMFacadeClient(llm_name=llm_name)
     github_client = github_client or GithubClient()
 
-    for research_study in research_study_list:
+    for index, research_study in enumerate(research_study_list):
         title = research_study.title or "N/A"
 
         if not research_study.full_text or not (
@@ -101,7 +113,9 @@ def extract_github_url_from_text(
             research_study.llm_extracted_info.methodology,
             candidates,
             prompt_template,
+            github_repository_info,
             llm_client,
+            index,
         )
 
         if idx is not None and 0 <= idx < len(candidates):

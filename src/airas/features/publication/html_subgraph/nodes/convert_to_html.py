@@ -1,3 +1,5 @@
+import json
+
 from jinja2 import Environment
 from pydantic import BaseModel
 
@@ -5,7 +7,9 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent
+from airas.utils.save_prompt import save_io_on_github
 
 
 class LLMOutput(BaseModel):
@@ -17,6 +21,7 @@ def convert_to_html(
     paper_content: PaperContent,
     image_file_name_list: list[str],
     prompt_template: str,
+    github_repository_info: GitHubRepositoryInfo,
     client: LLMFacadeClient | None = None,
 ) -> str:
     """Convert paper content to HTML using LLM."""
@@ -42,9 +47,13 @@ def convert_to_html(
     )
     if output is None:
         raise ValueError("No response from the model in convert_to_html.")
-
-    if not isinstance(output, dict):
-        raise ValueError("Invalid output format")
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=json.dumps(output, ensure_ascii=False, indent=4),
+        subgraph_name="html_subgraph",
+        node_name="convert_to_html",
+    )
 
     generated_html_text = output.get("generated_html_text", "")
     if not generated_html_text:

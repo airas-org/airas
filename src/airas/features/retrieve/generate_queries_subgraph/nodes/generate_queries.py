@@ -1,3 +1,5 @@
+import json
+
 from jinja2 import Environment
 from pydantic import BaseModel, create_model
 
@@ -5,6 +7,8 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.github import GitHubRepositoryInfo
+from airas.utils.save_prompt import save_io_on_github
 
 
 def _build_generated_query_model(n_queries: int) -> type[BaseModel]:
@@ -17,6 +21,7 @@ def generate_queries(
     prompt_template: str,
     research_topic: str,
     n_queries: int,
+    github_repository_info: GitHubRepositoryInfo,
     client: LLMFacadeClient | None = None,
 ) -> list[str]:
     client = client or LLMFacadeClient(llm_name=llm_name)
@@ -36,5 +41,11 @@ def generate_queries(
     )
     if output is None:
         raise ValueError("Error: No response from LLM in generate_queries_node.")
-
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=json.dumps(output, ensure_ascii=False, indent=4),
+        subgraph_name="generate_queries_subgraph",
+        node_name="generate_queries",
+    )
     return [output[f"generated_query_{i + 1}"] for i in range(n_queries)]

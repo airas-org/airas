@@ -111,6 +111,7 @@ class FixCodeWithDevinSubgraph(BaseSubgraph):
             runner_type=cast(RunnerType, self.runner_type),
             devin_info=state["devin_info"],
             error_list=state["error_list"],
+            github_repository_info=state["github_repository_info"],
         )
         return {"executed_flag": False}
 

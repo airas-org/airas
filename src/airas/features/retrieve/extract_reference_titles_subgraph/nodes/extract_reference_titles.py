@@ -1,3 +1,4 @@
+import json
 import string
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from logging import getLogger
@@ -12,7 +13,9 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import ResearchStudy
+from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -34,6 +37,8 @@ def _normalize_title(title: str) -> str:
 def _extract_references_from_study(
     research_study: ResearchStudy,
     template: str,
+    github_repository_info: GitHubRepositoryInfo,
+    index: int,
     client: LLMFacadeClient,
 ) -> list[str]:
     if not research_study.full_text:
@@ -56,7 +61,13 @@ def _extract_references_from_study(
             f"Warning: No valid response from LLM for reference extraction for '{research_study.title}'."
         )
         return []
-
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=json.dumps(output, ensure_ascii=False, indent=4),
+        subgraph_name="extract_reference_titles_subgraph",
+        node_name=f"extract_reference_titles_{index}",
+    )
     reference_titles = output.get("reference_titles", [])
     logger.info(
         f"Found {len(reference_titles)} reference titles for study '{research_study.title}'."
@@ -68,6 +79,7 @@ def _extract_references_from_study(
 def extract_reference_titles(
     llm_name: LLM_MODEL,
     research_study_list: list[ResearchStudy],
+    github_repository_info: GitHubRepositoryInfo,
     client: LLMFacadeClient | None = None,
     max_workers: int = 3,
 ) -> list[ResearchStudy]:
@@ -93,9 +105,11 @@ def extract_reference_titles(
                 _extract_references_from_study,
                 study,
                 extract_reference_titles_prompt,
+                github_repository_info,
+                index,
                 client,
             ): study
-            for study in valid_studies
+            for index, study in enumerate(valid_studies)
         }
 
         for future in as_completed(future_to_study):

@@ -1,3 +1,4 @@
+import json
 import logging
 
 from jinja2 import Environment
@@ -10,7 +11,9 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ExperimentCode, ResearchHypothesis
+from airas.utils.save_prompt import save_io_on_github
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +26,7 @@ def convert_code_to_scripts(
     runner_type: RunnerType,
     secret_names: list[str],
     file_static_validations: dict[str, dict[str, list[str]]],
+    github_repository_info: GitHubRepositoryInfo,
     prompt_template: str = convert_code_to_scripts_prompt,
     client: LLMFacadeClient | None = None,
 ) -> ResearchHypothesis:
@@ -48,7 +52,13 @@ def convert_code_to_scripts(
     )
     if output is None:
         raise ValueError("Error: No response from LLM in convert_code_to_scripts.")
-
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=json.dumps(output, ensure_ascii=False, indent=4),
+        subgraph_name="create_code_subgraph",
+        node_name="convert_code_to_scripts",
+    )
     new_method.experimental_design.experiment_code = ExperimentCode(**output)
 
     return new_method
