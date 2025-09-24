@@ -7,9 +7,6 @@ from pydantic import BaseModel
 from airas.features.create.create_code_subgraph.prompt.validate_full_experiment_prompt import (
     validate_full_experiment_prompt,
 )
-from airas.features.create.fix_code_with_devin_subgraph.nodes.initial_session_fix_code_with_devin import (
-    _retrieve_huggingface_data,
-)
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -42,9 +39,6 @@ def validate_full_experiment_code(
     messages = template.render(
         {
             "new_method": new_method.model_dump(),
-            "huggingface_data": _retrieve_huggingface_data(
-                new_method.experimental_design.external_resources
-            ),
         }
     )
     output, _ = client.structured_outputs(message=messages, data_model=ValidationOutput)

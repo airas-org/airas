@@ -41,7 +41,13 @@ Respond with a JSON object containing:
 {{ new_method.experimental_design.experiment_code | tojson }}
 
 # External Resources
-{{ external_resources }}
-{{ new_method.experimental_design.external_resources }}
+{% if new_method.experimental_design.external_resources and new_method.experimental_design.external_resources.hugging_face %}
+**HuggingFace Models:**
+{% for model in new_method.experimental_design.external_resources.hugging_face.models %}
+- ID: {{ model.id }}
+{% if model.extracted_code %}
+- Code: {{ model.extracted_code }}
+{% endif %}
+{% endfor %}
 
 Analyze the code thoroughly and provide your validation result."""
