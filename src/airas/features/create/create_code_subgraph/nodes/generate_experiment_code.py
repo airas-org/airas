@@ -12,9 +12,6 @@ from airas.features.create.create_code_subgraph.prompt.generate_experiment_code_
 #     LLM_MODEL,
 #     LLMFacadeClient,
 # )
-from airas.features.create.fix_code_with_devin_subgraph.nodes.initial_session_fix_code_with_devin import (
-    _retrieve_huggingface_data,
-)
 from airas.services.api_client.llm_client.anthropic_client import CLAUDE_MODEL
 from airas.services.api_client.llm_client.openai_client import (
     OPENAI_MODEL,
@@ -37,7 +34,7 @@ def generate_experiment_code(
     full_experiment_validation: tuple[bool, str],
     github_repository_info: GitHubRepositoryInfo,
     feedback_text: str | None = None,
-    use_structured_outputs: bool = True,
+    use_structured_outputs: bool = False,
 ) -> str:
     # TODO: We will first verify openAI's reasoning.
     # client = LLMFacedeClient(llm_name=llm_name, reasoning_effort="high", thinking_budget=32768)
@@ -53,9 +50,6 @@ def generate_experiment_code(
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "secret_names": secret_names,
         "consistency_feedback": feedback_text,
-        "huggingface_data": _retrieve_huggingface_data(
-            new_method.experimental_design.external_resources
-        ),
         "full_experiment_validation": full_experiment_validation,
     }
     messages = template.render(data)

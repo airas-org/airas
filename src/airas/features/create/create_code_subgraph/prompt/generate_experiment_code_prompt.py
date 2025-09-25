@@ -95,8 +95,24 @@ File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`
 - Strategy: {{ new_method.experimental_design.experiment_strategy }}
 - Details: {{ new_method.experimental_design.experiment_details }}
 
-# Hugging Face code
-{{ huggingface_data }}
+# External Resources
+{% if new_method.experimental_design.external_resources and new_method.experimental_design.external_resources.hugging_face %}
+**HuggingFace Models:**
+{% for model in new_method.experimental_design.external_resources.hugging_face.models %}
+- ID: {{ model.id }}
+{% if model.extracted_code %}
+- Code: {{ model.extracted_code }}
+{% endif %}
+{% endfor %}
+
+**HuggingFace Datasets:**
+{% for dataset in new_method.experimental_design.external_resources.hugging_face.datasets %}
+- ID: {{ dataset.id }}
+{% if dataset.extracted_code %}
+- Code: {{ dataset.extracted_code }}
+{% endif %}
+{% endfor %}
+{% endif %}
 
 {% if consistency_feedback %}
 ## Consistency Feedback
