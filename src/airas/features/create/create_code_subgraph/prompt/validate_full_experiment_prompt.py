@@ -50,4 +50,13 @@ Respond with a JSON object containing:
 {% endif %}
 {% endfor %}
 
+**HuggingFace Datasets:**
+{% for dataset in new_method.experimental_design.external_resources.hugging_face.datasets %}
+- ID: {{ dataset.id }}
+{% if dataset.extracted_code %}
+- Code: {{ dataset.extracted_code }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
 Analyze the code thoroughly and provide your validation result."""
