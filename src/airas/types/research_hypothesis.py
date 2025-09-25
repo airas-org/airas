@@ -34,19 +34,17 @@ class ExperimentCode(BaseModel):
         }
 
 
-class ParameterVariation(BaseModel):
-    variation_id: str = Field(
+class ExperimentRun(BaseModel):
+    run_id: str = Field(
         ...,
-        description="A unique identifier for this variation (e.g., 'exp-1-lr-0.01').",
+        description="A unique identifier for this run (e.g., 'exp-1-lr-0.01').",
     )
-    parameters: dict[str, Any] = Field(
-        ..., description="The parameters for this variation"
-    )
+    parameters: dict[str, Any] = Field(..., description="The parameters for this run")
     code: Optional[ExperimentCode] = Field(
-        None, description="The specific code generated to run this variation."
+        None, description="The specific code generated to run this run."
     )
     results: Optional[ExperimentalResults] = Field(
-        None, description="The results of the experimental run for this variation."
+        None, description="The results of the experimental run for this run."
     )
 
 
@@ -58,15 +56,13 @@ class Experiment(BaseModel):
     description: str = Field(
         ..., description="The objective or hypothesis for this line of experimentation."
     )
-    variations: list[ParameterVariation] = Field(
+    runs: list[ExperimentRun] = Field(
         ...,
-        description="A list of parameter variations to be tested within this experiment.",
+        description="A list of parameter runs to be tested within this experiment.",
     )
 
-    def get_variation_by_id(self, variation_id: str) -> Optional[ParameterVariation]:
-        return next(
-            (v for v in self.variations if v.variation_id == variation_id), None
-        )
+    def get_run_by_id(self, run_id: str) -> Optional[ExperimentRun]:
+        return next((run for run in self.runs if run.run_id == run_id), None)
 
 
 class ExperimentalDesign(BaseModel):
