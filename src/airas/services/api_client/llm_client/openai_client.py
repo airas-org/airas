@@ -45,6 +45,12 @@ OPENAI_MODEL_INFO = {
         "output_token_cost": 60.00 * 1 / 1000000,
     },
     # Flagship chat models
+    "gpt-5-codex": {
+        "max_input_tokens": 400_000 - 128_000,
+        "max_output_tokens": 128_000,
+        "input_token_cost": 1.25 * 1 / 1_000_000,
+        "output_token_cost": 10.00 * 1 / 1_000_000,
+    },
     "gpt-5-2025-08-07": {
         "max_input_tokens": 400_000 - 128_000,
         "max_output_tokens": 128_000,
@@ -90,6 +96,7 @@ OPENAI_MODEL = Literal[
     "o3-mini-2025-01-31",
     "o1-pro-2025-03-19",
     "o1-2024-12-17",
+    "gpt-5-codex",
     "gpt-5-2025-08-07",
     "gpt-5-mini-2025-08-07",
     "gpt-5-nano-2025-08-07",
