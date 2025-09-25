@@ -4,8 +4,8 @@ from logging import getLogger
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.features.create.create_code_subgraph.prompt.validate_full_experiment_prompt import (
-    validate_full_experiment_prompt,
+from airas.features.create.create_code_subgraph.prompt.validate_core_code_prompt import (
+    validate_core_code_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
@@ -19,20 +19,18 @@ logger = getLogger(__name__)
 
 
 class ValidationOutput(BaseModel):
-    is_full_experiment_ready: bool
-    full_experiment_issue: str
+    is_core_code_ready: bool
+    core_code_issue: str
 
 
-def validate_full_experiment_code(
+def validate_core_code(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
     github_repository_info: GitHubRepositoryInfo,
-    prompt_template: str = validate_full_experiment_prompt,
-    client: LLMFacadeClient | None = None,
+    prompt_template: str = validate_core_code_prompt,
+    llm_client: LLMFacadeClient | None = None,
 ) -> tuple[bool, str]:
-    if client is None:
-        client = LLMFacadeClient(llm_name=llm_name)
-
+    client = llm_client or LLMFacadeClient(llm_name=llm_name)
     env = Environment()
     template = env.from_string(prompt_template)
 
@@ -44,15 +42,15 @@ def validate_full_experiment_code(
     output, _ = client.structured_outputs(message=messages, data_model=ValidationOutput)
 
     if output is None:
-        logger.error(
-            "No response from LLM in validate_full_experiment_code. Defaulting to False."
-        )
+        logger.error("No response from LLM in validate_core_code. Defaulting to False.")
         return False, ""
+
     save_io_on_github(
         github_repository_info=github_repository_info,
         input=messages,
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_code_subgraph",
-        node_name="validate_full_experiment_code",
+        node_name="validate_core_code",
     )
-    return output["is_full_experiment_ready"], output["full_experiment_issue"]
+
+    return output["is_core_code_ready"], output["core_code_issue"]
