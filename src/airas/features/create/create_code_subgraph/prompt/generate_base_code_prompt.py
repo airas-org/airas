@@ -33,7 +33,7 @@ Based on the research method in # Current Research Method and experimental desig
 - **STRUCTURED PLACEHOLDER APPROACH**: Use well-defined placeholders for dataset/model specifics while ensuring base logic is complete and functional
 
 ## Results Documentation Requirements
-- Save the results of each experiment as separate JSON files and modify the code to print the contents of the JSON files to standard output using a print statement.
+- Save each experiment's results as separate JSON files in the `.research/iteration{{ experiment_iteration }}/` directory and print each JSON contents to standard output for verification.
 
 ## Standard Output Content Requirements
 - Experiment description: Before printing experimental results, the standard output must include a detailed description of the experiment.
@@ -48,6 +48,7 @@ Based on the research method in # Current Research Method and experimental desig
 - Include legends in the figures.
 - All figures must be saved in .pdf format (e.g., using plt.savefig("filename.pdf", bbox_inches="tight")).
   - Do not use .png or any other formats—only .pdf is acceptable for publication quality.
+- Please save all images output from the experiment in the `.research/iteration{{ experiment_iteration }}/images/` directory.
 
 ## Figure Naming Convention
 File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`

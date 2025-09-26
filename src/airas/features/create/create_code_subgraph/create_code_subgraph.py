@@ -141,6 +141,7 @@ class CreateCodeSubgraph(BaseSubgraph):
             runner_type=cast(RunnerType, self.runner_type),
             secret_names=self.secret_names,
             github_repository_info=state["github_repository_info"],
+            experiment_iteration=state["experiment_iteration"],
             feedback_text=feedback[-1]
             if (feedback := state.get("consistency_feedback"))
             else None,
@@ -156,6 +157,7 @@ class CreateCodeSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.validate_base_code,
             new_method=state["new_method"],
             github_repository_info=state["github_repository_info"],
+            experiment_iteration=state["experiment_iteration"],
         )
         return {
             "base_code_validation": base_code_validation,
@@ -196,6 +198,7 @@ class CreateCodeSubgraph(BaseSubgraph):
             runner_type=cast(RunnerType, self.runner_type),
             secret_names=self.secret_names,
             github_repository_info=state["github_repository_info"],
+            experiment_iteration=state["experiment_iteration"],
             experiment_code_validation=state.get("experiment_code_validation"),
         )
         return {"new_method": new_method}

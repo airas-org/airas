@@ -24,6 +24,7 @@ def generate_base_code(
     runner_type: RunnerType,
     secret_names: list[str],
     github_repository_info: GitHubRepositoryInfo,
+    experiment_iteration: int,
     feedback_text: str | None = None,
     base_code_validation: tuple[bool, str] | None = None,
 ) -> ResearchHypothesis:
@@ -36,6 +37,7 @@ def generate_base_code(
         "new_method": new_method.model_dump(),
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "secret_names": secret_names,
+        "experiment_iteration": experiment_iteration,
         "consistency_feedback": feedback_text,
         "base_code_validation": base_code_validation,
     }

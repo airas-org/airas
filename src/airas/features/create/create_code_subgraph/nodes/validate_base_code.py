@@ -27,6 +27,7 @@ def validate_base_code(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
     github_repository_info: GitHubRepositoryInfo,
+    experiment_iteration: int,
     prompt_template: str = validate_base_code_prompt,
     llm_client: LLMFacadeClient | None = None,
 ) -> tuple[bool, str]:
@@ -37,6 +38,7 @@ def validate_base_code(
     messages = template.render(
         {
             "new_method": new_method.model_dump(),
+            "experiment_iteration": experiment_iteration,
         }
     )
     output, _ = client.structured_outputs(message=messages, data_model=ValidationOutput)

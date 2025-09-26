@@ -90,7 +90,7 @@ def push_files_to_experiment_branch(
 
     # TODO: 将来的には複数実験に対応
     # 現在は単一実験として処理
-    experiments = [("exp-x", "run-x")]  # experiment_id, run_id
+    experiments = [("exp-1", "run-1")]  # experiment_id, run_id
 
     success_results = asyncio.run(
         _push_experiments(

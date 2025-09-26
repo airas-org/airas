@@ -40,7 +40,8 @@ Check if the generated base code meets ALL of the following requirements:
 
 5. **Publication-Ready Infrastructure**:
    - Figure generation with proper formatting (PDF output, legends, annotations)
-   - Results saved as JSON files with stdout printing
+   - Figures are saved in `.research/iteration{{ experiment_iteration }}/images/` directory
+   - Results saved as JSON files in `.research/iteration{{ experiment_iteration }}/` directory with stdout printing
    - Consistent result formatting and comparison logic
    - Proper experimental description output
 
