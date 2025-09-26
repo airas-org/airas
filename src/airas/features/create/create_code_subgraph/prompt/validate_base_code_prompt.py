@@ -32,10 +32,11 @@ Check if the generated base code meets ALL of the following requirements:
    - No additional utility files, helper modules, or separate components
    - All functionality is contained within the specified 7 files only
 
-4. **Command Line Interface**:
+4. **Command Line Interface & Module Structure**:
    - main.py properly supports `--smoke-test` and `--full-experiment` flags
    - Configuration system can handle different experimental scenarios
    - Proper command-line argument parsing
+   - Import statements are compatible with `uv run python -m src.main` execution (relative imports like `from .train import train` are valid)
 
 5. **Publication-Ready Infrastructure**:
    - Figure generation with proper formatting (PDF output, legends, annotations)

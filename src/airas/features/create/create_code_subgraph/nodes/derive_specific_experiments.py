@@ -31,7 +31,7 @@ def derive_specific_experiments(
     secret_names: list[str],
     github_repository_info: GitHubRepositoryInfo,
 ) -> ResearchHypothesis:
-    client = OpenAIClient()
+    client = OpenAIClient(reasoning_effort="high")
     env = Environment()
 
     template = env.from_string(derive_specific_experiments_prompt)
@@ -58,5 +58,5 @@ def derive_specific_experiments(
         subgraph_name="create_code_subgraph",
         node_name="derive_specific_experiments",
     )
-    new_method.experimental_design.code = ExperimentCode(**output)
+    new_method.experimental_design.experiment_code = ExperimentCode(**output)
     return new_method
