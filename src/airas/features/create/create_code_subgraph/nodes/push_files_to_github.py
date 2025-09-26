@@ -27,8 +27,8 @@ async def _push_experiments(
     base_commit_sha = base_branch_info["commit"]["sha"]
 
     tasks = []
-    for exp_id, var_id in experiments:
-        child_branch = github_repository_info.add_child_branch(exp_id, var_id)
+    for exp_id, run_id in experiments:
+        child_branch = f"{github_repository_info.branch_name}-{exp_id}-{run_id}"
         files = new_method.experimental_design.experiment_code.to_file_dict()
 
         # Create child branch and commit files
@@ -38,7 +38,7 @@ async def _push_experiments(
             child_branch=child_branch,
             base_commit_sha=base_commit_sha,
             files=files,
-            commit_message=f"{commit_message} ({exp_id}-{var_id})",
+            commit_message=f"{commit_message} ({exp_id}-{run_id})",
         )
         tasks.append(task)
 
@@ -90,7 +90,7 @@ def push_files_to_github(
 
     # TODO: 将来的には複数実験に対応
     # 現在は単一実験として処理
-    experiments = [(0, 0)]  # experiment_id, variation_id
+    experiments = [(0, 0)]  # experiment_id, run_id
 
     success_results = asyncio.run(
         _push_experiments(

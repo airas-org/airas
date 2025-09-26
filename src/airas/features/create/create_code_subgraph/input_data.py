@@ -44,8 +44,8 @@ dummy_research_hypothesis = ResearchHypothesis(
 
 dummy_github_repo = GitHubRepositoryInfo(
     github_owner="auto-res2",
-    repository_name="experiment_matsuzawa_20250911",
-    branch_name="research-20250911-160618-003",
+    repository_name="experiment_matsuzawa_250925",
+    branch_name="research-20250925-125744-001",
 )
 
 create_code_subgraph_input_data = {
