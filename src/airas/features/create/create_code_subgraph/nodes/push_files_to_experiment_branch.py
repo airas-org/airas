@@ -80,17 +80,17 @@ async def _push_single_experiment(
         return False
 
 
-def push_files_to_github(
+def push_files_to_experiment_branch(
     github_repository_info: GitHubRepositoryInfo,
     new_method: ResearchHypothesis,
     commit_message: str,
     github_client: GithubClient | None = None,
-) -> bool:
+) -> list[str]:
     github_client = github_client or GithubClient()
 
     # TODO: 将来的には複数実験に対応
     # 現在は単一実験として処理
-    experiments = [(0, 0)]  # experiment_id, run_id
+    experiments = [("exp-x", "run-x")]  # experiment_id, run_id
 
     success_results = asyncio.run(
         _push_experiments(
@@ -102,15 +102,20 @@ def push_files_to_github(
         )
     )
 
+    experiment_branches = [
+        f"{github_repository_info.branch_name}-{exp_id}-{run_id}"
+        for exp_id, run_id in experiments
+    ]
+
     success = all(success_results)
 
     if success:
         logger.info(
-            f"Successfully pushed files to {github_repository_info.github_owner}/{github_repository_info.repository_name} on branch {github_repository_info.branch_name}"
+            f"Successfully pushed files to {github_repository_info.github_owner}/{github_repository_info.repository_name}, created branches: {experiment_branches}"
         )
-        return True
+    else:
+        logger.error(
+            f"Failed to push some files to {github_repository_info.github_owner}/{github_repository_info.repository_name}"
+        )
 
-    logger.error(
-        f"Failed to push files to {github_repository_info.github_owner}/{github_repository_info.repository_name} on branch {github_repository_info.branch_name}"
-    )
-    return False
+    return experiment_branches

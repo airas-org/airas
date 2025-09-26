@@ -27,7 +27,7 @@ def generate_base_code(
     feedback_text: str | None = None,
     base_code_validation: tuple[bool, str] | None = None,
 ) -> ResearchHypothesis:
-    client = OpenAIClient()
+    client = OpenAIClient(reasoning_effort="high")
     env = Environment()
 
     template = env.from_string(generate_base_code_prompt)

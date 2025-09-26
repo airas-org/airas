@@ -18,8 +18,8 @@ from airas.features.create.create_code_subgraph.nodes.derive_specific_experiment
 from airas.features.create.create_code_subgraph.nodes.generate_base_code import (
     generate_base_code,
 )
-from airas.features.create.create_code_subgraph.nodes.push_files_to_github import (
-    push_files_to_github,
+from airas.features.create.create_code_subgraph.nodes.push_files_to_experiment_branch import (
+    push_files_to_experiment_branch,
 )
 from airas.features.create.create_code_subgraph.nodes.set_github_actions_secrets import (
     set_github_actions_secrets,
@@ -68,8 +68,8 @@ class CreateCodeSubgraphHiddenState(TypedDict):
 
 class CreateCodeSubgraphOutputState(TypedDict):
     new_method: ResearchHypothesis
-    is_code_pushed_to_github: bool
     experiment_iteration: int
+    experiment_branches: list[str]
 
 
 class CreateCodeSubgraphState(
@@ -227,13 +227,13 @@ class CreateCodeSubgraph(BaseSubgraph):
             logger.info(
                 "Experiment code validation passed. Proceeding to push files to GitHub..."
             )
-            return "push_files_to_github"
+            return "push_files_to_experiment_branch"
 
         if experiment_code_validation_count >= self.max_experiment_code_validations:
             logger.warning(
                 f"Maximum experiment code validation attempts ({self.max_experiment_code_validations}) reached. Proceeding to push files..."
             )
-            return "push_files_to_github"
+            return "push_files_to_experiment_branch"
 
         logger.warning(
             f"Experiment code validation failed: {issue}. Re-running derive_specific_experiments... (attempt {experiment_code_validation_count}/{self.max_experiment_code_validations})"
@@ -241,17 +241,19 @@ class CreateCodeSubgraph(BaseSubgraph):
         return "derive_specific_experiments"
 
     @create_code_timed
-    def _push_files_to_github(self, state: CreateCodeSubgraphState) -> dict[str, bool]:
+    def _push_files_to_experiment_branch(
+        self, state: CreateCodeSubgraphState
+    ) -> dict[str, list[str]]:
         commit_message = f"Add generated experiment files for iteration {state['experiment_iteration']}"
 
-        is_code_pushed_to_github = push_files_to_github(
+        experiment_branches = push_files_to_experiment_branch(
             github_repository_info=state["github_repository_info"],
             new_method=state["new_method"],
             commit_message=commit_message,
         )
 
         return {
-            "is_code_pushed_to_github": is_code_pushed_to_github,
+            "experiment_branches": experiment_branches,
         }
 
     @create_code_timed
@@ -279,7 +281,9 @@ class CreateCodeSubgraph(BaseSubgraph):
         graph_builder.add_node(
             "validate_experiment_code", self._validate_experiment_code
         )
-        graph_builder.add_node("push_files_to_github", self._push_files_to_github)
+        graph_builder.add_node(
+            "push_files_to_experiment_branch", self._push_files_to_experiment_branch
+        )
         graph_builder.add_node(
             "set_github_actions_secrets", self._set_github_actions_secrets
         )
@@ -304,10 +308,12 @@ class CreateCodeSubgraph(BaseSubgraph):
             self._should_continue_after_experiment_code_validation,
             {
                 "derive_specific_experiments": "derive_specific_experiments",
-                "push_files_to_github": "push_files_to_github",
+                "push_files_to_experiment_branch": "push_files_to_experiment_branch",
             },
         )
-        graph_builder.add_edge("push_files_to_github", "set_github_actions_secrets")
+        graph_builder.add_edge(
+            "push_files_to_experiment_branch", "set_github_actions_secrets"
+        )
         graph_builder.add_edge("set_github_actions_secrets", END)
 
         return graph_builder.compile()
