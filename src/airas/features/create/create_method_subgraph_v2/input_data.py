@@ -1,3 +1,4 @@
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import ResearchStudy
 
 create_method_subgraph_v2_input_data = {
@@ -16,4 +17,9 @@ create_method_subgraph_v2_input_data = {
             abstract="Recent work has demonstrated substantial gains on many NLP tasks and benchmarks by pre-training on a large corpus of text followed by fine-tuning on a specific task. While typically task-agnostic in architecture, this method still requires task-specific fine-tuning datasets of thousands or tens of thousands of examples.",
         ),
     ],
+    "github_repository_info": GitHubRepositoryInfo(
+        github_owner="auto-res2",
+        repository_name="experiment_matsuzawa_250925",
+        branch_name="research-20250925-125744-001",
+    ),
 }
