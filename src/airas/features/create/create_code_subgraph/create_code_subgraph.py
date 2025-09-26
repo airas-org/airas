@@ -27,6 +27,9 @@ from airas.features.create.create_code_subgraph.nodes.set_github_actions_secrets
 from airas.features.create.create_code_subgraph.nodes.validate_base_code import (
     validate_base_code,
 )
+from airas.features.create.create_code_subgraph.nodes.validate_experiment_code import (
+    validate_experiment_code,
+)
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
@@ -46,6 +49,7 @@ class CreateCodeLLMMapping(BaseModel):
     derive_specific_experiments: LLM_MODEL = DEFAULT_NODE_LLMS[
         "derive_specific_experiments"
     ]
+    validate_experiment_code: LLM_MODEL = DEFAULT_NODE_LLMS["validate_experiment_code"]
 
 
 class CreateCodeSubgraphInputState(TypedDict, total=False):
@@ -58,6 +62,8 @@ class CreateCodeSubgraphInputState(TypedDict, total=False):
 class CreateCodeSubgraphHiddenState(TypedDict):
     base_code_validation: tuple[bool, str]
     base_code_validation_count: int
+    experiment_code_validation: tuple[bool, str]
+    experiment_code_validation_count: int
 
 
 class CreateCodeSubgraphOutputState(TypedDict):
@@ -85,10 +91,12 @@ class CreateCodeSubgraph(BaseSubgraph):
         llm_mapping: dict[str, str] | CreateCodeLLMMapping | None = None,
         secret_names: list[str] | None = None,
         max_base_code_validations: int = 3,
+        max_experiment_code_validations: int = 3,
     ):
         self.runner_type = runner_type
         self.secret_names = secret_names or []
         self.max_base_code_validations = max_base_code_validations
+        self.max_experiment_code_validations = max_experiment_code_validations
         if llm_mapping is None:
             self.llm_mapping = CreateCodeLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -119,6 +127,8 @@ class CreateCodeSubgraph(BaseSubgraph):
             "experiment_iteration": state.get("experiment_iteration", 0) + 1,
             "base_code_validation": (False, ""),
             "base_code_validation_count": 0,
+            "experiment_code_validation": (False, ""),
+            "experiment_code_validation_count": 0,
         }
 
     @create_code_timed
@@ -152,7 +162,7 @@ class CreateCodeSubgraph(BaseSubgraph):
             "base_code_validation_count": state["base_code_validation_count"] + 1,
         }
 
-    def _should_continue_after_code_validation(
+    def _should_continue_after_base_code_validation(
         self, state: CreateCodeSubgraphState
     ) -> str:
         is_base_code_ready, issue = state["base_code_validation"]
@@ -186,8 +196,49 @@ class CreateCodeSubgraph(BaseSubgraph):
             runner_type=cast(RunnerType, self.runner_type),
             secret_names=self.secret_names,
             github_repository_info=state["github_repository_info"],
+            experiment_code_validation=state.get("experiment_code_validation"),
         )
         return {"new_method": new_method}
+
+    @create_code_timed
+    def _validate_experiment_code(
+        self, state: CreateCodeSubgraphState
+    ) -> dict[str, tuple[bool, str] | int]:
+        experiment_code_validation = validate_experiment_code(
+            llm_name=self.llm_mapping.validate_experiment_code,
+            new_method=state["new_method"],
+            github_repository_info=state["github_repository_info"],
+        )
+        return {
+            "experiment_code_validation": experiment_code_validation,
+            "experiment_code_validation_count": state[
+                "experiment_code_validation_count"
+            ]
+            + 1,
+        }
+
+    def _should_continue_after_experiment_code_validation(
+        self, state: CreateCodeSubgraphState
+    ) -> str:
+        is_experiment_code_ready, issue = state["experiment_code_validation"]
+        experiment_code_validation_count = state["experiment_code_validation_count"]
+
+        if is_experiment_code_ready:
+            logger.info(
+                "Experiment code validation passed. Proceeding to push files to GitHub..."
+            )
+            return "push_files_to_github"
+
+        if experiment_code_validation_count >= self.max_experiment_code_validations:
+            logger.warning(
+                f"Maximum experiment code validation attempts ({self.max_experiment_code_validations}) reached. Proceeding to push files..."
+            )
+            return "push_files_to_github"
+
+        logger.warning(
+            f"Experiment code validation failed: {issue}. Re-running derive_specific_experiments... (attempt {experiment_code_validation_count}/{self.max_experiment_code_validations})"
+        )
+        return "derive_specific_experiments"
 
     @create_code_timed
     def _push_files_to_github(self, state: CreateCodeSubgraphState) -> dict[str, bool]:
@@ -225,6 +276,9 @@ class CreateCodeSubgraph(BaseSubgraph):
             "derive_specific_experiments", self._derive_specific_experiments
         )
         graph_builder.add_node("validate_base_code", self._validate_base_code)
+        graph_builder.add_node(
+            "validate_experiment_code", self._validate_experiment_code
+        )
         graph_builder.add_node("push_files_to_github", self._push_files_to_github)
         graph_builder.add_node(
             "set_github_actions_secrets", self._set_github_actions_secrets
@@ -234,17 +288,25 @@ class CreateCodeSubgraph(BaseSubgraph):
         graph_builder.add_edge(START, "initialize")
         graph_builder.add_edge("initialize", "generate_base_code")
         graph_builder.add_edge("generate_base_code", "validate_base_code")
-
         graph_builder.add_conditional_edges(
             "validate_base_code",
-            self._should_continue_after_code_validation,
+            self._should_continue_after_base_code_validation,
             {
                 "generate_base_code": "generate_base_code",
                 "derive_specific_experiments": "derive_specific_experiments",
             },
         )
-
-        graph_builder.add_edge("derive_specific_experiments", "push_files_to_github")
+        graph_builder.add_edge(
+            "derive_specific_experiments", "validate_experiment_code"
+        )
+        graph_builder.add_conditional_edges(
+            "validate_experiment_code",
+            self._should_continue_after_experiment_code_validation,
+            {
+                "derive_specific_experiments": "derive_specific_experiments",
+                "push_files_to_github": "push_files_to_github",
+            },
+        )
         graph_builder.add_edge("push_files_to_github", "set_github_actions_secrets")
         graph_builder.add_edge("set_github_actions_secrets", END)
 

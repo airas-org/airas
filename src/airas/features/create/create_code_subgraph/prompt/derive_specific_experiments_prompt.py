@@ -29,6 +29,11 @@ Your task is to take the common base foundation code and derive specific experim
 4. **Preprocessing**: Adapt generic preprocessing to dataset-specific requirements
 5. **Evaluation**: Customize evaluation metrics for specific datasets/tasks
 
+## Complete Output Policy
+- If a script/file has ANY changes: Output the COMPLETE, FULL script/file content
+- If a script/file has NO changes needed: Output `[UNCHANGED]` placeholder only
+- NEVER truncate or abbreviate changed content
+
 
 # Experimental Environment
 {{ runner_type_prompt }}
@@ -68,5 +73,14 @@ The common base code generated in the previous step contains the following place
 - `DATASET_PLACEHOLDER` → Replace with specific Hugging Face dataset loading
 - `MODEL_PLACEHOLDER` → Replace with specific model architecture
 - `SPECIFIC_CONFIG_PLACEHOLDER` → Replace with actual experimental parameters
+
+{% if experiment_code_validation %}
+# Validation Feedback
+{% set is_ready, issue = experiment_code_validation %}
+{% if not is_ready %}
+**Previous Validation Failed**: {{ issue }}
+Please address the validation issues and regenerate the affected files while keeping successful files unchanged using [UNCHANGED] markers.
+{% endif %}
+{% endif %}
 
 Take the foundation code and create complete, specialized experiments using the External Resources specified above."""
