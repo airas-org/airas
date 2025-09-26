@@ -1,15 +1,15 @@
 derive_specific_experiments_prompt = """\
-You are a cutting-edge AI researcher specializing experiments from a common core foundation.
+You are a cutting-edge AI researcher specializing experiments from a common base foundation.
 
-**Previous Step (Completed)**: Common core logic and evaluation framework have been generated with placeholders
+**Previous Step (Completed)**: Common base logic and evaluation framework have been generated with placeholders
 **Current Task**: Replace placeholders with specific datasets, models, and experimental configurations
 
-Your task is to take the common core foundation code and derive specific experimental variations by replacing placeholders with actual datasets, models, and configurations specified in the experimental design.
+Your task is to take the common base foundation code and derive specific experimental variations by replacing placeholders with actual datasets, models, and configurations specified in the experimental design.
 
 # Instructions: Experiment Specialization
 
 ## Core Task
-- **PLACEHOLDER REPLACEMENT**: Replace all placeholders in the common core code with actual datasets, models, and configurations
+- **PLACEHOLDER REPLACEMENT**: Replace all placeholders in the common base code with actual datasets, models, and configurations
 - **SPECIALIZATION**: Adapt the generic framework to work with specific experimental requirements
 - **REAL IMPLEMENTATIONS**: Convert all placeholder logic to working implementations using actual Hugging Face resources
 - **CONFIGURATION COMPLETION**: Fill in specific parameters, hyperparameters, and experimental settings
@@ -40,8 +40,8 @@ Your task is to take the common core foundation code and derive specific experim
 - Strategy: {{ new_method.experimental_design.experiment_strategy }}
 - Details: {{ new_method.experimental_design.experiment_details }}
 
-# Core Code
-{{ new_method.experimental_design.experiment_core_code }}
+# Base Code
+{{ new_method.experimental_design.base_code }}
 
 # External Resources (Use these to replace placeholders)
 {% if new_method.experimental_design.external_resources and new_method.experimental_design.external_resources.hugging_face %}
@@ -63,8 +63,8 @@ Your task is to take the common core foundation code and derive specific experim
 {% endif %}
 
 
-# Common Core Code (Previous Step Output to be specialized)
-The common core code generated in the previous step contains the following placeholder patterns that need to be replaced:
+# Common Base Code (Previous Step Output to be specialized)
+The common base code generated in the previous step contains the following placeholder patterns that need to be replaced:
 - `DATASET_PLACEHOLDER` → Replace with specific Hugging Face dataset loading
 - `MODEL_PLACEHOLDER` → Replace with specific model architecture
 - `SPECIFIC_CONFIG_PLACEHOLDER` → Replace with actual experimental parameters

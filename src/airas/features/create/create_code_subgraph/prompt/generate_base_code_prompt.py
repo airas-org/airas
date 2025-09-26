@@ -1,9 +1,9 @@
-generate_core_code_prompt = """\
+generate_base_code_prompt = """\
 You are a cutting-edge AI researcher preparing the COMMON CORE FOUNDATION for experiments that will ensure consistency across all experimental variations.
 
 This step generates the **COMMON CORE FOUNDATION** for experiments that will ensure consistency across all experimental variations.
 
-**Current Task**: Generate common core logic, evaluation framework, and infrastructure with placeholders for specific datasets/models
+**Current Task**: Generate common base logic, evaluation framework, and infrastructure with placeholders for specific datasets/models
 **Next Step**: A subsequent step will derive specific experiments by replacing placeholders with actual datasets/models
 
 Based on the research method in # Current Research Method and experimental design in # Experimental Design, generate the foundational code that will serve as the common base for ALL experimental variations.
@@ -21,16 +21,16 @@ Based on the research method in # Current Research Method and experimental desig
 - Use descriptive placeholder names like `DATASET_PLACEHOLDER`, `MODEL_PLACEHOLDER`, `SPECIFIC_CONFIG_PLACEHOLDER`
 - Include comments explaining what will be replaced: `# PLACEHOLDER: Will be replaced with specific dataset loading logic`
 - Ensure placeholders are easily identifiable and replaceable in the next phase
-- Keep the core logic intact - only dataset/model-specific parts should be placeholders
+- Keep the base logic intact - only dataset/model-specific parts should be placeholders
 
 ## Implementation Requirements
-- **ZERO PLACEHOLDER POLICY FOR CORE LOGIC**: Generate complete, production-ready core framework. NO placeholders for training loops, evaluation logic, or result processing.
-- **COMPLETE IMPLEMENTATION**: Every core component must be fully functional. No "omitted for brevity", no "simplified version" for core logic.
+- **ZERO PLACEHOLDER POLICY FOR CORE LOGIC**: Generate complete, production-ready base framework. NO placeholders for training loops, evaluation logic, or result processing.
+- **COMPLETE IMPLEMENTATION**: Every base component must be fully functional. No "omitted for brevity", no "simplified version" for base logic.
 - **PUBLICATION-READY INFRASTRUCTURE**: Framework must produce actual publication-worthy results when datasets/models are specified
 - **USE PYTORCH EXCLUSIVELY** as the deep learning framework
 - **COMPLETE DATA PIPELINE FRAMEWORK**: Implement data loading and preprocessing pipeline with placeholders for specific datasets
 - **COMPREHENSIVE EXPERIMENT INFRASTRUCTURE**: Full-scale experiment framework with sufficient training epochs, proper validation splits, and thorough evaluation metrics
-- **STRUCTURED PLACEHOLDER APPROACH**: Use well-defined placeholders for dataset/model specifics while ensuring core logic is complete and functional
+- **STRUCTURED PLACEHOLDER APPROACH**: Use well-defined placeholders for dataset/model specifics while ensuring base logic is complete and functional
 
 ## Results Documentation Requirements
 - Save the results of each experiment as separate JSON files and modify the code to print the contents of the JSON files to standard output using a print statement.
@@ -89,12 +89,12 @@ Your output must contain EXACTLY these 7 files with NO additional files:
 3. **Result Infrastructure**: Consistent figure generation, data saving, and output formatting
 4. **Configuration Flexibility**: System that can handle different datasets/models via configuration
 
-{% if core_code_validation %}
+{% if base_code_validation %}
 ## Core code Validation Feedback
-{% set is_ready, issue = core_code_validation %}
+{% set is_ready, issue = base_code_validation %}
 {% if not is_ready and issue %}
 **Previous Validation Issue**: {{ issue }}
-**Action Required**: Address this by ensuring the core framework provides a solid foundation for experimental implementations.
+**Action Required**: Address this by ensuring the base framework provides a solid foundation for experimental implementations.
 {% endif %}
 {% endif %}
 
@@ -110,7 +110,7 @@ Your output must contain EXACTLY these 7 files with NO additional files:
 
 {% if consistency_feedback %}
 ## Consistency Feedback
-**Critical**: Address the following consistency requirements in your core framework:
+**Critical**: Address the following consistency requirements in your base framework:
 {{ consistency_feedback }}
 
 Ensure your foundational code addresses these consistency issues across all future experimental variations.
@@ -123,4 +123,4 @@ Ensure your foundational code addresses these consistency issues across all futu
 - Details: {{ new_method.iteration_history[-1].experimental_design.experiment_details }}
 {% endif %}
 
-Remember: This is the FOUNDATION that will ensure ALL experimental variations are conducted on the same rigorous, consistent basis. Focus on creating robust core logic with strategic placeholders for dataset/model specifics."""
+Remember: This is the FOUNDATION that will ensure ALL experimental variations are conducted on the same rigorous, consistent basis. Focus on creating robust base logic with strategic placeholders for dataset/model specifics."""

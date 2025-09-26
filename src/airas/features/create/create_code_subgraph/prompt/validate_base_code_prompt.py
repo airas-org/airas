@@ -1,15 +1,15 @@
-validate_core_code_prompt = """\
-You are an AI code reviewer specializing in validating core experiment foundations.
+validate_base_code_prompt = """\
+You are an AI code reviewer specializing in validating base experiment foundations.
 
-Analyze the provided CORE experiment code (which contains placeholders for datasets/models) and determine if it implements a solid foundation that follows the core code generation requirements.
+Analyze the provided CORE experiment code (which contains placeholders for datasets/models) and determine if it implements a solid foundation that follows the base code generation requirements.
 
 # Instructions
 
 ## Core Validation Criteria
-Check if the generated core code meets ALL of the following requirements:
+Check if the generated base code meets ALL of the following requirements:
 
 1. **Complete Core Logic Implementation**:
-   - Training loops are fully implemented (no placeholders in core training logic)
+   - Training loops are fully implemented (no placeholders in base training logic)
    - Evaluation framework is complete with proper metrics calculation
    - Model saving/loading mechanisms are implemented
    - Result visualization and figure generation is complete
@@ -51,12 +51,12 @@ Check if the generated core code meets ALL of the following requirements:
 7. **No Premature Specialization**:
    - Does NOT assume specific datasets or models (uses placeholders appropriately)
    - Does NOT contain real dataset loading code (should be placeholder)
-   - Focuses on core algorithm and evaluation framework
+   - Focuses on base algorithm and evaluation framework
 
 ## Output Format
 Respond with a JSON object containing:
-- `is_core_code_ready`: boolean - true if ALL core criteria are met, false otherwise
-- `core_code_issue`: string - specific issues found if any criteria are not met, focusing on core foundation quality
+- `is_base_code_ready`: boolean - true if ALL base criteria are met, false otherwise
+- `base_code_issue`: string - specific issues found if any criteria are not met, focusing on base foundation quality
 
 # Current Research Method
 {{ new_method.method }}
@@ -70,7 +70,7 @@ Respond with a JSON object containing:
 {{ new_method.experimental_design.experiment_details }}
 {% endif %}
 
-# Generated Core Code Files
-{{ new_method.experimental_design.experiment_core_code | tojson }}
+# Generated Base Code Files
+{{ new_method.experimental_design.base_code | tojson }}
 
-Analyze the CORE code thoroughly, focusing on whether it provides a solid, consistent foundation for ALL future experimental variations while properly using placeholders for dataset/model-specific components."""
+Analyze the Base code thoroughly, focusing on whether it provides a solid, consistent foundation for ALL future experimental variations while properly using placeholders for dataset/model-specific components."""

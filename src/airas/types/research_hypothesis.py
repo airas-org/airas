@@ -81,7 +81,7 @@ class ExperimentalDesign(BaseModel):
         None,
         description="External resources including models, datasets, and other resources",
     )
-    experiment_core_code: Optional[ExperimentCode] = Field(None, description="")
+    base_code: Optional[ExperimentCode] = Field(None, description="")
     experiment_code: Optional[ExperimentCode] = Field(
         None, description=""
     )  # TODO: Temporarily unified, but need to be separated for each experiment.

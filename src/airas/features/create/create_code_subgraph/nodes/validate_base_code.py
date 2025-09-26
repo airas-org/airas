@@ -4,8 +4,8 @@ from logging import getLogger
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.features.create.create_code_subgraph.prompt.validate_core_code_prompt import (
-    validate_core_code_prompt,
+from airas.features.create.create_code_subgraph.prompt.validate_base_code_prompt import (
+    validate_base_code_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
@@ -19,15 +19,15 @@ logger = getLogger(__name__)
 
 
 class ValidationOutput(BaseModel):
-    is_core_code_ready: bool
-    core_code_issue: str
+    is_base_code_ready: bool
+    base_code_issue: str
 
 
-def validate_core_code(
+def validate_base_code(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
     github_repository_info: GitHubRepositoryInfo,
-    prompt_template: str = validate_core_code_prompt,
+    prompt_template: str = validate_base_code_prompt,
     llm_client: LLMFacadeClient | None = None,
 ) -> tuple[bool, str]:
     client = llm_client or LLMFacadeClient(llm_name=llm_name)
@@ -42,7 +42,7 @@ def validate_core_code(
     output, _ = client.structured_outputs(message=messages, data_model=ValidationOutput)
 
     if output is None:
-        logger.error("No response from LLM in validate_core_code. Defaulting to False.")
+        logger.error("No response from LLM in validate_base_code. Defaulting to False.")
         return False, ""
 
     save_io_on_github(
@@ -50,7 +50,7 @@ def validate_core_code(
         input=messages,
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_code_subgraph",
-        node_name="validate_core_code",
+        node_name="validate_base_code",
     )
 
-    return output["is_core_code_ready"], output["core_code_issue"]
+    return output["is_base_code_ready"], output["base_code_issue"]

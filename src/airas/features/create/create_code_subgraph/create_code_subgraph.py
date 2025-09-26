@@ -15,8 +15,8 @@ from airas.features.create.create_code_subgraph.input_data import (
 from airas.features.create.create_code_subgraph.nodes.derive_specific_experiments import (
     derive_specific_experiments,
 )
-from airas.features.create.create_code_subgraph.nodes.generate_core_code import (
-    generate_core_code,
+from airas.features.create.create_code_subgraph.nodes.generate_base_code import (
+    generate_base_code,
 )
 from airas.features.create.create_code_subgraph.nodes.push_files_to_github import (
     push_files_to_github,
@@ -24,8 +24,8 @@ from airas.features.create.create_code_subgraph.nodes.push_files_to_github impor
 from airas.features.create.create_code_subgraph.nodes.set_github_actions_secrets import (
     set_github_actions_secrets,
 )
-from airas.features.create.create_code_subgraph.nodes.validate_core_code import (
-    validate_core_code,
+from airas.features.create.create_code_subgraph.nodes.validate_base_code import (
+    validate_base_code,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
@@ -41,8 +41,8 @@ create_code_timed = lambda f: time_node("create_code_subgraph")(f)  # noqa: E731
 
 
 class CreateCodeLLMMapping(BaseModel):
-    generate_core_code: LLM_MODEL = DEFAULT_NODE_LLMS["generate_core_code"]
-    validate_core_code: LLM_MODEL = DEFAULT_NODE_LLMS["validate_core_code"]
+    generate_base_code: LLM_MODEL = DEFAULT_NODE_LLMS["generate_base_code"]
+    validate_base_code: LLM_MODEL = DEFAULT_NODE_LLMS["validate_base_code"]
     derive_specific_experiments: LLM_MODEL = DEFAULT_NODE_LLMS[
         "derive_specific_experiments"
     ]
@@ -56,8 +56,8 @@ class CreateCodeSubgraphInputState(TypedDict, total=False):
 
 
 class CreateCodeSubgraphHiddenState(TypedDict):
-    core_code_validation: tuple[bool, str]
-    core_code_validation_count: int
+    base_code_validation: tuple[bool, str]
+    base_code_validation_count: int
 
 
 class CreateCodeSubgraphOutputState(TypedDict):
@@ -84,11 +84,11 @@ class CreateCodeSubgraph(BaseSubgraph):
         runner_type: RunnerType = "ubuntu-latest",
         llm_mapping: dict[str, str] | CreateCodeLLMMapping | None = None,
         secret_names: list[str] | None = None,
-        max_core_code_validations: int = 3,
+        max_base_code_validations: int = 3,
     ):
         self.runner_type = runner_type
         self.secret_names = secret_names or []
-        self.max_core_code_validations = max_core_code_validations
+        self.max_base_code_validations = max_base_code_validations
         if llm_mapping is None:
             self.llm_mapping = CreateCodeLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -117,16 +117,16 @@ class CreateCodeSubgraph(BaseSubgraph):
         # Always increment experiment_iteration to create a new iteration folder
         return {
             "experiment_iteration": state.get("experiment_iteration", 0) + 1,
-            "core_code_validation": (False, ""),
-            "core_code_validation_count": 0,
+            "base_code_validation": (False, ""),
+            "base_code_validation_count": 0,
         }
 
     @create_code_timed
-    def _generate_core_code(
+    def _generate_base_code(
         self, state: CreateCodeSubgraphState
     ) -> dict[str, ResearchHypothesis]:
-        new_method = generate_core_code(
-            llm_name=self.llm_mapping.generate_core_code,
+        new_method = generate_base_code(
+            llm_name=self.llm_mapping.generate_base_code,
             new_method=state["new_method"],
             runner_type=cast(RunnerType, self.runner_type),
             secret_names=self.secret_names,
@@ -134,46 +134,46 @@ class CreateCodeSubgraph(BaseSubgraph):
             feedback_text=feedback[-1]
             if (feedback := state.get("consistency_feedback"))
             else None,
-            core_code_validation=state.get("core_code_validation"),
+            base_code_validation=state.get("base_code_validation"),
         )
         return {"new_method": new_method}
 
     @create_code_timed
-    def _validate_core_code(
+    def _validate_base_code(
         self, state: CreateCodeSubgraphState
     ) -> dict[str, tuple[bool, str] | int]:
-        core_code_validation = validate_core_code(
-            llm_name=self.llm_mapping.validate_core_code,
+        base_code_validation = validate_base_code(
+            llm_name=self.llm_mapping.validate_base_code,
             new_method=state["new_method"],
             github_repository_info=state["github_repository_info"],
         )
         return {
-            "core_code_validation": core_code_validation,
-            "core_code_validation_count": state["core_code_validation_count"] + 1,
+            "base_code_validation": base_code_validation,
+            "base_code_validation_count": state["base_code_validation_count"] + 1,
         }
 
     def _should_continue_after_code_validation(
         self, state: CreateCodeSubgraphState
     ) -> str:
-        is_core_code_ready, issue = state["core_code_validation"]
-        core_code_validation_count = state["core_code_validation_count"]
+        is_base_code_ready, issue = state["base_code_validation"]
+        base_code_validation_count = state["base_code_validation_count"]
 
-        if is_core_code_ready:
+        if is_base_code_ready:
             logger.info(
-                "Core code validation passed. Proceeding to derive specific experiments..."
+                "Base code validation passed. Proceeding to derive specific experiments..."
             )
             return "derive_specific_experiments"
 
-        if core_code_validation_count >= self.max_core_code_validations:
+        if base_code_validation_count >= self.max_base_code_validations:
             logger.warning(
-                f"Maximum core code validation attempts ({self.max_core_code_validations}) reached. Proceeding to derive experiments..."
+                f"Maximum base code validation attempts ({self.max_base_code_validations}) reached. Proceeding to derive experiments..."
             )
             return "derive_specific_experiments"
 
         logger.warning(
-            f"Core code validation failed: {issue}. Re-running generate_core_code... (attempt {core_code_validation_count}/{self.max_core_code_validations})"
+            f"Base code validation failed: {issue}. Re-running generate_base_code... (attempt {base_code_validation_count}/{self.max_base_code_validations})"
         )
-        return "generate_core_code"
+        return "generate_base_code"
 
     # TODO: Generate code for each experiment and store it separately in the state.
     @create_code_timed
@@ -220,11 +220,11 @@ class CreateCodeSubgraph(BaseSubgraph):
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(CreateCodeSubgraphState)
         graph_builder.add_node("initialize", self._initialize)
-        graph_builder.add_node("generate_core_code", self._generate_core_code)
+        graph_builder.add_node("generate_base_code", self._generate_base_code)
         graph_builder.add_node(
             "derive_specific_experiments", self._derive_specific_experiments
         )
-        graph_builder.add_node("validate_core_code", self._validate_core_code)
+        graph_builder.add_node("validate_base_code", self._validate_base_code)
         graph_builder.add_node("push_files_to_github", self._push_files_to_github)
         graph_builder.add_node(
             "set_github_actions_secrets", self._set_github_actions_secrets
@@ -232,14 +232,14 @@ class CreateCodeSubgraph(BaseSubgraph):
 
         # Core generation -> Validation -> Experiment specialization workflow
         graph_builder.add_edge(START, "initialize")
-        graph_builder.add_edge("initialize", "generate_core_code")
-        graph_builder.add_edge("generate_core_code", "validate_core_code")
+        graph_builder.add_edge("initialize", "generate_base_code")
+        graph_builder.add_edge("generate_base_code", "validate_base_code")
 
         graph_builder.add_conditional_edges(
-            "validate_core_code",
+            "validate_base_code",
             self._should_continue_after_code_validation,
             {
-                "generate_core_code": "generate_core_code",
+                "generate_base_code": "generate_base_code",
                 "derive_specific_experiments": "derive_specific_experiments",
             },
         )

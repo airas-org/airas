@@ -58,5 +58,5 @@ def derive_specific_experiments(
         subgraph_name="create_code_subgraph",
         node_name="derive_specific_experiments",
     )
-    new_method.experimental_design.experiment_code = ExperimentCode(**output)
+    new_method.experimental_design.code = ExperimentCode(**output)
     return new_method
