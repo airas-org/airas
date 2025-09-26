@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -39,7 +39,9 @@ class ExperimentRun(BaseModel):
         ...,
         description="A unique identifier for this run (e.g., 'exp-1-lr-0.01').",
     )
-    parameters: dict[str, Any] = Field(..., description="The parameters for this run")
+    description: str = Field(
+        ..., description="The objective or hypothesis for this run."
+    )
     code: Optional[ExperimentCode] = Field(
         None, description="The specific code generated to run this run."
     )
@@ -95,7 +97,7 @@ class ExperimentalResults(BaseModel):
 
 class ExperimentalAnalysis(BaseModel):
     analysis_report: Optional[str] = Field(None, description="")
-    # TODO: Select which experimental results to include in the paper.
+    # TODO: Select which experimental results to include in the paper. e.g. selected_run_ids: list[str]
 
 
 class ResearchHypothesis(BaseModel):
