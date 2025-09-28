@@ -34,6 +34,7 @@ def generate_idea_and_research_summary(
     client = client or LLMFacadeClient(llm_name=llm_name)
     env = Environment()
 
+    # NOTE: Simplified the experiment's difficulty level.
     # template = env.from_string(generate_idea_and_research_summary_prompt)
     template = env.from_string(generate_simple_method_prompt)
     data = {
