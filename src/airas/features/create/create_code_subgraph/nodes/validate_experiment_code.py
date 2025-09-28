@@ -4,8 +4,8 @@ from logging import getLogger
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.features.create.create_code_subgraph.prompt.validate_full_experiment_prompt import (
-    validate_full_experiment_prompt,
+from airas.features.create.create_code_subgraph.prompt.validate_experiment_code_prompt import (
+    validate_experiment_code_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
@@ -17,22 +17,23 @@ from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
-
-class ValidationOutput(BaseModel):
-    is_full_experiment_ready: bool
-    full_experiment_issue: str
+# TODO: Add support for partial validation by run_id
+# Enable selective regeneration of failed files while preserving valid ones
 
 
-def validate_full_experiment_code(
+class ExperimentValidationOutput(BaseModel):
+    is_experiment_code_ready: bool
+    experiment_code_issue: str
+
+
+def validate_experiment_code(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
     github_repository_info: GitHubRepositoryInfo,
-    prompt_template: str = validate_full_experiment_prompt,
-    client: LLMFacadeClient | None = None,
+    prompt_template: str = validate_experiment_code_prompt,
+    llm_client: LLMFacadeClient | None = None,
 ) -> tuple[bool, str]:
-    if client is None:
-        client = LLMFacadeClient(llm_name=llm_name)
-
+    client = llm_client or LLMFacadeClient(llm_name=llm_name)
     env = Environment()
     template = env.from_string(prompt_template)
 
@@ -41,18 +42,22 @@ def validate_full_experiment_code(
             "new_method": new_method.model_dump(),
         }
     )
-    output, _ = client.structured_outputs(message=messages, data_model=ValidationOutput)
+    output, _ = client.structured_outputs(
+        message=messages, data_model=ExperimentValidationOutput
+    )
 
     if output is None:
         logger.error(
-            "No response from LLM in validate_full_experiment_code. Defaulting to False."
+            "No response from LLM in validate_experiment_code. Defaulting to False."
         )
-        return False, ""
+        return False, "No response from validation LLM"
+
     save_io_on_github(
         github_repository_info=github_repository_info,
         input=messages,
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_code_subgraph",
-        node_name="validate_full_experiment_code",
+        node_name="validate_experiment_code",
     )
-    return output["is_full_experiment_ready"], output["full_experiment_issue"]
+
+    return output["is_experiment_code_ready"], output["experiment_code_issue"]

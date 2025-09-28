@@ -106,10 +106,10 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
             huggingface_api_key_check=True,
         )
 
-    async def _search_hugging_face(
+    def _search_hugging_face(
         self, state: RetrieveHuggingFaceState
     ) -> dict[str, HuggingFace]:
-        huggingface_search_results = await search_hugging_face(
+        huggingface_search_results = search_hugging_face(
             new_method=state["new_method"],
             max_results_per_search=self.max_results_per_search,
             include_gated=self.include_gated,

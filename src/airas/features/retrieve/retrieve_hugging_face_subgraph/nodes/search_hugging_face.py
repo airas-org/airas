@@ -17,9 +17,9 @@ from airas.types.research_hypothesis import ResearchHypothesis
 logger = logging.getLogger(__name__)
 
 
-async def search_hugging_face(
+async def _search_hugging_face(
     new_method: ResearchHypothesis,
-    max_results_per_search: int = 20,  # TODO: Add logic to rescan if no resources meeting the conditions are found.
+    max_results_per_search: int,
     hf_client: HuggingFaceClient | None = None,
     include_gated: bool = False,
 ) -> HuggingFace:
@@ -213,4 +213,17 @@ def _apply_hf_resource_type(
         library_name=merged_data.get("library_name"),
         readme=readme_content,
         model_index=merged_data.get("model_index"),
+    )
+
+
+def search_hugging_face(
+    new_method: ResearchHypothesis,
+    max_results_per_search: int = 20,  # TODO: Add logic to rescan if no resources meeting the conditions are found.
+    hf_client: HuggingFaceClient | None = None,
+    include_gated: bool = False,
+) -> HuggingFace:
+    return asyncio.run(
+        _search_hugging_face(
+            new_method, max_results_per_search, hf_client, include_gated
+        )
     )

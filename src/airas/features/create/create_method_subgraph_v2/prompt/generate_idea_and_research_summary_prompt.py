@@ -1,4 +1,4 @@
-generate_ide_and_research_summary_prompt = """\
+generate_idea_and_research_summary_prompt = """\
 You are an accomplished researcher in machine learning. Based on the instructions below, please generate a new research idea.
 # Instructions:
 - Carefully read the research topic described below and understand the problems this research should address as well as the broader impact it aims to achieve.
