@@ -217,12 +217,18 @@ class CreateMethodSubgraphV2(BaseSubgraph):
         else:
             return "search_arxiv_by_id"
 
+    def should_skip_paper_retrieval(self, state: CreateMethodSubgraphV2State) -> str:
+        if self.num_retrieve_related_papers <= 0:
+            return "evaluate_novelty_and_significance"
+        else:
+            return "retrieve_related_papers"
+
     # 新規性と重要性の10段階評価
     def _evaluate_novelty_and_significance(
         self, state: CreateMethodSubgraphV2State
     ) -> dict[str, ResearchIdea | list[ResearchStudy]]:
         research_study_list = state["research_study_list"]
-        related_research_study_list = state["related_research_study_list"]
+        related_research_study_list = state.get("related_research_study_list", [])
         new_idea_info = state["new_idea_info"]
         evaluation_results = evaluate_novelty_and_significance(
             research_topic=state["research_topic"],
@@ -307,8 +313,13 @@ class CreateMethodSubgraphV2(BaseSubgraph):
 
         graph_builder.add_edge(START, "initialize")
         graph_builder.add_edge("initialize", "generate_idea_and_research_summary")
-        graph_builder.add_edge(
-            "generate_idea_and_research_summary", "retrieve_related_papers"
+        graph_builder.add_conditional_edges(
+            "generate_idea_and_research_summary",
+            self.should_skip_paper_retrieval,
+            {
+                "retrieve_related_papers": "retrieve_related_papers",
+                "evaluate_novelty_and_significance": "evaluate_novelty_and_significance",
+            },
         )
         graph_builder.add_edge("retrieve_related_papers", "search_arxiv_id_from_title")
         graph_builder.add_conditional_edges(
@@ -339,7 +350,10 @@ class CreateMethodSubgraphV2(BaseSubgraph):
 
 def main():
     input = create_method_subgraph_v2_input_data
-    result = CreateMethodSubgraphV2().run(input)
+    result = CreateMethodSubgraphV2(
+        method_refinement_rounds=0,
+        num_retrieve_related_papers=0,
+    ).run(input)
     print(f"result: {result}")
 
 
