@@ -1,3 +1,4 @@
+import asyncio
 import time
 from dataclasses import dataclass
 from logging import getLogger
@@ -9,8 +10,8 @@ from airas.types.github import GitHubRepositoryInfo
 
 logger = getLogger(__name__)
 
-_POLL_INTERVAL_SEC = 10
-_TIMEOUT_SEC = 12000  # NOTE: 200 minutes (slightly longer than GitHub Actions timeout of 180 minutes)
+_POLL_INTERVAL_SEC = 60
+_TIMEOUT_SEC = 360000  # NOTE: 6000 minutes (matching YAML timeout-minutes setting)
 
 
 @dataclass
@@ -24,7 +25,7 @@ class WorkflowExecutor:
     def __init__(self, client: Optional[GithubClient] = None):
         self.client = client or GithubClient()
 
-    def execute_workflow(
+    async def execute_workflow(
         self,
         github_owner: str,
         repository_name: str,
@@ -34,7 +35,7 @@ class WorkflowExecutor:
         workflow_file: str,
     ) -> WorkflowResult:
         try:
-            baseline_count = self._get_baseline_workflow_count(
+            baseline_count = await self._get_baseline_workflow_count(
                 github_owner, repository_name, branch_name
             )
             if baseline_count is None:
@@ -42,7 +43,7 @@ class WorkflowExecutor:
                     None, False, "Failed to get baseline workflow count"
                 )
 
-            success = self._dispatch_workflow(
+            success = await self._dispatch_workflow(
                 github_owner,
                 repository_name,
                 experiment_iteration,
@@ -53,7 +54,7 @@ class WorkflowExecutor:
             if not success:
                 return WorkflowResult(None, False, "Failed to dispatch workflow")
 
-            run_id = self._wait_for_completion(
+            run_id = await self._wait_for_completion(
                 github_owner, repository_name, branch_name, baseline_count
             )
             if run_id is None:
@@ -67,11 +68,11 @@ class WorkflowExecutor:
             logger.error(f"Workflow execution failed: {e}")
             return WorkflowResult(None, False, str(e))
 
-    def _get_baseline_workflow_count(
+    async def _get_baseline_workflow_count(
         self, github_owner: str, repository_name: str, branch_name: str
     ) -> Optional[int]:
         try:
-            response = self.client.list_workflow_runs(
+            response = await self.client.alist_workflow_runs(
                 github_owner, repository_name, branch_name
             )
             if not response:
@@ -83,7 +84,7 @@ class WorkflowExecutor:
             logger.error(f"Failed to get baseline workflow count: {e}")
             return None
 
-    def _dispatch_workflow(
+    async def _dispatch_workflow(
         self,
         github_owner: str,
         repository_name: str,
@@ -97,7 +98,7 @@ class WorkflowExecutor:
             "runner_type": runner_type,
         }
         try:
-            success = self.client.create_workflow_dispatch(
+            success = await self.client.acreate_workflow_dispatch(
                 github_owner,
                 repository_name,
                 workflow_file,
@@ -117,7 +118,7 @@ class WorkflowExecutor:
             logger.error(f"Failed to dispatch workflow: {e}")
             return False
 
-    def _wait_for_completion(
+    async def _wait_for_completion(
         self,
         github_owner: str,
         repository_name: str,
@@ -131,11 +132,11 @@ class WorkflowExecutor:
                 logger.error("Workflow execution timed out")
                 return None
 
-            response = self._get_workflow_runs(
+            response = await self._get_workflow_runs(
                 github_owner, repository_name, branch_name
             )
             if not response:
-                time.sleep(_POLL_INTERVAL_SEC)
+                await asyncio.sleep(_POLL_INTERVAL_SEC)
                 continue
 
             run_id = self._check_for_new_completed_workflow(response, baseline_count)
@@ -143,13 +144,13 @@ class WorkflowExecutor:
                 logger.info(f"Workflow {run_id} completed successfully")
                 return run_id
 
-            time.sleep(_POLL_INTERVAL_SEC)
+            await asyncio.sleep(_POLL_INTERVAL_SEC)
 
-    def _get_workflow_runs(
+    async def _get_workflow_runs(
         self, github_owner: str, repository_name: str, branch_name: str
     ) -> Optional[dict]:
         try:
-            response = self.client.list_workflow_runs(
+            response = await self.client.alist_workflow_runs(
                 github_owner, repository_name, branch_name
             )
             return response if response else None
@@ -187,16 +188,27 @@ def execute_github_actions_workflow(
     github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
     runner_type: RunnerType,  # noqa: F821
-    workflow_file: str = "run_experiment.yml",
+    experiment_branches: list[str],
+    workflow_file: str = "run_experiment_with_claude_code.yml",
     client: Optional[GithubClient] = None,
 ) -> bool:
+    # TODO: Currently assumes single branch execution. Once ResearchHypothesis data structure
+    # is updated, store data for each experiment separately.
     executor = WorkflowExecutor(client)
-    result = executor.execute_workflow(
-        github_repository.github_owner,
-        github_repository.repository_name,
-        github_repository.branch_name,
-        experiment_iteration,
-        runner_info_dict[runner_type]["runner_setting"],
-        workflow_file,
-    )
-    return result.success
+
+    # For now, execute workflow for the first experiment branch only
+    if experiment_branches:
+        branch_name = experiment_branches[0]
+        result = asyncio.run(
+            executor.execute_workflow(
+                github_repository.github_owner,
+                github_repository.repository_name,
+                branch_name,
+                experiment_iteration,
+                runner_info_dict[runner_type]["runner_setting"],
+                workflow_file,
+            )
+        )
+        return result.success
+
+    return False
