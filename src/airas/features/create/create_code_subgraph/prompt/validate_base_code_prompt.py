@@ -36,7 +36,7 @@ Check if the generated base code meets ALL of the following requirements:
    - main.py properly supports `--smoke-test` and `--full-experiment` flags
    - Configuration system can handle different experimental scenarios
    - Proper command-line argument parsing
-   - Import statements are compatible with `uv run python -m src.main` execution (relative imports like `from .train import train` are valid)
+   - Import statements are compatible with `uv run python -m src.main` execution (relative imports like `from .train import train` are valid even without `src/__init__.py`)
 
 5. **Publication-Ready Infrastructure**:
    - Figure generation with proper formatting (PDF output, legends, annotations)

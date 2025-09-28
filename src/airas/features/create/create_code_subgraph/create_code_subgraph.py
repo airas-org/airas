@@ -68,7 +68,7 @@ class CreateCodeSubgraphHiddenState(TypedDict):
 
 class CreateCodeSubgraphOutputState(TypedDict):
     new_method: ResearchHypothesis
-    experiment_iteration: int
+    experiment_iteration: int  # TODO?: It may become unnecessary in the future.
     experiment_branches: list[str]
 
 
@@ -198,7 +198,6 @@ class CreateCodeSubgraph(BaseSubgraph):
             runner_type=cast(RunnerType, self.runner_type),
             secret_names=self.secret_names,
             github_repository_info=state["github_repository_info"],
-            experiment_iteration=state["experiment_iteration"],
             experiment_code_validation=state.get("experiment_code_validation"),
         )
         return {"new_method": new_method}
