@@ -57,6 +57,7 @@ def refine_idea_and_research_summary(
         output=str(output),
         subgraph_name="create_method_subgraph_v2",
         node_name=f"refine_idea_and_research_summary_{refine_iterations}",
+        llm_name=llm_name,
     )
     new_idea_info = ResearchIdea(idea=GenerateIdea(**output))
     idea_info_history.append(evaluated_idea_info)

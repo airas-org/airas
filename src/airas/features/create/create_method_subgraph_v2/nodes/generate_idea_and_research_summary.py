@@ -49,6 +49,7 @@ def generate_idea_and_research_summary(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_method_subgraph_v2",
         node_name="generate_idea_and_research_summary",
+        llm_name=llm_name,
     )
     new_idea_info = ResearchIdea(idea=GenerateIdea(**output))
     return new_idea_info

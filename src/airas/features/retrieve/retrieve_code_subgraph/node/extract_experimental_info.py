@@ -30,6 +30,7 @@ def _extract_experimental_info_from_study(
     template: str,
     client: LLMFacadeClient,
     github_repository_info: GitHubRepositoryInfo,
+    llm_name: LLM_MODEL,
     index: int,
 ) -> ResearchStudy:
     title = research_study.title or "N/A"
@@ -73,6 +74,7 @@ def _extract_experimental_info_from_study(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="retrieve_code_subgraph",
         node_name=f"extract_experimental_info_{index}",
+        llm_name=llm_name,
     )
     research_study.llm_extracted_info.experimental_code = output["experimental_code"]
     research_study.llm_extracted_info.experimental_info = output["experimental_info"]
@@ -110,6 +112,7 @@ def extract_experimental_info(
                 prompt_template,
                 client,
                 github_repository_info,
+                llm_name,
                 i,
             ): i
             for i, (study, code_str) in enumerate(

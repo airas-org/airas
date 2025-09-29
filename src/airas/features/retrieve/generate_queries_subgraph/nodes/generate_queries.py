@@ -47,5 +47,6 @@ def generate_queries(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="generate_queries_subgraph",
         node_name="generate_queries",
+        llm_name=llm_name,
     )
     return [output[f"generated_query_{i + 1}"] for i in range(n_queries)]

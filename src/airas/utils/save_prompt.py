@@ -1,4 +1,5 @@
 from airas.services.api_client.github_client import GithubClient
+from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 
 
@@ -8,12 +9,14 @@ def save_io_on_github(
     output: str,
     subgraph_name: str,
     node_name: str,
+    llm_name: LLM_MODEL,
     client: GithubClient | None = None,
 ) -> None:
     if client is None:
         client = GithubClient()
     file_path = f".research/prompt/{subgraph_name}/{node_name}.txt"
     text = f"""
+LLM Name: {llm_name}
 Input:
 {input}
 Output:

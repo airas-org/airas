@@ -53,6 +53,7 @@ def convert_to_latex_str(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="latex_subgraph",
         node_name="convert_to_latex_str",
+        llm_name=llm_name,
     )
     missing_fields = [
         field

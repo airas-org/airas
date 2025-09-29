@@ -49,5 +49,6 @@ def extract_required_info(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="github_actions_executor_subgraph",
         node_name="extract_required_info",
+        llm_name=llm_name,
     )
     return output["extracted_output"], output["extracted_error"]

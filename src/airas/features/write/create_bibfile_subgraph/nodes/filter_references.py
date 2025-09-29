@@ -55,6 +55,7 @@ def filter_references(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_bibfile_subgraph",
         node_name="filter_references",
+        llm_name=llm_name,
     )
     selected_indices = output["selected_reference_indices"]
     filtered_references = [

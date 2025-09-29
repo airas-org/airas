@@ -59,6 +59,7 @@ def _select_github_url(
     prompt_template: str,
     github_repository_info: GitHubRepositoryInfo,
     llm_client: LLMFacadeClient,
+    llm_name: LLM_MODEL,
     index: int,
 ) -> int | None:
     template = Environment().from_string(prompt_template)
@@ -75,6 +76,7 @@ def _select_github_url(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="retrieve_code_subgraph",
         node_name=f"extract_github_url_from_text_{index}",
+        llm_name=llm_name,
     )
     return output["index"] if output else None
 
@@ -115,6 +117,7 @@ def extract_github_url_from_text(
             prompt_template,
             github_repository_info,
             llm_client,
+            llm_name,
             index,
         )
 

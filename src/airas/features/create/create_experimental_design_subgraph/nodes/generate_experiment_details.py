@@ -52,6 +52,7 @@ def generate_experiment_details(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_experimental_design_subgraph",
         node_name="generate_experiment_details",
+        llm_name=llm_name,
     )
     new_method.experimental_design.experiment_details = output["experiment_details"]
     new_method.experimental_design.expected_models = output["expected_models"]

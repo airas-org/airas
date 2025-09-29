@@ -51,6 +51,7 @@ def review_paper(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="review_paper_subgraph",
         node_name="review_paper",
+        llm_name=llm_name,
     )
     paper_review_scores = PaperReviewScores(
         novelty_score=output["novelty_score"],

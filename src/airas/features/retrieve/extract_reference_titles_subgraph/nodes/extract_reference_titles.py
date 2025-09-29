@@ -40,6 +40,7 @@ def _extract_references_from_study(
     github_repository_info: GitHubRepositoryInfo,
     index: int,
     client: LLMFacadeClient,
+    llm_name: LLM_MODEL,
 ) -> list[str]:
     if not research_study.full_text:
         logger.warning(f"No full_text found for study: {research_study.title}")
@@ -67,6 +68,7 @@ def _extract_references_from_study(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="extract_reference_titles_subgraph",
         node_name=f"extract_reference_titles_{index}",
+        llm_name=llm_name,
     )
     reference_titles = output.get("reference_titles", [])
     logger.info(
@@ -108,6 +110,7 @@ def extract_reference_titles(
                 github_repository_info,
                 index,
                 client,
+                llm_name,
             ): study
             for index, study in enumerate(valid_studies)
         }

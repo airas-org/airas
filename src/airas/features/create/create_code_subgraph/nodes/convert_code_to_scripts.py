@@ -58,6 +58,7 @@ def convert_code_to_scripts(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_code_subgraph",
         node_name="convert_code_to_scripts",
+        llm_name=llm_name,
     )
     new_method.experimental_design.experiment_code = ExperimentCode(**output)
 

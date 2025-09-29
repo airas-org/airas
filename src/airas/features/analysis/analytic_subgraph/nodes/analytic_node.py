@@ -69,5 +69,6 @@ def analytic_node(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="analytic_subgraph",
         node_name="analytic_node",
+        llm_name=llm_name,
     )
     return output["analysis_report"]
