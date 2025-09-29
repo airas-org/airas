@@ -48,6 +48,7 @@ def evaluate_experimental_consistency(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="evaluate_experimental_consistency_subgraph",
         node_name="evaluate_experimental_consistency",
+        llm_name=llm_name,
     )
     if existing_feedback is None:
         existing_feedback = []

@@ -46,6 +46,7 @@ def evaluate_paper_results(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="evaluate_paper_results_subgraph",
         node_name="evaluate_paper_results",
+        llm_name=llm_name,
     )
     return (
         output["was_experiment_executed"],

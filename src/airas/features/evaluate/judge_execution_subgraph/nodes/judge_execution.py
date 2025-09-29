@@ -48,5 +48,6 @@ def judge_execution(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="judge_execution_subgraph",
         node_name="judge_execution",
+        llm_name=llm_name,
     )
     return output["is_experiment_successful"]

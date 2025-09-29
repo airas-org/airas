@@ -54,5 +54,6 @@ def validate_full_experiment_code(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_code_subgraph",
         node_name="validate_full_experiment_code",
+        llm_name=llm_name,
     )
     return output["is_full_experiment_ready"], output["full_experiment_issue"]

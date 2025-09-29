@@ -49,6 +49,7 @@ def evaluate_novelty_and_significance(
         output=str(output),
         subgraph_name="create_method_subgraph_v2",
         node_name="evaluate_novelty_and_significance",
+        llm_name=llm_name,
     )
     if output is None:
         raise ValueError("No response from LLM in idea_generator.")

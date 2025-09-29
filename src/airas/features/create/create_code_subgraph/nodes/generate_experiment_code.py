@@ -82,5 +82,6 @@ def generate_experiment_code(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_code_subgraph",
         node_name="generate_experiment_code",
+        llm_name=llm_name,
     )
     return output["experiment_code"]

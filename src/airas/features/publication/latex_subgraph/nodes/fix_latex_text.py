@@ -48,6 +48,7 @@ def fix_latex_text(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="latex_subgraph",
         node_name=node_name,
+        llm_name=llm_name,
     )
     latex_text = output["latex_text"]
     return latex_text

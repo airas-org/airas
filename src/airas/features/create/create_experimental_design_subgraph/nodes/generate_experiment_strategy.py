@@ -50,6 +50,7 @@ def generate_experiment_strategy(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_experimental_design_subgraph",
         node_name="generate_experiment_strategy",
+        llm_name=llm_name,
     )
     if new_method.experimental_design is None:
         new_method.experimental_design = ExperimentalDesign()

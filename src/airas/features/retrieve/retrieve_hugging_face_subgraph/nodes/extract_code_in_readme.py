@@ -51,6 +51,7 @@ def extract_code_in_readme(
             output=json.dumps(output, ensure_ascii=False, indent=4),
             subgraph_name="retrieve_hugging_face_subgraph",
             node_name=f"extract_code_in_readme_model_{index}",
+            llm_name=llm_name,
         )
         huggingface_data.extracted_code = output["extracted_code"]
     for index, dataset in enumerate(
@@ -76,6 +77,7 @@ def extract_code_in_readme(
             output=json.dumps(output, ensure_ascii=False, indent=4),
             subgraph_name="retrieve_hugging_face_subgraph",
             node_name=f"extract_code_in_readme_dataset_{index}",
+            llm_name=llm_name,
         )
         dataset.extracted_code = output["extracted_code"]
 

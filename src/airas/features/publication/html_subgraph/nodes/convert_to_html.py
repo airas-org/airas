@@ -53,6 +53,7 @@ def convert_to_html(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="html_subgraph",
         node_name="convert_to_html",
+        llm_name=llm_name,
     )
 
     generated_html_text = output.get("generated_html_text", "")

@@ -62,6 +62,7 @@ def summarize_paper(
             output=json.dumps(output, ensure_ascii=False, indent=4),
             subgraph_name="summarize_paper_subgraph",
             node_name=f"summarize_paper_{index}",
+            llm_name=llm_name,
         )
 
         research_study.llm_extracted_info = LLMExtractedInfo(**output)

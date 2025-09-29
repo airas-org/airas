@@ -56,6 +56,7 @@ def initial_session_fix_code_with_devin(
         output="Devin session",
         subgraph_name="fix_code_with_devin_subgraph",
         node_name="initial_session_fix_code_with_devin",
+        llm_name="Devin",
     )
     try:
         response = client.create_session(prompt_template=messages)
