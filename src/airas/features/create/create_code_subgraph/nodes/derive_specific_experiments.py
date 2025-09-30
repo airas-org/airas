@@ -64,7 +64,7 @@ def derive_specific_experiments(
     template = env.from_string(derive_specific_experiments_prompt)
 
     data = {
-        "new_method": new_method.model_dump(),
+        "new_method": new_method.model_dump(),  # TODO: After modifying CreateExperimentalDesign, change the location where design data is retrieved.
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "secret_names": secret_names,
         "experiment_code_validation": experiment_code_validation,
@@ -95,5 +95,7 @@ def derive_specific_experiments(
         subgraph_name="create_code_subgraph",
         node_name="derive_specific_experiments",
     )
-    new_method.experimental_design.experiment_code = output_experiment_code
+    new_method.experimental_design.experiment_code = (
+        output_experiment_code  # TODO: Store code for each experiment in the future
+    )
     return new_method

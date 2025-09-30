@@ -15,6 +15,8 @@ def execute_workflow(
     github_repository: GitHubRepositoryInfo,
     workflow_file_name: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
+    experiment_branches: list[str]
+    | None = None,  # TODO: Replace with the branch name selected by the AnalysisSubgraph.
     client: GithubClient | None = None,
 ) -> bool:
     """
@@ -48,12 +50,18 @@ def execute_workflow(
     logger.info(f"Baseline workflow run count: {base_workflow_run_count}")
 
     # ワークフローを実行
+    workflow_inputs = {
+        "subdir": latex_template_name,
+    }
+    if experiment_branches:
+        workflow_inputs["selected_branches"] = ",".join(experiment_branches)
+
     success = client.create_workflow_dispatch(
         github_owner=github_owner,
         repository_name=repository_name,
         workflow_file_name=workflow_file_name,
         ref=branch_name,
-        inputs={"subdir": latex_template_name},
+        inputs=workflow_inputs,
     )
     if not success:
         raise ValueError(

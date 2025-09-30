@@ -60,6 +60,9 @@ class LatexSubgraphInputState(TypedDict):
     github_repository_info: GitHubRepositoryInfo
     references_bib: str
     paper_content: PaperContent
+    experiment_branches: list[
+        str
+    ]  # TODO: Replace with the branch name selected by the AnalysisSubgraph.
 
 
 class LatexSubgraphHiddenState(TypedDict):
@@ -216,6 +219,7 @@ class LatexSubgraph(BaseSubgraph):
             github_repository=state["github_repository_info"],
             workflow_file_name="compile_latex.yml",
             latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
+            experiment_branches=state["experiment_branches"],
         )
         return {"is_latex_compiled": is_latex_compiled}
 
