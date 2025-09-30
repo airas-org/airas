@@ -4,6 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.hugging_face import HuggingFace
 
 
@@ -35,12 +36,16 @@ class ExperimentCode(BaseModel):
 
 
 class ExperimentRun(BaseModel):
-    run_id: str = Field(
+    parameter_id: str = Field(
         ...,
-        description="A unique identifier for this run (e.g., 'exp-1-lr-0.01').",
+        description="A unique identifier for this run, typically derived from its parameters (e.g., 'exp-1-lr-0.01').",
     )
     description: str = Field(
         ..., description="The objective or hypothesis for this run."
+    )
+    github_repository_info: Optional[GitHubRepositoryInfo] = Field(
+        None,
+        description="Information about the GitHub branch where the code for this run is stored.",
     )
     code: Optional[ExperimentCode] = Field(
         None, description="The specific code generated to run this run."
@@ -63,8 +68,10 @@ class Experiment(BaseModel):
         description="A list of parameter runs to be tested within this experiment.",
     )
 
-    def get_run_by_id(self, run_id: str) -> Optional[ExperimentRun]:
-        return next((run for run in self.runs if run.run_id == run_id), None)
+    def get_run_by_id(self, parameter_id: str) -> Optional[ExperimentRun]:
+        return next(
+            (run for run in self.runs if run.parameter_id == parameter_id), None
+        )
 
 
 class ExperimentalDesign(BaseModel):
@@ -72,7 +79,9 @@ class ExperimentalDesign(BaseModel):
     experiment_details: Optional[str] = Field(
         None, description=""
     )  # TODO: # It may become unnecessary if `experiments` field exists.
-    # experiments: Optional[list[Experiment]] = Field(None, description="List of primary experimental lines to be executed.")
+    experiments: Optional[list[Experiment]] = Field(
+        None, description="List of primary experimental lines to be executed."
+    )
     expected_models: Optional[list[str]] = Field(
         None, description="List of expected models to be used in the experiment"
     )
@@ -87,6 +96,16 @@ class ExperimentalDesign(BaseModel):
     experiment_code: Optional[ExperimentCode] = Field(
         None, description=""
     )  # TODO: Temporarily unified, but need to be separated for each experiment.
+
+    def get_experiment_by_id(self, experiment_id: str) -> Optional[Experiment]:
+        return next(
+            (
+                experiment
+                for experiment in self.experiments
+                if experiment.experiment_id == experiment_id
+            ),
+            None,
+        )
 
 
 class ExperimentalResults(BaseModel):

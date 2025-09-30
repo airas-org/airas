@@ -245,10 +245,10 @@ class CreateCodeSubgraph(BaseSubgraph):
     @create_code_timed
     def _push_files_to_experiment_branch(
         self, state: CreateCodeSubgraphState
-    ) -> dict[str, list[str]]:
+    ) -> dict[str, list[str] | ResearchHypothesis]:
         commit_message = f"Add generated experiment files for iteration {state['experiment_iteration']}"
 
-        experiment_branches = push_files_to_experiment_branch(
+        experiment_branches, new_method = push_files_to_experiment_branch(
             github_repository_info=state["github_repository_info"],
             new_method=state["new_method"],
             commit_message=commit_message,
@@ -256,6 +256,7 @@ class CreateCodeSubgraph(BaseSubgraph):
 
         return {
             "experiment_branches": experiment_branches,
+            "new_method": new_method,
         }
 
     @create_code_timed

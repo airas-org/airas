@@ -45,6 +45,9 @@ class HtmlSubgraphInputState(TypedDict):
     paper_content: PaperContent
     references_bib: str
     new_method: ResearchHypothesis
+    experiment_branches: list[
+        str
+    ]  # TODO: Replace with the branch name selected by the AnalysisSubgraph.
 
 
 class HtmlSubgraphHiddenState(TypedDict):
@@ -140,6 +143,7 @@ class HtmlSubgraph(BaseSubgraph):
 
         github_pages_url = prepare_images_for_html(
             github_repository=state["github_repository_info"],
+            experiment_branches=state["experiment_branches"],
         )
 
         return {

@@ -44,7 +44,7 @@ Based on the research method in # Current Research Method and experimental desig
 - Experimental results must always be presented in clear and interpretable figures without exception.
 - Use matplotlib or seaborn to output the results (e.g., accuracy, loss curves, confusion matrix).
 - Numeric values must be annotated on the axes of the graphs.
-- For line graphs, annotate values on the plot; for bar graphs, annotate values above each bar.
+- For line graphs, annotate significant values (e.g., the final or best value) to highlight key findings. For bar graphs, annotate the value above each bar.
 - Include legends in the figures.
 - All figures must be saved in .pdf format (e.g., using plt.savefig("filename.pdf", bbox_inches="tight")).
   - Do not use .png or any other formats—only .pdf is acceptable for publication quality.
