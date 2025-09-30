@@ -1,3 +1,4 @@
+import json
 import time
 from logging import getLogger
 
@@ -43,7 +44,7 @@ def prepare_images_for_html(
             repository_name,
             workflow_file,
             ref=branch_name,
-            inputs={"selected_branches": ",".join(experiment_branches)},
+            inputs={"selected_branches": json.dumps(experiment_branches)},
         )
         if not success:
             raise ValueError(

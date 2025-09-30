@@ -45,6 +45,99 @@ def _get_single_file_content(
         raise
 
 
+async def _retrieve_results_for_branch(
+    client: GithubClient,
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    experiment_iteration: int,
+) -> tuple[str, str, list[str], ExperimentCode]:
+    """Retrieve results and code for a single branch."""
+    output_file_path = f".research/iteration{experiment_iteration}/output.txt"
+    error_file_path = f".research/iteration{experiment_iteration}/error.txt"
+    image_directory_path = f".research/iteration{experiment_iteration}/images"
+
+    output_text_data = ""
+    error_text_data = ""
+    image_file_name_list = []
+
+    # Retrieve output file
+    try:
+        output_text_response = _get_single_file_content(
+            client, github_owner, repository_name, output_file_path, branch_name
+        )
+        if output_text_response and "content" in output_text_response:
+            output_text_data = _decode_base64_content(output_text_response["content"])
+        else:
+            logger.warning(
+                f"Output file {output_file_path} found but content is missing or invalid."
+            )
+    except Exception as e:
+        logger.warning(
+            f"Could not retrieve output file {output_file_path}: {e}. Continuing with empty string."
+        )
+
+    # Retrieve error file
+    try:
+        error_text_response = _get_single_file_content(
+            client, github_owner, repository_name, error_file_path, branch_name
+        )
+        if error_text_response and "content" in error_text_response:
+            error_text_data = _decode_base64_content(error_text_response["content"])
+        else:
+            logger.warning(
+                f"Error file {error_file_path} found but content is missing or invalid."
+            )
+    except Exception as e:
+        logger.warning(
+            f"Could not retrieve error file {error_file_path}: {e}. Continuing with empty string."
+        )
+
+    # Retrieve images
+    try:
+        image_data_list = _get_single_file_content(
+            client, github_owner, repository_name, image_directory_path, branch_name
+        )
+        image_file_name_list = [
+            image_data["name"] for image_data in cast(list[dict], image_data_list)
+        ]
+    except Exception as e:
+        logger.warning(f"Images directory not found at {image_directory_path}: {e}")
+        image_file_name_list = []
+
+    # Retrieve ExperimentCode files
+    dummy_code = ExperimentCode(**{field: "" for field in ExperimentCode.model_fields})
+    file_dict = dummy_code.to_file_dict()
+
+    code_contents = {}
+    for file_path in file_dict.values():
+        try:
+            file_response = _get_single_file_content(
+                client, github_owner, repository_name, file_path, branch_name
+            )
+            if file_response and "content" in file_response:
+                code_contents[file_path] = _decode_base64_content(
+                    file_response["content"]
+                )
+            else:
+                logger.warning(f"Code file {file_path} found but content is missing.")
+                code_contents[file_path] = ""
+        except Exception as e:
+            logger.warning(f"Could not retrieve code file {file_path}: {e}")
+            code_contents[file_path] = ""
+
+    field_values = {}
+    for field_name, file_path in zip(
+        ExperimentCode.model_fields.keys(), file_dict.values(), strict=True
+    ):
+        field_values[field_name] = code_contents.get(file_path, "")
+
+    experiment_code = ExperimentCode(**field_values)
+    logger.info(f"Successfully retrieved results from branch {branch_name}")
+
+    return output_text_data, error_text_data, image_file_name_list, experiment_code
+
+
 async def _retrieve_github_actions_results(
     github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
@@ -57,108 +150,56 @@ async def _retrieve_github_actions_results(
     github_owner = github_repository.github_owner
     repository_name = github_repository.repository_name
 
-    # TODO: Currently assumes single branch execution. Once ResearchHypothesis data structure
-    # is updated, store data for each experiment separately.
+    if not experiment_branches:
+        logger.warning("No experiment branches provided")
+        return new_method
 
-    # For now, process results from the first experiment branch only
-    output_text_data = ""
-    error_text_data = ""
-    image_file_name_list = []
-    experiment_code = None
+    if (
+        not new_method.experimental_design
+        or not new_method.experimental_design.experiments
+    ):
+        logger.error("No experiments found in experimental design")
+        return new_method
 
-    if experiment_branches:
-        branch_name = experiment_branches[0]
-        output_file_path = f".research/iteration{experiment_iteration}/output.txt"
-        error_file_path = f".research/iteration{experiment_iteration}/error.txt"
-        image_directory_path = f".research/iteration{experiment_iteration}/images"
-
-        try:
-            output_text_response = _get_single_file_content(
-                client, github_owner, repository_name, output_file_path, branch_name
-            )
-            if output_text_response and "content" in output_text_response:
-                output_text_data = _decode_base64_content(
-                    output_text_response["content"]
-                )
-            else:
-                logger.warning(
-                    f"Output file {output_file_path} found but content is missing or invalid."
-                )
-        except Exception as e:
+    # Process results for all branches
+    for i, branch_name in enumerate(experiment_branches):
+        if i >= len(new_method.experimental_design.experiments):
             logger.warning(
-                f"Could not retrieve output file {output_file_path}: {e}. Continuing with empty string."
+                f"More branches ({len(experiment_branches)}) than experiments ({len(new_method.experimental_design.experiments)})"
             )
+            break
 
-        try:
-            error_text_response = _get_single_file_content(
-                client, github_owner, repository_name, error_file_path, branch_name
-            )
-            if error_text_response and "content" in error_text_response:
-                error_text_data = _decode_base64_content(error_text_response["content"])
-            else:
-                logger.warning(
-                    f"Error file {error_file_path} found but content is missing or invalid."
-                )
-        except Exception as e:
-            logger.warning(
-                f"Could not retrieve error file {error_file_path}: {e}. Continuing with empty string."
-            )
-
-        try:
-            image_data_list = _get_single_file_content(
-                client, github_owner, repository_name, image_directory_path, branch_name
-            )
-            image_file_name_list = [
-                image_data["name"] for image_data in cast(list[dict], image_data_list)
-            ]
-        except Exception as e:
-            logger.warning(f"Images directory not found at {image_directory_path}: {e}")
-            image_file_name_list = []
-
-        # Retrieve ExperimentCode files
-        dummy_code = ExperimentCode(
-            **{field: "" for field in ExperimentCode.model_fields}
-        )
-        file_dict = dummy_code.to_file_dict()
-
-        code_contents = {}
-        for file_path in file_dict.values():
-            try:
-                file_response = _get_single_file_content(
-                    client, github_owner, repository_name, file_path, branch_name
-                )
-                if file_response and "content" in file_response:
-                    code_contents[file_path] = _decode_base64_content(
-                        file_response["content"]
-                    )
-                else:
-                    logger.warning(
-                        f"Code file {file_path} found but content is missing."
-                    )
-                    code_contents[file_path] = ""
-            except Exception as e:
-                logger.warning(f"Could not retrieve code file {file_path}: {e}")
-                code_contents[file_path] = ""
-
-        field_values = {}
-        for field_name, file_path in zip(
-            ExperimentCode.model_fields.keys(), file_dict.values(), strict=True
-        ):
-            field_values[field_name] = code_contents.get(file_path, "")
-
-        experiment_code = ExperimentCode(**field_values)
+        experiment = new_method.experimental_design.experiments[i]
         logger.info(
-            f"Successfully retrieved ExperimentCode files from branch {branch_name}"
+            f"Retrieving results for experiment '{experiment.experiment_id}' from branch '{branch_name}'"
         )
 
-        new_method.experimental_design.experiment_code = experiment_code
+        try:
+            (
+                output_text,
+                error_text,
+                image_files,
+                exp_code,
+            ) = await _retrieve_results_for_branch(
+                client, github_owner, repository_name, branch_name, experiment_iteration
+            )
 
-    if not new_method.experimental_results:
-        new_method.experimental_results = ExperimentalResults()
+            # Store results in the experiment
+            experiment.results = ExperimentalResults(
+                result=output_text,
+                error=error_text,
+                image_file_name_list=image_files,
+            )
+            experiment.code = exp_code
+            experiment.github_repository_info = github_repository
 
-    new_method.experimental_results.result = output_text_data
-    new_method.experimental_results.error = error_text_data
-    new_method.experimental_results.image_file_name_list = image_file_name_list
+        except Exception as e:
+            logger.error(f"Failed to retrieve results for branch {branch_name}: {e}")
+            experiment.results = ExperimentalResults(
+                result="",
+                error=f"Failed to retrieve results: {str(e)}",
+                image_file_name_list=[],
+            )
 
     return new_method
 

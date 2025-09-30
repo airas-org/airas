@@ -184,6 +184,41 @@ class WorkflowExecutor:
         return status == "completed" and conclusion is not None
 
 
+async def _execute_all_workflows(
+    executor: WorkflowExecutor,
+    github_owner: str,
+    repository_name: str,
+    experiment_branches: list[str],
+    experiment_iteration: int,
+    runner_type_setting: str,
+    workflow_file: str,
+) -> dict[str, WorkflowResult]:
+    tasks = []
+    for branch_name in experiment_branches:
+        task = executor.execute_workflow(
+            github_owner,
+            repository_name,
+            branch_name,
+            experiment_iteration,
+            runner_type_setting,
+            workflow_file,
+        )
+        tasks.append((branch_name, task))
+
+    results = {}
+    for branch_name, task in tasks:
+        result = await task
+        results[branch_name] = result
+        if result.success:
+            logger.info(f"Workflow for branch '{branch_name}' completed successfully")
+        else:
+            logger.error(
+                f"Workflow for branch '{branch_name}' failed: {result.error_message}"
+            )
+
+    return results
+
+
 def execute_github_actions_workflow(
     github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
@@ -192,23 +227,36 @@ def execute_github_actions_workflow(
     workflow_file: str = "run_experiment_with_claude_code.yml",
     client: Optional[GithubClient] = None,
 ) -> bool:
-    # TODO: Currently assumes single branch execution. Once ResearchHypothesis data structure
-    # is updated, store data for each experiment separately.
+    if not experiment_branches:
+        logger.warning("No experiment branches provided")
+        return False
+
     executor = WorkflowExecutor(client)
+    runner_type_setting = runner_info_dict[runner_type]["runner_setting"]
 
-    # For now, execute workflow for the first experiment branch only
-    if experiment_branches:
-        branch_name = experiment_branches[0]
-        result = asyncio.run(
-            executor.execute_workflow(
-                github_repository.github_owner,
-                github_repository.repository_name,
-                branch_name,
-                experiment_iteration,
-                runner_info_dict[runner_type]["runner_setting"],
-                workflow_file,
-            )
+    logger.info(f"Executing workflows for {len(experiment_branches)} branches")
+
+    results = asyncio.run(
+        _execute_all_workflows(
+            executor,
+            github_repository.github_owner,
+            github_repository.repository_name,
+            experiment_branches,
+            experiment_iteration,
+            runner_type_setting,
+            workflow_file,
         )
-        return result.success
+    )
 
-    return False
+    # Check if all workflows succeeded
+    all_success = all(result.success for result in results.values())
+
+    if all_success:
+        logger.info(f"All {len(experiment_branches)} workflows completed successfully")
+    else:
+        failed_branches = [
+            branch for branch, result in results.items() if not result.success
+        ]
+        logger.error(f"Some workflows failed: {failed_branches}")
+
+    return all_success
