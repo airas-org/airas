@@ -32,9 +32,6 @@ Based on the research method in # Current Research Method and experimental desig
 - **COMPREHENSIVE EXPERIMENT INFRASTRUCTURE**: Full-scale experiment framework with sufficient training epochs, proper validation splits, and thorough evaluation metrics
 - **STRUCTURED PLACEHOLDER APPROACH**: Use well-defined placeholders for dataset/model specifics while ensuring base logic is complete and functional
 
-## Results Documentation Requirements
-- Save each experiment's results as separate JSON files in the `.research/iteration{{ experiment_iteration }}/` directory and print each JSON contents to standard output for verification.
-
 ## Standard Output Content Requirements
 - Experiment description: Before printing experimental results, the standard output must include a detailed description of the experiment.
 - Experimental numerical data: All experimental data obtained in the experiments must be output to the standard output.
@@ -48,7 +45,6 @@ Based on the research method in # Current Research Method and experimental desig
 - Include legends in the figures.
 - All figures must be saved in .pdf format (e.g., using plt.savefig("filename.pdf", bbox_inches="tight")).
   - Do not use .png or any other formats—only .pdf is acceptable for publication quality.
-- Please save all images output from the experiment in the `.research/iteration{{ experiment_iteration }}/images/` directory.
 
 ## Figure Naming Convention
 File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`
@@ -61,34 +57,43 @@ File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`
 - Environment Variables: The following environment variables are available: {{ secret_names|join(', ') }}
 {% endif %}
 
-## Command Line Interface
+## Command Line Interface and Run Variations
+The `full_experiment.yaml` file defines a list of all experiments to be run (e.g., baseline, proposed, ablations). The `main.py` script reads this file and executes experiments with one GPU per run variation. If GPUs are insufficient, experiments run sequentially.
+
 The generated main.py must support:
 ```bash
-# Smoke test with any dataset/model combination
-uv run python -m src.main --smoke-test
+# Smoke test (runs a lightweight version of ALL run variations defined in smoke_test.yaml)
+uv run python -m src.main --smoke-test --results-dir <path>
 
-# Full experiment with any dataset/model combination
-uv run python -m src.main --full-experiment
+# Full experiment (reads full_experiment.yaml, runs all variations with 1 GPU per variation)
+uv run python -m src.main --full-experiment --results-dir <path>
 ```
+
+The `--results-dir` argument is passed from the GitHub Actions workflow and specifies where all outputs (figures, logs, metrics) should be saved.
 
 ## Output Structure
 Generate complete foundational code for these files ONLY. Do not create any additional files beyond this structure:
 
 ### Script Structure (ExperimentCode format)
-Your output must contain EXACTLY these 7 files with NO additional files:
-- `src/train.py`: Core training logic with algorithm implementation and placeholder data loading
-- `src/evaluate.py`: Universal evaluation framework that works across all experimental variations
+Generate complete foundational code for these files ONLY. Do not create any additional files beyond this structure:
+- `src/train.py`: Logic to run a single experiment variation. It is called as a subprocess by main.py. It must save final metrics to a structured file (e.g., results.json).
+- `src/evaluate.py`: Comparison and visualization tool. It reads the result files from all experiment variations and generates comparison figures.
 - `src/preprocess.py`: Common preprocessing pipeline with dataset placeholders
-- `src/main.py`: Main execution script with flexible configuration system
+- `src/model.py`: Model architecture implementations. It will contain classes for baseline, proposed, and ablation models.
+- `src/main.py`: The main orchestrator script. It reads a config file, launches train.py for each experiment in parallel across available GPUs, manages subprocesses, collects and consolidates logs, and finally triggers evaluate.py.
 - `pyproject.toml`: Complete project dependencies
-- `config/smoke_test.yaml`: Base configuration template for quick validation
-- `config/full_experiment.yaml`: Base configuration template for full experiments
+- `config/smoke_test.yaml`: Configuration file template with placeholder structure for run variations. Actual variations will be populated in derive_specific step.
+- `config/full_experiment.yaml`: Configuration file template with placeholder structure for run variations. Actual variations will be populated in derive_specific step.
 
 ### Key Implementation Focus Areas
-1. **Evaluation Consistency**: Identical metrics calculation, result formatting, and comparison logic
-2. **Algorithm Core**: Full implementation of the proposed method with proper abstraction
-3. **Result Infrastructure**: Consistent figure generation, data saving, and output formatting
-4. **Configuration Flexibility**: System that can handle different datasets/models via configuration
+1. Algorithm Core: Full implementation of the proposed method with proper abstraction
+2. GPU Allocation: main.py assigns 1 GPU per run variation. If available GPUs < total variations, queue remaining runs sequentially.
+3. Configuration Driven: The entire workflow must be driven by the YAML configuration files.
+4. Evaluation Consistency: Identical metrics calculation, result formatting, and comparison logic. evaluate.py must operate on the saved results after all training is complete.
+5. Structured Logging:
+   - train.py: Print JSON-formatted experimental data (epoch-wise metrics, final results) to stdout using `print(json.dumps({...}))`. Always include `"run_id"` field (use the run variation name from config).
+   - evaluate.py: Print JSON-formatted comparison results to stdout
+   - main.py: For each subprocess, redirect stdout/stderr to `{results_dir}/{run_id}/stdout.log` and `{results_dir}/{run_id}/stderr.log` while also forwarding to main process stdout/stderr (using tee-like logic) so logs are captured both structurally and by GitHub Actions.
 
 {% if base_code_validation %}
 ## Core code Validation Feedback
@@ -107,7 +112,6 @@ Your output must contain EXACTLY these 7 files with NO additional files:
 
 # Experimental Design
 - Strategy: {{ new_method.experimental_design.experiment_strategy }}
-- Details: {{ new_method.experimental_design.experiment_details }}
 
 {% if consistency_feedback %}
 ## Consistency Feedback
