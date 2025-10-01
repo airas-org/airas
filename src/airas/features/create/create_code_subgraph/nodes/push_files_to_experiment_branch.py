@@ -3,11 +3,7 @@ import logging
 
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import (
-    Experiment,
-    ExperimentRun,
-    ResearchHypothesis,
-)
+from airas.types.research_hypothesis import ResearchHypothesis
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +13,7 @@ async def _push_experiments(
     github_repository_info: GitHubRepositoryInfo,
     new_method: ResearchHypothesis,
     commit_message: str,
-    target_run_ids: list[tuple[str, str]],
+    target_experiment_ids: list[str],
 ) -> list[tuple[str, bool]]:
     base_branch_info = await github_client.aget_branch(
         github_repository_info.github_owner,
@@ -31,12 +27,17 @@ async def _push_experiments(
 
     tasks = []
     branches_to_push = []
-    for exp_id, param_id in target_run_ids:
-        child_branch = f"{github_repository_info.branch_name}-{exp_id}-{param_id}"
+    for exp_id in target_experiment_ids:
+        child_branch = f"{github_repository_info.branch_name}-{exp_id}"
         branches_to_push.append(child_branch)
 
-        # TODO: In the future, get code from experiment.runs[].code instead of experiment_code
-        files = new_method.experimental_design.experiment_code.to_file_dict()
+        # Get code from experiment.code
+        experiment = new_method.experimental_design.get_experiment_by_id(exp_id)
+        if not experiment or not experiment.code:
+            logger.error(f"No code found for experiment {exp_id}")
+            continue
+
+        files = experiment.code.to_file_dict()
 
         task = _push_single_experiment(
             github_client=github_client,
@@ -44,7 +45,7 @@ async def _push_experiments(
             child_branch=child_branch,
             base_commit_sha=base_commit_sha,
             files=files,
-            commit_message=f"{commit_message} ({exp_id}-{param_id})",
+            commit_message=f"{commit_message} ({exp_id})",
         )
         tasks.append(task)
 
@@ -95,30 +96,23 @@ def push_files_to_experiment_branch(
 ) -> tuple[list[str], ResearchHypothesis]:
     github_client = github_client or GithubClient()
 
-    # TODO: This entire block is a temporary measure for initialization and should be
-    # removed once the upstream subgraphs are implemented to populate these objects.
-    exp_id, param_id = "exp-1", "param-1"
-    new_method.experimental_design.experiments = []
-    experiment = Experiment(
-        experiment_id=exp_id, description=f"Description for {exp_id}", runs=[]
-    )
-    experiment.runs.append(
-        ExperimentRun(
-            parameter_id=param_id, description=f"Description for parameters {param_id}"
-        )
-    )
-    new_method.experimental_design.experiments.append(experiment)
+    if (
+        not new_method.experimental_design
+        or not new_method.experimental_design.experiments
+    ):
+        logger.error("No experiments found in experimental design")
+        return [], new_method
 
-    target_run_ids = [
-        (experiment.experiment_id, run.parameter_id)
+    # Find experiments that don't have GitHub repository info yet
+    target_experiment_ids = [
+        experiment.experiment_id
         for experiment in new_method.experimental_design.experiments
-        for run in experiment.runs
-        if run.github_repository_info is None
+        if experiment.github_repository_info is None
     ]
 
-    if not target_run_ids:
+    if not target_experiment_ids:
         logger.info(
-            "No new runs to push. All runs already have GitHub repository info."
+            "No new experiments to push. All experiments already have GitHub repository info."
         )
         return [], new_method
 
@@ -128,19 +122,18 @@ def push_files_to_experiment_branch(
             github_repository_info,
             new_method,
             commit_message,
-            target_run_ids,
+            target_experiment_ids,
         )
     )
 
     pushed_branches = []
-    for (exp_id, param_id), (branch_name, success) in zip(
-        target_run_ids, push_results, strict=True
+    for exp_id, (branch_name, success) in zip(
+        target_experiment_ids, push_results, strict=True
     ):
         if not success:
             continue
         experiment = new_method.experimental_design.get_experiment_by_id(exp_id)
-        run = experiment.get_run_by_id(param_id)
-        run.github_repository_info = GitHubRepositoryInfo(
+        experiment.github_repository_info = GitHubRepositoryInfo(
             github_owner=github_repository_info.github_owner,
             repository_name=github_repository_info.repository_name,
             branch_name=branch_name,
