@@ -28,7 +28,7 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "validate_experiment_code": BASE_MODEL,
     # CreateExperimentalDesignSubgraph
     "generate_experiment_strategy": BASE_MODEL,
-    "generate_experiment_details": BASE_MODEL,
+    "generate_experiments": BASE_MODEL,
     # CreateMethodSubgraph
     "idea_generator": BASE_MODEL,
     "refine_idea": BASE_MODEL,
