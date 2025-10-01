@@ -37,6 +37,21 @@ class ExperimentCode(BaseModel):
         }
 
 
+class ExperimentEvaluation(BaseModel):
+    consistency_score: Optional[int] = Field(
+        None,
+        description="Score (1-10) indicating consistency between experimental design and results",
+    )
+    consistency_feedback: Optional[str] = Field(
+        None,
+        description="Detailed feedback on experimental consistency and quality",
+    )
+    is_selected_for_paper: Optional[bool] = Field(
+        None,
+        description="Whether this experiment is selected for inclusion in the paper based on consistency, significance, and ability to support the main claims",
+    )
+
+
 # TODO: Consider how to maintain the history of experimental parameters
 class Experiment(BaseModel):
     experiment_id: str = Field(
@@ -61,6 +76,10 @@ class Experiment(BaseModel):
     )
     results: Optional[ExperimentalResults] = Field(
         None, description="The results of this experiment"
+    )
+    evaluation: Optional[ExperimentEvaluation] = Field(
+        None,
+        description="Evaluation of this experiment's consistency and suitability for the paper",
     )
 
 
@@ -100,7 +119,6 @@ class ExperimentalResults(BaseModel):
 
 class ExperimentalAnalysis(BaseModel):
     analysis_report: Optional[str] = Field(None, description="")
-    # TODO: Select which experimental results to include in the paper. e.g. selected_experiment_ids: list[str]?
 
 
 class ResearchHypothesis(BaseModel):

@@ -39,6 +39,7 @@ from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
 from airas.types.paper import PaperContent
+from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -60,9 +61,7 @@ class LatexSubgraphInputState(TypedDict):
     github_repository_info: GitHubRepositoryInfo
     references_bib: str
     paper_content: PaperContent
-    experiment_branches: list[
-        str
-    ]  # TODO: Replace with the branch name selected by the AnalysisSubgraph.
+    new_method: ResearchHypothesis
 
 
 class LatexSubgraphHiddenState(TypedDict):
@@ -215,11 +214,25 @@ class LatexSubgraph(BaseSubgraph):
 
     @latex_timed
     def _execute_latex_compile(self, state: LatexSubgraphState) -> dict:
+        # Extract branches of experiments selected for paper (for image retrieval)
+        selected_branches = []
+        if (
+            state["new_method"].experimental_design
+            and state["new_method"].experimental_design.experiments
+        ):
+            selected_branches = [
+                exp.github_repository_info.branch_name
+                for exp in state["new_method"].experimental_design.experiments
+                if exp.evaluation
+                and exp.evaluation.is_selected_for_paper
+                and exp.github_repository_info
+            ]
+
         is_latex_compiled = execute_workflow(
             github_repository=state["github_repository_info"],
             workflow_file_name="compile_latex.yml",
             latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
-            experiment_branches=state["experiment_branches"],
+            experiment_branches=selected_branches,
         )
         return {"is_latex_compiled": is_latex_compiled}
 

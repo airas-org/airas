@@ -45,9 +45,6 @@ class HtmlSubgraphInputState(TypedDict):
     paper_content: PaperContent
     references_bib: str
     new_method: ResearchHypothesis
-    experiment_branches: list[
-        str
-    ]  # TODO: Replace with the branch name selected by the AnalysisSubgraph.
 
 
 class HtmlSubgraphHiddenState(TypedDict):
@@ -141,9 +138,23 @@ class HtmlSubgraph(BaseSubgraph):
     ) -> dict[str, str | bool]:
         time.sleep(3)
 
+        # Extract branches of experiments selected for paper (for image retrieval)
+        selected_branches = []
+        if (
+            state["new_method"].experimental_design
+            and state["new_method"].experimental_design.experiments
+        ):
+            selected_branches = [
+                exp.github_repository_info.branch_name
+                for exp in state["new_method"].experimental_design.experiments
+                if exp.evaluation
+                and exp.evaluation.is_selected_for_paper
+                and exp.github_repository_info
+            ]
+
         github_pages_url = prepare_images_for_html(
             github_repository=state["github_repository_info"],
-            experiment_branches=state["experiment_branches"],
+            experiment_branches=selected_branches,
         )
 
         return {
