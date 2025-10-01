@@ -33,7 +33,8 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-runner_type = "A100_80GM×1"
+# runner_type = "A100_80GM×1"
+runner_type = "Tesla_T4"
 secret_names = ["HF_TOKEN", "ANTHROPIC_API_KEY"]
 
 n_queries = 5  # 論文検索時のサブクエリの数
@@ -46,9 +47,9 @@ max_huggingface_results_per_search = (
     10  # modelやdatasetごとのHuggingFaceからの候補の取得数
 )
 # CreateCodeSubgraph parameters
-max_base_code_validations = 5  # 全実験で共通するコードの最大改善回数
-max_experiment_code_validations = 3  # 各実験コードの最大改善回数
-consistency_score_threshold = (1,)  # 実験に一貫性スコア（1-10）
+max_base_code_validations = 10  # 全実験で共通するコードの最大改善回数
+max_experiment_code_validations = 10  # 各実験コードの最大改善回数
+consistency_score_threshold = 1  # 実験に一貫性スコア（1-10）
 writing_refinement_rounds = 2  # 論文の推敲回数
 max_filtered_references = 20  # 論文中で引用する参考文献の最大数
 max_chktex_revisions = 3  # LaTeXの文法チェックの最大修正回数
