@@ -17,10 +17,13 @@ Check if the derived experiment code meets ALL of the following requirements:
    - Core algorithms and logic remain intact and functional
    - No reduction in code quality or completeness
 
-2. **Proper Placeholder Replacement**:
+2. **Proper Placeholder Replacement and Variation Implementation**:
    - All `DATASET_PLACEHOLDER` entries replaced with specific Hugging Face dataset loading
    - All `MODEL_PLACEHOLDER` entries replaced with specific model architectures
    - All `SPECIFIC_CONFIG_PLACEHOLDER` entries replaced with actual parameters
+   - All run_variations are defined in both `config/smoke_test.yaml` and `config/full_experiment.yaml`
+   - All run_variations are implemented in `src/model.py`
+   - `config/smoke_test.yaml` contains ALL run variations in lightweight form
    - No placeholder remnants or incomplete replacements
 
 3. **Functional Enhancement**:
@@ -59,21 +62,23 @@ Respond with a JSON object containing:
 {{ new_method.method }}
 
 # Experimental Design
-{% if new_method.experimental_design %}
 ## Experiment Strategy
 {{ new_method.experimental_design.experiment_strategy }}
-
-## Experiment Details
-{{ new_method.experimental_design.experiment_details }}
-{% endif %}
 
 # Base Code (Reference Foundation)
 {{ new_method.experimental_design.base_code | tojson }}
 
+# Current Experiment (To be validated)
+- Experiment ID: {{ current_experiment.experiment_id }}
+- Description: {{ current_experiment.description }}
+- Run Variations: {{ current_experiment.run_variations }}
+
 # Derived Experiment Code (To be validated)
-{% if new_method.experimental_design.experiment_code %}
-{{ new_method.experimental_design.experiment_code | tojson }}
+{% if current_experiment.code %}
+{{ current_experiment.code | tojson }}
+{% else %}
+No code generated for this experiment yet.
 {% endif %}
 
-Compare the Base Code with the Derived Experiment Code thoroughly. Ensure the derived code maintains all the quality, completeness, and functionality of the base code while properly replacing placeholders with specific implementations.
+Compare the Base Code with the Derived Experiment Code for this specific experiment thoroughly. Ensure the derived code maintains all the quality, completeness, and functionality of the base code while properly replacing placeholders with specific implementations.
 """

@@ -12,11 +12,11 @@ from airas.core.base import BaseSubgraph
 from airas.features.create.create_experimental_design_subgraph.input_data import (
     create_experimental_design_subgraph_input_data,
 )
-from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_details import (
-    generate_experiment_details,
-)
 from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_strategy import (
     generate_experiment_strategy,
+)
+from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiments import (
+    generate_experiments,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
@@ -36,9 +36,7 @@ class CreateExperimentalDesignLLMMapping(BaseModel):
     generate_experiment_strategy: LLM_MODEL = DEFAULT_NODE_LLMS[
         "generate_experiment_strategy"
     ]
-    generate_experiment_details: LLM_MODEL = DEFAULT_NODE_LLMS[
-        "generate_experiment_details"
-    ]
+    generate_experiments: LLM_MODEL = DEFAULT_NODE_LLMS["generate_experiments"]
 
 
 class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
@@ -71,8 +69,10 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         self,
         runner_type: RunnerType = "ubuntu-latest",
         llm_mapping: dict[str, str] | CreateExperimentalDesignLLMMapping | None = None,
+        num_experiments: int = 5,
     ):
         self.runner_type = runner_type
+        self.num_experiments = num_experiments
         if llm_mapping is None:
             self.llm_mapping = CreateExperimentalDesignLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -132,14 +132,15 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         return {"new_method": new_method}
 
     @create_experimental_design_timed
-    def _generate_experiment_details(
+    def _generate_experiments(
         self, state: CreateExperimentalDesignState
     ) -> dict[str, ResearchHypothesis]:
-        new_method = generate_experiment_details(
-            llm_name=self.llm_mapping.generate_experiment_details,
+        new_method = generate_experiments(
+            llm_name=self.llm_mapping.generate_experiments,
             new_method=state["new_method"],
             runner_type=cast(RunnerType, self.runner_type),
             github_repository_info=state["github_repository_info"],
+            num_experiments=self.num_experiments,
             feedback_text=feedback[-1]
             if (feedback := state.get("consistency_feedback"))
             else None,
@@ -154,18 +155,14 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         graph_builder.add_node(
             "generate_experiment_strategy", self._generate_experiment_strategy
         )
-        graph_builder.add_node(
-            "generate_experiment_details", self._generate_experiment_details
-        )
+        graph_builder.add_node("generate_experiments", self._generate_experiments)
 
         graph_builder.add_edge(START, "prepare_iteration_history")
         graph_builder.add_edge(
             "prepare_iteration_history", "generate_experiment_strategy"
         )
-        graph_builder.add_edge(
-            "generate_experiment_strategy", "generate_experiment_details"
-        )
-        graph_builder.add_edge("generate_experiment_details", END)
+        graph_builder.add_edge("generate_experiment_strategy", "generate_experiments")
+        graph_builder.add_edge("generate_experiments", END)
 
         return graph_builder.compile()
 

@@ -16,6 +16,7 @@ create_experimental_design_subgraph_input_data = {
                 train_py="import torch\nclass ACMOptimizer(torch.optim.Optimizer):\n    pass\n",
                 evaluate_py="def evaluate_model(model, loader):\n    pass\n",
                 preprocess_py="def load_cifar10():\n    pass\n",
+                model_py="import torch.nn as nn\nclass ResNet18(nn.Module):\n    pass\n",
                 main_py="if __name__ == '__main__':\n    main()\n",
                 pyproject_toml="[tool.poetry]\nname = 'acm-experiment'\n",
                 smoke_test_yaml="epochs: 1\nseeds: 1\n",

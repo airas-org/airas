@@ -55,14 +55,14 @@ class CreateCodeLLMMapping(BaseModel):
 class CreateCodeSubgraphInputState(TypedDict, total=False):
     github_repository_info: GitHubRepositoryInfo
     new_method: ResearchHypothesis
-    experiment_iteration: int
+    experiment_iteration: int  # TODO?: It is retained for compatibility reasons but may become unnecessary.
     consistency_feedback: list[str]
 
 
 class CreateCodeSubgraphHiddenState(TypedDict):
     base_code_validation: tuple[bool, str]
     base_code_validation_count: int
-    experiment_code_validation: tuple[bool, str]
+    experiment_code_validation: dict[str, tuple[bool, str]]
     experiment_code_validation_count: int
 
 
@@ -121,13 +121,13 @@ class CreateCodeSubgraph(BaseSubgraph):
     @create_code_timed
     def _initialize(
         self, state: CreateCodeSubgraphState
-    ) -> dict[str, int | tuple[bool, str]]:
+    ) -> dict[str, int | tuple[bool, str] | dict[str, tuple[bool, str]]]:
         # Always increment experiment_iteration to create a new iteration folder
         return {
             "experiment_iteration": state.get("experiment_iteration", 0) + 1,
             "base_code_validation": (False, ""),
             "base_code_validation_count": 0,
-            "experiment_code_validation": (False, ""),
+            "experiment_code_validation": {},
             "experiment_code_validation_count": 0,
         }
 
@@ -141,7 +141,6 @@ class CreateCodeSubgraph(BaseSubgraph):
             runner_type=cast(RunnerType, self.runner_type),
             secret_names=self.secret_names,
             github_repository_info=state["github_repository_info"],
-            experiment_iteration=state["experiment_iteration"],
             feedback_text=feedback[-1]
             if (feedback := state.get("consistency_feedback"))
             else None,
@@ -157,7 +156,6 @@ class CreateCodeSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.validate_base_code,
             new_method=state["new_method"],
             github_repository_info=state["github_repository_info"],
-            experiment_iteration=state["experiment_iteration"],
         )
         return {
             "base_code_validation": base_code_validation,
@@ -205,7 +203,7 @@ class CreateCodeSubgraph(BaseSubgraph):
     @create_code_timed
     def _validate_experiment_code(
         self, state: CreateCodeSubgraphState
-    ) -> dict[str, tuple[bool, str] | int]:
+    ) -> dict[str, dict[str, tuple[bool, str]] | int]:
         experiment_code_validation = validate_experiment_code(
             llm_name=self.llm_mapping.validate_experiment_code,
             new_method=state["new_method"],
@@ -222,12 +220,15 @@ class CreateCodeSubgraph(BaseSubgraph):
     def _should_continue_after_experiment_code_validation(
         self, state: CreateCodeSubgraphState
     ) -> str:
-        is_experiment_code_ready, issue = state["experiment_code_validation"]
+        experiment_code_validation = state["experiment_code_validation"]
         experiment_code_validation_count = state["experiment_code_validation_count"]
 
-        if is_experiment_code_ready:
+        # Check if all experiments are ready
+        all_ready = all(is_ready for is_ready, _ in experiment_code_validation.values())
+
+        if all_ready and experiment_code_validation:
             logger.info(
-                "Experiment code validation passed. Proceeding to push files to GitHub..."
+                "All experiment code validations passed. Proceeding to push files to GitHub..."
             )
             return "push_files_to_experiment_branch"
 
@@ -237,8 +238,14 @@ class CreateCodeSubgraph(BaseSubgraph):
             )
             return "push_files_to_experiment_branch"
 
+        # Log failed experiments
+        failed_experiments = [
+            f"{exp_id}: {issue}"
+            for exp_id, (is_ready, issue) in experiment_code_validation.items()
+            if not is_ready
+        ]
         logger.warning(
-            f"Experiment code validation failed: {issue}. Re-running derive_specific_experiments... (attempt {experiment_code_validation_count}/{self.max_experiment_code_validations})"
+            f"Experiment code validation failed for: {failed_experiments}. Re-running derive_specific_experiments... (attempt {experiment_code_validation_count}/{self.max_experiment_code_validations})"
         )
         return "derive_specific_experiments"
 

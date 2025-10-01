@@ -1,3 +1,4 @@
+import json
 import time
 from logging import getLogger
 
@@ -54,7 +55,7 @@ def execute_workflow(
         "subdir": latex_template_name,
     }
     if experiment_branches:
-        workflow_inputs["selected_branches"] = ",".join(experiment_branches)
+        workflow_inputs["selected_branches"] = json.dumps(experiment_branches)
 
     success = client.create_workflow_dispatch(
         github_owner=github_owner,

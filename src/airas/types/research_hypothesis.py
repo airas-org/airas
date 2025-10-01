@@ -18,6 +18,7 @@ class ExperimentCode(BaseModel):
     train_py: str
     evaluate_py: str
     preprocess_py: str
+    model_py: str
     main_py: str
     pyproject_toml: str
     smoke_test_yaml: str
@@ -28,6 +29,7 @@ class ExperimentCode(BaseModel):
             "src/train.py": self.train_py,
             "src/evaluate.py": self.evaluate_py,
             "src/preprocess.py": self.preprocess_py,
+            "src/model.py": self.model_py,
             "src/main.py": self.main_py,
             "pyproject.toml": self.pyproject_toml,
             "config/smoke_test.yaml": self.smoke_test_yaml,
@@ -35,50 +37,35 @@ class ExperimentCode(BaseModel):
         }
 
 
-class ExperimentRun(BaseModel):
-    parameter_id: str = Field(
-        ...,
-        description="A unique identifier for this run, typically derived from its parameters (e.g., 'exp-1-lr-0.01').",
-    )
-    description: str = Field(
-        ..., description="The objective or hypothesis for this run."
-    )
-    github_repository_info: Optional[GitHubRepositoryInfo] = Field(
-        None,
-        description="Information about the GitHub branch where the code for this run is stored.",
-    )
-    code: Optional[ExperimentCode] = Field(
-        None, description="The specific code generated to run this run."
-    )
-    results: Optional[ExperimentalResults] = Field(
-        None, description="The results of the experimental run for this run."
-    )
-
-
+# TODO: Consider how to maintain the history of experimental parameters
 class Experiment(BaseModel):
     experiment_id: str = Field(
         ...,
         description="A unique identifier for this major experiment (e.g., 'exp-1', 'exp-2').",
     )
-    description: str = Field(
-        ..., description="The objective or hypothesis for this line of experimentation."
-    )
-    runs: list[ExperimentRun] = Field(
+    # TODO?: It might be okay to make it a class definition in the future.
+    run_variations: list[str] = Field(
         ...,
-        description="A list of parameter runs to be tested within this experiment.",
+        description="A definiation of variations for experiments (e.g., 'baseline', 'proposed').",
     )
-
-    def get_run_by_id(self, parameter_id: str) -> Optional[ExperimentRun]:
-        return next(
-            (run for run in self.runs if run.parameter_id == parameter_id), None
-        )
+    description: str = Field(
+        ...,
+        description="The objective or hypothesis for this experiment.",
+    )
+    github_repository_info: Optional[GitHubRepositoryInfo] = Field(
+        None,
+        description="Information about the GitHub branch where the code for this experiment is stored.",
+    )
+    code: Optional[ExperimentCode] = Field(
+        None, description="The specific code of this experiment."
+    )
+    results: Optional[ExperimentalResults] = Field(
+        None, description="The results of this experiment"
+    )
 
 
 class ExperimentalDesign(BaseModel):
     experiment_strategy: Optional[str] = Field(None, description="")
-    experiment_details: Optional[str] = Field(
-        None, description=""
-    )  # TODO: # It may become unnecessary if `experiments` field exists.
     experiments: Optional[list[Experiment]] = Field(
         None, description="List of primary experimental lines to be executed."
     )
@@ -93,9 +80,6 @@ class ExperimentalDesign(BaseModel):
         description="External resources including models, datasets, and other resources",
     )
     base_code: Optional[ExperimentCode] = Field(None, description="")
-    experiment_code: Optional[ExperimentCode] = Field(
-        None, description=""
-    )  # TODO: Temporarily unified, but need to be separated for each experiment.
 
     def get_experiment_by_id(self, experiment_id: str) -> Optional[Experiment]:
         return next(
@@ -116,15 +100,12 @@ class ExperimentalResults(BaseModel):
 
 class ExperimentalAnalysis(BaseModel):
     analysis_report: Optional[str] = Field(None, description="")
-    # TODO: Select which experimental results to include in the paper. e.g. selected_run_ids: list[str]
+    # TODO: Select which experimental results to include in the paper. e.g. selected_experiment_ids: list[str]?
 
 
 class ResearchHypothesis(BaseModel):
     method: str = Field(..., description="")
     experimental_design: Optional[ExperimentalDesign] = Field(None, description="")
-    experimental_results: Optional[ExperimentalResults] = Field(
-        None, description=""
-    )  # TODO: # It may become unnecessary if `experiments` field exists.
     experimental_analysis: Optional[ExperimentalAnalysis] = Field(None, description="")
     iteration_history: Optional[list[ResearchHypothesis]] = Field(
         None, description="Previous iterations of this research hypothesis"

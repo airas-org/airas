@@ -20,28 +20,31 @@ Check if the generated base code meets ALL of the following requirements:
    - Core algorithm logic has NO placeholders
    - Includes comments explaining what each placeholder will be replaced with
 
-3. **7-File Structure Compliance**:
-   - Contains EXACTLY these 7 required files:
+3. **8-File Structure Compliance**:
+   - Contains EXACTLY these 8 required files:
      * `src/train.py`
      * `src/evaluate.py`
      * `src/preprocess.py`
+     * `src/model.py`
      * `src/main.py`
      * `pyproject.toml`
      * `config/smoke_test.yaml`
      * `config/full_experiment.yaml`
    - No additional utility files, helper modules, or separate components
-   - All functionality is contained within the specified 7 files only
+   - All functionality is contained within the specified 8 files only
 
 4. **Command Line Interface & Module Structure**:
-   - main.py properly supports `--smoke-test` and `--full-experiment` flags
-   - Configuration system can handle different experimental scenarios
-   - Proper command-line argument parsing
-   - Import statements are compatible with `uv run python -m src.main` execution (relative imports like `from .train import train` are valid even without `src/__init__.py`)
+   - main.py properly supports `--smoke-test` and `--full-experiment` flags with `--results-dir <path>` argument
+   - main.py reads configuration YAML files and launches train.py for each run variation
+   - main.py implements 1 GPU per run variation allocation, queueing runs sequentially when GPUs are insufficient
+   - main.py redirects each subprocess stdout/stderr to `{results_dir}/{run_id}/stdout.log` and `stderr.log` while forwarding to main stdout/stderr
+   - train.py outputs JSON-formatted metrics with `run_id` field using `print(json.dumps({...}))`
+   - evaluate.py outputs JSON-formatted comparison results to stdout
+   - Configuration YAML structure is ready to accept run variations (specific values will be added in derive_specific step)
+   - Import statements are compatible with `uv run python -m src.main` execution
 
 5. **Publication-Ready Infrastructure**:
    - Figure generation with proper formatting (PDF output, legends, annotations)
-   - Figures are saved in `.research/iteration{{ experiment_iteration }}/images/` directory
-   - Results saved as JSON files in `.research/iteration{{ experiment_iteration }}/` directory with stdout printing
    - Consistent result formatting and comparison logic
    - Proper experimental description output
 
@@ -54,6 +57,7 @@ Check if the generated base code meets ALL of the following requirements:
    - Does NOT assume specific datasets or models (uses placeholders appropriately)
    - Does NOT contain real dataset loading code (should be placeholder)
    - Focuses on base algorithm and evaluation framework
+   - Does NOT validate specific run_variation names (they will be provided later in derive_specific_experiments step)
 
 ## Output Format
 Respond with a JSON object containing:
@@ -64,13 +68,8 @@ Respond with a JSON object containing:
 {{ new_method.method }}
 
 # Experimental Design
-{% if new_method.experimental_design %}
 ## Experiment Strategy
 {{ new_method.experimental_design.experiment_strategy }}
-
-## Experiment Details
-{{ new_method.experimental_design.experiment_details }}
-{% endif %}
 
 # Generated Base Code Files
 {{ new_method.experimental_design.base_code | tojson }}
