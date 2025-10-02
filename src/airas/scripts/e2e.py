@@ -314,11 +314,10 @@ def resume_workflow(
         f"Creating new branch '{target_branch_name}' from '{source_branch_name}' "
         f"at subgraph '{start_subgraph_name}'"
     )
-    create_branch_subgraph = CreateBranchSubgraph(
+    state = CreateBranchSubgraph(
         new_branch_name=target_branch_name,
         start_subgraph_name=start_subgraph_name,
-    )
-    state = create_branch_subgraph.run(state)
+    ).run(state)
 
     remaining_subgraphs = subgraph_list[start_index:]
     logger.info(

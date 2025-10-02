@@ -207,6 +207,7 @@ class CreateCodeSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.validate_experiment_code,
             new_method=state["new_method"],
             github_repository_info=state["github_repository_info"],
+            previous_validation_results=state.get("experiment_code_validation"),
         )
         return {
             "experiment_code_validation": experiment_code_validation,
