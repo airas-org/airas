@@ -33,8 +33,8 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# runner_type = "A100_80GM×1"
-runner_type = "Tesla_T4"
+runner_type = "A100_80GM×8"
+# runner_type = "Tesla_T4"
 secret_names = ["HF_TOKEN", "ANTHROPIC_API_KEY"]
 
 n_queries = 5  # 論文検索時のサブクエリの数
@@ -42,7 +42,7 @@ max_results_per_query = 5  # 論文検索時の各サブクエリに対する論
 num_reference_paper = 2  # 論文作成時に追加で参照する論文数
 method_refinement_rounds = 0  # 新規手法の改良回数
 num_retrieve_related_papers = 20  # 新規手法作成時に新規性を確認するのに取得する論文数
-num_experiments = 1  # 生成する実験数
+num_experiments = 2  # 生成する実験数
 max_huggingface_results_per_search = (
     10  # modelやdatasetごとのHuggingFaceからの候補の取得数
 )
@@ -322,19 +322,19 @@ def resume_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "experiment_matsuzawa_251001"
+    repository_name = "experiment_matsuzawa_251002"
     research_topic_list = [
         "Improving efficiency of hyperparameter optimization",
     ]
 
-    execute_workflow(
-        github_owner, repository_name, research_topic_list=research_topic_list
-    )
-
-    # resume_workflow(
-    #     github_owner=github_owner,
-    #     repository_name=repository_name,
-    #     branch_name="research-0",
-    #     start_subgraph_name="CreateCodeSubgraph",
-    #     subgraph_list=subgraph_list,
+    # execute_workflow(
+    #     github_owner, repository_name, research_topic_list=research_topic_list
     # )
+
+    resume_workflow(
+        github_owner=github_owner,
+        repository_name=repository_name,
+        branch_name="research-1",
+        start_subgraph_name="CreateCodeSubgraph",
+        subgraph_list=subgraph_list,
+    )

@@ -58,14 +58,14 @@ File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`
 {% endif %}
 
 ## Command Line Interface and Run Variations
-The `full_experiment.yaml` file defines a list of all experiments to be run (e.g., baseline, proposed, ablations). The `main.py` script reads this file and executes experiments with one GPU per run variation. If GPUs are insufficient, experiments run sequentially.
+The `full_experiment.yaml` file defines a list of all experiments to be run (e.g., baseline, proposed, ablations). The `main.py` script reads this file and executes experiments sequentially.
 
 The generated main.py must support:
 ```bash
 # Smoke test (runs a lightweight version of ALL run variations defined in smoke_test.yaml)
 uv run python -m src.main --smoke-test --results-dir <path>
 
-# Full experiment (reads full_experiment.yaml, runs all variations with 1 GPU per variation)
+# Full experiment (reads full_experiment.yaml, runs all variations sequentially)
 uv run python -m src.main --full-experiment --results-dir <path>
 ```
 
@@ -80,14 +80,14 @@ Generate complete foundational code for these files ONLY. Do not create any addi
 - `src/evaluate.py`: Comparison and visualization tool. It reads the result files from all experiment variations and generates comparison figures.
 - `src/preprocess.py`: Common preprocessing pipeline with dataset placeholders
 - `src/model.py`: Model architecture implementations. It will contain classes for baseline, proposed, and ablation models.
-- `src/main.py`: The main orchestrator script. It reads a config file, launches train.py for each experiment in parallel across available GPUs, manages subprocesses, collects and consolidates logs, and finally triggers evaluate.py.
+- `src/main.py`: The main orchestrator script. It reads a config file, launches train.py for each experiment sequentially, manages subprocesses, collects and consolidates logs, and finally triggers evaluate.py.
 - `pyproject.toml`: Complete project dependencies
 - `config/smoke_test.yaml`: Configuration file template with placeholder structure for run variations. Actual variations will be populated in derive_specific step.
 - `config/full_experiment.yaml`: Configuration file template with placeholder structure for run variations. Actual variations will be populated in derive_specific step.
 
 ### Key Implementation Focus Areas
 1. Algorithm Core: Full implementation of the proposed method with proper abstraction
-2. GPU Allocation: main.py assigns 1 GPU per run variation. If available GPUs < total variations, queue remaining runs sequentially.
+2. Sequential Execution: main.py executes run variations one at a time in sequential order.
 3. Configuration Driven: The entire workflow must be driven by the YAML configuration files.
 4. Evaluation Consistency: Identical metrics calculation, result formatting, and comparison logic. evaluate.py must operate on the saved results after all training is complete.
 5. Structured Logging:

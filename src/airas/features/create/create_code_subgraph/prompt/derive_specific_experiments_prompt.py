@@ -11,9 +11,9 @@ Your task is to take the common base foundation code and derive specific experim
 ## Core Task
 - CONFIGURE ALL EXPERIMENTS: The primary task is to populate YAML file with a complete list of configurations for all run variations (baseline, proposed, ablations).
 - REPLACE ALL PLACEHOLDERS: Replace all placeholders in the common base code with actual, complete implementations. No TODO, PLACEHOLDER, pass, or ... are allowed.
-- IMPLEMENT MODELS: Implement all model architectures corresponding to the variations defined in the YAML file within `src/model.py`.
+- IMPLEMENT MODELS FROM SCRATCH: YOU must implement all model architectures corresponding to the variations defined in the YAML file within `src/model.py`. Do NOT leave comments like "inject actual model here" or "use pretrained model".
 - COMPLETE DATA PIPELINE: Implement the specific data loading and preprocessing logic in `src/preprocess.py`.
-- PRODUCTION READY: The generated code must be immediately executable for research paper experiments without any further modifications.
+- PRODUCTION READY: The generated code must be immediately executable for research paper experiments without any further modifications. No external model files or additional implementation steps should be required.
 
 ## Specialization Requirements
 - Complete `config/full_experiment.yaml`: This file is the driver of the entire experiment. Define each run variation ({{ current_experiment.run_variations }}) as a separate item in the `runs` list, specifying its unique id, model name, and parameters.
