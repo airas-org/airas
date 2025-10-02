@@ -44,7 +44,7 @@ Check if the generated base code meets ALL of the following requirements:
    - Import statements are compatible with `uv run python -m src.main` execution
 
 5. **Publication-Ready Infrastructure**:
-   - Figure generation with proper formatting (PDF output, legends, annotations)
+   - Figure generation with proper formatting (PDF output to `{results_dir}/images/` directory, legends, annotations)
    - Consistent result formatting and comparison logic
    - Proper experimental description output
 
