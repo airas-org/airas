@@ -64,7 +64,7 @@ def derive_specific_experiments(
     github_repository_info: GitHubRepositoryInfo,
     experiment_code_validation: dict[str, tuple[bool, str]] | None = None,
 ) -> ResearchHypothesis:
-    client = OpenAIClient()
+    client = OpenAIClient(reasoning_effort="high")
     env = Environment()
     template = env.from_string(derive_specific_experiments_prompt)
     base_code = new_method.experimental_design.base_code

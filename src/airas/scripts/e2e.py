@@ -6,6 +6,7 @@ from airas.config.workflow_config import DEFAULT_WORKFLOW_CONFIG
 from airas.features import (
     AnalyticSubgraph,
     CreateBibfileSubgraph,
+    CreateBranchSubgraph,
     CreateCodeSubgraph,
     CreateExperimentalDesignSubgraph,
     CreateMethodSubgraphV2,
@@ -277,8 +278,9 @@ def execute_workflow(
 def resume_workflow(
     github_owner: str,
     repository_name: str,
-    branch_name: str,
+    source_branch_name: str,
     start_subgraph_name: str,
+    target_branch_name: str,
     subgraph_list: list = subgraph_list,
 ):
     start_index = None
@@ -301,13 +303,22 @@ def resume_workflow(
         "github_repository_info": GitHubRepositoryInfo(
             github_owner=github_owner,
             repository_name=repository_name,
-            branch_name=branch_name,
+            branch_name=source_branch_name,
         ),
     }
 
-    logger.info(f"Downloading existing state from branch: {branch_name}")
-    download_subgraph = GithubDownloadSubgraph()
-    state = download_subgraph.run(state)
+    logger.info(f"Downloading existing state from branch: {source_branch_name}")
+    state = GithubDownloadSubgraph().run(state)
+
+    logger.info(
+        f"Creating new branch '{target_branch_name}' from '{source_branch_name}' "
+        f"at subgraph '{start_subgraph_name}'"
+    )
+    create_branch_subgraph = CreateBranchSubgraph(
+        new_branch_name=target_branch_name,
+        start_subgraph_name=start_subgraph_name,
+    )
+    state = create_branch_subgraph.run(state)
 
     remaining_subgraphs = subgraph_list[start_index:]
     logger.info(
@@ -334,7 +345,8 @@ if __name__ == "__main__":
     resume_workflow(
         github_owner=github_owner,
         repository_name=repository_name,
-        branch_name="research-0",
+        source_branch_name="research-0",
+        target_branch_name="research-0-retry-1",
         start_subgraph_name="CreateCodeSubgraph",
         subgraph_list=subgraph_list,
     )
