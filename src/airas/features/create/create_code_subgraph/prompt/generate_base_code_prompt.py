@@ -43,6 +43,7 @@ Based on the research method in # Current Research Method and experimental desig
 - Numeric values must be annotated on the axes of the graphs.
 - For line graphs, annotate significant values (e.g., the final or best value) to highlight key findings. For bar graphs, annotate the value above each bar.
 - Include legends in the figures.
+- To prevent labels, titles, and legends from overlapping, use `plt.tight_layout()` before saving the figure.
 - All figures must be saved to `{results_dir}/images/` directory in .pdf format (e.g., using `plt.savefig(os.path.join(results_dir, "images", "filename.pdf"), bbox_inches="tight")`).
   - Do not use .png or any other formats—only .pdf is acceptable for publication quality.
 

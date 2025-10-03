@@ -26,11 +26,11 @@ def create_branch(
     )
 
     if existing_branch:
-        logger.info(
+        raise RuntimeError(
             f"Branch '{github_repository_info.branch_name}' already exists in repository "
-            f"'{github_repository_info.github_owner}/{github_repository_info.repository_name}'"
+            f"'{github_repository_info.github_owner}/{github_repository_info.repository_name}'. "
+            f"Cannot create duplicate branch."
         )
-        return True
 
     try:
         response = client.create_branch(

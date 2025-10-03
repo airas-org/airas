@@ -34,7 +34,7 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-runner_type = "A100_80GM×8"
+runner_type = "A100_80GM×1"
 # runner_type = "Tesla_T4"
 secret_names = ["HF_TOKEN", "ANTHROPIC_API_KEY"]
 
@@ -307,9 +307,6 @@ def resume_workflow(
         ),
     }
 
-    logger.info(f"Downloading existing state from branch: {source_branch_name}")
-    state = GithubDownloadSubgraph().run(state)
-
     logger.info(
         f"Creating new branch '{target_branch_name}' from '{source_branch_name}' "
         f"at subgraph '{start_subgraph_name}'"
@@ -318,6 +315,9 @@ def resume_workflow(
         new_branch_name=target_branch_name,
         start_subgraph_name=start_subgraph_name,
     ).run(state)
+
+    logger.info(f"Downloading existing state from branch: {target_branch_name}")
+    state = GithubDownloadSubgraph().run(state)
 
     remaining_subgraphs = subgraph_list[start_index:]
     logger.info(
@@ -337,6 +337,8 @@ if __name__ == "__main__":
         "Improving efficiency of hyperparameter optimization",
     ]
 
+    # TODO: argparse
+
     # execute_workflow(
     #     github_owner, repository_name, research_topic_list=research_topic_list
     # )
@@ -344,8 +346,8 @@ if __name__ == "__main__":
     resume_workflow(
         github_owner=github_owner,
         repository_name=repository_name,
-        source_branch_name="research-0",
-        target_branch_name="research-0-retry-2",
-        start_subgraph_name="CreateCodeSubgraph",
+        source_branch_name="research-0-retry-3",
+        target_branch_name="research-0-retry-4",
+        start_subgraph_name="GitHubActionsExecutorSubgraph",
         subgraph_list=subgraph_list,
     )
