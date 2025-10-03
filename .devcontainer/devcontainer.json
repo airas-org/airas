@@ -51,5 +51,5 @@
             }
         }
     },
-    "postCreateCommand": "uv python install 3.10 3.11 3.12 3.13 3.14 && uv python pin 3.11 && uv venv --python 3.11 && uv sync && uv run pre-commit install"
+    "postCreateCommand": "cd ${containerWorkspaceFolder} && uv python install 3.10 3.11 3.12 3.13 3.14 && uv python pin 3.11 && uv venv --python 3.11 && uv sync && uv run pre-commit install"
 }
