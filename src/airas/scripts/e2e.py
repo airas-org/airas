@@ -35,7 +35,10 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 runner_type = "A100_80GM×1"
-# runner_type = "Tesla_T4"
+
+# TODO: From the perspective of research consistency,
+# we should probably not have ClaudeCode make changes to HuggingFace resources.
+# This change includes prompt modifications in `run_experiment_with_claude_code.yml``.
 secret_names = ["HF_TOKEN", "ANTHROPIC_API_KEY"]
 
 n_queries = 5  # 論文検索時のサブクエリの数
