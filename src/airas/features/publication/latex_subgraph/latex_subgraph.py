@@ -330,6 +330,8 @@ class LatexSubgraph(BaseSubgraph):
             ["retrieve_latex_template", "convert_to_latex"], "embed_in_latex_template"
         )
         graph_builder.add_edge("embed_in_latex_template", "upload_latex_file")
+
+        # TODO: If ClaudeCodeGithubActions is effective, the subsequent logic becomes simpler.
         graph_builder.add_conditional_edges(
             "upload_latex_file",
             self._route_after_upload,

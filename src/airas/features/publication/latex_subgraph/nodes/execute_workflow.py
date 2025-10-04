@@ -71,6 +71,10 @@ def execute_workflow(
 
     logger.info(f"Workflow {workflow_file_name} dispatched successfully")
 
+    # Wait for GitHub to propagate file changes before workflow starts
+    logger.info("Waiting for GitHub file propagation...")
+    time.sleep(5)
+
     # ワークフローの完了を待機
     start_time = time.time()
     new_workflow_run_id = None
