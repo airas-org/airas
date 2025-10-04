@@ -103,16 +103,17 @@ def push_files_to_experiment_branch(
         logger.error("No experiments found in experimental design")
         return [], new_method
 
-    # Find experiments that don't have GitHub repository info yet
+    # Push only experiments that are not selected for paper (need improvement and re-execution)
+    # Experiments with is_selected_for_paper=True are already successful and don't need re-execution
     target_experiment_ids = [
         experiment.experiment_id
         for experiment in new_method.experimental_design.experiments
-        if experiment.github_repository_info is None
+        if not (experiment.evaluation and experiment.evaluation.is_selected_for_paper)
     ]
 
     if not target_experiment_ids:
         logger.info(
-            "No new experiments to push. All experiments already have GitHub repository info."
+            "No experiments need re-execution. All experiments are already selected for paper."
         )
         return [], new_method
 

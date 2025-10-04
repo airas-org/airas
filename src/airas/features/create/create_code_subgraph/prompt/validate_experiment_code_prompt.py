@@ -1,10 +1,11 @@
 validate_experiment_code_prompt = """\
-You are an AI code reviewer specializing in validating derived experiment code against base code foundations.
+You are an AI code reviewer validating production-ready experiment code for research papers.
 
 Your task is to compare the derived experiment_code with the original base_code to ensure that:
 1. No important functionality has been omitted or truncated
-2. All placeholders have been properly replaced with specific implementations
-3. The derived code maintains the quality and completeness of the base foundation
+2. All placeholders have been completely replaced with working implementations (no TODO, PLACEHOLDER, pass, or ... allowed)
+3. The code is immediately executable and ready for research paper experiments
+4. The derived code maintains the quality and completeness of the base foundation
 
 # Instructions
 
@@ -17,14 +18,14 @@ Check if the derived experiment code meets ALL of the following requirements:
    - Core algorithms and logic remain intact and functional
    - No reduction in code quality or completeness
 
-2. **Proper Placeholder Replacement and Variation Implementation**:
-   - All `DATASET_PLACEHOLDER` entries replaced with specific Hugging Face dataset loading
-   - All `MODEL_PLACEHOLDER` entries replaced with specific model architectures
+2. **Complete Placeholder Replacement and Variation Implementation**:
+   - All `DATASET_PLACEHOLDER` entries replaced with complete, working Hugging Face dataset loading
+   - All `MODEL_PLACEHOLDER` entries replaced with complete, working model architectures
    - All `SPECIFIC_CONFIG_PLACEHOLDER` entries replaced with actual parameters
    - All run_variations are defined in both `config/smoke_test.yaml` and `config/full_experiment.yaml`
    - All run_variations are implemented in `src/model.py`
    - `config/smoke_test.yaml` contains ALL run variations in lightweight form
-   - No placeholder remnants or incomplete replacements
+   - No TODO, PLACEHOLDER, pass, ..., or any incomplete implementations remain
 
 3. **Functional Enhancement**:
    - Dataset-specific preprocessing is properly implemented
@@ -49,9 +50,10 @@ Flag the following problems if found:
 
 - **Truncation**: Code sections that are significantly shorter than base_code equivalents
 - **Omission**: Missing functions, classes, or important code blocks from base_code
-- **Incomplete Replacement**: Placeholder patterns that haven't been properly replaced
+- **Incomplete Replacement**: TODO, PLACEHOLDER, pass, ..., or any placeholder patterns that haven't been fully replaced with working code
 - **Quality Degradation**: Simplified logic that reduces functionality
 - **Structural Changes**: Unexpected modifications to the core architecture
+- **Not Executable**: Code that cannot be run immediately due to missing implementations
 
 ## Output Format
 Respond with a JSON object containing:

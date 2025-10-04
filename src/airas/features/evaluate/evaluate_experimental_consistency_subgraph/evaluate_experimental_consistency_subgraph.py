@@ -39,8 +39,6 @@ class EvaluateExperimentalConsistencyLLMMapping(BaseModel):
 
 class EvaluateExperimentalConsistencySubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
-    consistency_feedback: list[str]
-    consistency_score: list[int]
     github_repository_info: GitHubRepositoryInfo
 
 
@@ -48,9 +46,7 @@ class EvaluateExperimentalConsistencySubgraphHiddenState(TypedDict): ...
 
 
 class EvaluateExperimentalConsistencySubgraphOutputState(TypedDict):
-    is_experiment_consistent: bool
-    consistency_feedback: list[str]
-    consistency_score: list[int]
+    new_method: ResearchHypothesis
 
 
 class EvaluateExperimentalConsistencySubgraphState(
@@ -72,6 +68,7 @@ class EvaluateExperimentalConsistencySubgraph(BaseSubgraph):
         | EvaluateExperimentalConsistencyLLMMapping
         | None = None,
         prompt_template: str | None = None,
+        consistency_score_threshold: int = 7,
     ):
         if llm_mapping is None:
             self.llm_mapping = EvaluateExperimentalConsistencyLLMMapping()
@@ -88,27 +85,21 @@ class EvaluateExperimentalConsistencySubgraph(BaseSubgraph):
         self.prompt_template = (
             prompt_template or evaluate_experimental_consistency_prompt
         )
+        self.consistency_score_threshold = consistency_score_threshold
         check_api_key(llm_api_key_check=True)
 
     @evaluate_experimental_consistency_timed
     def _evaluate_experimental_consistency(
         self, state: EvaluateExperimentalConsistencySubgraphState
-    ) -> dict[str, bool | list[str] | list[int]]:
-        is_experiment_consistent, updated_feedback, updated_scores = (
-            evaluate_experimental_consistency(
-                llm_name=self.llm_mapping.evaluate_experimental_consistency,
-                prompt_template=self.prompt_template,
-                new_method=state["new_method"],
-                github_repository_info=state["github_repository_info"],
-                existing_feedback=state.get("consistency_feedback"),
-                existing_scores=state.get("consistency_score"),
-            )
+    ) -> dict[str, ResearchHypothesis]:
+        new_method = evaluate_experimental_consistency(
+            llm_name=self.llm_mapping.evaluate_experimental_consistency,
+            prompt_template=self.prompt_template,
+            new_method=state["new_method"],
+            github_repository_info=state["github_repository_info"],
+            consistency_score_threshold=self.consistency_score_threshold,
         )
-        return {
-            "is_experiment_consistent": is_experiment_consistent,
-            "consistency_feedback": updated_feedback,
-            "consistency_score": updated_scores,
-        }
+        return {"new_method": new_method}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(EvaluateExperimentalConsistencySubgraphState)

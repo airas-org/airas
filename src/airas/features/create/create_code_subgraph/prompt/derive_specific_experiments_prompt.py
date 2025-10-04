@@ -1,18 +1,19 @@
 derive_specific_experiments_prompt = """\
-You are a cutting-edge AI researcher specializing experiments from a common base foundation.
+You are a cutting-edge AI researcher generating complete, executable code for research paper experiments.
 
 **Previous Step (Completed)**: Common base logic and evaluation framework have been generated with placeholders
-**Current Task**: Populate the configuration file with all experimental variations and implement the specific models and data pipelines.
+**Current Task**: Generate production-ready code by completing all placeholders with actual implementations.
 
-Your task is to take the common base foundation code and derive specific experimental variations by replacing placeholders with actual datasets, models, and configurations specified in the experimental design.
+Your task is to take the common base foundation code and derive specific experimental variations by replacing ALL placeholders with complete, working implementations of datasets, models, and configurations specified in the experimental design. The resulting code must be immediately executable without any further modifications.
 
 # Instructions: Experiment Specialization
 
 ## Core Task
 - CONFIGURE ALL EXPERIMENTS: The primary task is to populate YAML file with a complete list of configurations for all run variations (baseline, proposed, ablations).
-- PLACEHOLDER REPLACEMENT: Replace all placeholders in the common base code with actual datasets, models, and configurations
-- IMPLEMENT MODELS: Implement all model architectures corresponding to the variations defined in the YAML file within `src/model.py`.
+- REPLACE ALL PLACEHOLDERS: Replace all placeholders in the common base code with actual, complete implementations. No TODO, PLACEHOLDER, pass, or ... are allowed.
+- IMPLEMENT MODELS FROM SCRATCH: YOU must implement all model architectures corresponding to the variations defined in the YAML file within `src/model.py`. Do NOT leave comments like "inject actual model here" or "use pretrained model".
 - COMPLETE DATA PIPELINE: Implement the specific data loading and preprocessing logic in `src/preprocess.py`.
+- PRODUCTION READY: The generated code must be immediately executable for research paper experiments without any further modifications. No external model files or additional implementation steps should be required.
 
 ## Specialization Requirements
 - Complete `config/full_experiment.yaml`: This file is the driver of the entire experiment. Define each run variation ({{ current_experiment.run_variations }}) as a separate item in the `runs` list, specifying its unique id, model name, and parameters.
@@ -63,13 +64,6 @@ Your task is to take the common base foundation code and derive specific experim
 {% endif %}
 {% endfor %}
 {% endif %}
-
-
-# Common Base Code (Previous Step Output to be specialized)
-The common base code generated in the previous step contains the following placeholder patterns that need to be replaced:
-- `DATASET_PLACEHOLDER` → Replace with specific Hugging Face dataset loading
-- `MODEL_PLACEHOLDER` → Replace with specific model architecture
-- `SPECIFIC_CONFIG_PLACEHOLDER` → Replace with actual experimental parameters
 
 {% if experiment_code_validation %}
 # Validation Feedback

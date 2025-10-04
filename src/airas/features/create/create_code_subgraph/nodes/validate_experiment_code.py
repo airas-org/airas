@@ -29,6 +29,7 @@ def validate_experiment_code(
     github_repository_info: GitHubRepositoryInfo,
     prompt_template: str = validate_experiment_code_prompt,
     llm_client: LLMFacadeClient | None = None,
+    previous_validation_results: dict[str, tuple[bool, str]] | None = None,
 ) -> dict[str, tuple[bool, str]]:
     client = llm_client or LLMFacadeClient(llm_name=llm_name)
     env = Environment()
@@ -41,8 +42,19 @@ def validate_experiment_code(
         logger.error("No experiments found in experimental design")
         return {}
 
-    validation_results = {}
+    validation_results = (
+        previous_validation_results.copy() if previous_validation_results else {}
+    )
+
     for experiment in new_method.experimental_design.experiments:
+        if experiment.experiment_id in validation_results:
+            is_ready, _ = validation_results[experiment.experiment_id]
+            if is_ready:
+                logger.info(
+                    f"Skipping validation for experiment {experiment.experiment_id} - already validated successfully"
+                )
+                continue
+
         if not experiment.code:
             logger.warning(
                 f"No code found for experiment {experiment.experiment_id}, skipping validation"

@@ -65,7 +65,7 @@ class GithubClient(BaseHTTPClient):
     ) -> None:
         auth_headers = {
             "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN')}",
+            "Authorization": f"Bearer {os.getenv('GH_PERSONAL_ACCESS_TOKEN')}",
             "X-GitHub-Api-Version": "2022-11-28",
         }
         super().__init__(

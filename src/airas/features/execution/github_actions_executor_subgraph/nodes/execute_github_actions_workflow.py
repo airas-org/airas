@@ -205,9 +205,10 @@ async def _execute_all_workflows(
         )
         tasks.append((branch_name, task))
 
+    results_list = await asyncio.gather(*[task for _, task in tasks])
+
     results = {}
-    for branch_name, task in tasks:
-        result = await task
+    for (branch_name, _), result in zip(tasks, results_list, strict=True):
         results[branch_name] = result
         if result.success:
             logger.info(f"Workflow for branch '{branch_name}' completed successfully")

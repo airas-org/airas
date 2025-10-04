@@ -1,15 +1,51 @@
-from airas.types.research_hypothesis import ExperimentalResults, ResearchHypothesis
+from airas.types.github import GitHubRepositoryInfo
+from airas.types.research_hypothesis import (
+    Experiment,
+    ExperimentalDesign,
+    ExperimentalResults,
+    ResearchHypothesis,
+)
 
 evaluate_experimental_consistency_subgraph_input_data = {
     "new_method": ResearchHypothesis(
-        method="""
-Adaptive Curvature Momentum (ACM) Optimizer Overview Existing adaptive optimizers such as Adam and AdaBelief dynamically adjust the learning rate based on the history of gradients. However, while these methods adapt to the magnitude of the gradients, they do not fully exploit information about the local curvature of the loss landscape. In this proposal, we introduce a new optimizer called Adaptive Curvature Momentum (ACM), which utilizes local quadratic approximations to adaptively adjust the update direction and scale. Method Standard Momentum Update Similar to SGD or Adam, ACM maintains a momentum term based on past gradients. Adaptive Learning Rate Scaling Uses second-order information (approximations of the Hessian) to dynamically adjust the learning rate for each direction. To reduce the computational cost of Hessian calculations, Fisher Information Matrix approximations can be employed. Curvature-Aware Adaptive Adjustment Estimates curvature by using the gradient change rate: Δ 𝑔 = 𝑔 𝑡 − 𝑔 𝑡 − 1 Δg=g t ​ −g t−1 ​ Modifies the learning rate based on curvature: 𝜂 𝑡 = 𝛼 1 + 𝛽 ⋅ Curvature ( 𝑔 𝑡 ) η t ​ = 1+β⋅Curvature(g t ​ ) α ​ where 𝛼 α is the base learning rate, and 𝛽 β controls the influence of curvature. Adaptive Regularization Encourages stable updates by incorporating an adaptive weight decay mechanism. When local curvature is high, the optimizer strengthens regularization to suppress excessive updates. Key Features and Benefits ✅ Combines Adam-style adaptability with curvature-aware updates ✅ Faster convergence: Adapts step sizes dynamically, taking larger steps in flat regions and smaller steps in sharp valleys. ✅ Hessian-free approximation: Utilizes efficient curvature estimation while maintaining low computational overhead. ✅ Scalability: Suitable for large-scale models such as ResNets and Transformers.
-""",
-        experimental_results=ExperimentalResults(
-            result="Training completed successfully with ACM optimizer. Final metrics: accuracy=94.2%, loss=0.087, convergence_epochs=45. Comparison with baselines: ACM vs Adam (92.1%), ACM vs SGD (89.7%), ACM vs AdaBelief (93.5%). Memory usage: 2.1GB, Training time: 3.2 hours.",
-            was_experiment_executed=True,
-            is_better_than_baseline=True,
+        method="Adaptive Curvature Momentum (ACM) Optimizer for improved convergence in deep learning",
+        experimental_design=ExperimentalDesign(
+            experiment_strategy="Compare ACM against Adam/SGD/AdaBelief on ResNet-18 using CIFAR-10",
+            experiments=[
+                Experiment(
+                    experiment_id="exp-1",
+                    description="Baseline comparison: ACM vs Adam/SGD/AdaBelief on CIFAR-10",
+                    run_variations=[
+                        "baseline_adam",
+                        "baseline_sgd",
+                        "baseline_adabelief",
+                        "proposed_acm",
+                    ],
+                    results=ExperimentalResults(
+                        result="Training completed successfully. Final metrics: ACM accuracy=94.2%, Adam=92.1%, SGD=89.7%, AdaBelief=93.5%. Convergence: ACM at 45 epochs, Adam at 55 epochs.",
+                        error=None,
+                        image_file_name_list=[
+                            "training_loss.pdf",
+                            "accuracy_comparison.pdf",
+                        ],
+                    ),
+                ),
+                Experiment(
+                    experiment_id="exp-2",
+                    description="Ablation study: Impact of curvature-aware adjustment",
+                    run_variations=["acm_full", "acm_no_curvature", "acm_no_momentum"],
+                    results=ExperimentalResults(
+                        result="Ablation results: ACM full=94.2%, ACM without curvature=92.8%, ACM without momentum=91.5%. Curvature adjustment provides 1.4% improvement.",
+                        error="Training instability observed in acm_no_momentum variant at epoch 35",
+                        image_file_name_list=["ablation_comparison.pdf"],
+                    ),
+                ),
+            ],
         ),
     ),
-    "generated_file_contents": {"sample.py": "print('Hello world!')"},
+    "github_repository_info": GitHubRepositoryInfo(
+        github_owner="auto-res2",
+        repository_name="experiment_matsuzawa_251001",
+        branch_name="research-20251001-051610-001",
+    ),
 }

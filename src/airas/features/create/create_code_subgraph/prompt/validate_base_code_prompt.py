@@ -35,8 +35,8 @@ Check if the generated base code meets ALL of the following requirements:
 
 4. **Command Line Interface & Module Structure**:
    - main.py properly supports `--smoke-test` and `--full-experiment` flags with `--results-dir <path>` argument
-   - main.py reads configuration YAML files and launches train.py for each run variation
-   - main.py implements 1 GPU per run variation allocation, queueing runs sequentially when GPUs are insufficient
+   - main.py reads configuration YAML files and launches train.py for each run variation sequentially
+   - main.py executes run variations one at a time in sequential order
    - main.py redirects each subprocess stdout/stderr to `{results_dir}/{run_id}/stdout.log` and `stderr.log` while forwarding to main stdout/stderr
    - train.py outputs JSON-formatted metrics with `run_id` field using `print(json.dumps({...}))`
    - evaluate.py outputs JSON-formatted comparison results to stdout
@@ -44,7 +44,7 @@ Check if the generated base code meets ALL of the following requirements:
    - Import statements are compatible with `uv run python -m src.main` execution
 
 5. **Publication-Ready Infrastructure**:
-   - Figure generation with proper formatting (PDF output, legends, annotations)
+   - Figure generation with proper formatting (PDF output to `{results_dir}/images/` directory, legends, annotations)
    - Consistent result formatting and comparison logic
    - Proper experimental description output
 
