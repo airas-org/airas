@@ -31,7 +31,9 @@ class CreateMethodSubgraphV2Config(BaseModel):
 
 
 class CreateExperimentalDesignSubgraphConfig(BaseModel):
-    num_experiments: int = 2  # 生成する実験数
+    num_models_to_use: int = 2  # 実験で使用するモデルの数
+    num_datasets_to_use: int = 2  # 実験で使用するデータセットの数
+    num_comparative_methods: int = 2  # 実験で比較する手法の数
 
 
 class RetrieveHuggingFaceSubgraphConfig(BaseModel):
@@ -144,6 +146,9 @@ class Settings(BaseSettings):
             self.extract_reference_titles.num_reference_paper = 1
             self.create_method.num_retrieve_related_papers = 1
             self.create_method.method_refinement_rounds = 0
+            self.create_experimental_design.num_models_to_use = 1
+            self.create_experimental_design.num_datasets_to_use = 1
+            self.create_experimental_design.num_comparative_methods = 1
             self.retrieve_hugging_face.max_results_per_search = 2
             self.retrieve_hugging_face.max_models = 1
             self.retrieve_hugging_face.max_datasets = 1
