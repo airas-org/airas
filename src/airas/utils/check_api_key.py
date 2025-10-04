@@ -86,5 +86,4 @@ def check_api_key(
                 f"- {key['name']} (Environment variable: {key['env']})\n  Get it here: {key['url']}"
             )
         full_message = "\n".join(message_lines)
-        logger.error(full_message)
-        raise RuntimeError("Missing required API keys. Aborting process.")
+        raise RuntimeError(full_message)
