@@ -90,9 +90,7 @@ create_method = CreateMethodSubgraphV2(
 )
 create_experimental_design = CreateExperimentalDesignSubgraph(
     runner_type=settings.runner_type,
-    num_models_to_use=settings.create_experimental_design.num_models_to_use,
-    num_datasets_to_use=settings.create_experimental_design.num_datasets_to_use,
-    num_comparative_methods=settings.create_experimental_design.num_comparative_methods,
+    num_experiments=settings.create_experimental_design.num_experiments,
     llm_mapping={
         "generate_experiment_strategy": settings.llm_mapping.generate_experiment_strategy,
         "generate_experiments": settings.llm_mapping.generate_experiments,

@@ -1,5 +1,38 @@
 generate_experiment_details_prompt = """\
-You are an AI researcher. You will conduct experiments to demonstrate the superiority of the new method described in # New Methods. Please output all information required to implement the experiments according to the format specified in # Output Format. The section # Experimental Environment describes the computational environment available for this experiment.
+You are a cutting-edge AI researcher. Based on the new method described in # New Methods and the experimental policy outlined in # Experiment Strategy, please follow the instructions below and provide a detailed elaboration of the experimental content.
+
+# Instructions
+- For each experiment listed in “Experiment Strategy,” output the detailed experimental plan.
+- Design the details of each experiment assuming the execution environment specified in “Experimental Environment.”
+- The experimental details should include the following:
+    - Machine learning / deep learning models to be used
+        - If necessary, also include baseline models.
+    - Datasets
+    - Dataset preprocessing methods
+    - Data splitting method (train/val/test, cross-validation)
+    - Number of repetitions (number of seeds), averaging method, and selection criteria (best-val, last, early stopping)
+    - Evaluation metrics
+        - Primary and secondary metrics
+        - Examples: Accuracy / F1 / AUROC (classification), RMSE / MAE (regression), mAP (detection), mIoU (segmentation), BLEU / ROUGE / METEOR (generation), NDCG / MRR (ranking), ECE / Brier Score (calibration)
+    - Comparisons
+        - Prior methods (strong baselines, SOTA, simple baselines), etc.
+        - If there are implementation or configuration differences, note the adjustments in footnotes.
+    - Methods for analyzing important hyperparameters (e.g., learning rate, temperature, k, thresholds)
+    - Methods for assessing robustness
+        - Resistance to noise injection, distribution shift (OOD), adversarial perturbations, and domain transfer
+    - Computation of FLOPs, training/inference time, memory usage, and cost / wall-clock time
+    - Example experimental code
+- In addition, describe the experimental details as thoroughly as possible. It is acceptable if the output is long.
+- Avoid excessive redundancy across experiments. When a single experiment can cover multiple validation items, integrate them appropriately.
+- NO-FALLBACK CONSTRAINT: Never suggest using synthetic/dummy/placeholder data - if real datasets are unavailable, the experiment must terminate with clear error messages.
+- "Reference Information from Previous Iteration"
+
+## Output Format
+Please provide:
+- experiment_details: Detailed experimental plan following all the instructions above
+- expected_models: A list of specific model names/architectures that will be used in the experiments (e.g., ["ResNet-50", "BERT-base", "GPT-3.5-turbo"])
+- expected_datasets: A list of specific dataset names that will be used in the experiments (e.g., ["CIFAR-10", "ImageNet", "IMDB Reviews"])
+
 
 # Experimental Environment
 {{ runner_type_prompt }}
@@ -7,32 +40,22 @@ You are an AI researcher. You will conduct experiments to demonstrate the superi
 # Current Research Method (Target for Experiment Design)
 {{ new_method.method }}
 
-# MODEL LIST
-{{ model_list }}
+# Experiment Strategy
+{{ new_method.experimental_design.experiment_strategy }}
 
-# DATASET LIST
-{{ dataset_list }}
+---
+{% if consistency_feedback %}
+- **Important**: Address the following feedback from previous experimental consistency evaluation:
+{{ consistency_feedback }}
+- Specifically improve the experimental design to resolve these consistency issues.
+{% endif %}
 
-# Output Format
-- experiment_summary：
-  - Describe the overall implementation details of the experiment. Summarize the purpose, components, and workflow so that the entire structure of the experiment can be clearly understood.
-- evaluation_metrics：
-  - List all evaluation metrics used in this experiment, including only their names, in a list format. (e.g., Accuracy AUC ROC, F1 Score, RMSE, BLEU, ROUGE, etc.)
-- models_to_use：
-  - Select {{ num_models_to_use }} deep learning or machine learning models to be used in the experiment and output them in a list format.
-  - Each model name should clearly indicate its number of parameters.
-  - Refer to the provided “# MODEL LIST” for guidance, although models not included in the list are also acceptable.
-  - If the proposed method itself introduces a new model (e.g., a novel architecture), return an empty list and describe the details of the method in new_method.
-- datasets_to_use：
-  - Select {{ num_datasets_to_use }} datasets to be used in the experiment and output them in a list format.
-  - Refer to the provided “# DATASET LIST” for guidance, although datasets not included in the list are also acceptable.
-  - If a new dataset is proposed as part of this study, return an empty list and describe its details in new_method.
-- new_method：
-  - Describe the proposed method and its implementation in detail.
-  - Clearly state its objectives, theoretical background, components, and algorithmic procedures.
-- comparative_methods：
-  - Select {{ num_comparative_methods }} existing methods for comparison with the proposed method and output them in a list format.
-  - For example, if the proposed method is a new optimization algorithm, comparative methods might include Adam or AdamW.
-  - If the proposal is a new LLM architecture, comparative methods might include Llama 4 or Qwen.
-- hyperparameters_to_search：
-  - List all hyperparameters to be explored, including only their names, in a list format."""
+# Reference Information from Previous Iteration
+{% if new_method.iteration_history %}
+**Previous Experimental Design**:
+- Strategy: {{ new_method.iteration_history[-1].experimental_design.experiment_strategy }}
+- Details: {{ new_method.iteration_history[-1].experimental_design.experiment_details }}
+- Code: {{ new_method.iteration_history[-1].experimental_design.experiment_code | tojson }}
+
+Build upon what worked and address what didn't work to improve the consistency score.
+{% endif %}"""

@@ -84,26 +84,15 @@ class Experiment(BaseModel):
 
 
 class ExperimentalDesign(BaseModel):
-    experiment_summary: Optional[str] = Field(
-        None, description="A summary of the overall experimental design"
+    experiment_strategy: Optional[str] = Field(None, description="")
+    experiments: Optional[list[Experiment]] = Field(
+        None, description="List of primary experimental lines to be executed."
     )
-    evaluation_metrics: Optional[list[str]] = Field(
-        None, description="Metrics used to evaluate the experiments"
+    expected_models: Optional[list[str]] = Field(
+        None, description="List of expected models to be used in the experiment"
     )
-    models_to_use: Optional[list[str]] = Field(
-        None, description="List of models to be used in the experiments"
-    )
-    datasets_to_use: Optional[list[str]] = Field(
-        None, description="List of datasets to be used in the experiments"
-    )
-    new_method: Optional[str] = Field(
-        None, description="A detailed description of the new method to be implemented"
-    )
-    comparative_methods: Optional[list[str]] = Field(
-        None, description="Existing methods selected for comparison"
-    )
-    hyperparameters_to_search: Optional[list[str]] = Field(
-        None, description="Hyperparameters to be explored in the experiments"
+    expected_datasets: Optional[list[str]] = Field(
+        None, description="List of expected datasets to be used in the experiment"
     )
     external_resources: Optional[ExternalResources] = Field(
         None,
