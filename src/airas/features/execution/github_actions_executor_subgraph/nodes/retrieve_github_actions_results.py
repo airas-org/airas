@@ -191,7 +191,6 @@ async def _retrieve_github_actions_results(
                 image_file_name_list=image_files,
             )
             experiment.code = exp_code
-            experiment.github_repository_info = github_repository
 
         except Exception as e:
             logger.error(f"Failed to retrieve results for branch {branch_name}: {e}")

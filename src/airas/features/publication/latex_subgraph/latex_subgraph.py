@@ -290,6 +290,12 @@ class LatexSubgraph(BaseSubgraph):
         else:
             return "fix"
 
+    def _route_after_upload(self, state: LatexSubgraphState) -> str:
+        if state["compile_revision_count"] > 0:
+            return "compile"
+        else:
+            return "chktex"
+
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(LatexSubgraphState)
         graph_builder.add_node("initialize", self._initialize)
@@ -324,8 +330,14 @@ class LatexSubgraph(BaseSubgraph):
             ["retrieve_latex_template", "convert_to_latex"], "embed_in_latex_template"
         )
         graph_builder.add_edge("embed_in_latex_template", "upload_latex_file")
-        # First stage: chktex validation loop
-        graph_builder.add_edge("upload_latex_file", "execute_chktex")
+        graph_builder.add_conditional_edges(
+            "upload_latex_file",
+            self._route_after_upload,
+            {
+                "chktex": "execute_chktex",
+                "compile": "execute_latex_compile",
+            },
+        )
         graph_builder.add_edge("execute_chktex", "retrieve_chktex_log")
         graph_builder.add_edge("retrieve_chktex_log", "check_chktex_successful")
         graph_builder.add_conditional_edges(
