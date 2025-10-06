@@ -2,7 +2,7 @@ import asyncio
 import time
 from dataclasses import dataclass
 from logging import getLogger
-from typing import Optional
+from typing import Any, Optional
 
 from airas.config.runner_type_info import RunnerType, runner_info_dict
 from airas.services.api_client.github_client import GithubClient
@@ -30,9 +30,8 @@ class WorkflowExecutor:
         github_owner: str,
         repository_name: str,
         branch_name: str,
-        experiment_iteration: int,
-        runner_type: str,
         workflow_file: str,
+        inputs: dict[str, Any],
     ) -> WorkflowResult:
         try:
             baseline_count = await self._get_baseline_workflow_count(
@@ -46,10 +45,9 @@ class WorkflowExecutor:
             success = await self._dispatch_workflow(
                 github_owner,
                 repository_name,
-                experiment_iteration,
                 branch_name,
-                runner_type,
                 workflow_file,
+                inputs,
             )
             if not success:
                 return WorkflowResult(None, False, "Failed to dispatch workflow")
@@ -88,15 +86,10 @@ class WorkflowExecutor:
         self,
         github_owner: str,
         repository_name: str,
-        experiment_iteration: int,
         branch_name: str,
-        runner_type: str,
         workflow_file: str,
+        inputs: dict[str, Any],
     ) -> bool:
-        inputs = {
-            "experiment_iteration": str(experiment_iteration),
-            "runner_type": runner_type,
-        }
         try:
             success = await self.client.acreate_workflow_dispatch(
                 github_owner,
@@ -189,19 +182,18 @@ async def _execute_all_workflows(
     github_owner: str,
     repository_name: str,
     experiment_branches: list[str],
-    experiment_iteration: int,
-    runner_type_setting: str,
     workflow_file: str,
+    inputs: dict[str, Any],
 ) -> dict[str, WorkflowResult]:
     tasks = []
+    # Execute the same workflow across multiple branches in parallel
     for branch_name in experiment_branches:
         task = executor.execute_workflow(
             github_owner,
             repository_name,
             branch_name,
-            experiment_iteration,
-            runner_type_setting,
             workflow_file,
+            inputs,
         )
         tasks.append((branch_name, task))
 
@@ -237,19 +229,22 @@ def execute_github_actions_workflow(
 
     logger.info(f"Executing workflows for {len(experiment_branches)} branches")
 
+    inputs = {
+        "experiment_iteration": str(experiment_iteration),
+        "runner_type": runner_type_setting,
+    }
+
     results = asyncio.run(
         _execute_all_workflows(
             executor,
             github_repository.github_owner,
             github_repository.repository_name,
             experiment_branches,
-            experiment_iteration,
-            runner_type_setting,
             workflow_file,
+            inputs,
         )
     )
 
-    # Check if all workflows succeeded
     all_success = all(result.success for result in results.values())
 
     if all_success:

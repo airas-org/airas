@@ -76,7 +76,5 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "convert_to_html": BASE_MODEL,
     # LatexSubgraph
     "convert_to_latex": BASE_MODEL,
-    "check_execution_successful": BASE_MODEL,
-    "fix_latex_text": BASE_MODEL,
 }
 # fmt: on
