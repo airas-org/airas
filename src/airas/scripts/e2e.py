@@ -133,7 +133,7 @@ create_bibfile = CreateBibfileSubgraph(
     llm_mapping={
         "filter_references": settings.llm_mapping.filter_references,
     },
-    latex_template_name="agents4science_2025",
+    latex_template_name="iclr2024",
     max_filtered_references=settings.create_bibfile.max_filtered_references,
 )
 writer = WriterSubgraph(
