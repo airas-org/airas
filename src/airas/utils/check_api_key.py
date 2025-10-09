@@ -87,4 +87,7 @@ def check_api_key(
             )
         full_message = "\n".join(message_lines)
         logger.error(full_message)
-        raise RuntimeError("Missing required API keys. Aborting process.")
+        raise RuntimeError(
+            "Missing required API keys. Aborting process. Missing keys: "
+            + ", ".join([key["name"] for key in missing_keys])
+        )
