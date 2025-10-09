@@ -90,6 +90,7 @@ class HtmlSubgraph(BaseSubgraph):
 
     @html_timed
     def _convert_to_html(self, state: HtmlSubgraphState) -> dict[str, str]:
+        # TODO: Since they are stored for each experiment, it currently results in an error.
         image_file_name_list = (
             getattr(
                 state["new_method"].experimental_results, "image_file_name_list", None
@@ -154,7 +155,7 @@ class HtmlSubgraph(BaseSubgraph):
 
         github_pages_url = prepare_images_for_html(
             github_repository=state["github_repository_info"],
-            experiment_branches=selected_branches,
+            image_source_branches=selected_branches,
         )
 
         return {
