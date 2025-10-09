@@ -30,9 +30,6 @@ create_experimental_design_timed = lambda f: time_node(create_str)(f)  # noqa: E
 
 
 class CreateExperimentalDesignLLMMapping(BaseModel):
-    # generate_experiment_strategy: LLM_MODEL = DEFAULT_NODE_LLMS[
-    #     "generate_experiment_strategy"
-    # ]
     generate_experiments: LLM_MODEL = DEFAULT_NODE_LLMS["generate_experiments"]
 
 
@@ -117,21 +114,6 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
     #     return {
     #         "new_method": current_method,
     #     }
-
-    # @create_experimental_design_timed
-    # def _generate_experiment_strategy(
-    #     self, state: CreateExperimentalDesignState
-    # ) -> dict[str, ResearchHypothesis]:
-    #     new_method = generate_experiment_strategy(
-    #         llm_name=self.llm_mapping.generate_experiment_strategy,
-    #         new_method=state["new_method"],
-    #         runner_type=cast(RunnerType, self.runner_type),
-    #         github_repository_info=state["github_repository_info"],
-    #         feedback_text=feedback[-1]
-    #         if (feedback := state.get("consistency_feedback"))
-    #         else None,
-    #     )
-    #     return {"new_method": new_method}
 
     @create_experimental_design_timed
     def _generate_experiment_details(

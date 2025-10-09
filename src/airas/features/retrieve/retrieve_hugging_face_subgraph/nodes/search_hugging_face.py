@@ -24,8 +24,8 @@ async def _search_hugging_face(
     include_gated: bool = False,
 ) -> HuggingFace:
     if not new_method.experimental_design or (
-        not new_method.experimental_design.expected_models
-        and not new_method.experimental_design.expected_datasets
+        not new_method.experimental_design.models_to_use
+        and not new_method.experimental_design.datasets_to_use
     ):
         logger.warning("No expected models or datasets found in experimental design")
         return HuggingFace(models=[], datasets=[])
@@ -34,10 +34,10 @@ async def _search_hugging_face(
 
     search_tasks = [
         ("models", model.strip())
-        for model in new_method.experimental_design.expected_models
+        for model in new_method.experimental_design.models_to_use
     ] + [
         ("datasets", dataset.strip())
-        for dataset in new_method.experimental_design.expected_datasets
+        for dataset in new_method.experimental_design.datasets_to_use
     ]
 
     if not search_tasks:
