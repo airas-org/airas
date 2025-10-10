@@ -46,41 +46,42 @@ class ExperimentEvaluation(BaseModel):
         None,
         description="Detailed feedback on experimental consistency and quality",
     )
-    is_selected_for_paper: Optional[bool] = Field(
-        None,
-        description="Whether this experiment is selected for inclusion in the paper based on consistency, significance, and ability to support the main claims",
-    )
 
 
-# TODO: Consider how to maintain the history of experimental parameters
-class Experiment(BaseModel):
-    experiment_id: str = Field(
+class HyperparameterSearchSpace(BaseModel): ...
+
+
+class ExperimentRun(BaseModel):
+    run_id: str = Field(
         ...,
-        description="A unique identifier for this major experiment (e.g., 'exp-1', 'exp-2').",
+        description="A unique identifier for this specific experimental run (e.g., 'run-1-proposed-bert-glue-mrpc').",
     )
-    # TODO?: It might be okay to make it a class definition in the future.
-    run_variations: list[str] = Field(
+    method_name: Optional[str] = Field(
         ...,
-        description="A definiation of variations for experiments (e.g., 'baseline', 'proposed').",
+        description="The name of the method used in this run (e.g., 'baseline', 'proposed').",
     )
-    description: str = Field(
+    model_name: Optional[str] = Field(
+        ..., description="The name of the model used in this run."
+    )
+    dataset_name: Optional[str] = Field(
+        ..., description="The name of the dataset used in this run."
+    )
+    hyperparameter_search_space: Optional[dict[str, str]] = Field(
         ...,
-        description="The objective or hypothesis for this experiment.",
+        description="Defines the hyperparameter search space for this specific run.",
     )
     github_repository_info: Optional[GitHubRepositoryInfo] = Field(
         None,
-        description="Information about the GitHub branch where the code for this experiment is stored.",
-    )
-    code: Optional[ExperimentCode] = Field(
-        None, description="The specific code of this experiment."
+        description="Information about the GitHub branch where the code for this run is stored.",
     )
     results: Optional[ExperimentalResults] = Field(
-        None, description="The results of this experiment"
+        None, description="The results of this run."
     )
     evaluation: Optional[ExperimentEvaluation] = Field(
         None,
-        description="Evaluation of this experiment's consistency and suitability for the paper",
+        description="Evaluation of this run's consistency and suitability for the paper.",
     )
+    # TODO: code? When code modifications by Claude Code occur, is it necessary to have them?
 
 
 class ExperimentalDesign(BaseModel):
@@ -96,7 +97,7 @@ class ExperimentalDesign(BaseModel):
     datasets_to_use: Optional[list[str]] = Field(
         None, description="List of datasets to be used in the experiments"
     )
-    new_method: Optional[str] = Field(
+    proposed_method: Optional[str] = Field(
         None, description="A detailed description of the new method to be implemented"
     )
     comparative_methods: Optional[list[str]] = Field(
@@ -110,14 +111,13 @@ class ExperimentalDesign(BaseModel):
         description="External resources including models, datasets, and other resources",
     )
     base_code: Optional[ExperimentCode] = Field(None, description="")
+    experiment_runs: Optional[list[ExperimentRun]] = Field(
+        None, description="A list of all individual experimental runs"
+    )
 
-    def get_experiment_by_id(self, experiment_id: str) -> Optional[Experiment]:
+    def get_experiment_run_by_id(self, run_id: str) -> Optional[ExperimentRun]:
         return next(
-            (
-                experiment
-                for experiment in self.experiments
-                if experiment.experiment_id == experiment_id
-            ),
+            (run for run in self.experiment_runs if run.run_id == run_id),
             None,
         )
 
@@ -126,6 +126,7 @@ class ExperimentalResults(BaseModel):
     result: Optional[str] = Field(None, description="")
     error: Optional[str] = Field(None, description="")
     image_file_name_list: Optional[list[str]] = Field(None, description="")
+    # TODO: wandb?
 
 
 class ExperimentalAnalysis(BaseModel):
@@ -136,6 +137,6 @@ class ResearchHypothesis(BaseModel):
     method: str = Field(..., description="")
     experimental_design: Optional[ExperimentalDesign] = Field(None, description="")
     experimental_analysis: Optional[ExperimentalAnalysis] = Field(None, description="")
-    iteration_history: Optional[list[ResearchHypothesis]] = Field(
-        None, description="Previous iterations of this research hypothesis"
-    )
+    # iteration_history: Optional[list[ResearchHypothesis]] = Field(
+    #     None, description="Previous iterations of this research hypothesis"
+    # )
