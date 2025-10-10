@@ -55,7 +55,6 @@ class CreateCodeLLMMapping(BaseModel):
 class CreateCodeSubgraphInputState(TypedDict, total=False):
     github_repository_info: GitHubRepositoryInfo
     new_method: ResearchHypothesis
-    experiment_iteration: int  # TODO?: It is retained for compatibility reasons but may become unnecessary.
     consistency_feedback: list[str]
 
 
@@ -68,8 +67,6 @@ class CreateCodeSubgraphHiddenState(TypedDict):
 
 class CreateCodeSubgraphOutputState(TypedDict):
     new_method: ResearchHypothesis
-    experiment_iteration: int  # TODO?: It may become unnecessary in the future.
-    experiment_branches: list[str]
 
 
 class CreateCodeSubgraphState(
@@ -122,9 +119,7 @@ class CreateCodeSubgraph(BaseSubgraph):
     def _initialize(
         self, state: CreateCodeSubgraphState
     ) -> dict[str, int | tuple[bool, str] | dict[str, tuple[bool, str]]]:
-        # Always increment experiment_iteration to create a new iteration folder
         return {
-            "experiment_iteration": state.get("experiment_iteration", 0) + 1,
             "base_code_validation": (False, ""),
             "base_code_validation_count": 0,
             "experiment_code_validation": {},
@@ -253,7 +248,7 @@ class CreateCodeSubgraph(BaseSubgraph):
     def _push_files_to_experiment_branch(
         self, state: CreateCodeSubgraphState
     ) -> dict[str, list[str] | ResearchHypothesis]:
-        commit_message = f"Add generated experiment files for iteration {state['experiment_iteration']}"
+        commit_message = "Add generated experiment files."
 
         experiment_branches, new_method = push_files_to_experiment_branch(
             github_repository_info=state["github_repository_info"],
