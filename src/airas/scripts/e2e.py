@@ -135,7 +135,7 @@ create_bibfile = CreateBibfileSubgraph(
     llm_mapping={
         "filter_references": settings.llm_mapping.filter_references,
     },
-    latex_template_name="agents4science_2025",
+    latex_template_name="iclr2024",
     max_filtered_references=settings.create_bibfile.max_filtered_references,
 )
 writer = WriterSubgraph(
@@ -153,12 +153,8 @@ review = ReviewPaperSubgraph(
 latex = LatexSubgraph(
     llm_mapping={
         "convert_to_latex": settings.llm_mapping.convert_to_latex,
-        "check_execution_successful": settings.llm_mapping.check_execution_successful,
-        "fix_latex_text": settings.llm_mapping.fix_latex_text,
     },
-    latex_template_name="agents4science_2025",
-    max_chktex_revisions=settings.latex.max_chktex_revisions,
-    max_compile_revisions=settings.latex.max_compile_revisions,
+    latex_template_name="iclr2024",
 )
 readme = ReadmeSubgraph()
 html = HtmlSubgraph(
@@ -290,13 +286,13 @@ if __name__ == "__main__":
 
     # TODO: argparse
 
-    execute_workflow(github_owner, repository_name, research_topic=research_topic_list)
+    # execute_workflow(github_owner, repository_name, research_topic=research_topic_list)
 
-    # resume_workflow(
-    #     github_owner=github_owner,
-    #     repository_name=repository_name,
-    #     source_branch_name="research-0-retry-3",
-    #     target_branch_name="research-0-retry-4",
-    #     start_subgraph_name="GitHubActionsExecutorSubgraph",
-    #     subgraph_list=subgraph_list,
-    # )
+    resume_workflow(
+        github_owner=github_owner,
+        repository_name="experiment_matsuzawa_251002",
+        source_branch_name="research-0-retry-5",
+        target_branch_name="research-0-retry-5-opencode-latex",
+        start_subgraph_name="LatexSubgraph",
+        subgraph_list=subgraph_list,
+    )
