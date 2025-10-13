@@ -108,7 +108,7 @@ class Settings(BaseSettings):
     # TODO: From the perspective of research consistency,
     # we should probably not have ClaudeCode make changes to HuggingFace resources.
     # This change includes prompt modifications in `run_experiment_with_claude_code.yml``.
-    secret_names: list[str] = ["HF_TOKEN", "ANTHROPIC_API_KEY"]
+    secret_names: list[str] = ["HF_TOKEN", "ANTHROPIC_API_KEY", "WANDB_API_KEY"]
 
     # 設定
     generate_queries: GenerateQueriesSubgraphConfig = GenerateQueriesSubgraphConfig()

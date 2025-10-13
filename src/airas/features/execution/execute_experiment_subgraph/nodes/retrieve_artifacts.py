@@ -3,6 +3,7 @@ import base64
 import logging
 
 from airas.services.api_client.github_client import GithubClient
+from airas.services.api_client.wandb_client import WandbClient
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import (
     ExperimentalResults,
@@ -51,6 +52,7 @@ async def _retrieve_artifacts_from_branch(
     branch_name: str,
     experiment_iteration: int,
     include_code: bool = False,
+    new_method: ResearchHypothesis | None = None,
 ) -> tuple[str, str, list[str], ExperimentCode | None]:
     output_file_path = f".research/iteration{experiment_iteration}/output.txt"
     error_file_path = f".research/iteration{experiment_iteration}/error.txt"
@@ -107,10 +109,11 @@ async def _retrieve_artifacts_from_branch(
         dummy_code = ExperimentCode(
             **{field: "" for field in ExperimentCode.model_fields}
         )
-        file_dict = dummy_code.to_file_dict()
+        experiment_runs = new_method.experiment_runs if new_method else None
+        file_dict = dummy_code.to_file_dict(experiment_runs=experiment_runs)
 
         code_contents = {}
-        for file_path in file_dict.values():
+        for file_path in file_dict.keys():
             try:
                 file_response = _get_single_file_content(
                     client, github_owner, repository_name, file_path, branch_name
@@ -165,6 +168,7 @@ async def _retrieve_trial_experiment_artifacts_async(
         branch_name,
         experiment_iteration,
         include_code=True,
+        new_method=new_method,
     )
 
     if new_method.experimental_design and base_code:
@@ -192,8 +196,11 @@ async def _retrieve_full_experiment_artifacts_async(
     experiment_iteration: int,
     new_method: ResearchHypothesis,
     github_client: GithubClient | None = None,
+    wandb_entity: str | None = None,
+    wandb_project: str | None = None,
 ) -> ResearchHypothesis:
     client = github_client or GithubClient()
+    _ = WandbClient() if (wandb_entity and wandb_project) else None
 
     if not new_method.experiment_runs:
         logger.error("No experiment runs found")
@@ -226,6 +233,26 @@ async def _retrieve_full_experiment_artifacts_async(
                 experiment_iteration,
                 include_code=False,
             )
+
+            # if wandb_client and wandb_entity and wandb_project:
+            #     try:
+            #         logger.info(
+            #             f"Retrieving WandB metrics for run '{exp_run.run_id}' "
+            #             f"from {wandb_entity}/{wandb_project}"
+            #         )
+            #         metrics_df = wandb_client.retrieve_run_metrics(
+            #             entity=wandb_entity,
+            #             project=wandb_project,
+            #             run_id=exp_run.run_id,
+            #         )
+            #         metrics_text = metrics_df.to_string() if metrics_df is not None else ""
+            #         output_text = f"{output_text}\n\n=== WandB Metrics ===\n{metrics_text}"
+            #         logger.info(f"Successfully retrieved WandB metrics for run {exp_run.run_id}")
+
+            #     except Exception as wandb_error:
+            #         logger.warning(
+            #             f"Failed to retrieve WandB metrics for run {exp_run.run_id}: {wandb_error}"
+            #         )
 
             exp_run.results = ExperimentalResults(
                 result=output_text,
@@ -265,11 +292,15 @@ def retrieve_full_experiment_artifacts(
     experiment_iteration: int,
     new_method: ResearchHypothesis,
     github_client: GithubClient | None = None,
+    wandb_entity: str | None = None,
+    wandb_project: str | None = None,
 ) -> ResearchHypothesis:
     return asyncio.run(
         _retrieve_full_experiment_artifacts_async(
             experiment_iteration,
             new_method,
             github_client,
+            wandb_entity,
+            wandb_project,
         )
     )

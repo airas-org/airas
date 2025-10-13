@@ -1,6 +1,17 @@
 import os
+from logging import getLogger
 
 import wandb
+from wandb.errors import CommError
+
+from airas.services.api_client.retry_policy import make_retry_policy
+
+logger = getLogger(__name__)
+
+WANDB_RETRY = make_retry_policy(
+    max_retries=5,
+    retryable_exc=(CommError, ConnectionError, TimeoutError),
+)
 
 
 class WandbClient:
@@ -9,6 +20,7 @@ class WandbClient:
         wandb.login(key=api_key)
         self.api = wandb.Api()
 
+    @WANDB_RETRY
     def retrieve_run_metrics(self, entity: str, project: str, run_id: str):
         run = self.api.run(f"{entity}/{project}/{run_id}")
         metrics_dataframe = run.history()

@@ -12,10 +12,10 @@ from airas.features import (
     CreateExperimentalDesignSubgraph,
     CreateMethodSubgraphV2,
     EvaluateExperimentalConsistencySubgraph,
+    ExecuteExperimentSubgraph,
     ExtractReferenceTitlesSubgraph,
     GenerateQueriesSubgraph,
     GetPaperTitlesFromDBSubgraph,
-    GitHubActionsExecutorSubgraph,
     GithubUploadSubgraph,
     HtmlSubgraph,
     LatexSubgraph,
@@ -119,7 +119,7 @@ coder = CreateCodeSubgraph(
     max_base_code_validations=settings.create_code.max_base_code_validations,
     max_experiment_code_validations=settings.create_code.max_experiment_code_validations,
 )
-executor = GitHubActionsExecutorSubgraph(runner_type=settings.runner_type)
+executor = ExecuteExperimentSubgraph(runner_type=settings.runner_type)
 evaluate_consistency = EvaluateExperimentalConsistencySubgraph(
     consistency_score_threshold=settings.evaluate_experimental_consistency.consistency_score_threshold,
     llm_mapping={
