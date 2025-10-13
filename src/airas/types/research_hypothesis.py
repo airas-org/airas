@@ -21,20 +21,29 @@ class ExperimentCode(BaseModel):
     model_py: str
     main_py: str
     pyproject_toml: str
-    smoke_test_yaml: str
-    full_experiment_yaml: str
+    config_yaml: str
 
-    def to_file_dict(self) -> dict[str, str]:
-        return {
+    def to_file_dict(
+        self, experiment_runs: list[ExperimentRun] | None = None
+    ) -> dict[str, str]:
+        files = {
             "src/train.py": self.train_py,
             "src/evaluate.py": self.evaluate_py,
             "src/preprocess.py": self.preprocess_py,
             "src/model.py": self.model_py,
             "src/main.py": self.main_py,
             "pyproject.toml": self.pyproject_toml,
-            "config/smoke_test.yaml": self.smoke_test_yaml,
-            "config/full_experiment.yaml": self.full_experiment_yaml,
+            "config/config.yaml": self.config_yaml,
         }
+        if experiment_runs:
+            files.update(
+                {
+                    f"config/run/{exp_run.run_id}.yaml": exp_run.run_config
+                    for exp_run in experiment_runs
+                    if exp_run.run_config
+                }
+            )
+        return files
 
 
 class ExperimentEvaluation(BaseModel):
@@ -49,11 +58,17 @@ class ExperimentEvaluation(BaseModel):
 
 
 class ExperimentalDesign(BaseModel):
-    experiment_summary: Optional[str] = Field(
+    experiment_summary: str = Field(
         None, description="A summary of the overall experimental design"
     )
-    evaluation_metrics: Optional[list[str]] = Field(
+    evaluation_metrics: list[str] = Field(
         None, description="Metrics used to evaluate the experiments"
+    )
+    proposed_method: str = Field(
+        None, description="A detailed description of the new method to be implemented"
+    )
+    comparative_methods: list[str] = Field(
+        None, description="Existing methods selected for comparison"
     )
     models_to_use: Optional[list[str]] = Field(
         None, description="List of models to be used in the experiments"
@@ -61,13 +76,7 @@ class ExperimentalDesign(BaseModel):
     datasets_to_use: Optional[list[str]] = Field(
         None, description="List of datasets to be used in the experiments"
     )
-    proposed_method: Optional[str] = Field(
-        None, description="A detailed description of the new method to be implemented"
-    )
-    comparative_methods: Optional[list[str]] = Field(
-        None, description="Existing methods selected for comparison"
-    )
-    hyperparameters_to_search: Optional[list[str]] = Field(
+    hyperparameters_to_search: Optional[dict[str, str]] = Field(
         None, description="Hyperparameters to be explored in the experiments"
     )
     external_resources: Optional[ExternalResources] = Field(
@@ -82,7 +91,7 @@ class ExperimentRun(BaseModel):
         ...,
         description="A unique identifier for this specific experimental run (e.g., 'run-1-proposed-bert-glue-mrpc').",
     )
-    method_name: Optional[str] = Field(
+    method_name: str = Field(
         ...,
         description="The name of the method used in this run (e.g., 'baseline', 'proposed').",
     )
@@ -92,10 +101,9 @@ class ExperimentRun(BaseModel):
     dataset_name: Optional[str] = Field(
         ..., description="The name of the dataset used in this run."
     )
-    # TODO: class HyperparameterSearchSpace(BaseModel): ...
-    hyperparameter_search_space: Optional[dict[str, str]] = Field(
-        ...,
-        description="Defines the hyperparameter search space for this specific run.",
+    run_config: Optional[str] = Field(
+        None,
+        description="Configuration for this specific run as a YAML string.",
     )
     github_repository_info: Optional[GitHubRepositoryInfo] = Field(
         None,
@@ -120,5 +128,5 @@ class ExperimentalAnalysis(BaseModel):
 class ResearchHypothesis(BaseModel):
     method: str = Field(..., description="")
     experimental_design: Optional[ExperimentalDesign] = Field(None, description="")
-    experimental_runs: Optional[list[ExperimentRun]] = Field(None, description="")
+    experiment_runs: Optional[list[ExperimentRun]] = Field(None, description="")
     experimental_analysis: Optional[ExperimentalAnalysis] = Field(None, description="")

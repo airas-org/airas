@@ -141,7 +141,7 @@ async def _retrieve_artifacts_from_branch(
     return output_text_data, error_text_data, image_file_name_list, experiment_code
 
 
-async def _retrieve_smoke_test_artifacts_async(
+async def _retrieve_trial_experiment_artifacts_async(
     github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
     new_method: ResearchHypothesis,
@@ -175,17 +175,17 @@ async def _retrieve_smoke_test_artifacts_async(
             "No experimental_design found in new_method or code retrieval failed"
         )
 
-    smoke_test_results = ExperimentalResults(
+    trial_experiment_results = ExperimentalResults(
         result=output_text,
         error=error_text,
         image_file_name_list=image_files,
     )
 
     logger.info(
-        f"Successfully retrieved smoke test artifacts from branch {branch_name}"
+        f"Successfully retrieved trial experiment artifacts from branch {branch_name}"
     )
 
-    return new_method, smoke_test_results
+    return new_method, trial_experiment_results
 
 
 async def _retrieve_full_experiment_artifacts_async(
@@ -195,14 +195,11 @@ async def _retrieve_full_experiment_artifacts_async(
 ) -> ResearchHypothesis:
     client = github_client or GithubClient()
 
-    if (
-        not new_method.experimental_design
-        or not new_method.experimental_design.experiment_runs
-    ):
-        logger.error("No experiment runs found in experimental design")
+    if not new_method.experiment_runs:
+        logger.error("No experiment runs found")
         return new_method
 
-    for exp_run in new_method.experimental_design.experiment_runs:
+    for exp_run in new_method.experiment_runs:
         if not exp_run.github_repository_info:
             logger.warning(f"No branch information found for run {exp_run.run_id}")
             continue
@@ -248,14 +245,14 @@ async def _retrieve_full_experiment_artifacts_async(
     return new_method
 
 
-def retrieve_smoke_test_artifacts(
+def retrieve_trial_experiment_artifacts(
     github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
     new_method: ResearchHypothesis,
     github_client: GithubClient | None = None,
 ) -> tuple[ResearchHypothesis, ExperimentalResults]:
     return asyncio.run(
-        _retrieve_smoke_test_artifacts_async(
+        _retrieve_trial_experiment_artifacts_async(
             github_repository,
             experiment_iteration,
             new_method,

@@ -1,9 +1,6 @@
 from airas.types.research_hypothesis import (
-    Experiment,
     ExperimentalAnalysis,
     ExperimentalDesign,
-    ExperimentalResults,
-    ExperimentEvaluation,
     ResearchHypothesis,
 )
 from airas.types.research_study import LLMExtractedInfo, MetaData, ResearchStudy
@@ -13,43 +10,6 @@ writer_subgraph_input_data = {
         method="We propose a novel approach that combines transformer attention mechanisms with reinforcement learning to improve decision-making in dynamic environments. Our method leverages multi-head attention to capture temporal dependencies and uses policy gradient methods for optimization.",
         experimental_design=ExperimentalDesign(
             experiment_strategy="We compare our method against state-of-the-art baselines using standard benchmarks including Atari games and continuous control tasks. Performance is measured using average cumulative reward over 100 episodes.",
-            experiments=[
-                Experiment(
-                    experiment_id="exp-1",
-                    description="Baseline comparison on Atari games",
-                    run_variations=[
-                        "baseline_ppo",
-                        "baseline_a2c",
-                        "proposed_attention_rl",
-                    ],
-                    results=ExperimentalResults(
-                        result="Our method achieves 15% higher average reward compared to PPO. Breakout: 520+/-25 points, SpaceInvaders: 1840+/-67 points.",
-                        image_file_name_list=[
-                            "training_curves.pdf",
-                            "attention_visualization.pdf",
-                        ],
-                    ),
-                    evaluation=ExperimentEvaluation(
-                        consistency_score=9,
-                        consistency_feedback="Excellent experimental design with clear statistical validation.",
-                        is_selected_for_paper=True,
-                    ),
-                ),
-                Experiment(
-                    experiment_id="exp-2",
-                    description="Continuous control tasks (CartPole, MountainCar)",
-                    run_variations=["baseline_ddpg", "proposed_attention_rl"],
-                    results=ExperimentalResults(
-                        result="CartPole: 95+/-8 points vs DDPG 78+/-12. Method shows consistent improvements.",
-                        image_file_name_list=["performance_comparison.pdf"],
-                    ),
-                    evaluation=ExperimentEvaluation(
-                        consistency_score=8,
-                        consistency_feedback="Strong evidence with good generalization across tasks.",
-                        is_selected_for_paper=True,
-                    ),
-                ),
-            ],
         ),
         experimental_analysis=ExperimentalAnalysis(
             analysis_report="The results demonstrate that our attention-based approach successfully captures temporal dependencies that are crucial for decision-making. The attention visualization reveals that the model learns to focus on relevant past states when making decisions. Ablation studies show that both the attention mechanism and RL components are necessary for optimal performance. The method shows consistent improvements across different environment types, suggesting good generalization capabilities."

@@ -126,6 +126,23 @@ class CreateCodeSubgraph(BaseSubgraph):
             "experiment_code_validation_count": 0,
         }
 
+    # @create_code_timed
+    # def _generate_run_config(
+    #     self, state: CreateCodeSubgraphState
+    # ) -> dict[str, ResearchHypothesis]:
+    #     new_method = generate_run_config(
+    #         llm_name=self.llm_mapping.generate_base_code,
+    #         new_method=state["new_method"],
+    #         runner_type=cast(RunnerType, self.runner_type),
+    #         secret_names=self.secret_names,
+    #         github_repository_info=state["github_repository_info"],
+    #         feedback_text=feedback[-1]
+    #         if (feedback := state.get("consistency_feedback"))
+    #         else None,
+    #         base_code_validation=state.get("base_code_validation"),
+    #     )
+    #     return {"new_method": new_method}
+
     @create_code_timed
     def _generate_base_code(
         self, state: CreateCodeSubgraphState

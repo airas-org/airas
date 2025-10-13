@@ -26,14 +26,11 @@ async def _create_experiment_branches(
     tasks = []
     branches_to_create = []
 
-    if (
-        not new_method.experimental_design
-        or not new_method.experimental_design.experiment_runs
-    ):
-        logger.warning("No experiment runs found in experimental design")
+    if not new_method.experiment_runs:
+        logger.warning("No experiment runs found")
         return []
 
-    for exp_run in new_method.experimental_design.experiment_runs:
+    for exp_run in new_method.experiment_runs:
         # Create child branch name based on run_id
         child_branch = f"{github_repository_info.branch_name}-{exp_run.run_id}"
         branches_to_create.append(child_branch)
@@ -83,11 +80,8 @@ def create_experiment_branches(
 ) -> ResearchHypothesis:
     github_client = github_client or GithubClient()
 
-    if (
-        not new_method.experimental_design
-        or not new_method.experimental_design.experiment_runs
-    ):
-        logger.error("No experiment runs found in experimental design")
+    if not new_method.experiment_runs:
+        logger.error("No experiment runs found")
         return new_method
 
     branch_results = asyncio.run(
@@ -99,7 +93,7 @@ def create_experiment_branches(
     )
 
     created_count = 0
-    for exp_run in new_method.experimental_design.experiment_runs:
+    for exp_run in new_method.experiment_runs:
         child_branch = f"{github_repository_info.branch_name}-{exp_run.run_id}"
 
         branch_success = next(
@@ -119,7 +113,7 @@ def create_experiment_branches(
             logger.warning(f"Branch creation failed for run {exp_run.run_id}")
 
     logger.info(
-        f"Successfully created {created_count} branches out of {len(new_method.experimental_design.experiment_runs)} experiment runs"
+        f"Successfully created {created_count} branches out of {len(new_method.experiment_runs)} experiment runs"
     )
 
     return new_method

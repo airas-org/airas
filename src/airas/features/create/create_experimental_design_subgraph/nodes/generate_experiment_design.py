@@ -1,7 +1,7 @@
 import json
 
 from jinja2 import Environment
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from airas.config.runner_type_info import RunnerType, runner_info_dict
 from airas.features.create.create_experimental_design_subgraph.dataset_list import (
@@ -10,8 +10,8 @@ from airas.features.create.create_experimental_design_subgraph.dataset_list impo
 from airas.features.create.create_experimental_design_subgraph.model_list import (
     MODEL_LIST,
 )
-from airas.features.create.create_experimental_design_subgraph.prompt.generate_experiment_details_prompt import (
-    generate_experiment_details_prompt,
+from airas.features.create.create_experimental_design_subgraph.prompt.generate_experiment_design_prompt import (
+    generate_experiment_design_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
@@ -22,17 +22,24 @@ from airas.types.research_hypothesis import ExperimentalDesign, ResearchHypothes
 from airas.utils.save_prompt import save_io_on_github
 
 
+class HyperParameter(BaseModel):
+    name: str = Field(..., description="Name of the hyperparameter")
+    range: str = Field(
+        ..., description="Search range (e.g., '0.001-0.01' or '16,32,64')"
+    )
+
+
 class LLMOutput(BaseModel):
     experiment_summary: str
     evaluation_metrics: list[str]
     models_to_use: list[str]
     datasets_to_use: list[str]
-    new_method: str
+    proposed_method: str
     comparative_methods: list[str]
-    hyperparameters_to_search: list[str]
+    hyperparameters_to_search: list[HyperParameter]
 
 
-def generate_experiment_details(
+def generate_experiment_design(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
     runner_type: RunnerType,
@@ -44,7 +51,7 @@ def generate_experiment_details(
     client = LLMFacadeClient(llm_name=llm_name)
     env = Environment()
 
-    template = env.from_string(generate_experiment_details_prompt)
+    template = env.from_string(generate_experiment_design_prompt)
 
     data = {
         "new_method": new_method.model_dump(),
@@ -56,7 +63,7 @@ def generate_experiment_details(
         "num_comparative_methods": num_comparative_methods,
     }
     messages = template.render(data)
-    output, cost = client.structured_outputs(
+    output, _ = client.structured_outputs(
         message=messages,
         data_model=LLMOutput,
     )
@@ -70,14 +77,17 @@ def generate_experiment_details(
         node_name="generate_experiment_details",
     )
 
-    # Convert LLM output to Experiment objects
+    hyperparameters_dict = {
+        hp["name"]: hp["range"] for hp in output["hyperparameters_to_search"]
+    }
+
     new_method.experimental_design = ExperimentalDesign(
         experiment_summary=output["experiment_summary"],
         evaluation_metrics=output["evaluation_metrics"],
         models_to_use=output["models_to_use"],
         datasets_to_use=output["datasets_to_use"],
-        new_method=output["new_method"],
+        proposed_method=output["proposed_method"],
         comparative_methods=output["comparative_methods"],
-        hyperparameters_to_search=output["hyperparameters_to_search"],
+        hyperparameters_to_search=hyperparameters_dict,
     )
     return new_method
