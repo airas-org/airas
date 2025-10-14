@@ -12,6 +12,9 @@ from airas.core.base import BaseSubgraph
 from airas.features.evaluate.judge_execution_subgraph.nodes.judge_execution import (
     judge_execution,
 )
+from airas.features.execution.execute_experiment_subgraph.input_data import (
+    execute_experiment_subgraph_input_data,
+)
 from airas.features.execution.execute_experiment_subgraph.nodes.create_experiment_branches import (
     create_experiment_branches,
 )
@@ -26,6 +29,7 @@ from airas.features.execution.execute_experiment_subgraph.nodes.retrieve_artifac
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ExperimentalResults, ResearchHypothesis
+from airas.types.wandb import WandbInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -73,8 +77,11 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
         self,
         runner_type: RunnerType = "ubuntu-latest",
         llm_mapping: dict[str, str] | ExecuteExperimentLLMMapping | None = None,
+        wandb_info: WandbInfo | None = None,
     ):
         self.runner_type = runner_type
+        self.wandb_info = wandb_info
+
         if llm_mapping is None:
             self.llm_mapping = ExecuteExperimentLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -93,6 +100,7 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or ExecuteExperimentLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
+
         check_api_key(
             github_personal_access_token_check=True,
             llm_api_key_check=True,
@@ -190,6 +198,7 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
         new_method = retrieve_full_experiment_artifacts(
             experiment_iteration=state["experiment_iteration"],
             new_method=state["new_method"],
+            wandb_info=self.wandb_info,
         )
         return {"new_method": new_method}
 
@@ -207,6 +216,7 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(ExecutorSubgraphState)
 
+        graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node(
             "execute_trial_experiment", self._execute_trial_experiment
         )
@@ -226,7 +236,8 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
             self._retrieve_full_experiment_artifacts,
         )
 
-        graph_builder.add_edge(START, "execute_trial_experiment")
+        graph_builder.add_edge(START, "initialize")
+        graph_builder.add_edge("initialize", "execute_trial_experiment")
         graph_builder.add_edge(
             "execute_trial_experiment", "retrieve_trial_experiment_artifacts"
         )
@@ -251,7 +262,14 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
 
 
 def main():
-    result = ExecuteExperimentSubgraph(runner_type="ubuntu-latest").run()
+    from airas.types.wandb import WandbInfo
+
+    wandb_info = WandbInfo(entity="gengaru617", project="251014-test")
+    runner_type = "A100_80GM×1"
+    result = ExecuteExperimentSubgraph(
+        runner_type=runner_type,
+        wandb_info=wandb_info,
+    ).run(execute_experiment_subgraph_input_data)
     print(f"result: {result}")
 
 
