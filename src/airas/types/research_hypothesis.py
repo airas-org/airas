@@ -83,7 +83,7 @@ class ExperimentalDesign(BaseModel):
         None,
         description="External resources including models, datasets, and other resources",
     )
-    base_code: Optional[ExperimentCode] = Field(None, description="")
+    experiment_code: Optional[ExperimentCode] = Field(None, description="")
 
 
 class ExperimentRun(BaseModel):

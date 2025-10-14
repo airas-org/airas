@@ -1,9 +1,10 @@
-from typing import Literal
+from typing import Literal, Self
 
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
 from airas.config.runner_type_info import RunnerType
+from airas.types.wandb import WandbInfo
 
 
 class GenerateQueriesSubgraphConfig(BaseModel):
@@ -46,8 +47,7 @@ class RetrieveHuggingFaceSubgraphConfig(BaseModel):
 
 
 class CreateCodeSubgraphConfig(BaseModel):
-    max_base_code_validations: int = 10  # 全実験で共通するコードの最大改善回数
-    max_experiment_code_validations: int = 10  # 各実験コードの最大改善回数
+    max_code_validations: int = 10  # 実験コードの最大改善回数
 
 
 class EvaluateExperimentalConsistencySubgraphConfig(BaseModel):
@@ -67,6 +67,16 @@ class WriterSubgraphConfig(BaseModel):
 class LatexSubgraphConfig(BaseModel):
     max_chktex_revisions: int = 3  # LaTeXの文法チェックの最大修正回数
     max_compile_revisions: int = 3  # LaTeXのコンパイルエラーの最大修正回数
+
+
+class WandbConfig(BaseModel):
+    entity: str | None = None  # WandB entity (username or team name)
+    project: str | None = None  # WandB project name
+
+    def to_wandb_info(self):
+        if self.entity and self.project:
+            return WandbInfo(entity=self.entity, project=self.project)
+        return None
 
 
 class LLMMappingConfig(BaseModel):
@@ -135,11 +145,12 @@ class Settings(BaseSettings):
     create_bibfile: CreateBibfileSubgraphConfig = CreateBibfileSubgraphConfig()
     writer: WriterSubgraphConfig = WriterSubgraphConfig()
     latex: LatexSubgraphConfig = LatexSubgraphConfig()
+    wandb: WandbConfig = WandbConfig()
 
     # LLMの設定
     llm_mapping: LLMMappingConfig = LLMMappingConfig()
 
-    def apply_profile_overrides(self) -> "Settings":
+    def apply_profile_overrides(self) -> Self:
         if self.profile == "test":
             self.generate_queries.n_queries = 1
             self.get_paper_titles_from_db.max_results_per_query = 2
@@ -152,8 +163,7 @@ class Settings(BaseSettings):
             self.retrieve_hugging_face.max_results_per_search = 2
             self.retrieve_hugging_face.max_models = 1
             self.retrieve_hugging_face.max_datasets = 1
-            self.create_code.max_base_code_validations = 1
-            self.create_code.max_experiment_code_validations = 1
+            self.create_code.max_code_validations = 1
             self.evaluate_experimental_consistency.consistency_score_threshold = 1
             self.create_bibfile.max_filtered_references = 2
             self.writer.writing_refinement_rounds = 1
@@ -164,5 +174,4 @@ class Settings(BaseSettings):
             self.generate_queries.n_queries = 6
             self.get_paper_titles_from_db.max_results_per_query = 8
             self.create_method.method_refinement_rounds = 2
-            self.create_experimental_design.num_experiments = 3
         return self

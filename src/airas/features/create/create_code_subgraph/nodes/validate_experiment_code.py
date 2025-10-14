@@ -18,9 +18,9 @@ from airas.utils.save_prompt import save_io_on_github
 logger = getLogger(__name__)
 
 
-class ExperimentValidationOutput(BaseModel):
-    is_experiment_code_ready: bool
-    experiment_code_issue: str
+class ValidationOutput(BaseModel):
+    is_code_ready: bool
+    code_issue: str
 
 
 def validate_experiment_code(
@@ -29,73 +29,30 @@ def validate_experiment_code(
     github_repository_info: GitHubRepositoryInfo,
     prompt_template: str = validate_experiment_code_prompt,
     llm_client: LLMFacadeClient | None = None,
-    previous_validation_results: dict[str, tuple[bool, str]] | None = None,
-) -> dict[str, tuple[bool, str]]:
+) -> tuple[bool, str]:
     client = llm_client or LLMFacadeClient(llm_name=llm_name)
     env = Environment()
     template = env.from_string(prompt_template)
 
-    if (
-        not new_method.experimental_design
-        or not new_method.experimental_design.experiments
-    ):
-        logger.error("No experiments found in experimental design")
-        return {}
+    messages = template.render(
+        {
+            "new_method": new_method.model_dump(),
+        }
+    )
+    output, _ = client.structured_outputs(message=messages, data_model=ValidationOutput)
 
-    validation_results = (
-        previous_validation_results.copy() if previous_validation_results else {}
+    if output is None:
+        logger.error(
+            "No response from LLM in validate_experiment_code. Defaulting to False."
+        )
+        return False, ""
+
+    save_io_on_github(
+        github_repository_info=github_repository_info,
+        input=messages,
+        output=json.dumps(output, ensure_ascii=False, indent=4),
+        subgraph_name="create_code_subgraph",
+        node_name="validate_experiment_code",
     )
 
-    for experiment in new_method.experimental_design.experiments:
-        if experiment.experiment_id in validation_results:
-            is_ready, _ = validation_results[experiment.experiment_id]
-            if is_ready:
-                logger.info(
-                    f"Skipping validation for experiment {experiment.experiment_id} - already validated successfully"
-                )
-                continue
-
-        if not experiment.code:
-            logger.warning(
-                f"No code found for experiment {experiment.experiment_id}, skipping validation"
-            )
-            validation_results[experiment.experiment_id] = (
-                False,
-                "No code generated yet",
-            )
-            continue
-
-        messages = template.render(
-            {
-                "new_method": new_method.model_dump(),
-                "current_experiment": experiment.model_dump(),
-            }
-        )
-        output, _ = client.structured_outputs(
-            message=messages, data_model=ExperimentValidationOutput
-        )
-
-        if output is None:
-            logger.error(
-                f"No response from LLM for experiment {experiment.experiment_id}. Defaulting to False."
-            )
-            validation_results[experiment.experiment_id] = (
-                False,
-                "No response from validation LLM",
-            )
-            continue
-
-        save_io_on_github(
-            github_repository_info=github_repository_info,
-            input=messages,
-            output=json.dumps(output, ensure_ascii=False, indent=4),
-            subgraph_name="create_code_subgraph",
-            node_name=f"validate_experiment_code_{experiment.experiment_id}",
-        )
-
-        validation_results[experiment.experiment_id] = (
-            output["is_experiment_code_ready"],
-            output["experiment_code_issue"],
-        )
-
-    return validation_results
+    return output["is_code_ready"], output["code_issue"]

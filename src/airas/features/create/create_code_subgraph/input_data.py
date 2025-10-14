@@ -1,55 +1,62 @@
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.hugging_face import HuggingFace, HuggingFaceResource
 from airas.types.research_hypothesis import (
     ExperimentalDesign,
-    ExternalResources,
+    ExperimentRun,
     ResearchHypothesis,
 )
 
-dummy_external_resources = ExternalResources(
-    hugging_face=HuggingFace(
-        models=[
-            HuggingFaceResource(
-                id="microsoft/DialoGPT-medium",
-                author="microsoft",
-                downloads=1000000,
-                likes=500,
-                pipeline_tag="conversational",
-            )
-        ],
-        datasets=[
-            HuggingFaceResource(
-                id="squad",
-                author="rajpurkar",
-                downloads=500000,
-                likes=200,
-                pipeline_tag="question-answering",
-            )
-        ],
-    )
+dummy_experimental_design = ExperimentalDesign(
+    experiment_summary="Comparative analysis of efficient model architectures across vision and language tasks",
+    evaluation_metrics=["accuracy", "f1_score", "inference_time", "model_size"],
+    proposed_method="Evaluate MobileNetV2 and DistilBERT variants for efficient deployment",
+    comparative_methods=[
+        "MobileNetV2-0.5 (3.5M parameters)",
+        "DistilBERT-base (66M parameters)",
+    ],
+    models_to_use=["MobileNetV2-0.5-3.5M", "DistilBERT-base-66M"],
+    datasets_to_use=["CIFAR-10", "alpaca-cleaned"],
 )
 
-dummy_experimental_design = ExperimentalDesign(
-    experiment_strategy="Test strategy for validation",
-    experiment_details="Simple test details for validation",
-    expected_models=["test-model"],
-    expected_datasets=["test-dataset"],
-    external_resources=dummy_external_resources,
-)
+dummy_experiment_runs = [
+    ExperimentRun(
+        run_id="comparative-2-MobileNetV2-0.5-3.5M-CIFAR-10",
+        method_name="comparative-2",
+        model_name="MobileNetV2-0.5-3.5M",
+        dataset_name="CIFAR-10",
+    ),
+    ExperimentRun(
+        run_id="comparative-2-MobileNetV2-0.5-3.5M-alpaca-cleaned",
+        method_name="comparative-2",
+        model_name="MobileNetV2-0.5-3.5M",
+        dataset_name="alpaca-cleaned",
+    ),
+    ExperimentRun(
+        run_id="comparative-2-DistilBERT-base-66M-CIFAR-10",
+        method_name="comparative-2",
+        model_name="DistilBERT-base-66M",
+        dataset_name="CIFAR-10",
+    ),
+    ExperimentRun(
+        run_id="comparative-2-DistilBERT-base-66M-alpaca-cleaned",
+        method_name="comparative-2",
+        model_name="DistilBERT-base-66M",
+        dataset_name="alpaca-cleaned",
+    ),
+]
 
 dummy_research_hypothesis = ResearchHypothesis(
-    method="Simple test method for validation",
+    method="We compare lightweight model architectures (MobileNetV2-0.5 and DistilBERT-base) across vision and language tasks to evaluate their efficiency and performance trade-offs.",
     experimental_design=dummy_experimental_design,
+    experiment_runs=dummy_experiment_runs,
 )
 
 dummy_github_repo = GitHubRepositoryInfo(
     github_owner="auto-res2",
-    repository_name="experiment_matsuzawa_250925",
-    branch_name="research-20250925-125744-001",
+    repository_name="20251014-matsuzawa",
+    branch_name="develop",
 )
 
 create_code_subgraph_input_data = {
     "github_repository_info": dummy_github_repo,
     "new_method": dummy_research_hypothesis,
-    "experiment_iteration": 1,
 }

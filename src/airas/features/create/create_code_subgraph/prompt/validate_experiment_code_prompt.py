@@ -1,86 +1,121 @@
 validate_experiment_code_prompt = """\
 You are an AI code reviewer validating production-ready experiment code for research papers.
 
-Your task is to compare the derived experiment_code with the original base_code to ensure that:
-1. No important functionality has been omitted or truncated
-2. All placeholders have been completely replaced with working implementations (no TODO, PLACEHOLDER, pass, or ... allowed)
-3. The code is immediately executable and ready for research paper experiments
-4. The derived code maintains the quality and completeness of the base foundation
+Analyze the provided experiment code and determine if it meets all requirements for immediate execution in research experiments.
 
 # Instructions
 
 ## Core Validation Criteria
-Check if the derived experiment code meets ALL of the following requirements:
+Check if the generated experiment code meets ALL of the following requirements:
 
-1. **Complete Implementation Preservation**:
-   - All functionality from base_code is preserved or properly enhanced
-   - No code sections have been omitted or significantly shortened
-   - Core algorithms and logic remain intact and functional
-   - No reduction in code quality or completeness
+1. **Complete Implementation**:
+   - Every component is fully functional, production-ready, publication-worthy code
+   - No "omitted for brevity", no "simplified version", no TODO, PLACEHOLDER, pass, or ...
+   - All functions and classes are completely implemented
+   - No truncated code sections or incomplete implementations
 
-2. **Complete Placeholder Replacement and Variation Implementation**:
-   - All `DATASET_PLACEHOLDER` entries replaced with complete, working Hugging Face dataset loading
-   - All `MODEL_PLACEHOLDER` entries replaced with complete, working model architectures
-   - All `SPECIFIC_CONFIG_PLACEHOLDER` entries replaced with actual parameters
-   - All run_variations are defined in both `config/smoke_test.yaml` and `config/full_experiment.yaml`
-   - All run_variations are implemented in `src/model.py`
-   - `config/smoke_test.yaml` contains ALL run variations in lightweight form
-   - No TODO, PLACEHOLDER, pass, ..., or any incomplete implementations remain
+2. **Hydra Integration**:
+   - Uses Hydra to manage all experiment configurations from `config/run/*.yaml` files
+   - All parameters are loaded from run configs dynamically
+   - Proper configuration structure with run_id, method, model, dataset, training, and optuna sections
+   - CLI interface matches: `uv run python -u -m src.main run={run_id} results_dir={path}`
 
-3. **Functional Enhancement**:
+3. **Complete Data Pipeline**:
+   - Full data loading and preprocessing implementation
    - Dataset-specific preprocessing is properly implemented
-   - Model-specific configurations are correctly applied
-   - Evaluation metrics are adapted for the specific experimental setup
-   - All external resources are properly integrated
+   - No placeholder dataset loading code
+   - Proper error handling for data operations
 
-4. **Code Completeness**:
-   - No truncated functions or incomplete implementations
-   - All imports and dependencies are properly specified
-   - Configuration files contain real experimental parameters
-   - No "[UNCHANGED]" markers or similar placeholders remain
+4. **Model Implementation**:
+   - Complete model architectures for baseline, proposed, and ablation methods
+   - All models implemented from scratch (no placeholders)
+   - Model-specific configurations correctly applied
+   - Proper PyTorch usage throughout
 
-5. **Consistency with Base Code**:
-   - Same file structure and organization
-   - Consistent coding style and patterns
-   - Proper error handling and logging maintained
-   - All base functionality enhanced, not removed
+5. **File Structure Compliance**:
+   - Contains EXACTLY these required files:
+     * `src/train.py`
+     * `src/evaluate.py`
+     * `src/preprocess.py`
+     * `src/model.py`
+     * `src/main.py`
+     * `pyproject.toml`
+     * `config/config.yaml`
+   - No missing files from the structure
+   - All functionality contained within specified files
+
+6. **Structured Logging**:
+   - train.py prints JSON-formatted metrics with `run_id` field using `print(json.dumps({...}))`
+   - evaluate.py prints JSON-formatted comparison results to stdout
+   - main.py redirects subprocess stdout/stderr to `{results_dir}/{run_id}/stdout.log` and `stderr.log`
+   - Logs are forwarded to main process stdout/stderr for GitHub Actions capture
+
+7. **Configuration Files**:
+   - config/config.yaml contains list of all experiment run_ids
+   - NOTE: config/run/{run_id}.yaml files are provided separately in the "Experiment Runs" section below (not in ExperimentCode)
+   - The generated code must properly reference these config files via Hydra
+   - All run configurations match the experiment_runs provided
+   - Optuna search spaces are properly defined if applicable
+
+8. **Evaluation and Figures** (if WandB not used):
+   - Figure generation with proper formatting (PDF output to `{results_dir}/images/`)
+   - Figures include legends, annotations, and proper labels
+   - Uses `plt.tight_layout()` before saving
+   - Consistent result formatting and comparison logic
+
+9. **WandB Integration** (if WandB is used):
+   - Proper WandB initialization with entity/project from config
+   - Metrics logged to WandB during training
+   - WandB run URL printed to stdout
+   - Metadata saved to `.research/iteration{experiment_iteration}/wandb_metadata.json`
+   - Figures uploaded as WandB artifacts
+
+10. **Immediate Executability**:
+    - Code can be run immediately without modifications
+    - All imports and dependencies properly specified in pyproject.toml
+    - No missing external resources or undefined variables
+    - Proper module structure for `uv run python -m src.main` execution
 
 ## Detection of Common Issues
 Flag the following problems if found:
 
-- **Truncation**: Code sections that are significantly shorter than base_code equivalents
-- **Omission**: Missing functions, classes, or important code blocks from base_code
-- **Incomplete Replacement**: TODO, PLACEHOLDER, pass, ..., or any placeholder patterns that haven't been fully replaced with working code
-- **Quality Degradation**: Simplified logic that reduces functionality
-- **Structural Changes**: Unexpected modifications to the core architecture
-- **Not Executable**: Code that cannot be run immediately due to missing implementations
+- **Incomplete Implementation**: TODO, PLACEHOLDER, pass, ..., or any placeholder patterns
+- **Truncation**: Code sections that appear shortened or simplified inappropriately
+- **Missing Functionality**: Expected features not implemented
+- **Configuration Issues**: Missing or incomplete run configs
+- **Import Errors**: Missing dependencies or incorrect import statements
+- **Not Executable**: Code that cannot be run immediately
+- **Inconsistent Structure**: Files not matching required structure
+- **Logging Issues**: Missing or incorrect JSON logging format
 
 ## Output Format
 Respond with a JSON object containing:
-- `is_experiment_code_ready`: boolean - true if ALL criteria are met, false otherwise
-- `experiment_code_issue`: string - specific issues found if any criteria are not met
+- `is_code_ready`: boolean - true if ALL criteria are met, false otherwise
+- `code_issue`: string - specific issues found if any criteria are not met, focusing on what needs to be fixed
 
 # Current Research Method
 {{ new_method.method }}
 
 # Experimental Design
-## Experiment Strategy
-{{ new_method.experimental_design.experiment_strategy }}
+- Strategy: {{ new_method.experimental_design.experiment_summary }}
+- Proposed Method: {{ new_method.experimental_design.proposed_method }}
+- Evaluation Metrics: {{ new_method.experimental_design.evaluation_metrics }}
 
-# Base Code (Reference Foundation)
-{{ new_method.experimental_design.base_code | tojson }}
+# Experiment Runs
+{% for run in new_method.experiment_runs %}
+- Run ID: {{ run.run_id }}
+  Method: {{ run.method_name }}
+  Model: {{ run.model_name }}
+  Dataset: {{ run.dataset_name }}
+  {% if run.run_config %}
+  Config Content:
+  ```yaml
+  {{ run.run_config }}
+  ```
+  {% endif %}
+{% endfor %}
 
-# Current Experiment (To be validated)
-- Experiment ID: {{ current_experiment.experiment_id }}
-- Description: {{ current_experiment.description }}
-- Run Variations: {{ current_experiment.run_variations }}
+# Generated Experiment Code (To be validated)
+{{ new_method.experimental_design.experiment_code | tojson }}
 
-# Derived Experiment Code (To be validated)
-{% if current_experiment.code %}
-{{ current_experiment.code | tojson }}
-{% else %}
-No code generated for this experiment yet.
-{% endif %}
-
-Compare the Base Code with the Derived Experiment Code for this specific experiment thoroughly. Ensure the derived code maintains all the quality, completeness, and functionality of the base code while properly replacing placeholders with specific implementations.
-"""
+Analyze the experiment code thoroughly. Ensure it is complete, executable, and ready for publication-quality research experiments."""

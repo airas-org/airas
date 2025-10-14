@@ -1,4 +1,5 @@
 import asyncio
+import json
 from logging import getLogger
 from typing import Any
 
@@ -67,7 +68,7 @@ async def _execute_trial_experiment_async(
     inputs = {
         "experiment_iteration": str(experiment_iteration),
         "runner_type": runner_type_setting,
-        "run_ids": ",".join(run_ids),
+        "run_ids": json.dumps(run_ids),
     }
 
     result = await _execute_workflow_on_branch(
@@ -110,7 +111,7 @@ async def _execute_full_experiments_async(
             continue
 
         inputs = base_inputs.copy()
-        inputs["run_ids"] = exp_run.run_id
+        inputs["run_ids"] = json.dumps([exp_run.run_id])
 
         task = _execute_workflow_on_branch(
             executor,
