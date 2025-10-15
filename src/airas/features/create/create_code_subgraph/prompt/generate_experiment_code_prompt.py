@@ -122,8 +122,12 @@ Generate complete code for these files ONLY. Do not create any additional files 
 In addition to the common requirements above, integrate WandB (Weights & Biases) for experiment tracking and visualization.
 
 ## Additional Requirements
-- WANDB INTEGRATION: Initialize WandB with proper project/entity from config, log metrics/artifacts, and save wandb_run_id to metadata
-- WANDB METADATA: Save WandB run information to `.research/iteration{experiment_iteration}/wandb_metadata.json` with structure:
+- Initialization: Initialize WandB at the start of each training run with config from Hydra
+- Metric Logging: Log all training/validation metrics to WandB (loss, accuracy, etc.)
+- Configuration Logging: Log all hyperparameters and config to WandB
+- Artifact Tracking: Log model checkpoints and important artifacts
+- Figure Upload: Upload figures as WandB artifacts instead of (or in addition to) saving locally
+- Metadata File: Save WandB run information to `{results_dir}/wandb_metadata.json` immediately after initialization:
   ```json
   {
     "wandb_entity": "{{ wandb_info.entity }}",
@@ -131,12 +135,6 @@ In addition to the common requirements above, integrate WandB (Weights & Biases)
     "wandb_run_id": "<actual_run_id_from_wandb>"
   }
   ```
-- Initialization: Initialize WandB at the start of each training run with config from Hydra
-- Metric Logging: Log all training/validation metrics to WandB (loss, accuracy, etc.)
-- Artifact Tracking: Log model checkpoints and important artifacts
-- Metadata Saving: After WandB initialization, save the wandb_run_id to `.research/iteration{experiment_iteration}/wandb_metadata.json`
-- Configuration Logging: Log all hyperparameters and config to WandB
-- Figure Upload: Upload figures as WandB artifacts instead of (or in addition to) saving locally
 
 ## WandB Configuration
 - Entity: {{ wandb_info.entity }}
@@ -145,22 +143,15 @@ In addition to the common requirements above, integrate WandB (Weights & Biases)
 ## Environment Variables
 - `WANDB_API_KEY`: Available as a GitHub Actions secret for WandB authentication
 
-## Modified Output Requirements
-- WandB run URL: Print the WandB run URL to stdout for easy access to detailed logs
-- Figures: Upload figures as WandB artifacts (local saving is optional)
+## Output Requirements
+- Print the WandB run URL for easy access to detailed logs
 
-## Modified Config Structure
+## Config Structure
 Each run config file should also include:
 - wandb: WandB configuration (entity, project, run_name, tags)
 
-## Modified Dependencies
+## Dependencies
 - pyproject.toml: Include `wandb` package
-
-## WandB Metadata File Location
-The wandb_metadata.json file must be saved to:
-- Path: `.research/iteration{experiment_iteration}/wandb_metadata.json`
-- The experiment_iteration should be passed as an environment variable or config parameter
-- The file should be created immediately after WandB run initialization in train.py
 
 {% else %}
 # ========================================
@@ -175,7 +166,7 @@ The wandb_metadata.json file must be saved to:
 - To prevent labels, titles, and legends from overlapping, use `plt.tight_layout()` before saving the figure.
 - All figures must be saved to `{results_dir}/images/` directory in .pdf format (e.g., using `plt.savefig(os.path.join(results_dir, "images", "filename.pdf"), bbox_inches="tight")`).
   - Do not use .png or any other formats—only .pdf is acceptable for publication quality.
-- Names of figures summarizing the numerical data should be printed to stdout
+- Names of figures summarizing the numerical data should be printed
 
 ## Figure Naming Convention
 File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`

@@ -60,8 +60,8 @@ Check if the generated experiment code meets ALL of the following requirements:
 8. **WandB Integration**:
    - Proper WandB initialization with entity/project from config
    - Metrics logged to WandB during training
-   - WandB run URL printed to stdout
-   - Metadata saved to `.research/iteration{experiment_iteration}/wandb_metadata.json`
+   - WandB run URL printed
+   - Metadata saved to `{results_dir}/wandb_metadata.json`
    - Figures uploaded as WandB artifacts
 {% else %}
 8. **Evaluation and Figures**:
