@@ -149,6 +149,7 @@ class CreateCodeSubgraph(BaseSubgraph):
         code_validation = validate_experiment_code(
             llm_name=self.llm_mapping.validate_experiment_code,
             new_method=state["new_method"],
+            wandb_info=self.wandb_info,
             github_repository_info=state["github_repository_info"],
         )
         return {
@@ -241,8 +242,8 @@ class CreateCodeSubgraph(BaseSubgraph):
 def main():
     from airas.types.wandb import WandbInfo
 
-    secret_names = ["HF_TOKEN", "WANDB_API_KEY"]
-    wandb_info = WandbInfo(entity="gengaru617", project="251014-test")
+    secret_names = ["HF_TOKEN", "WANDB_API_KEY", "ANTHROPIC_API_KEY"]
+    wandb_info = WandbInfo(entity="gengaru617", project="251015-test")
     max_code_validations = 10
     result = CreateCodeSubgraph(
         secret_names=secret_names,

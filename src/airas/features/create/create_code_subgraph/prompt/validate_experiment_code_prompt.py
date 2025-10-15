@@ -57,20 +57,22 @@ Check if the generated experiment code meets ALL of the following requirements:
    - All run configurations match the experiment_runs provided
    - Optuna search spaces are properly defined if applicable
 
-8. **Evaluation and Figures** (if WandB not used):
-   - Figure generation with proper formatting (PDF output to `{results_dir}/images/`)
-   - Figures include legends, annotations, and proper labels
-   - Uses `plt.tight_layout()` before saving
-   - Consistent result formatting and comparison logic
-
-9. **WandB Integration** (if WandB is used):
+{% if wandb_info %}
+8. **WandB Integration**:
    - Proper WandB initialization with entity/project from config
    - Metrics logged to WandB during training
    - WandB run URL printed to stdout
    - Metadata saved to `.research/iteration{experiment_iteration}/wandb_metadata.json`
    - Figures uploaded as WandB artifacts
+{% else %}
+8. **Evaluation and Figures**:
+   - Figure generation with proper formatting (PDF output to `{results_dir}/images/`)
+   - Figures include legends, annotations, and proper labels
+   - Uses `plt.tight_layout()` before saving
+   - Consistent result formatting and comparison logic
+{% endif %}
 
-10. **Immediate Executability**:
+9. **Immediate Executability**:
     - Code can be run immediately without modifications
     - All imports and dependencies properly specified in pyproject.toml
     - No missing external resources or undefined variables

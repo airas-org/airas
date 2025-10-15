@@ -26,9 +26,13 @@ Each run config file (`config/run/{run_id}.yaml`) contains:
 
 ## Command Line Interface
 The generated code must support the following CLI:
+- Full Experiment: Runs the experiment using the exact parameters from the configuration files.
 ```bash
-# Run a single experiment (specified by Hydra)
 uv run python -u -m src.main run={run_id} results_dir={path}
+```
+- Trial Mode: For quick validation, a trial_mode=true flag must be supported. When enabled, the code should override configurations for a minimal run (e.g., set training.epochs=1 and disable Optuna by setting optuna.n_trials=0). This flag defaults to false.
+```bash
+uv run python -u -m src.main run={run_id} results_dir={path} trial_mode=true
 ```
 
 The `run` argument specifies which experiment to run (matching a run_id from config/run/*.yaml).

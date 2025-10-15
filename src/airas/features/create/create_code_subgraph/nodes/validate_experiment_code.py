@@ -13,6 +13,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
 )
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.wandb import WandbInfo
 from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
@@ -27,6 +28,7 @@ def validate_experiment_code(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
     github_repository_info: GitHubRepositoryInfo,
+    wandb_info: WandbInfo | None = None,
     prompt_template: str = validate_experiment_code_prompt,
     llm_client: LLMFacadeClient | None = None,
 ) -> tuple[bool, str]:
@@ -37,6 +39,7 @@ def validate_experiment_code(
     messages = template.render(
         {
             "new_method": new_method.model_dump(),
+            "wandb_info": wandb_info.model_dump() if wandb_info else None,
         }
     )
     output, _ = client.structured_outputs(message=messages, data_model=ValidationOutput)

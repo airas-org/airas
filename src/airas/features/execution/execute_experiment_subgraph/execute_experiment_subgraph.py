@@ -264,8 +264,8 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
 def main():
     from airas.types.wandb import WandbInfo
 
-    wandb_info = WandbInfo(entity="gengaru617", project="251014-test")
-    runner_type = "A100_80GM×1"
+    wandb_info = WandbInfo(entity="gengaru617", project="251015-test")
+    runner_type = "A100_80GM×8"
     result = ExecuteExperimentSubgraph(
         runner_type=runner_type,
         wandb_info=wandb_info,
