@@ -8,7 +8,7 @@ Based on the research method in # Current Research Method and experimental desig
 ## Core Requirements
 - COMPLETE IMPLEMENTATION: Every component must be fully functional, production-ready, publication-worthy code. No "omitted for brevity", no "simplified version", no TODO, PLACEHOLDER, pass, or ...
 - PYTORCH EXCLUSIVELY: Use PyTorch as the deep learning framework
-- HYDRA INTEGRATION: Use Hydra to manage all experiment configurations from `config/run/*.yaml` files
+- HYDRA INTEGRATION: Use Hydra to manage all experiment configurations from `config/run/*.yaml` files. Use `config_path="../config"` in all @hydra.main decorators
 - COMPLETE DATA PIPELINE: Full data loading and preprocessing implementation
 
 ## Hydra Configuration Structure
@@ -47,6 +47,7 @@ Generate complete code for these files ONLY. Do not create any additional files 
 - `src/preprocess.py`: Complete preprocessing pipeline implementation for the specified datasets
 - `src/model.py`: Complete model architecture implementations. It will contain classes for baseline, proposed, and ablation models. Implement all architectures from scratch.
 - `src/main.py`: The main orchestrator script. It receives a run_id via Hydra, launches train.py for that specific experiment, manages subprocess, collects and consolidates logs, and finally triggers evaluate.py if needed.
+    Use `@hydra.main(config_path="../config")` since execution is from repository root.
 - `pyproject.toml`: Complete project dependencies (include hydra-core, optuna if needed)
 - `config/config.yaml`: Main Hydra configuration file that defines the list of all experiment run_ids
 
@@ -122,6 +123,7 @@ Generate complete code for these files ONLY. Do not create any additional files 
 In addition to the common requirements above, integrate WandB (Weights & Biases) for experiment tracking and visualization.
 
 ## Additional Requirements
+- Mode Handling: Check `cfg.wandb.mode` before initializing WandB. If mode is "disabled", skip `wandb.init()` entirely and use no-op logging
 - Initialization: Initialize WandB at the start of each training run with config from Hydra
 - Metric Logging: Log all training/validation metrics to WandB (loss, accuracy, etc.)
 - Configuration Logging: Log all hyperparameters and config to WandB
@@ -136,19 +138,20 @@ In addition to the common requirements above, integrate WandB (Weights & Biases)
   }
   ```
 
-## WandB Configuration
-- Entity: {{ wandb_info.entity }}
-- Project: {{ wandb_info.project }}
+## Config Structure
+The `config/config.yaml` file should include WandB configuration:
+```yaml
+wandb:
+  entity: {{ wandb_info.entity }}
+  project: {{ wandb_info.project }}
+  mode: online  # Can be overridden to "disabled" or "offline" via CLI
+```
 
 ## Environment Variables
 - `WANDB_API_KEY`: Available as a GitHub Actions secret for WandB authentication
 
 ## Output Requirements
 - Print the WandB run URL for easy access to detailed logs
-
-## Config Structure
-Each run config file should also include:
-- wandb: WandB configuration (entity, project, run_name, tags)
 
 ## Dependencies
 - pyproject.toml: Include `wandb` package
