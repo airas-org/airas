@@ -58,9 +58,8 @@ Generate complete code for these files ONLY. Do not create any additional files 
 4. Configuration Driven: The entire workflow must be driven by the YAML configuration files
 5. Evaluation Consistency: Identical metrics calculation, result formatting, and comparison logic. evaluate.py must operate on the saved results after all training is complete
 6. Structured Logging:
-   - train.py: Print JSON-formatted experimental data (epoch-wise metrics, final results) to stdout using `print(json.dumps({...}))`. Always include `"run_id"` field (use the run variation name from config).
-   - evaluate.py: Print JSON-formatted comparison results to stdout
-   - main.py: For each subprocess, redirect stdout/stderr to `{results_dir}/{run_id}/stdout.log` and `{results_dir}/{run_id}/stderr.log` while also forwarding to main process stdout/stderr (using tee-like logic) so logs are captured both structurally and by GitHub Actions.
+   - train.py: Print JSON-formatted experimental data (epoch-wise metrics, final results) using `print(json.dumps({...}))`. Always include `"run_id"` field.
+   - evaluate.py: Print JSON-formatted comparison results using `print(json.dumps({...}))`
 
 {% if code_validation %}
 ## Code Validation Feedback

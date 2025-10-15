@@ -46,9 +46,8 @@ Check if the generated experiment code meets ALL of the following requirements:
 
 6. **Structured Logging**:
    - train.py prints JSON-formatted metrics with `run_id` field using `print(json.dumps({...}))`
-   - evaluate.py prints JSON-formatted comparison results to stdout
-   - main.py redirects subprocess stdout/stderr to `{results_dir}/{run_id}/stdout.log` and `stderr.log`
-   - Logs are forwarded to main process stdout/stderr for GitHub Actions capture
+   - evaluate.py prints JSON-formatted comparison results using `print(json.dumps({...}))`
+   - All printed output is automatically captured by the GitHub Actions workflow
 
 7. **Configuration Files**:
    - config/config.yaml contains list of all experiment run_ids
