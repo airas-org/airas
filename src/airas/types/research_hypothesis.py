@@ -115,14 +115,24 @@ class ExperimentRun(BaseModel):
 
 
 class ExperimentalResults(BaseModel):
-    result: Optional[str] = Field(None, description="")
-    error: Optional[str] = Field(None, description="")
-    image_file_name_list: Optional[list[str]] = Field(None, description="")
-    # TODO: wandb?
+    stdout: Optional[str] = Field(None, description="Standard output from the run")
+    stderr: Optional[str] = Field(None, description="Standard error from the run")
+    figures: Optional[list[str]] = Field(
+        None, description="Figures specific to this run"
+    )
+    metrics_data: Optional[str] = Field(None, description="Metrics data for this run")
 
 
 class ExperimentalAnalysis(BaseModel):
-    analysis_report: Optional[str] = Field(None, description="")
+    analysis_report: Optional[str] = Field(
+        None, description="Overall analysis report text"
+    )
+    aggregated_metrics: Optional[str] = Field(
+        None, description="Aggregated metrics across all runs"
+    )
+    comparison_figures: Optional[list[str]] = Field(
+        None, description="List of comparison figure filenames"
+    )
 
 
 class ResearchHypothesis(BaseModel):

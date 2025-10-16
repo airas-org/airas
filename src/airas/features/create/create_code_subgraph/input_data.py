@@ -53,7 +53,7 @@ dummy_research_hypothesis = ResearchHypothesis(
 
 dummy_github_repo = GitHubRepositoryInfo(
     github_owner="auto-res2",
-    repository_name="20251016-matsuzawa",
+    repository_name="20251016_matsuzawa_2",
     branch_name="research",
 )
 

@@ -1,18 +1,15 @@
 import asyncio
 import base64
-
-# import json
 import logging
 
 from airas.services.api_client.github_client import GithubClient
-from airas.services.api_client.wandb_client import WandbClient
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import (
+    ExperimentalAnalysis,
     ExperimentalResults,
     ExperimentCode,
     ResearchHypothesis,
 )
-from airas.types.wandb import WandbInfo
 
 logger = logging.getLogger(__name__)
 
@@ -45,39 +42,6 @@ def _get_single_file_content(
     except Exception as e:
         logger.error(f"Error retrieving {file_path} from repository: {e}")
         raise
-
-
-# def _get_wandb_run_id_from_metadata(
-#     client: GithubClient,
-#     github_owner: str,
-#     repository_name: str,
-#     branch_name: str,
-#     experiment_iteration: int,
-# ) -> str | None:
-#     metadata_path = f".research/iteration{experiment_iteration}/wandb_metadata.json"
-
-#     try:
-#         response = _get_single_file_content(
-#             client, github_owner, repository_name, metadata_path, branch_name
-#         )
-#         if response and "content" in response:
-#             content = _decode_base64_content(response["content"])
-#             metadata = json.loads(content)
-#             wandb_run_id = metadata.get("wandb_run_id")
-#             if wandb_run_id:
-#                 logger.info(f"Found wandb_run_id: {wandb_run_id} from {metadata_path}")
-#                 return wandb_run_id
-#             else:
-#                 logger.warning(f"wandb_run_id not found in {metadata_path}")
-#                 return None
-#         else:
-#             logger.warning(
-#                 f"Metadata file {metadata_path} found but content is missing"
-#             )
-#             return None
-#     except Exception as e:
-#         logger.warning(f"Could not retrieve wandb metadata from {metadata_path}: {e}")
-#         return None
 
 
 def _retrieve_experiment_code(
@@ -118,46 +82,6 @@ def _retrieve_experiment_code(
     return ExperimentCode(**field_values)
 
 
-# def _append_wandb_metrics(
-#     output_text: str,
-#     wandb_client: WandbClient,
-#     wandb_info: WandbInfo,
-#     client: GithubClient,
-#     github_owner: str,
-#     repository_name: str,
-#     branch_name: str,
-#     experiment_iteration: int,
-#     run_id: str,
-# ) -> str:
-#     try:
-#         wandb_run_id = _get_wandb_run_id_from_metadata(
-#             client, github_owner, repository_name, branch_name, experiment_iteration
-#         )
-
-#         if not wandb_run_id:
-#             logger.warning(f"Could not find wandb_run_id in metadata for run {run_id}")
-#             return output_text
-
-#         logger.info(
-#             f"Retrieving WandB metrics for run '{wandb_run_id}' "
-#             f"from {wandb_info.entity}/{wandb_info.project}"
-#         )
-#         metrics_df = wandb_client.retrieve_run_metrics(
-#             entity=wandb_info.entity,
-#             project=wandb_info.project,
-#             run_id=wandb_run_id,
-#         )
-#         metrics_text = metrics_df.to_string() if metrics_df is not None else ""
-#         logger.info(f"Successfully retrieved WandB metrics for run {wandb_run_id}")
-#         return f"{output_text}\n\n=== WandB Metrics ===\n{metrics_text}"
-
-#     except Exception as wandb_error:
-#         logger.warning(
-#             f"Failed to retrieve WandB metrics for run {run_id}: {wandb_error}"
-#         )
-#         return output_text
-
-
 async def _retrieve_artifacts_from_branch(
     client: GithubClient,
     github_owner: str,
@@ -168,38 +92,37 @@ async def _retrieve_artifacts_from_branch(
     new_method: ResearchHypothesis | None = None,
 ) -> tuple[str, str, list[str], ExperimentCode | None]:
     iteration_path = f".research/iteration{experiment_iteration}"
-    output_file_path = f"{iteration_path}/output.txt"
-    error_file_path = f"{iteration_path}/error.txt"
-    # NOTE: Image names are retrieved from repository regardless of source (Python generation or WandB)
+    stdout_file_path = f"{iteration_path}/stdout.txt"
+    stderr_file_path = f"{iteration_path}/stderr.txt"
     image_directory_path = f"{iteration_path}/images"
 
-    output_text_data = ""
+    stdout_text_data = ""
     try:
-        output_text_response = _get_single_file_content(
-            client, github_owner, repository_name, output_file_path, branch_name
+        stdout_text_response = _get_single_file_content(
+            client, github_owner, repository_name, stdout_file_path, branch_name
         )
-        if output_text_response and "content" in output_text_response:
-            output_text_data = _decode_base64_content(output_text_response["content"])
+        if stdout_text_response and "content" in stdout_text_response:
+            stdout_text_data = _decode_base64_content(stdout_text_response["content"])
         else:
             logger.warning(
-                f"Output file {output_file_path} found but content is missing."
+                f"Stdout file {stdout_file_path} found but content is missing."
             )
     except Exception as e:
-        logger.warning(f"Could not retrieve output file {output_file_path}: {e}")
+        logger.warning(f"Could not retrieve stdout file {stdout_file_path}: {e}")
 
-    error_text_data = ""
+    stderr_text_data = ""
     try:
-        error_text_response = _get_single_file_content(
-            client, github_owner, repository_name, error_file_path, branch_name
+        stderr_text_response = _get_single_file_content(
+            client, github_owner, repository_name, stderr_file_path, branch_name
         )
-        if error_text_response and "content" in error_text_response:
-            error_text_data = _decode_base64_content(error_text_response["content"])
+        if stderr_text_response and "content" in stderr_text_response:
+            stderr_text_data = _decode_base64_content(stderr_text_response["content"])
         else:
             logger.warning(
-                f"Error file {error_file_path} found but content is missing."
+                f"Stderr file {stderr_file_path} found but content is missing."
             )
     except Exception as e:
-        logger.warning(f"Could not retrieve error file {error_file_path}: {e}")
+        logger.warning(f"Could not retrieve stderr file {stderr_file_path}: {e}")
 
     image_file_name_list: list[str] = []
     try:
@@ -221,7 +144,7 @@ async def _retrieve_artifacts_from_branch(
         )
 
     logger.info(f"Successfully retrieved artifacts from branch {branch_name}")
-    return output_text_data, error_text_data, image_file_name_list, experiment_code
+    return stdout_text_data, stderr_text_data, image_file_name_list, experiment_code
 
 
 async def _retrieve_trial_experiment_artifacts_async(
@@ -233,7 +156,7 @@ async def _retrieve_trial_experiment_artifacts_async(
     client = github_client or GithubClient()
 
     (
-        output_text,
+        stdout_text,
         error_text,
         image_files,
         experiment_code,
@@ -251,9 +174,9 @@ async def _retrieve_trial_experiment_artifacts_async(
     logger.info(f"Updated experiment_code from branch {github_repository.branch_name}")
 
     trial_experiment_results = ExperimentalResults(
-        result=output_text,
-        error=error_text,
-        image_file_name_list=image_files,
+        stdout=stdout_text,
+        stderr=error_text,
+        figures=image_files,
     )
 
     logger.info(
@@ -262,71 +185,122 @@ async def _retrieve_trial_experiment_artifacts_async(
     return new_method, trial_experiment_results
 
 
-async def _retrieve_full_experiment_artifacts_async(
+# async def _retrieve_full_experiment_artifacts_async(
+#     experiment_iteration: int,
+#     new_method: ResearchHypothesis,
+#     github_client: GithubClient | None = None,
+#     wandb_client: WandbClient | None = None,
+#     wandb_info: WandbInfo | None = None,
+# ) -> ResearchHypothesis:
+#     github_client = github_client or GithubClient()
+#     wandb_client = wandb_client or (WandbClient() if wandb_info else None)
+
+#     for exp_run in new_method.experiment_runs:
+#         if not exp_run.github_repository_info:
+#             logger.warning(f"No branch information found for run {exp_run.run_id}")
+#             continue
+
+#         repo_info = exp_run.github_repository_info
+#         logger.info(
+#             f"Retrieving artifacts for run '{exp_run.run_id}' from branch '{repo_info.branch_name}'"
+#         )
+
+#         try:
+#             (
+#                 stdout_text,
+#                 error_text,
+#                 image_files,
+#                 _,
+#             ) = await _retrieve_artifacts_from_branch(
+#                 github_client,
+#                 repo_info.github_owner,
+#                 repo_info.repository_name,
+#                 repo_info.branch_name,
+#                 experiment_iteration,
+#                 include_code=False,
+#             )
+
+#             exp_run.results = ExperimentalResults(
+#                 result=stdout_text,
+#                 error=error_text,
+#                 image_file_name_list=image_files,
+#             )
+#             logger.info(f"Successfully stored results for run {exp_run.run_id}")
+
+#         except Exception as e:
+#             logger.error(f"Failed to retrieve artifacts for run {exp_run.run_id}: {e}")
+#             exp_run.results = ExperimentalResults(
+#                 result="",
+#                 error=f"Failed to retrieve artifacts: {str(e)}",
+#                 image_file_name_list=[],
+#             )
+
+#     return new_method
+
+
+async def _retrieve_evaluation_artifacts_async(
+    github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
     new_method: ResearchHypothesis,
     github_client: GithubClient | None = None,
-    wandb_client: WandbClient | None = None,
-    wandb_info: WandbInfo | None = None,
 ) -> ResearchHypothesis:
-    github_client = github_client or GithubClient()
-    wandb_client = wandb_client or (WandbClient() if wandb_info else None)
+    client = github_client or GithubClient()
 
-    for exp_run in new_method.experiment_runs:
-        if not exp_run.github_repository_info:
-            logger.warning(f"No branch information found for run {exp_run.run_id}")
-            continue
+    iteration_path = f".research/iteration{experiment_iteration}"
+    wandb_data_path = f"{iteration_path}/wandb_data"
+    images_path = f"{iteration_path}/images"
 
-        repo_info = exp_run.github_repository_info
-        logger.info(
-            f"Retrieving artifacts for run '{exp_run.run_id}' from branch '{repo_info.branch_name}'"
+    aggregated_metrics = ""
+    try:
+        summary_files = _get_single_file_content(
+            client,
+            github_repository.github_owner,
+            github_repository.repository_name,
+            wandb_data_path,
+            github_repository.branch_name,
         )
+        if isinstance(summary_files, list):
+            for file_data in summary_files:
+                if "summary" in file_data.get("name", "").lower():
+                    summary_response = _get_single_file_content(
+                        client,
+                        github_repository.github_owner,
+                        github_repository.repository_name,
+                        f"{wandb_data_path}/{file_data['name']}",
+                        github_repository.branch_name,
+                    )
+                    if summary_response and "content" in summary_response:
+                        aggregated_metrics = _decode_base64_content(
+                            summary_response["content"]
+                        )
+                    break
+    except Exception as e:
+        logger.warning(f"Could not retrieve aggregated metrics: {e}")
 
-        try:
-            (
-                output_text,
-                error_text,
-                image_files,
-                _,
-            ) = await _retrieve_artifacts_from_branch(
-                github_client,
-                repo_info.github_owner,
-                repo_info.repository_name,
-                repo_info.branch_name,
-                experiment_iteration,
-                include_code=False,
-            )
+    comparison_figures: list[str] = []
+    try:
+        images_list = _get_single_file_content(
+            client,
+            github_repository.github_owner,
+            github_repository.repository_name,
+            images_path,
+            github_repository.branch_name,
+        )
+        if isinstance(images_list, list):
+            comparison_figures = [img["name"] for img in images_list]
+            logger.info(f"Retrieved {len(comparison_figures)} comparison figures")
+    except Exception as e:
+        logger.warning(f"Could not retrieve comparison figures: {e}")
 
-            # NOTE: WandB metrics retrieval is commented out because train.py now saves
-            # all metrics to results.json. No need to fetch from WandB API redundantly.
-            # if wandb_client and wandb_info:
-            #     output_text = _append_wandb_metrics(
-            #         output_text,
-            #         wandb_client,
-            #         wandb_info,
-            #         github_client,
-            #         repo_info.github_owner,
-            #         repo_info.repository_name,
-            #         repo_info.branch_name,
-            #         experiment_iteration,
-            #         exp_run.run_id,
-            #     )
+    if not new_method.experimental_analysis:
+        new_method.experimental_analysis = ExperimentalAnalysis()
 
-            exp_run.results = ExperimentalResults(
-                result=output_text,
-                error=error_text,
-                image_file_name_list=image_files,
-            )
-            logger.info(f"Successfully stored results for run {exp_run.run_id}")
+    new_method.experimental_analysis.aggregated_metrics = aggregated_metrics
+    new_method.experimental_analysis.comparison_figures = comparison_figures
 
-        except Exception as e:
-            logger.error(f"Failed to retrieve artifacts for run {exp_run.run_id}: {e}")
-            exp_run.results = ExperimentalResults(
-                result="",
-                error=f"Failed to retrieve artifacts: {str(e)}",
-                image_file_name_list=[],
-            )
-
+    logger.info(
+        f"Successfully retrieved evaluation artifacts from branch {github_repository.branch_name}"
+    )
     return new_method
 
 
@@ -346,19 +320,35 @@ def retrieve_trial_experiment_artifacts(
     )
 
 
-def retrieve_full_experiment_artifacts(
+# def retrieve_full_experiment_artifacts(
+#     experiment_iteration: int,
+#     new_method: ResearchHypothesis,
+#     github_client: GithubClient | None = None,
+#     wandb_client: WandbClient | None = None,
+#     wandb_info: WandbInfo | None = None,
+# ) -> ResearchHypothesis:
+#     return asyncio.run(
+#         _retrieve_full_experiment_artifacts_async(
+#             experiment_iteration,
+#             new_method,
+#             github_client,
+#             wandb_client,
+#             wandb_info,
+#         )
+#     )
+
+
+def retrieve_evaluation_artifacts(
+    github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
     new_method: ResearchHypothesis,
     github_client: GithubClient | None = None,
-    wandb_client: WandbClient | None = None,
-    wandb_info: WandbInfo | None = None,
 ) -> ResearchHypothesis:
     return asyncio.run(
-        _retrieve_full_experiment_artifacts_async(
+        _retrieve_evaluation_artifacts_async(
+            github_repository,
             experiment_iteration,
             new_method,
             github_client,
-            wandb_client,
-            wandb_info,
         )
     )

@@ -111,7 +111,7 @@ async def _execute_full_experiments_async(
             continue
 
         inputs = base_inputs.copy()
-        inputs["run_ids"] = json.dumps([exp_run.run_id])
+        inputs["run_id"] = exp_run.run_id
 
         task = _execute_workflow_on_branch(
             executor,
@@ -154,6 +154,38 @@ async def _execute_full_experiments_async(
     return all_success
 
 
+async def _execute_evaluation_async(
+    github_repository: GitHubRepositoryInfo,
+    experiment_iteration: int,
+    runner_type: RunnerType,
+    workflow_file: str,
+    github_client: GithubClient | None = None,
+) -> bool:
+    client = github_client or GithubClient()
+    executor = WorkflowExecutor(client)
+    runner_type_setting = runner_info_dict[runner_type]["runner_setting"]
+
+    branch_name = github_repository.branch_name
+
+    logger.info(f"Executing evaluation on main branch '{branch_name}'")
+
+    inputs = {
+        "experiment_iteration": str(experiment_iteration),
+        "runner_type": runner_type_setting,
+    }
+
+    result = await _execute_workflow_on_branch(
+        executor,
+        github_repository.github_owner,
+        github_repository.repository_name,
+        branch_name,
+        workflow_file,
+        inputs,
+    )
+
+    return result.success
+
+
 def execute_trial_experiment(
     github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
@@ -188,6 +220,24 @@ def execute_full_experiments(
             experiment_iteration,
             runner_type,
             new_method,
+            workflow_file,
+            github_client,
+        )
+    )
+
+
+def execute_evaluation(
+    github_repository: GitHubRepositoryInfo,
+    experiment_iteration: int,
+    runner_type: RunnerType,
+    workflow_file: str = "run_evaluation_with_open_code.yml",
+    github_client: GithubClient | None = None,
+) -> bool:
+    return asyncio.run(
+        _execute_evaluation_async(
+            github_repository,
+            experiment_iteration,
+            runner_type,
             workflow_file,
             github_client,
         )

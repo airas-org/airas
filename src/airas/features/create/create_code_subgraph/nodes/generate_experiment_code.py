@@ -56,7 +56,5 @@ def generate_experiment_code(
     )
 
     new_method.experimental_design.experiment_code = ExperimentCode(**output)
-    logger.info(
-        f"Successfully generated experiment code ({'with WandB' if wandb_info else 'without WandB'})"
-    )
+    logger.info("Successfully generated experiment code")
     return new_method
