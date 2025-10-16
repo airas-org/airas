@@ -99,7 +99,7 @@ Generate complete code for these files ONLY. Do not create any additional files 
 
 **`src/preprocess.py`**: Complete preprocessing pipeline implementation for the specified datasets
 
-**`src/model.py`**: Complete model architecture implementations (baseline, proposed, ablation models from scratch)
+**`src/model.py`**: Complete model architecture implementations for all methods (proposed and comparative methods)
 
 **`src/main.py`**: Main orchestrator
 - Receives run_id via Hydra, launches train.py as subprocess, manages logs, triggers evaluate.py

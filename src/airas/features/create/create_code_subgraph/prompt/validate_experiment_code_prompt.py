@@ -29,8 +29,10 @@ Check if the generated experiment code meets ALL of the following requirements:
    - Uses `.cache/` as the cache directory for all datasets and models
 
 4. **Model Implementation**:
-   - Complete model architectures for baseline, proposed, and ablation methods
-   - All models implemented from scratch (no placeholders)
+   - Complete model architectures for all methods (proposed and comparative methods)
+   - No placeholders (TODO, PLACEHOLDER, pass, or incomplete implementations)
+   - When External Resources specify HuggingFace models: properly use and customize them (acceptable to wrap AutoModel, add adapters, etc.)
+   - When no external models specified: implement architectures from scratch using PyTorch primitives
    - Model-specific configurations correctly applied
    - Proper PyTorch usage throughout
 
