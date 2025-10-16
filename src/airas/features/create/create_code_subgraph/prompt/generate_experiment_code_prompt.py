@@ -9,7 +9,7 @@ Based on the research method in # Current Research Method and experimental desig
 - COMPLETE IMPLEMENTATION: Every component must be fully functional, production-ready, publication-worthy code. No "omitted for brevity", no "simplified version", no TODO, PLACEHOLDER, pass, or ...
 - PYTORCH EXCLUSIVELY: Use PyTorch as the deep learning framework
 - HYDRA INTEGRATION: Use Hydra to manage all experiment configurations from `config/run/*.yaml` files. Use `config_path="../config"` in all @hydra.main decorators
-- COMPLETE DATA PIPELINE: Full data loading and preprocessing implementation
+- COMPLETE DATA PIPELINE: Full data loading and preprocessing implementation. Use `.cache/` as the cache directory for all datasets and models (e.g., for HuggingFace, set `cache_dir=".cache/"`)
 
 ## Hydra Configuration Structure
 Each run config file (`config/run/{run_id}.yaml`) contains:
@@ -20,36 +20,95 @@ Each run config file (`config/run/{run_id}.yaml`) contains:
 - training: Training hyperparameters (learning rate, batch size, epochs, optimizer settings, validation split)
 - optuna: Hyperparameter search space definition for Optuna optimization
 
-## Standard Output Content Requirements
-- Experiment description: Before printing experimental results, the standard output must include a detailed description of the experiment.
-- Experimental numerical data: All experimental data obtained in the experiments must be output to the standard output.
-
 ## Command Line Interface
 The generated code must support the following CLI:
-- Full Experiment: Runs the experiment using the exact parameters from the configuration files.
+
+**Full Experiment:**
 ```bash
 uv run python -u -m src.main run={run_id} results_dir={path}
 ```
-- Trial Mode: For quick validation, a trial_mode=true flag must be supported. When enabled, the code should override configurations for a minimal run (e.g., set training.epochs=1 and disable Optuna by setting optuna.n_trials=0). This flag defaults to false.
+Runs the experiment using exact parameters from configuration files.
+
+**Trial Mode (for quick validation):**
 ```bash
 uv run python -u -m src.main run={run_id} results_dir={path} trial_mode=true
 ```
+When `trial_mode=true` (defaults to false), the code performs minimal, lightweight execution:
+- Training: epochs=1, limit batches to 1-2, disable Optuna (n_trials=0), use small evaluation subset
+- Evaluation: process only current run's results (skip past results comparison), generate 1-2 minimal plots
+- Purpose: Fast validation that code runs without errors (not for production results)
 
-The `run` argument specifies which experiment to run (matching a run_id from config/run/*.yaml).
-The `results_dir` argument is passed from the GitHub Actions workflow and specifies where all outputs should be saved.
+**Arguments:**
+- `run`: Experiment run_id (matching a run_id from config/run/*.yaml)
+- `results_dir`: Output directory (passed from GitHub Actions workflow)
 
-## Output Structure
-Generate complete code for these files ONLY. Do not create any additional files beyond this structure:
+## Results Output Requirements
+
+**Metrics Storage (always required)**:
+- train.py MUST save all primary metrics to `{results_dir}/run_{run_id}/results.json`
+- This file is required for evaluate.py to compute secondary/derived metrics
+- Structure: run_id, method_name, model_name, dataset_name, final_metrics, training_history, hyperparameters
+
+{% if wandb_info %}
+**Figure Output (WandB mode)**:
+- **DO NOT generate figures locally** (no plt.savefig calls in train.py or evaluate.py)
+- Instead, log all metrics to WandB:
+  - train.py: Log training/validation metrics (loss, accuracy, etc.) → WandB auto-generates learning curves
+  - evaluate.py: Compute secondary metrics from results.json, log them to WandB → Create comparison charts in WandB UI
+- Use the same entity/project for data consistency and unified visualization
+
+{% else %}
+**Figure Output (Local mode)**:
+- Generate publication-quality PDF figures and save to `{results_dir}/images/`
+  - Example: `plt.savefig(os.path.join(results_dir, "images", "filename.pdf"), bbox_inches="tight")`
+- **Visualization quality**:
+  - Use matplotlib or seaborn
+  - Include legends, annotate numeric values on axes
+  - For line graphs: annotate significant values (final/best values)
+  - For bar graphs: annotate values above each bar
+  - Use `plt.tight_layout()` before saving to prevent label overlap
+- **Naming convention**: `<figure_topic>[_<condition>][_pairN].pdf`
+  - `<figure_topic>`: Main subject (e.g., training_loss, accuracy, inference_latency)
+  - `_<condition>` (optional): Model/setting (e.g., baseline, proposed)
+  - `_pairN` (optional): For paired figures (e.g., _pair1, _pair2)
+- Print figure names to stdout for reference
+{% endif %}
+
 
 ### Script Structure (ExperimentCode format)
-- `src/train.py`: Logic to run a single experiment variation. Uses Hydra config to load parameters. It is called as a subprocess by main.py. It must save final metrics to a structured file (e.g., results.json).
-- `src/evaluate.py`: Comparison and visualization tool. It reads the result files from all experiment variations and generates comparison figures.
-- `src/preprocess.py`: Complete preprocessing pipeline implementation for the specified datasets
-- `src/model.py`: Complete model architecture implementations. It will contain classes for baseline, proposed, and ablation models. Implement all architectures from scratch.
-- `src/main.py`: The main orchestrator script. It receives a run_id via Hydra, launches train.py for that specific experiment, manages subprocess, collects and consolidates logs, and finally triggers evaluate.py if needed.
-    Use `@hydra.main(config_path="../config")` since execution is from repository root.
-- `pyproject.toml`: Complete project dependencies (include hydra-core, optuna if needed)
-- `config/config.yaml`: Main Hydra configuration file that defines the list of all experiment run_ids
+Generate complete code for these files ONLY. Do not create any additional files beyond this structure:
+
+**`src/train.py`**: Single experiment run executor
+- Uses Hydra config to load all parameters
+- Called as subprocess by main.py
+- Responsibilities:
+  * Train model with given configuration
+  * Compute ALL primary metrics (accuracy, loss, precision, recall, F1, inference time, etc.)
+  * Save comprehensive results to `{results_dir}/run_{run_id}/results.json`:
+
+**`src/evaluate.py`**: Cross-run comparison and visualization
+- **CRITICAL CONSTRAINTS**:
+  * MUST NOT reload datasets or models
+  * MUST NOT recompute primary metrics
+  * ONLY read results.json files and perform visualization
+- **Responsibilities**:
+  * Read all results.json files from different runs
+  * Compute secondary/derived metrics (e.g., relative improvement: (proposed - baseline) / baseline)
+  * Generate cross-run comparison figures (bar charts, overlaid learning curves, etc.)
+- Should complete within seconds (lightweight JSON parsing + plotting only)
+
+**`src/preprocess.py`**: Complete preprocessing pipeline implementation for the specified datasets
+
+**`src/model.py`**: Complete model architecture implementations (baseline, proposed, ablation models from scratch)
+
+**`src/main.py`**: Main orchestrator
+- Receives run_id via Hydra, launches train.py as subprocess, manages logs, triggers evaluate.py
+- Use `@hydra.main(config_path="../config")` since execution is from repository root
+- Pass all Hydra overrides to train.py subprocess (e.g., `wandb.mode=disabled`, `trial_mode=true`)
+
+**`pyproject.toml`**: Complete project dependencies (include hydra-core, optuna if needed)
+
+**`config/config.yaml`**: Main Hydra configuration file
 
 
 ### Key Implementation Focus Areas
@@ -74,11 +133,12 @@ Generate complete code for these files ONLY. Do not create any additional files 
 # Experimental Environment
 {{ runner_type_prompt }}
 
-# Current Research Method (Target for Experiment Design)
+# Current Research Method
 {{ new_method.method }}
 
 # Experimental Design
-- Strategy: {{ new_method.experimental_design.experiment_strategy }}
+- Summary: {{ new_method.experimental_design.experiment_summary }}
+- Evaluation metrics: {{ new_method.experimental_design.evaluation_metrics }}
 
 # Experiment Runs
 {% for run in new_method.experiment_runs %}
@@ -119,27 +179,27 @@ Generate complete code for these files ONLY. Do not create any additional files 
 # WandB Integration Requirements
 # ========================================
 
-## Overview
-In addition to the common requirements above, integrate WandB (Weights & Biases) for experiment tracking and visualization.
+Integrate WandB (Weights & Biases) for metrics logging and visualization:
 
-## Additional Requirements
-- Mode Handling: Check `cfg.wandb.mode` before initializing WandB. If mode is "disabled", skip `wandb.init()` entirely and use no-op logging
-- Initialization: Initialize WandB at the start of each training run with config from Hydra
-- Metric Logging: Log all training/validation metrics to WandB (loss, accuracy, etc.)
-- Configuration Logging: Log all hyperparameters and config to WandB
-- Artifact Tracking: Log model checkpoints and important artifacts
-- Figure Upload: Upload figures as WandB artifacts instead of (or in addition to) saving locally
-- Metadata File: Save WandB run information to `{results_dir}/wandb_metadata.json` immediately after initialization:
+**train.py**:
+- Initialize WandB at start: `wandb.init(entity="...", project="...", config=cfg)`
+- Check `cfg.wandb.mode`: If "disabled", skip `wandb.init()` entirely
+- Log all training/validation metrics: `wandb.log({"train_loss": 0.5, "val_acc": 0.85, ...})`
+- Log hyperparameters and configuration
+- Save metadata file `{results_dir}/wandb_metadata.json`:
   ```json
-  {
-    "wandb_entity": "{{ wandb_info.entity }}",
-    "wandb_project": "{{ wandb_info.project }}",
-    "wandb_run_id": "<actual_run_id_from_wandb>"
-  }
+  {"wandb_entity": "{{ wandb_info.entity }}", "wandb_project": "{{ wandb_info.project }}", "wandb_run_id": "<actual_run_id>"}
   ```
+- Print WandB run URL
+- **DO NOT generate figures** (WandB auto-generates learning curves from logged metrics)
 
-## Config Structure
-The `config/config.yaml` file should include WandB configuration:
+**evaluate.py**:
+- Read all results.json files
+- Compute secondary/derived metrics (e.g., improvement rate)
+- Log secondary metrics to WandB: `wandb.log({"improvement_rate": 0.082, ...})`
+- **DO NOT generate figures** (create comparison charts in WandB UI from logged metrics)
+
+**config/config.yaml** must include:
 ```yaml
 wandb:
   entity: {{ wandb_info.entity }}
@@ -147,36 +207,9 @@ wandb:
   mode: online  # Can be overridden to "disabled" or "offline" via CLI
 ```
 
-## Environment Variables
-- `WANDB_API_KEY`: Available as a GitHub Actions secret for WandB authentication
+**Environment**: `WANDB_API_KEY` available as GitHub Actions secret
 
-## Output Requirements
-- Print the WandB run URL for easy access to detailed logs
-
-## Dependencies
-- pyproject.toml: Include `wandb` package
-
-{% else %}
-# ========================================
-# Figure Output Requirements (Non-WandB)
-# ========================================
-
-- Experimental results must always be presented in clear and interpretable figures without exception.
-- Use matplotlib or seaborn to output the results (e.g., accuracy, loss curves, confusion matrix).
-- Numeric values must be annotated on the axes of the graphs.
-- For line graphs, annotate significant values (e.g., the final or best value) to highlight key findings. For bar graphs, annotate the value above each bar.
-- Include legends in the figures.
-- To prevent labels, titles, and legends from overlapping, use `plt.tight_layout()` before saving the figure.
-- All figures must be saved to `{results_dir}/images/` directory in .pdf format (e.g., using `plt.savefig(os.path.join(results_dir, "images", "filename.pdf"), bbox_inches="tight")`).
-  - Do not use .png or any other formats—only .pdf is acceptable for publication quality.
-- Names of figures summarizing the numerical data should be printed
-
-## Figure Naming Convention
-File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`
-- `<figure_topic>`: The main subject of the figure (e.g., training_loss, accuracy, inference_latency)
-- `_<condition>` (optional): Indicates model, setting, or comparison condition (e.g., amict, baseline, tokens, multimodal_vs_text)
-- `_pairN` (optional): Used when presenting figures in pairs (e.g., _pair1, _pair2)
-- For standalone figures, do not include _pairN.
+**Dependencies**: Include `wandb` in pyproject.toml
 {% endif %}
 
 Generate complete, production-ready experiment code that integrates with Hydra configuration system."""

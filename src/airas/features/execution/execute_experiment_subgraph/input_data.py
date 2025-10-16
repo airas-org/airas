@@ -6,53 +6,54 @@ from airas.types.research_hypothesis import (
 )
 
 dummy_experimental_design = ExperimentalDesign(
-    experiment_summary="Comparative analysis of efficient model architectures across vision and language tasks",
-    evaluation_metrics=["accuracy", "f1_score", "inference_time", "model_size"],
-    proposed_method="Evaluate MobileNetV2 and DistilBERT variants for efficient deployment",
+    experiment_summary="Comparative analysis of DistilBERT performance across vision and language tasks",
+    evaluation_metrics=["accuracy", "f1_score", "inference_time"],
+    proposed_method="Fine-tuned DistilBERT with task-specific adapters",
     comparative_methods=[
-        "MobileNetV2-0.5 (3.5M parameters)",
-        "DistilBERT-base (66M parameters)",
+        "Standard DistilBERT fine-tuning",
     ],
-    models_to_use=["MobileNetV2-0.5-3.5M", "DistilBERT-base-66M"],
+    models_to_use=["DistilBERT-base-66M"],
     datasets_to_use=["CIFAR-10", "alpaca-cleaned"],
 )
 
 dummy_experiment_runs = [
+    # Proposed method
     ExperimentRun(
-        run_id="comparative-2-MobileNetV2-0.5-3.5M-CIFAR-10",
-        method_name="comparative-2",
-        model_name="MobileNetV2-0.5-3.5M",
-        dataset_name="CIFAR-10",
-    ),
-    ExperimentRun(
-        run_id="comparative-2-MobileNetV2-0.5-3.5M-alpaca-cleaned",
-        method_name="comparative-2",
-        model_name="MobileNetV2-0.5-3.5M",
-        dataset_name="alpaca-cleaned",
-    ),
-    ExperimentRun(
-        run_id="comparative-2-DistilBERT-base-66M-CIFAR-10",
-        method_name="comparative-2",
+        run_id="proposed-DistilBERT-base-66M-CIFAR-10",
+        method_name="proposed",
         model_name="DistilBERT-base-66M",
         dataset_name="CIFAR-10",
     ),
     ExperimentRun(
-        run_id="comparative-2-DistilBERT-base-66M-alpaca-cleaned",
-        method_name="comparative-2",
+        run_id="proposed-DistilBERT-base-66M-alpaca-cleaned",
+        method_name="proposed",
+        model_name="DistilBERT-base-66M",
+        dataset_name="alpaca-cleaned",
+    ),
+    # Comparative method
+    ExperimentRun(
+        run_id="comparative-1-DistilBERT-base-66M-CIFAR-10",
+        method_name="comparative-1",
+        model_name="DistilBERT-base-66M",
+        dataset_name="CIFAR-10",
+    ),
+    ExperimentRun(
+        run_id="comparative-1-DistilBERT-base-66M-alpaca-cleaned",
+        method_name="comparative-1",
         model_name="DistilBERT-base-66M",
         dataset_name="alpaca-cleaned",
     ),
 ]
 
 dummy_research_hypothesis = ResearchHypothesis(
-    method="We compare lightweight model architectures (MobileNetV2-0.5 and DistilBERT-base) across vision and language tasks to evaluate their efficiency and performance trade-offs.",
+    method="We compare DistilBERT with task-specific adapters (proposed) against standard fine-tuning (comparative) across vision and language tasks to evaluate performance improvements.",
     experimental_design=dummy_experimental_design,
     experiment_runs=dummy_experiment_runs,
 )
 
 dummy_github_repo = GitHubRepositoryInfo(
     github_owner="auto-res2",
-    repository_name="20251015-matsuzawa",
+    repository_name="20251016-matsuzawa",
     branch_name="research",
 )
 
