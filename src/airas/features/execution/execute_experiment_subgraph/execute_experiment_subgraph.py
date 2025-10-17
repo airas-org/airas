@@ -173,6 +173,7 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
     ) -> dict[str, ResearchHypothesis]:
         new_method = create_experiment_branches(
             github_repository_info=state["github_repository_info"],
+            experiment_iteration=state["experiment_iteration"],
             new_method=state["new_method"],
         )
         return {"new_method": new_method}
@@ -270,7 +271,7 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
 def main():
     from airas.types.wandb import WandbInfo
 
-    wandb_info = WandbInfo(entity="gengaru617-personal", project="251016-test")
+    wandb_info = WandbInfo(entity="gengaru617-personal", project="251017-test")
     runner_type = "A100_80GM×8"
     result = ExecuteExperimentSubgraph(
         runner_type=runner_type,

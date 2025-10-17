@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 async def _create_experiment_branches(
     github_client: GithubClient,
     github_repository_info: GitHubRepositoryInfo,
+    experiment_iteration: int,
     new_method: ResearchHypothesis,
 ) -> list[tuple[str, bool]]:
     base_branch_info = await github_client.aget_branch(
@@ -31,8 +32,7 @@ async def _create_experiment_branches(
         return []
 
     for exp_run in new_method.experiment_runs:
-        # Create child branch name based on run_id
-        child_branch = f"{github_repository_info.branch_name}-{exp_run.run_id}"
+        child_branch = f"{github_repository_info.branch_name}-{experiment_iteration}-{exp_run.run_id}"
         branches_to_create.append(child_branch)
 
         task = _create_single_branch(
@@ -76,6 +76,7 @@ async def _create_single_branch(
 def create_experiment_branches(
     github_repository_info: GitHubRepositoryInfo,
     new_method: ResearchHypothesis,
+    experiment_iteration: int,
     github_client: GithubClient | None = None,
 ) -> ResearchHypothesis:
     github_client = github_client or GithubClient()
@@ -88,13 +89,14 @@ def create_experiment_branches(
         _create_experiment_branches(
             github_client,
             github_repository_info,
+            experiment_iteration,
             new_method,
         )
     )
 
     created_count = 0
     for exp_run in new_method.experiment_runs:
-        child_branch = f"{github_repository_info.branch_name}-{exp_run.run_id}"
+        child_branch = f"{github_repository_info.branch_name}-{experiment_iteration}-{exp_run.run_id}"
 
         branch_success = next(
             (success for branch, success in branch_results if branch == child_branch),

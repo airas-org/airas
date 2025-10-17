@@ -243,7 +243,7 @@ def main():
     from airas.types.wandb import WandbInfo
 
     secret_names = ["HF_TOKEN", "WANDB_API_KEY", "ANTHROPIC_API_KEY"]
-    wandb_info = WandbInfo(entity="gengaru617-personal", project="251016-test")
+    wandb_info = WandbInfo(entity="gengaru617-personal", project="251017-test")
     max_code_validations = 10
     result = CreateCodeSubgraph(
         secret_names=secret_names,
