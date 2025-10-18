@@ -12,10 +12,10 @@ from airas.features import (
     CreateExperimentalDesignSubgraph,
     CreateMethodSubgraphV2,
     EvaluateExperimentalConsistencySubgraph,
+    ExecuteExperimentSubgraph,
     ExtractReferenceTitlesSubgraph,
     GenerateQueriesSubgraph,
     GetPaperTitlesFromDBSubgraph,
-    GitHubActionsExecutorSubgraph,
     GithubUploadSubgraph,
     HtmlSubgraph,
     LatexSubgraph,
@@ -110,16 +110,19 @@ retrieve_hugging_face = RetrieveHuggingFaceSubgraph(
 coder = CreateCodeSubgraph(
     runner_type=settings.runner_type,
     secret_names=settings.secret_names,
+    wandb_info=settings.wandb.to_wandb_info(),
     llm_mapping={
-        "generate_base_code": settings.llm_mapping.generate_base_code,
-        "derive_specific_experiments": settings.llm_mapping.derive_specific_experiments,
-        "validate_base_code": settings.llm_mapping.validate_base_code,
+        "generate_run_config": settings.llm_mapping.generate_base_code,
+        "generate_experiment_code": settings.llm_mapping.generate_base_code,
         "validate_experiment_code": settings.llm_mapping.validate_experiment_code,
     },
-    max_base_code_validations=settings.create_code.max_base_code_validations,
-    max_experiment_code_validations=settings.create_code.max_experiment_code_validations,
+    max_code_validations=settings.create_code.max_code_validations,
 )
-executor = GitHubActionsExecutorSubgraph(runner_type=settings.runner_type)
+
+executor = ExecuteExperimentSubgraph(
+    runner_type=settings.runner_type,
+    wandb_info=settings.wandb.to_wandb_info(),
+)
 evaluate_consistency = EvaluateExperimentalConsistencySubgraph(
     consistency_score_threshold=settings.evaluate_experimental_consistency.consistency_score_threshold,
     llm_mapping={

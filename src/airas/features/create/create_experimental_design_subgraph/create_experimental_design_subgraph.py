@@ -12,8 +12,11 @@ from airas.core.base import BaseSubgraph
 from airas.features.create.create_experimental_design_subgraph.input_data import (
     create_experimental_design_subgraph_input_data,
 )
-from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_details import (
-    generate_experiment_details,
+from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_design import (
+    generate_experiment_design,
+)
+from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_runs import (
+    generate_experiment_runs,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
@@ -30,13 +33,15 @@ create_experimental_design_timed = lambda f: time_node(create_str)(f)  # noqa: E
 
 
 class CreateExperimentalDesignLLMMapping(BaseModel):
-    generate_experiments: LLM_MODEL = DEFAULT_NODE_LLMS["generate_experiments"]
+    generate_experiment_design: LLM_MODEL = DEFAULT_NODE_LLMS[
+        "generate_experiment_design"
+    ]
 
 
 class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
-    consistency_feedback: list[str]
     github_repository_info: GitHubRepositoryInfo
+    # consistency_feedback: list[str]
 
 
 class CreateExperimentalDesignHiddenState(TypedDict): ...
@@ -116,11 +121,11 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
     #     }
 
     @create_experimental_design_timed
-    def _generate_experiment_details(
+    def _generate_experiment_design(
         self, state: CreateExperimentalDesignState
     ) -> dict[str, ResearchHypothesis]:
-        new_method = generate_experiment_details(
-            llm_name=self.llm_mapping.generate_experiments,
+        new_method = generate_experiment_design(
+            llm_name=self.llm_mapping.generate_experiment_design,
             new_method=state["new_method"],
             runner_type=cast(RunnerType, self.runner_type),
             num_models_to_use=self.num_models_to_use,
@@ -130,14 +135,27 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         )
         return {"new_method": new_method}
 
+    @create_experimental_design_timed
+    def _geneate_experiment_runs(
+        self, state: CreateExperimentalDesignState
+    ) -> dict[str, ResearchHypothesis]:
+        new_method = generate_experiment_runs(
+            new_method=state["new_method"],
+        )
+        return {"new_method": new_method}
+
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(CreateExperimentalDesignState)
         graph_builder.add_node(
-            "generate_experiment_details", self._generate_experiment_details
+            "generate_experiment_design", self._generate_experiment_design
+        )
+        graph_builder.add_node(
+            "generate_experiment_runs", self._geneate_experiment_runs
         )
 
-        graph_builder.add_edge(START, "generate_experiment_details")
-        graph_builder.add_edge("generate_experiment_details", END)
+        graph_builder.add_edge(START, "generate_experiment_design")
+        graph_builder.add_edge("generate_experiment_design", "generate_experiment_runs")
+        graph_builder.add_edge("generate_experiment_runs", END)
 
         return graph_builder.compile()
 

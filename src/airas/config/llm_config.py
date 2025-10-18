@@ -22,13 +22,11 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
 
     # --- features/create ---
     # CreateCodeSubgraph
-    "generate_base_code": BASE_MODEL,
-    "derive_specific_experiments": BASE_MODEL,
-    "validate_base_code": BASE_MODEL,
+    "generate_run_config": BASE_MODEL,
+    "generate_experiment_code": BASE_MODEL,
     "validate_experiment_code": BASE_MODEL,
     # CreateExperimentalDesignSubgraph
-    "generate_experiment_strategy": BASE_MODEL,
-    "generate_experiments": BASE_MODEL,
+    "generate_experiment_design": BASE_MODEL,
     # CreateMethodSubgraph
     "idea_generator": BASE_MODEL,
     "refine_idea": BASE_MODEL,

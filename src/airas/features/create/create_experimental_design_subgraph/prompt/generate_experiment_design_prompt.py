@@ -1,4 +1,4 @@
-generate_experiment_details_prompt = """\
+generate_experiment_design_prompt = """\
 You are an AI researcher. You will conduct experiments to demonstrate the superiority of the new method described in # New Methods. Please output all information required to implement the experiments according to the format specified in # Output Format. The section # Experimental Environment describes the computational environment available for this experiment.
 
 # Experimental Environment
@@ -27,7 +27,7 @@ You are an AI researcher. You will conduct experiments to demonstrate the superi
   - Select {{ num_datasets_to_use }} datasets to be used in the experiment and output them in a list format.
   - Refer to the provided “# DATASET LIST” for guidance, although datasets not included in the list are also acceptable.
   - If a new dataset is proposed as part of this study, return an empty list and describe its details in new_method.
-- new_method：
+- proposed_method：
   - Describe the proposed method and its implementation in detail.
   - Clearly state its objectives, theoretical background, components, and algorithmic procedures.
 - comparative_methods：
@@ -35,4 +35,6 @@ You are an AI researcher. You will conduct experiments to demonstrate the superi
   - For example, if the proposed method is a new optimization algorithm, comparative methods might include Adam or AdamW.
   - If the proposal is a new LLM architecture, comparative methods might include Llama 4 or Qwen.
 - hyperparameters_to_search：
-  - List all hyperparameters to be explored, including only their names, in a list format."""
+  - Output a list of objects, where each object contains "name" (hyperparameter name) and "range" (search range).
+  - For example: [{"name": "learning_rate", "range": "0.001-0.01"}, {"name": "batch_size", "range": "16,32,64"}, {"name": "weight_decay", "range": "0.0001-0.001"}]
+  - Search ranges can be expressed as ranges (e.g., "0.001-0.01") or discrete values (e.g., "16,32,64")."""

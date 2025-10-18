@@ -57,7 +57,7 @@ dummy_github_repo = GitHubRepositoryInfo(
     branch_name="research",
 )
 
-create_code_subgraph_input_data = {
+execute_experiment_subgraph_input_data = {
     "github_repository_info": dummy_github_repo,
     "new_method": dummy_research_hypothesis,
 }
