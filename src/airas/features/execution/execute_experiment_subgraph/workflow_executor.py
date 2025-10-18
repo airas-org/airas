@@ -4,9 +4,7 @@ from dataclasses import dataclass
 from logging import getLogger
 from typing import Any, Optional
 
-from airas.config.runner_type_info import RunnerType, runner_info_dict
 from airas.services.api_client.github_client import GithubClient
-from airas.types.github import GitHubRepositoryInfo
 
 logger = getLogger(__name__)
 
@@ -175,84 +173,3 @@ class WorkflowExecutor:
         logger.debug(f"Workflow status: {status}, conclusion: {conclusion}")
 
         return status == "completed" and conclusion is not None
-
-
-async def _execute_all_workflows(
-    executor: WorkflowExecutor,
-    github_owner: str,
-    repository_name: str,
-    experiment_branches: list[str],
-    workflow_file: str,
-    inputs: dict[str, Any],
-) -> dict[str, WorkflowResult]:
-    tasks = []
-    # Execute the same workflow across multiple branches in parallel
-    for branch_name in experiment_branches:
-        task = executor.execute_workflow(
-            github_owner,
-            repository_name,
-            branch_name,
-            workflow_file,
-            inputs,
-        )
-        tasks.append((branch_name, task))
-
-    results_list = await asyncio.gather(*[task for _, task in tasks])
-
-    results = {}
-    for (branch_name, _), result in zip(tasks, results_list, strict=True):
-        results[branch_name] = result
-        if result.success:
-            logger.info(f"Workflow for branch '{branch_name}' completed successfully")
-        else:
-            logger.error(
-                f"Workflow for branch '{branch_name}' failed: {result.error_message}"
-            )
-
-    return results
-
-
-def execute_github_actions_workflow(
-    github_repository: GitHubRepositoryInfo,
-    experiment_iteration: int,
-    runner_type: RunnerType,  # noqa: F821
-    experiment_branches: list[str],
-    workflow_file: str = "run_experiment_with_claude_code.yml",
-    client: Optional[GithubClient] = None,
-) -> bool:
-    if not experiment_branches:
-        logger.warning("No experiment branches provided")
-        return False
-
-    executor = WorkflowExecutor(client)
-    runner_type_setting = runner_info_dict[runner_type]["runner_setting"]
-
-    logger.info(f"Executing workflows for {len(experiment_branches)} branches")
-
-    inputs = {
-        "experiment_iteration": str(experiment_iteration),
-        "runner_type": runner_type_setting,
-    }
-
-    results = asyncio.run(
-        _execute_all_workflows(
-            executor,
-            github_repository.github_owner,
-            github_repository.repository_name,
-            experiment_branches,
-            workflow_file,
-            inputs,
-        )
-    )
-
-    all_success = all(result.success for result in results.values())
-
-    if all_success:
-        logger.info(f"All {len(experiment_branches)} workflows completed successfully")
-    else:
-        failed_branches = [
-            branch for branch, result in results.items() if not result.success
-        ]
-        logger.error(f"Some workflows failed: {failed_branches}")
-
-    return all_success

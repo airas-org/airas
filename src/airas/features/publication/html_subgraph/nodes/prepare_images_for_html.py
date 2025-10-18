@@ -2,7 +2,7 @@ import asyncio
 import json
 from logging import getLogger
 
-from airas.features.execution.github_actions_executor_subgraph.nodes.execute_github_actions_workflow import (
+from airas.features.execution.execute_experiment_subgraph.workflow_executor import (
     WorkflowExecutor,
 )
 from airas.services.api_client.github_client import GithubClient
