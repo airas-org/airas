@@ -1,44 +1,589 @@
 MODEL_LIST = {
     "Large Language Models": {
-        # Llama
-        # https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E
-        "Llama-4-Scout-17B-16E": "Llama 4, developed by Meta, is a new generation of natively multimodal AI models that leverage a Mixture-of-Experts (MoE) architecture to achieve state-of-the-art performance in both text and image understanding. Marking the beginning of a new era for the Llama ecosystem, the series introduces two models: Llama 4 Scout, a 17-billion-parameter model with 16 experts, and Llama 4 Maverick, also with 17 billion parameters but incorporating 128 experts. These auto-regressive language models employ early fusion to enable seamless multimodal processing, allowing them to integrate text and image information natively.",
-        # https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E
-        "Llama-4-Maverick-17B-128E": "The Llama 4 collection, developed by Meta, represents a new generation of natively multimodal AI models designed to enable both text and multimodal experiences. By leveraging a Mixture-of-Experts (MoE) architecture, these models deliver industry-leading performance in understanding text and images. Marking the beginning of a new era for the Llama ecosystem, the series introduces two efficient models: Llama 4 Scout, a 17-billion-parameter model with 16 experts, and Llama 4 Maverick, also with 17 billion parameters but featuring 128 experts. Built as auto-regressive language models, the Llama 4 series incorporates early fusion to achieve seamless and native multimodality.",
-        # Qwen
-        ## https://huggingface.co/Qwen/Qwen3-0.6B
-        "Qwen3-0.6B": "Qwen3-0.6B is a compact causal language model with 0.6B parameters, offering dense and MoE variants, improved reasoning, seamless mode switching, strong alignment, agent capabilities, multilingual support, and 32K context length.",
-        ## https://huggingface.co/Qwen/Qwen3-1.7B
-        "Qwen3-1.7B": "Qwen3-1.7B is a next-generation causal language model with 1.7B parameters, offering dense and MoE variants, enhanced reasoning, seamless mode switching, strong alignment, agent capabilities, multilingual support, and long-context processing up to 32K tokens.",
-        ## https://huggingface.co/Qwen/Qwen3-4B
-        "Qwen3-4B": "Qwen3 is the latest generation of large language models, featuring both dense and MoE variants with enhanced reasoning, instruction-following, agent capabilities, and multilingual support, including seamless mode switching, superior alignment, and long-context processing up to 131K tokens.",
-        ## https://huggingface.co/Qwen/Qwen3-8B
-        "Qwen3-8B": "Qwen3-8B is an advanced causal language model with 8.2B parameters, featuring dense and MoE variants, enhanced reasoning, seamless mode switching, strong alignment, agent capabilities, multilingual support, and long-context processing up to 131K tokens.",
-        ## https://huggingface.co/Qwen/Qwen3-14B
-        "Qwen3-14B": "Qwen3-14B is a large-scale causal language model with 14.8B parameters, offering dense and MoE variants, advanced reasoning, seamless mode switching, strong alignment, agent capabilities, multilingual support, and extended context handling up to 131K tokens.",
-        ## https://huggingface.co/Qwen/Qwen3-32B
-        "Qwen3-32B": "Qwen3-32B is a powerful causal language model with 32.8B parameters, featuring dense and MoE variants, enhanced reasoning, seamless mode switching, strong alignment, advanced agent capabilities, multilingual support, and long-context processing up to 131K tokens.",
+        # Llama 4
+        "Llama-4-Scout-17B-16E": {
+            "model_parameters": {
+                "total_parameters": "109b",
+                "active_parameters": "17b",
+            },
+            "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E",
+            "language_distribution": "Multilingual",
+            "input_modalities": ["text", "image"],
+            "output_modalities": ["text"],
+            "dependent packages": [],
+            "code": """\
+""",
+            "citation": """\
+""",
+        },
+        "Llama-4-Maverick-17B-128E": {
+            "model_parameters": {
+                "total_parameters": "400b",
+                "active_parameters": "17b",
+            },
+            "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+            "language_distribution": "Multilingual",
+            "input_modalities": ["text", "image"],
+            "output_modalities": ["text"],
+            "dependent packages": [],
+            "code": """\
+""",
+            "citation": """\
+""",
+        },
+        # Qwen 3
+        "Qwen3-0.6B": {
+            "model_parameters": "0.6b",
+            "model_architecture": "Transformer",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/Qwen/Qwen3-0.6B",
+            "language_distribution": "Multilingual",
+            "input_modalities": ["text"],
+            "output_modalities": ["text"],
+            "dependent packages": ["transformers>=4.51.0"],
+            "code": """\
+from transformers import AutoModelForCausalLM, AutoTokenizer
+model_name = "Qwen/Qwen3-0.6B"
+
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    torch_dtype="auto",
+    device_map="auto"
+)
+
+prompt = "Give me a short introduction to large language model."
+messages = [
+    {"role": "user", "content": prompt}
+]
+text = tokenizer.apply_chat_template(
+    messages,
+    tokenize=False,
+    add_generation_prompt=True,
+    enable_thinking=True # Switches between thinking and non-thinking modes. Default is True.
+)
+model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
+
+generated_ids = model.generate(
+    **model_inputs,
+    max_new_tokens=32768
+)
+output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
+            "citation": """\
+@misc{qwen3technicalreport,
+      title={Qwen3 Technical Report},
+      author={Qwen Team},
+      year={2025},
+      eprint={2505.09388},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2505.09388},
+}""",
+        },
+        "Qwen3-1.7B": {
+            "model_parameters": "1.7b",
+            "model_architecture": "Transformer",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/Qwen/Qwen3-1.7B",
+            "language_distribution": "Multilingual",
+            "input_modalities": ["text"],
+            "output_modalities": ["text"],
+            "dependent packages": ["transformers>=4.51.0"],
+            "code": """\
+from transformers import AutoModelForCausalLM, AutoTokenizer
+model_name = "Qwen/Qwen3-1.7B"
+
+# load the tokenizer and the model
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    torch_dtype="auto",
+    device_map="auto"
+)
+
+# prepare the model input
+prompt = "Give me a short introduction to large language model."
+messages = [
+    {"role": "user", "content": prompt}
+]
+text = tokenizer.apply_chat_template(
+    messages,
+    tokenize=False,
+    add_generation_prompt=True,
+    enable_thinking=True # Switches between thinking and non-thinking modes. Default is True.
+)
+model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
+
+# conduct text completion
+generated_ids = model.generate(
+    **model_inputs,
+    max_new_tokens=32768
+)
+output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
+            "citation": """\
+@misc{qwen3technicalreport,
+      title={Qwen3 Technical Report},
+      author={Qwen Team},
+      year={2025},
+      eprint={2505.09388},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2505.09388},
+}""",
+        },
+        "Qwen3-4B": {
+            "model_parameters": "4b",
+            "model_architecture": "Transformer",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/Qwen/Qwen3-4B",
+            "language_distribution": "Multilingual",
+            "input_modalities": ["text"],
+            "output_modalities": ["text"],
+            "dependent packages": ["transformers>=4.51.0"],
+            "code": """\
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model_name = "Qwen/Qwen3-4B"
+
+# load the tokenizer and the model
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    torch_dtype="auto",
+    device_map="auto"
+)
+
+# prepare the model input
+prompt = "Give me a short introduction to large language model."
+messages = [
+    {"role": "user", "content": prompt}
+]
+text = tokenizer.apply_chat_template(
+    messages,
+    tokenize=False,
+    add_generation_prompt=True,
+    enable_thinking=True # Switches between thinking and non-thinking modes. Default is True.
+)
+model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
+
+# conduct text completion
+generated_ids = model.generate(
+    **model_inputs,
+    max_new_tokens=32768
+)
+output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
+            "citation": """\
+@misc{qwen3technicalreport,
+      title={Qwen3 Technical Report},
+      author={Qwen Team},
+      year={2025},
+      eprint={2505.09388},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2505.09388},
+}""",
+        },
+        "Qwen3-8B": {
+            "model_parameters": "8b",
+            "model_architecture": "Transformer",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/Qwen/Qwen3-8B",
+            "language_distribution": "Multilingual",
+            "input_modalities": ["text"],
+            "output_modalities": ["text"],
+            "dependent packages": ["transformers>=4.51.0"],
+            "code": """\
+from transformers import AutoModelForCausalLM, AutoTokenizer
+model_name = "Qwen/Qwen3-8B"
+
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    torch_dtype="auto",
+    device_map="auto"
+)
+
+prompt = "Give me a short introduction to large language model."
+messages = [
+    {"role": "user", "content": prompt}
+]
+text = tokenizer.apply_chat_template(
+    messages,
+    tokenize=False,
+    add_generation_prompt=True,
+    enable_thinking=True # Switches between thinking and non-thinking modes. Default is True.
+)
+model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
+
+generated_ids = model.generate(
+    **model_inputs,
+    max_new_tokens=32768
+)
+output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
+            "citation": """\
+@misc{qwen3technicalreport,
+      title={Qwen3 Technical Report},
+      author={Qwen Team},
+      year={2025},
+      eprint={2505.09388},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2505.09388},
+}""",
+        },
+        "Qwen3-14B": {
+            "model_parameters": "14b",
+            "model_architecture": "Transformer",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/Qwen/Qwen3-14B",
+            "language_distribution": "",
+            "input_modalities": ["text"],
+            "output_modalities": ["text"],
+            "dependent packages": ["transformers>=4.51.0"],
+            "code": """\
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model_name = "Qwen/Qwen3-14B"
+
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    torch_dtype="auto",
+    device_map="auto"
+)
+
+prompt = "Give me a short introduction to large language model."
+messages = [
+    {"role": "user", "content": prompt}
+]
+text = tokenizer.apply_chat_template(
+    messages,
+    tokenize=False,
+    add_generation_prompt=True,
+    enable_thinking=True # Switches between thinking and non-thinking modes. Default is True.
+)
+model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
+
+generated_ids = model.generate(
+    **model_inputs,
+    max_new_tokens=32768
+)
+output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
+            "citation": """\
+@misc{qwen3technicalreport,
+      title={Qwen3 Technical Report},
+      author={Qwen Team},
+      year={2025},
+      eprint={2505.09388},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2505.09388},
+}""",
+        },
+        "Qwen3-32B": {
+            "model_parameters": "32.8b",
+            "model_architecture": "Transformer",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/Qwen/Qwen3-32B",
+            "language_distribution": "",
+            "input_modalities": ["text"],
+            "output_modalities": ["text"],
+            "dependent packages": ["transformers>=4.51.0"],
+            "code": """\
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model_name = "Qwen/Qwen3-32B"
+
+# load the tokenizer and the model
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    torch_dtype="auto",
+    device_map="auto"
+)
+
+# prepare the model input
+prompt = "Give me a short introduction to large language model."
+messages = [
+    {"role": "user", "content": prompt}
+]
+text = tokenizer.apply_chat_template(
+    messages,
+    tokenize=False,
+    add_generation_prompt=True,
+    enable_thinking=True # Switches between thinking and non-thinking modes. Default is True.
+)
+model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
+
+# conduct text completion
+generated_ids = model.generate(
+    **model_inputs,
+    max_new_tokens=32768
+)
+output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
+            "citation": """\
+@misc{qwen3technicalreport,
+      title={Qwen3 Technical Report},
+      author={Qwen Team},
+      year={2025},
+      eprint={2505.09388},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2505.09388},
+}""",
+        },
         # Deepseek
-        # https://huggingface.co/deepseek-ai/DeepSeek-V3
-        "DeepSeek-v3": "DeepSeek-V3 is a 671B-parameter MoE language model (37B active per token) featuring MLA and DeepSeekMoE architectures, auxiliary-loss-free load balancing, and multi-token prediction, trained on 14.8T tokens with efficient GPU usage, achieving performance comparable to top closed-source models while maintaining stable training.",
-        # https://huggingface.co/deepseek-ai/DeepSeek-V3.1
-        "DeepSeek-V3.1": "DeepSeek-V3.1 extends DeepSeek-V3 with larger long-context training (630B tokens at 32K and 209B tokens at 128K) and adopts FP8 data formats for efficiency and compatibility.",
-        # https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp
-        "DeepSeek-V3.2-Exp": "DeepSeek-V3.2-Exp, built on V3.1-Terminus, introduces Sparse Attention to improve training and inference efficiency for long-context processing as part of ongoing research into more efficient transformer architectures.",
-        # Mistral
-        # "Mistral" : "",
-        # "Mixtral-8x7B": "",
+        "DeepSeek-v3": {
+            "model_parameters": {
+                "total_parameters": "671b",
+                "active_parameters": "37b",
+            },
+            "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3",
+            "language_distribution": "Multilingual",
+            "input_modalities": ["text"],
+            "output_modalities": ["text"],
+            "dependent packages": [],
+            "code": """\
+""",
+            "citation": """\
+@misc{deepseekai2024deepseekv3technicalreport,
+      title={DeepSeek-V3 Technical Report},
+      author={DeepSeek-AI},
+      year={2024},
+      eprint={2412.19437},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2412.19437},
+}""",
+        },
+        "DeepSeek-V3.1": {
+            "model_parameters": {
+                "total_parameters": "671B",
+                "active_parameters": "37B",
+            },
+            "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+            "language_distribution": "Multilingual",
+            "input_modalities": ["Text"],
+            "output_modalities": ["Text"],
+            "dependent packages": [],
+            "code": """\
+""",
+            "citation": """\
+@misc{deepseekai2024deepseekv3technicalreport,
+      title={DeepSeek-V3 Technical Report},
+      author={DeepSeek-AI},
+      year={2024},
+      eprint={2412.19437},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2412.19437},
+}""",
+        },
+        "DeepSeek-V3.2-Exp": {
+            "model_parameters": {
+                "total_parameters": "671B",
+                "active_parameters": "37B",
+            },
+            "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
+            "language_distribution": "Multilingual",
+            "input_modalities": ["Text"],
+            "output_modalities": ["Text"],
+            "dependent packages": [],
+            "code": """\
+""",
+            "citation": """\
+@misc{deepseekai2024deepseekv32,
+      title={DeepSeek-V3.2-Exp: Boosting Long-Context Efficiency with DeepSeek Sparse Attention},
+      author={DeepSeek-AI},
+      year={2025},
+}""",
+        },
         # gpt-oss
-        # https://huggingface.co/openai/gpt-oss-20b
-        "gpt-oss-20b": "The gpt-oss series, introduced by OpenAI, consists of open-weight models designed to support powerful reasoning, agentic tasks, and a wide range of developer use cases. Two versions are being released: gpt-oss-120b, a 117-billion-parameter model with 5.1 billion active parameters optimized for production-level, general-purpose, high-reasoning tasks that can fit into a single 80GB GPU such as the NVIDIA H100 or AMD MI300X; and gpt-oss-20b, a 21-billion-parameter model with 3.6 billion active parameters intended for lower latency, as well as local or specialized applications. Both models were trained using OpenAI’s harmony response format and must be used with this format to function correctly.",
+        "gpt-oss-20b": {
+            "model_parameters": {
+                "total_parameters": "21b",
+                "active_parameters": "3.6b",
+            },
+            "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/openai/gpt-oss-20b",
+            "context_length": "",
+            "language_distribution": "multilingual",
+            "input_modalities": "text",
+            "output_modalities": "text",
+            "dependent packages": ["accelerate", "transformers", "kernels"],
+            "code": """\
+from transformers import AutoModelForCausalLM, AutoTokenizer
+model_id = "openai/gpt-oss-20b"
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    device_map="auto",
+    torch_dtype="auto",
+)
+messages = [
+    {"role": "user", "content": "How many rs are in the word 'strawberry'?"},
+]
+
+inputs = tokenizer.apply_chat_template(
+    messages,
+    add_generation_prompt=True,
+    return_tensors="pt",
+    return_dict=True,
+).to(model.device)
+
+generated = model.generate(**inputs, max_new_tokens=100)
+print(tokenizer.decode(generated[0][inputs["input_ids"].shape[-1]:]))
+""",
+            "citation": """\
+@misc{openai2025gptoss120bgptoss20bmodel,
+      title={gpt-oss-120b & gpt-oss-20b Model Card},
+      author={OpenAI},
+      year={2025},
+      eprint={2508.10925},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2508.10925},
+}""",
+        },
         # Genma
-        # https://huggingface.co/google/gemma-3-1b-it
-        "gemma-3-1b-it": "Gemma is a family of lightweight open models from Google, built on the same research as Gemini. The latest Gemma 3 models are multimodal, supporting both text and image inputs with text generation outputs. They feature a 128K context window (32K for the 1B model), multilingual support in over 140 languages, and come in multiple sizes, making them suitable for tasks such as question answering, summarization, reasoning, and image understanding. Their smaller size allows deployment on laptops, desktops, or personal cloud infrastructure, broadening access to advanced AI. Inputs include text and images normalized to 896×896 resolution, while outputs are generated text with up to 8192 tokens of context.",
-        # https://huggingface.co/google/gemma-3-4b-it
-        "gemma-3-4b-it": "Gemma is a family of lightweight open models from Google, built on the same research behind the Gemini models. The latest Gemma 3 models are multimodal, capable of processing both text and images as input and generating text as output, with open weights for pre-trained and instruction-tuned variants. They offer a 128K context window (32K for the 1B model), support over 140 languages, and come in more sizes than earlier versions, making them suitable for tasks like question answering, summarization, reasoning, and image understanding. Thanks to their smaller size, Gemma models can run on laptops, desktops, or personal cloud setups, expanding access to advanced AI. Inputs include text and images (normalized to 896×896 and encoded to 256 tokens each), while outputs are generated text with up to 8192 tokens.",
-        # https://huggingface.co/google/gemma-3-27b-it
-        "gemma-3-27b-it": "Gemma is a family of lightweight open models from Google, built on the same research as the Gemini models. The Gemma 3 series is multimodal, able to take both text and image inputs and generate text outputs, with open weights available for both pre-trained and instruction-tuned versions. They feature a 128K context window (32K for the 1B model), multilingual support in more than 140 languages, and come in a wider range of sizes than previous releases. Well-suited for tasks such as question answering, summarization, reasoning, and image understanding, Gemma models are compact enough to run on laptops, desktops, or personal cloud setups, making advanced AI more broadly accessible. Inputs include text strings or images normalized to 896×896 and encoded into 256 tokens each, while outputs are generated text of up to 8192 tokens.",
-        # BERT
+        "gemma-3-1b-it": {
+            "model_parameters": "1b",
+            "model_architecture": "Transformer",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/google/gemma-3-1b-it",
+            "language_distribution": "Multilingual",
+            "input_modalities": ["text", "image"],
+            "output_modalities": ["text"],
+            "dependent packages": ["transformers"],
+            "code": """\
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("google/gemma-3-1b-it")
+model = AutoModelForCausalLM.from_pretrained("google/gemma-3-1b-it")
+messages = [
+    {"role": "user", "content": "自己紹介してください"},
+]
+inputs = tokenizer.apply_chat_template(
+	messages,
+	add_generation_prompt=True,
+	tokenize=True,
+	return_dict=True,
+	return_tensors="pt",
+).to(model.device)
+
+outputs = model.generate(**inputs, max_new_tokens=4000)
+print(tokenizer.decode(outputs[0][inputs["input_ids"].shape[-1]:]))
+""",
+            "citation": """\
+@article{gemma_2025,
+    title={Gemma 3},
+    url={https://goo.gle/Gemma3Report},
+    publisher={Kaggle},
+    author={Gemma Team},
+    year={2025}
+}""",
+        },
+        "gemma-3-4b-it": {
+            "model_parameters": "4b",
+            "model_architecture": "Transformer",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/google/gemma-3-4b-it",
+            "language_distribution": "Multilingual",
+            "input_modalities": ["text", "image"],
+            "output_modalities": ["text"],
+            "dependent packages": ["transformers"],
+            "code": """\
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("google/gemma-3-4b-it")
+model = AutoModelForCausalLM.from_pretrained("google/gemma-3-4b-it")
+messages = [
+    {"role": "user", "content": "自己紹介してください"},
+]
+inputs = tokenizer.apply_chat_template(
+	messages,
+	add_generation_prompt=True,
+	tokenize=True,
+	return_dict=True,
+	return_tensors="pt",
+).to(model.device)
+
+outputs = model.generate(**inputs, max_new_tokens=4000)
+print(tokenizer.decode(outputs[0][inputs["input_ids"].shape[-1]:]))
+""",
+            "citation": """\
+@article{gemma_2025,
+    title={Gemma 3},
+    url={https://goo.gle/Gemma3Report},
+    publisher={Kaggle},
+    author={Gemma Team},
+    year={2025}
+}""",
+        },
+        "gemma-3-27b-it": {
+            "model_parameters": "27b",
+            "model_architecture": "Transformer",
+            "training_data_sources": "",
+            "huggingface_url": "https://huggingface.co/google/gemma-3-27b-it",
+            "language_distribution": "Multilingual",
+            "input_modalities": ["text", "image"],
+            "output_modalities": ["text"],
+            "dependent packages": ["transformers"],
+            "code": """\
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("google/gemma-3-27b-it")
+model = AutoModelForCausalLM.from_pretrained("google/gemma-3-27b-it")
+messages = [
+    {"role": "user", "content": "自己紹介してください"},
+]
+inputs = tokenizer.apply_chat_template(
+	messages,
+	add_generation_prompt=True,
+	tokenize=True,
+	return_dict=True,
+	return_tensors="pt",
+).to(model.device)
+
+outputs = model.generate(**inputs, max_new_tokens=4000)
+print(tokenizer.decode(outputs[0][inputs["input_ids"].shape[-1]:]))
+""",
+            "citation": """\
+@article{gemma_2025,
+    title={Gemma 3},
+    url={https://goo.gle/Gemma3Report},
+    publisher={Kaggle},
+    author={Gemma Team},
+    year={2025}
+}""",
+        },
+        # Mistral
+        # Sample
+        #         "sample": {
+        #             "model_parameters": "",
+        #             "model_architecture": "",
+        #             "training_data_sources": "",
+        #             "huggingface_url": "",
+        #             "language_distribution": "",
+        #             "input_modalities": [],
+        #             "output_modalities": [],
+        #             "dependent packages": [],
+        #             "code": """\
+        # """,
+        #             "citation": """\
+        # """
+        #         },
     },
     "Vision Language Models": {},
     "Vision Language Action Models": {},
