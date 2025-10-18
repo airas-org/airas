@@ -157,13 +157,11 @@ async def _execute_full_experiments_async(
 async def _execute_evaluation_async(
     github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
-    runner_type: RunnerType,
     workflow_file: str,
     github_client: GithubClient | None = None,
 ) -> bool:
     client = github_client or GithubClient()
     executor = WorkflowExecutor(client)
-    runner_type_setting = runner_info_dict[runner_type]["runner_setting"]
 
     branch_name = github_repository.branch_name
 
@@ -171,7 +169,6 @@ async def _execute_evaluation_async(
 
     inputs = {
         "experiment_iteration": str(experiment_iteration),
-        "runner_type": runner_type_setting,
     }
 
     result = await _execute_workflow_on_branch(
@@ -229,7 +226,6 @@ def execute_full_experiments(
 def execute_evaluation(
     github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
-    runner_type: RunnerType,
     workflow_file: str = "run_evaluation_with_open_code.yml",
     github_client: GithubClient | None = None,
 ) -> bool:
@@ -237,7 +233,6 @@ def execute_evaluation(
         _execute_evaluation_async(
             github_repository,
             experiment_iteration,
-            runner_type,
             workflow_file,
             github_client,
         )
