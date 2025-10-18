@@ -9,7 +9,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLMFacadeClient,
 )
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_hypothesis import ExperimentEvaluation, ResearchHypothesis
 from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
@@ -25,45 +25,62 @@ def evaluate_experimental_consistency(
     prompt_template: str,
     new_method: ResearchHypothesis,
     github_repository_info: GitHubRepositoryInfo,
-    existing_feedback: list[str] | None = None,
-    existing_scores: list[int] | None = None,
+    consistency_score_threshold: int = 7,
     client: LLMFacadeClient | None = None,
-) -> tuple[bool, list[str], list[int]]:
+) -> ResearchHypothesis:
     client = client or LLMFacadeClient(llm_name=llm_name)
-
     env = Environment()
     template = env.from_string(prompt_template)
 
-    messages = template.render({"new_method": new_method.model_dump()})
+    if (
+        not new_method.experimental_design
+        or not new_method.experimental_design.experiments
+    ):
+        logger.warning("No experiments to evaluate")
+        return new_method
 
-    output, _cost = client.structured_outputs(message=messages, data_model=LLMOutput)
+    for experiment in new_method.experimental_design.experiments:
+        if not experiment.results:
+            logger.warning(
+                f"Experiment {experiment.experiment_id} has no results, skipping evaluation"
+            )
+            continue
 
-    if output is None:
-        raise ValueError(
-            "No response from LLM in evaluate_experimental_consistency node."
+        messages = template.render(
+            {
+                "new_method": new_method.model_dump(),
+                "current_experiment": experiment.model_dump(),
+            }
         )
-    save_io_on_github(
-        github_repository_info=github_repository_info,
-        input=messages,
-        output=json.dumps(output, ensure_ascii=False, indent=4),
-        subgraph_name="evaluate_experimental_consistency_subgraph",
-        node_name="evaluate_experimental_consistency",
-        llm_name=llm_name,
-    )
-    if existing_feedback is None:
-        existing_feedback = []
-    if existing_scores is None:
-        existing_scores = []
 
-    consistency_score = output["consistency_score"]
-    updated_scores = existing_scores + [consistency_score]
+        output, _ = client.structured_outputs(message=messages, data_model=LLMOutput)
 
-    # NOTE: If score is high enough, append empty string to avoid side effects
-    if consistency_score >= 7:
-        is_experiment_consistent = True
-        updated_feedback = existing_feedback + [""]
-    else:
-        is_experiment_consistent = False
-        updated_feedback = existing_feedback + [output["consistency_feedback"]]
+        if output is None:
+            logger.error(
+                f"No response from LLM for experiment {experiment.experiment_id}"
+            )
+            continue
 
-    return (is_experiment_consistent, updated_feedback, updated_scores)
+        save_io_on_github(
+            github_repository_info=github_repository_info,
+            input=messages,
+            output=json.dumps(output, ensure_ascii=False, indent=4),
+            subgraph_name="evaluate_experimental_consistency_subgraph",
+            node_name=f"evaluate_experimental_consistency_{experiment.experiment_id}",
+        )
+
+        consistency_score = output["consistency_score"]
+        is_selected = consistency_score >= consistency_score_threshold
+
+        experiment.evaluation = ExperimentEvaluation(
+            consistency_score=consistency_score,
+            consistency_feedback=output["consistency_feedback"],
+            is_selected_for_paper=is_selected,
+        )
+
+        logger.info(
+            f"Experiment {experiment.experiment_id}: score={consistency_score}, "
+            f"selected={is_selected}"
+        )
+
+    return new_method

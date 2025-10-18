@@ -22,12 +22,11 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
 
     # --- features/create ---
     # CreateCodeSubgraph
+    "generate_run_config": BASE_MODEL,
     "generate_experiment_code": BASE_MODEL,
-    "convert_code_to_scripts": BASE_MODEL,
-    "validate_full_experiment_code": BASE_MODEL,
+    "validate_experiment_code": BASE_MODEL,
     # CreateExperimentalDesignSubgraph
-    "generate_experiment_strategy": BASE_MODEL,
-    "generate_experiment_details": BASE_MODEL,
+    "generate_experiment_design": BASE_MODEL,
     # CreateMethodSubgraph
     "idea_generator": BASE_MODEL,
     "refine_idea": BASE_MODEL,
@@ -75,7 +74,5 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "convert_to_html": BASE_MODEL,
     # LatexSubgraph
     "convert_to_latex": BASE_MODEL,
-    "check_execution_successful": BASE_MODEL,
-    "fix_latex_text": BASE_MODEL,
 }
 # fmt: on

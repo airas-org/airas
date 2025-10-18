@@ -44,16 +44,16 @@ class CreateBranchSubgraph(BaseSubgraph):
     InputState = CreateBranchSubgraphInputState
     OutputState = CreateBranchSubgraphOutputState
 
-    def __init__(self, new_branch_name: str, restart_from_subgraph: str):
+    def __init__(self, new_branch_name: str, start_subgraph_name: str):
         check_api_key(github_personal_access_token_check=True)
         self.new_branch_name = new_branch_name
-        self.restart_from_subgraph = restart_from_subgraph
+        self.start_subgraph_name = start_subgraph_name
 
     @create_branch_timed
     def _find_commit_sha(self, state: CreateBranchSubgraphState) -> dict[str, str]:
         target_sha = find_commit_sha(
             github_repository_info=state["github_repository_info"],
-            subgraph_name=self.restart_from_subgraph,
+            subgraph_name=self.start_subgraph_name,
         )
         return {"target_sha": target_sha}
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     parser.add_argument("github_repository", help="Your GitHub repository")
     parser.add_argument("branch_name", help="Your Branch name")
     parser.add_argument("new_branch_name", help="Name of new branch to create")
-    parser.add_argument("restart_from_subgraph", help="Subgraph name to restart from")
+    parser.add_argument("start_subgraph_name", help="Subgraph name to restart from")
 
     args = parser.parse_args()
 
@@ -104,6 +104,6 @@ if __name__ == "__main__":
 
     result = CreateBranchSubgraph(
         new_branch_name=args.new_branch_name,
-        restart_from_subgraph=args.restart_from_subgraph,
+        start_subgraph_name=args.start_subgraph_name,
     ).run(state)
     print(f"result: {result}")

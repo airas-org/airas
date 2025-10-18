@@ -50,11 +50,11 @@ def check_api_key(
             )
 
     if github_personal_access_token_check:
-        if not os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN"):
+        if not os.getenv("GH_PERSONAL_ACCESS_TOKEN"):
             missing_keys.append(
                 {
                     "name": "GitHub Personal Access Token",
-                    "env": "GITHUB_PERSONAL_ACCESS_TOKEN",
+                    "env": "GH_PERSONAL_ACCESS_TOKEN",
                     "url": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token",
                 }
             )

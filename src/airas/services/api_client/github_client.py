@@ -1,9 +1,11 @@
+import asyncio
 import base64
 import logging
 import os
 from datetime import datetime, timezone
 from typing import Any, Literal, Protocol, runtime_checkable
 
+import httpx
 import requests
 from nacl import public
 from tenacity import (
@@ -63,7 +65,7 @@ class GithubClient(BaseHTTPClient):
     ) -> None:
         auth_headers = {
             "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN')}",
+            "Authorization": f"Bearer {os.getenv('GH_PERSONAL_ACCESS_TOKEN')}",
             "X-GitHub-Api-Version": "2022-11-28",
         }
         super().__init__(
@@ -73,7 +75,9 @@ class GithubClient(BaseHTTPClient):
         self._parser = parser or ResponseParser()
 
     @staticmethod
-    def _raise_for_status(response: requests.Response, path: str) -> None:
+    def _raise_for_status(
+        response: requests.Response | httpx.Response, path: str
+    ) -> None:
         code = response.status_code
 
         if 200 <= code < 300:
@@ -866,6 +870,330 @@ class GithubClient(BaseHTTPClient):
             case 404:
                 logger.error(f"Repository not found (404): {path}")
                 raise GithubClientFatalError(f"Repository not found (404): {path}")
+            case _:
+                self._raise_for_status(response, path)
+                return False
+
+    # --------------------------------------------------
+    # Async Branch Methods
+    # --------------------------------------------------
+
+    async def aget_branch(
+        self,
+        github_owner: str,
+        repository_name: str,
+        branch_name: str,
+    ) -> dict | None:
+        # https://docs.github.com/ja/rest/branches/branches?apiVersion=2022-11-28#get-a-branch
+        # For public repositories, no access token is required.
+        path = f"/repos/{github_owner}/{repository_name}/branches/{branch_name}"
+
+        response = await self.aget(path=path)
+        match response.status_code:
+            case 200:
+                logger.info("The specified branch exists (200).")
+                response = self._parser.parse(response, as_="json")
+                return response
+            case 301:
+                logger.warning(f"Moved permanently: {path} (301).")
+                return None  # NOTE: Returning None is intentional; a missing branch is an expected case.
+            case 404:
+                logger.warning(f"Branch not found: {path} (404).")
+                return None
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
+    async def acreate_branch(
+        self,
+        github_owner: str,
+        repository_name: str,
+        branch_name: str,
+        from_sha: str,
+    ) -> bool:
+        path = f"/repos/{github_owner}/{repository_name}/git/refs"
+        payload = {"ref": f"refs/heads/{branch_name}", "sha": from_sha}
+
+        response = await self.apost(path=path, json=payload)
+        match response.status_code:
+            case 201:
+                logger.info(f"Branch created (201): {branch_name}")
+                return True
+            case 409:
+                logger.error(f"Conflict creating branch (409): {path}")
+                raise GithubClientFatalError(f"Conflict creating branch (409): {path}")
+            case 422:
+                logger.error(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
+                raise GithubClientFatalError(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
+            case _:
+                self._raise_for_status(response, path)
+                return False
+
+    # --------------------------------------------------
+    # Async GitHub Actions Methods
+    # --------------------------------------------------
+
+    async def acreate_workflow_dispatch(
+        self,
+        github_owner: str,
+        repository_name: str,
+        workflow_file_name: str,
+        ref: str,
+        inputs: dict | None = None,
+    ) -> bool:
+        path = f"/repos/{github_owner}/{repository_name}/actions/workflows/{workflow_file_name}/dispatches"
+        json = {"ref": ref, **({"inputs": inputs} if inputs else {})}
+
+        response = await self.apost(path=path, json=json)
+        match response.status_code:
+            case 204:
+                logger.info("Workflow dispatch accepted.")
+                return True
+            case 403:
+                logger.error(f"Access forbidden (403): {path}")
+                raise GithubClientFatalError(f"Access forbidden (403): {path}")
+            case 404:
+                logger.error(f"Workflow or repository not found (404): {path}")
+                raise GithubClientFatalError(
+                    f"Workflow or repository not found (404): {path}"
+                )
+            case 422:
+                logger.error(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
+                raise GithubClientFatalError(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
+            case _:
+                self._raise_for_status(response, path)
+                return False
+
+    async def alist_workflow_runs(
+        self,
+        github_owner: str,
+        repository_name: str,
+        branch_name: str | None = None,
+        event: str = "workflow_dispatch",
+        status: str | None = None,
+        per_page: int = 100,
+    ) -> dict | None:
+        path = f"/repos/{github_owner}/{repository_name}/actions/runs"
+        params = {"event": event, "per_page": per_page}
+        if branch_name:
+            params["branch"] = branch_name
+        if status:
+            params["status"] = status
+
+        response = await self.aget(path=path, params=params)
+        match response.status_code:
+            case 200:
+                logger.info(f"Success (200): {path}")
+                return response.json()
+            case 403:
+                logger.error(f"Access forbidden (403): {path}")
+                raise GithubClientFatalError(f"Access forbidden (403): {path}")
+            case 404:
+                logger.error(f"Workflow or repository not found (404): {path}")
+                raise GithubClientFatalError(
+                    f"Workflow or repository not found (404): {path}"
+                )
+            case 422:
+                logger.error(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
+                raise GithubClientFatalError(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
+    async def aget_repository_content(
+        self,
+        github_owner: str,
+        repository_name: str,
+        file_path: str,
+        branch_name: str | None = None,
+        as_: Literal["json", "bytes"] = "json",
+    ) -> dict | bytes:
+        path = f"/repos/{github_owner}/{repository_name}/contents/{file_path}"
+
+        headers = None
+        if as_ == "bytes":
+            headers = {"Accept": "application/vnd.github.raw+json"}
+
+        response = await self.aget(path, params={"ref": branch_name}, headers=headers)
+        match response.status_code:
+            case 200:
+                logger.info(f"Success (200): {path}")
+                if as_ == "json":
+                    return response.json()
+                else:
+                    return response.content
+            case 404:
+                logger.warning(f"Resource not found (404): {path}")
+                raise GithubClientFatalError(f"Resource not found (404): {path}")
+            case 403:
+                logger.error(f"Access forbidden (403): {path}")
+                raise GithubClientFatalError(f"Access forbidden (403): {path}")
+            case _:
+                self._raise_for_status(response, path)
+
+    async def acommit_multiple_files(
+        self,
+        github_owner: str,
+        repository_name: str,
+        branch_name: str,
+        files: dict[str, str],  # path -> content
+        commit_message: str,
+    ) -> bool:
+        try:
+            # Get current branch info
+            branch_info = await self.aget_branch(
+                github_owner, repository_name, branch_name
+            )
+            if not branch_info:
+                raise GithubClientFatalError(f"Branch {branch_name} not found")
+
+            current_commit_sha = branch_info["commit"]["sha"]
+            base_tree_sha = branch_info["commit"]["commit"]["tree"]["sha"]
+
+            # Create blobs for all files
+            blob_tasks = []
+            for _, content in files.items():
+                blob_tasks.append(
+                    self._acreate_blob(github_owner, repository_name, content)
+                )
+
+            blob_shas = await asyncio.gather(*blob_tasks)
+
+            # Create tree entries
+            tree_entries = []
+            for i, (file_path, _) in enumerate(files.items()):
+                tree_entries.append(
+                    {
+                        "path": file_path,
+                        "mode": "100644",
+                        "type": "blob",
+                        "sha": blob_shas[i],
+                    }
+                )
+
+            # Create tree
+            tree_sha = await self._acreate_tree(
+                github_owner, repository_name, base_tree_sha, tree_entries
+            )
+
+            # Create commit
+            commit_sha = await self._acreate_commit(
+                github_owner,
+                repository_name,
+                commit_message,
+                tree_sha,
+                [current_commit_sha],
+            )
+
+            # Update branch reference
+            return await self._aupdate_ref(
+                github_owner, repository_name, f"heads/{branch_name}", commit_sha
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to commit multiple files: {e}")
+            raise GithubClientFatalError(f"Failed to commit multiple files: {e}") from e
+
+    async def _acreate_blob(
+        self,
+        github_owner: str,
+        repository_name: str,
+        content: str,
+        encoding: str = "utf-8",
+    ) -> str:
+        path = f"/repos/{github_owner}/{repository_name}/git/blobs"
+        payload = {
+            "content": content,
+            "encoding": encoding,
+        }
+
+        response = await self.apost(path=path, json=payload)
+        match response.status_code:
+            case 201:
+                result = response.json()
+                return result["sha"]
+            case _:
+                self._raise_for_status(response, path)
+                raise GithubClientFatalError(f"Failed to create blob: {response.text}")
+
+    async def _acreate_tree(
+        self,
+        github_owner: str,
+        repository_name: str,
+        base_tree: str,
+        tree_entries: list[dict],
+    ) -> str:
+        path = f"/repos/{github_owner}/{repository_name}/git/trees"
+        payload = {
+            "base_tree": base_tree,
+            "tree": tree_entries,
+        }
+
+        response = await self.apost(path=path, json=payload)
+        match response.status_code:
+            case 201:
+                result = response.json()
+                return result["sha"]
+            case _:
+                self._raise_for_status(response, path)
+                raise GithubClientFatalError(f"Failed to create tree: {response.text}")
+
+    async def _acreate_commit(
+        self,
+        github_owner: str,
+        repository_name: str,
+        message: str,
+        tree_sha: str,
+        parent_shas: list[str],
+    ) -> str:
+        path = f"/repos/{github_owner}/{repository_name}/git/commits"
+        payload = {
+            "message": message,
+            "tree": tree_sha,
+            "parents": parent_shas,
+        }
+
+        response = await self.apost(path=path, json=payload)
+        match response.status_code:
+            case 201:
+                result = response.json()
+                return result["sha"]
+            case _:
+                self._raise_for_status(response, path)
+                raise GithubClientFatalError(
+                    f"Failed to create commit: {response.text}"
+                )
+
+    async def _aupdate_ref(
+        self,
+        github_owner: str,
+        repository_name: str,
+        ref: str,
+        sha: str,
+        force: bool = False,
+    ) -> bool:
+        path = f"/repos/{github_owner}/{repository_name}/git/refs/{ref}"
+        payload = {
+            "sha": sha,
+            "force": force,
+        }
+
+        response = await self.apatch(path=path, json=payload)
+        match response.status_code:
+            case 200:
+                return True
             case _:
                 self._raise_for_status(response, path)
                 return False

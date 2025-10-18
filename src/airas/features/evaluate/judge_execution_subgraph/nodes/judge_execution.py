@@ -23,15 +23,15 @@ class LLMOutput(BaseModel):
 
 def judge_execution(
     llm_name: LLM_MODEL,
-    output_text_data: str,
-    error_text_data: str,
+    stdout_text: str,
+    stderr_text: str,
     github_repository_info: GitHubRepositoryInfo,
     prompt_template: str = judge_execution_prompt,
     client: LLMFacadeClient | None = None,
 ) -> bool:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
-    data = {"output_text_data": output_text_data, "error_text_data": error_text_data}
+    data = {"stdout_text": stdout_text, "stderr_text": stderr_text}
 
     env = Environment()
     template = env.from_string(prompt_template)

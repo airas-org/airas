@@ -5,16 +5,14 @@ Output True if the script SUCCEEDED, False if it FAILED.
 Follow the rules below:
 
 # Rules:
-- Output False if "Error Data" contains any error messages or exceptions.
-- Output False if both "Error Data" and "Output Data" are empty.
-- Output False if "Output Data" does not contain clear experimental results such as:
-  - Quantitative results or measurements
-  - Numerical comparisons or improvements
-  - Completion messages indicating successful execution
-  - Statistical analysis or evaluation results
-- Output True ONLY if "Output Data" contains clear evidence of successful experimental execution with meaningful results.
+- Output False if "Standard Error" contains any error messages or exceptions.
+- Output True if the script completed without errors and "Standard Output" shows evidence of successful execution, such as:
+  - Completion messages indicating the script finished normally
+  - Progress logs showing the script ran through its stages
+  - Any output indicating normal termination (even if minimal in trial mode)
+- The script may be running in trial mode (lightweight validation), so minimal output is acceptable as long as there are no errors.
 
-# Error Data:
-{{ error_text_data }}
-# Output Data:
-{{ output_text_data }}"""
+# Standard Error:
+{{ stderr_text }}
+# Standard Output:
+{{ stdout_text }}"""

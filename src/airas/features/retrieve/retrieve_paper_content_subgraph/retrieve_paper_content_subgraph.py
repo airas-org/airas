@@ -79,6 +79,7 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
         self,
         target_study_list_source: UsedStudyListSource,
         llm_mapping: dict[str, str] | RetrievePaperContentLLMMapping | None = None,
+        # TODO: Literal["arxiv", "semantic_scholar"]の実装に変更する
         paper_provider: str = "arxiv",
     ):
         if llm_mapping is None:

@@ -1,275 +1,301 @@
-import json
-import os
+import logging
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Type, TypeVar
 
-from pydantic import TypeAdapter
+from tqdm import tqdm
 
+from airas.config.workflow_config import DEFAULT_WORKFLOW_CONFIG
 from airas.features import (
     AnalyticSubgraph,
     CreateBibfileSubgraph,
-    # CreateBranchSubgraph,
-    # CreateCodeSubgraph,
-    CreateCodeWithDevinSubgraph,
+    CreateBranchSubgraph,
+    CreateCodeSubgraph,
     CreateExperimentalDesignSubgraph,
-    CreateMethodSubgraph,
+    CreateMethodSubgraphV2,
+    EvaluateExperimentalConsistencySubgraph,
+    ExecuteExperimentSubgraph,
     ExtractReferenceTitlesSubgraph,
-    # FixCodeSubgraph,
-    FixCodeWithDevinSubgraph,
     GenerateQueriesSubgraph,
     GetPaperTitlesFromDBSubgraph,
-    GitHubActionsExecutorSubgraph,
-    # GithubDownloadSubgraph,
     GithubUploadSubgraph,
     HtmlSubgraph,
     LatexSubgraph,
     PrepareRepositorySubgraph,
     ReadmeSubgraph,
     RetrieveCodeSubgraph,
+    RetrieveHuggingFaceSubgraph,
     RetrievePaperContentSubgraph,
     ReviewPaperSubgraph,
     SummarizePaperSubgraph,
     WriterSubgraph,
 )
+from airas.features.github.github_download_subgraph import GithubDownloadSubgraph
+from airas.scripts.settings import Settings
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ResearchHypothesis
-from airas.types.research_study import ResearchStudy
+from airas.utils.logging_utils import setup_logging
 
-prepare = PrepareRepositorySubgraph()
-generate_queries = GenerateQueriesSubgraph(n_queries=5)
+setup_logging()
+logger = logging.getLogger(__name__)
+
+settings = Settings().apply_profile_overrides()
+
+generate_queries = GenerateQueriesSubgraph(
+    llm_mapping={
+        "generate_queries": settings.llm_mapping.generate_queries,
+    },
+    n_queries=settings.generate_queries.n_queries,
+)
 get_paper_titles = GetPaperTitlesFromDBSubgraph(
-    max_results_per_query=3, semantic_search=True
+    max_results_per_query=settings.get_paper_titles_from_db.max_results_per_query,
+    semantic_search=settings.get_paper_titles_from_db.semantic_search,
 )
-# get_paper_titles = GetPaperTitlesFromWebSubgraph(max_results_per_query=5)
 retrieve_paper_content = RetrievePaperContentSubgraph(
-    paper_provider="arxiv", target_study_list_source="research_study_list"
+    target_study_list_source="research_study_list",
+    llm_mapping={
+        "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
+    },
+    paper_provider=settings.retrieve_paper_content.paper_provider,
 )
-summarize_paper = SummarizePaperSubgraph()
-retrieve_code = RetrieveCodeSubgraph()
-reference_extractor = ExtractReferenceTitlesSubgraph(num_reference_paper=10)
+summarize_paper = SummarizePaperSubgraph(
+    llm_mapping={"summarize_paper": settings.llm_mapping.summarize_paper}
+)
+retrieve_code = RetrieveCodeSubgraph(
+    llm_mapping={
+        "extract_github_url_from_text": settings.llm_mapping.extract_github_url_from_text,
+        "extract_experimental_info": settings.llm_mapping.extract_experimental_info,
+    }
+)
+reference_extractor = ExtractReferenceTitlesSubgraph(
+    llm_mapping={
+        "extract_reference_titles": settings.llm_mapping.extract_reference_titles
+    },
+    num_reference_paper=settings.extract_reference_titles.num_reference_paper,
+)
 retrieve_reference_paper_content = RetrievePaperContentSubgraph(
-    paper_provider="arxiv", target_study_list_source="reference_research_study_list"
+    target_study_list_source="reference_research_study_list",
+    llm_mapping={
+        "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
+    },
+    paper_provider=settings.retrieve_paper_content.paper_provider,
 )
-create_method = CreateMethodSubgraph(refine_iterations=5)
-create_experimental_design = CreateExperimentalDesignSubgraph()
-coder = CreateCodeWithDevinSubgraph()
-# coder = CreateCodeSubgraph()
-executor = GitHubActionsExecutorSubgraph(gpu_enabled=True)
-fixer = FixCodeWithDevinSubgraph()
-# fixer = FixCodeSubgraph()
-analysis = AnalyticSubgraph()
+
+create_method = CreateMethodSubgraphV2(
+    llm_mapping={
+        "generate_ide_and_research_summary": settings.llm_mapping.generate_ide_and_research_summary,
+        "evaluate_novelty_and_significance": settings.llm_mapping.evaluate_novelty_and_significance,
+        "refine_idea_and_research_summary": settings.llm_mapping.refine_idea_and_research_summary,
+        "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
+    },
+    method_refinement_rounds=settings.create_method.method_refinement_rounds,
+    num_retrieve_related_papers=settings.create_method.num_retrieve_related_papers,
+)
+create_experimental_design = CreateExperimentalDesignSubgraph(
+    runner_type=settings.runner_type,
+    num_models_to_use=settings.create_experimental_design.num_models_to_use,
+    num_datasets_to_use=settings.create_experimental_design.num_datasets_to_use,
+    num_comparative_methods=settings.create_experimental_design.num_comparative_methods,
+    llm_mapping={
+        "generate_experiment_strategy": settings.llm_mapping.generate_experiment_strategy,
+        "generate_experiments": settings.llm_mapping.generate_experiments,
+    },
+)
+retrieve_hugging_face = RetrieveHuggingFaceSubgraph(
+    include_gated=False,
+    max_results_per_search=settings.retrieve_hugging_face.max_results_per_search,
+    max_models=settings.retrieve_hugging_face.max_models,
+    max_datasets=settings.retrieve_hugging_face.max_datasets,
+    llm_mapping={
+        "select_resources": settings.llm_mapping.select_resources,
+    },
+)
+coder = CreateCodeSubgraph(
+    runner_type=settings.runner_type,
+    secret_names=settings.secret_names,
+    wandb_info=settings.wandb.to_wandb_info(),
+    llm_mapping={
+        "generate_run_config": settings.llm_mapping.generate_base_code,
+        "generate_experiment_code": settings.llm_mapping.generate_base_code,
+        "validate_experiment_code": settings.llm_mapping.validate_experiment_code,
+    },
+    max_code_validations=settings.create_code.max_code_validations,
+)
+
+executor = ExecuteExperimentSubgraph(
+    runner_type=settings.runner_type,
+    wandb_info=settings.wandb.to_wandb_info(),
+)
+evaluate_consistency = EvaluateExperimentalConsistencySubgraph(
+    consistency_score_threshold=settings.evaluate_experimental_consistency.consistency_score_threshold,
+    llm_mapping={
+        "evaluate_experimental_consistency": settings.llm_mapping.evaluate_experimental_consistency,
+    },
+)
+analysis = AnalyticSubgraph(
+    llm_mapping={
+        "analytic_node": settings.llm_mapping.analytic_node,
+    }
+)
 create_bibfile = CreateBibfileSubgraph(
-    latex_template_name="iclr2024", max_filtered_references=30
+    llm_mapping={
+        "filter_references": settings.llm_mapping.filter_references,
+    },
+    latex_template_name="iclr2024",
+    max_filtered_references=settings.create_bibfile.max_filtered_references,
 )
-writer = WriterSubgraph(writing_refinement_rounds=2)
-review = ReviewPaperSubgraph()
-latex = LatexSubgraph(latex_template_name="iclr2024", max_revision_count=3)
+writer = WriterSubgraph(
+    llm_mapping={
+        "write_paper": settings.llm_mapping.write_paper,
+        "refine_paper": settings.llm_mapping.refine_paper,
+    },
+    writing_refinement_rounds=settings.writer.writing_refinement_rounds,
+)
+review = ReviewPaperSubgraph(
+    llm_mapping={
+        "review_paper": settings.llm_mapping.review_paper,
+    }
+)
+latex = LatexSubgraph(
+    llm_mapping={
+        "convert_to_latex": settings.llm_mapping.convert_to_latex,
+    },
+    latex_template_name="iclr2024",
+)
 readme = ReadmeSubgraph()
-html = HtmlSubgraph()
+html = HtmlSubgraph(
+    llm_mapping={
+        "convert_to_html": settings.llm_mapping.convert_to_html,
+    }
+)
 uploader = GithubUploadSubgraph()
 
 
-_TA_ANY = TypeAdapter(Any)
-
-T = TypeVar("T")
-
-
-def save_state(
-    state: Any,
-    step_name: str,
-    save_dir: str,
-    *,
-    by_alias: bool = False,
-    exclude_none: bool = False,
-):
-    filename = f"{step_name}.json"
-    state_save_dir = f"/workspaces/airas/data/{save_dir}"
-    os.makedirs(state_save_dir, exist_ok=True)
-    filepath = os.path.join(state_save_dir, filename)
-
-    # BaseModel を含むオブジェクトを再帰的に「素のPython型」に変換
-    plain = _TA_ANY.dump_python(state, by_alias=by_alias, exclude_none=exclude_none)
-
-    # そのままJSON保存（default=str は不要）
-    with open(filepath, "w", encoding="utf-8") as f:
-        json.dump(plain, f, indent=2, ensure_ascii=True)
+subgraph_list = [
+    generate_queries,
+    get_paper_titles,
+    retrieve_paper_content,
+    summarize_paper,
+    retrieve_code,
+    create_method,
+    create_experimental_design,
+    retrieve_hugging_face,
+    coder,
+    executor,
+    evaluate_consistency,  # TODO 現状イテレーションできない
+    analysis,
+    reference_extractor,
+    retrieve_reference_paper_content,
+    create_bibfile,
+    writer,
+    review,
+    latex,
+    html,
+    readme,
+]
 
 
-def load_state(
-    path: str | bytes | os.PathLike,
-    *,
-    field_type_map: dict[str, Any]
-    | None = None,  # 例: {"user": UserModel, "items": list[ItemModel]}
-    base_target: Type[T] | None = None,  # 例: 全体を UserEnvelope にしたいとき
-) -> dict | T:
-    text = Path(path).read_text(encoding="utf-8")
-
-    # まずは全体をプリミティブ型でロード
-    data: Any = TypeAdapter(Any).validate_json(text)
-
-    # 必要なら全体を一括で Pydantic モデルへ（包絡モデルがある場合）
-    if base_target is not None:
-        return TypeAdapter(base_target).validate_python(data)
-
-    # 特定フィールドだけ型変換
-    if field_type_map:
-        for field, target_ann in field_type_map.items():
-            if isinstance(data, dict) and field in data and data[field] is not None:
-                data[field] = TypeAdapter(target_ann).validate_python(data[field])
-
-    return data
-
-
-def retrieve_execution_subgraph_list(
-    file_path: str, subgraph_name_list: list[str]
-) -> list[str]:
-    filename = os.path.basename(file_path)
-    START_FROM_STEP = os.path.splitext(filename)[0]
-    start_index = subgraph_name_list.index(START_FROM_STEP)
-    subgraph_name_list = subgraph_name_list[start_index + 1 :]
-    return subgraph_name_list
-
-
-def run_from_state_file(state: dict, save_dir: str, file_path: str | None = None):
-    """
-    filenameが指定されていればそのstateファイルから、指定されていなければ最初からsubgraphを順次実行し、各ステップの結果を保存する
-    """
-    subgraph_name_list = [
-        "generate_queries",
-        "get_paper_titles",
-        "retrieve_paper_content",
-        "summarize_paper",
-        "retrieve_code",
-        "create_method",
-        "create_experimental_design",
-        "coder",
-        "executor",
-        "fixer",
-        "analysis",
-        "reference_extractor",
-        "retrieve_reference_paper_content",
-        "create_bibfile",
-        "writer",
-        "review",
-        "latex",
-        "readme",
-        "html",
-    ]
-
-    field_type_map = {
-        "github_repository_info": GitHubRepositoryInfo,
-        "research_study_list": list[ResearchStudy],
-        "reference_research_study_list": list[ResearchStudy],
-        "new_method": ResearchHypothesis,
-    }
-
-    if file_path:
-        # stateをロード
-        state = load_state(file_path, field_type_map=field_type_map)
-        # 実行対象のsubgraphリストを取得
-        subgraph_name_list = retrieve_execution_subgraph_list(
-            file_path, subgraph_name_list
-        )
-
-    for subgraph_name in subgraph_name_list:
+def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG):
+    for subgraph in tqdm(subgraph_list, desc="Executing AIRAS"):
+        subgraph_name = subgraph.__class__.__name__
         print(f"--- Running Subgraph: {subgraph_name} ---")
-        if subgraph_name == "generate_queries":
-            state = generate_queries.run(state)
-            save_state(state, "generate_queries", save_dir)
-        elif subgraph_name == "get_paper_titles":
-            state = get_paper_titles.run(state)
-            save_state(state, "get_paper_titles", save_dir)
-        elif subgraph_name == "retrieve_paper_content":
-            state = retrieve_paper_content.run(state)
-            save_state(state, "retrieve_paper_content", save_dir)
-        elif subgraph_name == "summarize_paper":
-            state = summarize_paper.run(state)
-            save_state(state, "summarize_paper", save_dir)
-        elif subgraph_name == "retrieve_code":
-            state = retrieve_code.run(state)
-            save_state(state, "retrieve_code", save_dir)
-        elif subgraph_name == "create_method":
-            state = create_method.run(state)
-            save_state(state, "create_method", save_dir)
-        elif subgraph_name == "create_experimental_design":
-            state = create_experimental_design.run(state)
-            save_state(state, "create_experimental_design", save_dir)
-        elif subgraph_name == "coder":
-            state = coder.run(state)
-            save_state(state, "coder", save_dir)
-        elif subgraph_name == "executor":
-            state = executor.run(state)
-            save_state(state, "executor", save_dir)
-        elif subgraph_name == "fixer":
-            while True:
-                if state.get("executed_flag") is True:
-                    state = analysis.run(state)
-                    save_state(state, "analysis", save_dir)
-                    break
-                else:
-                    state = fixer.run(state)
-                    save_state(state, "fixer", save_dir)
-                    state = executor.run(state)
-                    save_state(state, "executor", save_dir)
-        elif subgraph_name == "analysis":
-            state = analysis.run(state)
-            save_state(state, "analysis", save_dir)
-        elif subgraph_name == "reference_extractor":
-            state = reference_extractor.run(state)
-            save_state(state, "reference_extractor", save_dir)
-        elif subgraph_name == "retrieve_reference_paper_content":
-            state = retrieve_reference_paper_content.run(state)
-            save_state(state, "retrieve_reference_paper_content", save_dir)
-        elif subgraph_name == "create_bibfile":
-            state = create_bibfile.run(state)
-            save_state(state, "create_bibfile", save_dir)
-        elif subgraph_name == "writer":
-            state = writer.run(state)
-            save_state(state, "writer", save_dir)
-        elif subgraph_name == "review":
-            state = review.run(state)
-            save_state(state, "review", save_dir)
-        elif subgraph_name == "latex":
-            state = latex.run(state)
-            save_state(state, "latex", save_dir)
-        elif subgraph_name == "readme":
-            state = readme.run(state)
-            save_state(state, "readme", save_dir)
-        elif subgraph_name == "html":
-            state = html.run(state)
-            save_state(state, "html", save_dir)
 
+        state = subgraph.run(state)
         _ = uploader.run(state)
         print(f"--- Finished Subgraph: {subgraph_name} ---\n")
-        # state = upload.run(state)
-        # state = download.run(state)
 
 
-def main(file_path: str | None = None):
-    """
-    E2E実行のメイン関数
-    """
-    save_dir = datetime.now().strftime("%Y%m%d_%H%M%S")
-    input_data = {
+def execute_workflow(
+    github_owner: str,
+    repository_name: str,
+    research_topic: str,
+    branch_name: str = "main",
+    subgraph_list: list = subgraph_list,
+):
+    state = {
         "github_repository_info": GitHubRepositoryInfo(
-            github_owner="auto-res2",
-            repository_name="experiment_matsuzawa_e2e",
-            branch_name="develop",
+            github_owner=github_owner,
+            repository_name=repository_name,
+            branch_name=branch_name,
         ),
-        "research_topic": "Research on diffusion models and reinforcement learning",
+        "research_topic": research_topic,
     }
-    prepare.run(input_data)
-    if file_path:
-        run_from_state_file(input_data, save_dir=save_dir, file_path=file_path)
-    else:
-        run_from_state_file(input_data, save_dir=save_dir)
+
+    _ = PrepareRepositorySubgraph().run(state)
+    try:
+        _ = run_subgraphs(subgraph_list, state)
+    except Exception:
+        raise
+
+
+def resume_workflow(
+    github_owner: str,
+    repository_name: str,
+    source_branch_name: str,
+    start_subgraph_name: str,
+    target_branch_name: str,
+    subgraph_list: list = subgraph_list,
+):
+    start_index = None
+    for i, subgraph in enumerate(subgraph_list):
+        if subgraph.__class__.__name__ == start_subgraph_name:
+            start_index = i
+            break
+
+    if start_index is None:
+        raise ValueError(
+            f"Subgraph '{start_subgraph_name}' not found in subgraph_list. "
+            f"Available: {[sg.__class__.__name__ for sg in subgraph_list]}"
+        )
+
+    logger.info(
+        f"Resuming workflow from subgraph: {start_subgraph_name} (index {start_index})"
+    )
+
+    state = {
+        "github_repository_info": GitHubRepositoryInfo(
+            github_owner=github_owner,
+            repository_name=repository_name,
+            branch_name=source_branch_name,
+        ),
+    }
+
+    logger.info(
+        f"Creating new branch '{target_branch_name}' from '{source_branch_name}' "
+        f"at subgraph '{start_subgraph_name}'"
+    )
+    state = CreateBranchSubgraph(
+        new_branch_name=target_branch_name,
+        start_subgraph_name=start_subgraph_name,
+    ).run(state)
+
+    logger.info(f"Downloading existing state from branch: {target_branch_name}")
+    state = GithubDownloadSubgraph().run(state)
+
+    remaining_subgraphs = subgraph_list[start_index:]
+    logger.info(
+        f"Executing {len(remaining_subgraphs)} subgraphs starting from {start_subgraph_name}"
+    )
+
+    try:
+        run_subgraphs(remaining_subgraphs, state)
+    except Exception:
+        raise
 
 
 if __name__ == "__main__":
-    # Execute from the beginning
-    main()
+    github_owner = "auto-res2"
+    suffix = "tanaka"
+    exec_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+    repository_name = f"airas-{exec_time}-{suffix}"
+    research_topic_list = "LLMの新しい損失関数"
 
-    # If you want to run from the middle, specify the file path.
-    # file_path = "/workspaces/airas/data/20250812_111116/retrieve_reference_paper_content.json"
-    # main(file_path=file_path)
+    # TODO: argparse
+
+    # execute_workflow(github_owner, repository_name, research_topic=research_topic_list)
+
+    resume_workflow(
+        github_owner=github_owner,
+        repository_name="experiment_matsuzawa_251002",
+        source_branch_name="research-0-retry-5",
+        target_branch_name="research-0-retry-5-opencode-latex",
+        start_subgraph_name="LatexSubgraph",
+        subgraph_list=subgraph_list,
+    )

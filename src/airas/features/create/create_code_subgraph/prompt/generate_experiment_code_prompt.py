@@ -1,101 +1,164 @@
 generate_experiment_code_prompt = """\
-You are a cutting-edge AI researcher preparing experiments for a research paper publication.
-Based on the new method described in # Current Research Method, the experimental policy outlined in # Experiment Strategy and the detailed experimental specifications provided in # Experiment Details,
-please present detailed code for conducting rigorous experiments that will generate publication-worthy results according to the instructions below.
+You are a cutting-edge AI researcher generating complete, executable code for research paper experiments with Hydra configuration management.
 
-# Instructions
-## Basic Requirements
-- ZERO PLACEHOLDER POLICY: Generate complete, production-ready experiments that work immediately without any modifications. NO placeholders, NO synthetic data, NO approximations, NO incomplete implementations.
-- Real Data Only: Use actual datasets from Hugging Face code exactly as specified. If multiple datasets are mentioned in the experimental design, implement ALL of them - not just one.
-- Complete Implementation: Every component must be fully functional. No "omitted for brevity", no "simplified version", no "approximation" comments. Everything must work end-to-end.
-- Exact Configuration Match: Full experiment configuration must match the experimental design exactly - correct layer counts, all specified datasets, complete parameter ranges.
-- Dual Configuration System: Generate two YAML configuration files:
-  - smoke_test.yaml: Quick validation with minimal resources (reduced epochs, smaller subsets)
-  - full_experiment.yaml: Complete experimental setup matching ALL specifications in experimental design
-- Publication-Ready Results: The code must produce actual publication-worthy results immediately when executed - not demonstration outputs or toy examples.
-- Use PyTorch exclusively as the deep learning framework.
-- Make full use of existing Python libraries where possible and avoid implementing from scratch.
+Based on the research method in # Current Research Method and experimental design in # Experimental Design, generate production-ready experiment code that integrates with Hydra for configuration management.
 
-## Implementation Guidelines
-- Complete data pipeline: Implement full data acquisition from URLs, including downloading, extraction, and organizing into data/ directory. Do not assume existing local data.
-- Comprehensive experiments: Implement full-scale experiments, not quick tests or prototypes. Include sufficient training epochs, proper validation splits, and thorough evaluation metrics.
-- STRICT NO-FALLBACK RULE: If real datasets or models cannot be accessed, terminate execution immediately with clear error messages - NEVER use synthetic/dummy/placeholder data under any circumstances.
-{% if secret_names %}
-- Environment Variables: The following environment variables are available for use in your experiments: {{ secret_names|join(', ') }}. These can be accessed using os.getenv() in your Python code.
-{% endif %}
+# Instructions: Complete Experiment Code Generation
 
-## Command Line Execution Requirements
-The generated main.py must support the following command patterns:
+## Core Requirements
+- COMPLETE IMPLEMENTATION: Every component must be fully functional, production-ready, publication-worthy code. No "omitted for brevity", no "simplified version", no TODO, PLACEHOLDER, pass, or ...
+- PYTORCH EXCLUSIVELY: Use PyTorch as the deep learning framework
+- HYDRA INTEGRATION: Use Hydra to manage all experiment configurations from `config/run/*.yaml` files. Use `config_path="../config"` in all @hydra.main decorators
+- COMPLETE DATA PIPELINE: Full data loading and preprocessing implementation. Use `.cache/` as the cache directory for all datasets and models (e.g., for HuggingFace, set `cache_dir=".cache/"`)
+- WANDB REQUIRED: WandB is mandatory for metrics logging (except trial_mode validation)
+
+## Hydra Configuration Structure
+Each run config file (`config/run/{run_id}.yaml`) contains:
+- run_id: Unique identifier for this run
+- method: The method name (baseline, proposed, ablation, etc.)
+- model: Model-specific parameters (name, architecture details, hyperparameters)
+- dataset: Dataset-specific parameters (name, preprocessing settings, split ratios)
+- training: Training hyperparameters (learning rate, batch size, epochs, optimizer settings, validation split)
+- optuna: Hyperparameter search space definition for Optuna optimization
+
+## Command Line Interface
+The generated code must support the following CLI:
+
+**Training (main.py):**
 ```bash
-# Smoke test only
-uv run python -m src.main --smoke-test
+# Full experiment with WandB logging
+uv run python -u -m src.main run={run_id} results_dir={path}
 
-# Full experiment only
-uv run python -m src.main --full-experiment
+# Trial mode (validation only, WandB disabled)
+uv run python -u -m src.main run={run_id} results_dir={path} trial_mode=true
 ```
+- `run`: Experiment run_id (matching a run_id from config/run/*.yaml)
+- `results_dir`: Output directory (passed from GitHub Actions workflow)
+- `trial_mode=true` (optional): Lightweight execution for validation (epochs=1, batches limited to 1-2, disable Optuna n_trials=0, **WandB disabled**)
 
-## Output Requirements
-Generate a complete experiment implementation organized into the following Python scripts:
+**Evaluation (evaluate.py, independent execution):**
+```bash
+uv run python -m src.evaluate results_dir={path}
+```
+- `results_dir`: Directory containing experiment metadata and where outputs will be saved
+- Executed as a separate workflow after all training runs complete
+- **NOT called from main.py**
 
-### Script Structure (ExperimentCode format)
-Your output must contain exactly these files with the specified content:
-- `src/train.py`: Training script with model definition, training loop, and model saving
-- `src/evaluate.py`: Evaluation script with metrics calculation and result visualization
-- `src/preprocess.py`: Data loading and preprocessing pipeline
-- `src/main.py`: Main execution script with command-line interface (--smoke-test, --full-experiment)
-- `pyproject.toml`: Project dependencies and package configuration
-- `config/smoke_test.yaml`: Quick validation configuration (minimal resources)
-- `config/full_experiment.yaml`: Full experimental configuration (production settings)
+## Script Structure (ExperimentCode format)
+Generate complete code for these files ONLY. Do not create any additional files beyond this structure:
 
-When implementing the code, ensure that the output strictly adheres to the following rules:
+**`src/train.py`**: Single experiment run executor
+- Uses Hydra config to load all parameters
+- Called as subprocess by main.py
+- Responsibilities:
+  * Train model with given configuration
+  * Initialize WandB: `wandb.init(entity=cfg.wandb.entity, project=cfg.wandb.project, id=cfg.run.run_id, config=OmegaConf.to_container(cfg, resolve=True), resume="allow")`
+  * Skip `wandb.init()` if `cfg.wandb.mode == "disabled"` (trial_mode)
+  * Log ALL metrics to WandB: `wandb.log({"train_loss": 0.5, "val_acc": 0.85, "epoch": 1, ...})`
+  * Print WandB run URL to stdout
+- **NO results.json, no stdout JSON output, no figure generation**
 
-### Results Documentation
-- Save the results of each experiment as separate JSON files and modify the code to print the contents of the JSON files to standard output using a print statement.
+**`src/evaluate.py`**: Independent evaluation and visualization script
+- **Execution**: Run independently via `uv run python -m src.evaluate results_dir={path}`
+- **NOT called from main.py** - executes as separate workflow after all training completes
+- **Responsibilities**:
+  * Parse `results_dir` from command line arguments
+  * Load WandB config from `{results_dir}/config.yaml`
+  * Retrieve all experimental data from WandB API:
+    ```python
+    api = wandb.Api()
+    runs = api.runs(f"{entity}/{project}")
+    for run in runs:
+        metrics_df = run.history()  # pandas DataFrame with all logged metrics
+    ```
+  * Export retrieved data to:
+    - `{results_dir}/wandb_data/run_{run_id}_metrics.csv` (per-run metrics)
+    - `{results_dir}/wandb_data/summary.json` (aggregated comparison)
+  * Compute secondary/derived metrics (e.g., improvement rate: (proposed - baseline) / baseline)
+  * Generate ALL publication-quality PDF figures and save to `{results_dir}/images/`:
+    - Learning curves (loss, accuracy over epochs)
+    - Cross-run comparison charts (bar charts, box plots)
+    - Performance metrics tables
+  * Use matplotlib or seaborn with proper legends, annotations, tight_layout
+    - For line graphs: annotate significant values (final/best values)
+    - For bar graphs: annotate values above each bar
+  * Follow naming convention: `<figure_topic>[_<condition>][_pairN].pdf`
+  * Print generated figure names to stdout
 
-### Standard Output Content
-- Experiment description: Before printing experimental results, the standard output must include a detailed description of the experiment.
-- Experimental numerical data: All experimental data obtained in the experiments must be output to the standard output.
-- Names of figures summarizing the numerical data
+**`src/preprocess.py`**: Complete preprocessing pipeline implementation for the specified datasets
 
-### Figure Output Requirements
-- Experimental results must always be presented in clear and interpretable figures without exception.
-- Use matplotlib or seaborn to output the results (e.g., accuracy, loss curves, confusion matrix).
-- Numeric values must be annotated on the axes of the graphs.
-- For line graphs, annotate values on the plot; for bar graphs, annotate values above each bar.
-- Include legends in the figures.
-- All figures must be saved in .pdf format (e.g., using plt.savefig("filename.pdf", bbox_inches="tight")).
-  - Do not use .png or any other formats—only .pdf is acceptable for publication quality.
+**`src/model.py`**: Complete model architecture implementations for all methods (proposed and comparative methods)
 
-### Figure Naming Convention
-File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`
-- `<figure_topic>`: The main subject of the figure (e.g., training_loss, accuracy, inference_latency)
-- `_<condition>` (optional): Indicates model, setting, or comparison condition (e.g., amict, baseline, tokens, multimodal_vs_text)
-- `_pairN` (optional): Used when presenting figures in pairs (e.g., _pair1, _pair2)
-- For standalone figures, do not include _pairN.
+**`src/main.py`**: Main orchestrator
+- Receives run_id via Hydra, launches train.py as subprocess, manages logs
+- **DOES NOT call evaluate.py** (evaluate.py runs independently in separate workflow)
+- Use `@hydra.main(config_path="../config")` since execution is from repository root
+- Pass all Hydra overrides to train.py subprocess (e.g., `wandb.mode=disabled`, `trial_mode=true`)
+- In trial_mode, automatically set `wandb.mode=disabled`
+
+**`config/config.yaml`**: Main Hydra configuration file
+- MUST include WandB configuration:
+  ```yaml
+  wandb:
+    entity: {{ wandb_info.entity }}
+    project: {{ wandb_info.project }}
+    mode: online  # Automatically set to "disabled" in trial_mode
+  ```
+
+**`pyproject.toml`**: Complete project dependencies
+- MUST include: `hydra-core`, `wandb` (required)
+- Include as needed: `optuna`, `torch`, `transformers`, `datasets`, etc.
 
 
-{% if full_experiment_validation %}
-## Full Experiment Validation Feedback
-{% set is_ready, issue = full_experiment_validation %}
+## Key Implementation Focus Areas
+1. **Hydra-Driven Configuration**: All parameters loaded from run configs dynamically
+2. **Algorithm Core**: Full implementation of the proposed method with proper abstraction
+3. **Trial Mode Behavior**: trial_mode=true automatically disables WandB (sets wandb.mode=disabled)
+4. **Run Execution**: main.py executes a single run_id passed via CLI (GitHub Actions dispatches multiple runs separately)
+5. **WandB Integration**: All metrics logged to WandB; train.py does NOT output JSON to stdout or save results.json
+6. **Independent Evaluation**: evaluate.py runs separately, fetches data from WandB API, generates all figures
+
+
+{% if code_validation %}
+## Code Validation Feedback
+{% set is_ready, issue = code_validation %}
 {% if not is_ready and issue %}
-**Critical Issue Detected**: The previous code generation failed full experiment validation:
-{{ issue }}
+**Previous Validation Issue**: {{ issue }}
+**Action Required**: Address this issue in the implementation.
 
-**Required Action**: Address this validation failure by ensuring your generated code strictly follows the Hugging Face code requirements and implements genuine full experiments using real datasets and models.
+**Previous Code (for reference)**:
+{{ new_method.experimental_design.experiment_code | tojson }}
+
+Fix the issues identified above while preserving the correct parts of the implementation.
 {% endif %}
 {% endif %}
 
 # Experimental Environment
 {{ runner_type_prompt }}
 
-# Current Research Method (Target for Experiment Design)
+# Current Research Method
 {{ new_method.method }}
 
 # Experimental Design
-- Strategy: {{ new_method.experimental_design.experiment_strategy }}
-- Details: {{ new_method.experimental_design.experiment_details }}
+- Summary: {{ new_method.experimental_design.experiment_summary }}
+- Evaluation metrics: {{ new_method.experimental_design.evaluation_metrics }}
 
-# External Resources
+# Experiment Runs
+{% for run in new_method.experiment_runs %}
+- Run ID: {{ run.run_id }}
+  Method: {{ run.method_name }}
+  Model: {{ run.model_name }}
+  Dataset: {{ run.dataset_name }}
+  Config File: config/run/{{ run.run_id }}.yaml
+  {% if run.run_config %}
+  Config Content:
+  ```yaml
+  {{ run.run_config }}
+  ```
+  {% endif %}
+{% endfor %}
+
+# External Resources (Use these for implementation)
 {% if new_method.experimental_design.external_resources and new_method.experimental_design.external_resources.hugging_face %}
 **HuggingFace Models:**
 {% for model in new_method.experimental_design.external_resources.hugging_face.models %}
@@ -114,18 +177,4 @@ File names must follow the format: `<figure_topic>[_<condition>][_pairN].pdf`
 {% endfor %}
 {% endif %}
 
-{% if consistency_feedback %}
-## Consistency Feedback
-**Important**: Address the following feedback from previous experimental consistency evaluation:
-{{ consistency_feedback }}
-
-Specifically improve the experimental code to resolve these consistency issues.
-{% endif %}
-
-# Reference Information from Previous Iteration
-{% if new_method.iteration_history %}
-## Previous Experimental Design
-- Strategy: {{ new_method.iteration_history[-1].experimental_design.experiment_strategy }}
-- Details: {{ new_method.iteration_history[-1].experimental_design.experiment_details }}
-- Code: {{ new_method.iteration_history[-1].experimental_design.experiment_code | tojson }}
-{% endif %}"""
+Generate complete, production-ready experiment code that integrates with Hydra configuration system."""

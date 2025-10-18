@@ -17,15 +17,15 @@ from airas.types.research_hypothesis import ResearchHypothesis
 logger = logging.getLogger(__name__)
 
 
-async def search_hugging_face(
+async def _search_hugging_face(
     new_method: ResearchHypothesis,
-    max_results_per_search: int = 20,  # TODO: Add logic to rescan if no resources meeting the conditions are found.
+    max_results_per_search: int,
     hf_client: HuggingFaceClient | None = None,
     include_gated: bool = False,
 ) -> HuggingFace:
     if not new_method.experimental_design or (
-        not new_method.experimental_design.expected_models
-        and not new_method.experimental_design.expected_datasets
+        not new_method.experimental_design.models_to_use
+        and not new_method.experimental_design.datasets_to_use
     ):
         logger.warning("No expected models or datasets found in experimental design")
         return HuggingFace(models=[], datasets=[])
@@ -34,10 +34,10 @@ async def search_hugging_face(
 
     search_tasks = [
         ("models", model.strip())
-        for model in new_method.experimental_design.expected_models
+        for model in new_method.experimental_design.models_to_use
     ] + [
         ("datasets", dataset.strip())
-        for dataset in new_method.experimental_design.expected_datasets
+        for dataset in new_method.experimental_design.datasets_to_use
     ]
 
     if not search_tasks:
@@ -213,4 +213,17 @@ def _apply_hf_resource_type(
         library_name=merged_data.get("library_name"),
         readme=readme_content,
         model_index=merged_data.get("model_index"),
+    )
+
+
+def search_hugging_face(
+    new_method: ResearchHypothesis,
+    max_results_per_search: int = 20,  # TODO: Add logic to rescan if no resources meeting the conditions are found.
+    hf_client: HuggingFaceClient | None = None,
+    include_gated: bool = False,
+) -> HuggingFace:
+    return asyncio.run(
+        _search_hugging_face(
+            new_method, max_results_per_search, hf_client, include_gated
+        )
     )

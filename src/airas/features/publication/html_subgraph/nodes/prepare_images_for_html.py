@@ -1,5 +1,10 @@
+import asyncio
+import json
 from logging import getLogger
 
+from airas.features.execution.execute_experiment_subgraph.workflow_executor import (
+    WorkflowExecutor,
+)
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 
@@ -8,39 +13,45 @@ logger = getLogger(__name__)
 
 def prepare_images_for_html(
     github_repository: GitHubRepositoryInfo,
+    image_source_branches: list[str],
     workflow_file: str = "prepare_images_for_html.yml",
     client: GithubClient | None = None,
 ) -> str | None:
-    if client is None:
-        client = GithubClient()
-
     github_owner = github_repository.github_owner
     repository_name = github_repository.repository_name
     branch_name = github_repository.branch_name or "main"
 
+    executor = WorkflowExecutor(client)
+    inputs = {
+        "image_source_branches": json.dumps(image_source_branches),
+    }
+
     try:
-        success = client.create_workflow_dispatch(
-            github_owner,
-            repository_name,
-            workflow_file,
-            ref=branch_name,
+        result = asyncio.run(
+            executor.execute_workflow(
+                github_owner=github_owner,
+                repository_name=repository_name,
+                branch_name=branch_name,
+                workflow_file=workflow_file,
+                inputs=inputs,
+            )
         )
 
-        if success:
-            relative_path = f"branches/{branch_name}/index.html"
-            github_pages_url = (
-                f"https://{github_owner}.github.io/{repository_name}/{relative_path}"
-            )
-            logger.info("Workflow dispatched successfully.")
-            logger.info(
-                f"GitHub Pages build triggered. HTML will be available at: {github_pages_url} "
-                "(It may take a few minutes to reflect on GitHub Pages)"
-            )
-            return github_pages_url
-        else:
-            logger.error("Workflow dispatch failed")
+        if not result.success:
+            logger.error(f"Workflow failed: {result.error_message}")
             return None
 
+        relative_path = f"branches/{branch_name}/index.html"
+        github_pages_url = (
+            f"https://{github_owner}.github.io/{repository_name}/{relative_path}"
+        )
+        logger.info(f"Workflow {workflow_file} completed successfully")
+        logger.info(
+            f"GitHub Pages build triggered. HTML will be available at: {github_pages_url} "
+            "(It may take a few minutes to reflect on GitHub Pages)"
+        )
+        return github_pages_url
+
     except Exception as e:
-        logger.error(f"Failed to dispatch workflow: {e}")
+        logger.error(f"Failed to execute workflow: {e}")
         return None
