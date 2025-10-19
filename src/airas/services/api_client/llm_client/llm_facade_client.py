@@ -45,6 +45,17 @@ class LLMFacadeClient:
         )
 
     @LLM_RETRY
+    async def structured_outputs_async(self, message: str, data_model):
+        # NOTE:The Anthropic model does not support structured output.
+        if self.llm_name in CLAUDE_MODEL.__args__:
+            raise NotImplementedError(
+                "Structured output is not supported for Anthropic models."
+            )
+        return await self.client.structured_outputs_async(
+            model_name=self.llm_name, message=message, data_model=data_model
+        )
+
+    @LLM_RETRY
     def text_embedding(self, message: str, model_name: str = "gemini-embedding-001"):
         return self.client.text_embedding(message=message, model_name=model_name)
 
