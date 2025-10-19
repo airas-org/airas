@@ -1,10 +1,11 @@
+import asyncio
 import json
 import logging
 import re
 from typing import Any, Literal
 
 import tiktoken
-from openai import OpenAI
+from openai import AsyncOpenAI, OpenAI
 from pydantic import BaseModel
 
 from airas.utils.logging_utils import setup_logging
@@ -120,6 +121,7 @@ class OpenAIClient:
     def __init__(self, reasoning_effort: ReasoningEffort | None = None) -> None:
         self.logger = logging.getLogger(__name__)
         self.client = OpenAI()
+        self.aclient = AsyncOpenAI()
         self.reasoning_effort = reasoning_effort
 
     def _truncate_prompt(self, model_name: OPENAI_MODEL, message: str) -> str:
@@ -179,13 +181,23 @@ class OpenAIClient:
         message: str,
         data_model: type[BaseModel],
     ) -> tuple[dict | None, float]:
+        return asyncio.run(
+            self.structured_outputs_async(model_name, message, data_model)
+        )
+
+    async def structured_outputs_async(
+        self,
+        model_name: OPENAI_MODEL,
+        message: str,
+        data_model: type[BaseModel],
+    ) -> tuple[dict | None, float]:
         if not isinstance(message, str):
             raise TypeError("message must be a string")
         message = message.encode("utf-8", "ignore").decode("utf-8")
         message = self._truncate_prompt(model_name, message)
         params = self._get_params()
 
-        response = self.client.responses.parse(
+        response = await self.aclient.responses.parse(
             model=model_name, input=message, text_format=data_model, **params
         )
         output = response.output_text
@@ -245,6 +257,18 @@ class OpenAIClient:
         return output, cost
 
 
+async def main(
+    model_name: OPENAI_MODEL, message: str, data_model: type[BaseModel]
+) -> None:
+    client = OpenAIClient()
+    output, cost = await client.structured_outputs_async(
+        model_name=model_name,
+        message=message,
+        data_model=data_model,
+    )
+    print(output)
+
+
 if __name__ == "__main__":
 
     class UserModel(BaseModel):
@@ -252,23 +276,9 @@ if __name__ == "__main__":
         age: int
         email: str
 
-    openai_client = OpenAIClient()
     model_name = "o3-mini-2025-01-31"
     message = """
 以下の文章から，名前，年齢，メールアドレスを抽出してください。
 「田中太郎さん（35歳）は、東京在住のソフトウェアエンジニアです。現在、新しいAI技術の研究に取り組んでおり、業界内でも注目を集めています。お問い合わせは、taro.tanaka@example.com までお願いします。」
 """
-    output, cost = openai_client.generate(
-        model_name=model_name,
-        message=message,
-    )
-    print(output)
-    print(cost)
-
-    output, cost = openai_client.structured_outputs(
-        model_name=model_name,
-        message=message,
-        data_model=UserModel,
-    )
-    print(output)
-    print(cost)
+    asyncio.run(main(model_name=model_name, message=message, data_model=UserModel))

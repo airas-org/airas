@@ -1,4 +1,5 @@
 import ast
+import asyncio
 import json
 import logging
 import os
@@ -135,6 +136,16 @@ class GoogleGenAIClient:
         message: str,
         data_model: type[BaseModel],
     ) -> tuple[dict | None, float]:
+        return asyncio.run(
+            self.structured_outputs_async(model_name, message, data_model)
+        )
+
+    async def structured_outputs_async(
+        self,
+        model_name: VERTEXAI_MODEL,
+        message: str,
+        data_model: type[BaseModel],
+    ) -> tuple[dict | None, float]:
         if not isinstance(message, str):
             raise TypeError("message must be a string")
         message = message.encode("utf-8", "ignore").decode("utf-8")
@@ -150,7 +161,7 @@ class GoogleGenAIClient:
         if "config" in params:
             config.update(params["config"].model_dump(exclude_none=True))
 
-        response = self.client.models.generate_content(
+        response = await self.client.aio.models.generate_content(
             model=model_name,
             contents=message,
             config=config,
@@ -177,6 +188,18 @@ class GoogleGenAIClient:
         return result.embeddings[0].values
 
 
+async def main(
+    model_name: VERTEXAI_MODEL, message: str, data_model: type[BaseModel]
+) -> None:
+    client = GoogleGenAIClient()
+    output, cost = await client.structured_outputs_async(
+        model_name=model_name,
+        message=message,
+        data_model=data_model,
+    )
+    print(output)
+
+
 if __name__ == "__main__":
 
     class UserModel(BaseModel):
@@ -184,23 +207,10 @@ if __name__ == "__main__":
         age: int
         email: str
 
-    model_name = "gemini-2.0-flash-001"
+    model_name = "gemini-2.5-flash"
     message = """
 以下の文章から，名前，年齢，メールアドレスを抽出してください。
 「田中太郎さん（35歳）は、東京在住のソフトウェアエンジニアです。現在、新しいAI技術の研究に取り組んでおり、業界内でも注目を集めています。お問い合わせは、taro.tanaka@example.com までお願いします。」
 """
-    genai_client = GoogleGenAIClient()
-    output, cost = genai_client.generate(
-        model_name=model_name,
-        message=message,
-    )
-    print(output)
-    print(cost)
 
-    output, cost = genai_client.structured_outputs(
-        model_name=model_name,
-        message=message,
-        data_model=UserModel,
-    )
-    print(output)
-    print(cost)
+    asyncio.run(main(model_name=model_name, message=message, data_model=UserModel))
