@@ -1,6 +1,8 @@
 from typing import Literal
 
-RunnerType = Literal["ubuntu-latest", "Tesla_T4", "A100_80GM×1", "A100_80GM×8"]
+RunnerType = Literal[
+    "ubuntu-latest", "Tesla_T4", "A100_80GM×1", "A100_80GM×8", "gpu-runner"
+]
 
 runner_info_dict = {
     "ubuntu-latest": {
@@ -29,5 +31,12 @@ RAM：2048 GB""",
 NVIDIA A100×8
 VRAM：80GB×8
 RAM：2048 GB""",
+    },
+    "gpu-runner": {
+        "runner_setting": '["self-hosted", "gpu-runner"]',
+        "prompt": """\
+NVIDIA A100 or H200
+VRAM: 80 GB or more
+RAM: 2048 GB or more""",
     },
 }

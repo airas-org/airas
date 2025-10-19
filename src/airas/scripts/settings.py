@@ -114,7 +114,7 @@ class Settings(BaseSettings):
     profile: Literal["test", "prod"] = "test"
 
     # 実行基盤
-    runner_type: RunnerType = "A100_80GM×1"
+    runner_type: RunnerType = "gpu-runner"
     # TODO: From the perspective of research consistency,
     # we should probably not have ClaudeCode make changes to HuggingFace resources.
     # This change includes prompt modifications in `run_experiment_with_claude_code.yml``.
