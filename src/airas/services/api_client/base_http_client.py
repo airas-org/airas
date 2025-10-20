@@ -1,21 +1,9 @@
 import logging
-import warnings
 
 import httpx
 import requests
 
 logger = logging.getLogger(__name__)
-
-# TODO: Properly manage httpx.AsyncClient lifecycle with async context managers
-# Currently, AsyncClient instances are not explicitly closed before event loop termination,
-# which causes "Unclosed client session" and "Event loop is closed" warnings in logs.
-# These warnings are harmless (connections are cleaned up by the runtime), but proper
-# resource management should be implemented by:
-# 1. Using `async with BaseHTTPClient() as client:` pattern for short-lived clients
-# 2. Explicitly calling `await client.aclose()` for long-lived clients
-# 3. Implementing __aenter__/__aexit__ methods in this class
-# Suppress ResourceWarning for unclosed sockets/sessions temporarily
-warnings.filterwarnings("ignore", message="unclosed", category=ResourceWarning)
 
 
 class BaseHTTPClient:
