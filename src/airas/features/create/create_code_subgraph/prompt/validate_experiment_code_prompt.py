@@ -20,7 +20,7 @@ Check if the generated experiment code meets ALL of the following requirements:
    - Proper configuration structure with run_id, method, model, dataset, training, and optuna sections
    - CLI interface matches:
      * Training: `uv run python -u -m src.main run={run_id} results_dir={path}`
-     * Evaluation: `uv run python -m src.evaluate results_dir={path}` (independent execution)
+     * Evaluation: `uv run python -m src.evaluate results_dir={path} run_ids='["run-1", "run-2", ...]'` (independent execution)
    - Supports trial_mode=true flag for lightweight validation runs (automatically disables WandB)
 
 3. **Complete Data Pipeline**:
@@ -64,11 +64,21 @@ Check if the generated experiment code meets ALL of the following requirements:
    - Optuna search spaces are properly defined if applicable
 
 8. **Evaluation Script Independence**:
-   - evaluate.py is executed independently via `uv run python -m src.evaluate results_dir={path}`
+   - evaluate.py is executed independently via `uv run python -m src.evaluate results_dir={path} run_ids='["run-1", "run-2"]'`
+   - Accepts `run_ids` parameter as JSON string list (parse with `json.loads(args.run_ids)`)
    - main.py DOES NOT call evaluate.py
    - evaluate.py retrieves ALL data from WandB API using `wandb.Api()` (not from local files)
-   - evaluate.py exports retrieved WandB data to `{results_dir}/wandb_data/` for reproducibility
-   - evaluate.py generates ALL publication-quality PDF figures and saves to `{results_dir}/images/`
+   - **STEP 1: Per-Run Processing** (for each run_id):
+     * Export run-specific metrics to: `{results_dir}/{run_id}/metrics.json`
+     * Generate run-specific figures (learning curves, confusion matrices) to: `{results_dir}/{run_id}/`
+     * Each run should have its own subdirectory with its metrics and figures
+   - **STEP 2: Aggregated Analysis** (after processing all runs):
+     * Export aggregated metrics to: `{results_dir}/comparison/aggregated_metrics.json`
+     * Compute secondary/derived metrics (e.g., improvement rate: (proposed - baseline) / baseline)
+     * Generate comparison figures to: `{results_dir}/comparison/`
+     * Cross-run comparison charts (bar charts, box plots)
+     * Performance metrics tables
+     * Statistical significance tests
    - Proper figure quality: legends, annotations, tight_layout
    - Follows naming convention: `<figure_topic>[_<condition>][_pairN].pdf`
    - train.py and main.py generate NO figures

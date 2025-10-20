@@ -75,6 +75,7 @@ def generate_experiment_design(
         output=json.dumps(output, ensure_ascii=False, indent=4),
         subgraph_name="create_experimental_design_subgraph",
         node_name="generate_experiment_details",
+        llm_name=llm_name,
     )
 
     hyperparameters_dict = {
