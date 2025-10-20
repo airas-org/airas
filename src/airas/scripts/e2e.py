@@ -11,7 +11,7 @@ from airas.features import (
     CreateCodeSubgraph,
     CreateExperimentalDesignSubgraph,
     CreateMethodSubgraphV2,
-    EvaluateExperimentalConsistencySubgraph,
+    # EvaluateExperimentalConsistencySubgraph,
     ExecuteExperimentSubgraph,
     ExtractReferenceTitlesSubgraph,
     GenerateQueriesSubgraph,
@@ -80,7 +80,7 @@ retrieve_reference_paper_content = RetrievePaperContentSubgraph(
 
 create_method = CreateMethodSubgraphV2(
     llm_mapping={
-        "generate_ide_and_research_summary": settings.llm_mapping.generate_ide_and_research_summary,
+        "generate_idea_and_research_summary": settings.llm_mapping.generate_idea_and_research_summary,
         "evaluate_novelty_and_significance": settings.llm_mapping.evaluate_novelty_and_significance,
         "refine_idea_and_research_summary": settings.llm_mapping.refine_idea_and_research_summary,
         "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
@@ -94,8 +94,7 @@ create_experimental_design = CreateExperimentalDesignSubgraph(
     num_datasets_to_use=settings.create_experimental_design.num_datasets_to_use,
     num_comparative_methods=settings.create_experimental_design.num_comparative_methods,
     llm_mapping={
-        "generate_experiment_strategy": settings.llm_mapping.generate_experiment_strategy,
-        "generate_experiments": settings.llm_mapping.generate_experiments,
+        "generate_experiment_design": settings.llm_mapping.generate_experiment_design,
     },
 )
 retrieve_hugging_face = RetrieveHuggingFaceSubgraph(
@@ -112,8 +111,8 @@ coder = CreateCodeSubgraph(
     secret_names=settings.secret_names,
     wandb_info=settings.wandb.to_wandb_info(),
     llm_mapping={
-        "generate_run_config": settings.llm_mapping.generate_base_code,
-        "generate_experiment_code": settings.llm_mapping.generate_base_code,
+        "generate_run_config": settings.llm_mapping.generate_run_config,
+        "generate_experiment_code": settings.llm_mapping.generate_experiment_code,
         "validate_experiment_code": settings.llm_mapping.validate_experiment_code,
     },
     max_code_validations=settings.create_code.max_code_validations,
@@ -121,24 +120,23 @@ coder = CreateCodeSubgraph(
 
 executor = ExecuteExperimentSubgraph(
     runner_type=settings.runner_type,
-    wandb_info=settings.wandb.to_wandb_info(),
 )
-evaluate_consistency = EvaluateExperimentalConsistencySubgraph(
-    consistency_score_threshold=settings.evaluate_experimental_consistency.consistency_score_threshold,
-    llm_mapping={
-        "evaluate_experimental_consistency": settings.llm_mapping.evaluate_experimental_consistency,
-    },
-)
+# evaluate_consistency = EvaluateExperimentalConsistencySubgraph(
+#     consistency_score_threshold=settings.evaluate_experimental_consistency.consistency_score_threshold,
+#     llm_mapping={
+#         "evaluate_experimental_consistency": settings.llm_mapping.evaluate_experimental_consistency,
+#     },
+# )
 analysis = AnalyticSubgraph(
     llm_mapping={
         "analytic_node": settings.llm_mapping.analytic_node,
-    }
+    },
 )
 create_bibfile = CreateBibfileSubgraph(
     llm_mapping={
         "filter_references": settings.llm_mapping.filter_references,
     },
-    latex_template_name="iclr2024",
+    latex_template_name=settings.latex_template_name,
     max_filtered_references=settings.create_bibfile.max_filtered_references,
 )
 writer = WriterSubgraph(
@@ -157,7 +155,7 @@ latex = LatexSubgraph(
     llm_mapping={
         "convert_to_latex": settings.llm_mapping.convert_to_latex,
     },
-    latex_template_name="iclr2024",
+    latex_template_name=settings.latex_template_name,
 )
 readme = ReadmeSubgraph()
 html = HtmlSubgraph(
@@ -179,7 +177,7 @@ subgraph_list = [
     retrieve_hugging_face,
     coder,
     executor,
-    evaluate_consistency,  # TODO 現状イテレーションできない
+    # evaluate_consistency,
     analysis,
     reference_extractor,
     retrieve_reference_paper_content,
@@ -282,20 +280,22 @@ def resume_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    suffix = "tanaka"
+    suffix = "matsuzawa"
     exec_time = datetime.now().strftime("%Y%m%d-%H%M%S")
     repository_name = f"airas-{exec_time}-{suffix}"
-    research_topic_list = "LLMの新しい損失関数"
+    research_topic_list = (
+        "Improving Test-Time Adaptation in terms of convergence speed."
+    )
 
     # TODO: argparse
 
-    # execute_workflow(github_owner, repository_name, research_topic=research_topic_list)
+    execute_workflow(github_owner, repository_name, research_topic=research_topic_list)
 
-    resume_workflow(
-        github_owner=github_owner,
-        repository_name="experiment_matsuzawa_251002",
-        source_branch_name="research-0-retry-5",
-        target_branch_name="research-0-retry-5-opencode-latex",
-        start_subgraph_name="LatexSubgraph",
-        subgraph_list=subgraph_list,
-    )
+    # resume_workflow(
+    #     github_owner=github_owner,
+    #     repository_name="experiment_matsuzawa_251002",
+    #     source_branch_name="research-0-retry-5",
+    #     target_branch_name="research-0-retry-5-opencode-latex",
+    #     start_subgraph_name="LatexSubgraph",
+    #     subgraph_list=subgraph_list,
+    # )

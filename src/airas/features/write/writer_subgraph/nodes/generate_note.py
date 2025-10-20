@@ -10,68 +10,83 @@ def generate_note(
     reference_research_study_list: list[ResearchStudy],
     references_bib: str,
 ) -> str:
-    # Extract selected experiments
-    selected_experiments = []
-    if new_method.experimental_design and new_method.experimental_design.experiments:
-        selected_experiments = [
-            exp
-            for exp in new_method.experimental_design.experiments
-            if exp.evaluation and exp.evaluation.is_selected_for_paper
-        ]
-
-    # Combine results and images from all selected experiments
-    combined_results = []
     all_image_files = []
-    for exp in selected_experiments:
-        if exp.results:
-            combined_results.append(f"**{exp.experiment_id}**: {exp.results.result}")
-            if exp.results.image_file_name_list:
-                all_image_files.extend(exp.results.image_file_name_list)
+    run_results = []
+    for run in new_method.experiment_runs:
+        if run.results.figures:
+            all_image_files.extend(run.results.figures)
+
+        if run.results.metrics_data:
+            run_results.append(
+                f"- **{run.run_id}** (Method: {run.method_name}, "
+                f"Model: {run.model_name or 'N/A'}, "
+                f"Dataset: {run.dataset_name or 'N/A'})\n  {run.results.metrics_data}"
+            )
+    if new_method.experimental_analysis.comparison_figures:
+        all_image_files.extend(new_method.experimental_analysis.comparison_figures)
 
     template = Template(
         """\
-## Method
+# Research Paper Note
+
+## 1. Proposed Method
 {{ method }}
 
-## Experimental Strategy
-{{ experimental_strategy }}
+## 2. Experimental Design
+{{ experimental_design_summary }}
 
-## Experimental Results
-{{ experimental_results }}
+## 3. Individual Run Results
+{% for result in run_results %}
+{{ result }}
+{% endfor %}
 
-## Analysis
-{{ analysis }}
+## 4. Aggregated Metrics
+{{ aggregated_metrics }}
 
-## Image Files
-{{ image_file_name_list | join("\n") }}
+## 5. Analysis Report
+{{ analysis_report }}
 
-## Reference Papers
-{{ research_study_list | join("\n") }}
-{{ reference_research_study_list | join("\n") }}
+## 6. Figures
+{% for figure in image_files %}
+- {{ figure }}
+{% endfor %}
 
-## BibTeX References
+## 7. Reference Papers
+
+### Main References
+{% for paper in main_references %}
+**{{ paper.title }}**
+{{ paper.abstract }}
+
+{% endfor %}
+
+### Additional References
+{% for paper in additional_references %}
+**{{ paper.title }}**
+{{ paper.abstract }}
+
+{% endfor %}
+
+## 8. BibTeX References
 {{ references_bib }}""".strip()
     )
 
     return template.render(
         method=new_method.method,
-        experimental_strategy=new_method.experimental_design.experiment_strategy
-        if new_method.experimental_design
-        else "",
-        experimental_results="\n\n".join(combined_results) if combined_results else "",
-        analysis=new_method.experimental_analysis.analysis_report
-        if new_method.experimental_analysis
-        else "",
-        image_file_name_list=all_image_files,
-        research_study_list=[
-            f"{research_study.title}\n{research_study.abstract}"
-            for research_study in research_study_list
-            if research_study.abstract
+        experimental_design_summary=new_method.experimental_design.experiment_summary,
+        run_results=run_results,
+        aggregated_metrics=new_method.experimental_analysis.aggregated_metrics,
+        analysis_report=new_method.experimental_analysis.analysis_report,
+        image_files=all_image_files,
+        main_references=[
+            {"title": rs.title, "abstract": rs.abstract}
+            for rs in research_study_list
+            if rs.abstract
         ],
-        reference_research_study_list=[
-            f"{reference_research_study.title}\n{reference_research_study.abstract}"
-            for reference_research_study in reference_research_study_list
-            if reference_research_study.abstract
+        additional_references=[
+            {"title": rs.title, "abstract": rs.abstract}
+            for rs in reference_research_study_list
+            if rs.abstract
         ],
         references_bib=references_bib,
     ).strip()

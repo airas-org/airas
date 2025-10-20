@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
 from airas.config.runner_type_info import RunnerType
+from airas.types.latex import LATEX_TEMPLATE_NAME
 from airas.types.wandb import WandbInfo
 
 
@@ -55,8 +56,6 @@ class EvaluateExperimentalConsistencySubgraphConfig(BaseModel):
 
 
 class CreateBibfileSubgraphConfig(BaseModel):
-    # TODO: Literalで定義する
-    latex_template_name: str = "agents4science_2025"
     max_filtered_references: int = 20  # 論文中で引用する参考文献の最大数
 
 
@@ -70,51 +69,77 @@ class LatexSubgraphConfig(BaseModel):
 
 
 class WandbConfig(BaseModel):
-    entity: str | None = None  # WandB entity (username or team name)
-    project: str | None = None  # WandB project name
+    entity: str = "your-wandb-entity"  # WandB entity (username or team name)
+    project: str = "your-wandb-project"  # WandB project name
 
     def to_wandb_info(self):
-        if self.entity and self.project:
-            return WandbInfo(entity=self.entity, project=self.project)
-        return None
+        return WandbInfo(entity=self.entity, project=self.project)
 
 
 class LLMMappingConfig(BaseModel):
+    # GenerateQueriesSubgraph
     generate_queries: str = "o4-mini-2025-04-16"
+
+    # RetrievePaperContentSubgraph and CreateMethodSubgraphV2
     search_arxiv_id_from_title: str = (
         "gpt-5-mini-2025-08-07"  # Only openAI models are available.
     )
+
+    # SummarizePaperSubgraph
     summarize_paper: str = "gemini-2.5-flash"
+
+    # RetrieveCodeSubgraph
     extract_github_url_from_text: str = "gemini-2.5-flash"
     extract_experimental_info: str = "gemini-2.5-flash"
+
+    # ExtractReferenceTitlesSubgraph
     extract_reference_titles: str = "gemini-2.5-flash-lite-preview-06-17"
-    generate_ide_and_research_summary: str = "o3-2025-04-16"
+
+    # CreateMethodSubgraphV2
+    generate_idea_and_research_summary: str = "o3-2025-04-16"
     evaluate_novelty_and_significance: str = "o3-2025-04-16"
     refine_idea_and_research_summary: str = "o3-2025-04-16"
-    generate_experiment_strategy: str = "o3-2025-04-16"
-    generate_experiments: str = "o3-2025-04-16"
+
+    # CreateExperimentalDesignSubgraph
+    generate_experiment_design: str = "o3-2025-04-16"
+
+    # RetrieveHuggingFaceSubgraph
     select_resources: str = "gemini-2.5-flash"
-    generate_base_code: str = "o3-2025-04-16"
-    derive_specific_experiments: str = "o3-2025-04-16"
-    validate_base_code: str = "o3-2025-04-16"
+    extract_code_in_readme: str = "gemini-2.5-flash"
+
+    # CreateCodeSubgraph
+    generate_run_config: str = "o3-2025-04-16"
+    generate_experiment_code: str = "o3-2025-04-16"
     validate_experiment_code: str = "o3-2025-04-16"
-    evaluate_experimental_consistency: str = "o3-2025-04-16"
+
+    # AnalyticSubgraph
     analytic_node: str = "o3-2025-04-16"
+
+    # CreateBibfileSubgraph
     filter_references: str = "gemini-2.5-flash"
+
+    # WriterSubgraph
     write_paper: str = "gpt-5-2025-08-07"
     refine_paper: str = "o3-2025-04-16"
+
+    # ReviewPaperSubgraph
     review_paper: str = "o3-2025-04-16"
+
+    # LatexSubgraph
     convert_to_latex: str = "gpt-5-2025-08-07"
-    check_execution_successful: str = "gpt-5-2025-08-07"
-    fix_latex_text: str = "o3-2025-04-16"
+
+    # HtmlSubgraph
     convert_to_html: str = "gpt-5-2025-08-07"
 
 
 class Settings(BaseSettings):
     profile: Literal["test", "prod"] = "test"
 
+    # LaTeX設定
+    latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024"
+
     # 実行基盤
-    runner_type: RunnerType = "gpu-runner"
+    runner_type: RunnerType = "H200_144GM×8"
     # TODO: From the perspective of research consistency,
     # we should probably not have ClaudeCode make changes to HuggingFace resources.
     # This change includes prompt modifications in `run_experiment_with_claude_code.yml``.
@@ -151,6 +176,9 @@ class Settings(BaseSettings):
     llm_mapping: LLMMappingConfig = LLMMappingConfig()
 
     def apply_profile_overrides(self) -> Self:
+        self.wandb.entity = "gengaru617-personal"
+        self.wandb.project = "251020-test"
+
         if self.profile == "test":
             self.generate_queries.n_queries = 1
             self.get_paper_titles_from_db.max_results_per_query = 2
