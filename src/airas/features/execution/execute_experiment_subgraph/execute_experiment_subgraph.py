@@ -19,18 +19,15 @@ from airas.features.execution.execute_experiment_subgraph.nodes.create_experimen
     create_experiment_branches,
 )
 from airas.features.execution.execute_experiment_subgraph.nodes.execute_experiment import (
-    execute_evaluation,
     execute_full_experiments,
     execute_trial_experiment,
 )
 from airas.features.execution.execute_experiment_subgraph.nodes.retrieve_artifacts import (
-    retrieve_evaluation_artifacts,
     retrieve_trial_experiment_artifacts,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ExperimentalResults, ResearchHypothesis
-from airas.types.wandb import WandbInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -79,10 +76,8 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
         self,
         runner_type: RunnerType = "ubuntu-latest",
         llm_mapping: dict[str, str] | ExecuteExperimentLLMMapping | None = None,
-        wandb_info: WandbInfo | None = None,
     ):
         self.runner_type = runner_type
-        self.wandb_info = wandb_info
 
         if llm_mapping is None:
             self.llm_mapping = ExecuteExperimentLLMMapping()
@@ -121,15 +116,13 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
     def _execute_trial_experiment(
         self, state: ExecutorSubgraphState
     ) -> dict[str, bool]:
-        executed_flag = execute_trial_experiment(
+        execute_trial_experiment(
             github_repository=state["github_repository_info"],
             experiment_iteration=state["experiment_iteration"],
             runner_type=cast(RunnerType, self.runner_type),
             new_method=state["new_method"],
         )
-        return {
-            "executed_flag": executed_flag,
-        }
+        return {}
 
     @executor_timed
     def _retrieve_trial_experiment_artifacts(
@@ -182,35 +175,13 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
     def _execute_full_experiments(
         self, state: ExecutorSubgraphState
     ) -> dict[str, bool | int]:
-        executed_flag = execute_full_experiments(
+        execute_full_experiments(
             github_repository=state["github_repository_info"],
             experiment_iteration=state["experiment_iteration"],
             runner_type=cast(RunnerType, self.runner_type),
             new_method=state["new_method"],
         )
-        return {
-            "executed_flag": executed_flag,
-        }
-
-    @executor_timed
-    def _execute_evaluation(self, state: ExecutorSubgraphState) -> dict[str, bool]:
-        executed_flag = execute_evaluation(
-            github_repository=state["github_repository_info"],
-            experiment_iteration=state["experiment_iteration"],
-            runner_type=cast(RunnerType, self.runner_type),
-        )
-        return {"executed_flag": executed_flag}
-
-    @executor_timed
-    def _retrieve_evaluation_artifacts(
-        self, state: ExecutorSubgraphState
-    ) -> dict[str, ResearchHypothesis]:
-        new_method = retrieve_evaluation_artifacts(
-            github_repository=state["github_repository_info"],
-            experiment_iteration=state["experiment_iteration"],
-            new_method=state["new_method"],
-        )
-        return {"new_method": new_method}
+        return {}
 
     def _should_retry_trial_experiment(self, state: ExecutorSubgraphState) -> str:
         if state.get("trial_experiment_passed", False):
@@ -241,10 +212,6 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
         graph_builder.add_node(
             "execute_full_experiments", self._execute_full_experiments
         )
-        graph_builder.add_node("execute_evaluation", self._execute_evaluation)
-        graph_builder.add_node(
-            "retrieve_evaluation_artifacts", self._retrieve_evaluation_artifacts
-        )
 
         graph_builder.add_edge(START, "initialize")
         graph_builder.add_edge("initialize", "execute_trial_experiment")
@@ -261,9 +228,7 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
             },
         )
         graph_builder.add_edge("create_experiment_branches", "execute_full_experiments")
-        graph_builder.add_edge("execute_full_experiments", "execute_evaluation")
-        graph_builder.add_edge("execute_evaluation", "retrieve_evaluation_artifacts")
-        graph_builder.add_edge("retrieve_evaluation_artifacts", END)
+        graph_builder.add_edge("execute_full_experiments", END)
 
         return graph_builder.compile()
 

@@ -11,9 +11,15 @@ from airas.features.analysis.analytic_subgraph.input_data import (
     analytic_subgraph_input_data,
 )
 from airas.features.analysis.analytic_subgraph.nodes.analytic_node import analytic_node
+from airas.features.execution.execute_experiment_subgraph.nodes.execute_experiment import (
+    execute_evaluation,
+)
+from airas.features.execution.execute_experiment_subgraph.nodes.retrieve_artifacts import (
+    retrieve_evaluation_artifacts,
+)
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ExperimentalAnalysis, ResearchHypothesis
+from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -31,14 +37,14 @@ class AnalyticLLMMapping(BaseModel):
 class AnalyticSubgraphInputState(TypedDict):
     new_method: ResearchHypothesis
     github_repository_info: GitHubRepositoryInfo
+    experiment_iteration: int
 
 
-class AnalyticSubgraphHiddenState(TypedDict):
-    pass
+class AnalyticSubgraphHiddenState(TypedDict): ...
 
 
 class AnalyticSubgraphOutputState(TypedDict):
-    analysis_report: str
+    new_method: ResearchHypothesis
 
 
 class AnalyticSubgraphState(
@@ -61,8 +67,6 @@ class AnalyticSubgraph(BaseSubgraph):
         if llm_mapping is None:
             self.llm_mapping = AnalyticLLMMapping()
         elif isinstance(llm_mapping, dict):
-            # dict から AnalyticLLMMapping を作成する際に型変換を行う
-            # 実行時には文字列が有効なLLM_MODELかをチェック
             try:
                 self.llm_mapping = AnalyticLLMMapping.model_validate(llm_mapping)
             except Exception as e:
@@ -70,7 +74,6 @@ class AnalyticSubgraph(BaseSubgraph):
                     f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
                 ) from e
         elif isinstance(llm_mapping, AnalyticLLMMapping):
-            # すでに型が正しい場合も受け入れる
             self.llm_mapping = llm_mapping
         else:
             raise TypeError(
@@ -80,23 +83,43 @@ class AnalyticSubgraph(BaseSubgraph):
         check_api_key(llm_api_key_check=True)
 
     @analytic_timed
-    def _analytic_node(self, state: AnalyticSubgraphState) -> dict:
-        new_method = state["new_method"]
-        analysis_report = analytic_node(
-            llm_name=self.llm_mapping.analytic_node,
-            new_method=new_method,
-            github_repository_info=state["github_repository_info"],
+    def _execute_evaluation(self, state: AnalyticSubgraphState) -> dict:
+        execute_evaluation(
+            github_repository=state["github_repository_info"],
+            experiment_iteration=state["experiment_iteration"],
+            new_method=state["new_method"],
         )
-        new_method.experimental_analysis = ExperimentalAnalysis(
-            analysis_report=analysis_report
+        return {}
+
+    @analytic_timed
+    def _retrieve_evaluation_artifacts(self, state: AnalyticSubgraphState) -> dict:
+        new_method = retrieve_evaluation_artifacts(
+            github_repository=state["github_repository_info"],
+            experiment_iteration=state["experiment_iteration"],
+            new_method=state["new_method"],
+        )
+        return {"new_method": new_method}
+
+    @analytic_timed
+    def _analytic_node(self, state: AnalyticSubgraphState) -> dict:
+        new_method = analytic_node(
+            llm_name=self.llm_mapping.analytic_node,
+            new_method=state["new_method"],
+            github_repository_info=state["github_repository_info"],
         )
         return {"new_method": new_method}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(AnalyticSubgraphState)
+        graph_builder.add_node("execute_evaluation", self._execute_evaluation)
+        graph_builder.add_node(
+            "retrieve_evaluation_artifacts", self._retrieve_evaluation_artifacts
+        )
         graph_builder.add_node("analytic_node", self._analytic_node)
 
-        graph_builder.add_edge(START, "analytic_node")
+        graph_builder.add_edge(START, "execute_evaluation")
+        graph_builder.add_edge("execute_evaluation", "retrieve_evaluation_artifacts")
+        graph_builder.add_edge("retrieve_evaluation_artifacts", "analytic_node")
         graph_builder.add_edge("analytic_node", END)
         return graph_builder.compile()
 

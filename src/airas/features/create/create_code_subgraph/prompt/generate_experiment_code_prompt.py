@@ -38,9 +38,10 @@ uv run python -u -m src.main run={run_id} results_dir={path} trial_mode=true
 
 **Evaluation (evaluate.py, independent execution):**
 ```bash
-uv run python -m src.evaluate results_dir={path}
+uv run python -m src.evaluate results_dir={path} run_ids='["run-1", "run-2", ...]'
 ```
 - `results_dir`: Directory containing experiment metadata and where outputs will be saved
+- `run_ids`: JSON string list of run IDs to evaluate (e.g., '["run-1-proposed-bert-glue", "run-2-baseline-bert-glue"]')
 - Executed as a separate workflow after all training runs complete
 - **NOT called from main.py**
 
@@ -59,31 +60,39 @@ Generate complete code for these files ONLY. Do not create any additional files 
 - **NO results.json, no stdout JSON output, no figure generation**
 
 **`src/evaluate.py`**: Independent evaluation and visualization script
-- **Execution**: Run independently via `uv run python -m src.evaluate results_dir={path}`
+- **Execution**: Run independently via `uv run python -m src.evaluate results_dir={path} run_ids='["run-1", "run-2"]'`
 - **NOT called from main.py** - executes as separate workflow after all training completes
 - **Responsibilities**:
-  * Parse `results_dir` from command line arguments
+  * Parse command line arguments:
+    - `results_dir`: Output directory path
+    - `run_ids`: JSON string list of run IDs (parse with `json.loads(args.run_ids)`)
   * Load WandB config from `{results_dir}/config.yaml`
-  * Retrieve all experimental data from WandB API:
+  * Retrieve experimental data from WandB API for specified run_ids:
     ```python
+    import json
     api = wandb.Api()
-    runs = api.runs(f"{entity}/{project}")
-    for run in runs:
+    run_ids = json.loads(args.run_ids)  # Parse JSON string to list
+    for run_id in run_ids:
+        run = api.run(f"{entity}/{project}/{run_id}")
         metrics_df = run.history()  # pandas DataFrame with all logged metrics
     ```
-  * Export retrieved data to:
-    - `{results_dir}/wandb_data/run_{run_id}_metrics.csv` (per-run metrics)
-    - `{results_dir}/wandb_data/summary.json` (aggregated comparison)
-  * Compute secondary/derived metrics (e.g., improvement rate: (proposed - baseline) / baseline)
-  * Generate ALL publication-quality PDF figures and save to `{results_dir}/images/`:
-    - Learning curves (loss, accuracy over epochs)
-    - Cross-run comparison charts (bar charts, box plots)
-    - Performance metrics tables
-  * Use matplotlib or seaborn with proper legends, annotations, tight_layout
+  * **STEP 1: Per-Run Processing** (for each run_id):
+    - Export run-specific metrics to: `{results_dir}/{run_id}/metrics.json`
+    - Generate run-specific figures (learning curves, confusion matrices) to: `{results_dir}/{run_id}/`
+    - Each run should have its own subdirectory with its metrics and figures
+  * **STEP 2: Aggregated Analysis** (after processing all runs):
+    - Export aggregated metrics to: `{results_dir}/comparison/aggregated_metrics.json`
+    - Compute secondary/derived metrics (e.g., improvement rate: (proposed - baseline) / baseline)
+    - Generate comparison figures to: `{results_dir}/comparison/`:
+      * Cross-run comparison charts (bar charts, box plots)
+      * Performance metrics tables
+      * Statistical significance tests
+  * **Figure Generation Guidelines**:
+    - Use matplotlib or seaborn with proper legends, annotations, tight_layout
     - For line graphs: annotate significant values (final/best values)
     - For bar graphs: annotate values above each bar
-  * Follow naming convention: `<figure_topic>[_<condition>][_pairN].pdf`
-  * Print generated figure names to stdout
+    - Follow naming convention: `<figure_topic>[_<condition>][_pairN].pdf`
+  * Print all generated file paths to stdout (both per-run and comparison)
 
 **`src/preprocess.py`**: Complete preprocessing pipeline implementation for the specified datasets
 
