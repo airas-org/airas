@@ -1,9 +1,14 @@
 import itertools
 import logging
+import re
 
 from airas.types.research_hypothesis import ExperimentRun, ResearchHypothesis
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_for_branch_name(text: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9_-]+", "-", text).strip("-")
 
 
 def generate_experiment_runs(
@@ -31,7 +36,7 @@ def generate_experiment_runs(
 
     experiment_runs = [
         ExperimentRun(
-            run_id=f"{method}-{model}-{dataset}",
+            run_id=_sanitize_for_branch_name(f"{method}-{model}-{dataset}"),
             method_name=method,
             model_name=model,
             dataset_name=dataset,
