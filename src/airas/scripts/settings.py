@@ -63,11 +63,6 @@ class WriterSubgraphConfig(BaseModel):
     writing_refinement_rounds: int = 2  # 論文の推敲回数
 
 
-class LatexSubgraphConfig(BaseModel):
-    max_chktex_revisions: int = 3  # LaTeXの文法チェックの最大修正回数
-    max_compile_revisions: int = 3  # LaTeXのコンパイルエラーの最大修正回数
-
-
 class WandbConfig(BaseModel):
     entity: str = "your-wandb-entity"  # WandB entity (username or team name)
     project: str = "your-wandb-project"  # WandB project name
@@ -169,7 +164,6 @@ class Settings(BaseSettings):
     )
     create_bibfile: CreateBibfileSubgraphConfig = CreateBibfileSubgraphConfig()
     writer: WriterSubgraphConfig = WriterSubgraphConfig()
-    latex: LatexSubgraphConfig = LatexSubgraphConfig()
     wandb: WandbConfig = WandbConfig()
 
     # LLMの設定
@@ -195,8 +189,6 @@ class Settings(BaseSettings):
             self.evaluate_experimental_consistency.consistency_score_threshold = 1
             self.create_bibfile.max_filtered_references = 2
             self.writer.writing_refinement_rounds = 1
-            self.latex.max_chktex_revisions = 1
-            self.latex.max_compile_revisions = 1
         elif self.profile == "prod":
             # 本番はリッチに
             self.generate_queries.n_queries = 6
