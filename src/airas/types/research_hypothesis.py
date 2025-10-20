@@ -113,6 +113,9 @@ class ExperimentRun(BaseModel):
         None, description="The results of this run."
     )
 
+    def get_branch_name(self, base_branch: str) -> str:
+        return f"{base_branch}-{self.run_id}"
+
 
 class ExperimentalResults(BaseModel):
     stdout: Optional[str] = Field(None, description="Standard output from the run")
