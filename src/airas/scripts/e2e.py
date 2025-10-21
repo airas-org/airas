@@ -287,8 +287,6 @@ if __name__ == "__main__":
         "Improving Test-Time Adaptation in terms of convergence speed."
     )
 
-    # TODO: argparse
-
     execute_workflow(github_owner, repository_name, research_topic=research_topic_list)
 
     # resume_workflow(
@@ -299,3 +297,8 @@ if __name__ == "__main__":
     #     start_subgraph_name="LatexSubgraph",
     #     subgraph_list=subgraph_list,
     # )
+
+    # TODO: The current CreateBranchSubgraph traces the f"[subgraph: {subgraph_name}]" marker in the commit message.
+    # However, if ExecuteExperimentSubgraph stops with an error,
+    # for example, no commit will exist, forcing a re-execution from the previous subgraph (CreateCodeSubgraph).
+    # It seems desirable to change the specification to absorb the changes up to the previous marker into a new branch.
