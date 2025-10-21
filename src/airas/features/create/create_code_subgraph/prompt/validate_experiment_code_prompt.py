@@ -52,7 +52,10 @@ Check if the generated experiment code meets ALL of the following requirements:
    - All functionality contained within specified files
 
 6. **WandB Integration**:
-   - train.py initializes WandB and logs ALL metrics using `wandb.log()`
+   - train.py initializes WandB and logs ALL metrics comprehensively:
+     * Use `wandb.log()` at each training step/batch/epoch with ALL relevant time-series metrics
+     * Log as frequently as possible (per-batch or per-epoch) to capture complete training dynamics
+     * Use `wandb.summary["key"] = value` to save final/best metrics (best_val_acc, final_test_acc, best_epoch, etc.)
    - trial_mode automatically disables WandB (sets wandb.mode=disabled)
    - NO results.json or stdout JSON dumps in train.py
    - config/config.yaml contains mandatory WandB settings (entity/project)
@@ -67,9 +70,11 @@ Check if the generated experiment code meets ALL of the following requirements:
    - evaluate.py is executed independently via `uv run python -m src.evaluate results_dir={path} run_ids='["run-1", "run-2"]'`
    - Accepts `run_ids` parameter as JSON string list (parse with `json.loads(args.run_ids)`)
    - main.py DOES NOT call evaluate.py
-   - evaluate.py retrieves ALL data from WandB API using `wandb.Api()` (not from local files)
+   - evaluate.py retrieves comprehensive data from WandB API:
+     * Use `wandb.Api()` to get run data: `run = api.run(f"{entity}/{project}/{run_id}")`
+     * Retrieve: `history = run.history()`, `summary = run.summary._json_dict`, `config = dict(run.config)`
    - **STEP 1: Per-Run Processing** (for each run_id):
-     * Export run-specific metrics to: `{results_dir}/{run_id}/metrics.json`
+     * Export comprehensive run-specific metrics to: `{results_dir}/{run_id}/metrics.json`
      * Generate run-specific figures (learning curves, confusion matrices) to: `{results_dir}/{run_id}/`
      * Each run should have its own subdirectory with its metrics and figures
    - **STEP 2: Aggregated Analysis** (after processing all runs):

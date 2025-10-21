@@ -55,7 +55,11 @@ Generate complete code for these files ONLY. Do not create any additional files 
   * Train model with given configuration
   * Initialize WandB: `wandb.init(entity=cfg.wandb.entity, project=cfg.wandb.project, id=cfg.run.run_id, config=OmegaConf.to_container(cfg, resolve=True), resume="allow")`
   * Skip `wandb.init()` if `cfg.wandb.mode == "disabled"` (trial_mode)
-  * Log ALL metrics to WandB: `wandb.log({"train_loss": 0.5, "val_acc": 0.85, "epoch": 1, ...})`
+  * **Log ALL metrics to WandB comprehensively**:
+    - Use `wandb.log()` at each training step/batch/epoch with ALL relevant metrics
+    - Log as frequently as possible (per-batch or per-epoch) to capture training dynamics
+  * **Save final/best metrics to WandB summary**:
+    - Use `wandb.summary["key"] = value` for final results
   * Print WandB run URL to stdout
 - **NO results.json, no stdout JSON output, no figure generation**
 
@@ -67,17 +71,19 @@ Generate complete code for these files ONLY. Do not create any additional files 
     - `results_dir`: Output directory path
     - `run_ids`: JSON string list of run IDs (parse with `json.loads(args.run_ids)`)
   * Load WandB config from `{results_dir}/config.yaml`
-  * Retrieve experimental data from WandB API for specified run_ids:
+  * **Retrieve comprehensive experimental data from WandB API** for specified run_ids:
     ```python
     import json
     api = wandb.Api()
     run_ids = json.loads(args.run_ids)  # Parse JSON string to list
     for run_id in run_ids:
         run = api.run(f"{entity}/{project}/{run_id}")
-        metrics_df = run.history()  # pandas DataFrame with all logged metrics
+        history = run.history()  # pandas DataFrame with ALL time-series metrics (train_loss, val_acc, etc.)
+        summary = run.summary._json_dict  # Final/best metrics (best_val_acc, final_test_acc, etc.)
+        config = dict(run.config)  # Run configuration (hyperparameters, model settings, etc.)
     ```
   * **STEP 1: Per-Run Processing** (for each run_id):
-    - Export run-specific metrics to: `{results_dir}/{run_id}/metrics.json`
+    - Export **comprehensive** run-specific metrics to: `{results_dir}/{run_id}/metrics.json`
     - Generate run-specific figures (learning curves, confusion matrices) to: `{results_dir}/{run_id}/`
     - Each run should have its own subdirectory with its metrics and figures
   * **STEP 2: Aggregated Analysis** (after processing all runs):

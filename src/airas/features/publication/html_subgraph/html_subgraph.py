@@ -128,12 +128,8 @@ class HtmlSubgraph(BaseSubgraph):
         self, state: HtmlSubgraphState
     ) -> dict[str, str | bool]:
         time.sleep(3)
-
-        # All images are in the main branch (github_repository_info.branch_name)
-        # No need to collect branches from individual experiment runs
         github_pages_url = prepare_images_for_html(
             github_repository=state["github_repository_info"],
-            image_source_branches=[state["github_repository_info"].branch_name],
         )
 
         return {

@@ -202,6 +202,8 @@ async def _retrieve_evaluation_artifacts_async(
 
     for run in new_method.experiment_runs:
         run_dir = f"{iteration_path}/{run.run_id}"
+        if run.results is None:
+            run.results = ExperimentalResults()
 
         try:
             metrics_file = _get_single_file_content(
@@ -228,11 +230,7 @@ async def _retrieve_evaluation_artifacts_async(
                 github_repository.branch_name,
             )
             if isinstance(figures_list, list):
-                run.results.figures = [
-                    f["name"]
-                    for f in figures_list
-                    if f["name"].endswith((".pdf", ".png", ".jpg", ".jpeg"))
-                ]
+                run.results.figures = [f["name"] for f in figures_list]
                 logger.info(
                     f"Retrieved {len(run.results.figures)} figures for run {run.run_id}"
                 )
@@ -265,11 +263,7 @@ async def _retrieve_evaluation_artifacts_async(
             github_repository.branch_name,
         )
         if isinstance(comparison_files, list):
-            comparison_figures = [
-                f["name"]
-                for f in comparison_files
-                if f["name"].endswith((".pdf", ".png", ".jpg", ".jpeg"))
-            ]
+            comparison_figures = [f["name"] for f in comparison_files]
             logger.info(f"Retrieved {len(comparison_figures)} comparison figures")
     except Exception as e:
         logger.warning(f"Could not retrieve comparison figures: {e}")

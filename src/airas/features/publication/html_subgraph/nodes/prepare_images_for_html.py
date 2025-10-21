@@ -1,5 +1,4 @@
 import asyncio
-import json
 from logging import getLogger
 
 from airas.features.execution.execute_experiment_subgraph.workflow_executor import (
@@ -13,7 +12,6 @@ logger = getLogger(__name__)
 
 def prepare_images_for_html(
     github_repository: GitHubRepositoryInfo,
-    image_source_branches: list[str],
     workflow_file: str = "prepare_images_for_html.yml",
     client: GithubClient | None = None,
 ) -> str | None:
@@ -22,9 +20,7 @@ def prepare_images_for_html(
     branch_name = github_repository.branch_name or "main"
 
     executor = WorkflowExecutor(client)
-    inputs = {
-        "image_source_branches": json.dumps(image_source_branches),
-    }
+    inputs: dict = {}
 
     try:
         result = asyncio.run(

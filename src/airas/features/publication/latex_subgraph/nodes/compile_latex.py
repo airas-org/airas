@@ -1,5 +1,4 @@
 import asyncio
-import json
 from logging import getLogger
 
 from airas.features.execution.execute_experiment_subgraph.workflow_executor import (
@@ -14,7 +13,6 @@ logger = getLogger(__name__)
 
 def compile_latex(
     github_repository_info: GitHubRepositoryInfo,
-    image_source_branches: list[str],
     workflow_file: str = "compile_latex_with_open_code.yml",
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
     client: GithubClient | None = None,
@@ -27,7 +25,6 @@ def compile_latex(
 
     workflow_inputs = {
         "subdir": latex_template_name,
-        "image_source_branches": json.dumps(image_source_branches),
     }
 
     try:

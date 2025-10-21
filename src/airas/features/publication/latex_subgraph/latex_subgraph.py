@@ -52,7 +52,6 @@ class LatexSubgraphInputState(TypedDict):
     references_bib: str
     paper_content: PaperContent
     new_method: ResearchHypothesis
-    experiment_branches: list[str]  # TODO
 
 
 class LatexSubgraphHiddenState(TypedDict):
@@ -145,7 +144,6 @@ class LatexSubgraph(BaseSubgraph):
     def _compile_latex(self, state: LatexSubgraphState) -> dict:
         is_compiled = compile_latex(
             github_repository_info=state["github_repository_info"],
-            image_source_branches=state["experiment_branches"],
             latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
         )
         return {"is_compiled": is_compiled}

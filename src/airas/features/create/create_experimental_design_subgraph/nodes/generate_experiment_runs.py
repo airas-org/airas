@@ -8,7 +8,16 @@ logger = logging.getLogger(__name__)
 
 
 def _sanitize_for_branch_name(text: str) -> str:
-    return re.sub(r"[^a-zA-Z0-9_-]+", "-", text).strip("-")
+    # Allow alphanumeric, dots, hyphens, underscores
+    sanitized = re.sub(r"[^a-zA-Z0-9._-]+", "-", text)
+    # Remove leading/trailing dots and hyphens
+    sanitized = sanitized.strip(".-")
+    # Replace consecutive dots with single dot (.. is not allowed)
+    sanitized = re.sub(r"\.{2,}", ".", sanitized)
+    # Remove .lock suffix if present
+    if sanitized.endswith(".lock"):
+        sanitized = sanitized[:-5]
+    return sanitized
 
 
 def generate_experiment_runs(
