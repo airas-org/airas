@@ -35,17 +35,22 @@ def generate_experiment_runs(
     ]
     methods.extend(comparative_ids)
 
-    models = design.models_to_use or []
-    datasets = design.datasets_to_use or []
+    # Use placeholder if models or datasets are empty (e.g., when proposed method introduces new model/dataset)
+    models = design.models_to_use or [None]
+    datasets = design.datasets_to_use or [None]
 
-    if not models:
-        logger.warning("No models specified in experimental design")
-    if not datasets:
-        logger.warning("No datasets specified in experimental design")
+    if design.models_to_use is None or len(design.models_to_use) == 0:
+        logger.warning("No models specified (proposed method may introduce new model)")
+    if design.datasets_to_use is None or len(design.datasets_to_use) == 0:
+        logger.warning(
+            "No datasets specified (proposed method may introduce new dataset)"
+        )
 
     experiment_runs = [
         ExperimentRun(
-            run_id=_sanitize_for_branch_name(f"{method}-{model}-{dataset}"),
+            run_id=_sanitize_for_branch_name(
+                "-".join(filter(None, [method, model, dataset]))
+            ),
             method_name=method,
             model_name=model,
             dataset_name=dataset,
