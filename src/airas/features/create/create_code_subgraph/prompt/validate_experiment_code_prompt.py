@@ -85,7 +85,9 @@ Check if the generated experiment code meets ALL of the following requirements:
      * Performance metrics tables
      * Statistical significance tests
    - Proper figure quality: legends, annotations, tight_layout
-   - Follows naming convention: `<figure_topic>[_<condition>][_pairN].pdf`
+   - Follows GLOBALLY UNIQUE naming convention to prevent collisions:
+     * Per-run figures: `{run_id}_{figure_topic}[_<condition>][_pairN].pdf` (e.g., `run-1-proposed-bert-glue_learning_curve.pdf`)
+     * Comparison figures: `comparison_{figure_topic}[_<condition>][_pairN].pdf` (e.g., `comparison_accuracy_bar_chart.pdf`)
    - train.py and main.py generate NO figures
    - evaluate.py cannot run in trial_mode (no WandB data available when WandB disabled)
 

@@ -97,7 +97,9 @@ Generate complete code for these files ONLY. Do not create any additional files 
     - Use matplotlib or seaborn with proper legends, annotations, tight_layout
     - For line graphs: annotate significant values (final/best values)
     - For bar graphs: annotate values above each bar
-    - Follow naming convention: `<figure_topic>[_<condition>][_pairN].pdf`
+    - Use GLOBALLY UNIQUE image filenames to prevent collisions across different runs and directories**:
+      * Per-run figures: `{run_id}_{figure_topic}[_<condition>][_pairN].pdf` (e.g., `run-1-proposed-bert-glue_learning_curve.pdf`)
+      * Comparison figures: `comparison_{figure_topic}[_<condition>][_pairN].pdf` (e.g., `comparison_accuracy_bar_chart.pdf`)
   * Print all generated file paths to stdout (both per-run and comparison)
 
 **`src/preprocess.py`**: Complete preprocessing pipeline implementation for the specified datasets
