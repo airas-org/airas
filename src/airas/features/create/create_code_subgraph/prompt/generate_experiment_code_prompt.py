@@ -27,14 +27,15 @@ The generated code must support the following CLI:
 **Training (main.py):**
 ```bash
 # Full experiment with WandB logging
-uv run python -u -m src.main run={run_id} results_dir={path}
+uv run python -u -m src.main run={run_id} results_dir={path} wandb.mode=online
 
 # Trial mode (validation only, WandB disabled)
 uv run python -u -m src.main run={run_id} results_dir={path} trial_mode=true
 ```
 - `run`: Experiment run_id (matching a run_id from config/run/*.yaml)
 - `results_dir`: Output directory (passed from GitHub Actions workflow)
-- `trial_mode=true` (optional): Lightweight execution for validation (epochs=1, batches limited to 1-2, disable Optuna n_trials=0, **WandB disabled**)
+- `trial_mode=true` (optional): Lightweight execution for validation (epochs=1, batches limited to 1-2, disable Optuna n_trials=0)
+  * **When trial_mode=true, code must automatically set wandb.mode=disabled internally (e.g., `if cfg.trial_mode: cfg.wandb.mode = "disabled"`)**
 
 **Evaluation (evaluate.py, independent execution):**
 ```bash
@@ -110,8 +111,7 @@ Generate complete code for these files ONLY. Do not create any additional files 
 - Receives run_id via Hydra, launches train.py as subprocess, manages logs
 - **DOES NOT call evaluate.py** (evaluate.py runs independently in separate workflow)
 - Use `@hydra.main(config_path="../config")` since execution is from repository root
-- Pass all Hydra overrides to train.py subprocess (e.g., `wandb.mode=disabled`, `trial_mode=true`)
-- In trial_mode, automatically set `wandb.mode=disabled`
+- **Trial mode handling**: When `cfg.trial_mode=true`, automatically set `cfg.wandb.mode="disabled"` before any WandB operations
 
 **`config/config.yaml`**: Main Hydra configuration file
 - MUST include WandB configuration:
@@ -121,6 +121,7 @@ Generate complete code for these files ONLY. Do not create any additional files 
     project: {{ wandb_info.project }}
     mode: online  # Automatically set to "disabled" in trial_mode
   ```
+- `WANDB_API_KEY` environment variable is automatically available for authentication
 
 **`pyproject.toml`**: Complete project dependencies
 - MUST include: `hydra-core`, `wandb` (required)
@@ -130,7 +131,7 @@ Generate complete code for these files ONLY. Do not create any additional files 
 ## Key Implementation Focus Areas
 1. **Hydra-Driven Configuration**: All parameters loaded from run configs dynamically
 2. **Algorithm Core**: Full implementation of the proposed method with proper abstraction
-3. **Trial Mode Behavior**: trial_mode=true automatically disables WandB (sets wandb.mode=disabled)
+3. **Trial Mode Behavior**: When `trial_mode=true`, code must automatically set `cfg.wandb.mode="disabled"` internally
 4. **Run Execution**: main.py executes a single run_id passed via CLI (GitHub Actions dispatches multiple runs separately)
 5. **WandB Integration**: All metrics logged to WandB; train.py does NOT output JSON to stdout or save results.json
 6. **Independent Evaluation**: evaluate.py runs separately, fetches data from WandB API, generates all figures

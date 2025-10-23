@@ -19,9 +19,10 @@ Check if the generated experiment code meets ALL of the following requirements:
    - All parameters are loaded from run configs dynamically
    - Proper configuration structure with run_id, method, model, dataset, training, and optuna sections
    - CLI interface matches:
-     * Training: `uv run python -u -m src.main run={run_id} results_dir={path}`
+     * Training (normal): `uv run python -u -m src.main run={run_id} results_dir={path} wandb.mode=online`
+     * Training (trial): `uv run python -u -m src.main run={run_id} results_dir={path} trial_mode=true`
      * Evaluation: `uv run python -m src.evaluate results_dir={path} run_ids='["run-1", "run-2", ...]'` (independent execution)
-   - Supports trial_mode=true flag for lightweight validation runs (automatically disables WandB)
+   - When trial_mode=true, code must automatically set cfg.wandb.mode="disabled" internally
 
 3. **Complete Data Pipeline**:
    - Full data loading and preprocessing implementation
@@ -56,9 +57,10 @@ Check if the generated experiment code meets ALL of the following requirements:
      * Use `wandb.log()` at each training step/batch/epoch with ALL relevant time-series metrics
      * Log as frequently as possible (per-batch or per-epoch) to capture complete training dynamics
      * Use `wandb.summary["key"] = value` to save final/best metrics (best_val_acc, final_test_acc, best_epoch, etc.)
-   - trial_mode automatically disables WandB (sets wandb.mode=disabled)
+   - When trial_mode=true, code must automatically set cfg.wandb.mode="disabled" before any WandB operations
    - NO results.json or stdout JSON dumps in train.py
    - config/config.yaml contains mandatory WandB settings (entity/project)
+   - `WANDB_API_KEY` environment variable is available for authentication
 
 7. **Configuration Files**:
    - The generated code properly references config files via Hydra
@@ -94,7 +96,7 @@ Check if the generated experiment code meets ALL of the following requirements:
 9. **Trial Mode Implementation**:
    - trial_mode=true flag properly reduces computational load
    - Training: epochs=1, batches limited to 1-2, Optuna disabled (n_trials=0), small evaluation subset
-   - WandB automatically disabled in trial_mode (wandb.mode=disabled)
+   - Code must automatically set cfg.wandb.mode="disabled" when trial_mode=true (e.g., `if cfg.trial_mode: cfg.wandb.mode = "disabled"`)
    - Purpose: Fast validation that code runs without errors
 
 ## Output Format
