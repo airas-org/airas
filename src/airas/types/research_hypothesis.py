@@ -96,10 +96,10 @@ class ExperimentRun(BaseModel):
         description="The name of the method used in this run (e.g., 'baseline', 'proposed').",
     )
     model_name: Optional[str] = Field(
-        ..., description="The name of the model used in this run."
+        None, description="The name of the model used in this run."
     )
     dataset_name: Optional[str] = Field(
-        ..., description="The name of the dataset used in this run."
+        None, description="The name of the dataset used in this run."
     )
     run_config: Optional[str] = Field(
         None,
