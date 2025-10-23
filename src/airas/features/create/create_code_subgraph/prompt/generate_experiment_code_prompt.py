@@ -74,7 +74,7 @@ Generate complete code for these files ONLY. Do not create any additional files 
   * Parse command line arguments:
     - `results_dir`: Output directory path
     - `run_ids`: JSON string list of run IDs (parse with `json.loads(args.run_ids)`)
-  * Load WandB config from `{results_dir}/config.yaml`
+  * Load WandB config from `config/config.yaml` (in repository root)
   * **Retrieve comprehensive experimental data from WandB API** for specified run_ids:
     ```python
     import json

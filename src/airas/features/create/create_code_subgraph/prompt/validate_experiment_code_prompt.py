@@ -77,6 +77,7 @@ Check if the generated experiment code meets ALL of the following requirements:
    - evaluate.py is executed independently via `uv run python -m src.evaluate results_dir={path} run_ids='["run-1", "run-2"]'`
    - Accepts `run_ids` parameter as JSON string list (parse with `json.loads(args.run_ids)`)
    - main.py DOES NOT call evaluate.py
+   - evaluate.py loads WandB config from `config/config.yaml` (in repository root)
    - evaluate.py retrieves comprehensive data from WandB API:
      * Use `wandb.Api()` to get run data: `run = api.run(f"{entity}/{project}/{run_id}")`
      * Retrieve: `history = run.history()`, `summary = run.summary._json_dict`, `config = dict(run.config)`
