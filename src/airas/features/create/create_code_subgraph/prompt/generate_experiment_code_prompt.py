@@ -27,15 +27,17 @@ The generated code must support the following CLI:
 **Training (main.py):**
 ```bash
 # Full experiment with WandB logging
-uv run python -u -m src.main run={run_id} results_dir={path} wandb.mode=online
+uv run python -u -m src.main run={run_id} results_dir={path} mode=full
 
 # Trial mode (validation only, WandB disabled)
-uv run python -u -m src.main run={run_id} results_dir={path} trial_mode=true
+uv run python -u -m src.main run={run_id} results_dir={path} mode=trial
 ```
 - `run`: Experiment run_id (matching a run_id from config/run/*.yaml)
 - `results_dir`: Output directory (passed from GitHub Actions workflow)
-- `trial_mode=true` (optional): Lightweight execution for validation (epochs=1, batches limited to 1-2, disable Optuna n_trials=0)
-  * **When trial_mode=true, code must automatically set wandb.mode=disabled internally (e.g., `if cfg.trial_mode: cfg.wandb.mode = "disabled"`)**
+- `mode`: Execution mode (required parameter)
+  * `mode=trial`: Lightweight execution for validation (epochs=1, batches limited to 1-2, wandb.mode=disabled, optuna.n_trials=0)
+  * `mode=full`: Full experiment execution (wandb.mode=online, full epochs, full Optuna trials)
+  * **Code must automatically configure based on mode (e.g., `if cfg.mode == "trial": cfg.wandb.mode = "disabled"; cfg.optuna.n_trials = 0` elif `cfg.mode == "full": cfg.wandb.mode = "online"`)**
 
 **Evaluation (evaluate.py, independent execution):**
 ```bash
@@ -111,7 +113,9 @@ Generate complete code for these files ONLY. Do not create any additional files 
 - Receives run_id via Hydra, launches train.py as subprocess, manages logs
 - **DOES NOT call evaluate.py** (evaluate.py runs independently in separate workflow)
 - Use `@hydra.main(config_path="../config")` since execution is from repository root
-- **Trial mode handling**: When `cfg.trial_mode=true`, automatically set `cfg.wandb.mode="disabled"` before any WandB operations
+- **Mode handling**: Automatically configure based on `cfg.mode`:
+  * When `cfg.mode == "trial"`: Set `cfg.wandb.mode = "disabled"`, `cfg.optuna.n_trials = 0`, epochs=1, etc.
+  * When `cfg.mode == "full"`: Set `cfg.wandb.mode = "online"` and use full configuration
 
 **`config/config.yaml`**: Main Hydra configuration file
 - MUST include WandB configuration:
@@ -131,7 +135,9 @@ Generate complete code for these files ONLY. Do not create any additional files 
 ## Key Implementation Focus Areas
 1. **Hydra-Driven Configuration**: All parameters loaded from run configs dynamically
 2. **Algorithm Core**: Full implementation of the proposed method with proper abstraction
-3. **Trial Mode Behavior**: When `trial_mode=true`, code must automatically set `cfg.wandb.mode="disabled"` internally
+3. **Mode-Based Behavior**: Code must automatically configure based on `cfg.mode` ("trial" vs "full")
+   - `mode=trial`: Set `cfg.wandb.mode="disabled"`, `cfg.optuna.n_trials=0`, epochs=1, limited batches
+   - `mode=full`: Set `cfg.wandb.mode="online"`, use full configuration
 4. **Run Execution**: main.py executes a single run_id passed via CLI (GitHub Actions dispatches multiple runs separately)
 5. **WandB Integration**: All metrics logged to WandB; train.py does NOT output JSON to stdout or save results.json
 6. **Independent Evaluation**: evaluate.py runs separately, fetches data from WandB API, generates all figures

@@ -19,10 +19,12 @@ Check if the generated experiment code meets ALL of the following requirements:
    - All parameters are loaded from run configs dynamically
    - Proper configuration structure with run_id, method, model, dataset, training, and optuna sections
    - CLI interface matches:
-     * Training (normal): `uv run python -u -m src.main run={run_id} results_dir={path} wandb.mode=online`
-     * Training (trial): `uv run python -u -m src.main run={run_id} results_dir={path} trial_mode=true`
+     * Training (full): `uv run python -u -m src.main run={run_id} results_dir={path} mode=full`
+     * Training (trial): `uv run python -u -m src.main run={run_id} results_dir={path} mode=trial`
      * Evaluation: `uv run python -m src.evaluate results_dir={path} run_ids='["run-1", "run-2", ...]'` (independent execution)
-   - When trial_mode=true, code must automatically set cfg.wandb.mode="disabled" internally
+   - Code must automatically configure based on mode:
+     * When `cfg.mode == "trial"`: Set `cfg.wandb.mode = "disabled"`, `cfg.optuna.n_trials = 0`, epochs=1
+     * When `cfg.mode == "full"`: Set `cfg.wandb.mode = "online"` and use full configuration
 
 3. **Complete Data Pipeline**:
    - Full data loading and preprocessing implementation
@@ -57,7 +59,9 @@ Check if the generated experiment code meets ALL of the following requirements:
      * Use `wandb.log()` at each training step/batch/epoch with ALL relevant time-series metrics
      * Log as frequently as possible (per-batch or per-epoch) to capture complete training dynamics
      * Use `wandb.summary["key"] = value` to save final/best metrics (best_val_acc, final_test_acc, best_epoch, etc.)
-   - When trial_mode=true, code must automatically set cfg.wandb.mode="disabled" before any WandB operations
+   - Code must automatically configure based on mode:
+     * When `cfg.mode == "trial"`: Set `cfg.wandb.mode = "disabled"` before any WandB operations
+     * When `cfg.mode == "full"`: Set `cfg.wandb.mode = "online"` before any WandB operations
    - NO results.json or stdout JSON dumps in train.py
    - config/config.yaml contains mandatory WandB settings (entity/project)
    - `WANDB_API_KEY` environment variable is available for authentication
@@ -93,11 +97,15 @@ Check if the generated experiment code meets ALL of the following requirements:
    - train.py and main.py generate NO figures
    - evaluate.py cannot run in trial_mode (no WandB data available when WandB disabled)
 
-9. **Trial Mode Implementation**:
-   - trial_mode=true flag properly reduces computational load
-   - Training: epochs=1, batches limited to 1-2, Optuna disabled (n_trials=0), small evaluation subset
-   - Code must automatically set cfg.wandb.mode="disabled" when trial_mode=true (e.g., `if cfg.trial_mode: cfg.wandb.mode = "disabled"`)
-   - Purpose: Fast validation that code runs without errors
+9. **Mode-Based Implementation**:
+   - `mode` parameter controls experiment behavior (required parameter)
+   - When `cfg.mode == "trial"`:
+     * Properly reduces computational load: epochs=1, batches limited to 1-2, Optuna disabled (n_trials=0), small evaluation subset
+     * Automatically sets `cfg.wandb.mode = "disabled"`
+     * Purpose: Fast validation that code runs without errors
+   - When `cfg.mode == "full"`:
+     * Automatically sets `cfg.wandb.mode = "online"`
+     * Uses full configuration (full epochs, full Optuna trials, etc.)
 
 ## Output Format
 Respond with a JSON object containing:
