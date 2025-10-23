@@ -134,7 +134,7 @@ class Settings(BaseSettings):
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024"
 
     # 実行基盤
-    runner_type: RunnerType = "H200_144GM×8"
+    runner_type: RunnerType = "A100_80GM×8"
     # TODO: From the perspective of research consistency,
     # we should probably not have ClaudeCode make changes to HuggingFace resources.
     # This change includes prompt modifications in `run_experiment_with_claude_code.yml``.
@@ -171,7 +171,7 @@ class Settings(BaseSettings):
 
     def apply_profile_overrides(self) -> Self:
         self.wandb.entity = "gengaru617-personal"
-        self.wandb.project = "251020-test"
+        self.wandb.project = "251023-test"
 
         if self.profile == "test":
             self.generate_queries.n_queries = 1
@@ -185,13 +185,25 @@ class Settings(BaseSettings):
             self.retrieve_hugging_face.max_results_per_search = 2
             self.retrieve_hugging_face.max_models = 1
             self.retrieve_hugging_face.max_datasets = 1
-            self.create_code.max_code_validations = 1
-            self.evaluate_experimental_consistency.consistency_score_threshold = 1
+            self.create_code.max_code_validations = 10
+            # self.evaluate_experimental_consistency.consistency_score_threshold = 1
             self.create_bibfile.max_filtered_references = 2
             self.writer.writing_refinement_rounds = 1
         elif self.profile == "prod":
             # 本番はリッチに
-            self.generate_queries.n_queries = 6
-            self.get_paper_titles_from_db.max_results_per_query = 8
-            self.create_method.method_refinement_rounds = 2
+            self.generate_queries.n_queries = 5
+            self.get_paper_titles_from_db.max_results_per_query = 5
+            self.extract_reference_titles.num_reference_paper = 20
+            self.create_method.num_retrieve_related_papers = 5
+            self.create_method.method_refinement_rounds = 5
+            self.create_experimental_design.num_models_to_use = 1
+            self.create_experimental_design.num_datasets_to_use = 1
+            self.create_experimental_design.num_comparative_methods = 1
+            self.retrieve_hugging_face.max_results_per_search = 3
+            self.retrieve_hugging_face.max_models = 3
+            self.retrieve_hugging_face.max_datasets = 3
+            self.create_code.max_code_validations = 10
+            # self.evaluate_experimental_consistency.consistency_score_threshold = 1
+            self.create_bibfile.max_filtered_references = 15
+            self.writer.writing_refinement_rounds = 3
         return self
