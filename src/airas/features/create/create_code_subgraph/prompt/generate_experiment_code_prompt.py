@@ -58,6 +58,7 @@ Generate complete code for these files ONLY. Do not create any additional files 
   * Train model with given configuration
   * Initialize WandB: `wandb.init(entity=cfg.wandb.entity, project=cfg.wandb.project, id=cfg.run.run_id, config=OmegaConf.to_container(cfg, resolve=True), resume="allow")`
   * Skip `wandb.init()` if `cfg.wandb.mode == "disabled"` (trial_mode)
+  * **Optuna Integration**: If using Optuna for hyperparameter search, DO NOT log intermediate trial results to WandB - only train once with the best hyperparameters after optimization completes and log that final run
   * **Log ALL metrics to WandB comprehensively**:
     - Use `wandb.log()` at each training step/batch/epoch with ALL relevant metrics
     - Log as frequently as possible (per-batch or per-epoch) to capture training dynamics
