@@ -62,6 +62,7 @@ Generate complete code for these files ONLY. Do not create any additional files 
   * **Log ALL metrics to WandB comprehensively**:
     - Use `wandb.log()` at each training step/batch/epoch with ALL relevant metrics
     - Log as frequently as possible (per-batch or per-epoch) to capture training dynamics
+    - Use CONSISTENT metric names across train.py and evaluate.py (e.g., if train.py logs "train_acc", evaluate.py MUST use run.history(keys=["train_acc",...]))
   * **Save final/best metrics to WandB summary**:
     - Use `wandb.summary["key"] = value` for final results
   * Print WandB run URL to stdout

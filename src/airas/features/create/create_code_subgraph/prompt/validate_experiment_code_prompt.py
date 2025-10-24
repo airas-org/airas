@@ -59,6 +59,7 @@ Check if the generated experiment code meets ALL of the following requirements:
      * Use `wandb.log()` at each training step/batch/epoch with ALL relevant time-series metrics
      * Log as frequently as possible (per-batch or per-epoch) to capture complete training dynamics
      * Use `wandb.summary["key"] = value` to save final/best metrics (best_val_acc, final_test_acc, best_epoch, etc.)
+     * Metric names in train.py's wandb.log() MUST exactly match the keys used in evaluate.py's run.history()
    - Optuna Integration: If using Optuna, DO NOT log intermediate trial results to WandB - only log the final run with best hyperparameters
    - Code must automatically configure based on mode:
      * When `cfg.mode == "trial"`: Set `cfg.wandb.mode = "disabled"` before any WandB operations
