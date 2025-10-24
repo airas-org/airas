@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
 from airas.config.runner_type_info import RunnerType
+from airas.types.latex import LATEX_TEMPLATE_NAME
 from airas.types.wandb import WandbInfo
 
 
@@ -55,8 +56,6 @@ class EvaluateExperimentalConsistencySubgraphConfig(BaseModel):
 
 
 class CreateBibfileSubgraphConfig(BaseModel):
-    # TODO: Literalで定義する
-    latex_template_name: str = "agents4science_2025"
     max_filtered_references: int = 20  # 論文中で引用する参考文献の最大数
 
 
@@ -64,57 +63,78 @@ class WriterSubgraphConfig(BaseModel):
     writing_refinement_rounds: int = 2  # 論文の推敲回数
 
 
-class LatexSubgraphConfig(BaseModel):
-    max_chktex_revisions: int = 3  # LaTeXの文法チェックの最大修正回数
-    max_compile_revisions: int = 3  # LaTeXのコンパイルエラーの最大修正回数
-
-
 class WandbConfig(BaseModel):
-    entity: str | None = None  # WandB entity (username or team name)
-    project: str | None = None  # WandB project name
+    entity: str = "your-wandb-entity"  # WandB entity (username or team name)
+    project: str = "your-wandb-project"  # WandB project name
 
     def to_wandb_info(self):
-        if self.entity and self.project:
-            return WandbInfo(entity=self.entity, project=self.project)
-        return None
+        return WandbInfo(entity=self.entity, project=self.project)
 
 
 class LLMMappingConfig(BaseModel):
+    # GenerateQueriesSubgraph
     generate_queries: str = "o4-mini-2025-04-16"
+
+    # RetrievePaperContentSubgraph and CreateMethodSubgraphV2
     search_arxiv_id_from_title: str = (
         "gpt-5-mini-2025-08-07"  # Only openAI models are available.
     )
+
+    # SummarizePaperSubgraph
     summarize_paper: str = "gemini-2.5-flash"
+
+    # RetrieveCodeSubgraph
     extract_github_url_from_text: str = "gemini-2.5-flash"
     extract_experimental_info: str = "gemini-2.5-flash"
+
+    # ExtractReferenceTitlesSubgraph
     extract_reference_titles: str = "gemini-2.5-flash-lite-preview-06-17"
-    generate_ide_and_research_summary: str = "o3-2025-04-16"
+
+    # CreateMethodSubgraphV2
+    generate_idea_and_research_summary: str = "o3-2025-04-16"
     evaluate_novelty_and_significance: str = "o3-2025-04-16"
     refine_idea_and_research_summary: str = "o3-2025-04-16"
-    generate_experiment_strategy: str = "o3-2025-04-16"
-    generate_experiments: str = "o3-2025-04-16"
+
+    # CreateExperimentalDesignSubgraph
+    generate_experiment_design: str = "o3-2025-04-16"
+
+    # RetrieveHuggingFaceSubgraph
     select_resources: str = "gemini-2.5-flash"
-    generate_base_code: str = "o3-2025-04-16"
-    derive_specific_experiments: str = "o3-2025-04-16"
-    validate_base_code: str = "o3-2025-04-16"
+    extract_code_in_readme: str = "gemini-2.5-flash"
+
+    # CreateCodeSubgraph
+    generate_run_config: str = "o3-2025-04-16"
+    generate_experiment_code: str = "o3-2025-04-16"
     validate_experiment_code: str = "o3-2025-04-16"
-    evaluate_experimental_consistency: str = "o3-2025-04-16"
+
+    # AnalyticSubgraph
     analytic_node: str = "o3-2025-04-16"
+
+    # CreateBibfileSubgraph
     filter_references: str = "gemini-2.5-flash"
+
+    # WriterSubgraph
     write_paper: str = "gpt-5-2025-08-07"
     refine_paper: str = "o3-2025-04-16"
+
+    # ReviewPaperSubgraph
     review_paper: str = "o3-2025-04-16"
+
+    # LatexSubgraph
     convert_to_latex: str = "gpt-5-2025-08-07"
-    check_execution_successful: str = "gpt-5-2025-08-07"
-    fix_latex_text: str = "o3-2025-04-16"
+
+    # HtmlSubgraph
     convert_to_html: str = "gpt-5-2025-08-07"
 
 
 class Settings(BaseSettings):
     profile: Literal["test", "prod"] = "test"
 
+    # LaTeX設定
+    latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024"
+
     # 実行基盤
-    runner_type: RunnerType = "gpu-runner"
+    runner_type: RunnerType = "A100_80GM×8"
     # TODO: From the perspective of research consistency,
     # we should probably not have ClaudeCode make changes to HuggingFace resources.
     # This change includes prompt modifications in `run_experiment_with_claude_code.yml``.
@@ -144,13 +164,15 @@ class Settings(BaseSettings):
     )
     create_bibfile: CreateBibfileSubgraphConfig = CreateBibfileSubgraphConfig()
     writer: WriterSubgraphConfig = WriterSubgraphConfig()
-    latex: LatexSubgraphConfig = LatexSubgraphConfig()
     wandb: WandbConfig = WandbConfig()
 
     # LLMの設定
     llm_mapping: LLMMappingConfig = LLMMappingConfig()
 
     def apply_profile_overrides(self) -> Self:
+        self.wandb.entity = "gengaru617-personal"
+        self.wandb.project = "251023-test"
+
         if self.profile == "test":
             self.generate_queries.n_queries = 1
             self.get_paper_titles_from_db.max_results_per_query = 2
@@ -163,15 +185,25 @@ class Settings(BaseSettings):
             self.retrieve_hugging_face.max_results_per_search = 2
             self.retrieve_hugging_face.max_models = 1
             self.retrieve_hugging_face.max_datasets = 1
-            self.create_code.max_code_validations = 1
-            self.evaluate_experimental_consistency.consistency_score_threshold = 1
+            self.create_code.max_code_validations = 10
+            # self.evaluate_experimental_consistency.consistency_score_threshold = 1
             self.create_bibfile.max_filtered_references = 2
             self.writer.writing_refinement_rounds = 1
-            self.latex.max_chktex_revisions = 1
-            self.latex.max_compile_revisions = 1
         elif self.profile == "prod":
             # 本番はリッチに
-            self.generate_queries.n_queries = 6
-            self.get_paper_titles_from_db.max_results_per_query = 8
-            self.create_method.method_refinement_rounds = 2
+            self.generate_queries.n_queries = 5
+            self.get_paper_titles_from_db.max_results_per_query = 5
+            self.extract_reference_titles.num_reference_paper = 20
+            self.create_method.num_retrieve_related_papers = 5
+            self.create_method.method_refinement_rounds = 5
+            self.create_experimental_design.num_models_to_use = 1
+            self.create_experimental_design.num_datasets_to_use = 1
+            self.create_experimental_design.num_comparative_methods = 1
+            self.retrieve_hugging_face.max_results_per_search = 3
+            self.retrieve_hugging_face.max_models = 3
+            self.retrieve_hugging_face.max_datasets = 3
+            self.create_code.max_code_validations = 10
+            # self.evaluate_experimental_consistency.consistency_score_threshold = 1
+            self.create_bibfile.max_filtered_references = 15
+            self.writer.writing_refinement_rounds = 3
         return self

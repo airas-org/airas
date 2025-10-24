@@ -2,7 +2,6 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
-from airas.types.devin import DevinInfo
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent, PaperReviewScores
 from airas.types.research_hypothesis import ResearchHypothesis
@@ -30,19 +29,13 @@ class ResearchHistory(BaseModel):
     idea_info_history: Optional[list[ResearchIdea]] = Field(
         None, description="new research method history"
     )
-
-    devin_info: Optional[DevinInfo] = Field(
-        None, description="Devin service information"
-    )
     push_completion: Optional[bool] = Field(None, description="Push completion status")
     executed_flag: Optional[bool] = Field(None, description="Execution completion flag")
 
     experiment_iteration: Optional[int] = Field(
         None, description="Current experiment iteration"
     )
-    experiment_branches: Optional[list[str]] = Field(
-        None, description="Search queries used"
-    )
+
     paper_content: Optional[PaperContent] = Field(
         None, description="Generated paper content"
     )

@@ -32,7 +32,7 @@ async def _create_experiment_branches(
         return []
 
     for exp_run in new_method.experiment_runs:
-        child_branch = f"{github_repository_info.branch_name}-{experiment_iteration}-{exp_run.run_id}"
+        child_branch = exp_run.get_branch_name(github_repository_info.branch_name)
         branches_to_create.append(child_branch)
 
         task = _create_single_branch(
@@ -96,7 +96,7 @@ def create_experiment_branches(
 
     created_count = 0
     for exp_run in new_method.experiment_runs:
-        child_branch = f"{github_repository_info.branch_name}-{experiment_iteration}-{exp_run.run_id}"
+        child_branch = exp_run.get_branch_name(github_repository_info.branch_name)
 
         branch_success = next(
             (success for branch, success in branch_results if branch == child_branch),

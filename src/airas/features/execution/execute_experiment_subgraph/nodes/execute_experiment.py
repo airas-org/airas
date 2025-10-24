@@ -157,18 +157,26 @@ async def _execute_full_experiments_async(
 async def _execute_evaluation_async(
     github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
+    new_method: ResearchHypothesis,
     workflow_file: str,
     github_client: GithubClient | None = None,
 ) -> bool:
+    if not new_method.experiment_runs:
+        logger.error("No experiment runs found in new_method")
+        return False
+
     client = github_client or GithubClient()
     executor = WorkflowExecutor(client)
 
     branch_name = github_repository.branch_name
+    run_ids = [run.run_id for run in new_method.experiment_runs]
 
     logger.info(f"Executing evaluation on main branch '{branch_name}'")
+    logger.info(f"Evaluation will process {len(run_ids)} runs: {', '.join(run_ids)}")
 
     inputs = {
         "experiment_iteration": str(experiment_iteration),
+        "run_ids": json.dumps(run_ids),
     }
 
     result = await _execute_workflow_on_branch(
@@ -226,6 +234,7 @@ def execute_full_experiments(
 def execute_evaluation(
     github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
+    new_method: ResearchHypothesis,
     workflow_file: str = "run_evaluation_with_open_code.yml",
     github_client: GithubClient | None = None,
 ) -> bool:
@@ -233,6 +242,7 @@ def execute_evaluation(
         _execute_evaluation_async(
             github_repository,
             experiment_iteration,
+            new_method,
             workflow_file,
             github_client,
         )

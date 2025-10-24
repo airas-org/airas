@@ -9,6 +9,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
 )
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent
+from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.save_prompt import save_io_on_github
 
 
@@ -19,7 +20,7 @@ class LLMOutput(BaseModel):
 def convert_to_html(
     llm_name: LLM_MODEL,
     paper_content: PaperContent,
-    image_file_name_list: list[str],
+    new_method: ResearchHypothesis,
     prompt_template: str,
     github_repository_info: GitHubRepositoryInfo,
     client: LLMFacadeClient | None = None,
@@ -27,6 +28,18 @@ def convert_to_html(
     """Convert paper content to HTML using LLM."""
     if client is None:
         client = LLMFacadeClient(llm_name=llm_name)
+
+    # Extract image files from new_method
+    image_file_name_list = []
+    if new_method.experiment_runs:
+        for run in new_method.experiment_runs:
+            if run.results and run.results.figures:
+                image_file_name_list.extend(run.results.figures)
+    if (
+        new_method.experimental_analysis
+        and new_method.experimental_analysis.comparison_figures
+    ):
+        image_file_name_list.extend(new_method.experimental_analysis.comparison_figures)
 
     data = {
         "sections": [

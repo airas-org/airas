@@ -13,31 +13,78 @@ Your task is to analyze the experimental results and generate a comprehensive an
 # Proposed Method
 {{ new_method.method }}
 
-# Experimental Strategy
-{{ new_method.experimental_design.experiment_strategy }}
+{% if new_method.experimental_design %}
+# Experimental Design
 
-# Experiments and Results
-{% for experiment in new_method.experimental_design.experiments %}
-{% if experiment.evaluation and experiment.evaluation.is_selected_for_paper %}
-## Experiment: {{ experiment.experiment_id }}
-**Description**: {{ experiment.description }}
-**Run Variations**: {{ experiment.run_variations }}
+## Experiment Summary
+{{ new_method.experimental_design.experiment_summary }}
 
-**Code**:
-{{ experiment.code | tojson }}
-
-{% if experiment.results %}
-**Results**: {{ experiment.results.result }}
-{% if experiment.results.error %}
-**Errors**: {{ experiment.results.error }}
-{% endif %}
-{% if experiment.results.image_file_name_list %}
-**Figures**: {{ experiment.results.image_file_name_list | join(', ') }}
-{% endif %}
-{% endif %}
-
-{% endif %}
+## Evaluation Metrics
+{% for metric in new_method.experimental_design.evaluation_metrics %}
+- {{ metric }}
 {% endfor %}
+
+## Proposed Method Details
+{{ new_method.experimental_design.proposed_method }}
+
+## Comparative Methods
+{% for method in new_method.experimental_design.comparative_methods %}
+- {{ method }}
+{% endfor %}
+
+{% if new_method.experimental_design.models_to_use %}
+## Models Used
+{% for model in new_method.experimental_design.models_to_use %}
+- {{ model }}
+{% endfor %}
+{% endif %}
+
+{% if new_method.experimental_design.datasets_to_use %}
+## Datasets Used
+{% for dataset in new_method.experimental_design.datasets_to_use %}
+- {{ dataset }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+# Experimental Analysis
+{% if new_method.experimental_analysis %}
+{% if new_method.experimental_analysis.aggregated_metrics %}
+## Aggregated Metrics
+{{ new_method.experimental_analysis.aggregated_metrics }}
+{% endif %}
+
+{% if new_method.experimental_analysis.comparison_figures %}
+## Comparison Figures
+{% for figure in new_method.experimental_analysis.comparison_figures %}
+- {{ figure }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+# Experiment Runs and Results
+{% if new_method.experiment_runs %}
+{% for run in new_method.experiment_runs %}
+## Run: {{ run.run_id }}
+**Method**: {{ run.method_name }}
+{% if run.model_name %}**Model**: {{ run.model_name }}{% endif %}
+{% if run.dataset_name %}**Dataset**: {{ run.dataset_name }}{% endif %}
+
+{% if run.results %}
+{% if run.results.metrics_data %}
+**Metrics**:
+{{ run.results.metrics_data }}
+{% endif %}
+
+{% if run.results.figures %}
+**Figures**: {{ run.results.figures | join(', ') }}
+{% endif %}
+{% endif %}
+
+{% endfor %}
+{% else %}
+No experimental results available yet.
+{% endif %}
 
 # Task
 Please summarize the experimental results in detail as an "analysis_report", based on the experimental setup and outcomes. Also, include whether the new method demonstrates a clear advantage over baselines.
