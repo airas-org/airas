@@ -196,7 +196,7 @@ def execute_trial_experiment(
     experiment_iteration: int,
     runner_type: RunnerType,
     new_method: ResearchHypothesis,
-    workflow_file: str = "run_trial_experiment_with_open_code_2.yml",
+    workflow_file: str = "run_trial_experiment_with_open_code.yml",
     github_client: GithubClient | None = None,
 ) -> bool:
     return asyncio.run(
@@ -216,7 +216,7 @@ def execute_full_experiments(
     experiment_iteration: int,
     runner_type: RunnerType,
     new_method: ResearchHypothesis,
-    workflow_file: str = "run_full_experiment_with_open_code_2.yml",
+    workflow_file: str = "run_full_experiment_with_open_code.yml",
     github_client: GithubClient | None = None,
 ) -> bool:
     return asyncio.run(
