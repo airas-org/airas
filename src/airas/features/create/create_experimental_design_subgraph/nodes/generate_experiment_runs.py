@@ -1,9 +1,23 @@
 import itertools
 import logging
+import re
 
 from airas.types.research_hypothesis import ExperimentRun, ResearchHypothesis
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_for_branch_name(text: str) -> str:
+    # Allow alphanumeric, dots, hyphens, underscores
+    sanitized = re.sub(r"[^a-zA-Z0-9._-]+", "-", text)
+    # Remove leading/trailing dots and hyphens
+    sanitized = sanitized.strip(".-")
+    # Replace consecutive dots with single dot (.. is not allowed)
+    sanitized = re.sub(r"\.{2,}", ".", sanitized)
+    # Remove .lock suffix if present
+    if sanitized.endswith(".lock"):
+        sanitized = sanitized[:-5]
+    return sanitized
 
 
 def generate_experiment_runs(
@@ -21,17 +35,22 @@ def generate_experiment_runs(
     ]
     methods.extend(comparative_ids)
 
-    models = design.models_to_use or []
-    datasets = design.datasets_to_use or []
+    # Use placeholder if models or datasets are empty (e.g., when proposed method introduces new model/dataset)
+    models = design.models_to_use or [None]
+    datasets = design.datasets_to_use or [None]
 
-    if not models:
-        logger.warning("No models specified in experimental design")
-    if not datasets:
-        logger.warning("No datasets specified in experimental design")
+    if design.models_to_use is None or len(design.models_to_use) == 0:
+        logger.warning("No models specified (proposed method may introduce new model)")
+    if design.datasets_to_use is None or len(design.datasets_to_use) == 0:
+        logger.warning(
+            "No datasets specified (proposed method may introduce new dataset)"
+        )
 
     experiment_runs = [
         ExperimentRun(
-            run_id=f"{method}-{model}-{dataset}",
+            run_id=_sanitize_for_branch_name(
+                "-".join(filter(None, [method, model, dataset]))
+            ),
             method_name=method,
             model_name=model,
             dataset_name=dataset,

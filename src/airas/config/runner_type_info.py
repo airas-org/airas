@@ -1,7 +1,12 @@
 from typing import Literal
 
 RunnerType = Literal[
-    "ubuntu-latest", "Tesla_T4", "A100_80GM×1", "A100_80GM×8", "gpu-runner"
+    "ubuntu-latest",
+    "Tesla_T4",
+    "A100_80GM×1",
+    "A100_80GM×8",
+    "H200_144GM×8",
+    "gpu-runner",
 ]
 
 runner_info_dict = {
@@ -31,6 +36,13 @@ RAM：2048 GB""",
 NVIDIA A100×8
 VRAM：80GB×8
 RAM：2048 GB""",
+    },
+    "H200_144GM×8": {
+        "runner_setting": '["self-hosted", "H200 144GM×8"]',
+        "prompt": """\
+NVIDIA H200×8
+VRAM: 144GB×8
+RAM： 2048 GB or more""",
     },
     "gpu-runner": {
         "runner_setting": '["self-hosted", "gpu-runner"]',

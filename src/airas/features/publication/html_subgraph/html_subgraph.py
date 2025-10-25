@@ -79,7 +79,6 @@ class HtmlSubgraph(BaseSubgraph):
         elif isinstance(llm_mapping, dict):
             self.llm_mapping = HtmlLLMMapping(**llm_mapping)
         elif isinstance(llm_mapping, HtmlLLMMapping):
-            # すでに型が正しい場合も受け入れる
             self.llm_mapping = llm_mapping
         else:
             raise TypeError(
@@ -90,17 +89,10 @@ class HtmlSubgraph(BaseSubgraph):
 
     @html_timed
     def _convert_to_html(self, state: HtmlSubgraphState) -> dict[str, str]:
-        # TODO: Since they are stored for each experiment, it currently results in an error.
-        image_file_name_list = (
-            getattr(
-                state["new_method"].experimental_results, "image_file_name_list", None
-            )
-            or []
-        )
         paper_content_html = convert_to_html(
             llm_name=self.llm_mapping.convert_to_html,
             paper_content=state["paper_content"],
-            image_file_name_list=image_file_name_list,
+            new_method=state["new_method"],
             prompt_template=convert_to_html_prompt,
             github_repository_info=state["github_repository_info"],
         )
@@ -125,11 +117,9 @@ class HtmlSubgraph(BaseSubgraph):
 
     @html_timed
     def _upload_html(self, state: HtmlSubgraphState) -> dict[str, bool]:
-        full_html = state["full_html"]
-
         ok = upload_html(
             github_repository=state["github_repository_info"],
-            full_html=full_html,
+            full_html=state["full_html"],
         )
         return {"html_upload": ok}
 
@@ -138,24 +128,8 @@ class HtmlSubgraph(BaseSubgraph):
         self, state: HtmlSubgraphState
     ) -> dict[str, str | bool]:
         time.sleep(3)
-
-        # Extract branches of experiments selected for paper (for image retrieval)
-        selected_branches = []
-        if (
-            state["new_method"].experimental_design
-            and state["new_method"].experimental_design.experiments
-        ):
-            selected_branches = [
-                exp.github_repository_info.branch_name
-                for exp in state["new_method"].experimental_design.experiments
-                if exp.evaluation
-                and exp.evaluation.is_selected_for_paper
-                and exp.github_repository_info
-            ]
-
         github_pages_url = prepare_images_for_html(
             github_repository=state["github_repository_info"],
-            image_source_branches=selected_branches,
         )
 
         return {

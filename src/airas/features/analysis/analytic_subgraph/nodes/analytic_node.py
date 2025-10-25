@@ -12,7 +12,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLMFacadeClient,
 )
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_hypothesis import ExperimentalAnalysis, ResearchHypothesis
 from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
@@ -27,7 +27,7 @@ def analytic_node(
     new_method: ResearchHypothesis,
     github_repository_info: GitHubRepositoryInfo,
     client: LLMFacadeClient | None = None,
-) -> str | None:
+) -> ResearchHypothesis:
     if client is None:
         client = LLMFacadeClient(llm_name=llm_name)
 
@@ -47,4 +47,10 @@ def analytic_node(
         node_name="analytic_node",
         llm_name=llm_name,
     )
-    return output["analysis_report"]
+
+    # ExperimentalAnalysisがすでに存在する場合はanalysis_reportを更新、存在しない場合は新規作成
+    if new_method.experimental_analysis is None:
+        new_method.experimental_analysis = ExperimentalAnalysis()
+    new_method.experimental_analysis.analysis_report = output["analysis_report"]
+
+    return new_method

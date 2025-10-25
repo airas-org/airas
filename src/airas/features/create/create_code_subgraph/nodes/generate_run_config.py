@@ -70,6 +70,7 @@ def generate_run_config(
         output=json.dumps(output, ensure_ascii=False, indent=2),
         subgraph_name="create_code_subgraph",
         node_name="generate_run_config",
+        llm_name=llm_name,
     )
 
     output_model = RunConfigListOutput(**output)

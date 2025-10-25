@@ -27,20 +27,24 @@ The generated code must support the following CLI:
 **Training (main.py):**
 ```bash
 # Full experiment with WandB logging
-uv run python -u -m src.main run={run_id} results_dir={path}
+uv run python -u -m src.main run={run_id} results_dir={path} mode=full
 
 # Trial mode (validation only, WandB disabled)
-uv run python -u -m src.main run={run_id} results_dir={path} trial_mode=true
+uv run python -u -m src.main run={run_id} results_dir={path} mode=trial
 ```
 - `run`: Experiment run_id (matching a run_id from config/run/*.yaml)
 - `results_dir`: Output directory (passed from GitHub Actions workflow)
-- `trial_mode=true` (optional): Lightweight execution for validation (epochs=1, batches limited to 1-2, disable Optuna n_trials=0, **WandB disabled**)
+- `mode`: Execution mode (required parameter)
+  * `mode=trial`: Lightweight execution for validation (epochs=1, batches limited to 1-2, wandb.mode=disabled, optuna.n_trials=0)
+  * `mode=full`: Full experiment execution (wandb.mode=online, full epochs, full Optuna trials)
+  * **Code must automatically configure based on mode (e.g., `if cfg.mode == "trial": cfg.wandb.mode = "disabled"; cfg.optuna.n_trials = 0` elif `cfg.mode == "full": cfg.wandb.mode = "online"`)**
 
 **Evaluation (evaluate.py, independent execution):**
 ```bash
-uv run python -m src.evaluate results_dir={path}
+uv run python -m src.evaluate results_dir={path} run_ids='["run-1", "run-2", ...]'
 ```
 - `results_dir`: Directory containing experiment metadata and where outputs will be saved
+- `run_ids`: JSON string list of run IDs to evaluate (e.g., '["run-1-proposed-bert-glue", "run-2-baseline-bert-glue"]')
 - Executed as a separate workflow after all training runs complete
 - **NOT called from main.py**
 
@@ -54,36 +58,54 @@ Generate complete code for these files ONLY. Do not create any additional files 
   * Train model with given configuration
   * Initialize WandB: `wandb.init(entity=cfg.wandb.entity, project=cfg.wandb.project, id=cfg.run.run_id, config=OmegaConf.to_container(cfg, resolve=True), resume="allow")`
   * Skip `wandb.init()` if `cfg.wandb.mode == "disabled"` (trial_mode)
-  * Log ALL metrics to WandB: `wandb.log({"train_loss": 0.5, "val_acc": 0.85, "epoch": 1, ...})`
+  * **Optuna Integration**: If using Optuna for hyperparameter search, DO NOT log intermediate trial results to WandB - only train once with the best hyperparameters after optimization completes and log that final run
+  * **Log ALL metrics to WandB comprehensively**:
+    - Use `wandb.log()` at each training step/batch/epoch with ALL relevant metrics
+    - Log as frequently as possible (per-batch or per-epoch) to capture training dynamics
+    - Use CONSISTENT metric names across train.py and evaluate.py (e.g., if train.py logs "train_acc", evaluate.py MUST use run.history(keys=["train_acc",...]))
+  * **Save final/best metrics to WandB summary**:
+    - Use `wandb.summary["key"] = value` for final results
   * Print WandB run URL to stdout
 - **NO results.json, no stdout JSON output, no figure generation**
 
 **`src/evaluate.py`**: Independent evaluation and visualization script
-- **Execution**: Run independently via `uv run python -m src.evaluate results_dir={path}`
+- **Execution**: Run independently via `uv run python -m src.evaluate results_dir={path} run_ids='["run-1", "run-2"]'`
 - **NOT called from main.py** - executes as separate workflow after all training completes
 - **Responsibilities**:
-  * Parse `results_dir` from command line arguments
-  * Load WandB config from `{results_dir}/config.yaml`
-  * Retrieve all experimental data from WandB API:
+  * Parse command line arguments:
+    - `results_dir`: Output directory path
+    - `run_ids`: JSON string list of run IDs (parse with `json.loads(args.run_ids)`)
+  * Load WandB config from `config/config.yaml` (in repository root)
+  * **Retrieve comprehensive experimental data from WandB API** for specified run_ids:
     ```python
+    import json
     api = wandb.Api()
-    runs = api.runs(f"{entity}/{project}")
-    for run in runs:
-        metrics_df = run.history()  # pandas DataFrame with all logged metrics
+    run_ids = json.loads(args.run_ids)  # Parse JSON string to list
+    for run_id in run_ids:
+        run = api.run(f"{entity}/{project}/{run_id}")
+        history = run.history()  # pandas DataFrame with ALL time-series metrics (train_loss, val_acc, etc.)
+        summary = run.summary._json_dict  # Final/best metrics (best_val_acc, final_test_acc, etc.)
+        config = dict(run.config)  # Run configuration (hyperparameters, model settings, etc.)
     ```
-  * Export retrieved data to:
-    - `{results_dir}/wandb_data/run_{run_id}_metrics.csv` (per-run metrics)
-    - `{results_dir}/wandb_data/summary.json` (aggregated comparison)
-  * Compute secondary/derived metrics (e.g., improvement rate: (proposed - baseline) / baseline)
-  * Generate ALL publication-quality PDF figures and save to `{results_dir}/images/`:
-    - Learning curves (loss, accuracy over epochs)
-    - Cross-run comparison charts (bar charts, box plots)
-    - Performance metrics tables
-  * Use matplotlib or seaborn with proper legends, annotations, tight_layout
+  * **STEP 1: Per-Run Processing** (for each run_id):
+    - Export **comprehensive** run-specific metrics to: `{results_dir}/{run_id}/metrics.json`
+    - Generate run-specific figures (learning curves, confusion matrices) to: `{results_dir}/{run_id}/`
+    - Each run should have its own subdirectory with its metrics and figures
+  * **STEP 2: Aggregated Analysis** (after processing all runs):
+    - Export aggregated metrics to: `{results_dir}/comparison/aggregated_metrics.json`
+    - Compute secondary/derived metrics (e.g., improvement rate: (proposed - baseline) / baseline)
+    - Generate comparison figures to: `{results_dir}/comparison/`:
+      * Cross-run comparison charts (bar charts, box plots)
+      * Performance metrics tables
+      * Statistical significance tests
+  * **Figure Generation Guidelines**:
+    - Use matplotlib or seaborn with proper legends, annotations, tight_layout
     - For line graphs: annotate significant values (final/best values)
     - For bar graphs: annotate values above each bar
-  * Follow naming convention: `<figure_topic>[_<condition>][_pairN].pdf`
-  * Print generated figure names to stdout
+    - Use GLOBALLY UNIQUE image filenames to prevent collisions across different runs and directories**:
+      * Per-run figures: `{run_id}_{figure_topic}[_<condition>][_pairN].pdf` (e.g., `run-1-proposed-bert-glue_learning_curve.pdf`)
+      * Comparison figures: `comparison_{figure_topic}[_<condition>][_pairN].pdf` (e.g., `comparison_accuracy_bar_chart.pdf`)
+  * Print all generated file paths to stdout (both per-run and comparison)
 
 **`src/preprocess.py`**: Complete preprocessing pipeline implementation for the specified datasets
 
@@ -93,8 +115,9 @@ Generate complete code for these files ONLY. Do not create any additional files 
 - Receives run_id via Hydra, launches train.py as subprocess, manages logs
 - **DOES NOT call evaluate.py** (evaluate.py runs independently in separate workflow)
 - Use `@hydra.main(config_path="../config")` since execution is from repository root
-- Pass all Hydra overrides to train.py subprocess (e.g., `wandb.mode=disabled`, `trial_mode=true`)
-- In trial_mode, automatically set `wandb.mode=disabled`
+- **Mode handling**: Automatically configure based on `cfg.mode`:
+  * When `cfg.mode == "trial"`: Set `cfg.wandb.mode = "disabled"`, `cfg.optuna.n_trials = 0`, epochs=1, etc.
+  * When `cfg.mode == "full"`: Set `cfg.wandb.mode = "online"` and use full configuration
 
 **`config/config.yaml`**: Main Hydra configuration file
 - MUST include WandB configuration:
@@ -104,6 +127,7 @@ Generate complete code for these files ONLY. Do not create any additional files 
     project: {{ wandb_info.project }}
     mode: online  # Automatically set to "disabled" in trial_mode
   ```
+- `WANDB_API_KEY` environment variable is automatically available for authentication
 
 **`pyproject.toml`**: Complete project dependencies
 - MUST include: `hydra-core`, `wandb` (required)
@@ -113,7 +137,9 @@ Generate complete code for these files ONLY. Do not create any additional files 
 ## Key Implementation Focus Areas
 1. **Hydra-Driven Configuration**: All parameters loaded from run configs dynamically
 2. **Algorithm Core**: Full implementation of the proposed method with proper abstraction
-3. **Trial Mode Behavior**: trial_mode=true automatically disables WandB (sets wandb.mode=disabled)
+3. **Mode-Based Behavior**: Code must automatically configure based on `cfg.mode` ("trial" vs "full")
+   - `mode=trial`: Set `cfg.wandb.mode="disabled"`, `cfg.optuna.n_trials=0`, epochs=1, limited batches
+   - `mode=full`: Set `cfg.wandb.mode="online"`, use full configuration
 4. **Run Execution**: main.py executes a single run_id passed via CLI (GitHub Actions dispatches multiple runs separately)
 5. **WandB Integration**: All metrics logged to WandB; train.py does NOT output JSON to stdout or save results.json
 6. **Independent Evaluation**: evaluate.py runs separately, fetches data from WandB API, generates all figures

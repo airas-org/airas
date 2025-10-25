@@ -19,9 +19,12 @@ Check if the generated experiment code meets ALL of the following requirements:
    - All parameters are loaded from run configs dynamically
    - Proper configuration structure with run_id, method, model, dataset, training, and optuna sections
    - CLI interface matches:
-     * Training: `uv run python -u -m src.main run={run_id} results_dir={path}`
-     * Evaluation: `uv run python -m src.evaluate results_dir={path}` (independent execution)
-   - Supports trial_mode=true flag for lightweight validation runs (automatically disables WandB)
+     * Training (full): `uv run python -u -m src.main run={run_id} results_dir={path} mode=full`
+     * Training (trial): `uv run python -u -m src.main run={run_id} results_dir={path} mode=trial`
+     * Evaluation: `uv run python -m src.evaluate results_dir={path} run_ids='["run-1", "run-2", ...]'` (independent execution)
+   - Code must automatically configure based on mode:
+     * When `cfg.mode == "trial"`: Set `cfg.wandb.mode = "disabled"`, `cfg.optuna.n_trials = 0`, epochs=1
+     * When `cfg.mode == "full"`: Set `cfg.wandb.mode = "online"` and use full configuration
 
 3. **Complete Data Pipeline**:
    - Full data loading and preprocessing implementation
@@ -52,10 +55,18 @@ Check if the generated experiment code meets ALL of the following requirements:
    - All functionality contained within specified files
 
 6. **WandB Integration**:
-   - train.py initializes WandB and logs ALL metrics using `wandb.log()`
-   - trial_mode automatically disables WandB (sets wandb.mode=disabled)
+   - train.py initializes WandB and logs ALL metrics comprehensively:
+     * Use `wandb.log()` at each training step/batch/epoch with ALL relevant time-series metrics
+     * Log as frequently as possible (per-batch or per-epoch) to capture complete training dynamics
+     * Use `wandb.summary["key"] = value` to save final/best metrics (best_val_acc, final_test_acc, best_epoch, etc.)
+     * Metric names in train.py's wandb.log() MUST exactly match the keys used in evaluate.py's run.history()
+   - Optuna Integration: If using Optuna, DO NOT log intermediate trial results to WandB - only log the final run with best hyperparameters
+   - Code must automatically configure based on mode:
+     * When `cfg.mode == "trial"`: Set `cfg.wandb.mode = "disabled"` before any WandB operations
+     * When `cfg.mode == "full"`: Set `cfg.wandb.mode = "online"` before any WandB operations
    - NO results.json or stdout JSON dumps in train.py
    - config/config.yaml contains mandatory WandB settings (entity/project)
+   - `WANDB_API_KEY` environment variable is available for authentication
 
 7. **Configuration Files**:
    - The generated code properly references config files via Hydra
@@ -64,21 +75,40 @@ Check if the generated experiment code meets ALL of the following requirements:
    - Optuna search spaces are properly defined if applicable
 
 8. **Evaluation Script Independence**:
-   - evaluate.py is executed independently via `uv run python -m src.evaluate results_dir={path}`
+   - evaluate.py is executed independently via `uv run python -m src.evaluate results_dir={path} run_ids='["run-1", "run-2"]'`
+   - Accepts `run_ids` parameter as JSON string list (parse with `json.loads(args.run_ids)`)
    - main.py DOES NOT call evaluate.py
-   - evaluate.py retrieves ALL data from WandB API using `wandb.Api()` (not from local files)
-   - evaluate.py exports retrieved WandB data to `{results_dir}/wandb_data/` for reproducibility
-   - evaluate.py generates ALL publication-quality PDF figures and saves to `{results_dir}/images/`
+   - evaluate.py loads WandB config from `config/config.yaml` (in repository root)
+   - evaluate.py retrieves comprehensive data from WandB API:
+     * Use `wandb.Api()` to get run data: `run = api.run(f"{entity}/{project}/{run_id}")`
+     * Retrieve: `history = run.history()`, `summary = run.summary._json_dict`, `config = dict(run.config)`
+   - **STEP 1: Per-Run Processing** (for each run_id):
+     * Export comprehensive run-specific metrics to: `{results_dir}/{run_id}/metrics.json`
+     * Generate run-specific figures (learning curves, confusion matrices) to: `{results_dir}/{run_id}/`
+     * Each run should have its own subdirectory with its metrics and figures
+   - **STEP 2: Aggregated Analysis** (after processing all runs):
+     * Export aggregated metrics to: `{results_dir}/comparison/aggregated_metrics.json`
+     * Compute secondary/derived metrics (e.g., improvement rate: (proposed - baseline) / baseline)
+     * Generate comparison figures to: `{results_dir}/comparison/`
+     * Cross-run comparison charts (bar charts, box plots)
+     * Performance metrics tables
+     * Statistical significance tests
    - Proper figure quality: legends, annotations, tight_layout
-   - Follows naming convention: `<figure_topic>[_<condition>][_pairN].pdf`
+   - Follows GLOBALLY UNIQUE naming convention to prevent collisions:
+     * Per-run figures: `{run_id}_{figure_topic}[_<condition>][_pairN].pdf` (e.g., `run-1-proposed-bert-glue_learning_curve.pdf`)
+     * Comparison figures: `comparison_{figure_topic}[_<condition>][_pairN].pdf` (e.g., `comparison_accuracy_bar_chart.pdf`)
    - train.py and main.py generate NO figures
    - evaluate.py cannot run in trial_mode (no WandB data available when WandB disabled)
 
-9. **Trial Mode Implementation**:
-   - trial_mode=true flag properly reduces computational load
-   - Training: epochs=1, batches limited to 1-2, Optuna disabled (n_trials=0), small evaluation subset
-   - WandB automatically disabled in trial_mode (wandb.mode=disabled)
-   - Purpose: Fast validation that code runs without errors
+9. **Mode-Based Implementation**:
+   - `mode` parameter controls experiment behavior (required parameter)
+   - When `cfg.mode == "trial"`:
+     * Properly reduces computational load: epochs=1, batches limited to 1-2, Optuna disabled (n_trials=0), small evaluation subset
+     * Automatically sets `cfg.wandb.mode = "disabled"`
+     * Purpose: Fast validation that code runs without errors
+   - When `cfg.mode == "full"`:
+     * Automatically sets `cfg.wandb.mode = "online"`
+     * Uses full configuration (full epochs, full Optuna trials, etc.)
 
 ## Output Format
 Respond with a JSON object containing:
