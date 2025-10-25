@@ -4,11 +4,11 @@ from jinja2 import Environment
 from pydantic import BaseModel, Field
 
 from airas.config.runner_type_info import RunnerType, runner_info_dict
-from airas.features.create.create_experimental_design_subgraph.dataset_list import (
-    DATASET_LIST,
+from airas.data.dataset.language_model_fine_tuning_dataset import (
+    LANGUAGE_MODEL_FINE_TUNING_DATASET_LIST,
 )
-from airas.features.create.create_experimental_design_subgraph.model_list import (
-    MODEL_LIST,
+from airas.data.model.language_model import (
+    LANGUAGE_MODEL_LIST,
 )
 from airas.features.create.create_experimental_design_subgraph.prompt.generate_experiment_design_prompt import (
     generate_experiment_design_prompt,
@@ -56,8 +56,10 @@ def generate_experiment_design(
     data = {
         "new_method": new_method.model_dump(),
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
-        "model_list": json.dumps(MODEL_LIST, indent=4, ensure_ascii=False),
-        "dataset_list": json.dumps(DATASET_LIST, indent=4, ensure_ascii=False),
+        "model_list": json.dumps(LANGUAGE_MODEL_LIST, indent=4, ensure_ascii=False),
+        "dataset_list": json.dumps(
+            LANGUAGE_MODEL_FINE_TUNING_DATASET_LIST, indent=4, ensure_ascii=False
+        ),
         "num_models_to_use": num_models_to_use,
         "num_datasets_to_use": num_datasets_to_use,
         "num_comparative_methods": num_comparative_methods,
