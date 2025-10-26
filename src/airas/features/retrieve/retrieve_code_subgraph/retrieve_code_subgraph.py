@@ -91,8 +91,7 @@ class RetrieveCodeSubgraph(BaseSubgraph):
         self.save_prompts = save_prompts
         check_api_key(llm_api_key_check=True)
 
-    # TODO: async support
-    # @retrieve_code_timed
+    @retrieve_code_timed
     async def _extract_github_url_from_text(
         self, state: RetrieveCodeState
     ) -> dict[str, list[ResearchStudy]]:
@@ -117,8 +116,7 @@ class RetrieveCodeSubgraph(BaseSubgraph):
             "code_str_list": code_str_list,
         }
 
-    # TODO: async support
-    # @retrieve_code_timed
+    @retrieve_code_timed
     async def _extract_experimental_info(
         self, state: RetrieveCodeState
     ) -> dict[str, list[ResearchStudy]]:
