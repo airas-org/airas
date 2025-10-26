@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 
 from jinja2 import Environment, Template
@@ -11,7 +10,6 @@ from airas.services.api_client.llm_client.llm_facade_client import (
 )
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import LLMExtractedInfo, ResearchStudy
-from airas.utils.save_prompt import save_io_on_github
 
 logger = logging.getLogger(__name__)
 
@@ -53,16 +51,6 @@ async def _summarize_single_study(
         logger.error(f"Failed to summarize '{research_study.title or 'N/A'}': {e}")
         return
 
-    await asyncio.to_thread(
-        save_io_on_github,
-        github_repository_info,
-        messages,
-        json.dumps(output, ensure_ascii=False, indent=4),
-        "summarize_paper_subgraph",
-        f"summarize_paper_{index}",
-        llm_name,
-    )
-
     # 生成結果を study に反映
     research_study.llm_extracted_info = LLMExtractedInfo(**output)
 
@@ -71,7 +59,7 @@ async def summarize_paper(
     llm_name: LLM_MODEL,
     prompt_template: str,
     research_study_list: list[ResearchStudy],
-    github_repository_info: GitHubRepositoryInfo,
+    github_repository_info: GitHubRepositoryInfo | None = None,
     client: LLMFacadeClient | None = None,
 ) -> list[ResearchStudy]:
     if client is None:

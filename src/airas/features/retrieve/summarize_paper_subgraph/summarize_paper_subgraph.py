@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from langgraph.graph import END, START, StateGraph
@@ -74,7 +75,8 @@ class SummarizePaperSubgraph(BaseSubgraph):
                 f"but got {type(llm_mapping)}"
             )
 
-    @summarize_paper_subgraph_timed
+    # TODO: async support
+    # @summarize_paper_subgraph_timed
     async def _summarize_paper(
         self, state: SummarizePaperState
     ) -> dict[str, list[ResearchStudy]]:
@@ -82,7 +84,7 @@ class SummarizePaperSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.summarize_paper,
             prompt_template=summarize_paper_prompt,
             research_study_list=state["research_study_list"],
-            github_repository_info=state["github_repository_info"],
+            github_repository_info=state.get("github_repository_info"),
         )
         return {"research_study_list": research_study_list}
 
@@ -95,15 +97,15 @@ class SummarizePaperSubgraph(BaseSubgraph):
         return graph_builder.compile()
 
 
-def main():
+async def main():
     input_data = summarize_paper_subgraph_input_data
-    result = SummarizePaperSubgraph().run(input_data)
+    result = await SummarizePaperSubgraph().arun(input_data)
     print(f"result: {result}")
 
 
 if __name__ == "__main__":
     try:
-        main()
+        asyncio.run(main())
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         raise
