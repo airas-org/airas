@@ -75,8 +75,7 @@ class SummarizePaperSubgraph(BaseSubgraph):
                 f"but got {type(llm_mapping)}"
             )
 
-    # TODO: async support
-    # @summarize_paper_subgraph_timed
+    @summarize_paper_subgraph_timed
     async def _summarize_paper(
         self, state: SummarizePaperState
     ) -> dict[str, list[ResearchStudy]]:
