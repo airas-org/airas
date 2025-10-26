@@ -1,3 +1,4 @@
+import asyncio
 import time
 from functools import wraps
 from logging import getLogger
@@ -18,27 +19,57 @@ def time_node(
     def decorator(func):
         actual_node = node_name or func.__name__
 
-        @wraps(func)
-        def wrapper(self, state, *args, **kwargs):
-            header = f"[{subgraph_name}.{actual_node}]".ljust(40)
-            logger.info(f"{header} Start")
-            start = time.time()
+        if asyncio.iscoroutinefunction(func):
 
-            result = func(self, state, *args, **kwargs)
-            end = time.time()
-            duration = round(end - start, 4)
+            @wraps(func)
+            async def async_wrapper(self, state, *args, **kwargs):
+                header = f"[{subgraph_name}.{actual_node}]".ljust(40)
+                logger.info(f"{header} Start")
+                start = time.time()
 
-            execution_time = state.get("execution_time", {})
-            subgraph_log = execution_time.get(subgraph_name, {})
-            durations = subgraph_log.get(actual_node, [])
-            durations.append(duration)
+                result = await func(self, state, *args, **kwargs)
+                end = time.time()
+                duration = round(end - start, 4)
 
-            subgraph_log[actual_node] = durations
-            execution_time[subgraph_name] = subgraph_log
-            state["execution_time"] = execution_time
+                execution_time = state.get("execution_time", {})
+                subgraph_log = execution_time.get(subgraph_name, {})
+                durations = subgraph_log.get(actual_node, [])
+                durations.append(duration)
 
-            logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
-            return result
+                subgraph_log[actual_node] = durations
+                execution_time[subgraph_name] = subgraph_log
+                state["execution_time"] = execution_time
+
+                logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
+                return result
+
+            wrapper = async_wrapper
+
+        else:
+
+            @wraps(func)
+            def sync_wrapper(self, state, *args, **kwargs):
+                header = f"[{subgraph_name}.{actual_node}]".ljust(40)
+                logger.info(f"{header} Start")
+                start = time.time()
+
+                result = func(self, state, *args, **kwargs)
+                end = time.time()
+                duration = round(end - start, 4)
+
+                execution_time = state.get("execution_time", {})
+                subgraph_log = execution_time.get(subgraph_name, {})
+                durations = subgraph_log.get(actual_node, [])
+                durations.append(duration)
+
+                subgraph_log[actual_node] = durations
+                execution_time[subgraph_name] = subgraph_log
+                state["execution_time"] = execution_time
+
+                logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
+                return result
+
+            wrapper = sync_wrapper
 
         return wrapper
 
@@ -47,25 +78,53 @@ def time_node(
 
 def time_subgraph(subgraph_name: str):
     def decorator(func):
-        @wraps(func)
-        def wrapper(state, *args, **kwargs):
-            header = f"[{subgraph_name}]".ljust(40)
-            logger.info(f"{header} Start")
-            start = time.time()
-            result = func(state, *args, **kwargs)
-            end = time.time()
-            duration = round(end - start, 4)
+        if asyncio.iscoroutinefunction(func):
 
-            timings = state.get("execution_time", {})
-            subgraph_log = timings.get(subgraph_name, {})
-            durations = subgraph_log.get("__subgraph_total__", [])
-            durations.append(duration)
-            subgraph_log["__subgraph_total__"] = durations
-            timings[subgraph_name] = subgraph_log
-            state["execution_time"] = timings
+            @wraps(func)
+            async def async_wrapper(state, *args, **kwargs):
+                header = f"[{subgraph_name}]".ljust(40)
+                logger.info(f"{header} Start")
+                start = time.time()
+                result = await func(state, *args, **kwargs)
+                end = time.time()
+                duration = round(end - start, 4)
 
-            logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
-            return result
+                timings = state.get("execution_time", {})
+                subgraph_log = timings.get(subgraph_name, {})
+                durations = subgraph_log.get("__subgraph_total__", [])
+                durations.append(duration)
+                subgraph_log["__subgraph_total__"] = durations
+                timings[subgraph_name] = subgraph_log
+                state["execution_time"] = timings
+
+                logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
+                return result
+
+            wrapper = async_wrapper
+
+        else:
+
+            @wraps(func)
+            def sync_wrapper(state, *args, **kwargs):
+                header = f"[{subgraph_name}]".ljust(40)
+                logger.info(f"{header} Start")
+                start = time.time()
+                result = func(state, *args, **kwargs)
+                end = time.time()
+                duration = round(end - start, 4)
+
+                timings = state.get("execution_time", {})
+                subgraph_log = timings.get(subgraph_name, {})
+                durations = subgraph_log.get("__subgraph_total__", [])
+                durations.append(duration)
+                subgraph_log["__subgraph_total__"] = durations
+                timings[subgraph_name] = subgraph_log
+                state["execution_time"] = timings
+
+                logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
+                return result
+
+            wrapper = sync_wrapper
 
         return wrapper
 

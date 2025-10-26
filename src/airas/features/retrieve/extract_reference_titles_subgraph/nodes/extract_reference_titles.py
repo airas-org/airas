@@ -1,6 +1,5 @@
-import json
+import asyncio
 import string
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from logging import getLogger
 
 from jinja2 import Environment
@@ -15,7 +14,6 @@ from airas.services.api_client.llm_client.llm_facade_client import (
 )
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import ResearchStudy
-from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -34,7 +32,7 @@ def _normalize_title(title: str) -> str:
     return normalized
 
 
-def _extract_references_from_study(
+async def _extract_references_from_study(
     research_study: ResearchStudy,
     template: str,
     github_repository_info: GitHubRepositoryInfo,
@@ -52,7 +50,9 @@ def _extract_references_from_study(
     messages = jinja_template.render(data)
 
     try:
-        output, _ = client.structured_outputs(message=messages, data_model=LLMOutput)
+        output, _ = await client.structured_outputs_async(
+            message=messages, data_model=LLMOutput
+        )
     except Exception as e:
         logger.error(f"Error extracting references for '{research_study.title}': {e}")
         return []
@@ -62,14 +62,6 @@ def _extract_references_from_study(
             f"Warning: No valid response from LLM for reference extraction for '{research_study.title}'."
         )
         return []
-    save_io_on_github(
-        github_repository_info=github_repository_info,
-        input=messages,
-        output=json.dumps(output, ensure_ascii=False, indent=4),
-        subgraph_name="extract_reference_titles_subgraph",
-        node_name=f"extract_reference_titles_{index}",
-        llm_name=llm_name,
-    )
     reference_titles = output.get("reference_titles", [])
     logger.info(
         f"Found {len(reference_titles)} reference titles for study '{research_study.title}'."
@@ -78,12 +70,11 @@ def _extract_references_from_study(
     return reference_titles
 
 
-def extract_reference_titles(
+async def extract_reference_titles(
     llm_name: LLM_MODEL,
     research_study_list: list[ResearchStudy],
-    github_repository_info: GitHubRepositoryInfo,
+    github_repository_info: GitHubRepositoryInfo | None = None,
     client: LLMFacadeClient | None = None,
-    max_workers: int = 3,
 ) -> list[ResearchStudy]:
     client = client or LLMFacadeClient(llm_name=llm_name)
 
@@ -96,34 +87,53 @@ def extract_reference_titles(
         logger.warning("No studies with full_text found")
         return []
 
-    logger.info(f"Processing {len(valid_studies)} studies with {max_workers} workers")
-
-    all_reference_titles = []
-
     # NOTE: Using multithreading for easier implementation, though async is more efficient.
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_study = {
-            executor.submit(
-                _extract_references_from_study,
-                study,
-                extract_reference_titles_prompt,
-                github_repository_info,
-                index,
-                client,
-                llm_name,
-            ): study
-            for index, study in enumerate(valid_studies)
-        }
+    # with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    #     future_to_study = {
+    #         executor.submit(
+    #             _extract_references_from_study,
+    #             study,
+    #             extract_reference_titles_prompt,
+    #             github_repository_info,
+    #             index,
+    #             client,
+    #             llm_name,
+    #         ): study
+    #         for index, study in enumerate(valid_studies)
+    #     }
 
-        for future in as_completed(future_to_study):
-            study = future_to_study[future]
-            try:
-                titles = future.result()
-                all_reference_titles.extend(titles)
-            except Exception as e:
-                logger.error(f"Error processing study '{study.title}': {e}")
+    #     for future in as_completed(future_to_study):
+    #         study = future_to_study[future]
+    #         try:
+    #             titles = future.result()
+    #             all_reference_titles.extend(titles)
+    #         except Exception as e:
+    #             logger.error(f"Error processing study '{study.title}': {e}")
 
     # Global deduplication across all studies
+    # unique_titles = []
+    # seen_normalized = set()
+
+    # for title in all_reference_titles:
+    #     normalized_title = _normalize_title(title)
+    #     if normalized_title not in seen_normalized:
+    #         unique_titles.append(title)
+    #         seen_normalized.add(normalized_title)
+
+    tasks = [
+        _extract_references_from_study(
+            study,
+            extract_reference_titles_prompt,
+            github_repository_info,
+            index,
+            client,
+            llm_name,
+        )
+        for index, study in enumerate(valid_studies)
+    ]
+    result = await asyncio.gather(*tasks)
+    all_reference_titles = [x for sublist in result for x in sublist]
+
     unique_titles = []
     seen_normalized = set()
 

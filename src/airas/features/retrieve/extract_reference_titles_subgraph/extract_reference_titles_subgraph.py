@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from langgraph.graph import END, START, StateGraph
@@ -81,14 +82,15 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
             )
         self.num_reference_paper = num_reference_paper
 
-    @extract_reference_titles_timed
-    def _extract_reference_titles(
+    # TODO: async support
+    # @extract_reference_titles_timed
+    async def _extract_reference_titles(
         self, state: ExtractReferenceTitlesState
     ) -> dict[str, list[ResearchStudy]]:
-        reference_research_study_list = extract_reference_titles(
+        reference_research_study_list = await extract_reference_titles(
             llm_name=self.llm_mapping.extract_reference_titles,
             research_study_list=state["research_study_list"],
-            github_repository_info=state["github_repository_info"],
+            github_repository_info=state.get("github_repository_info"),
         )
         if self.num_reference_paper is not None:
             reference_research_study_list = reference_research_study_list[
@@ -108,15 +110,15 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
         return graph_builder.compile()
 
 
-def main():
+async def main():
     input_data = extract_reference_titles_subgraph_input_data
-    result = ExtractReferenceTitlesSubgraph().run(input_data)
+    result = await ExtractReferenceTitlesSubgraph().arun(input_data)
     print(f"result: {result}")
 
 
 if __name__ == "__main__":
     try:
-        main()
+        asyncio.run(main())
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         raise
