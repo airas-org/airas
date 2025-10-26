@@ -1,6 +1,5 @@
-import json
+import asyncio
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from jinja2 import Environment
 from pydantic import BaseModel
@@ -14,7 +13,6 @@ from airas.services.api_client.llm_client.llm_facade_client import (
 )
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import ResearchStudy
-from airas.utils.save_prompt import save_io_on_github
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +22,7 @@ class LLMOutput(BaseModel):
     experimental_info: str
 
 
-def _extract_experimental_info_from_study(
+async def _extract_experimental_info_from_study(
     research_study: ResearchStudy,
     code_str: str,
     template: str,
@@ -32,14 +30,14 @@ def _extract_experimental_info_from_study(
     github_repository_info: GitHubRepositoryInfo,
     llm_name: LLM_MODEL,
     index: int,
-) -> ResearchStudy:
+) -> None:
     title = research_study.title or "N/A"
 
     if not code_str:
         logger.info(
             f"No code available for '{title}', skipping experimental info extraction."
         )
-        return research_study
+        return
 
     if not (
         research_study.llm_extracted_info
@@ -48,7 +46,7 @@ def _extract_experimental_info_from_study(
         logger.warning(
             f"No llm_extracted_info or no methodology available for '{title}', skipping experimental info extraction."
         )
-        return research_study
+        return
 
     env = Environment()
     jinja_template = env.from_string(template)
@@ -60,30 +58,24 @@ def _extract_experimental_info_from_study(
     )
 
     try:
-        output, _ = client.structured_outputs(message=messages, data_model=LLMOutput)
+        output, _ = await client.structured_outputs_async(
+            message=messages, data_model=LLMOutput
+        )
     except Exception as e:
         logger.error(f"Error extracting experimental info for '{title}': {e}")
-        return research_study
+        return
 
     if not output or not isinstance(output, dict):
         logger.error(f"No response from LLM for '{title}'")
-        return research_study
-    save_io_on_github(
-        github_repository_info=github_repository_info,
-        input=messages,
-        output=json.dumps(output, ensure_ascii=False, indent=4),
-        subgraph_name="retrieve_code_subgraph",
-        node_name=f"extract_experimental_info_{index}",
-        llm_name=llm_name,
-    )
+        return
     research_study.llm_extracted_info.experimental_code = output["experimental_code"]
     research_study.llm_extracted_info.experimental_info = output["experimental_info"]
     logger.info(f"Successfully extracted experimental info for '{title}'")
 
-    return research_study
+    return
 
 
-def extract_experimental_info(
+async def extract_experimental_info(
     llm_name: LLM_MODEL,
     research_study_list: list[ResearchStudy],
     code_str_list: list[str],
@@ -102,39 +94,19 @@ def extract_experimental_info(
     logger.info(
         f"Processing {len(research_study_list)} studies with {max_workers} workers"
     )
-
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_index = {
-            executor.submit(
-                _extract_experimental_info_from_study,
-                study,
-                code_str,
-                prompt_template,
-                client,
-                github_repository_info,
-                llm_name,
-                i,
-            ): i
-            for i, (study, code_str) in enumerate(
-                zip(research_study_list, code_str_list)  # noqa: B905
-            )
-        }
-
-        # Results will be stored in order
-        results = [None] * len(research_study_list)
-        for future in as_completed(future_to_index):
-            index = future_to_index[future]
-            try:
-                updated_study = future.result()
-                results[index] = updated_study
-            except Exception as e:
-                study = research_study_list[index]
-                title = study.title or "N/A"
-                logger.error(f"Error processing study '{title}': {e}")
-                results[index] = study  # Return original study if processing fails
-
-    # Filter out None values (shouldn't happen with current logic)
-    updated_studies = [study for study in results if study is not None]
-
-    logger.info(f"Completed processing {len(updated_studies)} studies")
-    return updated_studies
+    tasks = [
+        _extract_experimental_info_from_study(
+            research_study,
+            code_str,
+            prompt_template,
+            client,
+            github_repository_info,
+            llm_name,
+            index,
+        )
+        for index, (research_study, code_str) in enumerate(
+            zip(research_study_list, code_str_list, strict=True)
+        )
+    ]
+    await asyncio.gather(*tasks)
+    return research_study_list
