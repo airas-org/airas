@@ -75,10 +75,10 @@ class SummarizePaperSubgraph(BaseSubgraph):
             )
 
     @summarize_paper_subgraph_timed
-    def _summarize_paper(
+    async def _summarize_paper(
         self, state: SummarizePaperState
     ) -> dict[str, list[ResearchStudy]]:
-        research_study_list = summarize_paper(
+        research_study_list = await summarize_paper(
             llm_name=self.llm_mapping.summarize_paper,
             prompt_template=summarize_paper_prompt,
             research_study_list=state["research_study_list"],

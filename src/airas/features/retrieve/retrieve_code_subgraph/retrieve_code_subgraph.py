@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from langgraph.graph import END, START, StateGraph
@@ -73,6 +74,7 @@ class RetrieveCodeSubgraph(BaseSubgraph):
     def __init__(
         self,
         llm_mapping: dict[str, str] | RetrieveCodeLLMMapping | None = None,
+        save_prompts: bool = True,
     ):
         if llm_mapping is None:
             self.llm_mapping = RetrieveCodeLLMMapping()
@@ -86,17 +88,19 @@ class RetrieveCodeSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or RetrieveCodeLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
+        self.save_prompts = save_prompts
         check_api_key(llm_api_key_check=True)
 
-    @retrieve_code_timed
-    def _extract_github_url_from_text(
+    # TODO: async support
+    # @retrieve_code_timed
+    async def _extract_github_url_from_text(
         self, state: RetrieveCodeState
     ) -> dict[str, list[ResearchStudy]]:
-        research_study_list = extract_github_url_from_text(
+        research_study_list = await extract_github_url_from_text(
             llm_name=self.llm_mapping.extract_github_url_from_text,
             prompt_template=extract_github_url_from_text_prompt,
             research_study_list=state["research_study_list"],
-            github_repository_info=state["github_repository_info"],
+            github_repository_info=state.get("github_repository_info"),
         )
         return {
             "research_study_list": research_study_list,
@@ -113,15 +117,16 @@ class RetrieveCodeSubgraph(BaseSubgraph):
             "code_str_list": code_str_list,
         }
 
-    @retrieve_code_timed
-    def _extract_experimental_info(
+    # TODO: async support
+    # @retrieve_code_timed
+    async def _extract_experimental_info(
         self, state: RetrieveCodeState
     ) -> dict[str, list[ResearchStudy]]:
-        research_study_list = extract_experimental_info(
+        research_study_list = await extract_experimental_info(
             llm_name=self.llm_mapping.extract_experimental_info,
             research_study_list=state["research_study_list"],
             code_str_list=state["code_str_list"],
-            github_repository_info=state["github_repository_info"],
+            github_repository_info=state.get("github_repository_info"),
         )
         return {"research_study_list": research_study_list}
 
@@ -148,15 +153,15 @@ class RetrieveCodeSubgraph(BaseSubgraph):
         return graph_builder.compile()
 
 
-def main():
+async def main():
     input = retrieve_code_subgraph_input_data
-    result = RetrieveCodeSubgraph().run(input)
+    result = await RetrieveCodeSubgraph().arun(input)
     print(f"result: {result}")
 
 
 if __name__ == "__main__":
     try:
-        main()
+        asyncio.run(main())
     except Exception as e:
         logger.error(f"Error running RetrieveCodeSubgraph: {e}")
         raise
