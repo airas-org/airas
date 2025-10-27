@@ -152,7 +152,7 @@ requires-dist = [
     { name = "anthropic", specifier = ">=0.66.0" },
     { name = "asyncio", marker = "extra == 'mcp'", specifier = ">=3.4.3" },
     { name = "bibtexparser", specifier = ">=1.4.3" },
-    { name = "dependency-injector", specifier = ">=4.42.0" },
+    { name = "dependency-injector", specifier = ">=4.48.2" },
     { name = "feedparser", specifier = ">=6.0.11" },
     { name = "google-genai", specifier = ">=1.37.0" },
     { name = "jinja2", specifier = ">=3.1.4" },
