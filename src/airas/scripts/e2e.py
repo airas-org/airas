@@ -9,7 +9,6 @@ from airas.services.api_client.api_clients_container import api_clients_containe
 # Register import hook before importing features to enable automatic dependency injection
 register_loader_containers(api_clients_container)
 
-# Import features after registering hook (intentionally not at top of file)
 from airas.config.workflow_config import DEFAULT_WORKFLOW_CONFIG  # noqa: E402
 from airas.features import (  # noqa: E402
     AnalyticSubgraph,

@@ -1,5 +1,14 @@
 from dependency_injector import containers, providers
 
+# Workaround for OpenAI SDK lazy initialization issue
+# Initialize AsyncOpenAI.responses at import time to prevent silent failures
+try:
+    from openai import AsyncOpenAI
+
+    _ = AsyncOpenAI().responses
+except Exception:
+    pass
+
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.hugging_face_client import HuggingFaceClient
