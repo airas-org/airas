@@ -16,11 +16,15 @@ class APIClientsContainer(containers.DeclarativeContainer):
     config = providers.Configuration()
 
     # --- LLM Clients ---
-    openai_client = providers.Singleton(OpenAIClient)
-    anthropic_client = providers.Singleton(AnthropicClient)
-    google_genai_client = providers.Singleton(GoogleGenAIClient)
+    openai_client: providers.Singleton[OpenAIClient] = providers.Singleton(OpenAIClient)
+    anthropic_client: providers.Singleton[AnthropicClient] = providers.Singleton(
+        AnthropicClient
+    )
+    google_genai_client: providers.Singleton[GoogleGenAIClient] = providers.Singleton(
+        GoogleGenAIClient
+    )
 
-    llm_facade_client = providers.Factory(
+    llm_facade_client: providers.Factory[LLMFacadeClient] = providers.Factory(
         LLMFacadeClient,
         openai_client=openai_client,
         anthropic_client=anthropic_client,
@@ -29,17 +33,23 @@ class APIClientsContainer(containers.DeclarativeContainer):
 
     # Delegate provider to inject the Factory itself
     # This allows passing runtime arguments (like llm_name) to the Factory
-    llm_facade_provider = providers.Delegate(llm_facade_client)
+    llm_facade_provider: providers.Delegate = providers.Delegate(llm_facade_client)
 
     # --- Code & Experiment Platforms ---
-    github_client = providers.Singleton(GithubClient)
-    hugging_face_client = providers.Singleton(HuggingFaceClient)
-    wandb_client = providers.Singleton(WandbClient)
+    github_client: providers.Singleton[GithubClient] = providers.Singleton(GithubClient)
+    hugging_face_client: providers.Singleton[HuggingFaceClient] = providers.Singleton(
+        HuggingFaceClient
+    )
+    wandb_client: providers.Singleton[WandbClient] = providers.Singleton(WandbClient)
 
     # --- Academic Research APIs ---
-    arxiv_client = providers.Singleton(ArxivClient)
-    semantic_scholar_client = providers.Singleton(SemanticScholarClient)
-    openalex_client = providers.Singleton(OpenAlexClient)
+    arxiv_client: providers.Singleton[ArxivClient] = providers.Singleton(ArxivClient)
+    semantic_scholar_client: providers.Singleton[SemanticScholarClient] = (
+        providers.Singleton(SemanticScholarClient)
+    )
+    openalex_client: providers.Singleton[OpenAlexClient] = providers.Singleton(
+        OpenAlexClient
+    )
 
 
 api_clients_container = APIClientsContainer()
