@@ -2,7 +2,7 @@ from logging import getLogger
 
 from dependency_injector.wiring import Provide, inject
 
-from airas.services.api_client.api_clients_container import api_clients_container
+from airas.services.api_client.api_clients_container import APIClientsContainer
 from airas.services.api_client.github_client import GithubClient, GithubClientError
 from airas.types.github import GitHubRepositoryInfo
 
@@ -14,7 +14,7 @@ def check_repository_from_template(
     github_repository_info: GitHubRepositoryInfo,
     template_owner: str,
     template_repo: str,
-    client: GithubClient = Provide[api_clients_container.github_client],
+    client: GithubClient = Provide[APIClientsContainer.github_client],
 ) -> bool:
     try:
         response = client.get_repository(

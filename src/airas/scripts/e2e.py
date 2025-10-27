@@ -1,10 +1,17 @@
 import logging
 from datetime import datetime
 
+from dependency_injector.wiring import register_loader_containers
 from tqdm import tqdm
 
-from airas.config.workflow_config import DEFAULT_WORKFLOW_CONFIG
-from airas.features import (
+from airas.services.api_client.api_clients_container import api_clients_container
+
+# Register import hook before importing features to enable automatic dependency injection
+register_loader_containers(api_clients_container)
+
+# Import features after registering hook (intentionally not at top of file)
+from airas.config.workflow_config import DEFAULT_WORKFLOW_CONFIG  # noqa: E402
+from airas.features import (  # noqa: E402
     AnalyticSubgraph,
     CreateBibfileSubgraph,
     CreateBranchSubgraph,
@@ -16,6 +23,7 @@ from airas.features import (
     ExtractReferenceTitlesSubgraph,
     GenerateQueriesSubgraph,
     GetPaperTitlesFromDBSubgraph,
+    GithubDownloadSubgraph,
     GithubUploadSubgraph,
     HtmlSubgraph,
     LatexSubgraph,
@@ -28,10 +36,9 @@ from airas.features import (
     SummarizePaperSubgraph,
     WriterSubgraph,
 )
-from airas.features.github.github_download_subgraph import GithubDownloadSubgraph
-from airas.scripts.settings import Settings
-from airas.types.github import GitHubRepositoryInfo
-from airas.utils.logging_utils import setup_logging
+from airas.scripts.settings import Settings  # noqa: E402
+from airas.types.github import GitHubRepositoryInfo  # noqa: E402
+from airas.utils.logging_utils import setup_logging  # noqa: E402
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -168,25 +175,25 @@ uploader = GithubUploadSubgraph()
 
 subgraph_list = [
     generate_queries,
-    get_paper_titles,
-    retrieve_paper_content,
-    summarize_paper,
-    retrieve_code,
-    create_method,
-    create_experimental_design,
-    retrieve_hugging_face,
-    coder,
-    executor,
-    # evaluate_consistency,
-    analysis,
-    reference_extractor,
-    retrieve_reference_paper_content,
-    create_bibfile,
-    writer,
-    review,
-    latex,
-    html,
-    readme,
+    # get_paper_titles,
+    # retrieve_paper_content,
+    # summarize_paper,
+    # retrieve_code,
+    # create_method,
+    # create_experimental_design,
+    # retrieve_hugging_face,
+    # coder,
+    # executor,
+    # # evaluate_consistency,
+    # analysis,
+    # reference_extractor,
+    # retrieve_reference_paper_content,
+    # create_bibfile,
+    # writer,
+    # review,
+    # latex,
+    # html,
+    # readme,
 ]
 
 

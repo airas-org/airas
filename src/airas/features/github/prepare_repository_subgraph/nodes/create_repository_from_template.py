@@ -3,7 +3,7 @@ from typing import Literal
 
 from dependency_injector.wiring import Provide, inject
 
-from airas.services.api_client.api_clients_container import api_clients_container
+from airas.services.api_client.api_clients_container import APIClientsContainer
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 
@@ -17,7 +17,7 @@ def create_repository_from_template(
     template_repo: str,
     include_all_branches: bool = True,
     private: bool = False,
-    client: GithubClient = Provide[api_clients_container.github_client],
+    client: GithubClient = Provide[APIClientsContainer.github_client],
 ) -> Literal[True]:
     try:
         result = client.create_repository_from_template(

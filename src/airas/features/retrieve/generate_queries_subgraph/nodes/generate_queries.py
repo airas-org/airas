@@ -4,7 +4,7 @@ from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 from pydantic import BaseModel, create_model
 
-from airas.services.api_client.api_clients_container import api_clients_container
+from airas.services.api_client.api_clients_container import APIClientsContainer
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.utils.save_prompt import save_io_on_github
@@ -22,7 +22,7 @@ def generate_queries(
     research_topic: str,
     n_queries: int,
     github_repository_info: GitHubRepositoryInfo,
-    llm_facade_provider=Provide[api_clients_container.llm_facade_provider],
+    llm_facade_provider=Provide[APIClientsContainer.llm_facade_provider],
 ) -> list[str]:
     client = llm_facade_provider(llm_name=llm_name)
 

@@ -98,6 +98,9 @@ class GenerateQueriesSubgraph(BaseSubgraph):
 
 
 def main():
+    from airas.services.api_client.api_clients_container import api_clients_container
+
+    api_clients_container.wire(modules=[__name__])
     input = generate_queries_subgraph_input_data
     result = GenerateQueriesSubgraph().run(input)
     print(f"result: {result}")
