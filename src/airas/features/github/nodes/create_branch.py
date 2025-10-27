@@ -1,24 +1,24 @@
 from logging import getLogger
 from typing import Literal
 
+from dependency_injector.wiring import Provide, inject
+
+from airas.services.api_client.api_clients_container import api_clients_container
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 
 logger = getLogger(__name__)
-DEVICETYPE = Literal["cpu", "gpu"]
 
 # NOTE：API Documentation
 # https://docs.github.com/ja/rest/git/refs?apiVersion=2022-11-28#create-a-reference
 
 
+@inject
 def create_branch(
     github_repository_info: GitHubRepositoryInfo,
     sha: str,
-    client: GithubClient | None = None,
+    client: GithubClient = Provide[api_clients_container.github_client],
 ) -> Literal[True]:
-    if client is None:
-        client = GithubClient()
-
     existing_branch = client.get_branch(
         github_owner=github_repository_info.github_owner,
         repository_name=github_repository_info.repository_name,

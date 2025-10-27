@@ -1,6 +1,9 @@
 from logging import getLogger
 from typing import Any, Iterator
 
+from dependency_injector.wiring import Provide, inject
+
+from airas.services.api_client.api_clients_container import api_clients_container
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 
@@ -33,13 +36,13 @@ def _iter_commits(
         page += 1
 
 
+@inject
 def find_commit_sha(
     github_repository_info: GitHubRepositoryInfo,
     subgraph_name: str,
     max_pages: int = 10,
-    client: GithubClient | None = None,
+    client: GithubClient = Provide[api_clients_container.github_client],
 ) -> str:
-    client = client or GithubClient()
     marker = f"[subgraph: {subgraph_name}]"
 
     commits_iter = _iter_commits(
