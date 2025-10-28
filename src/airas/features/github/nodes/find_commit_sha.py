@@ -3,7 +3,7 @@ from typing import Any, Iterator
 
 from dependency_injector.wiring import Provide, inject
 
-from airas.services.api_client.api_clients_container import APIClientsContainer
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 
@@ -41,7 +41,7 @@ def find_commit_sha(
     github_repository_info: GitHubRepositoryInfo,
     subgraph_name: str,
     max_pages: int = 10,
-    client: GithubClient = Provide[APIClientsContainer.github_client],
+    client: GithubClient = Provide[SyncContainer.github_client],
 ) -> str:
     marker = f"[subgraph: {subgraph_name}]"
 

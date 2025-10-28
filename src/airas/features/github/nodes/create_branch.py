@@ -3,7 +3,7 @@ from typing import Literal
 
 from dependency_injector.wiring import Provide, inject
 
-from airas.services.api_client.api_clients_container import APIClientsContainer
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 
@@ -17,7 +17,7 @@ logger = getLogger(__name__)
 def create_branch(
     github_repository_info: GitHubRepositoryInfo,
     sha: str,
-    client: GithubClient = Provide[APIClientsContainer.github_client],
+    client: GithubClient = Provide[SyncContainer.github_client],
 ) -> Literal[True]:
     existing_branch = client.get_branch(
         github_owner=github_repository_info.github_owner,

@@ -1,3 +1,7 @@
+from collections.abc import AsyncGenerator, Generator
+
+import httpx
+import requests
 from dependency_injector import containers, providers
 
 # Workaround for OpenAI SDK lazy initialization issue
@@ -18,47 +22,172 @@ from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClie
 from airas.services.api_client.llm_client.openai_client import OpenAIClient
 from airas.services.api_client.openalex_client import OpenAlexClient
 from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
-from airas.services.api_client.wandb_client import WandbClient
 
 
-class APIClientsContainer(containers.DeclarativeContainer):
-    config = providers.Configuration()
+def init_sync_session() -> Generator[requests.Session, None, None]:
+    session = requests.Session()
+    yield session
+    session.close()
+
+
+async def init_async_session() -> AsyncGenerator[httpx.AsyncClient, None]:
+    client = httpx.AsyncClient(follow_redirects=True)
+    yield client
+    await client.aclose()
+
+
+# NOTE: LLM clients are handled as separate resources because they use their own SDKs.
+def init_openai_client_sync() -> Generator[OpenAIClient, None, None]:
+    client = OpenAIClient()
+    yield client
+    client.close()
+
+
+def init_anthropic_client_sync() -> Generator[AnthropicClient, None, None]:
+    client = AnthropicClient()
+    yield client
+    client.close()
+
+
+def init_google_genai_client_sync() -> Generator[GoogleGenAIClient, None, None]:
+    client = GoogleGenAIClient()
+    yield client
+    client.close()
+
+
+async def init_openai_client_async() -> AsyncGenerator[OpenAIClient, None]:
+    client = OpenAIClient()
+    yield client
+    client.close()
+    await client.aclose()
+
+
+async def init_anthropic_client_async() -> AsyncGenerator[AnthropicClient, None]:
+    client = AnthropicClient()
+    yield client
+    client.close()
+    await client.aclose()
+
+
+async def init_google_genai_client_async() -> AsyncGenerator[GoogleGenAIClient, None]:
+    client = GoogleGenAIClient()
+    yield client
+    client.close()
+    await client.aclose()
+
+
+class SyncContainer(containers.DeclarativeContainer):
+    # --- HTTP Session ---
+    session = providers.Resource(init_sync_session)
 
     # --- LLM Clients ---
-    openai_client: providers.Singleton[OpenAIClient] = providers.Singleton(OpenAIClient)
-    anthropic_client: providers.Singleton[AnthropicClient] = providers.Singleton(
-        AnthropicClient
+    openai_client: providers.Resource[OpenAIClient] = providers.Resource(
+        init_openai_client_sync
     )
-    google_genai_client: providers.Singleton[GoogleGenAIClient] = providers.Singleton(
-        GoogleGenAIClient
+    anthropic_client: providers.Resource[AnthropicClient] = providers.Resource(
+        init_anthropic_client_sync
+    )
+    google_genai_client: providers.Resource[GoogleGenAIClient] = providers.Resource(
+        init_google_genai_client_sync
     )
 
+    # --- LLM Facade ---
     llm_facade_client: providers.Factory[LLMFacadeClient] = providers.Factory(
         LLMFacadeClient,
         openai_client=openai_client,
         anthropic_client=anthropic_client,
         google_genai_client=google_genai_client,
     )
-
-    # Delegate provider to inject the Factory itself
-    # This allows passing runtime arguments (like llm_name) to the Factory
     llm_facade_provider: providers.Delegate = providers.Delegate(llm_facade_client)
 
     # --- Code & Experiment Platforms ---
-    github_client: providers.Singleton[GithubClient] = providers.Singleton(GithubClient)
-    hugging_face_client: providers.Singleton[HuggingFaceClient] = providers.Singleton(
-        HuggingFaceClient
+    github_client: providers.Singleton[GithubClient] = providers.Singleton(
+        GithubClient,
+        sync_session=session,
+        async_session=None,
     )
-    wandb_client: providers.Singleton[WandbClient] = providers.Singleton(WandbClient)
+    hugging_face_client: providers.Singleton[HuggingFaceClient] = providers.Singleton(
+        HuggingFaceClient,
+        sync_session=session,
+        async_session=None,
+    )
 
     # --- Academic Research APIs ---
-    arxiv_client: providers.Singleton[ArxivClient] = providers.Singleton(ArxivClient)
+    arxiv_client: providers.Singleton[ArxivClient] = providers.Singleton(
+        ArxivClient,
+        sync_session=session,
+        async_session=None,
+    )
     semantic_scholar_client: providers.Singleton[SemanticScholarClient] = (
-        providers.Singleton(SemanticScholarClient)
+        providers.Singleton(
+            SemanticScholarClient,
+            sync_session=session,
+            async_session=None,
+        )
     )
     openalex_client: providers.Singleton[OpenAlexClient] = providers.Singleton(
-        OpenAlexClient
+        OpenAlexClient,
+        sync_session=session,
+        async_session=None,
     )
 
 
-api_clients_container = APIClientsContainer()
+class AsyncContainer(containers.DeclarativeContainer):
+    # --- HTTP Session ---
+    session = providers.Resource(init_async_session)
+
+    # --- LLM Clients ---
+    openai_client: providers.Resource[OpenAIClient] = providers.Resource(
+        init_openai_client_async
+    )
+    anthropic_client: providers.Resource[AnthropicClient] = providers.Resource(
+        init_anthropic_client_async
+    )
+    google_genai_client: providers.Resource[GoogleGenAIClient] = providers.Resource(
+        init_google_genai_client_async
+    )
+
+    # --- LLM Facade ---
+    llm_facade_client: providers.Factory[LLMFacadeClient] = providers.Factory(
+        LLMFacadeClient,
+        openai_client=openai_client,
+        anthropic_client=anthropic_client,
+        google_genai_client=google_genai_client,
+    )
+    llm_facade_provider: providers.Delegate = providers.Delegate(llm_facade_client)
+
+    # --- Code & Experiment Platforms ---
+    github_client: providers.Singleton[GithubClient] = providers.Singleton(
+        GithubClient,
+        sync_session=None,
+        async_session=session,
+    )
+    hugging_face_client: providers.Singleton[HuggingFaceClient] = providers.Singleton(
+        HuggingFaceClient,
+        sync_session=None,
+        async_session=session,
+    )
+
+    # --- Academic Research APIs ---
+    arxiv_client: providers.Singleton[ArxivClient] = providers.Singleton(
+        ArxivClient,
+        sync_session=None,
+        async_session=session,
+    )
+    semantic_scholar_client: providers.Singleton[SemanticScholarClient] = (
+        providers.Singleton(
+            SemanticScholarClient,
+            sync_session=None,
+            async_session=session,
+        )
+    )
+    openalex_client: providers.Singleton[OpenAlexClient] = providers.Singleton(
+        OpenAlexClient,
+        sync_session=None,
+        async_session=session,
+    )
+
+
+# Create container instances for direct use
+sync_container = SyncContainer()
+async_container = AsyncContainer()

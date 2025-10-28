@@ -4,10 +4,14 @@ from datetime import datetime
 from dependency_injector.wiring import register_loader_containers
 from tqdm import tqdm
 
-from airas.services.api_client.api_clients_container import api_clients_container
+from airas.services.api_client.api_clients_container import (
+    async_container,
+    sync_container,
+)
 
 # Register import hook before importing features to enable automatic dependency injection
-register_loader_containers(api_clients_container)
+register_loader_containers(sync_container)
+register_loader_containers(async_container)
 
 from airas.config.workflow_config import DEFAULT_WORKFLOW_CONFIG  # noqa: E402
 from airas.features import (  # noqa: E402

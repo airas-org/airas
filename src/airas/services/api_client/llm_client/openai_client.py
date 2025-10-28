@@ -256,6 +256,14 @@ class OpenAIClient:
         )
         return output, cost
 
+    def close(self) -> None:
+        if hasattr(self, "client") and self.client:
+            self.client.close()
+
+    async def aclose(self) -> None:
+        if hasattr(self, "aclient") and self.aclient:
+            await self.aclient.close()
+
 
 async def main(
     model_name: OPENAI_MODEL, message: str, data_model: type[BaseModel]

@@ -5,7 +5,7 @@ from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 from pydantic import BaseModel, create_model
 
-from airas.services.api_client.api_clients_container import APIClientsContainer
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -27,7 +27,7 @@ def generate_queries(
     n_queries: int,
     github_repository_info: GitHubRepositoryInfo,
     llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
-        APIClientsContainer.llm_facade_provider
+        SyncContainer.llm_facade_provider
     ],
 ) -> list[str]:
     client = llm_facade_provider(llm_name=llm_name)
