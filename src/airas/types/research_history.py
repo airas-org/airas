@@ -24,7 +24,11 @@ class ResearchHistory(BaseModel):
         None, description="Reference research studies"
     )
     new_method: Optional[ResearchHypothesis] = Field(
-        None, description="Proposed new research method"
+        None, description="Current research hypothesis (backward compatibility)"
+    )
+    hypothesis_versions: list[ResearchHypothesis] = Field(
+        default_factory=list,
+        description="History of research hypothesis versions. Last item is current.",
     )
     idea_info_history: Optional[list[ResearchIdea]] = Field(
         None, description="new research method history"
@@ -55,3 +59,10 @@ class ResearchHistory(BaseModel):
     additional_data: Optional[dict[str, Any]] = Field(
         None, description="Additional data fields for future extensions"
     )
+
+    def add_hypothesis_version(self, hypothesis: ResearchHypothesis) -> None:
+        self.hypothesis_versions.append(hypothesis)
+
+    @property
+    def current_hypothesis(self) -> Optional[ResearchHypothesis]:
+        return self.hypothesis_versions[-1] if self.hypothesis_versions else None

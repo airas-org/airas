@@ -139,6 +139,13 @@ class ExperimentalAnalysis(BaseModel):
 
 
 class ResearchHypothesis(BaseModel):
+    method_iteration_id: int = Field(
+        default=1, description="Iteration count for method modifications"
+    )
+    design_iteration_id: int = Field(
+        default=1, description="Iteration count for experimental design modifications"
+    )
+
     method: str = Field(..., description="")
     experimental_design: Optional[ExperimentalDesign] = Field(None, description="")
     experiment_runs: Optional[list[ExperimentRun]] = Field(None, description="")
