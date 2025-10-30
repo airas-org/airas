@@ -41,7 +41,7 @@ class CreateExperimentalDesignLLMMapping(BaseModel):
 class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
     github_repository_info: GitHubRepositoryInfo
-    # consistency_feedback: list[str]
+    hypothesis_versions: list[ResearchHypothesis]
 
 
 class CreateExperimentalDesignHiddenState(TypedDict): ...
@@ -96,30 +96,6 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             )
         check_api_key(llm_api_key_check=True)
 
-    # TODO: ループ処理を再度実装しなおす
-    # @create_experimental_design_timed
-    # def _prepare_iteration_history(
-    #     self, state: CreateExperimentalDesignState
-    # ) -> dict[str, ResearchHypothesis | str | None]:
-    #     current_method = state["new_method"]
-    #     if current_method.experimental_design is not None:
-    #         previous_method = current_method.model_copy(deep=True)
-    #         previous_method.iteration_history = None
-
-    #         current_method.iteration_history = current_method.iteration_history or []
-    #         current_method.iteration_history.append(previous_method)
-
-    #         for field in (
-    #             "experimental_design",
-    #             "experimental_results",
-    #             "experimental_analysis",
-    #         ):
-    #             setattr(current_method, field, None)
-
-    #     return {
-    #         "new_method": current_method,
-    #     }
-
     @create_experimental_design_timed
     def _generate_experiment_design(
         self, state: CreateExperimentalDesignState
@@ -132,6 +108,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             num_datasets_to_use=self.num_datasets_to_use,
             num_comparative_methods=self.num_comparative_methods,
             github_repository_info=state["github_repository_info"],
+            hypothesis_versions=state.get("hypothesis_versions", []),
         )
         return {"new_method": new_method}
 

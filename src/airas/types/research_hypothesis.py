@@ -47,13 +47,13 @@ class ExperimentCode(BaseModel):
 
 
 class ExperimentEvaluation(BaseModel):
-    consistency_score: Optional[int] = Field(
+    design_feedback: Optional[str] = Field(
         None,
-        description="Score (1-10) indicating consistency between experimental design and results",
+        description="Detailed feedback on experimental design",
     )
-    consistency_feedback: Optional[str] = Field(
+    method_feedback: Optional[str] = Field(
         None,
-        description="Detailed feedback on experimental consistency and quality",
+        description="Detailed feedback on method",
     )
 
 
@@ -83,7 +83,10 @@ class ExperimentalDesign(BaseModel):
         None,
         description="External resources including models, datasets, and other resources",
     )
-    experiment_code: Optional[ExperimentCode] = Field(None, description="")
+    experiment_code: Optional[ExperimentCode] = Field(
+        None,
+        description="Generated experimental code including training, evaluation, and configuration files",
+    )
 
 
 class ExperimentRun(BaseModel):
@@ -136,6 +139,10 @@ class ExperimentalAnalysis(BaseModel):
     comparison_figures: Optional[list[str]] = Field(
         None, description="List of comparison figure filenames"
     )
+    evaluation: Optional[ExperimentEvaluation] = Field(
+        None,
+        description="Evaluation and feedback for iterative refinement of experimental design and method",
+    )
 
 
 class ResearchHypothesis(BaseModel):
@@ -146,7 +153,16 @@ class ResearchHypothesis(BaseModel):
         default=1, description="Iteration count for experimental design modifications"
     )
 
-    method: str = Field(..., description="")
-    experimental_design: Optional[ExperimentalDesign] = Field(None, description="")
-    experiment_runs: Optional[list[ExperimentRun]] = Field(None, description="")
-    experimental_analysis: Optional[ExperimentalAnalysis] = Field(None, description="")
+    method: str = Field(..., description="The proposed research method or hypothesis")
+    experimental_design: Optional[ExperimentalDesign] = Field(
+        None,
+        description="Experimental design including datasets, models, metrics, and comparative methods",
+    )
+    experiment_runs: Optional[list[ExperimentRun]] = Field(
+        None,
+        description="List of individual experiment runs with their configurations and results",
+    )
+    experimental_analysis: Optional[ExperimentalAnalysis] = Field(
+        None,
+        description="Comprehensive analysis of experimental results including reports and aggregated metrics",
+    )

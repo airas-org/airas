@@ -47,6 +47,7 @@ def generate_experiment_design(
     num_datasets_to_use: int,
     num_comparative_methods: int,
     github_repository_info: GitHubRepositoryInfo,
+    hypothesis_versions: list[ResearchHypothesis] | None = None,
 ) -> ResearchHypothesis:
     client = LLMFacadeClient(llm_name=llm_name)
     env = Environment()
@@ -63,6 +64,7 @@ def generate_experiment_design(
         "num_models_to_use": num_models_to_use,
         "num_datasets_to_use": num_datasets_to_use,
         "num_comparative_methods": num_comparative_methods,
+        "hypothesis_versions": [h.model_dump() for h in (hypothesis_versions or [])],
     }
     messages = template.render(data)
     output, _ = client.structured_outputs(

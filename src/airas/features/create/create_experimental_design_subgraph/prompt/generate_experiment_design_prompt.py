@@ -37,4 +37,58 @@ You are an AI researcher. You will conduct experiments to demonstrate the superi
 - hyperparameters_to_search：
   - Output a list of objects, where each object contains "name" (hyperparameter name) and "range" (search range).
   - For example: [{"name": "learning_rate", "range": "0.001-0.01"}, {"name": "batch_size", "range": "16,32,64"}, {"name": "weight_decay", "range": "0.0001-0.001"}]
-  - Search ranges can be expressed as ranges (e.g., "0.001-0.01") or discrete values (e.g., "16,32,64")."""
+  - Search ranges can be expressed as ranges (e.g., "0.001-0.01") or discrete values (e.g., "16,32,64").
+
+
+{% if hypothesis_versions and hypothesis_versions|length > 0 %}
+{% set last = hypothesis_versions[-1] %}
+{% if last.experimental_design %}
+# Previous Experimental Design (For Reference)
+
+The previous iteration used the following experimental design:
+
+## Experiment Summary
+{{ last.experimental_design.experiment_summary }}
+
+## Evaluation Metrics
+{% for metric in last.experimental_design.evaluation_metrics %}
+- {{ metric }}
+{% endfor %}
+
+## Proposed Method
+{{ last.experimental_design.proposed_method }}
+
+## Comparative Methods
+{% for method in last.experimental_design.comparative_methods %}
+- {{ method }}
+{% endfor %}
+
+{% if last.experimental_design.models_to_use %}
+## Models Used
+{% for model in last.experimental_design.models_to_use %}
+- {{ model }}
+{% endfor %}
+{% endif %}
+
+{% if last.experimental_design.datasets_to_use %}
+## Datasets Used
+{% for dataset in last.experimental_design.datasets_to_use %}
+- {{ dataset }}
+{% endfor %}
+{% endif %}
+
+{% if last.experimental_design.hyperparameters_to_search %}
+## Hyperparameters Searched
+{% for key, value in last.experimental_design.hyperparameters_to_search.items() %}
+- {{ key }}: {{ value }}
+{% endfor %}
+{% endif %}
+
+{% if last.experimental_analysis and last.experimental_analysis.evaluation and last.experimental_analysis.evaluation.design_feedback %}
+## Design Feedback from Previous Iteration
+{{ last.experimental_analysis.evaluation.design_feedback }}
+**Important**: Based on this feedback, refine and improve the experimental design. Address the specific issues raised while building upon the previous design.
+{% endif %}
+
+{% endif %}
+{% endif %}"""

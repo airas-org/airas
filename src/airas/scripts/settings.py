@@ -63,6 +63,11 @@ class WriterSubgraphConfig(BaseModel):
     writing_refinement_rounds: int = 2  # 論文の推敲回数
 
 
+class AnalyticSubgraphConfig(BaseModel):
+    max_design_iterations: int = 1  # 実験設計のイテレーション最大回数
+    max_method_iterations: int = 1  # 手法のイテレーション最大回数（0=無効）
+
+
 class WandbConfig(BaseModel):
     entity: str = "your-wandb-entity"  # WandB entity (username or team name)
     project: str = "your-wandb-project"  # WandB project name
@@ -109,6 +114,7 @@ class LLMMappingConfig(BaseModel):
 
     # AnalyticSubgraph
     analytic_node: str = "o3-2025-04-16"
+    evaluate_experimental_design: str = "o3-2025-04-16"
 
     # CreateBibfileSubgraph
     filter_references: str = "gemini-2.5-flash"
@@ -164,6 +170,7 @@ class Settings(BaseSettings):
     )
     create_bibfile: CreateBibfileSubgraphConfig = CreateBibfileSubgraphConfig()
     writer: WriterSubgraphConfig = WriterSubgraphConfig()
+    analytic: AnalyticSubgraphConfig = AnalyticSubgraphConfig()
     wandb: WandbConfig = WandbConfig()
 
     # LLMの設定
@@ -189,6 +196,8 @@ class Settings(BaseSettings):
             # self.evaluate_experimental_consistency.consistency_score_threshold = 1
             self.create_bibfile.max_filtered_references = 2
             self.writer.writing_refinement_rounds = 1
+            self.analytic.max_design_iterations = 1
+            self.analytic.max_method_iterations = 1
         elif self.profile == "prod":
             # 本番はリッチに
             self.generate_queries.n_queries = 5
@@ -206,4 +215,6 @@ class Settings(BaseSettings):
             # self.evaluate_experimental_consistency.consistency_score_threshold = 1
             self.create_bibfile.max_filtered_references = 15
             self.writer.writing_refinement_rounds = 3
+            self.analytic.max_design_iterations = 3
+            self.analytic.max_method_iterations = 1
         return self
