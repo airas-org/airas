@@ -156,7 +156,7 @@ class AnalyticSubgraph(BaseSubgraph):
     @analytic_timed
     def _evaluate_methods(self, state: AnalyticSubgraphState) -> dict:
         new_method = evaluate_methods(
-            llm_name=self.llm_mapping.evaluate_experimental_design,
+            llm_name=self.llm_mapping.evaluate_methods,
             new_method=state["new_method"],
             github_repository_info=state["github_repository_info"],
         )
