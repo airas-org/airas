@@ -41,7 +41,6 @@ class CreateExperimentalDesignLLMMapping(BaseModel):
 class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
     github_repository_info: GitHubRepositoryInfo
-    hypothesis_versions: list[ResearchHypothesis]
 
 
 class CreateExperimentalDesignHiddenState(TypedDict): ...
@@ -108,7 +107,6 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             num_datasets_to_use=self.num_datasets_to_use,
             num_comparative_methods=self.num_comparative_methods,
             github_repository_info=state["github_repository_info"],
-            hypothesis_versions=state.get("hypothesis_versions", []),
         )
         return {"new_method": new_method}
 

@@ -11,9 +11,6 @@ from airas.features.analysis.analytic_subgraph.input_data import (
     analytic_subgraph_input_data,
 )
 from airas.features.analysis.analytic_subgraph.nodes.analytic_node import analytic_node
-from airas.features.analysis.analytic_subgraph.nodes.evaluate_experimental_design import (
-    evaluate_experimental_design,
-)
 from airas.features.analysis.analytic_subgraph.nodes.evaluate_methods import (
     evaluate_methods,
 )
@@ -38,16 +35,13 @@ analytic_timed = lambda f: time_node("analytic_subgraph")(f)  # noqa: E731
 
 class AnalyticLLMMapping(BaseModel):
     analytic_node: LLM_MODEL = DEFAULT_NODE_LLMS["analytic_node"]
-    evaluate_experimental_design: LLM_MODEL = DEFAULT_NODE_LLMS[
-        "evaluate_experimental_design"
-    ]
     evaluate_methods: LLM_MODEL = DEFAULT_NODE_LLMS["evaluate_methods"]
 
 
 class AnalyticSubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
     github_repository_info: GitHubRepositoryInfo
-    experiment_iteration: int  # TODO: This will be removed.
+    experiment_iteration: int  # TODO?: This will be removed.
     hypothesis_versions: list[ResearchHypothesis]
 
 
@@ -75,10 +69,8 @@ class AnalyticSubgraph(BaseSubgraph):
     def __init__(
         self,
         llm_mapping: dict[str, str] | AnalyticLLMMapping | None = None,
-        max_design_iterations: int = 1,
         max_method_iterations: int = 1,
     ):
-        self.max_design_iterations = max_design_iterations
         self.max_method_iterations = max_method_iterations
         if llm_mapping is None:
             self.llm_mapping = AnalyticLLMMapping()
@@ -132,28 +124,6 @@ class AnalyticSubgraph(BaseSubgraph):
         return {"new_method": new_method}
 
     @analytic_timed
-    def _evaluate_experimental_design(self, state: AnalyticSubgraphState) -> dict:
-        new_method = evaluate_experimental_design(
-            llm_name=self.llm_mapping.evaluate_experimental_design,
-            new_method=state["new_method"],
-            github_repository_info=state["github_repository_info"],
-        )
-
-        hypothesis_versions = state.get("hypothesis_versions", [])
-        hypothesis_versions.append(new_method.model_copy(deep=True))
-
-        new_method.design_iteration_id += 1
-        # NOTE: 'new_method.method' remains unchanged for the next iteration.
-        new_method.experimental_design = None
-        new_method.experiment_runs = None
-        new_method.experimental_analysis = None
-
-        return {
-            "new_method": new_method,
-            "hypothesis_versions": hypothesis_versions,
-        }
-
-    @analytic_timed
     def _evaluate_methods(self, state: AnalyticSubgraphState) -> dict:
         new_method = evaluate_methods(
             llm_name=self.llm_mapping.evaluate_methods,
@@ -169,7 +139,6 @@ class AnalyticSubgraph(BaseSubgraph):
         new_method.experimental_design = None
         new_method.experiment_runs = None
         new_method.experimental_analysis = None
-        # TODO: `CreateMethodSubgraph` supports `method_feedback`
 
         return {
             "new_method": new_method,
@@ -178,26 +147,18 @@ class AnalyticSubgraph(BaseSubgraph):
 
     def _should_iterate(self, state: AnalyticSubgraphState) -> str:
         new_method = state["new_method"]
-
-        design_iteration = new_method.design_iteration_id
         method_iteration = new_method.method_iteration_id
 
-        if design_iteration < self.max_design_iterations:
-            logger.info(
-                f"Decision: Design iteration needed (current: {design_iteration}, next: {design_iteration + 1}, max: {self.max_design_iterations})"
-            )
-            return "iterate_design"
-        elif method_iteration < self.max_method_iterations:
-            logger.info(
-                f"Decision: Method iteration needed (current: {method_iteration}, next: {method_iteration + 1}, max: {self.max_method_iterations})"
-            )
+        logger.info(
+            f"Decision: Checking method iteration "
+            f"({method_iteration}/{self.max_method_iterations})"
+        )
+
+        if method_iteration < self.max_method_iterations:
+            logger.info("Decision: Iteration needed. Continuing to the next iteration.")
             return "iterate_method"
         else:
-            logger.info(
-                f"Decision: No iteration needed "
-                f"(design: {design_iteration}/{self.max_design_iterations}, "
-                f"method: {'disabled' if self.max_method_iterations == 0 else f'{method_iteration}/{self.max_method_iterations}'})"
-            )
+            logger.info("Decision: No iteration needed. Maximum iterations reached.")
             return "no_iteration"
 
     def build_graph(self) -> CompiledGraph:
@@ -209,9 +170,6 @@ class AnalyticSubgraph(BaseSubgraph):
             "retrieve_evaluation_artifacts", self._retrieve_evaluation_artifacts
         )
         graph_builder.add_node("analytic_node", self._analytic_node)
-        graph_builder.add_node(
-            "evaluate_experimental_design", self._evaluate_experimental_design
-        )
         graph_builder.add_node("evaluate_methods", self._evaluate_methods)
 
         graph_builder.add_edge(START, "initialize")
@@ -224,12 +182,9 @@ class AnalyticSubgraph(BaseSubgraph):
             self._should_iterate,
             {
                 "no_iteration": END,
-                "iterate_design": "evaluate_experimental_design",
                 "iterate_method": "evaluate_methods",
             },
         )
-
-        graph_builder.add_edge("evaluate_experimental_design", END)
         graph_builder.add_edge("evaluate_methods", END)
 
         return graph_builder.compile()

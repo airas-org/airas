@@ -24,7 +24,7 @@ class ResearchHistory(BaseModel):
         None, description="Reference research studies"
     )
     new_method: Optional[ResearchHypothesis] = Field(
-        None, description="Current research hypothesis (backward compatibility)"
+        None, description="Current research hypothesis"
     )
     hypothesis_versions: list[ResearchHypothesis] = Field(
         default_factory=list,
@@ -63,6 +63,6 @@ class ResearchHistory(BaseModel):
     def add_hypothesis_version(self, hypothesis: ResearchHypothesis) -> None:
         self.hypothesis_versions.append(hypothesis)
 
-    @property
-    def current_hypothesis(self) -> Optional[ResearchHypothesis]:
-        return self.hypothesis_versions[-1] if self.hypothesis_versions else None
+    # @property
+    # def current_hypothesis(self) -> Optional[ResearchHypothesis]:
+    #     return self.hypothesis_versions[-1] if self.hypothesis_versions else None

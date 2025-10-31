@@ -64,8 +64,7 @@ class WriterSubgraphConfig(BaseModel):
 
 
 class AnalyticSubgraphConfig(BaseModel):
-    max_design_iterations: int = 1  # 実験設計のイテレーション最大回数
-    max_method_iterations: int = 1  # 手法のイテレーション最大回数（0=無効）
+    max_method_iterations: int = 1  # 手法のイテレーション最大回数
 
 
 class WandbConfig(BaseModel):

@@ -47,10 +47,6 @@ class ExperimentCode(BaseModel):
 
 
 class ExperimentEvaluation(BaseModel):
-    design_feedback: Optional[str] = Field(
-        None,
-        description="Detailed feedback on experimental design",
-    )
     method_feedback: Optional[str] = Field(
         None,
         description="Detailed feedback on method",
@@ -147,10 +143,7 @@ class ExperimentalAnalysis(BaseModel):
 
 class ResearchHypothesis(BaseModel):
     method_iteration_id: int = Field(
-        default=1, description="Iteration count for method modifications"
-    )
-    design_iteration_id: int = Field(
-        default=1, description="Iteration count for experimental design modifications"
+        default=1, description="Iteration count for method"
     )
 
     method: str = Field(..., description="The proposed research method or hypothesis")
