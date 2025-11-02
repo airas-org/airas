@@ -17,8 +17,41 @@ class BaseHTTPClient:
     ):
         self.base_url = base_url.rstrip("/")
         self.default_headers = default_headers or {}
+
+        # NOTE: For backward compatibility: auto-create sessions if not provided
         self.sync_session = sync_session or requests.Session()
         self.async_session = async_session or httpx.AsyncClient(follow_redirects=True)
+
+        # TODO: Future strict DI enforcement
+        # Uncomment below to require DI container to provide sessions
+        # if sync_session is None and async_session is None:
+        #     raise ValueError(
+        #         f"{self.__class__.__name__}: Either sync_session or async_session "
+        #         "must be provided by DI container"
+        #     )
+        #
+        # self._sync_session = sync_session
+        # self._async_session = async_session
+
+    # TODO: Future strict DI enforcement
+    # Uncomment @property to enforce DI-provided sessions
+    # @property
+    # def sync_session(self) -> requests.Session:
+    #     if self._sync_session is None:
+    #         raise RuntimeError(
+    #             f"{self.__class__.__name__}: Sync session not available. "
+    #             "Use SyncContainer for synchronous operations."
+    #         )
+    #     return self._sync_session
+    #
+    # @property
+    # def async_session(self) -> httpx.AsyncClient:
+    #     if self._async_session is None:
+    #         raise RuntimeError(
+    #             f"{self.__class__.__name__}: Async session not available. "
+    #             "Use AsyncContainer for asynchronous operations."
+    #         )
+    #     return self._async_session
 
     def request(
         self,
@@ -111,3 +144,11 @@ class BaseHTTPClient:
 
     async def apatch(self, path: str, **kwargs) -> httpx.Response:
         return await self.arequest("PATCH", path, **kwargs)
+
+    def close(self) -> None:
+        if self.sync_session is not None:
+            self.sync_session.close()
+
+    async def aclose(self) -> None:
+        if self.async_session is not None:
+            await self.async_session.aclose()

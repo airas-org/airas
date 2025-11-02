@@ -2,7 +2,8 @@ import os
 from logging import getLogger
 from typing import Any, Protocol, runtime_checkable
 
-import requests  # type: ignore
+import httpx
+import requests  # type: ignore[import-untyped]
 
 from airas.services.api_client.base_http_client import BaseHTTPClient
 from airas.services.api_client.response_parser import ResponseParser
@@ -25,12 +26,16 @@ class OpenAlexClient(BaseHTTPClient):
         base_url: str = "https://api.openalex.org",
         default_headers: dict[str, str] | None = None,
         parser: ResponseParserProtocol | None = None,
+        sync_session: requests.Session | None = None,
+        async_session: httpx.AsyncClient | None = None,
     ):
         api_key = os.getenv("OPENALEX_API_KEY")
         params_header = f"?api_key={api_key}" if api_key else ""
         super().__init__(
             base_url=base_url.rstrip("/"),
             default_headers=default_headers or {},
+            sync_session=sync_session,
+            async_session=async_session,
         )
         self._parser = parser or ResponseParser()
         self._key_qs = params_header

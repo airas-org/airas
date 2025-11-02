@@ -170,3 +170,4 @@ tmp/*
 .gitmessage.txt
 .github/instructions/*
 .serena/*
+.mcp.json

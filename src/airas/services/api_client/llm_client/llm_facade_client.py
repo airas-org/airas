@@ -18,14 +18,20 @@ LLM_MODEL = Literal[OPENAI_MODEL, VERTEXAI_MODEL, CLAUDE_MODEL]
 
 
 class LLMFacadeClient:
-    def __init__(self, llm_name: LLM_MODEL):
+    def __init__(
+        self,
+        llm_name: LLM_MODEL,
+        openai_client: OpenAIClient,
+        anthropic_client: AnthropicClient,
+        google_genai_client: GoogleGenAIClient,
+    ):
         self.llm_name = llm_name
         if llm_name in OPENAI_MODEL.__args__:
-            self.client = OpenAIClient()
+            self.client = openai_client
         elif llm_name in VERTEXAI_MODEL.__args__:
-            self.client = GoogleGenAIClient()
+            self.client = google_genai_client
         elif llm_name in CLAUDE_MODEL.__args__:
-            self.client = AnthropicClient()
+            self.client = anthropic_client
         else:
             raise ValueError(f"Unsupported LLM model: {llm_name}")
 

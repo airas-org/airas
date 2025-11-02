@@ -187,6 +187,13 @@ class GoogleGenAIClient:
         result = self.client.models.embed_content(model=model_name, contents=message)
         return result.embeddings[0].values
 
+    def close(self) -> None:
+        """Close method for consistency (Google GenAI SDK doesn't have explicit close)."""
+
+    async def aclose(self) -> None:
+        """Async close method for consistency."""
+        self.close()
+
 
 async def main(
     model_name: VERTEXAI_MODEL, message: str, data_model: type[BaseModel]

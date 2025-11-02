@@ -110,6 +110,13 @@ class AnthropicClient:
         )
         return output, cost
 
+    def close(self) -> None:
+        if hasattr(self, "client") and self.client:
+            self.client.close()
+
+    async def aclose(self) -> None:
+        self.close()
+
 
 if __name__ == "__main__":
 
