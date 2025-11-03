@@ -195,7 +195,6 @@ class Settings(BaseSettings):
             # self.evaluate_experimental_consistency.consistency_score_threshold = 1
             self.create_bibfile.max_filtered_references = 2
             self.writer.writing_refinement_rounds = 1
-            self.analytic.max_design_iterations = 1
             self.analytic.max_method_iterations = 1
         elif self.profile == "prod":
             # 本番はリッチに
@@ -214,6 +213,5 @@ class Settings(BaseSettings):
             # self.evaluate_experimental_consistency.consistency_score_threshold = 1
             self.create_bibfile.max_filtered_references = 15
             self.writer.writing_refinement_rounds = 3
-            self.analytic.max_design_iterations = 3
             self.analytic.max_method_iterations = 1
         return self
