@@ -142,12 +142,9 @@ class ExperimentalAnalysis(BaseModel):
 
 
 # TODO?: Since it's an object that contains both the hypothesis and the results, maybe it's better to rename it?
+# ResearchIteration?
 class ResearchHypothesis(BaseModel):
-    method_iteration_id: int = Field(
-        default=1, description="Iteration count for method"
-    )
-
-    method: str = Field(..., description="The proposed research method or hypothesis")
+    method: str = Field(..., description="The proposed research method")
     experimental_design: Optional[ExperimentalDesign] = Field(
         None,
         description="Experimental design including datasets, models, metrics, and comparative methods",
