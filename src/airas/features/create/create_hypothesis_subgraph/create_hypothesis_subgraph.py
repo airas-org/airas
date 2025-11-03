@@ -335,6 +335,9 @@ class CreateHypothesisSubgraph(BaseSubgraph):
 
 
 def main():
+    from airas.services.api_client.api_clients_container import sync_container
+
+    sync_container.wire(modules=[__name__])
     input = create_hypothesis_subgraph_input_data
     result = CreateHypothesisSubgraph(
         refinement_rounds=0,

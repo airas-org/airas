@@ -1,8 +1,11 @@
+from dependency_injector import providers
+from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 
 from airas.features.create.create_hypothesis_subgraph.prompt.evaluate_novelty_and_significance_prompt import (
     evaluate_novelty_and_significance_prompt,
 )
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -16,15 +19,18 @@ from airas.types.research_study import ResearchStudy
 from airas.utils.save_prompt import save_io_on_github
 
 
+@inject
 def evaluate_novelty_and_significance(
     research_topic: str,
     research_study_list: list[ResearchStudy],
     new_idea: GenerateIdea,
     llm_name: LLM_MODEL,
     github_repository_info: GitHubRepositoryInfo,
-    client: LLMFacadeClient | None = None,
+    llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
+        SyncContainer.llm_facade_provider
+    ],
 ) -> IdeaEvaluationResults:
-    client = client or LLMFacadeClient(llm_name=llm_name)
+    client = llm_facade_provider(llm_name=llm_name)
     env = Environment()
 
     template = env.from_string(evaluate_novelty_and_significance_prompt)

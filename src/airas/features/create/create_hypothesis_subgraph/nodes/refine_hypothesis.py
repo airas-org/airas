@@ -1,8 +1,11 @@
+from dependency_injector import providers
+from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 
 from airas.features.create.create_hypothesis_subgraph.prompt.refine_hypothesis_prompt import (
     refine_hypothesis_prompt,
 )
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -16,6 +19,7 @@ from airas.types.research_study import ResearchStudy
 from airas.utils.save_prompt import save_io_on_github
 
 
+@inject
 def refine_hypothesis(
     llm_name: LLM_MODEL,
     research_topic: str,
@@ -24,9 +28,11 @@ def refine_hypothesis(
     idea_info_history: list[ResearchIdea],
     refine_iterations: int,
     github_repository_info: GitHubRepositoryInfo,
-    client: LLMFacadeClient | None = None,
+    llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
+        SyncContainer.llm_facade_provider
+    ],
 ) -> ResearchIdea:
-    client = client or LLMFacadeClient(llm_name=llm_name)
+    client = llm_facade_provider(llm_name=llm_name)
     env = Environment()
 
     template = env.from_string(refine_hypothesis_prompt)
