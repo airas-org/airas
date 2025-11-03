@@ -35,7 +35,7 @@ analytic_timed = lambda f: time_node("analytic_subgraph")(f)  # noqa: E731
 
 class AnalyticLLMMapping(BaseModel):
     analytic_node: LLM_MODEL = DEFAULT_NODE_LLMS["analytic_node"]
-    evaluate_methods: LLM_MODEL = DEFAULT_NODE_LLMS["evaluate_methods"]
+    evaluate_method: LLM_MODEL = DEFAULT_NODE_LLMS["evaluate_method"]
 
 
 class AnalyticSubgraphInputState(TypedDict, total=False):
