@@ -11,8 +11,8 @@ from airas.features.analysis.analytic_subgraph.input_data import (
     analytic_subgraph_input_data,
 )
 from airas.features.analysis.analytic_subgraph.nodes.analytic_node import analytic_node
-from airas.features.analysis.analytic_subgraph.nodes.evaluate_methods import (
-    evaluate_methods,
+from airas.features.analysis.analytic_subgraph.nodes.evaluate_method import (
+    evaluate_method,
 )
 from airas.features.execution.execute_experiment_subgraph.nodes.execute_experiment import (
     execute_evaluation,
@@ -42,7 +42,7 @@ class AnalyticSubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
     github_repository_info: GitHubRepositoryInfo
     experiment_iteration: int  # TODO?: This will be removed.
-    hypothesis_versions: list[ResearchHypothesis]
+    hypothesis_history: list[ResearchHypothesis]
 
 
 class AnalyticSubgraphHiddenState(TypedDict): ...
@@ -50,7 +50,7 @@ class AnalyticSubgraphHiddenState(TypedDict): ...
 
 class AnalyticSubgraphOutputState(TypedDict):
     new_method: ResearchHypothesis
-    hypothesis_versions: list[ResearchHypothesis]
+    hypothesis_history: list[ResearchHypothesis]
 
 
 class AnalyticSubgraphState(
@@ -91,12 +91,6 @@ class AnalyticSubgraph(BaseSubgraph):
         check_api_key(llm_api_key_check=True)
 
     @analytic_timed
-    def _initialize(self, state: AnalyticSubgraphState) -> dict:
-        if not state.get("hypothesis_versions"):
-            return {"hypothesis_versions": []}
-        return {}
-
-    @analytic_timed
     def _execute_evaluation(self, state: AnalyticSubgraphState) -> dict:
         execute_evaluation(
             github_repository=state["github_repository_info"],
@@ -124,25 +118,30 @@ class AnalyticSubgraph(BaseSubgraph):
         return {"new_method": new_method}
 
     @analytic_timed
-    def _evaluate_methods(self, state: AnalyticSubgraphState) -> dict:
-        new_method = evaluate_methods(
+    def _evaluate_method(self, state: AnalyticSubgraphState) -> dict:
+        evaluated_method = evaluate_method(
             llm_name=self.llm_mapping.evaluate_methods,
             new_method=state["new_method"],
+            hypothesis_history=state.get("hypothesis_history", []),
             github_repository_info=state["github_repository_info"],
         )
+        hypothesis_history = state.get("hypothesis_history", []) + [evaluated_method]
 
-        hypothesis_versions = state.get("hypothesis_versions", [])
-        hypothesis_versions.append(new_method.model_copy(deep=True))
-
-        new_method.method_iteration_id += 1
-        new_method.method = ""
-        new_method.experimental_design = None
-        new_method.experiment_runs = None
-        new_method.experimental_analysis = None
+        # Prepare for the next iteration.
+        new_method = evaluated_method.model_copy(
+            deep=True,
+            update={
+                "method_iteration_id": evaluated_method.method_iteration_id + 1,
+                "method": "",
+                "experimental_design": None,
+                "experiment_runs": None,
+                "experimental_analysis": None,
+            },
+        )
 
         return {
             "new_method": new_method,
-            "hypothesis_versions": hypothesis_versions,
+            "hypothesis_history": hypothesis_history,
         }
 
     def _should_iterate(self, state: AnalyticSubgraphState) -> str:
@@ -164,16 +163,14 @@ class AnalyticSubgraph(BaseSubgraph):
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(AnalyticSubgraphState)
 
-        graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node("execute_evaluation", self._execute_evaluation)
         graph_builder.add_node(
             "retrieve_evaluation_artifacts", self._retrieve_evaluation_artifacts
         )
         graph_builder.add_node("analytic_node", self._analytic_node)
-        graph_builder.add_node("evaluate_methods", self._evaluate_methods)
+        graph_builder.add_node("evaluate_method", self._evaluate_method)
 
-        graph_builder.add_edge(START, "initialize")
-        graph_builder.add_edge("initialize", "execute_evaluation")
+        graph_builder.add_edge(START, "execute_evaluation")
         graph_builder.add_edge("execute_evaluation", "retrieve_evaluation_artifacts")
         graph_builder.add_edge("retrieve_evaluation_artifacts", "analytic_node")
 
@@ -182,10 +179,10 @@ class AnalyticSubgraph(BaseSubgraph):
             self._should_iterate,
             {
                 "no_iteration": END,
-                "iterate_method": "evaluate_methods",
+                "iterate_method": "evaluate_method",
             },
         )
-        graph_builder.add_edge("evaluate_methods", END)
+        graph_builder.add_edge("evaluate_method", END)
 
         return graph_builder.compile()
 

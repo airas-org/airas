@@ -1,9 +1,33 @@
-evaluate_methods_prompt = """\
+evaluate_method_prompt = """\
 You are an expert in machine learning research and methodology.
 
-Your task is to evaluate the proposed research method(s) based on experimental results and provide feedback to guide the next iteration toward more effective approaches.
+Your task is to evaluate the proposed research method based on experimental results and provide feedback to guide the next iteration toward more effective approaches.
 
-# Proposed Method(s)
+{% if hypothesis_history %}
+# Previous Method Iterations
+
+The following methods have been tried in previous iterations:
+
+{% for hypothesis in hypothesis_history %}
+## Iteration {{ hypothesis.method_iteration_id }}
+
+### Method
+{{ hypothesis.method }}
+
+{% if hypothesis.experimental_analysis and hypothesis.experimental_analysis.evaluation %}
+### Previous Feedback
+{{ hypothesis.experimental_analysis.evaluation.method_feedback }}
+{% endif %}
+
+{% if hypothesis.experimental_analysis and hypothesis.experimental_analysis.aggregated_metrics %}
+### Results
+{{ hypothesis.experimental_analysis.aggregated_metrics }}
+{% endif %}
+
+{% endfor %}
+{% endif %}
+
+# Current Proposed Method
 {{ new_method.method }}
 
 {% if new_method.experimental_design %}

@@ -46,7 +46,7 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     # --- features/analysis ---
     # AnalyticSubgraph
     "analytic_node": BASE_MODEL,
-    "evaluate_methods": BASE_MODEL,
+    "evaluate_method": BASE_MODEL,
 
     # --- features/write ---
     # CreateBibfileSubgraph

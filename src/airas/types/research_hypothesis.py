@@ -141,6 +141,7 @@ class ExperimentalAnalysis(BaseModel):
     )
 
 
+# TODO?: Since it's an object that contains both the hypothesis and the results, maybe it's better to rename it?
 class ResearchHypothesis(BaseModel):
     method_iteration_id: int = Field(
         default=1, description="Iteration count for method"

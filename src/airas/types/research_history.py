@@ -26,7 +26,7 @@ class ResearchHistory(BaseModel):
     new_method: Optional[ResearchHypothesis] = Field(
         None, description="Current research hypothesis"
     )
-    hypothesis_versions: list[ResearchHypothesis] = Field(
+    hypothesis_history: list[ResearchHypothesis] = Field(
         default_factory=list,
         description="History of research hypothesis versions. Last item is current.",
     )
@@ -60,8 +60,8 @@ class ResearchHistory(BaseModel):
         None, description="Additional data fields for future extensions"
     )
 
-    def add_hypothesis_version(self, hypothesis: ResearchHypothesis) -> None:
-        self.hypothesis_versions.append(hypothesis)
+    def add_hypothesis_history(self, hypothesis: ResearchHypothesis) -> None:
+        self.hypothesis_history.append(hypothesis)
 
     # @property
     # def current_hypothesis(self) -> Optional[ResearchHypothesis]:
