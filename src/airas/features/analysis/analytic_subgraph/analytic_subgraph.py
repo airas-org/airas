@@ -188,8 +188,10 @@ class AnalyticSubgraph(BaseSubgraph):
 
 
 def main():
-    input = analytic_subgraph_input_data
+    from airas.services.api_client.api_clients_container import sync_container
 
+    sync_container.wire(modules=[__name__])
+    input = analytic_subgraph_input_data
     result = AnalyticSubgraph().run(input)
 
     print(f"result: {result}")

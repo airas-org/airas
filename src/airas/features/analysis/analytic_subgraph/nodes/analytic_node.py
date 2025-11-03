@@ -1,12 +1,15 @@
 import json
 from logging import getLogger
 
+from dependency_injector import providers
+from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 from pydantic import BaseModel
 
 from airas.features.analysis.analytic_subgraph.prompt.analytic_node_prompt import (
     analytic_node_prompt,
 )
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -22,14 +25,16 @@ class LLMOutput(BaseModel):
     analysis_report: str
 
 
+@inject
 def analytic_node(
     llm_name: LLM_MODEL,
     new_method: ResearchHypothesis,
     github_repository_info: GitHubRepositoryInfo,
-    client: LLMFacadeClient | None = None,
+    llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
+        SyncContainer.llm_facade_provider
+    ],
 ) -> ResearchHypothesis:
-    if client is None:
-        client = LLMFacadeClient(llm_name=llm_name)
+    client = llm_facade_provider(llm_name=llm_name)
 
     env = Environment()
     template = env.from_string(analytic_node_prompt)
