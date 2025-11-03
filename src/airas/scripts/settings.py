@@ -113,8 +113,7 @@ class LLMMappingConfig(BaseModel):
 
     # AnalyticSubgraph
     analytic_node: str = "o3-2025-04-16"
-    evaluate_experimental_design: str = "o3-2025-04-16"
-    evaluate_methods: str = "o3-2025-04-16"
+    evaluate_method: str = "o3-2025-04-16"
 
     # CreateBibfileSubgraph
     filter_references: str = "gemini-2.5-flash"
