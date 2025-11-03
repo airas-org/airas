@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import Any, Literal, Protocol, runtime_checkable
 
 import httpx
-import requests
+import requests  # type: ignore[import-untyped]
 from nacl import public
 from tenacity import (
     before_sleep_log,
@@ -62,6 +62,8 @@ class GithubClient(BaseHTTPClient):
         base_url: str = "https://api.github.com",
         default_headers: dict[str, str] | None = None,
         parser: ResponseParserProtocol | None = None,
+        sync_session: requests.Session | None = None,
+        async_session: httpx.AsyncClient | None = None,
     ) -> None:
         auth_headers = {
             "Accept": "application/vnd.github+json",
@@ -71,6 +73,8 @@ class GithubClient(BaseHTTPClient):
         super().__init__(
             base_url=base_url,
             default_headers={**auth_headers, **(default_headers or {})},
+            sync_session=sync_session,
+            async_session=async_session,
         )
         self._parser = parser or ResponseParser()
 

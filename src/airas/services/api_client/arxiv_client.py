@@ -1,7 +1,8 @@
 from logging import getLogger
 from typing import Any, Protocol, runtime_checkable
 
-import requests
+import httpx
+import requests  # type: ignore[import-untyped]
 
 from airas.services.api_client.base_http_client import BaseHTTPClient
 from airas.services.api_client.response_parser import ResponseParser
@@ -23,8 +24,15 @@ class ArxivClient(BaseHTTPClient):
         base_url: str = "https://export.arxiv.org/api",
         default_headers: dict[str, str] | None = None,
         parser: ResponseParserProtocol | None = None,
+        sync_session: requests.Session | None = None,
+        async_session: httpx.AsyncClient | None = None,
     ):
-        super().__init__(base_url=base_url, default_headers=default_headers)
+        super().__init__(
+            base_url=base_url,
+            default_headers=default_headers,
+            sync_session=sync_session,
+            async_session=async_session,
+        )
         self._parser = parser or ResponseParser()
 
     @ARXIV_RETRY

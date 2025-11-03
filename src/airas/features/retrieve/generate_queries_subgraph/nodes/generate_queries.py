@@ -1,8 +1,11 @@
 import json
 
+from dependency_injector import providers
+from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 from pydantic import BaseModel, create_model
 
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -16,15 +19,18 @@ def _build_generated_query_model(n_queries: int) -> type[BaseModel]:
     return create_model("LLMOutput", **fields)
 
 
+@inject
 def generate_queries(
     llm_name: LLM_MODEL,
     prompt_template: str,
     research_topic: str,
     n_queries: int,
     github_repository_info: GitHubRepositoryInfo,
-    client: LLMFacadeClient | None = None,
+    llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
+        SyncContainer.llm_facade_provider
+    ],
 ) -> list[str]:
-    client = client or LLMFacadeClient(llm_name=llm_name)
+    client = llm_facade_provider(llm_name=llm_name)
 
     data = {
         "research_topic": research_topic,

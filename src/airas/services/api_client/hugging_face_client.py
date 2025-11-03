@@ -2,6 +2,9 @@ import os
 from logging import getLogger
 from typing import Any, Literal
 
+import httpx
+import requests  # type: ignore[import-untyped]
+
 from airas.services.api_client.base_http_client import BaseHTTPClient
 from airas.services.api_client.response_parser import ResponseParser
 from airas.services.api_client.retry_policy import make_retry_policy, raise_for_status
@@ -18,6 +21,8 @@ class HuggingFaceClient(BaseHTTPClient):
         self,
         base_url: str = "https://huggingface.co/api",
         default_headers: dict[str, str] | None = None,
+        sync_session: requests.Session | None = None,
+        async_session: httpx.AsyncClient | None = None,
     ):
         # HuggingFace API token is optional for public models/datasets
         api_key = os.getenv("HF_TOKEN")
@@ -30,6 +35,8 @@ class HuggingFaceClient(BaseHTTPClient):
         super().__init__(
             base_url=base_url,
             default_headers={**auth_headers, **(default_headers or {})},
+            sync_session=sync_session,
+            async_session=async_session,
         )
         self._parser = ResponseParser()
 

@@ -1,10 +1,20 @@
 import logging
 from datetime import datetime
 
+from dependency_injector.wiring import register_loader_containers
 from tqdm import tqdm
 
-from airas.config.workflow_config import DEFAULT_WORKFLOW_CONFIG
-from airas.features import (
+from airas.services.api_client.api_clients_container import (
+    async_container,
+    sync_container,
+)
+
+# Register import hook before importing features to enable automatic dependency injection
+register_loader_containers(sync_container)
+register_loader_containers(async_container)
+
+from airas.config.workflow_config import DEFAULT_WORKFLOW_CONFIG  # noqa: E402
+from airas.features import (  # noqa: E402
     AnalyticSubgraph,
     CreateBibfileSubgraph,
     CreateBranchSubgraph,
@@ -16,6 +26,7 @@ from airas.features import (
     ExtractReferenceTitlesSubgraph,
     GenerateQueriesSubgraph,
     GetPaperTitlesFromDBSubgraph,
+    GithubDownloadSubgraph,
     GithubUploadSubgraph,
     HtmlSubgraph,
     LatexSubgraph,
@@ -28,10 +39,9 @@ from airas.features import (
     SummarizePaperSubgraph,
     WriterSubgraph,
 )
-from airas.features.github.github_download_subgraph import GithubDownloadSubgraph
-from airas.scripts.settings import Settings
-from airas.types.github import GitHubRepositoryInfo
-from airas.utils.logging_utils import setup_logging
+from airas.scripts.settings import Settings  # noqa: E402
+from airas.types.github import GitHubRepositoryInfo  # noqa: E402
+from airas.utils.logging_utils import setup_logging  # noqa: E402
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -289,18 +299,25 @@ if __name__ == "__main__":
         "Improving Test-Time Adaptation in terms of convergence speed."
     )
 
-    execute_workflow(github_owner, repository_name, research_topic=research_topic_list)
+    try:
+        execute_workflow(
+            github_owner, repository_name, research_topic=research_topic_list
+        )
 
-    # resume_workflow(
-    #     github_owner=github_owner,
-    #     repository_name="experiment_matsuzawa_251002",
-    #     source_branch_name="research-0-retry-5",
-    #     target_branch_name="research-0-retry-5-opencode-latex",
-    #     start_subgraph_name="LatexSubgraph",
-    #     subgraph_list=subgraph_list,
-    # )
+        # resume_workflow(
+        #     github_owner=github_owner,
+        #     repository_name="experiment_matsuzawa_251002",
+        #     source_branch_name="research-0-retry-5",
+        #     target_branch_name="research-0-retry-5-opencode-latex",
+        #     start_subgraph_name="LatexSubgraph",
+        #     subgraph_list=subgraph_list,
+        # )
 
-    # TODO: The current CreateBranchSubgraph traces the f"[subgraph: {subgraph_name}]" marker in the commit message.
-    # However, if ExecuteExperimentSubgraph stops with an error,
-    # for example, no commit will exist, forcing a re-execution from the previous subgraph (CreateCodeSubgraph).
-    # It seems desirable to change the specification to absorb the changes up to the previous marker into a new branch.
+        # TODO: The current CreateBranchSubgraph traces the f"[subgraph: {subgraph_name}]" marker in the commit message.
+        # However, if ExecuteExperimentSubgraph stops with an error,
+        # for example, no commit will exist, forcing a re-execution from the previous subgraph (CreateCodeSubgraph).
+        # It seems desirable to change the specification to absorb the changes up to the previous marker into a new branch.
+    finally:
+        logger.info("Shutting down DI container resources...")
+        sync_container.shutdown_resources()
+        logger.info("Resource cleanup completed.")
