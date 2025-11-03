@@ -1,4 +1,4 @@
-refine_ide_and_research_summary_prompt = """\
+refine_hypothesis_prompt = """\
 You are an accomplished researcher in the field of machine learning. Based on the instructions below, please refine the research idea provided in "Idea Info" to make it more novel and academically as well as socially valuable.
 
 # Instructions

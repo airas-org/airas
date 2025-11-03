@@ -138,8 +138,19 @@ class ExperimentalAnalysis(BaseModel):
     )
 
 
+# TODO?: Since it's an object that contains both the hypothesis and the results, maybe it's better to rename it?
+# ResearchIteration?
 class ResearchHypothesis(BaseModel):
-    method: str = Field(..., description="")
-    experimental_design: Optional[ExperimentalDesign] = Field(None, description="")
-    experiment_runs: Optional[list[ExperimentRun]] = Field(None, description="")
-    experimental_analysis: Optional[ExperimentalAnalysis] = Field(None, description="")
+    method: str = Field(..., description="The proposed research method")
+    experimental_design: Optional[ExperimentalDesign] = Field(
+        None,
+        description="Experimental design including datasets, models, metrics, and comparative methods",
+    )
+    experiment_runs: Optional[list[ExperimentRun]] = Field(
+        None,
+        description="List of individual experiment runs with their configurations and results",
+    )
+    experimental_analysis: Optional[ExperimentalAnalysis] = Field(
+        None,
+        description="Comprehensive analysis of experimental results including reports and aggregated metrics",
+    )

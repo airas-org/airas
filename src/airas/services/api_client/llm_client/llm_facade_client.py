@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 
 from airas.services.api_client.llm_client.anthropic_client import (
     CLAUDE_MODEL,
@@ -21,17 +21,18 @@ class LLMFacadeClient:
     def __init__(
         self,
         llm_name: LLM_MODEL,
-        openai_client: OpenAIClient,
-        anthropic_client: AnthropicClient,
-        google_genai_client: GoogleGenAIClient,
+        openai_client: Optional[OpenAIClient] = None,
+        anthropic_client: Optional[AnthropicClient] = None,
+        google_genai_client: Optional[GoogleGenAIClient] = None,
     ):
         self.llm_name = llm_name
+        # For backward compatibility: A new client instance is automatically created if called without arguments.
         if llm_name in OPENAI_MODEL.__args__:
-            self.client = openai_client
+            self.client = openai_client or OpenAIClient()
         elif llm_name in VERTEXAI_MODEL.__args__:
-            self.client = google_genai_client
+            self.client = google_genai_client or GoogleGenAIClient()
         elif llm_name in CLAUDE_MODEL.__args__:
-            self.client = anthropic_client
+            self.client = anthropic_client or AnthropicClient()
         else:
             raise ValueError(f"Unsupported LLM model: {llm_name}")
 
