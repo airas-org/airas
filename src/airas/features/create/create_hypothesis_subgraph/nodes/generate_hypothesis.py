@@ -17,7 +17,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLMFacadeClient,
 )
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_idea import GenerateIdea, ResearchIdea
+from airas.types.research_hypothesis import ResearchHypothesis
 from airas.types.research_study import ResearchStudy
 from airas.utils.save_prompt import save_io_on_github
 
@@ -33,7 +33,7 @@ def generate_hypothesis(
     llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
         SyncContainer.llm_facade_provider
     ],
-) -> ResearchIdea:
+) -> ResearchHypothesis:
     client = llm_facade_provider(llm_name=llm_name)
     env = Environment()
 
@@ -47,7 +47,7 @@ def generate_hypothesis(
     messages = template.render(data)
     output, cost = client.structured_outputs(
         message=messages,
-        data_model=GenerateIdea,
+        data_model=ResearchHypothesis,
     )
     if output is None:
         raise ValueError("No response from LLM in generate_hypothesis.")
@@ -59,5 +59,4 @@ def generate_hypothesis(
         node_name="generate_hypothesis",
         llm_name=llm_name,
     )
-    new_idea_info = ResearchIdea(idea=GenerateIdea(**output))
-    return new_idea_info
+    return ResearchHypothesis(**output)

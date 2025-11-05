@@ -11,9 +11,10 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLMFacadeClient,
 )
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_idea import (
-    GenerateIdea,
-    IdeaEvaluationResults,
+from airas.types.research_hypothesis import (
+    EvaluatedHypothesis,
+    HypothesisEvaluation,
+    ResearchHypothesis,
 )
 from airas.types.research_study import ResearchStudy
 from airas.utils.save_prompt import save_io_on_github
@@ -23,13 +24,13 @@ from airas.utils.save_prompt import save_io_on_github
 def evaluate_novelty_and_significance(
     research_topic: str,
     research_study_list: list[ResearchStudy],
-    new_idea: GenerateIdea,
+    research_hypothesis: ResearchHypothesis,
     llm_name: LLM_MODEL,
     github_repository_info: GitHubRepositoryInfo,
     llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
         SyncContainer.llm_facade_provider
     ],
-) -> IdeaEvaluationResults:
+) -> EvaluatedHypothesis:
     client = llm_facade_provider(llm_name=llm_name)
     env = Environment()
 
@@ -37,12 +38,12 @@ def evaluate_novelty_and_significance(
     data = {
         "research_topic": research_topic,
         "research_study_list": ResearchStudy.format_list(research_study_list),
-        "new_idea_info": new_idea.to_formatted_json(),
+        "new_hypothesis": research_hypothesis.to_formatted_json(),
     }
     messages = template.render(data)
     output, cost = client.structured_outputs(
         message=messages,
-        data_model=IdeaEvaluationResults,
+        data_model=HypothesisEvaluation,
     )
     save_io_on_github(
         github_repository_info=github_repository_info,
@@ -54,4 +55,6 @@ def evaluate_novelty_and_significance(
     )
     if output is None:
         raise ValueError("No response from LLM in idea_generator.")
-    return IdeaEvaluationResults(**output)
+    return EvaluatedHypothesis(
+        hypothesis=research_hypothesis, evaluation=HypothesisEvaluation(**output)
+    )

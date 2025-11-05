@@ -40,10 +40,8 @@ from airas.features.retrieve.retrieve_paper_content_subgraph.prompt.openai_webse
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ResearchHypothesis
-from airas.types.research_idea import (
-    ResearchIdea,
-)
+from airas.types.research_hypothesis import EvaluatedHypothesis, ResearchHypothesis
+from airas.types.research_session import ResearchSession
 from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -75,14 +73,14 @@ class CreateHypothesisSubgraphInputState(TypedDict):
 
 
 class CreateHypothesisSubgraphHiddenState(TypedDict):
-    new_idea_info: ResearchIdea
+    research_hypothesis: ResearchHypothesis
     related_research_study_list: list[ResearchStudy]
     refine_iterations: int
 
 
 class CreateHypothesisSubgraphOutputState(TypedDict):
-    new_method: ResearchHypothesis
-    idea_info_history: list[ResearchIdea]
+    research_session: ResearchSession
+    evaluated_hypothesis_history: list[EvaluatedHypothesis]
 
 
 class CreateHypothesisSubgraphState(
@@ -131,30 +129,32 @@ class CreateHypothesisSubgraph(BaseSubgraph):
     @create_hypothesis_timed
     def _initialize(
         self, state: CreateHypothesisSubgraphState
-    ) -> dict[str, list[ResearchIdea] | int]:
+    ) -> dict[str, list[EvaluatedHypothesis] | int]:
         return {
-            "idea_info_history": [],
+            "evaluated_hypothesis_history": [],
             "refine_iterations": 0,
         }
 
     @create_hypothesis_timed
     def _generate_hypothesis(
         self, state: CreateHypothesisSubgraphState
-    ) -> dict[str, ResearchIdea]:
-        new_idea_info = generate_hypothesis(
+    ) -> dict[str, ResearchHypothesis]:
+        research_hypothesis = generate_hypothesis(
             llm_name=self.llm_mapping.generate_hypothesis,
             research_topic=state["research_topic"],
             research_study_list=state["research_study_list"],
             github_repository_info=state["github_repository_info"],
         )
-        return {"new_idea_info": new_idea_info}
+        return {"research_hypothesis": research_hypothesis}
 
     @create_hypothesis_timed
     def _retrieve_related_papers(
         self, state: CreateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
+        related_research_study_list = []  # Reset the list of related studies for re-execution.
+
         retrieved_titles = get_paper_titles_from_qdrant(
-            queries=[state["new_idea_info"].idea.method],
+            queries=[state["research_hypothesis"].method],
             num_retrieve_paper=self.num_retrieve_related_papers,
         )
         retrieved_studies = [
@@ -162,10 +162,10 @@ class CreateHypothesisSubgraph(BaseSubgraph):
         ]
 
         existing_titles = {study.title for study in state["research_study_list"]}
-        unique_research_studies = [
+        related_research_study_list = [
             study for study in retrieved_studies if study.title not in existing_titles
         ]
-        return {"related_research_study_list": unique_research_studies}
+        return {"related_research_study_list": related_research_study_list}
 
     @create_hypothesis_timed
     def _search_arxiv_id_from_title(
@@ -219,26 +219,25 @@ class CreateHypothesisSubgraph(BaseSubgraph):
 
     def _evaluate_novelty_and_significance(
         self, state: CreateHypothesisSubgraphState
-    ) -> dict[str, ResearchIdea | list[ResearchStudy]]:
-        new_idea_info = state["new_idea_info"]
-        evaluation_results = evaluate_novelty_and_significance(
+    ) -> dict[str, list[EvaluatedHypothesis]]:
+        evaluated_hypothesis = evaluate_novelty_and_significance(
             research_topic=state["research_topic"],
             research_study_list=state["research_study_list"]
             + state.get("related_research_study_list", []),
-            new_idea=new_idea_info.idea,
+            research_hypothesis=state["research_hypothesis"],
             llm_name=self.llm_mapping.evaluate_novelty_and_significance,
             github_repository_info=state["github_repository_info"],
         )
-        new_idea_info.evaluation = evaluation_results
         return {
-            "new_idea_info": new_idea_info,
-            "related_research_study_list": [],  # Reset the list of related studies.
+            "evaluated_hypothesis_history": state["evaluated_hypothesis_history"]
+            + [evaluated_hypothesis],
         }
 
     def _should_refine_iteration(self, state: CreateHypothesisSubgraphState) -> str:
+        latest_hypothesis = state["evaluated_hypothesis_history"][-1]
         if (
-            cast(int, state["new_idea_info"].evaluation.novelty_score) >= 9
-            and cast(int, state["new_idea_info"].evaluation.significance_score) >= 9
+            cast(int, latest_hypothesis.evaluation.novelty_score) >= 9
+            and cast(int, latest_hypothesis.evaluation.significance_score) >= 9
         ):
             return "end"
         elif state["refine_iterations"] < self.refinement_rounds:
@@ -250,33 +249,27 @@ class CreateHypothesisSubgraph(BaseSubgraph):
     @create_hypothesis_timed
     def _refine_hypothesis(
         self, state: CreateHypothesisSubgraphState
-    ) -> dict[str, ResearchIdea | list[ResearchIdea] | int]:
-        refined_idea = refine_hypothesis(
+    ) -> dict[str, ResearchHypothesis | int]:
+        refined_hypothesis = refine_hypothesis(
             llm_name=self.llm_mapping.refine_hypothesis,
             research_topic=state["research_topic"],
-            evaluated_idea_info=state["new_idea_info"],
-            idea_info_history=state["idea_info_history"],
+            evaluated_hypothesis_history=state["evaluated_hypothesis_history"],
             research_study_list=state["research_study_list"],
             refine_iterations=state["refine_iterations"],
             github_repository_info=state["github_repository_info"],
         )
-        idea_info_history = state["idea_info_history"] + [state["new_idea_info"]]
         return {
-            "new_idea_info": refined_idea,
-            "idea_info_history": idea_info_history,
+            "research_hypothesis": refined_hypothesis,
             "refine_iterations": state["refine_iterations"] + 1,
         }
 
     def _format_hypothesis(
         self, state: CreateHypothesisSubgraphState
-    ) -> dict[str, ResearchHypothesis | list[ResearchIdea]]:
-        idea_info_history = state["idea_info_history"] + [state["new_idea_info"]]
-        new_method = ResearchHypothesis(
-            method=state["new_idea_info"].idea.to_formatted_json(),
-        )
+    ) -> dict[str, ResearchSession]:
         return {
-            "new_method": new_method,
-            "idea_info_history": idea_info_history,
+            "research_session": ResearchSession(
+                hypothesis=state["evaluated_hypothesis_history"][-1].hypothesis,
+            )
         }
 
     def build_graph(self) -> CompiledGraph:

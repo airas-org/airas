@@ -1,156 +1,55 @@
 from __future__ import annotations
 
+import json
 from typing import Optional
 
-from pydantic import BaseModel, Field
-
-from airas.types.github import GitHubRepositoryInfo
-from airas.types.hugging_face import HuggingFace
+from pydantic import BaseModel
 
 
-class ExternalResources(BaseModel):
-    hugging_face: Optional[HuggingFace] = Field(
-        None, description="Hugging Face models and datasets"
-    )
-
-
-class ExperimentCode(BaseModel):
-    train_py: str
-    evaluate_py: str
-    preprocess_py: str
-    model_py: str
-    main_py: str
-    pyproject_toml: str
-    config_yaml: str
-
-    def to_file_dict(
-        self, experiment_runs: list[ExperimentRun] | None = None
-    ) -> dict[str, str]:
-        files = {
-            "src/train.py": self.train_py,
-            "src/evaluate.py": self.evaluate_py,
-            "src/preprocess.py": self.preprocess_py,
-            "src/model.py": self.model_py,
-            "src/main.py": self.main_py,
-            "pyproject.toml": self.pyproject_toml,
-            "config/config.yaml": self.config_yaml,
-        }
-        if experiment_runs:
-            files.update(
-                {
-                    f"config/run/{exp_run.run_id}.yaml": exp_run.run_config
-                    for exp_run in experiment_runs
-                    if exp_run.run_config
-                }
-            )
-        return files
-
-
-class ExperimentEvaluation(BaseModel):
-    consistency_score: Optional[int] = Field(
-        None,
-        description="Score (1-10) indicating consistency between experimental design and results",
-    )
-    consistency_feedback: Optional[str] = Field(
-        None,
-        description="Detailed feedback on experimental consistency and quality",
-    )
-
-
-class ExperimentalDesign(BaseModel):
-    experiment_summary: str = Field(
-        None, description="A summary of the overall experimental design"
-    )
-    evaluation_metrics: list[str] = Field(
-        None, description="Metrics used to evaluate the experiments"
-    )
-    proposed_method: str = Field(
-        None, description="A detailed description of the new method to be implemented"
-    )
-    comparative_methods: list[str] = Field(
-        None, description="Existing methods selected for comparison"
-    )
-    models_to_use: Optional[list[str]] = Field(
-        None, description="List of models to be used in the experiments"
-    )
-    datasets_to_use: Optional[list[str]] = Field(
-        None, description="List of datasets to be used in the experiments"
-    )
-    hyperparameters_to_search: Optional[dict[str, str]] = Field(
-        None, description="Hyperparameters to be explored in the experiments"
-    )
-    external_resources: Optional[ExternalResources] = Field(
-        None,
-        description="External resources including models, datasets, and other resources",
-    )
-    experiment_code: Optional[ExperimentCode] = Field(None, description="")
-
-
-class ExperimentRun(BaseModel):
-    run_id: str = Field(
-        ...,
-        description="A unique identifier for this specific experimental run (e.g., 'run-1-proposed-bert-glue-mrpc').",
-    )
-    method_name: str = Field(
-        ...,
-        description="The name of the method used in this run (e.g., 'baseline', 'proposed').",
-    )
-    model_name: Optional[str] = Field(
-        None, description="The name of the model used in this run."
-    )
-    dataset_name: Optional[str] = Field(
-        None, description="The name of the dataset used in this run."
-    )
-    run_config: Optional[str] = Field(
-        None,
-        description="Configuration for this specific run as a YAML string.",
-    )
-    github_repository_info: Optional[GitHubRepositoryInfo] = Field(
-        None,
-        description="Information about the GitHub branch where the code for this run is stored.",
-    )
-    results: Optional[ExperimentalResults] = Field(
-        None, description="The results of this run."
-    )
-
-    def get_branch_name(self, base_branch: str) -> str:
-        return f"{base_branch}-{self.run_id}"
-
-
-class ExperimentalResults(BaseModel):
-    stdout: Optional[str] = Field(None, description="Standard output from the run")
-    stderr: Optional[str] = Field(None, description="Standard error from the run")
-    figures: Optional[list[str]] = Field(
-        None, description="Figures specific to this run"
-    )
-    metrics_data: Optional[str] = Field(None, description="Metrics data for this run")
-
-
-class ExperimentalAnalysis(BaseModel):
-    analysis_report: Optional[str] = Field(
-        None, description="Overall analysis report text"
-    )
-    aggregated_metrics: Optional[str] = Field(
-        None, description="Aggregated metrics across all runs"
-    )
-    comparison_figures: Optional[list[str]] = Field(
-        None, description="List of comparison figure filenames"
-    )
-
-
-# TODO?: Since it's an object that contains both the hypothesis and the results, maybe it's better to rename it?
-# ResearchIteration?
 class ResearchHypothesis(BaseModel):
-    method: str = Field(..., description="The proposed research method")
-    experimental_design: Optional[ExperimentalDesign] = Field(
-        None,
-        description="Experimental design including datasets, models, metrics, and comparative methods",
-    )
-    experiment_runs: Optional[list[ExperimentRun]] = Field(
-        None,
-        description="List of individual experiment runs with their configurations and results",
-    )
-    experimental_analysis: Optional[ExperimentalAnalysis] = Field(
-        None,
-        description="Comprehensive analysis of experimental results including reports and aggregated metrics",
-    )
+    open_problems: str
+    method: str
+    experimental_setup: str
+    experimental_code: str
+    expected_result: str
+    expected_conclusion: str
+
+    def to_formatted_json(self) -> str:
+        data_dict = {
+            "Open Problems": self.open_problems,
+            "Methods": self.method,
+            "Experimental Setup": self.experimental_setup,
+            "Experimental Code": self.experimental_code,
+            "Expected Result": self.expected_result,
+            "Expected Conclusion": self.expected_conclusion,
+        }
+        return json.dumps(data_dict, ensure_ascii=False, indent=4)
+
+
+class HypothesisEvaluation(BaseModel):
+    novelty_reason: str
+    novelty_score: int
+    significance_reason: str
+    significance_score: int
+
+
+class EvaluatedHypothesis(BaseModel):
+    hypothesis: ResearchHypothesis
+    evaluation: Optional[HypothesisEvaluation] = None
+
+    # TODO?: Consider extracting it to utils/
+    def to_formatted_string(self) -> str:
+        parts = [f"Hypothesis:\n{self.hypothesis.to_formatted_json()}"]
+        if self.evaluation:
+            parts.append(
+                f"Novelty: {self.evaluation.novelty_reason}\n"
+                f"Significance: {self.evaluation.significance_reason}"
+            )
+        return "\n".join(parts) + "\n"
+
+    @classmethod
+    def format_list(cls, hypotheses: list[EvaluatedHypothesis]) -> str:
+        return (
+            "".join(iter.to_formatted_string() for hypothesis in hypotheses)
+            or "No previous hypotheses."
+        )
