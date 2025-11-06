@@ -4,42 +4,30 @@ from pydantic import BaseModel, Field
 
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent, PaperReviewScores
-from airas.types.research_hypothesis import ResearchHypothesis
-from airas.types.research_idea import ResearchIdea
+from airas.types.research_session import ResearchSession
 from airas.types.research_study import ResearchStudy
 
 
 class ResearchHistory(BaseModel):
+    # --- Project Management ---
     github_repository_info: Optional[GitHubRepositoryInfo] = Field(
         None, description="GitHub repository information"
     )
+    research_topic: str = Field(..., description="Main research topic")
 
-    research_topic: Optional[str] = Field(None, description="Main research topic")
+    # --- Search & Investigation ---
     queries: Optional[list[str]] = Field(None, description="Search queries used")
-
     research_study_list: Optional[list[ResearchStudy]] = Field(
         None, description="Main research studies"
     )
     reference_research_study_list: Optional[list[ResearchStudy]] = Field(
         None, description="Reference research studies"
     )
-    new_method: Optional[ResearchHypothesis] = Field(
-        None, description="Current research hypothesis"
-    )
-    hypothesis_history: list[ResearchHypothesis] = Field(
-        default_factory=list,
-        description="History of research hypothesis versions. Last item is current.",
-    )
-    idea_info_history: Optional[list[ResearchIdea]] = Field(
-        None, description="new research method history"
-    )
-    push_completion: Optional[bool] = Field(None, description="Push completion status")
-    executed_flag: Optional[bool] = Field(None, description="Execution completion flag")
 
-    experiment_iteration: Optional[int] = Field(
-        None, description="Current experiment iteration"
-    )
+    # --- Hypothesis & Experimentation ---
+    research_session: Optional[ResearchSession] = Field(None, description="")
 
+    # --- Writing & Publication ---
     paper_content: Optional[PaperContent] = Field(
         None, description="Generated paper content"
     )
@@ -56,13 +44,7 @@ class ResearchHistory(BaseModel):
         None, description="Review scores from ReviewPaperSubgraph"
     )
 
+    # --- Miscellaneous ---
     additional_data: Optional[dict[str, Any]] = Field(
         None, description="Additional data fields for future extensions"
     )
-
-    def add_hypothesis_history(self, hypothesis: ResearchHypothesis) -> None:
-        self.hypothesis_history.append(hypothesis)
-
-    # @property
-    # def current_hypothesis(self) -> Optional[ResearchHypothesis]:
-    #     return self.hypothesis_versions[-1] if self.hypothesis_versions else None

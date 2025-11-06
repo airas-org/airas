@@ -3,20 +3,8 @@ from .create.create_code_subgraph.create_code_subgraph import CreateCodeSubgraph
 from .create.create_experimental_design_subgraph.create_experimental_design_subgraph import (
     CreateExperimentalDesignSubgraph,
 )
-from .create.create_method_subgraph.create_method_subgraph import (
-    CreateMethodSubgraph,
-)
-from .create.create_method_subgraph_v2.create_method_subgraph_v2 import (
-    CreateMethodSubgraphV2,
-)
-from .evaluate.evaluate_experimental_consistency_subgraph.evaluate_experimental_consistency_subgraph import (
-    EvaluateExperimentalConsistencySubgraph,
-)
-from .evaluate.evaluate_paper_results_subgraph.evaluate_paper_results_subgraph import (
-    EvaluatePaperResultsSubgraph,
-)
-from .evaluate.judge_execution_subgraph.judge_execution_subgraph import (
-    JudgeExecutionSubgraph,
+from .create.create_hypothesis_subgraph.create_hypothesis_subgraph import (
+    CreateHypothesisSubgraph,
 )
 from .evaluate.review_paper_subgraph.review_paper_subgraph import (
     ReviewPaperSubgraph,
@@ -66,10 +54,8 @@ __all__ = [
     "CreateBranchSubgraph",
     "CreateCodeSubgraph",
     "CreateExperimentalDesignSubgraph",
-    "CreateMethodSubgraph",
-    "CreateMethodSubgraphV2",
-    "EvaluateExperimentalConsistencySubgraph",
-    "EvaluatePaperResultsSubgraph",
+    # "CreateMethodSubgraph",
+    "CreateHypothesisSubgraph",
     "ExecuteExperimentSubgraph",
     "ExtractReferenceTitlesSubgraph",
     "GenerateQueriesSubgraph",
@@ -78,6 +64,7 @@ __all__ = [
     "GithubDownloadSubgraph",
     "GithubUploadSubgraph",
     "HtmlSubgraph",
+    # "ImproveMethodSubgraph",
     "JudgeExecutionSubgraph",
     "LatexSubgraph",
     "PrepareRepositorySubgraph",

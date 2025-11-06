@@ -1,7 +1,7 @@
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import ResearchStudy
 
-create_method_subgraph_v2_input_data = {
+create_hypothesis_subgraph_input_data = {
     "research_topic": "Deep Learning for Natural Language Processing",
     "research_study_list": [
         ResearchStudy(
@@ -19,7 +19,7 @@ create_method_subgraph_v2_input_data = {
     ],
     "github_repository_info": GitHubRepositoryInfo(
         github_owner="auto-res2",
-        repository_name="experiment_matsuzawa_250925",
-        branch_name="research-20250925-125744-001",
+        repository_name="airas-20251009-055033-matsuzawa",
+        branch_name="main",
     ),
 }
