@@ -1,19 +1,21 @@
 import logging
 import os
 
+from dependency_injector.wiring import Provide, inject
+
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient, GithubClientError
 from airas.types.github import GitHubRepositoryInfo
 
 logger = logging.getLogger(__name__)
 
 
+@inject
 def set_github_actions_secrets(
     github_repository_info: GitHubRepositoryInfo,
     secret_names: list[str],
-    github_client: GithubClient | None = None,
+    github_client: GithubClient = Provide[SyncContainer.github_client],
 ) -> bool:
-    github_client = github_client or GithubClient()
-
     try:
         # Get repository public key once for all secrets
         public_key_info = github_client.get_repository_public_key(

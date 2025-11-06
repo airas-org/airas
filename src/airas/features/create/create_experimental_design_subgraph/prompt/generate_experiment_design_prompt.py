@@ -4,8 +4,11 @@ You are an AI researcher. You will conduct experiments to demonstrate the superi
 # Experimental Environment
 {{ runner_type_prompt }}
 
-# Current Research Method (Target for Experiment Design)
-{{ new_method.method }}
+# Hypothesis
+{{ research_session.hypothesis }}
+
+# Current Research Method
+{{ research_session.current_iteration.method }}
 
 # MODEL LIST
 {{ model_list }}

@@ -135,6 +135,7 @@ class CreateHypothesisSubgraph(BaseSubgraph):
             "refine_iterations": 0,
         }
 
+    # TODO: Include the scope of models and datasets within the hypotheses generated.
     @create_hypothesis_timed
     def _generate_hypothesis(
         self, state: CreateHypothesisSubgraphState

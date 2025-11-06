@@ -115,16 +115,19 @@ Respond with a JSON object containing:
 - `is_code_ready`: boolean - true if ALL criteria are met, false otherwise
 - `code_issue`: string - specific issues found if any criteria are not met, focusing on what needs to be fixed
 
+# Hypothesis
+{{ research_session.hypothesis }}
+
 # Current Research Method
-{{ new_method.method }}
+{{ research_session.current_iteration.method }}
 
 # Experimental Design
-- Strategy: {{ new_method.experimental_design.experiment_summary }}
-- Proposed Method: {{ new_method.experimental_design.proposed_method }}
-- Evaluation Metrics: {{ new_method.experimental_design.evaluation_metrics }}
+- Strategy: {{ research_session.current_iteration.experimental_design.experiment_summary }}
+- Proposed Method: {{ research_session.current_iteration.experimental_design.proposed_method }}
+- Evaluation Metrics: {{ research_session.current_iteration.experimental_design.evaluation_metrics }}
 
 # Experiment Runs
-{% for run in new_method.experiment_runs %}
+{% for run in research_session.current_iteration.experiment_runs %}
 - Run ID: {{ run.run_id }}
   Method: {{ run.method_name }}
   Model: {{ run.model_name }}
@@ -138,6 +141,6 @@ Respond with a JSON object containing:
 {% endfor %}
 
 # Generated Experiment Code (To be validated)
-{{ new_method.experimental_design.experiment_code | tojson }}
+{{ research_session.current_iteration.experimental_design.experiment_code.model_dump() | tojson }}
 
 Analyze the experiment code thoroughly. Ensure it is complete, executable, and ready for publication-quality research experiments."""

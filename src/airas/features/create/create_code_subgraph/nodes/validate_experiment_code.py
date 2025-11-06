@@ -1,18 +1,21 @@
 import json
 from logging import getLogger
 
+from dependency_injector import providers
+from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 from pydantic import BaseModel
 
 from airas.features.create.create_code_subgraph.prompt.validate_experiment_code_prompt import (
     validate_experiment_code_prompt,
 )
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_session import ResearchSession
 from airas.types.wandb import WandbInfo
 from airas.utils.save_prompt import save_io_on_github
 
@@ -24,21 +27,24 @@ class ValidationOutput(BaseModel):
     code_issue: str
 
 
+@inject
 def validate_experiment_code(
     llm_name: LLM_MODEL,
-    new_method: ResearchHypothesis,
+    research_session: ResearchSession,
     github_repository_info: GitHubRepositoryInfo,
     wandb_info: WandbInfo | None = None,
     prompt_template: str = validate_experiment_code_prompt,
-    llm_client: LLMFacadeClient | None = None,
+    llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
+        SyncContainer.llm_facade_provider
+    ],
 ) -> tuple[bool, str]:
-    client = llm_client or LLMFacadeClient(llm_name=llm_name)
+    client = llm_facade_provider(llm_name=llm_name)
     env = Environment()
     template = env.from_string(prompt_template)
 
     messages = template.render(
         {
-            "new_method": new_method.model_dump(),
+            "research_session": research_session,
             "wandb_info": wandb_info.model_dump() if wandb_info else None,
         }
     )

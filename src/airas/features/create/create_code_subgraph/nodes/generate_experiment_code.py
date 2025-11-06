@@ -12,7 +12,8 @@ from airas.services.api_client.llm_client.openai_client import (
     OpenAIClient,
 )
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ExperimentCode, ResearchHypothesis
+from airas.types.research_iteration import ExperimentCode
+from airas.types.research_session import ResearchSession
 from airas.types.wandb import WandbInfo
 from airas.utils.save_prompt import save_io_on_github
 
@@ -21,18 +22,18 @@ logger = logging.getLogger(__name__)
 
 def generate_experiment_code(
     llm_name: OPENAI_MODEL,
-    new_method: ResearchHypothesis,
+    research_session: ResearchSession,
     runner_type: RunnerType,
     github_repository_info: GitHubRepositoryInfo,
     wandb_info: WandbInfo | None = None,
     code_validation: tuple[bool, str] | None = None,
-) -> ResearchHypothesis:
+) -> ExperimentCode:
     client = OpenAIClient(reasoning_effort="high")
     env = Environment()
     template = env.from_string(generate_experiment_code_prompt)
 
     data = {
-        "new_method": new_method.model_dump(),
+        "research_session": research_session,
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
         "code_validation": code_validation,
         "wandb_info": wandb_info.model_dump() if wandb_info else None,
@@ -56,6 +57,4 @@ def generate_experiment_code(
         llm_name=llm_name,
     )
 
-    new_method.experimental_design.experiment_code = ExperimentCode(**output)
-    logger.info("Successfully generated experiment code")
-    return new_method
+    return ExperimentCode(**output)

@@ -29,7 +29,7 @@ from airas.features.create.create_code_subgraph.nodes.validate_experiment_code i
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_session import ResearchSession
 from airas.types.wandb import WandbInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import time_node
@@ -49,7 +49,7 @@ class CreateCodeLLMMapping(BaseModel):
 
 class CreateCodeSubgraphInputState(TypedDict, total=False):
     github_repository_info: GitHubRepositoryInfo
-    new_method: ResearchHypothesis
+    research_session: ResearchSession
 
 
 class CreateCodeSubgraphHiddenState(TypedDict):
@@ -58,7 +58,7 @@ class CreateCodeSubgraphHiddenState(TypedDict):
 
 
 class CreateCodeSubgraphOutputState(TypedDict):
-    new_method: ResearchHypothesis
+    research_session: ResearchSession
 
 
 class CreateCodeSubgraphState(
@@ -119,28 +119,39 @@ class CreateCodeSubgraph(BaseSubgraph):
     @create_code_timed
     def _generate_run_config(
         self, state: CreateCodeSubgraphState
-    ) -> dict[str, ResearchHypothesis]:
-        new_method = generate_run_config(
+    ) -> dict[str, ResearchSession]:
+        research_session = state["research_session"]
+        run_configs = generate_run_config(
             llm_name=self.llm_mapping.generate_run_config,
-            new_method=state["new_method"],
+            research_session=research_session,
             runner_type=cast(RunnerType, self.runner_type),
             github_repository_info=state["github_repository_info"],
         )
-        return {"new_method": new_method}
+
+        config_dict = {cfg.run_id: cfg.run_config_yaml for cfg in run_configs}
+        for exp_run in research_session.current_iteration.experiment_runs or []:
+            exp_run.run_config = config_dict.get(exp_run.run_id)
+
+        return {"research_session": research_session}
 
     @create_code_timed
     def _generate_experiment_code(
         self, state: CreateCodeSubgraphState
-    ) -> dict[str, ResearchHypothesis]:
-        new_method = generate_experiment_code(
+    ) -> dict[str, ResearchSession]:
+        research_session = state["research_session"]
+        experiment_code = generate_experiment_code(
             llm_name=self.llm_mapping.generate_experiment_code,
-            new_method=state["new_method"],
+            research_session=research_session,
             runner_type=cast(RunnerType, self.runner_type),
             github_repository_info=state["github_repository_info"],
             wandb_info=self.wandb_info,
             code_validation=state.get("code_validation"),
         )
-        return {"new_method": new_method}
+        research_session.current_iteration.experimental_design.experiment_code = (
+            experiment_code
+        )
+
+        return {"research_session": research_session}
 
     @create_code_timed
     def _validate_experiment_code(
@@ -148,7 +159,7 @@ class CreateCodeSubgraph(BaseSubgraph):
     ) -> dict[str, tuple[bool, str] | int]:
         code_validation = validate_experiment_code(
             llm_name=self.llm_mapping.validate_experiment_code,
-            new_method=state["new_method"],
+            research_session=state["research_session"],
             wandb_info=self.wandb_info,
             github_repository_info=state["github_repository_info"],
         )
@@ -181,16 +192,20 @@ class CreateCodeSubgraph(BaseSubgraph):
     @create_code_timed
     def _push_files_to_branch(
         self, state: CreateCodeSubgraphState
-    ) -> dict[str, ResearchHypothesis]:
+    ) -> dict[str, ResearchSession]:
         commit_message = "Add generated experiment files."
 
-        new_method = push_files_to_branch(
+        research_session = state["research_session"]
+        success = push_files_to_branch(
             github_repository_info=state["github_repository_info"],
-            new_method=state["new_method"],
+            research_session=research_session,
             commit_message=commit_message,
         )
 
-        return {"new_method": new_method}
+        if not success:
+            logger.warning("Failed to push files to branch, but continuing...")
+
+        return {"research_session": research_session}
 
     @create_code_timed
     def _set_github_actions_secrets(self, state: CreateCodeSubgraphState) -> dict:
@@ -240,7 +255,10 @@ class CreateCodeSubgraph(BaseSubgraph):
 
 
 def main():
+    from airas.services.api_client.api_clients_container import sync_container
     from airas.types.wandb import WandbInfo
+
+    sync_container.wire(modules=[__name__])
 
     secret_names = ["HF_TOKEN", "WANDB_API_KEY", "ANTHROPIC_API_KEY"]
     wandb_info = WandbInfo(entity="gengaru617-personal", project="251017-test")
