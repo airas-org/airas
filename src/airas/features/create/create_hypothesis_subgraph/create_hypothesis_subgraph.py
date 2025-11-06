@@ -148,6 +148,7 @@ class CreateHypothesisSubgraph(BaseSubgraph):
         )
         return {"research_hypothesis": research_hypothesis}
 
+    # TODO: If QDrant doesn't work, consider skipping the paper search or using airas_db.
     @create_hypothesis_timed
     def _retrieve_related_papers(
         self, state: CreateHypothesisSubgraphState

@@ -10,8 +10,8 @@ class ResearchSession(BaseModel):
     hypothesis: ResearchHypothesis = Field(
         ..., description="The initial hypothesis that guides the research."
     )
-    iterations: Optional[list[ResearchIteration]] = Field(
-        None,
+    iterations: list[ResearchIteration] = Field(
+        default_factory=list,
         description="A list of experimental cycles performed to test the hypothesis.",
     )
 

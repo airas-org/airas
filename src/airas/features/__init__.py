@@ -6,8 +6,8 @@ from .create.create_experimental_design_subgraph.create_experimental_design_subg
 from .create.create_hypothesis_subgraph.create_hypothesis_subgraph import (
     CreateHypothesisSubgraph,
 )
-from .evaluate.review_paper_subgraph.review_paper_subgraph import (
-    ReviewPaperSubgraph,
+from .create.create_method_subgraph.create_method_subgraph import (
+    CreateMethodSubgraph,
 )
 from .execution.execute_experiment_subgraph.execute_experiment_subgraph import (
     ExecuteExperimentSubgraph,
@@ -54,7 +54,7 @@ __all__ = [
     "CreateBranchSubgraph",
     "CreateCodeSubgraph",
     "CreateExperimentalDesignSubgraph",
-    # "CreateMethodSubgraph",
+    "CreateMethodSubgraph",
     "CreateHypothesisSubgraph",
     "ExecuteExperimentSubgraph",
     "ExtractReferenceTitlesSubgraph",
@@ -64,15 +64,12 @@ __all__ = [
     "GithubDownloadSubgraph",
     "GithubUploadSubgraph",
     "HtmlSubgraph",
-    # "ImproveMethodSubgraph",
-    "JudgeExecutionSubgraph",
     "LatexSubgraph",
     "PrepareRepositorySubgraph",
     "ReadmeSubgraph",
     "RetrieveCodeSubgraph",
     "RetrieveHuggingFaceSubgraph",
     "RetrievePaperContentSubgraph",
-    "ReviewPaperSubgraph",
     "SummarizePaperSubgraph",
     "WriterSubgraph",
 ]

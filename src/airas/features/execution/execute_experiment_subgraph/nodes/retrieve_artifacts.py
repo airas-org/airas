@@ -77,13 +77,13 @@ def _retrieve_experiment_code(
     field_values = {
         field_name: code_contents.get(file_path, "")
         for field_name, file_path in zip(
-            ExperimentCode.model_fields.keys(), file_dict.values(), strict=False
+            ExperimentCode.model_fields.keys(), file_dict.keys(), strict=False
         )
     }
 
     # Store run configs in ExperimentRun.run_config
     for exp_run in experiment_runs:
-        run_config_path = f"config/run/{exp_run.run_id}.yaml"
+        run_config_path = f"config/runs/{exp_run.run_id}.yaml"
         if run_config_path in code_contents:
             exp_run.run_config = code_contents[run_config_path]
 

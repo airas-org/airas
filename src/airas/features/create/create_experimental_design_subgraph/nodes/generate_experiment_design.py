@@ -62,6 +62,7 @@ def generate_experiment_design(
     template = env.from_string(generate_experiment_design_prompt)
 
     # TODO: Also pass the list of objective functions
+    # TODO: Handling cases where selection from a list is mandatory
     data = {
         "research_session": research_session,
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
