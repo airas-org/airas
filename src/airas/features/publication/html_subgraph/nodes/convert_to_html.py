@@ -1,15 +1,18 @@
 import json
 
+from dependency_injector import providers
+from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 from pydantic import BaseModel
 
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_session import ResearchSession
 from airas.utils.save_prompt import save_io_on_github
 
 
@@ -17,29 +20,28 @@ class LLMOutput(BaseModel):
     generated_html_text: str
 
 
+@inject
 def convert_to_html(
     llm_name: LLM_MODEL,
     paper_content: PaperContent,
-    new_method: ResearchHypothesis,
+    research_session: ResearchSession,
     prompt_template: str,
     github_repository_info: GitHubRepositoryInfo,
-    client: LLMFacadeClient | None = None,
+    llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
+        SyncContainer.llm_facade_provider
+    ],
 ) -> str:
-    """Convert paper content to HTML using LLM."""
-    if client is None:
-        client = LLMFacadeClient(llm_name=llm_name)
+    client = llm_facade_provider(llm_name=llm_name)
 
-    # Extract image files from new_method
+    # Extract image files from research_session
     image_file_name_list = []
-    if new_method.experiment_runs:
-        for run in new_method.experiment_runs:
-            if run.results and run.results.figures:
-                image_file_name_list.extend(run.results.figures)
-    if (
-        new_method.experimental_analysis
-        and new_method.experimental_analysis.comparison_figures
-    ):
-        image_file_name_list.extend(new_method.experimental_analysis.comparison_figures)
+    for run in research_session.current_iteration.experiment_runs:
+        if run.results and run.results.figures:
+            image_file_name_list.extend(run.results.figures)
+
+    image_file_name_list.extend(
+        research_session.current_iteration.experimental_analysis.comparison_figures
+    )
 
     data = {
         "sections": [
@@ -69,8 +71,7 @@ def convert_to_html(
         llm_name=llm_name,
     )
 
-    generated_html_text = output.get("generated_html_text", "")
-    if not generated_html_text:
+    if not (generated_html_text := output.get("generated_html_text", "")):
         raise ValueError("Missing or empty 'generated_html_text' in output.")
 
     return generated_html_text

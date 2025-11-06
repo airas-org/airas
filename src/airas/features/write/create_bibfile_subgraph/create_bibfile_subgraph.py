@@ -26,7 +26,7 @@ from airas.features.write.create_bibfile_subgraph.prompt.filter_references_promp
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_session import ResearchSession
 from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -44,7 +44,7 @@ class CreateBibfileLLMMapping(BaseModel):
 class CreateBibfileSubgraphInputState(TypedDict):
     research_study_list: list[ResearchStudy]
     reference_research_study_list: list[ResearchStudy]
-    new_method: ResearchHypothesis
+    research_session: ResearchSession
     github_repository_info: GitHubRepositoryInfo
 
 
@@ -104,7 +104,7 @@ class CreateBibfileSubgraph(BaseSubgraph):
             prompt_template=filter_references_prompt,
             research_study_list=state["research_study_list"],
             reference_study_list=state["reference_research_study_list"],
-            new_method=state["new_method"],
+            research_session=state["research_session"],
             github_repository_info=state["github_repository_info"],
             max_results=self.max_filtered_references,
         )
@@ -146,6 +146,10 @@ class CreateBibfileSubgraph(BaseSubgraph):
 
 
 def main():
+    from airas.services.api_client.api_clients_container import sync_container
+
+    sync_container.wire(modules=[__name__])
+
     result = CreateBibfileSubgraph(
         latex_template_name="iclr2024",
         max_filtered_references=20,
