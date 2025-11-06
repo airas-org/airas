@@ -140,7 +140,9 @@ executor = ExecuteExperimentSubgraph(
 analysis = AnalyticSubgraph(
     llm_mapping={
         "analytic_node": settings.llm_mapping.analytic_node,
+        "evaluate_method": settings.llm_mapping.evaluate_method,
     },
+    max_method_iterations=settings.analytic.max_method_iterations,
 )
 create_bibfile = CreateBibfileSubgraph(
     llm_mapping={
