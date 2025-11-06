@@ -16,7 +16,7 @@ from airas.features.write.writer_subgraph.nodes.write_paper import write_paper
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_session import ResearchSession
 from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -33,7 +33,7 @@ class WriterLLMMapping(BaseModel):
 
 
 class WriterSubgraphInputState(TypedDict):
-    new_method: ResearchHypothesis
+    research_session: ResearchSession
     research_study_list: list[ResearchStudy]
     reference_research_study_list: list[ResearchStudy]
     references_bib: str
@@ -73,7 +73,6 @@ class WriterSubgraph(BaseSubgraph):
         elif isinstance(llm_mapping, dict):
             self.llm_mapping = WriterLLMMapping(**llm_mapping)
         elif isinstance(llm_mapping, WriterLLMMapping):
-            # すでに型が正しい場合も受け入れる
             self.llm_mapping = llm_mapping
         else:
             raise TypeError(
@@ -92,7 +91,7 @@ class WriterSubgraph(BaseSubgraph):
     @writer_timed
     def _generate_note(self, state: WriterSubgraphState) -> dict[str, str]:
         note = generate_note(
-            new_method=state["new_method"],
+            research_session=state["research_session"],
             research_study_list=state["research_study_list"],
             reference_research_study_list=state["reference_research_study_list"],
             references_bib=state["references_bib"],
