@@ -96,7 +96,6 @@ class CreateMethodSubgraph(BaseSubgraph):
 
         research_session.iterations.append(
             ResearchIteration(
-                method_id=1,
                 method=hypothesis.method,
             )
         )
@@ -110,7 +109,6 @@ class CreateMethodSubgraph(BaseSubgraph):
         research_session = state["research_session"]
         research_session.iterations.append(
             ResearchIteration(
-                method_id=research_session.current_iteration.method_id + 1,
                 method=improve_method(
                     research_session=state["research_session"],
                     llm_name=self.llm_mapping.improve_method,

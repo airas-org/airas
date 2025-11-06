@@ -3,70 +3,73 @@ You are an expert in machine learning research and methodology.
 
 Your task is to evaluate the proposed research method based on experimental results and provide feedback to guide the next iteration toward more effective approaches.
 
-{% if hypothesis_history %}
+# Hypothesis
+{{ research_session.hypothesis }}
+
+{% if research_session.previous_iterations %}
 # Previous Method Iterations
 
 The following methods have been tried in previous iterations:
 
-{% for hypothesis in hypothesis_history %}
-## Iteration {{ hypothesis.method_iteration_id }}
+{% for iteration in research_session.previous_iterations %}
+## Iteration {{ loop.index }}
 
 ### Method
-{{ hypothesis.method }}
+{{ iteration.method }}
 
-{% if hypothesis.experimental_analysis and hypothesis.experimental_analysis.evaluation %}
+{% if iteration.experimental_analysis and iteration.experimental_analysis.evaluation %}
 ### Previous Feedback
-{{ hypothesis.experimental_analysis.evaluation.method_feedback }}
+{{ iteration.experimental_analysis.evaluation.method_feedback }}
 {% endif %}
 
-{% if hypothesis.experimental_analysis and hypothesis.experimental_analysis.aggregated_metrics %}
+{% if iteration.experimental_analysis and iteration.experimental_analysis.aggregated_metrics %}
 ### Results
-{{ hypothesis.experimental_analysis.aggregated_metrics }}
+{{ iteration.experimental_analysis.aggregated_metrics }}
 {% endif %}
 
 {% endfor %}
 {% endif %}
 
 # Current Proposed Method
-{{ new_method.method }}
+{{ research_session.current_iteration.method }}
 
-{% if new_method.experimental_design %}
+{% if research_session.current_iteration.experimental_design %}
 # Experimental Design
 
 ## Experiment Summary
-{{ new_method.experimental_design.experiment_summary }}
+{{ research_session.current_iteration.experimental_design.experiment_summary }}
 
 ## Evaluation Metrics
-{% for metric in new_method.experimental_design.evaluation_metrics %}
+{% for metric in research_session.current_iteration.experimental_design.evaluation_metrics %}
 - {{ metric }}
 {% endfor %}
 
 ## Proposed Method Details
-{{ new_method.experimental_design.proposed_method }}
+{{ research_session.current_iteration.experimental_design.proposed_method }}
 
 ## Comparative Methods
-{% for method in new_method.experimental_design.comparative_methods %}
+{% for method in research_session.current_iteration.experimental_design.comparative_methods %}
 - {{ method }}
 {% endfor %}
 {% endif %}
 
 # Experimental Results and Analysis
 
-{% if new_method.experimental_analysis %}
-{% if new_method.experimental_analysis.analysis_report %}
+{% if research_session.current_iteration.experimental_analysis %}
+{% if research_session.current_iteration.experimental_analysis.analysis_report %}
 ## Analysis Report
-{{ new_method.experimental_analysis.analysis_report }}
+{{ research_session.current_iteration.experimental_analysis.analysis_report }}
 {% endif %}
 
-{% if new_method.experimental_analysis.aggregated_metrics %}
+{% if research_session.current_iteration.experimental_analysis.aggregated_metrics %}
 ## Aggregated Metrics
-{{ new_method.experimental_analysis.aggregated_metrics }}
+{{ research_session.current_iteration.experimental_analysis.aggregated_metrics }}
 {% endif %}
 {% endif %}
 
 # Experiment Runs
-{% if new_method.experiment_runs %}
-{% for run in new_method.experiment_runs %}
+{% if research_session.current_iteration.experiment_runs %}
+{% for run in research_session.current_iteration.experiment_runs %}
 ## Run: {{ run.run_id }}
 **Method**: {{ run.method_name }}
 {% if run.model_name %}**Model**: {{ run.model_name }}{% endif %}

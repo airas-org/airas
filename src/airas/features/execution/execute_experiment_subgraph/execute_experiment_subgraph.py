@@ -27,7 +27,8 @@ from airas.features.execution.execute_experiment_subgraph.nodes.retrieve_artifac
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ExperimentalResults, ResearchHypothesis
+from airas.types.research_iteration import ExperimentalResults
+from airas.types.research_session import ResearchSession
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -44,19 +45,18 @@ class ExecuteExperimentLLMMapping(BaseModel):
 
 class ExecuteExperimentSubgraphInputState(TypedDict, total=False):
     github_repository_info: GitHubRepositoryInfo
-    new_method: ResearchHypothesis
-    experiment_iteration: int
+    research_session: ResearchSession
 
 
 class ExecuteExperimentSubgraphHiddenState(TypedDict):
     trial_experiment_results: ExperimentalResults
     trial_experiment_passed: bool
+    experiment_iteration: int
     executed_flag: bool
 
 
 class ExecuteExperimentSubgraphOutputState(TypedDict):
-    new_method: ResearchHypothesis
-    experiment_iteration: int
+    research_session: ResearchSession
 
 
 class ExecutorSubgraphState(
@@ -113,28 +113,31 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
         }
 
     @executor_timed
-    def _execute_trial_experiment(
+    async def _execute_trial_experiment(
         self, state: ExecutorSubgraphState
     ) -> dict[str, bool]:
-        execute_trial_experiment(
+        success = await execute_trial_experiment(
             github_repository=state["github_repository_info"],
             experiment_iteration=state["experiment_iteration"],
             runner_type=cast(RunnerType, self.runner_type),
-            new_method=state["new_method"],
+            research_session=state["research_session"],
         )
-        return {}
+        return {"executed_flag": success}
 
     @executor_timed
-    def _retrieve_trial_experiment_artifacts(
+    async def _retrieve_trial_experiment_artifacts(
         self, state: ExecutorSubgraphState
-    ) -> dict[str, ResearchHypothesis | ExperimentalResults]:
-        new_method, trial_experiment_results = retrieve_trial_experiment_artifacts(
+    ) -> dict[str, ResearchSession | ExperimentalResults]:
+        (
+            research_session,
+            trial_experiment_results,
+        ) = await retrieve_trial_experiment_artifacts(
             github_repository=state["github_repository_info"],
             experiment_iteration=state["experiment_iteration"],
-            new_method=state["new_method"],
+            research_session=state["research_session"],
         )
         return {
-            "new_method": new_method,
+            "research_session": research_session,
             "trial_experiment_results": trial_experiment_results,
         }
 
@@ -161,27 +164,26 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
         }
 
     @executor_timed
-    def _create_experiment_branches(
+    async def _create_experiment_branches(
         self, state: ExecutorSubgraphState
-    ) -> dict[str, ResearchHypothesis]:
-        new_method = create_experiment_branches(
+    ) -> dict[str, ResearchSession]:
+        research_session = await create_experiment_branches(
             github_repository_info=state["github_repository_info"],
-            experiment_iteration=state["experiment_iteration"],
-            new_method=state["new_method"],
+            research_session=state["research_session"],
         )
-        return {"new_method": new_method}
+        return {"research_session": research_session}
 
     @executor_timed
-    def _execute_full_experiments(
+    async def _execute_full_experiments(
         self, state: ExecutorSubgraphState
-    ) -> dict[str, bool | int]:
-        execute_full_experiments(
+    ) -> dict[str, bool]:
+        success = await execute_full_experiments(
             github_repository=state["github_repository_info"],
             experiment_iteration=state["experiment_iteration"],
             runner_type=cast(RunnerType, self.runner_type),
-            new_method=state["new_method"],
+            research_session=state["research_session"],
         )
-        return {}
+        return {"executed_flag": success}
 
     def _should_retry_trial_experiment(self, state: ExecutorSubgraphState) -> str:
         if state.get("trial_experiment_passed", False):

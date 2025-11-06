@@ -22,7 +22,8 @@ from airas.features.execution.execute_experiment_subgraph.nodes.retrieve_artifac
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_iteration import ExperimentEvaluation
+from airas.types.research_session import ResearchSession
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -39,18 +40,16 @@ class AnalyticLLMMapping(BaseModel):
 
 
 class AnalyticSubgraphInputState(TypedDict, total=False):
-    new_method: ResearchHypothesis
+    research_session: ResearchSession
     github_repository_info: GitHubRepositoryInfo
     experiment_iteration: int  # TODO?: This will be removed.
-    hypothesis_history: list[ResearchHypothesis]
 
 
 class AnalyticSubgraphHiddenState(TypedDict): ...
 
 
 class AnalyticSubgraphOutputState(TypedDict):
-    new_method: ResearchHypothesis
-    hypothesis_history: list[ResearchHypothesis]
+    research_session: ResearchSession
 
 
 class AnalyticSubgraphState(
@@ -91,69 +90,70 @@ class AnalyticSubgraph(BaseSubgraph):
         check_api_key(llm_api_key_check=True)
 
     @analytic_timed
-    def _execute_evaluation(self, state: AnalyticSubgraphState) -> dict:
-        execute_evaluation(
+    async def _execute_evaluation(
+        self, state: AnalyticSubgraphState
+    ) -> dict[str, bool]:
+        success = await execute_evaluation(
             github_repository=state["github_repository_info"],
             experiment_iteration=state["experiment_iteration"],
-            new_method=state["new_method"],
+            research_session=state["research_session"],
         )
-        return {}
+        return {"executed_flag": success}
 
     @analytic_timed
-    def _retrieve_evaluation_artifacts(self, state: AnalyticSubgraphState) -> dict:
-        new_method = retrieve_evaluation_artifacts(
+    async def _retrieve_evaluation_artifacts(
+        self, state: AnalyticSubgraphState
+    ) -> dict[str, ResearchSession]:
+        research_session = await retrieve_evaluation_artifacts(
             github_repository=state["github_repository_info"],
             experiment_iteration=state["experiment_iteration"],
-            new_method=state["new_method"],
+            research_session=state["research_session"],
         )
-        return {"new_method": new_method}
+        return {"research_session": research_session}
 
     @analytic_timed
-    def _analytic_node(self, state: AnalyticSubgraphState) -> dict:
-        new_method = analytic_node(
+    def _analytic_node(
+        self, state: AnalyticSubgraphState
+    ) -> dict[str, ResearchSession]:
+        research_session = state["research_session"]
+        analysis_report = analytic_node(
             llm_name=self.llm_mapping.analytic_node,
-            new_method=state["new_method"],
+            research_session=research_session,
             github_repository_info=state["github_repository_info"],
         )
-        return {"new_method": new_method}
+        research_session.current_iteration.experimental_analysis.analysis_report = (
+            analysis_report
+        )
+        return {"research_session": research_session}
 
     @analytic_timed
-    def _evaluate_method(self, state: AnalyticSubgraphState) -> dict:
-        evaluated_method = evaluate_method(
-            llm_name=self.llm_mapping.evaluate_methods,
-            new_method=state["new_method"],
-            hypothesis_history=state.get("hypothesis_history", []),
+    def _evaluate_method(
+        self, state: AnalyticSubgraphState
+    ) -> dict[str, ResearchSession]:
+        research_session = state["research_session"]
+        method_feedback = evaluate_method(
+            llm_name=self.llm_mapping.evaluate_method,
+            research_session=research_session,
             github_repository_info=state["github_repository_info"],
         )
-        hypothesis_history = state.get("hypothesis_history", []) + [evaluated_method]
+        if not research_session.current_iteration.experimental_analysis.evaluation:
+            research_session.current_iteration.experimental_analysis.evaluation = (
+                ExperimentEvaluation()
+            )
+        research_session.current_iteration.experimental_analysis.evaluation.method_feedback = method_feedback
 
-        # Prepare for the next iteration.
-        new_method = evaluated_method.model_copy(
-            deep=True,
-            update={
-                "method_iteration_id": evaluated_method.method_iteration_id + 1,
-                "method": "",
-                "experimental_design": None,
-                "experiment_runs": None,
-                "experimental_analysis": None,
-            },
-        )
-
-        return {
-            "new_method": new_method,
-            "hypothesis_history": hypothesis_history,
-        }
+        return {"research_session": research_session}
 
     def _should_iterate(self, state: AnalyticSubgraphState) -> str:
-        new_method = state["new_method"]
-        method_iteration = new_method.method_iteration_id
+        research_session = state["research_session"]
+        iteration_count = len(research_session.research_iterations)
 
         logger.info(
-            f"Decision: Checking method iteration "
-            f"({method_iteration}/{self.max_method_iterations})"
+            f"Decision: Checking iteration count "
+            f"({iteration_count}/{self.max_method_iterations})"
         )
 
-        if method_iteration < self.max_method_iterations:
+        if iteration_count < self.max_method_iterations:
             logger.info("Decision: Iteration needed. Continuing to the next iteration.")
             return "iterate_method"
         else:

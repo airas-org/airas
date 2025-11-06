@@ -15,7 +15,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLMFacadeClient,
 )
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ExperimentalAnalysis, ResearchHypothesis
+from airas.types.research_session import ResearchSession
 from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
@@ -28,22 +28,26 @@ class LLMOutput(BaseModel):
 @inject
 def analytic_node(
     llm_name: LLM_MODEL,
-    new_method: ResearchHypothesis,
+    research_session: ResearchSession,
     github_repository_info: GitHubRepositoryInfo,
     llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
         SyncContainer.llm_facade_provider
     ],
-) -> ResearchHypothesis:
+) -> str:
+    if not research_session.current_iteration:
+        logger.error("No current_iteration found in research_session")
+        return ""
+
     client = llm_facade_provider(llm_name=llm_name)
 
     env = Environment()
     template = env.from_string(analytic_node_prompt)
 
-    data = {"new_method": new_method.model_dump()}
-    messages = template.render(data)
+    messages = template.render({"research_session": research_session})
     output, cost = client.structured_outputs(message=messages, data_model=LLMOutput)
     if output is None:
         raise ValueError("No response from LLM in analytic_node.")
+
     save_io_on_github(
         github_repository_info=github_repository_info,
         input=messages,
@@ -53,9 +57,4 @@ def analytic_node(
         llm_name=llm_name,
     )
 
-    # ExperimentalAnalysisがすでに存在する場合はanalysis_reportを更新、存在しない場合は新規作成
-    if new_method.experimental_analysis is None:
-        new_method.experimental_analysis = ExperimentalAnalysis()
-    new_method.experimental_analysis.analysis_report = output["analysis_report"]
-
-    return new_method
+    return output["analysis_report"]
