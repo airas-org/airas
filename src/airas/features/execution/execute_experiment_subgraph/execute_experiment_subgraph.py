@@ -46,17 +46,18 @@ class ExecuteExperimentLLMMapping(BaseModel):
 class ExecuteExperimentSubgraphInputState(TypedDict, total=False):
     github_repository_info: GitHubRepositoryInfo
     research_session: ResearchSession
+    experiment_iteration: int
 
 
 class ExecuteExperimentSubgraphHiddenState(TypedDict):
     trial_experiment_results: ExperimentalResults
     trial_experiment_passed: bool
-    experiment_iteration: int
     executed_flag: bool
 
 
 class ExecuteExperimentSubgraphOutputState(TypedDict):
     research_session: ResearchSession
+    experiment_iteration: int
 
 
 class ExecutorSubgraphState(

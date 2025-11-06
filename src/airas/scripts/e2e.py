@@ -13,20 +13,19 @@ from airas.services.api_client.api_clients_container import (
 register_loader_containers(sync_container)
 register_loader_containers(async_container)
 
-from airas.config.workflow_config import DEFAULT_WORKFLOW_CONFIG  # noqa: E402
 from airas.features import (  # noqa: E402
     AnalyticSubgraph,
     CreateBibfileSubgraph,
-    CreateBranchSubgraph,
+    # CreateBranchSubgraph,
     CreateCodeSubgraph,
     CreateExperimentalDesignSubgraph,
-    CreateMethodSubgraphV2,
-    # EvaluateExperimentalConsistencySubgraph,
+    CreateHypothesisSubgraph,
+    CreateMethodSubgraph,
     ExecuteExperimentSubgraph,
     ExtractReferenceTitlesSubgraph,
     GenerateQueriesSubgraph,
     GetPaperTitlesFromDBSubgraph,
-    GithubDownloadSubgraph,
+    # GithubDownloadSubgraph,
     GithubUploadSubgraph,
     HtmlSubgraph,
     LatexSubgraph,
@@ -35,7 +34,6 @@ from airas.features import (  # noqa: E402
     RetrieveCodeSubgraph,
     RetrieveHuggingFaceSubgraph,
     RetrievePaperContentSubgraph,
-    ReviewPaperSubgraph,
     SummarizePaperSubgraph,
     WriterSubgraph,
 )
@@ -88,16 +86,23 @@ retrieve_reference_paper_content = RetrievePaperContentSubgraph(
     paper_provider=settings.retrieve_paper_content.paper_provider,
 )
 
-create_method = CreateMethodSubgraphV2(
+create_hypothesis = CreateHypothesisSubgraph(
     llm_mapping={
         "generate_idea_and_research_summary": settings.llm_mapping.generate_idea_and_research_summary,
         "evaluate_novelty_and_significance": settings.llm_mapping.evaluate_novelty_and_significance,
         "refine_idea_and_research_summary": settings.llm_mapping.refine_idea_and_research_summary,
         "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
     },
-    method_refinement_rounds=settings.create_method.method_refinement_rounds,
-    num_retrieve_related_papers=settings.create_method.num_retrieve_related_papers,
+    refinement_rounds=settings.create_hypothesis.refinement_rounds,
+    num_retrieve_related_papers=settings.create_hypothesis.num_retrieve_related_papers,
 )
+
+create_method = CreateMethodSubgraph(
+    llm_mapping={
+        "improve_method": settings.llm_mapping.improve_method,
+    },
+)
+
 create_experimental_design = CreateExperimentalDesignSubgraph(
     runner_type=settings.runner_type,
     num_models_to_use=settings.create_experimental_design.num_models_to_use,
@@ -131,12 +136,7 @@ coder = CreateCodeSubgraph(
 executor = ExecuteExperimentSubgraph(
     runner_type=settings.runner_type,
 )
-# evaluate_consistency = EvaluateExperimentalConsistencySubgraph(
-#     consistency_score_threshold=settings.evaluate_experimental_consistency.consistency_score_threshold,
-#     llm_mapping={
-#         "evaluate_experimental_consistency": settings.llm_mapping.evaluate_experimental_consistency,
-#     },
-# )
+
 analysis = AnalyticSubgraph(
     llm_mapping={
         "analytic_node": settings.llm_mapping.analytic_node,
@@ -158,51 +158,58 @@ writer = WriterSubgraph(
     },
     writing_refinement_rounds=settings.writer.writing_refinement_rounds,
 )
-review = ReviewPaperSubgraph(
-    llm_mapping={
-        "review_paper": settings.llm_mapping.review_paper,
-    }
-)
 latex = LatexSubgraph(
     llm_mapping={
         "convert_to_latex": settings.llm_mapping.convert_to_latex,
     },
     latex_template_name=settings.latex_template_name,
 )
-readme = ReadmeSubgraph()
 html = HtmlSubgraph(
     llm_mapping={
         "convert_to_html": settings.llm_mapping.convert_to_html,
     }
 )
+readme = ReadmeSubgraph()
 uploader = GithubUploadSubgraph()
 
 
-subgraph_list = [
+# Subgraph lists organized by workflow phase
+initial_subgraph_list = [
+    # --- Search & Investigation ---
     generate_queries,
     get_paper_titles,
     retrieve_paper_content,
     summarize_paper,
     retrieve_code,
+    # --- Hypothesis Creation ---
+    create_hypothesis,
+]
+
+# Method iteration loop subgraphs
+iteration_subgraph_list = [
     create_method,
     create_experimental_design,
     retrieve_hugging_face,
     coder,
     executor,
-    # evaluate_consistency,
     analysis,
+]
+
+# Final publication subgraphs
+final_subgraph_list = [
     reference_extractor,
     retrieve_reference_paper_content,
     create_bibfile,
     writer,
-    review,
     latex,
     html,
     readme,
 ]
 
+subgraph_list = initial_subgraph_list + iteration_subgraph_list + final_subgraph_list
 
-def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG):
+
+def run_subgraphs(subgraph_list, state):
     for subgraph in tqdm(subgraph_list, desc="Executing AIRAS"):
         subgraph_name = subgraph.__class__.__name__
         print(f"--- Running Subgraph: {subgraph_name} ---")
@@ -211,14 +218,17 @@ def run_subgraphs(subgraph_list, state, workflow_config=DEFAULT_WORKFLOW_CONFIG)
         _ = uploader.run(state)
         print(f"--- Finished Subgraph: {subgraph_name} ---\n")
 
+    return state
+
 
 def execute_workflow(
     github_owner: str,
     repository_name: str,
     research_topic: str,
     branch_name: str = "main",
-    subgraph_list: list = subgraph_list,
 ):
+    method_iteration_attempts = settings.method_iteration_attempts
+
     state = {
         "github_repository_info": GitHubRepositoryInfo(
             github_owner=github_owner,
@@ -229,65 +239,88 @@ def execute_workflow(
     }
 
     _ = PrepareRepositorySubgraph().run(state)
+
     try:
-        _ = run_subgraphs(subgraph_list, state)
-    except Exception:
-        raise
+        # Phase 1: Initial phase (research + hypothesis)
+        logger.info("=== Phase 1: Initial Research & Hypothesis Creation ===")
+        state = run_subgraphs(initial_subgraph_list, state)
 
-
-def resume_workflow(
-    github_owner: str,
-    repository_name: str,
-    source_branch_name: str,
-    start_subgraph_name: str,
-    target_branch_name: str,
-    subgraph_list: list = subgraph_list,
-):
-    start_index = None
-    for i, subgraph in enumerate(subgraph_list):
-        if subgraph.__class__.__name__ == start_subgraph_name:
-            start_index = i
-            break
-
-    if start_index is None:
-        raise ValueError(
-            f"Subgraph '{start_subgraph_name}' not found in subgraph_list. "
-            f"Available: {[sg.__class__.__name__ for sg in subgraph_list]}"
+        # Phase 2: Method iteration loop
+        logger.info(
+            f"=== Phase 2: Method Iteration Loop ({method_iteration_attempts} iterations) ==="
         )
+        for iteration in range(method_iteration_attempts):
+            logger.info(
+                f"--- Method Iteration {iteration + 1}/{method_iteration_attempts} ---"
+            )
+            state = run_subgraphs(iteration_subgraph_list, state)
 
-    logger.info(
-        f"Resuming workflow from subgraph: {start_subgraph_name} (index {start_index})"
-    )
+            # After analysis, create a new iteration in research_session
+            if iteration < method_iteration_attempts - 1:
+                logger.info("Preparing for next iteration...")
+                # The next iteration will be created by create_method subgraph
 
-    state = {
-        "github_repository_info": GitHubRepositoryInfo(
-            github_owner=github_owner,
-            repository_name=repository_name,
-            branch_name=source_branch_name,
-        ),
-    }
+        # Phase 3: Final publication phase
+        logger.info("=== Phase 3: Final Publication ===")
+        state = run_subgraphs(final_subgraph_list, state)
 
-    logger.info(
-        f"Creating new branch '{target_branch_name}' from '{source_branch_name}' "
-        f"at subgraph '{start_subgraph_name}'"
-    )
-    state = CreateBranchSubgraph(
-        new_branch_name=target_branch_name,
-        start_subgraph_name=start_subgraph_name,
-    ).run(state)
-
-    logger.info(f"Downloading existing state from branch: {target_branch_name}")
-    state = GithubDownloadSubgraph().run(state)
-
-    remaining_subgraphs = subgraph_list[start_index:]
-    logger.info(
-        f"Executing {len(remaining_subgraphs)} subgraphs starting from {start_subgraph_name}"
-    )
-
-    try:
-        run_subgraphs(remaining_subgraphs, state)
     except Exception:
         raise
+
+
+# def resume_workflow(
+#     github_owner: str,
+#     repository_name: str,
+#     source_branch_name: str,
+#     start_subgraph_name: str,
+#     target_branch_name: str,
+#     subgraph_list: list = subgraph_list,
+# ):
+#     start_index = None
+#     for i, subgraph in enumerate(subgraph_list):
+#         if subgraph.__class__.__name__ == start_subgraph_name:
+#             start_index = i
+#             break
+
+#     if start_index is None:
+#         raise ValueError(
+#             f"Subgraph '{start_subgraph_name}' not found in subgraph_list. "
+#             f"Available: {[sg.__class__.__name__ for sg in subgraph_list]}"
+#         )
+
+#     logger.info(
+#         f"Resuming workflow from subgraph: {start_subgraph_name} (index {start_index})"
+#     )
+
+#     state = {
+#         "github_repository_info": GitHubRepositoryInfo(
+#             github_owner=github_owner,
+#             repository_name=repository_name,
+#             branch_name=source_branch_name,
+#         ),
+#     }
+
+#     logger.info(
+#         f"Creating new branch '{target_branch_name}' from '{source_branch_name}' "
+#         f"at subgraph '{start_subgraph_name}'"
+#     )
+#     state = CreateBranchSubgraph(
+#         new_branch_name=target_branch_name,
+#         start_subgraph_name=start_subgraph_name,
+#     ).run(state)
+
+#     logger.info(f"Downloading existing state from branch: {target_branch_name}")
+#     state = GithubDownloadSubgraph().run(state)
+
+#     remaining_subgraphs = subgraph_list[start_index:]
+#     logger.info(
+#         f"Executing {len(remaining_subgraphs)} subgraphs starting from {start_subgraph_name}"
+#     )
+
+#     try:
+#         run_subgraphs(remaining_subgraphs, state)
+#     except Exception:
+#         raise
 
 
 if __name__ == "__main__":
@@ -295,9 +328,8 @@ if __name__ == "__main__":
     suffix = "matsuzawa"
     exec_time = datetime.now().strftime("%Y%m%d-%H%M%S")
     repository_name = f"airas-{exec_time}-{suffix}"
-    research_topic_list = (
-        "Improving Test-Time Adaptation in terms of convergence speed."
-    )
+
+    research_topic_list = "Improving fine-tuning performance of language models."
 
     try:
         execute_workflow(

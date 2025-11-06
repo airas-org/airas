@@ -15,7 +15,7 @@ Check if the generated experiment code meets ALL of the following requirements:
    - No truncated code sections or incomplete implementations
 
 2. **Hydra Integration**:
-   - Uses Hydra to manage all experiment configurations from `config/run/*.yaml` files
+   - Uses Hydra to manage all experiment configurations from `config/runs/*.yaml` files
    - All parameters are loaded from run configs dynamically
    - Proper configuration structure with run_id, method, model, dataset, training, and optuna sections
    - CLI interface matches:
@@ -70,7 +70,7 @@ Check if the generated experiment code meets ALL of the following requirements:
 
 7. **Configuration Files**:
    - The generated code properly references config files via Hydra
-   - NOTE: config/run/{run_id}.yaml files are provided separately (not in ExperimentCode)
+   - NOTE: config/runs/{run_id}.yaml files are provided separately (not in ExperimentCode)
    - All run configurations match the experiment_runs provided
    - Optuna search spaces are properly defined if applicable
 

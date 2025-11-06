@@ -13,7 +13,7 @@ class ResearchHistory(BaseModel):
     github_repository_info: Optional[GitHubRepositoryInfo] = Field(
         None, description="GitHub repository information"
     )
-    research_topic: str = Field(..., description="Main research topic")
+    research_topic: Optional[str] = Field(None, description="Main research topic")
 
     # --- Search & Investigation ---
     queries: Optional[list[str]] = Field(None, description="Search queries used")

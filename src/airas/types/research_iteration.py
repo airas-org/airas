@@ -38,7 +38,7 @@ class ExperimentCode(BaseModel):
         if experiment_runs:
             files.update(
                 {
-                    f"config/run/{exp_run.run_id}.yaml": exp_run.run_config
+                    f"config/runs/{exp_run.run_id}.yaml": exp_run.run_config
                     for exp_run in experiment_runs
                     if exp_run.run_config
                 }
