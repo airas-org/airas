@@ -2,7 +2,8 @@ import itertools
 import logging
 import re
 
-from airas.types.research_hypothesis import ExperimentRun, ResearchHypothesis
+from airas.types.research_iteration import ExperimentRun
+from airas.types.research_session import ResearchSession
 
 logger = logging.getLogger(__name__)
 
@@ -21,13 +22,11 @@ def _sanitize_for_branch_name(text: str) -> str:
 
 
 def generate_experiment_runs(
-    new_method: ResearchHypothesis,
-) -> ResearchHypothesis:
-    if not new_method.experimental_design:
-        logger.error("No experimental_design found in new_method")
-        return new_method
-
-    design = new_method.experimental_design
+    research_session: ResearchSession,
+) -> list[ExperimentRun]:
+    if not (design := research_session.current_iteration.experimental_design):
+        logger.error("No experimental_design found in current_iteration")
+        return []
 
     methods = ["proposed"]
     comparative_ids = [
@@ -46,7 +45,7 @@ def generate_experiment_runs(
             "No datasets specified (proposed method may introduce new dataset)"
         )
 
-    experiment_runs = [
+    return [
         ExperimentRun(
             run_id=_sanitize_for_branch_name(
                 "-".join(filter(None, [method, model, dataset]))
@@ -57,11 +56,3 @@ def generate_experiment_runs(
         )
         for method, model, dataset in itertools.product(methods, models, datasets)
     ]
-
-    new_method.experiment_runs = experiment_runs
-    logger.info(
-        f"Generated {len(experiment_runs)} experiment runs: "
-        f"{len(methods)} methods × {len(models)} models × {len(datasets)} datasets"
-    )
-
-    return new_method

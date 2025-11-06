@@ -20,7 +20,7 @@ from airas.features.create.create_experimental_design_subgraph.nodes.generate_ex
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_session import ResearchSession
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -39,7 +39,7 @@ class CreateExperimentalDesignLLMMapping(BaseModel):
 
 
 class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
-    new_method: ResearchHypothesis
+    research_session: ResearchSession
     github_repository_info: GitHubRepositoryInfo
 
 
@@ -47,7 +47,7 @@ class CreateExperimentalDesignHiddenState(TypedDict): ...
 
 
 class CreateExperimentalDesignSubgraphOutputState(TypedDict):
-    new_method: ResearchHypothesis
+    research_session: ResearchSession
 
 
 class CreateExperimentalDesignState(
@@ -98,26 +98,30 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
     @create_experimental_design_timed
     def _generate_experiment_design(
         self, state: CreateExperimentalDesignState
-    ) -> dict[str, ResearchHypothesis]:
-        new_method = generate_experiment_design(
+    ) -> dict[str, ResearchSession]:
+        research_session = state["research_session"]
+        experiment_design = generate_experiment_design(
             llm_name=self.llm_mapping.generate_experiment_design,
-            new_method=state["new_method"],
+            research_session=research_session,
             runner_type=cast(RunnerType, self.runner_type),
             num_models_to_use=self.num_models_to_use,
             num_datasets_to_use=self.num_datasets_to_use,
             num_comparative_methods=self.num_comparative_methods,
             github_repository_info=state["github_repository_info"],
         )
-        return {"new_method": new_method}
+        research_session.current_iteration.experimental_design = experiment_design
+        return {"research_session": research_session}
 
     @create_experimental_design_timed
     def _geneate_experiment_runs(
         self, state: CreateExperimentalDesignState
-    ) -> dict[str, ResearchHypothesis]:
-        new_method = generate_experiment_runs(
-            new_method=state["new_method"],
+    ) -> dict[str, ResearchSession]:
+        research_session = state["research_session"]
+        experiment_runs = generate_experiment_runs(
+            research_session=research_session,
         )
-        return {"new_method": new_method}
+        research_session.current_iteration.experiment_runs = experiment_runs
+        return {"research_session": research_session}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(CreateExperimentalDesignState)
@@ -136,6 +140,10 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
 
 
 def main():
+    from airas.services.api_client.api_clients_container import sync_container
+
+    sync_container.wire(modules=[__name__])
+
     input = create_experimental_design_subgraph_input_data
     result = CreateExperimentalDesignSubgraph().run(input)
     print(f"result: {result}")

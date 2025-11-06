@@ -22,7 +22,8 @@ from airas.features.retrieve.retrieve_hugging_face_subgraph.nodes.select_resourc
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.hugging_face import HuggingFace
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_iteration import ExternalResources
+from airas.types.research_session import ResearchSession
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -47,7 +48,7 @@ class RetrieveHuggingFaceLLMMapping(BaseModel):
 
 
 class RetrieveHuggingFaceInputState(TypedDict):
-    new_method: ResearchHypothesis
+    research_session: ResearchSession
     github_repository_info: GitHubRepositoryInfo
 
 
@@ -56,7 +57,7 @@ class RetrieveHuggingFaceHiddenState(TypedDict):
 
 
 class RetrieveHuggingFaceOutputState(TypedDict):
-    new_method: ResearchHypothesis
+    research_session: ResearchSession
 
 
 class RetrieveHuggingFaceState(
@@ -106,11 +107,11 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
             huggingface_api_key_check=True,
         )
 
-    def _search_hugging_face(
+    async def _search_hugging_face(
         self, state: RetrieveHuggingFaceState
     ) -> dict[str, HuggingFace]:
-        huggingface_search_results = search_hugging_face(
-            new_method=state["new_method"],
+        huggingface_search_results = await search_hugging_face(
+            research_session=state["research_session"],
             max_results_per_search=self.max_results_per_search,
             include_gated=self.include_gated,
         )
@@ -118,23 +119,29 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
 
     def _select_resources(
         self, state: RetrieveHuggingFaceState
-    ) -> dict[str, ResearchHypothesis]:
-        updated_method = select_resources(
+    ) -> dict[str, ResearchSession]:
+        research_session = state["research_session"]
+        selected_resources = select_resources(
             llm_name=self.llm_mapping.select_resources,
-            new_method=state["new_method"],
+            research_session=research_session,
             huggingface_search_results=state["huggingface_search_results"],
             max_models=self.max_models,
             max_datasets=self.max_datasets,
         )
-        return {"new_method": updated_method}
+        research_session.current_iteration.experimental_design.external_resources = (
+            ExternalResources(hugging_face=selected_resources)
+        )
+        return {"research_session": research_session}
 
-    def _extract_code_in_readme(self, state: RetrieveHuggingFaceState) -> dict:
-        updated_method = extract_code_in_readme(
+    def _extract_code_in_readme(
+        self, state: RetrieveHuggingFaceState
+    ) -> dict[str, ResearchSession]:
+        research_session = extract_code_in_readme(
             llm_name=self.llm_mapping.extract_code_in_readme,
-            new_method=state["new_method"],
+            research_session=state["research_session"],
             github_repository_info=state["github_repository_info"],
         )
-        return {"new_method": updated_method}
+        return {"research_session": research_session}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(RetrieveHuggingFaceState)
@@ -151,6 +158,10 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
 
 
 def main():
+    from airas.services.api_client.api_clients_container import sync_container
+
+    sync_container.wire(modules=[__name__])
+
     input_data = retrieve_hugging_face_subgraph_input_data
     result = RetrieveHuggingFaceSubgraph(
         include_gated=False,

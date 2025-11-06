@@ -1,54 +1,53 @@
 import logging
 
+from dependency_injector.wiring import Provide, inject
+
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_session import ResearchSession
 
 logger = logging.getLogger(__name__)
 
 
+@inject
 def push_files_to_branch(
     github_repository_info: GitHubRepositoryInfo,
-    new_method: ResearchHypothesis,
+    research_session: ResearchSession,
     commit_message: str,
-    github_client: GithubClient | None = None,
-) -> ResearchHypothesis:
-    github_client = github_client or GithubClient()
+    github_client: GithubClient = Provide[SyncContainer.github_client],
+) -> bool:
+    if not (current_iteration := research_session.current_iteration):
+        logger.error("No current iteration found")
+        return False
 
-    if (
-        not new_method.experimental_design
-        or not new_method.experimental_design.experiment_code
-    ):
+    experimental_design = current_iteration.experimental_design
+    if not experimental_design or not experimental_design.experiment_code:
         logger.error("No experiment code found in experimental design")
-        return new_method
+        return False
 
-    experiment_code = new_method.experimental_design.experiment_code
-    files = experiment_code.to_file_dict(experiment_runs=new_method.experiment_runs)
-
-    logger.info(
-        f"Pushing {len(files)} files to branch {github_repository_info.branch_name}"
+    experiment_code = experimental_design.experiment_code
+    files = experiment_code.to_file_dict(
+        experiment_runs=current_iteration.experiment_runs
     )
+    branch_name = github_repository_info.branch_name
+    logger.info(f"Pushing {len(files)} files to branch {branch_name}")
 
     try:
         success = github_client.commit_multiple_files(
             github_owner=github_repository_info.github_owner,
             repository_name=github_repository_info.repository_name,
-            branch_name=github_repository_info.branch_name,
+            branch_name=branch_name,
             files=files,
             commit_message=commit_message,
         )
-
-        if success:
-            logger.info(
-                f"Successfully pushed files to branch {github_repository_info.branch_name}"
-            )
-        else:
-            logger.error(
-                f"Failed to push files to branch {github_repository_info.branch_name}"
-            )
-
     except Exception as e:
-        logger.error(f"Error pushing files to branch: {e}")
-        raise
+        logger.exception(f"Error pushing files to branch {branch_name}: {e}")
+        return False
 
-    return new_method
+    if not success:
+        logger.error(f"Failed to push files to branch {branch_name}")
+        return False
+
+    logger.info(f"Successfully pushed files to branch {branch_name}")
+    return True

@@ -153,7 +153,7 @@ Generate complete code for these files ONLY. Do not create any additional files 
 **Action Required**: Address this issue in the implementation.
 
 **Previous Code (for reference)**:
-{{ new_method.experimental_design.experiment_code | tojson }}
+{{ research_session.current_iteration.experimental_design.experiment_code.model_dump() | tojson }}
 
 Fix the issues identified above while preserving the correct parts of the implementation.
 {% endif %}
@@ -162,15 +162,18 @@ Fix the issues identified above while preserving the correct parts of the implem
 # Experimental Environment
 {{ runner_type_prompt }}
 
+# Hypothesis
+{{ research_session.hypothesis }}
+
 # Current Research Method
-{{ new_method.method }}
+{{ research_session.current_iteration.method }}
 
 # Experimental Design
-- Summary: {{ new_method.experimental_design.experiment_summary }}
-- Evaluation metrics: {{ new_method.experimental_design.evaluation_metrics }}
+- Summary: {{ research_session.current_iteration.experimental_design.experiment_summary }}
+- Evaluation metrics: {{ research_session.current_iteration.experimental_design.evaluation_metrics }}
 
 # Experiment Runs
-{% for run in new_method.experiment_runs %}
+{% for run in research_session.current_iteration.experiment_runs %}
 - Run ID: {{ run.run_id }}
   Method: {{ run.method_name }}
   Model: {{ run.model_name }}
@@ -185,9 +188,9 @@ Fix the issues identified above while preserving the correct parts of the implem
 {% endfor %}
 
 # External Resources (Use these for implementation)
-{% if new_method.experimental_design.external_resources and new_method.experimental_design.external_resources.hugging_face %}
+{% if research_session.current_iteration.experimental_design.external_resources and research_session.current_iteration.experimental_design.external_resources.hugging_face %}
 **HuggingFace Models:**
-{% for model in new_method.experimental_design.external_resources.hugging_face.models %}
+{% for model in research_session.current_iteration.experimental_design.external_resources.hugging_face.models %}
 - ID: {{ model.id }}
 {% if model.extracted_code %}
 - Code: {{ model.extracted_code }}
@@ -195,7 +198,7 @@ Fix the issues identified above while preserving the correct parts of the implem
 {% endfor %}
 
 **HuggingFace Datasets:**
-{% for dataset in new_method.experimental_design.external_resources.hugging_face.datasets %}
+{% for dataset in research_session.current_iteration.experimental_design.external_resources.hugging_face.datasets %}
 - ID: {{ dataset.id }}
 {% if dataset.extracted_code %}
 - Code: {{ dataset.extracted_code }}

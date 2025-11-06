@@ -1,17 +1,20 @@
 import logging
 
+from dependency_injector import providers
+from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 from pydantic import BaseModel
 
 from airas.features.retrieve.retrieve_hugging_face_subgraph.prompt.select_resources_prompt import (
     select_resources_prompt,
 )
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
 from airas.types.hugging_face import HuggingFace
-from airas.types.research_hypothesis import ExternalResources, ResearchHypothesis
+from airas.types.research_session import ResearchSession
 
 logger = logging.getLogger(__name__)
 
@@ -21,22 +24,25 @@ class LLMOutput(BaseModel):
     selected_datasets: list[str]
 
 
+@inject
 def select_resources(
     llm_name: LLM_MODEL,
-    new_method: ResearchHypothesis,
+    research_session: ResearchSession,
     huggingface_search_results: HuggingFace,
     prompt_template: str = select_resources_prompt,
-    client: LLMFacadeClient | None = None,
+    llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
+        SyncContainer.llm_facade_provider
+    ],
     max_models: int = 10,
     max_datasets: int = 10,
-) -> ResearchHypothesis:
-    client = client or LLMFacadeClient(llm_name=llm_name)
+) -> HuggingFace:
+    client = llm_facade_provider(llm_name=llm_name)
 
     env = Environment()
     template = env.from_string(prompt_template)
     messages = template.render(
         {
-            "new_method": new_method.model_dump(),
+            "research_session": research_session,
             "huggingface_search_results": _format_huggingface_data(
                 huggingface_search_results
             ),
@@ -64,12 +70,7 @@ def select_resources(
         f"Selected {len(selected_models)} models and {len(selected_datasets)} datasets"
     )
 
-    # Create ExternalResources with structured typing
-    new_method.experimental_design.external_resources = ExternalResources(
-        hugging_face=HuggingFace(models=selected_models, datasets=selected_datasets)
-    )
-
-    return new_method
+    return HuggingFace(models=selected_models, datasets=selected_datasets)
 
 
 def _format_huggingface_data(huggingface_search_results: HuggingFace) -> str:
