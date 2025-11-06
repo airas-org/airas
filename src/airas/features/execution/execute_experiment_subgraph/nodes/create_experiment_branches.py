@@ -1,9 +1,13 @@
 import asyncio
 import logging
 
+from dependency_injector.wiring import Provide, inject
+
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_iteration import ExperimentRun
+from airas.types.research_session import ResearchSession
 
 logger = logging.getLogger(__name__)
 
@@ -11,8 +15,7 @@ logger = logging.getLogger(__name__)
 async def _create_experiment_branches(
     github_client: GithubClient,
     github_repository_info: GitHubRepositoryInfo,
-    experiment_iteration: int,
-    new_method: ResearchHypothesis,
+    experiment_runs: list[ExperimentRun],
 ) -> list[tuple[str, bool]]:
     base_branch_info = await github_client.aget_branch(
         github_repository_info.github_owner,
@@ -27,11 +30,11 @@ async def _create_experiment_branches(
     tasks = []
     branches_to_create = []
 
-    if not new_method.experiment_runs:
+    if not experiment_runs:
         logger.warning("No experiment runs found")
         return []
 
-    for exp_run in new_method.experiment_runs:
+    for exp_run in experiment_runs:
         child_branch = exp_run.get_branch_name(github_repository_info.branch_name)
         branches_to_create.append(child_branch)
 
@@ -73,29 +76,27 @@ async def _create_single_branch(
         return False
 
 
-def create_experiment_branches(
+@inject
+async def create_experiment_branches(
     github_repository_info: GitHubRepositoryInfo,
-    new_method: ResearchHypothesis,
-    experiment_iteration: int,
-    github_client: GithubClient | None = None,
-) -> ResearchHypothesis:
-    github_client = github_client or GithubClient()
+    research_session: ResearchSession,
+    github_client: GithubClient = Provide[SyncContainer.github_client],
+) -> ResearchSession:
+    if (
+        not research_session.current_iteration
+        or not research_session.current_iteration.experiment_runs
+    ):
+        logger.error("No experiment runs found in current_iteration")
+        return research_session
 
-    if not new_method.experiment_runs:
-        logger.error("No experiment runs found")
-        return new_method
-
-    branch_results = asyncio.run(
-        _create_experiment_branches(
-            github_client,
-            github_repository_info,
-            experiment_iteration,
-            new_method,
-        )
+    branch_results = await _create_experiment_branches(
+        github_client,
+        github_repository_info,
+        research_session.current_iteration.experiment_runs,
     )
 
     created_count = 0
-    for exp_run in new_method.experiment_runs:
+    for exp_run in research_session.current_iteration.experiment_runs:
         child_branch = exp_run.get_branch_name(github_repository_info.branch_name)
 
         branch_success = next(
@@ -115,7 +116,7 @@ def create_experiment_branches(
             logger.warning(f"Branch creation failed for run {exp_run.run_id}")
 
     logger.info(
-        f"Successfully created {created_count} branches out of {len(new_method.experiment_runs)} experiment runs"
+        f"Successfully created {created_count} branches out of {len(research_session.current_iteration.experiment_runs)} experiment runs"
     )
 
-    return new_method
+    return research_session

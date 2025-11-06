@@ -15,7 +15,6 @@ create_experimental_design_subgraph_input_data = {
         ),
         iterations=[
             ResearchIteration(
-                method_id=1,
                 method="Propose a novel training-free acceleration method using higher-order approximation",
             )
         ],

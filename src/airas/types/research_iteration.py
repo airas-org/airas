@@ -47,13 +47,9 @@ class ExperimentCode(BaseModel):
 
 
 class ExperimentEvaluation(BaseModel):
-    consistency_score: Optional[int] = Field(
+    method_feedback: Optional[int] = Field(
         None,
-        description="Score (1-10) indicating consistency between experimental design and results",
-    )
-    consistency_feedback: Optional[str] = Field(
-        None,
-        description="Detailed feedback on experimental consistency and quality",
+        description="",
     )
 
 
@@ -136,14 +132,10 @@ class ExperimentalAnalysis(BaseModel):
     comparison_figures: Optional[list[str]] = Field(
         None, description="List of comparison figure filenames"
     )
+    evaluation: Optional[ExperimentEvaluation] = Field(None, description="")
 
 
 class ResearchIteration(BaseModel):
-    method_id: int = Field(
-        default=1,
-        description="A unique identifier for this research iteration, typically sequential.",
-    )
-
     method: str = Field(..., description="The proposed research method")
     experimental_design: Optional[ExperimentalDesign] = Field(
         None,
