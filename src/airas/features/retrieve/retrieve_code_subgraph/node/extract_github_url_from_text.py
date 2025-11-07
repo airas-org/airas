@@ -56,12 +56,13 @@ async def _select_github_url(
     research_study: ResearchStudy,
     candidates: list[str],
     prompt_template: str,
-    github_repository_info: GitHubRepositoryInfo,
     llm_client: LLMFacadeClient,
-    llm_name: LLM_MODEL,
-    index: int,
 ) -> None:
-    paper_summary = research_study.llm_extracted_info.methodology
+    paper_summary = (
+        research_study.llm_extracted_info.methodology
+        if research_study.llm_extracted_info
+        else ""
+    )
     template = Environment().from_string(prompt_template)
     messages = template.render(
         {"paper_summary": paper_summary, "extract_github_url_list": candidates}

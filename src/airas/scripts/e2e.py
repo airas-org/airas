@@ -25,7 +25,7 @@ from airas.features import (  # noqa: E402
     ExtractReferenceTitlesSubgraph,
     GenerateQueriesSubgraph,
     GetPaperTitlesFromDBSubgraph,
-    # GithubDownloadSubgraph,
+    GithubDownloadSubgraph,
     GithubUploadSubgraph,
     HtmlSubgraph,
     LatexSubgraph,
@@ -239,6 +239,10 @@ def execute_workflow(
     }
 
     _ = PrepareRepositorySubgraph().run(state)
+
+    # Download existing state if available (for resuming from a specific subgraph)
+    logger.info("Attempting to download existing research state...")
+    state = GithubDownloadSubgraph().run(state)
 
     try:
         # Phase 1: Initial phase (research + hypothesis)

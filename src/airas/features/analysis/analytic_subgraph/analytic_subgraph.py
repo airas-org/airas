@@ -146,7 +146,9 @@ class AnalyticSubgraph(BaseSubgraph):
 
     def _should_iterate(self, state: AnalyticSubgraphState) -> str:
         research_session = state["research_session"]
-        iteration_count = len(research_session.research_iterations)
+        iteration_count = (
+            len(research_session.iterations) if research_session.iterations else 0
+        )
 
         logger.info(
             f"Decision: Checking iteration count "

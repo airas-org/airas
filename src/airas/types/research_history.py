@@ -26,6 +26,7 @@ class ResearchHistory(BaseModel):
 
     # --- Hypothesis & Experimentation ---
     research_session: Optional[ResearchSession] = Field(None, description="")
+    experiment_iteration: Optional[int] = Field(None, description="")
 
     # --- Writing & Publication ---
     paper_content: Optional[PaperContent] = Field(
