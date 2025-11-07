@@ -8,9 +8,6 @@ from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
-from airas.features.create.create_hypothesis_subgraph.input_data import (
-    create_hypothesis_subgraph_input_data,
-)
 from airas.features.create.create_hypothesis_subgraph.nodes.evaluate_novelty_and_significance import (
     evaluate_novelty_and_significance,
 )
@@ -330,8 +327,10 @@ class CreateHypothesisSubgraph(BaseSubgraph):
 
 
 def main():
+    from airas.features.create.create_hypothesis_subgraph.input_data import (
+        create_hypothesis_subgraph_input_data,
+    )
     from airas.services.api_client.api_clients_container import sync_container
-
     sync_container.wire(modules=[__name__])
     input = create_hypothesis_subgraph_input_data
     result = CreateHypothesisSubgraph(

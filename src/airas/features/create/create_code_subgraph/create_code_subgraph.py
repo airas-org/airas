@@ -9,9 +9,6 @@ from typing_extensions import TypedDict
 from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.config.runner_type_info import RunnerType
 from airas.core.base import BaseSubgraph
-from airas.features.create.create_code_subgraph.input_data import (
-    create_code_subgraph_input_data,
-)
 from airas.features.create.create_code_subgraph.nodes.generate_experiment_code import (
     generate_experiment_code,
 )
@@ -255,6 +252,9 @@ class CreateCodeSubgraph(BaseSubgraph):
 
 
 def main():
+    from airas.features.create.create_code_subgraph.input_data import (
+        create_code_subgraph_input_data,
+    )
     from airas.services.api_client.api_clients_container import sync_container
     from airas.types.wandb import WandbInfo
 

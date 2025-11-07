@@ -9,9 +9,6 @@ from typing_extensions import TypedDict
 from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.config.runner_type_info import RunnerType
 from airas.core.base import BaseSubgraph
-from airas.features.create.create_experimental_design_subgraph.input_data import (
-    create_experimental_design_subgraph_input_data,
-)
 from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_design import (
     generate_experiment_design,
 )
@@ -140,8 +137,10 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
 
 
 def main():
+    from airas.features.create.create_experimental_design_subgraph.input_data import (
+        create_experimental_design_subgraph_input_data,
+    )
     from airas.services.api_client.api_clients_container import sync_container
-
     sync_container.wire(modules=[__name__])
 
     input = create_experimental_design_subgraph_input_data

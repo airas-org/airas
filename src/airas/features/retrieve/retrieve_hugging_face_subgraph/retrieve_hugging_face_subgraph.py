@@ -7,9 +7,6 @@ from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
-from airas.features.retrieve.retrieve_hugging_face_subgraph.input_data import (
-    retrieve_hugging_face_subgraph_input_data,
-)
 from airas.features.retrieve.retrieve_hugging_face_subgraph.nodes.extract_code_in_readme import (
     extract_code_in_readme,
 )
@@ -158,8 +155,10 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
 
 
 def main():
+    from airas.features.retrieve.retrieve_hugging_face_subgraph.input_data import (
+        retrieve_hugging_face_subgraph_input_data,
+    )
     from airas.services.api_client.api_clients_container import sync_container
-
     sync_container.wire(modules=[__name__])
 
     input_data = retrieve_hugging_face_subgraph_input_data

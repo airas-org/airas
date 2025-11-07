@@ -7,9 +7,6 @@ from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
-from airas.features.analysis.analytic_subgraph.input_data import (
-    analytic_subgraph_input_data,
-)
 from airas.features.analysis.analytic_subgraph.nodes.analytic_node import analytic_node
 from airas.features.analysis.analytic_subgraph.nodes.evaluate_method import (
     evaluate_method,
@@ -190,8 +187,10 @@ class AnalyticSubgraph(BaseSubgraph):
 
 
 def main():
+    from airas.features.analysis.analytic_subgraph.input_data import (
+        analytic_subgraph_input_data,
+    )
     from airas.services.api_client.api_clients_container import sync_container
-
     sync_container.wire(modules=[__name__])
     input = analytic_subgraph_input_data
     result = AnalyticSubgraph().run(input)

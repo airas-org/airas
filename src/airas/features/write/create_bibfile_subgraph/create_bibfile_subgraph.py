@@ -8,9 +8,6 @@ from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
-from airas.features.write.create_bibfile_subgraph.input_data import (
-    create_bibfile_subgraph_input_data,
-)
 from airas.features.write.create_bibfile_subgraph.nodes.create_bibtex import (
     create_bibtex,
 )
@@ -146,8 +143,10 @@ class CreateBibfileSubgraph(BaseSubgraph):
 
 
 def main():
+    from airas.features.write.create_bibfile_subgraph.input_data import (
+        create_bibfile_subgraph_input_data,
+    )
     from airas.services.api_client.api_clients_container import sync_container
-
     sync_container.wire(modules=[__name__])
 
     result = CreateBibfileSubgraph(
