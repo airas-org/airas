@@ -33,6 +33,7 @@ from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
 from airas.types.paper import PaperContent
+from airas.types.research_session import ResearchSession
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -48,6 +49,7 @@ class LatexLLMMapping(BaseModel):
 
 class LatexSubgraphInputState(TypedDict):
     github_repository_info: GitHubRepositoryInfo
+    research_session: ResearchSession
     references_bib: str
     paper_content: PaperContent
 
@@ -139,9 +141,10 @@ class LatexSubgraph(BaseSubgraph):
         return {"is_upload_successful": is_upload_successful}
 
     @latex_timed
-    def _compile_latex(self, state: LatexSubgraphState) -> dict:
-        is_compiled = compile_latex(
+    async def _compile_latex(self, state: LatexSubgraphState) -> dict:
+        is_compiled = await compile_latex(
             github_repository_info=state["github_repository_info"],
+            research_session=state["research_session"],
             latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
         )
         return {"is_compiled": is_compiled}

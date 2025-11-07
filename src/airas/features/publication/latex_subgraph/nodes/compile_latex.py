@@ -1,4 +1,3 @@
-import asyncio
 from logging import getLogger
 
 from airas.features.execution.execute_experiment_subgraph.workflow_executor import (
@@ -7,12 +6,14 @@ from airas.features.execution.execute_experiment_subgraph.workflow_executor impo
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
+from airas.types.research_session import ResearchSession
 
 logger = getLogger(__name__)
 
 
-def compile_latex(
+async def compile_latex(
     github_repository_info: GitHubRepositoryInfo,
+    research_session: ResearchSession,
     workflow_file: str = "compile_latex_with_open_code.yml",
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
     client: GithubClient | None = None,
@@ -23,19 +24,24 @@ def compile_latex(
 
     executor = WorkflowExecutor(client)
 
+    if not (iteration := research_session.best_iteration):
+        logger.error(
+            "No best_iteration found in research_session. Cannot compile LaTeX without iteration_id."
+        )
+        return False
+
     workflow_inputs = {
         "subdir": latex_template_name,
+        "iteration_id": str(iteration.iteration_id),
     }
 
     try:
-        result = asyncio.run(
-            executor.execute_workflow(
-                github_owner=github_owner,
-                repository_name=repository_name,
-                branch_name=branch_name,
-                workflow_file=workflow_file,
-                inputs=workflow_inputs,
-            )
+        result = await executor.execute_workflow(
+            github_owner=github_owner,
+            repository_name=repository_name,
+            branch_name=branch_name,
+            workflow_file=workflow_file,
+            inputs=workflow_inputs,
         )
 
         if result.success:

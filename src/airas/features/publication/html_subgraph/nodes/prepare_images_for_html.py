@@ -1,4 +1,3 @@
-import asyncio
 from logging import getLogger
 
 from airas.features.execution.execute_experiment_subgraph.workflow_executor import (
@@ -6,12 +5,14 @@ from airas.features.execution.execute_experiment_subgraph.workflow_executor impo
 )
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
+from airas.types.research_session import ResearchSession
 
 logger = getLogger(__name__)
 
 
-def prepare_images_for_html(
+async def prepare_images_for_html(
     github_repository: GitHubRepositoryInfo,
+    research_session: ResearchSession,
     workflow_file: str = "prepare_images_for_html.yml",
     client: GithubClient | None = None,
 ) -> str | None:
@@ -20,17 +21,24 @@ def prepare_images_for_html(
     branch_name = github_repository.branch_name or "main"
 
     executor = WorkflowExecutor(client)
-    inputs: dict = {}
+
+    if not (iteration := research_session.best_iteration):
+        logger.error(
+            "No best_iteration found in research_session. Cannot prepare images without iteration_id."
+        )
+        return None
+
+    inputs: dict = {
+        "iteration_id": str(iteration.iteration_id),
+    }
 
     try:
-        result = asyncio.run(
-            executor.execute_workflow(
-                github_owner=github_owner,
-                repository_name=repository_name,
-                branch_name=branch_name,
-                workflow_file=workflow_file,
-                inputs=inputs,
-            )
+        result = await executor.execute_workflow(
+            github_owner=github_owner,
+            repository_name=repository_name,
+            branch_name=branch_name,
+            workflow_file=workflow_file,
+            inputs=inputs,
         )
 
         if not result.success:

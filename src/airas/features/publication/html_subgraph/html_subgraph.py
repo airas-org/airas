@@ -124,12 +124,13 @@ class HtmlSubgraph(BaseSubgraph):
         return {"html_upload": ok}
 
     @html_timed
-    def _prepare_images_for_html(
+    async def _prepare_images_for_html(
         self, state: HtmlSubgraphState
     ) -> dict[str, str | bool]:
         time.sleep(3)
-        github_pages_url = prepare_images_for_html(
+        github_pages_url = await prepare_images_for_html(
             github_repository=state["github_repository_info"],
+            research_session=state["research_session"],
         )
 
         return {
