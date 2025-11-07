@@ -127,13 +127,10 @@ async def extract_github_url_from_text(
             research_study,
             candidates,
             prompt_template,
-            github_repository_info,
             llm_client,
-            llm_name,
-            index,
         )
-        for index, (research_study, candidates) in enumerate(
-            zip(research_study_list, candidates_list, strict=True)
+        for research_study, candidates in zip(
+            research_study_list, candidates_list, strict=True
         )
     ]
 
