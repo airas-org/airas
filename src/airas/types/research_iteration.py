@@ -85,11 +85,11 @@ class ExperimentalDesign(BaseModel):
 class ExperimentRun(BaseModel):
     run_id: str = Field(
         ...,
-        description="A unique identifier for this specific experimental run (e.g., 'run-1-proposed-bert-glue-mrpc').",
+        description="A unique identifier for this specific experimental run (e.g., 'proposed-iter1-bert-glue-mrpc').",
     )
     method_name: str = Field(
         ...,
-        description="The name of the method used in this run (e.g., 'baseline', 'proposed').",
+        description="The name of the method used in this run (e.g., 'proposed', 'comparative-1).",
     )
     model_name: Optional[str] = Field(
         None, description="The name of the model used in this run."
@@ -126,7 +126,7 @@ class ExperimentalAnalysis(BaseModel):
     analysis_report: Optional[str] = Field(
         None, description="Overall analysis report text"
     )
-    aggregated_metrics: Optional[str] = Field(
+    aggregated_metrics: Optional[dict] = Field(
         None, description="Aggregated metrics across all runs"
     )
     comparison_figures: Optional[list[str]] = Field(
@@ -136,6 +136,7 @@ class ExperimentalAnalysis(BaseModel):
 
 
 class ResearchIteration(BaseModel):
+    iteration_id: int = Field(..., description="Unique identifier for this iteration")
     method: str = Field(..., description="The proposed research method")
     experimental_design: Optional[ExperimentalDesign] = Field(
         None,

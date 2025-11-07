@@ -93,6 +93,7 @@ class CreateMethodSubgraph(BaseSubgraph):
 
         research_session.iterations.append(
             ResearchIteration(
+                iteration_id=len(research_session.iterations) + 1,
                 method=hypothesis.method,
             )
         )
@@ -141,6 +142,7 @@ def main():
         create_method_subgraph_input_data,
     )
     from airas.services.api_client.api_clients_container import sync_container
+
     sync_container.wire(modules=[__name__])
     input = create_method_subgraph_input_data
 

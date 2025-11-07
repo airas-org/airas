@@ -46,7 +46,6 @@ class ExecuteExperimentLLMMapping(BaseModel):
 class ExecuteExperimentSubgraphInputState(TypedDict, total=False):
     github_repository_info: GitHubRepositoryInfo
     research_session: ResearchSession
-    experiment_iteration: int
 
 
 class ExecuteExperimentSubgraphHiddenState(TypedDict):
@@ -57,7 +56,6 @@ class ExecuteExperimentSubgraphHiddenState(TypedDict):
 
 class ExecuteExperimentSubgraphOutputState(TypedDict):
     research_session: ResearchSession
-    experiment_iteration: int
 
 
 class ExecutorSubgraphState(
@@ -105,21 +103,11 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
         )
 
     @executor_timed
-    def _initialize(
-        self, state: ExecutorSubgraphState
-    ) -> dict[str, int | tuple[bool, str] | dict[str, tuple[bool, str]]]:
-        # Always increment experiment_iteration to create a new iteration folder
-        return {
-            "experiment_iteration": state.get("experiment_iteration", 0) + 1,
-        }
-
-    @executor_timed
     async def _execute_trial_experiment(
         self, state: ExecutorSubgraphState
     ) -> dict[str, bool]:
         success = await execute_trial_experiment(
             github_repository=state["github_repository_info"],
-            experiment_iteration=state["experiment_iteration"],
             runner_type=cast(RunnerType, self.runner_type),
             research_session=state["research_session"],
         )
@@ -134,7 +122,6 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
             trial_experiment_results,
         ) = await retrieve_trial_experiment_artifacts(
             github_repository=state["github_repository_info"],
-            experiment_iteration=state["experiment_iteration"],
             research_session=state["research_session"],
         )
         return {
@@ -180,7 +167,6 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
     ) -> dict[str, bool]:
         success = await execute_full_experiments(
             github_repository=state["github_repository_info"],
-            experiment_iteration=state["experiment_iteration"],
             runner_type=cast(RunnerType, self.runner_type),
             research_session=state["research_session"],
         )
@@ -200,7 +186,6 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(ExecutorSubgraphState)
 
-        graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node(
             "execute_trial_experiment", self._execute_trial_experiment
         )
@@ -216,8 +201,7 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
             "execute_full_experiments", self._execute_full_experiments
         )
 
-        graph_builder.add_edge(START, "initialize")
-        graph_builder.add_edge("initialize", "execute_trial_experiment")
+        graph_builder.add_edge(START, "execute_trial_experiment")
         graph_builder.add_edge(
             "execute_trial_experiment", "retrieve_trial_experiment_artifacts"
         )
