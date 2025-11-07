@@ -10,25 +10,26 @@ def generate_note(
     reference_research_study_list: list[ResearchStudy],
     references_bib: str,
 ) -> str:
-    all_image_files = []
-    run_results = []
-    for run in research_session.current_iteration.experiment_runs:
-        if run.results and run.results.figures:
-            all_image_files.extend(run.results.figures)
+    if not (best_iter := research_session.best_iteration):
+        return ""
 
-        if run.results and run.results.metrics_data:
-            run_results.append(
-                f"- **{run.run_id}** (Method: {run.method_name}, "
-                f"Model: {run.model_name or 'N/A'}, "
-                f"Dataset: {run.dataset_name or 'N/A'})\n  {run.results.metrics_data}"
-            )
-    if (
-        research_session.current_iteration.experimental_analysis
-        and research_session.current_iteration.experimental_analysis.comparison_figures
-    ):
-        all_image_files.extend(
-            research_session.current_iteration.experimental_analysis.comparison_figures
-        )
+    image_files = [
+        fig
+        for run in best_iter.experiment_runs or []
+        for fig in getattr(run.results, "figures", []) or []
+    ]
+
+    run_results = [
+        f"- **{run.run_id}** (Method: {run.method_name}, "
+        f"Model: {run.model_name or 'N/A'}, Dataset: {run.dataset_name or 'N/A'})\n  "
+        f"{getattr(run.results, 'metrics_data', '')}"
+        for run in best_iter.experiment_runs or []
+        if getattr(run.results, "metrics_data", None)
+    ]
+
+    image_files.extend(
+        getattr(best_iter.experimental_analysis, "comparison_figures", []) or []
+    )
 
     template = Template(
         """\
@@ -73,22 +74,19 @@ def generate_note(
 {% endfor %}
 
 ## 8. BibTeX References
-{{ references_bib }}""".strip()
+{{ references_bib }}"""
     )
 
+    exp_analysis = getattr(best_iter, "experimental_analysis", None)
+    exp_design = getattr(best_iter, "experimental_design", None)
+
     return template.render(
-        method=research_session.current_iteration.method or "",
-        experimental_design_summary=research_session.current_iteration.experimental_design.experiment_summary
-        if research_session.current_iteration.experimental_design
-        else "",
+        method=best_iter.method or "",
+        experimental_design_summary=getattr(exp_design, "experiment_summary", ""),
         run_results=run_results,
-        aggregated_metrics=research_session.current_iteration.experimental_analysis.aggregated_metrics
-        if research_session.current_iteration.experimental_analysis
-        else "",
-        analysis_report=research_session.current_iteration.experimental_analysis.analysis_report
-        if research_session.current_iteration.experimental_analysis
-        else "",
-        image_files=all_image_files,
+        aggregated_metrics=getattr(exp_analysis, "aggregated_metrics", ""),
+        analysis_report=getattr(exp_analysis, "analysis_report", ""),
+        image_files=image_files,
         main_references=[
             {"title": rs.title, "abstract": rs.abstract}
             for rs in research_study_list

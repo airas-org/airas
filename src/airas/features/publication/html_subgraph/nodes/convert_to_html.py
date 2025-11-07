@@ -33,14 +33,19 @@ def convert_to_html(
 ) -> str:
     client = llm_facade_provider(llm_name=llm_name)
 
-    # Extract image files from research_session
-    image_file_name_list = []
-    for run in research_session.current_iteration.experiment_runs:
-        if run.results and run.results.figures:
-            image_file_name_list.extend(run.results.figures)
+    image_file_name_list: list[str] = []
+
+    if not (best_iter := research_session.best_iteration):
+        return ""
 
     image_file_name_list.extend(
-        research_session.current_iteration.experimental_analysis.comparison_figures
+        fig
+        for run in best_iter.experiment_runs or []
+        for fig in getattr(run.results, "figures", []) or []
+    )
+
+    image_file_name_list.extend(
+        getattr(best_iter.experimental_analysis, "comparison_figures", []) or []
     )
 
     data = {
