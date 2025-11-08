@@ -14,7 +14,7 @@ class GenerateQueriesSubgraphConfig(BaseModel):
 
 class GetPaperTitlesFromDBSubgraphConfig(BaseModel):
     max_results_per_query: int = 2  # 論文検索時の各サブクエリに対する論文数
-    semantic_search: bool = True  # QDRANRの意味検索をつ買う
+    semantic_search: bool = False  # QDRANTの意味検索を使用
 
 
 class RetrievePaperContentSubgraphConfig(BaseModel):
@@ -25,10 +25,10 @@ class ExtractReferenceTitlesSubgraphConfig(BaseModel):
     num_reference_paper: int = 2  # 論文作成時に追加で参照する論文数
 
 
-class CreateMethodSubgraphV2Config(BaseModel):
-    method_refinement_rounds: int = 2  # 新規手法の改良回数
+class CreateHypothesisSubgraphConfig(BaseModel):
+    refinement_rounds: int = 2  # 新規仮説の改良回数
     num_retrieve_related_papers: int = (
-        5  # 新規手法作成時に新規性を確認するのに取得する論文数
+        5  # 新規仮説作成時に新規性を確認するのに取得する論文数
     )
 
 
@@ -51,16 +51,16 @@ class CreateCodeSubgraphConfig(BaseModel):
     max_code_validations: int = 10  # 実験コードの最大改善回数
 
 
-class EvaluateExperimentalConsistencySubgraphConfig(BaseModel):
-    consistency_score_threshold: int = 1  # 実験に一貫性スコア（1-10）
-
-
 class CreateBibfileSubgraphConfig(BaseModel):
     max_filtered_references: int = 20  # 論文中で引用する参考文献の最大数
 
 
 class WriterSubgraphConfig(BaseModel):
     writing_refinement_rounds: int = 2  # 論文の推敲回数
+
+
+class AnalyticSubgraphConfig(BaseModel):
+    max_method_iterations: int = 1  # 手法のイテレーション最大回数
 
 
 class WandbConfig(BaseModel):
@@ -90,10 +90,13 @@ class LLMMappingConfig(BaseModel):
     # ExtractReferenceTitlesSubgraph
     extract_reference_titles: str = "gemini-2.5-flash-lite-preview-06-17"
 
-    # CreateMethodSubgraphV2
+    # CreateHypothesisSubgraph
     generate_idea_and_research_summary: str = "o3-2025-04-16"
     evaluate_novelty_and_significance: str = "o3-2025-04-16"
     refine_idea_and_research_summary: str = "o3-2025-04-16"
+
+    # CreateMethodSubgraph
+    improve_method: str = "o3-2025-04-16"
 
     # CreateExperimentalDesignSubgraph
     generate_experiment_design: str = "o3-2025-04-16"
@@ -109,6 +112,7 @@ class LLMMappingConfig(BaseModel):
 
     # AnalyticSubgraph
     analytic_node: str = "o3-2025-04-16"
+    evaluate_method: str = "o3-2025-04-16"
 
     # CreateBibfileSubgraph
     filter_references: str = "gemini-2.5-flash"
@@ -116,9 +120,6 @@ class LLMMappingConfig(BaseModel):
     # WriterSubgraph
     write_paper: str = "gpt-5-2025-08-07"
     refine_paper: str = "o3-2025-04-16"
-
-    # ReviewPaperSubgraph
-    review_paper: str = "o3-2025-04-16"
 
     # LatexSubgraph
     convert_to_latex: str = "gpt-5-2025-08-07"
@@ -130,11 +131,14 @@ class LLMMappingConfig(BaseModel):
 class Settings(BaseSettings):
     profile: Literal["test", "prod"] = "test"
 
+    # 手法イテレーション回数
+    method_iteration_attempts: int = 3
+
     # LaTeX設定
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024"
 
     # 実行基盤
-    runner_type: RunnerType = "A100_80GM×8"
+    runner_type: RunnerType = "gpu-runner"
     # TODO: From the perspective of research consistency,
     # we should probably not have ClaudeCode make changes to HuggingFace resources.
     # This change includes prompt modifications in `run_experiment_with_claude_code.yml``.
@@ -151,7 +155,7 @@ class Settings(BaseSettings):
     extract_reference_titles: ExtractReferenceTitlesSubgraphConfig = (
         ExtractReferenceTitlesSubgraphConfig()
     )
-    create_method: CreateMethodSubgraphV2Config = CreateMethodSubgraphV2Config()
+    create_hypothesis: CreateHypothesisSubgraphConfig = CreateHypothesisSubgraphConfig()
     create_experimental_design: CreateExperimentalDesignSubgraphConfig = (
         CreateExperimentalDesignSubgraphConfig()
     )
@@ -159,11 +163,9 @@ class Settings(BaseSettings):
         RetrieveHuggingFaceSubgraphConfig()
     )
     create_code: CreateCodeSubgraphConfig = CreateCodeSubgraphConfig()
-    evaluate_experimental_consistency: EvaluateExperimentalConsistencySubgraphConfig = (
-        EvaluateExperimentalConsistencySubgraphConfig()
-    )
     create_bibfile: CreateBibfileSubgraphConfig = CreateBibfileSubgraphConfig()
     writer: WriterSubgraphConfig = WriterSubgraphConfig()
+    analytic: AnalyticSubgraphConfig = AnalyticSubgraphConfig()
     wandb: WandbConfig = WandbConfig()
 
     # LLMの設定
@@ -171,14 +173,15 @@ class Settings(BaseSettings):
 
     def apply_profile_overrides(self) -> Self:
         self.wandb.entity = "gengaru617-personal"
-        self.wandb.project = "251023-test"
+        self.wandb.project = "251106-test"
 
         if self.profile == "test":
-            self.generate_queries.n_queries = 1
+            self.method_iteration_attempts = 1
+            self.generate_queries.n_queries = 5
             self.get_paper_titles_from_db.max_results_per_query = 2
             self.extract_reference_titles.num_reference_paper = 1
-            self.create_method.num_retrieve_related_papers = 1
-            self.create_method.method_refinement_rounds = 0
+            self.create_hypothesis.num_retrieve_related_papers = 0
+            self.create_hypothesis.refinement_rounds = 0
             self.create_experimental_design.num_models_to_use = 1
             self.create_experimental_design.num_datasets_to_use = 1
             self.create_experimental_design.num_comparative_methods = 1
@@ -186,16 +189,17 @@ class Settings(BaseSettings):
             self.retrieve_hugging_face.max_models = 1
             self.retrieve_hugging_face.max_datasets = 1
             self.create_code.max_code_validations = 10
-            # self.evaluate_experimental_consistency.consistency_score_threshold = 1
             self.create_bibfile.max_filtered_references = 2
             self.writer.writing_refinement_rounds = 1
+            self.analytic.max_method_iterations = 1
         elif self.profile == "prod":
             # 本番はリッチに
+            self.method_iteration_attempts = 3
             self.generate_queries.n_queries = 5
             self.get_paper_titles_from_db.max_results_per_query = 5
             self.extract_reference_titles.num_reference_paper = 20
-            self.create_method.num_retrieve_related_papers = 5
-            self.create_method.method_refinement_rounds = 5
+            self.create_hypothesis.num_retrieve_related_papers = 5
+            self.create_hypothesis.refinement_rounds = 5
             self.create_experimental_design.num_models_to_use = 1
             self.create_experimental_design.num_datasets_to_use = 1
             self.create_experimental_design.num_comparative_methods = 1
@@ -203,7 +207,7 @@ class Settings(BaseSettings):
             self.retrieve_hugging_face.max_models = 3
             self.retrieve_hugging_face.max_datasets = 3
             self.create_code.max_code_validations = 10
-            # self.evaluate_experimental_consistency.consistency_score_threshold = 1
             self.create_bibfile.max_filtered_references = 15
             self.writer.writing_refinement_rounds = 3
+            self.analytic.max_method_iterations = 1
         return self

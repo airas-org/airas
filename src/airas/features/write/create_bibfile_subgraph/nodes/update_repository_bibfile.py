@@ -1,6 +1,9 @@
 import base64
 import logging
 
+from dependency_injector.wiring import Provide, inject
+
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient, GithubClientFatalError
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
@@ -18,14 +21,13 @@ def _merge_bibtex_content(existing: str, new: str) -> str:
     return existing.strip() + "\n\n" + new.strip()
 
 
+@inject
 def update_repository_bibfile(
     github_repository_info: GitHubRepositoryInfo,
     references_bib: str,
     latex_template_name: LATEX_TEMPLATE_NAME,
-    client: GithubClient | None = None,
+    github_client: GithubClient = Provide[SyncContainer.github_client],
 ) -> bool:
-    client = GithubClient() or client
-
     github_owner = github_repository_info.github_owner
     repository_name = github_repository_info.repository_name
     branch_name = github_repository_info.branch_name
@@ -35,7 +37,7 @@ def update_repository_bibfile(
         f"Updating {bibfile_path} in {github_owner}/{repository_name}@{branch_name}"
     )
     try:
-        existing_content = client.get_repository_content(
+        existing_content = github_client.get_repository_content(
             github_owner=github_owner,
             repository_name=repository_name,
             file_path=bibfile_path,
@@ -59,7 +61,7 @@ def update_repository_bibfile(
     merged_bib = _merge_bibtex_content(existing_bib, references_bib)
 
     commit_message = f"Update {bibfile_path} with new references"
-    success = client.commit_file_bytes(
+    success = github_client.commit_file_bytes(
         github_owner=github_owner,
         repository_name=repository_name,
         branch_name=branch_name,

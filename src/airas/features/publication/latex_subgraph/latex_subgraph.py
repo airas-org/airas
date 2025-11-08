@@ -33,7 +33,6 @@ from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
 from airas.types.paper import PaperContent
-from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -51,7 +50,6 @@ class LatexSubgraphInputState(TypedDict):
     github_repository_info: GitHubRepositoryInfo
     references_bib: str
     paper_content: PaperContent
-    new_method: ResearchHypothesis
 
 
 class LatexSubgraphHiddenState(TypedDict):

@@ -6,14 +6,17 @@ Generate individual YAML configuration files for each experiment run. These conf
 
 # Input Information
 
+## Hypothesis
+{{ research_session.hypothesis }}
+
 ## Research Method
-{{ new_method.method }}
+{{ research_session.hypothesis.method }}
 
 ## Experimental Design
-{{ new_method.experimental_design }}
+{{ research_session.current_iteration.experimental_design }}
 
 ## Experiment Runs
-{% for run in new_method.experiment_runs %}
+{% for run in research_session.current_iteration.experiment_runs %}
 - Run ID: {{ run.run_id }}
   Method: {{ run.method_name }}
   Model: {{ run.model_name }}

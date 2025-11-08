@@ -1,15 +1,18 @@
 import json
 from typing import Annotated
 
+from dependency_injector import providers
+from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 from pydantic import BaseModel, Field
 
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_session import ResearchSession
 from airas.types.research_study import ResearchStudy
 from airas.utils.save_prompt import save_io_on_github
 
@@ -21,22 +24,24 @@ class FilteredReferencesOutput(BaseModel):
     ]
 
 
+@inject
 def filter_references(
     llm_name: LLM_MODEL,
     prompt_template: str,
     research_study_list: list[ResearchStudy],
     reference_study_list: list[ResearchStudy],
-    new_method: ResearchHypothesis,
+    research_session: ResearchSession,
     github_repository_info: GitHubRepositoryInfo,
     max_results: int = 30,
-    client: LLMFacadeClient | None = None,
+    llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
+        SyncContainer.llm_facade_provider
+    ],
 ) -> list[ResearchStudy]:
-    client = client or LLMFacadeClient(llm_name=llm_name)
-
+    client = llm_facade_provider(llm_name=llm_name)
     data = {
         "research_study_list": [study.model_dump() for study in research_study_list],
         "reference_study_list": [study.model_dump() for study in reference_study_list],
-        "research_hypothesis": new_method.model_dump(),
+        "research_session": research_session,
         "max_results": max_results,
     }
 

@@ -21,31 +21,28 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "summarize_paper": BASE_MODEL,
 
     # --- features/create ---
-    # CreateCodeSubgraph
-    "generate_run_config": BASE_MODEL,
-    "generate_experiment_code": BASE_MODEL,
-    "validate_experiment_code": BASE_MODEL,
-    # CreateExperimentalDesignSubgraph
-    "generate_experiment_design": BASE_MODEL,
-    # CreateMethodSubgraph
-    "idea_generator": BASE_MODEL,
-    "refine_idea": BASE_MODEL,
-    "research_value_judgement": BASE_MODEL,
-    # CreateMethodSubgraphV2
+    # CreateHypothesisSubgraph
     "generate_idea_and_research_summary": BASE_MODEL,
     "evaluate_novelty_and_significance": BASE_MODEL,
     "refine_idea_and_research_summary": BASE_MODEL,
     "search_arxiv_id_from_title": BASE_MODEL,
-    # FixCodeSubgraph
-    "fix_code": BASE_MODEL,
+    # CreateMethodSubgraph
+    "improve_method": BASE_MODEL,
+    # CreateExperimentalDesignSubgraph
+    "generate_experiment_design": BASE_MODEL,
+    # CreateCodeSubgraph
+    "generate_run_config": BASE_MODEL,
+    "generate_experiment_code": BASE_MODEL,
+    "validate_experiment_code": BASE_MODEL,
 
     # --- features/analysis ---
-    # GitHubActionsExecutorSubgraph
+    # ExecuteExperimentSubgraph
     "extract_required_info": BASE_MODEL,
 
     # --- features/analysis ---
     # AnalyticSubgraph
     "analytic_node": BASE_MODEL,
+    "evaluate_method": BASE_MODEL,
 
     # --- features/write ---
     # CreateBibfileSubgraph

@@ -13,7 +13,7 @@ from airas.services.api_client.llm_client.openai_client import (
     OpenAIClient,
 )
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_session import ResearchSession
 from airas.utils.save_prompt import save_io_on_github
 
 logger = logging.getLogger(__name__)
@@ -36,23 +36,24 @@ class RunConfigListOutput(BaseModel):
 
 def generate_run_config(
     llm_name: OPENAI_MODEL,
-    new_method: ResearchHypothesis,
+    research_session: ResearchSession,
     runner_type: RunnerType,
     github_repository_info: GitHubRepositoryInfo,
-) -> ResearchHypothesis:
+) -> list[RunConfigOutput]:
     client = OpenAIClient(reasoning_effort="high")
     env = Environment()
 
     template = env.from_string(generate_run_config_prompt)
 
     data = {
-        "new_method": new_method.model_dump(),
+        "research_session": research_session,
         "runner_type_prompt": runner_info_dict[runner_type]["prompt"],
     }
     messages = template.render(data)
 
+    experiment_runs = research_session.current_iteration.experiment_runs
     logger.info(
-        f"Generating run configs for {len(new_method.experiment_runs)} experiment runs using LLM..."
+        f"Generating run configs for {len(experiment_runs)} experiment runs using LLM..."
     )
 
     output, _ = client.structured_outputs(
@@ -75,32 +76,15 @@ def generate_run_config(
 
     output_model = RunConfigListOutput(**output)
 
-    try:
-        if len(output_model.run_configs) != len(new_method.experiment_runs):
-            logger.error(
-                f"Generated {len(output_model.run_configs)} configs but have {len(new_method.experiment_runs)} experiment runs"
-            )
-            raise ValueError(
-                f"Mismatch: {len(output_model.run_configs)} configs vs {len(new_method.experiment_runs)} runs"
-            )
+    experiment_runs = research_session.current_iteration.experiment_runs
 
-        config_dict = {
-            config.run_id: config.run_config_yaml for config in output_model.run_configs
-        }
+    if len(output_model.run_configs) != len(experiment_runs):
+        logger.error(
+            f"Generated {len(output_model.run_configs)} configs but have {len(experiment_runs)} experiment runs"
+        )
+        raise ValueError(
+            f"Mismatch: {len(output_model.run_configs)} configs vs {len(experiment_runs)} runs"
+        )
 
-        for exp_run in new_method.experiment_runs:
-            if exp_run.run_id not in config_dict:
-                logger.error(f"No config found for run_id: {exp_run.run_id}")
-                raise ValueError(f"Missing config for run_id: {exp_run.run_id}")
-
-            exp_run.run_config = config_dict[exp_run.run_id]
-            logger.info(f"Assigned run_config to {exp_run.run_id}")
-
-    except Exception as e:
-        logger.error(f"Failed to parse run configs: {e}")
-        raise
-
-    logger.info(
-        f"Successfully generated run configs for all {len(new_method.experiment_runs)} experiments"
-    )
-    return new_method
+    logger.info(f"Successfully generated {len(output_model.run_configs)} run configs")
+    return output_model.run_configs

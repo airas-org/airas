@@ -1,13 +1,12 @@
 import json
-from logging import getLogger
 
 from dependency_injector import providers
 from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.features.analysis.analytic_subgraph.prompt.analytic_node_prompt import (
-    analytic_node_prompt,
+from airas.features.create.create_method_subgraph.prompts.improve_method_prompt import (
+    improve_method_prompt,
 )
 from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
@@ -18,43 +17,44 @@ from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_session import ResearchSession
 from airas.utils.save_prompt import save_io_on_github
 
-logger = getLogger(__name__)
 
-
-class LLMOutput(BaseModel):
-    analysis_report: str
+class ImprovedMethod(BaseModel):
+    improved_method: str
 
 
 @inject
-def analytic_node(
-    llm_name: LLM_MODEL,
+def improve_method(
     research_session: ResearchSession,
+    llm_name: LLM_MODEL,
     github_repository_info: GitHubRepositoryInfo,
     llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
         SyncContainer.llm_facade_provider
     ],
 ) -> str:
-    if not research_session.current_iteration:
-        logger.error("No current_iteration found in research_session")
-        return ""
-
     client = llm_facade_provider(llm_name=llm_name)
-
     env = Environment()
-    template = env.from_string(analytic_node_prompt)
 
-    messages = template.render({"research_session": research_session})
-    output, cost = client.structured_outputs(message=messages, data_model=LLMOutput)
+    template = env.from_string(improve_method_prompt)
+    data = {
+        "research_session": research_session,
+    }
+    messages = template.render(data)
+
+    output, cost = client.structured_outputs(
+        message=messages,
+        data_model=ImprovedMethod,
+    )
+
     if output is None:
-        raise ValueError("No response from LLM in analytic_node.")
+        raise ValueError("No response from LLM in improve_method.")
 
     save_io_on_github(
         github_repository_info=github_repository_info,
         input=messages,
         output=json.dumps(output, ensure_ascii=False, indent=4),
-        subgraph_name="analytic_subgraph",
-        node_name="analytic_node",
+        subgraph_name="create_method_subgraph",
+        node_name="improve_method",
         llm_name=llm_name,
     )
 
-    return output["analysis_report"]
+    return output["improved_method"]
