@@ -3,9 +3,9 @@ from pydantic import BaseModel
 from airas.types.research_study import ResearchStudy
 
 
-class GetPaperTitleRequest(BaseModel):
+class GetPaperTitleRequestBody(BaseModel):
     queries: list[str]
 
 
-class GetPaperTitleResponse(BaseModel):
+class GetPaperTitleResponseBody(BaseModel):
     research_study_list: list[ResearchStudy]
