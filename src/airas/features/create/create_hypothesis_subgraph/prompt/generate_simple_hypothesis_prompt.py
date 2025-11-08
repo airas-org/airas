@@ -1,4 +1,4 @@
-generate_simple_method_prompt = """\
+generate_simple_hypothesis_prompt = """\
 You are a researcher in machine learning. Based on the instructions below, please generate a simple new research method with minimal modifications to existing approaches.
 
 # Instructions:

@@ -15,14 +15,15 @@ You are a machine learning researcher tasked with selecting the most relevant mo
 Select up to {{ max_models }} most relevant models and up to {{ max_datasets }} most relevant datasets. For each selected resource, provide only:
 - The exact "Model Name" and "Dataset Name" from the search results (this will be used to retrieve the complete resource information)
 
+# Hypothesis
+{{ research_session.hypothesis }}
+
 # Current Research Method
-{{ new_method.method }}
+{{ research_session.current_iteration.method }}
 
-# Experiment Strategy
-{{ new_method.experimental_design.experiment_strategy }}
-
-# Experiment Details
-{{ new_method.experimental_design.experiment_details }}
+# Experimental Design
+- Summary: {{ research_session.current_iteration.experimental_design.experiment_summary }}
+- Proposed Method: {{ research_session.current_iteration.experimental_design.proposed_method }}
 
 # HuggingFace Search Results
 

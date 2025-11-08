@@ -1,15 +1,18 @@
-import asyncio
 import base64
 import logging
 
+from dependency_injector.wiring import Provide, inject
+
+from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
-from airas.types.research_hypothesis import (
+from airas.types.research_iteration import (
     ExperimentalAnalysis,
     ExperimentalResults,
     ExperimentCode,
-    ResearchHypothesis,
+    ExperimentRun,
 )
+from airas.types.research_session import ResearchSession
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +52,9 @@ def _retrieve_experiment_code(
     github_owner: str,
     repository_name: str,
     branch_name: str,
-    new_method: ResearchHypothesis,
+    experiment_runs: list[ExperimentRun],
 ) -> ExperimentCode:
     dummy_code = ExperimentCode(**{field: "" for field in ExperimentCode.model_fields})
-    experiment_runs = new_method.experiment_runs if new_method else None
     file_dict = dummy_code.to_file_dict(experiment_runs=experiment_runs)
 
     code_contents = {}
@@ -75,13 +77,13 @@ def _retrieve_experiment_code(
     field_values = {
         field_name: code_contents.get(file_path, "")
         for field_name, file_path in zip(
-            ExperimentCode.model_fields.keys(), file_dict.values(), strict=False
+            ExperimentCode.model_fields.keys(), file_dict.keys(), strict=False
         )
     }
 
     # Store run configs in ExperimentRun.run_config
-    for exp_run in new_method.experiment_runs:
-        run_config_path = f"config/run/{exp_run.run_id}.yaml"
+    for exp_run in experiment_runs:
+        run_config_path = f"config/runs/{exp_run.run_id}.yaml"
         if run_config_path in code_contents:
             exp_run.run_config = code_contents[run_config_path]
 
@@ -95,7 +97,7 @@ async def _retrieve_artifacts_from_branch(
     branch_name: str,
     experiment_iteration: int,
     include_code: bool = False,
-    new_method: ResearchHypothesis | None = None,
+    experiment_runs: list[ExperimentRun] | None = None,
 ) -> tuple[str, str, list[str], ExperimentCode | None]:
     iteration_path = f".research/iteration{experiment_iteration}"
     stdout_file_path = f"{iteration_path}/stdout.txt"
@@ -144,22 +146,28 @@ async def _retrieve_artifacts_from_branch(
 
     # Retrieve experiment code if requested
     experiment_code = None
-    if include_code and new_method:
+    if include_code and experiment_runs:
         experiment_code = _retrieve_experiment_code(
-            client, github_owner, repository_name, branch_name, new_method
+            client, github_owner, repository_name, branch_name, experiment_runs
         )
 
     logger.info(f"Successfully retrieved artifacts from branch {branch_name}")
     return stdout_text_data, stderr_text_data, image_file_name_list, experiment_code
 
 
-async def _retrieve_trial_experiment_artifacts_async(
+@inject
+async def retrieve_trial_experiment_artifacts(
     github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
-    new_method: ResearchHypothesis,
-    github_client: GithubClient | None = None,
-) -> tuple[ResearchHypothesis, ExperimentalResults]:
-    client = github_client or GithubClient()
+    research_session: ResearchSession,
+    github_client: GithubClient = Provide[SyncContainer.github_client],
+) -> tuple[ResearchSession, ExperimentalResults]:
+    if (
+        not research_session.current_iteration
+        or not research_session.current_iteration.experiment_runs
+    ):
+        logger.error("No experiment runs found in current_iteration")
+        return research_session, ExperimentalResults()
 
     (
         stdout_text,
@@ -167,16 +175,18 @@ async def _retrieve_trial_experiment_artifacts_async(
         image_files,
         experiment_code,
     ) = await _retrieve_artifacts_from_branch(
-        client,
+        github_client,
         github_repository.github_owner,
         github_repository.repository_name,
         github_repository.branch_name,
         experiment_iteration,
         include_code=True,
-        new_method=new_method,
+        experiment_runs=research_session.current_iteration.experiment_runs,
     )
 
-    new_method.experimental_design.experiment_code = experiment_code
+    research_session.current_iteration.experimental_design.experiment_code = (
+        experiment_code
+    )
     logger.info(f"Updated experiment_code from branch {github_repository.branch_name}")
 
     trial_experiment_results = ExperimentalResults(
@@ -188,26 +198,26 @@ async def _retrieve_trial_experiment_artifacts_async(
     logger.info(
         f"Successfully retrieved trial experiment artifacts from branch {github_repository.branch_name}"
     )
-    return new_method, trial_experiment_results
+    return research_session, trial_experiment_results
 
 
-async def _retrieve_evaluation_artifacts_async(
+@inject
+async def retrieve_evaluation_artifacts(
     github_repository: GitHubRepositoryInfo,
     experiment_iteration: int,
-    new_method: ResearchHypothesis,
-    github_client: GithubClient | None = None,
-) -> ResearchHypothesis:
-    client = github_client or GithubClient()
+    research_session: ResearchSession,
+    github_client: GithubClient = Provide[SyncContainer.github_client],
+) -> ResearchSession:
     iteration_path = f".research/iteration{experiment_iteration}"
 
-    for run in new_method.experiment_runs:
+    for run in research_session.current_iteration.experiment_runs:
         run_dir = f"{iteration_path}/{run.run_id}"
         if run.results is None:
             run.results = ExperimentalResults()
 
         try:
             metrics_file = _get_single_file_content(
-                client,
+                github_client,
                 github_repository.github_owner,
                 github_repository.repository_name,
                 f"{run_dir}/metrics.json",
@@ -223,7 +233,7 @@ async def _retrieve_evaluation_artifacts_async(
 
         try:
             figures_list = _get_single_file_content(
-                client,
+                github_client,
                 github_repository.github_owner,
                 github_repository.repository_name,
                 run_dir,
@@ -241,7 +251,7 @@ async def _retrieve_evaluation_artifacts_async(
     aggregated_metrics = ""
     try:
         aggregated_file = _get_single_file_content(
-            client,
+            github_client,
             github_repository.github_owner,
             github_repository.repository_name,
             f"{comparison_dir}/aggregated_metrics.json",
@@ -256,7 +266,7 @@ async def _retrieve_evaluation_artifacts_async(
     comparison_figures: list[str] = []
     try:
         comparison_files = _get_single_file_content(
-            client,
+            github_client,
             github_repository.github_owner,
             github_repository.repository_name,
             comparison_dir,
@@ -268,45 +278,19 @@ async def _retrieve_evaluation_artifacts_async(
     except Exception as e:
         logger.warning(f"Could not retrieve comparison figures: {e}")
 
-    if not new_method.experimental_analysis:
-        new_method.experimental_analysis = ExperimentalAnalysis()
+    if not research_session.current_iteration.experimental_analysis:
+        research_session.current_iteration.experimental_analysis = (
+            ExperimentalAnalysis()
+        )
 
-    new_method.experimental_analysis.aggregated_metrics = aggregated_metrics
-    new_method.experimental_analysis.comparison_figures = comparison_figures
+    research_session.current_iteration.experimental_analysis.aggregated_metrics = (
+        aggregated_metrics
+    )
+    research_session.current_iteration.experimental_analysis.comparison_figures = (
+        comparison_figures
+    )
 
     logger.info(
         f"Successfully retrieved evaluation artifacts from branch {github_repository.branch_name}"
     )
-    return new_method
-
-
-def retrieve_trial_experiment_artifacts(
-    github_repository: GitHubRepositoryInfo,
-    experiment_iteration: int,
-    new_method: ResearchHypothesis,
-    github_client: GithubClient | None = None,
-) -> tuple[ResearchHypothesis, ExperimentalResults]:
-    return asyncio.run(
-        _retrieve_trial_experiment_artifacts_async(
-            github_repository,
-            experiment_iteration,
-            new_method,
-            github_client,
-        )
-    )
-
-
-def retrieve_evaluation_artifacts(
-    github_repository: GitHubRepositoryInfo,
-    experiment_iteration: int,
-    new_method: ResearchHypothesis,
-    github_client: GithubClient | None = None,
-) -> ResearchHypothesis:
-    return asyncio.run(
-        _retrieve_evaluation_artifacts_async(
-            github_repository,
-            experiment_iteration,
-            new_method,
-            github_client,
-        )
-    )
+    return research_session

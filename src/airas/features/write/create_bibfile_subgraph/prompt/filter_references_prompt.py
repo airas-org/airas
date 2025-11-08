@@ -14,8 +14,8 @@ Study {{ loop.index }}:
 {% endif %}
 {% endfor %}
 
-**Research Hypothesis:**
-{{ research_hypothesis }}
+**Research Hypothesis and Research Iterations:**
+{{ research_session }}
 
 
 **Reference Study List (Candidate Papers for Citation):**

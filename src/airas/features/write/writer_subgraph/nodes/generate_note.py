@@ -1,29 +1,34 @@
 from jinja2 import Template
 
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_session import ResearchSession
 from airas.types.research_study import ResearchStudy
 
 
 def generate_note(
-    new_method: ResearchHypothesis,
+    research_session: ResearchSession,
     research_study_list: list[ResearchStudy],
     reference_research_study_list: list[ResearchStudy],
     references_bib: str,
 ) -> str:
     all_image_files = []
     run_results = []
-    for run in new_method.experiment_runs:
-        if run.results.figures:
+    for run in research_session.current_iteration.experiment_runs:
+        if run.results and run.results.figures:
             all_image_files.extend(run.results.figures)
 
-        if run.results.metrics_data:
+        if run.results and run.results.metrics_data:
             run_results.append(
                 f"- **{run.run_id}** (Method: {run.method_name}, "
                 f"Model: {run.model_name or 'N/A'}, "
                 f"Dataset: {run.dataset_name or 'N/A'})\n  {run.results.metrics_data}"
             )
-    if new_method.experimental_analysis.comparison_figures:
-        all_image_files.extend(new_method.experimental_analysis.comparison_figures)
+    if (
+        research_session.current_iteration.experimental_analysis
+        and research_session.current_iteration.experimental_analysis.comparison_figures
+    ):
+        all_image_files.extend(
+            research_session.current_iteration.experimental_analysis.comparison_figures
+        )
 
     template = Template(
         """\
@@ -72,11 +77,17 @@ def generate_note(
     )
 
     return template.render(
-        method=new_method.method,
-        experimental_design_summary=new_method.experimental_design.experiment_summary,
+        method=research_session.current_iteration.method or "",
+        experimental_design_summary=research_session.current_iteration.experimental_design.experiment_summary
+        if research_session.current_iteration.experimental_design
+        else "",
         run_results=run_results,
-        aggregated_metrics=new_method.experimental_analysis.aggregated_metrics,
-        analysis_report=new_method.experimental_analysis.analysis_report,
+        aggregated_metrics=research_session.current_iteration.experimental_analysis.aggregated_metrics
+        if research_session.current_iteration.experimental_analysis
+        else "",
+        analysis_report=research_session.current_iteration.experimental_analysis.analysis_report
+        if research_session.current_iteration.experimental_analysis
+        else "",
         image_files=all_image_files,
         main_references=[
             {"title": rs.title, "abstract": rs.abstract}

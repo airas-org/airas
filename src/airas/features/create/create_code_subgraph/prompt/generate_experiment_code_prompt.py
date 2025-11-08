@@ -8,12 +8,12 @@ Based on the research method in # Current Research Method and experimental desig
 ## Core Requirements
 - COMPLETE IMPLEMENTATION: Every component must be fully functional, production-ready, publication-worthy code. No "omitted for brevity", no "simplified version", no TODO, PLACEHOLDER, pass, or ...
 - PYTORCH EXCLUSIVELY: Use PyTorch as the deep learning framework
-- HYDRA INTEGRATION: Use Hydra to manage all experiment configurations from `config/run/*.yaml` files. Use `config_path="../config"` in all @hydra.main decorators
+- HYDRA INTEGRATION: Use Hydra to manage all experiment configurations from `config/runs/*.yaml` files. Use `config_path="../config"` in all @hydra.main decorators
 - COMPLETE DATA PIPELINE: Full data loading and preprocessing implementation. Use `.cache/` as the cache directory for all datasets and models (e.g., for HuggingFace, set `cache_dir=".cache/"`)
 - WANDB REQUIRED: WandB is mandatory for metrics logging (except trial_mode validation)
 
 ## Hydra Configuration Structure
-Each run config file (`config/run/{run_id}.yaml`) contains:
+Each run config file (`config/runs/{run_id}.yaml`) contains:
 - run_id: Unique identifier for this run
 - method: The method name (baseline, proposed, ablation, etc.)
 - model: Model-specific parameters (name, architecture details, hyperparameters)
@@ -32,7 +32,7 @@ uv run python -u -m src.main run={run_id} results_dir={path} mode=full
 # Trial mode (validation only, WandB disabled)
 uv run python -u -m src.main run={run_id} results_dir={path} mode=trial
 ```
-- `run`: Experiment run_id (matching a run_id from config/run/*.yaml)
+- `run`: Experiment run_id (matching a run_id from config/runs/*.yaml)
 - `results_dir`: Output directory (passed from GitHub Actions workflow)
 - `mode`: Execution mode (required parameter)
   * `mode=trial`: Lightweight execution for validation (epochs=1, batches limited to 1-2, wandb.mode=disabled, optuna.n_trials=0)
@@ -153,7 +153,7 @@ Generate complete code for these files ONLY. Do not create any additional files 
 **Action Required**: Address this issue in the implementation.
 
 **Previous Code (for reference)**:
-{{ new_method.experimental_design.experiment_code | tojson }}
+{{ research_session.current_iteration.experimental_design.experiment_code.model_dump() | tojson }}
 
 Fix the issues identified above while preserving the correct parts of the implementation.
 {% endif %}
@@ -162,20 +162,23 @@ Fix the issues identified above while preserving the correct parts of the implem
 # Experimental Environment
 {{ runner_type_prompt }}
 
+# Hypothesis
+{{ research_session.hypothesis }}
+
 # Current Research Method
-{{ new_method.method }}
+{{ research_session.current_iteration.method }}
 
 # Experimental Design
-- Summary: {{ new_method.experimental_design.experiment_summary }}
-- Evaluation metrics: {{ new_method.experimental_design.evaluation_metrics }}
+- Summary: {{ research_session.current_iteration.experimental_design.experiment_summary }}
+- Evaluation metrics: {{ research_session.current_iteration.experimental_design.evaluation_metrics }}
 
 # Experiment Runs
-{% for run in new_method.experiment_runs %}
+{% for run in research_session.current_iteration.experiment_runs %}
 - Run ID: {{ run.run_id }}
   Method: {{ run.method_name }}
   Model: {{ run.model_name }}
   Dataset: {{ run.dataset_name }}
-  Config File: config/run/{{ run.run_id }}.yaml
+  Config File: config/runs/{{ run.run_id }}.yaml
   {% if run.run_config %}
   Config Content:
   ```yaml
@@ -185,9 +188,9 @@ Fix the issues identified above while preserving the correct parts of the implem
 {% endfor %}
 
 # External Resources (Use these for implementation)
-{% if new_method.experimental_design.external_resources and new_method.experimental_design.external_resources.hugging_face %}
+{% if research_session.current_iteration.experimental_design.external_resources and research_session.current_iteration.experimental_design.external_resources.hugging_face %}
 **HuggingFace Models:**
-{% for model in new_method.experimental_design.external_resources.hugging_face.models %}
+{% for model in research_session.current_iteration.experimental_design.external_resources.hugging_face.models %}
 - ID: {{ model.id }}
 {% if model.extracted_code %}
 - Code: {{ model.extracted_code }}
@@ -195,7 +198,7 @@ Fix the issues identified above while preserving the correct parts of the implem
 {% endfor %}
 
 **HuggingFace Datasets:**
-{% for dataset in new_method.experimental_design.external_resources.hugging_face.datasets %}
+{% for dataset in research_session.current_iteration.experimental_design.external_resources.hugging_face.datasets %}
 - ID: {{ dataset.id }}
 {% if dataset.extracted_code %}
 - Code: {{ dataset.extracted_code }}

@@ -10,61 +10,64 @@ Your task is to analyze the experimental results and generate a comprehensive an
 4. Reference specific metrics and experimental outcomes
 5. Generate a detailed analysis report
 
-# Proposed Method
-{{ new_method.method }}
+# Hypothesis
+{{ research_session.hypothesis }}
 
-{% if new_method.experimental_design %}
+# Proposed Method
+{{ research_session.current_iteration.method }}
+
+{% if research_session.current_iteration.experimental_design %}
 # Experimental Design
 
 ## Experiment Summary
-{{ new_method.experimental_design.experiment_summary }}
+{{ research_session.current_iteration.experimental_design.experiment_summary }}
 
 ## Evaluation Metrics
-{% for metric in new_method.experimental_design.evaluation_metrics %}
+{% for metric in research_session.current_iteration.experimental_design.evaluation_metrics %}
 - {{ metric }}
 {% endfor %}
 
 ## Proposed Method Details
-{{ new_method.experimental_design.proposed_method }}
+{{ research_session.current_iteration.experimental_design.proposed_method }}
 
 ## Comparative Methods
-{% for method in new_method.experimental_design.comparative_methods %}
+{% for method in research_session.current_iteration.experimental_design.comparative_methods %}
 - {{ method }}
 {% endfor %}
 
-{% if new_method.experimental_design.models_to_use %}
+{% if research_session.current_iteration.experimental_design.models_to_use %}
 ## Models Used
-{% for model in new_method.experimental_design.models_to_use %}
+{% for model in research_session.current_iteration.experimental_design.models_to_use %}
 - {{ model }}
 {% endfor %}
 {% endif %}
 
-{% if new_method.experimental_design.datasets_to_use %}
+{% if research_session.current_iteration.experimental_design.datasets_to_use %}
 ## Datasets Used
-{% for dataset in new_method.experimental_design.datasets_to_use %}
+{% for dataset in research_session.current_iteration.experimental_design.datasets_to_use %}
 - {{ dataset }}
 {% endfor %}
 {% endif %}
 {% endif %}
 
 # Experimental Analysis
-{% if new_method.experimental_analysis %}
-{% if new_method.experimental_analysis.aggregated_metrics %}
+{% if research_session.current_iteration.experimental_analysis %}
+{% if research_session.current_iteration.experimental_analysis.aggregated_metrics %}
 ## Aggregated Metrics
-{{ new_method.experimental_analysis.aggregated_metrics }}
+{{ research_session.current_iteration.experimental_analysis.aggregated_metrics }}
 {% endif %}
 
-{% if new_method.experimental_analysis.comparison_figures %}
+{% if research_session.current_iteration.experimental_analysis.comparison_figures %}
 ## Comparison Figures
-{% for figure in new_method.experimental_analysis.comparison_figures %}
+{% for figure in research_session.current_iteration.experimental_analysis.comparison_figures %}
 - {{ figure }}
 {% endfor %}
 {% endif %}
 {% endif %}
 
 # Experiment Runs and Results
-{% if new_method.experiment_runs %}
-{% for run in new_method.experiment_runs %}
+{% if research_session.current_iteration.experiment_runs %}
+{% for run in research_session.current_iteration.experiment_runs %}
 ## Run: {{ run.run_id }}
 **Method**: {{ run.method_name }}
 {% if run.model_name %}**Model**: {{ run.model_name }}{% endif %}
