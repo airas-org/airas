@@ -4,6 +4,8 @@ import httpx
 import requests
 from dependency_injector import containers, providers
 
+from airas.services.api_client.qdrant_client import QdrantClient
+
 # Workaround for OpenAI SDK lazy initialization issue
 # Initialize AsyncOpenAI.responses at import time to prevent silent failures
 try:
@@ -131,6 +133,9 @@ class SyncContainer(containers.DeclarativeContainer):
         async_session=None,
     )
 
+    # --- Database Client ---
+    qdrant_client: providers.Singleton = providers.Singleton(QdrantClient)
+
 
 class AsyncContainer(containers.DeclarativeContainer):
     # --- HTTP Session ---
@@ -155,6 +160,15 @@ class AsyncContainer(containers.DeclarativeContainer):
         google_genai_client=google_genai_client,
     )
     llm_facade_provider: providers.Delegate = providers.Delegate(llm_facade_client)
+
+    # NOTE: 現状だとインスタンス変数にモデル名を渡しているため、モデルごとにクラスを作る必要があるが、モデル名をメソッドから渡せるように変更する
+    gemini_embedding_001: providers.Factory[LLMFacadeClient] = providers.Factory(
+        LLMFacadeClient,
+        llm_name="gemini-embedding-001",
+        openai_client=openai_client,
+        anthropic_client=anthropic_client,
+        google_genai_client=google_genai_client,
+    )
 
     # --- Code & Experiment Platforms ---
     github_client: providers.Singleton[GithubClient] = providers.Singleton(
