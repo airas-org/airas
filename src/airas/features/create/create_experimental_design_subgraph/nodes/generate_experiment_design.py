@@ -21,10 +21,8 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_iteration import ExperimentalDesign
 from airas.types.research_session import ResearchSession
-from airas.utils.save_prompt import save_io_on_github
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +52,6 @@ def generate_experiment_design(
     num_models_to_use: int,
     num_datasets_to_use: int,
     num_comparative_methods: int,
-    github_repository_info: GitHubRepositoryInfo,
     llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
         SyncContainer.llm_facade_provider
     ],
@@ -84,14 +81,6 @@ def generate_experiment_design(
     )
     if output is None:
         raise ValueError("No response from LLM in generate_experiment_design.")
-    save_io_on_github(
-        github_repository_info=github_repository_info,
-        input=messages,
-        output=json.dumps(output, ensure_ascii=False, indent=4),
-        subgraph_name="create_experimental_design_subgraph",
-        node_name="generate_experiment_design",
-        llm_name=llm_name,
-    )
 
     hyperparameters_dict = {
         hp["name"]: hp["range"] for hp in output["hyperparameters_to_search"]

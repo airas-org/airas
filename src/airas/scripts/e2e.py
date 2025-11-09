@@ -1,10 +1,12 @@
 import logging
 from datetime import datetime
 
-from dependency_injector.wiring import register_loader_containers
+from dependency_injector.wiring import Provide, register_loader_containers
 from tqdm import tqdm
 
 from airas.services.api_client.api_clients_container import (
+    AsyncContainer,
+    SyncContainer,
     async_container,
     sync_container,
 )
@@ -12,6 +14,7 @@ from airas.services.api_client.api_clients_container import (
 # Register import hook before importing features to enable automatic dependency injection
 register_loader_containers(sync_container)
 register_loader_containers(async_container)
+
 
 from airas.features import (  # noqa: E402
     AnalyticSubgraph,
@@ -53,6 +56,8 @@ generate_queries = GenerateQueriesSubgraph(
     n_queries=settings.generate_queries.n_queries,
 )
 get_paper_titles = GetPaperTitlesFromDBSubgraph(
+    qdrant_client=Provide[SyncContainer.qdrant_client],
+    llm_client=Provide[AsyncContainer.llm_facade_client],
     max_results_per_query=settings.get_paper_titles_from_db.max_results_per_query,
     semantic_search=settings.get_paper_titles_from_db.semantic_search,
 )
@@ -87,6 +92,8 @@ retrieve_reference_paper_content = RetrievePaperContentSubgraph(
 )
 
 create_hypothesis = CreateHypothesisSubgraph(
+    qdrant_client=Provide[SyncContainer.qdrant_client],
+    llm_client=Provide[AsyncContainer.llm_facade_client],
     llm_mapping={
         "generate_idea_and_research_summary": settings.llm_mapping.generate_idea_and_research_summary,
         "evaluate_novelty_and_significance": settings.llm_mapping.evaluate_novelty_and_significance,
@@ -328,7 +335,7 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    suffix = "matsuzawa"
+    suffix = "tanaka"
     exec_time = datetime.now().strftime("%Y%m%d-%H%M%S")
     repository_name = f"airas-{exec_time}-{suffix}"
 

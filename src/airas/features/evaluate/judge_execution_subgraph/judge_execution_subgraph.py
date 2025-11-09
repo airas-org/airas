@@ -87,7 +87,6 @@ class JudgeExecutionSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.judge_execution,
             output_text_data=state["new_method"].experimental_results.result,
             error_text_data=state["new_method"].experimental_results.error,
-            github_repository_info=state["github_repository_info"],
         )
         return {
             "is_experiment_successful": is_experiment_successful,

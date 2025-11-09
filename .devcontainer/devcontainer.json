@@ -14,7 +14,8 @@
                 "ms-python.vscode-pylance",
                 "ms-python.debugpy",
                 "ms-python.mypy-type-checker",
-                "charliermarsh.ruff"
+                "charliermarsh.ruff",
+                "humao.rest-client"
 			]
 		},
         "settings" : {
@@ -45,11 +46,31 @@
                         "request": "launch",
                         "program": "${file}",
                         "console": "integratedTerminal",
-                        "justMyCode": false
+                        "env": {
+                            "PYTHONASYNCIODEBUG": "1"
+                        }
+                    },
+                    {
+                        "name": "Python: FastAPI Server",
+                        "type": "debugpy",
+                        "request": "launch",
+                        "python": "${workspaceFolder}/.venv/bin/python",
+                        "module": "uvicorn",
+                        "args": [
+                            "api.main:app",
+                            "--port=8001",
+                            "--log-level=debug",
+                            "--reload"
+                        ],
+                        "cwd": "${workspaceFolder}",
+                        "console": "integratedTerminal",
+                        "env": {
+                            "PYTHONASYNCIODEBUG": "1"
+                        }
                     }
                 ]
             }
         }
     },
-    "postCreateCommand": "cd ${containerWorkspaceFolder} && uv python install 3.10 3.11 3.12 3.13 3.14 && uv python pin 3.11 && uv venv --python 3.11 && uv sync && uv run pre-commit install"
+    "postCreateCommand": "bash .devcontainer/setup.sh"
 }

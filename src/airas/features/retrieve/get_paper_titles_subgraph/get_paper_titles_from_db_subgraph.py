@@ -18,6 +18,8 @@ from airas.features.retrieve.get_paper_titles_subgraph.nodes.get_paper_title_fro
 from airas.features.retrieve.get_paper_titles_subgraph.nodes.get_paper_titles_from_airas_db import (
     get_paper_titles_from_airas_db,
 )
+from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
+from airas.services.api_client.qdrant_client import QdrantClient
 from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -56,9 +58,13 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        qdrant_client: QdrantClient,
+        llm_client: LLMFacadeClient,
         max_results_per_query: int = 3,
         semantic_search: bool = False,
     ):
+        self.qdrant_client = qdrant_client
+        self.llm_client = llm_client
         self.max_results_per_query = max_results_per_query
         self.semantic_search = semantic_search
         if semantic_search:
@@ -88,7 +94,10 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
         self, state: GetPaperTitlesFromDBState
     ) -> dict[str, list[ResearchStudy]]:
         titles = get_paper_titles_from_qdrant(
-            num_retrieve_paper=self.max_results_per_query, queries=state["queries"]
+            num_retrieve_paper=self.max_results_per_query,
+            queries=state["queries"],
+            qdrant_client=self.qdrant_client,
+            llm_client=self.llm_client,
         )
         research_study_list = [ResearchStudy(title=title) for title in (titles or [])]
         return {"research_study_list": research_study_list}

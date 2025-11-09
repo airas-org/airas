@@ -141,7 +141,6 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.judge_execution,
             stdout_text=trial_experiment_results.stdout or "",
             stderr_text=trial_experiment_results.stderr or "",
-            github_repository_info=state["github_repository_info"],
         )
         logger.info(
             f"Trial experiment judgment: {'PASSED' if is_successful else 'FAILED'}"

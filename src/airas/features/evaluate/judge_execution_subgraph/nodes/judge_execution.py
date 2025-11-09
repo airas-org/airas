@@ -1,4 +1,3 @@
-import json
 from logging import getLogger
 
 from jinja2 import Environment
@@ -11,8 +10,6 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.github import GitHubRepositoryInfo
-from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -25,7 +22,6 @@ def judge_execution(
     llm_name: LLM_MODEL,
     stdout_text: str,
     stderr_text: str,
-    github_repository_info: GitHubRepositoryInfo,
     prompt_template: str = judge_execution_prompt,
     client: LLMFacadeClient | None = None,
 ) -> bool:
@@ -42,12 +38,4 @@ def judge_execution(
     )
     if output is None:
         raise ValueError("Error: No response from LLM in judge_execution.")
-    save_io_on_github(
-        github_repository_info=github_repository_info,
-        input=messages,
-        output=json.dumps(output, ensure_ascii=False, indent=4),
-        subgraph_name="judge_execution_subgraph",
-        node_name="judge_execution",
-        llm_name=llm_name,
-    )
     return output["is_experiment_successful"]

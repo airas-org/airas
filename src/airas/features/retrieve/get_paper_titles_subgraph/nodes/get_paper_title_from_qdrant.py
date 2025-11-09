@@ -3,10 +3,11 @@ from airas.services.api_client.qdrant_client import QdrantClient
 
 
 def get_paper_titles_from_qdrant(
-    queries: list[str], num_retrieve_paper: int
+    queries: list[str],
+    num_retrieve_paper: int,
+    qdrant_client: QdrantClient,
+    llm_client: LLMFacadeClient,
 ) -> list[str]:
-    llm_client = LLMFacadeClient(llm_name="gemini-embedding-001")
-    qdrant_client = QdrantClient()
     COLLECTION_NAME = "airas_database"
     results = []
     for query in queries:

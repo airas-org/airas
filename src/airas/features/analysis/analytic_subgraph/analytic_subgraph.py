@@ -114,7 +114,6 @@ class AnalyticSubgraph(BaseSubgraph):
         analysis_report = analytic_node(
             llm_name=self.llm_mapping.analytic_node,
             research_session=research_session,
-            github_repository_info=state["github_repository_info"],
         )
         research_session.current_iteration.experimental_analysis.analysis_report = (
             analysis_report
@@ -129,7 +128,6 @@ class AnalyticSubgraph(BaseSubgraph):
         method_feedback = evaluate_method(
             llm_name=self.llm_mapping.evaluate_method,
             research_session=research_session,
-            github_repository_info=state["github_repository_info"],
         )
         if not research_session.current_iteration.experimental_analysis.evaluation:
             research_session.current_iteration.experimental_analysis.evaluation = (

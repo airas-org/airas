@@ -1,5 +1,3 @@
-import json
-
 from dependency_injector import providers
 from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
@@ -10,10 +8,8 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent
 from airas.types.research_session import ResearchSession
-from airas.utils.save_prompt import save_io_on_github
 
 
 class LLMOutput(BaseModel):
@@ -26,7 +22,6 @@ def convert_to_html(
     paper_content: PaperContent,
     research_session: ResearchSession,
     prompt_template: str,
-    github_repository_info: GitHubRepositoryInfo,
     llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
         SyncContainer.llm_facade_provider
     ],
@@ -67,14 +62,6 @@ def convert_to_html(
     )
     if output is None:
         raise ValueError("No response from the model in convert_to_html.")
-    save_io_on_github(
-        github_repository_info=github_repository_info,
-        input=messages,
-        output=json.dumps(output, ensure_ascii=False, indent=4),
-        subgraph_name="html_subgraph",
-        node_name="convert_to_html",
-        llm_name=llm_name,
-    )
 
     if not (generated_html_text := output.get("generated_html_text", "")):
         raise ValueError("Missing or empty 'generated_html_text' in output.")

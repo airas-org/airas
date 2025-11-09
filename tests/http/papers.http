@@ -1,0 +1,8 @@
+
+
+GET http://127.0.0.1:8000/airas/v1/papers/search/title
+Content-Type: application/json
+
+{
+    "queries": ["world models"]
+}

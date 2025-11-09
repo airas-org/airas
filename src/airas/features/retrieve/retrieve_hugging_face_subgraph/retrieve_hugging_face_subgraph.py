@@ -17,7 +17,6 @@ from airas.features.retrieve.retrieve_hugging_face_subgraph.nodes.select_resourc
     select_resources,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.hugging_face import HuggingFace
 from airas.types.research_iteration import ExternalResources
 from airas.types.research_session import ResearchSession
@@ -46,7 +45,6 @@ class RetrieveHuggingFaceLLMMapping(BaseModel):
 
 class RetrieveHuggingFaceInputState(TypedDict):
     research_session: ResearchSession
-    github_repository_info: GitHubRepositoryInfo
 
 
 class RetrieveHuggingFaceHiddenState(TypedDict):
@@ -136,7 +134,6 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
         research_session = extract_code_in_readme(
             llm_name=self.llm_mapping.extract_code_in_readme,
             research_session=state["research_session"],
-            github_repository_info=state["github_repository_info"],
         )
         return {"research_session": research_session}
 
@@ -159,6 +156,7 @@ def main():
         retrieve_hugging_face_subgraph_input_data,
     )
     from airas.services.api_client.api_clients_container import sync_container
+
     sync_container.wire(modules=[__name__])
 
     input_data = retrieve_hugging_face_subgraph_input_data

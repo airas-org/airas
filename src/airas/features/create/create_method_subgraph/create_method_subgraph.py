@@ -110,7 +110,6 @@ class CreateMethodSubgraph(BaseSubgraph):
                 method=improve_method(
                     research_session=state["research_session"],
                     llm_name=self.llm_mapping.improve_method,
-                    github_repository_info=state["github_repository_info"],
                 ),
             )
         )

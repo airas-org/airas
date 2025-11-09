@@ -111,7 +111,6 @@ class LatexSubgraph(BaseSubgraph):
         latex_formatted_paper_content = convert_to_latex_str(
             llm_name=self.llm_mapping.convert_to_latex,
             paper_content=state["paper_content"],
-            github_repository_info=state["github_repository_info"],
         )
         return {"latex_formatted_paper_content": latex_formatted_paper_content}
 
