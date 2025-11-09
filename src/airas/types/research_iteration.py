@@ -47,7 +47,7 @@ class ExperimentCode(BaseModel):
 
 
 class ExperimentEvaluation(BaseModel):
-    method_feedback: Optional[int] = Field(
+    method_feedback: Optional[str] = Field(
         None,
         description="",
     )

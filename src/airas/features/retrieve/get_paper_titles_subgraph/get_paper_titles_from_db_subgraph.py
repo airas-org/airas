@@ -1,8 +1,11 @@
 import logging
 from typing import Any
 
+from dependency_injector import providers
+from dependency_injector.wiring import Provide, inject
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -18,7 +21,11 @@ from airas.features.retrieve.get_paper_titles_subgraph.nodes.get_paper_title_fro
 from airas.features.retrieve.get_paper_titles_subgraph.nodes.get_paper_titles_from_airas_db import (
     get_paper_titles_from_airas_db,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
+from airas.services.api_client.api_clients_container import SyncContainer
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.services.api_client.qdrant_client import QdrantClient
 from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
@@ -30,6 +37,10 @@ logger = logging.getLogger(__name__)
 
 get_paper_titles_from_db_str = "get_paper_titles_from_db_subgraph"
 get_paper_titles_from_db_timed = lambda f: time_node(get_paper_titles_from_db_str)(f)  # noqa: E731
+
+
+class GetPaperTitlesFromDBLLMMapping(BaseModel):
+    get_paper_titles_from_qdrant: LLM_MODEL = "gemini-embedding-001"
 
 
 class GetPaperTitlesFromDBInputState(TypedDict):
@@ -56,17 +67,21 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
     InputState = GetPaperTitlesFromDBInputState
     OutputState = GetPaperTitlesFromDBOutputState
 
+    @inject
     def __init__(
         self,
-        qdrant_client: QdrantClient,
-        llm_client: LLMFacadeClient,
         max_results_per_query: int = 3,
         semantic_search: bool = False,
+        qdrant_client: QdrantClient = Provide[SyncContainer.qdrant_client],
+        llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
+            SyncContainer.llm_facade_provider
+        ],
     ):
         self.qdrant_client = qdrant_client
-        self.llm_client = llm_client
+        self.llm_facade_provider = llm_facade_provider
         self.max_results_per_query = max_results_per_query
         self.semantic_search = semantic_search
+        self.llm_mapping = GetPaperTitlesFromDBLLMMapping()
         if semantic_search:
             check_api_key(qdrant_api_key_check=True)
 
@@ -97,7 +112,9 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
             num_retrieve_paper=self.max_results_per_query,
             queries=state["queries"],
             qdrant_client=self.qdrant_client,
-            llm_client=self.llm_client,
+            llm_client=self.llm_facade_provider(
+                llm_name=self.llm_mapping.get_paper_titles_from_qdrant
+            ),
         )
         research_study_list = [ResearchStudy(title=title) for title in (titles or [])]
         return {"research_study_list": research_study_list}

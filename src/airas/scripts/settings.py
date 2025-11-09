@@ -168,7 +168,7 @@ class Settings(BaseSettings):
 
     def apply_profile_overrides(self) -> Self:
         self.wandb.entity = "gengaru617-personal"
-        self.wandb.project = "251106-test"
+        self.wandb.project = "251109"
 
         if self.profile == "test":
             self.method_iteration_attempts = 1
