@@ -1,7 +1,5 @@
 from logging import getLogger
 
-from dependency_injector import providers
-from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 
 from airas.features.create.create_hypothesis_subgraph.prompt.generate_hypothesis_prompt import (
@@ -10,7 +8,6 @@ from airas.features.create.create_hypothesis_subgraph.prompt.generate_hypothesis
 from airas.features.create.create_hypothesis_subgraph.prompt.generate_simple_hypothesis_prompt import (
     generate_simple_hypothesis_prompt,
 )
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -21,16 +18,12 @@ from airas.types.research_study import ResearchStudy
 logger = getLogger(__name__)
 
 
-@inject
 def generate_hypothesis(
     llm_name: LLM_MODEL,
+    llm_client: LLMFacadeClient,
     research_topic: str,
     research_study_list: list[ResearchStudy],
-    llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
-        SyncContainer.llm_facade_provider
-    ],
 ) -> ResearchHypothesis:
-    client = llm_facade_provider(llm_name=llm_name)
     env = Environment()
 
     # NOTE: Simplified the experiment's difficulty level.
@@ -41,7 +34,7 @@ def generate_hypothesis(
         "research_study_list": ResearchStudy.format_list(research_study_list),
     }
     messages = template.render(data)
-    output, cost = client.structured_outputs(
+    output, cost = llm_client.structured_outputs(
         message=messages,
         data_model=ResearchHypothesis,
     )

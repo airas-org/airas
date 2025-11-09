@@ -102,6 +102,8 @@ retrieve_reference_paper_content = RetrievePaperContentSubgraph(
 
 create_hypothesis = CreateHypothesisSubgraph(
     qdrant_client=Provide[SyncContainer.qdrant_client],
+    arxiv_client=Provide[SyncContainer.arxiv_client],
+    ss_client=Provide[SyncContainer.semantic_scholar_client],
     llm_client=Provide[AsyncContainer.llm_facade_client],
     llm_mapping={
         "generate_idea_and_research_summary": settings.llm_mapping.generate_idea_and_research_summary,
