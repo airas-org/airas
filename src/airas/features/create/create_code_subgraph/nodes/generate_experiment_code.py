@@ -1,4 +1,3 @@
-import json
 import logging
 
 from jinja2 import Environment
@@ -11,11 +10,9 @@ from airas.services.api_client.llm_client.openai_client import (
     OPENAI_MODEL,
     OpenAIClient,
 )
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_iteration import ExperimentCode
 from airas.types.research_session import ResearchSession
 from airas.types.wandb import WandbInfo
-from airas.utils.save_prompt import save_io_on_github
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +21,6 @@ def generate_experiment_code(
     llm_name: OPENAI_MODEL,
     research_session: ResearchSession,
     runner_type: RunnerType,
-    github_repository_info: GitHubRepositoryInfo,
     wandb_info: WandbInfo | None = None,
     code_validation: tuple[bool, str] | None = None,
 ) -> ExperimentCode:
@@ -47,14 +43,5 @@ def generate_experiment_code(
     )
     if output is None:
         raise ValueError("No response from LLM in generate_experiment_code.")
-
-    save_io_on_github(
-        github_repository_info=github_repository_info,
-        input=messages,
-        output=json.dumps(output, ensure_ascii=False, indent=4),
-        subgraph_name="create_code_subgraph",
-        node_name="generate_experiment_code",
-        llm_name=llm_name,
-    )
 
     return ExperimentCode(**output)

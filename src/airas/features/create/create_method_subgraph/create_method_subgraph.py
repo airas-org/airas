@@ -109,7 +109,6 @@ class CreateMethodSubgraph(BaseSubgraph):
                 method=improve_method(
                     research_session=state["research_session"],
                     llm_name=self.llm_mapping.improve_method,
-                    github_repository_info=state["github_repository_info"],
                 ),
             )
         )
@@ -141,6 +140,7 @@ def main():
         create_method_subgraph_input_data,
     )
     from airas.services.api_client.api_clients_container import sync_container
+
     sync_container.wire(modules=[__name__])
     input = create_method_subgraph_input_data
 

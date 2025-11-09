@@ -102,7 +102,6 @@ class CreateBibfileSubgraph(BaseSubgraph):
             research_study_list=state["research_study_list"],
             reference_study_list=state["reference_research_study_list"],
             research_session=state["research_session"],
-            github_repository_info=state["github_repository_info"],
             max_results=self.max_filtered_references,
         )
         return {"reference_research_study_list": filtered_references}
@@ -147,6 +146,7 @@ def main():
         create_bibfile_subgraph_input_data,
     )
     from airas.services.api_client.api_clients_container import sync_container
+
     sync_container.wire(modules=[__name__])
 
     result = CreateBibfileSubgraph(

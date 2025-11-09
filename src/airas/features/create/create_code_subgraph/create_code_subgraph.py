@@ -122,7 +122,6 @@ class CreateCodeSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.generate_run_config,
             research_session=research_session,
             runner_type=cast(RunnerType, self.runner_type),
-            github_repository_info=state["github_repository_info"],
         )
 
         config_dict = {cfg.run_id: cfg.run_config_yaml for cfg in run_configs}
@@ -140,7 +139,6 @@ class CreateCodeSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.generate_experiment_code,
             research_session=research_session,
             runner_type=cast(RunnerType, self.runner_type),
-            github_repository_info=state["github_repository_info"],
             wandb_info=self.wandb_info,
             code_validation=state.get("code_validation"),
         )
@@ -158,7 +156,6 @@ class CreateCodeSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.validate_experiment_code,
             research_session=state["research_session"],
             wandb_info=self.wandb_info,
-            github_repository_info=state["github_repository_info"],
         )
         return {
             "code_validation": code_validation,
