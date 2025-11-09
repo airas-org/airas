@@ -21,6 +21,7 @@ You are an AI researcher. You will conduct experiments to demonstrate the superi
   - Describe the overall implementation details of the experiment. Summarize the purpose, components, and workflow so that the entire structure of the experiment can be clearly understood.
 - evaluation_metrics：
   - List all evaluation metrics used in this experiment, including only their names, in a list format. (e.g., Accuracy AUC ROC, F1 Score, RMSE, BLEU, ROUGE, etc.)
+  - The primary metric specified in the hypothesis ({{ research_session.hypothesis.primary_metric }}) MUST be included in this list.
 - models_to_use：
   - Select {{ num_models_to_use }} deep learning or machine learning models to be used in the experiment and output them in a list format.
   - Each model name should clearly indicate its number of parameters.

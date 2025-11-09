@@ -27,6 +27,12 @@ Based on the above analysis, propose a simple new research method that advances 
     - Specify which datasets and evaluation metrics will be used.
     - Design a straightforward comparison with the base method.
 
+- primary_metric
+    - Specify the single most important evaluation metric that will be used to assess the effectiveness of the proposed method.
+    - This metric will be used for calculating the performance gap (GAP) between the proposed method and baselines.
+    - Choose a metric that best represents the success of addressing the identified problem (e.g., "accuracy", "f1_score", "bleu", "perplexity").
+    - Use a clear, standard metric name that can be directly extracted from experimental results.
+
 - experimental_code
     - Output the core Python code implementing the proposed modification.
     - Focus only on the key changes to the base method.
@@ -34,6 +40,8 @@ Based on the above analysis, propose a simple new research method that advances 
 
 - expected_result
     - Describe the expected experimental results and performance improvement over the base method.
+    - Include specific quantitative predictions for the primary metric and other key evaluation metrics.
+    - These predictions help determine whether higher or lower metric values indicate better performance.
 
 - expected_conclusion
     - Summarize the practical value of the minimal modification.

@@ -22,11 +22,18 @@ You are an accomplished researcher in machine learning. Based on the instruction
         - Provide a concrete description of the experiments to demonstrate the effectiveness of the proposed method.
         - Specify which models and datasets will be used, the evaluation metrics for quantitative assessment, and how comparisons will be made with baseline methods.
         - Design experiments to evaluate robustness from multiple perspectives.
+    - primary_metric
+        - Specify the single most important evaluation metric that will be used to assess the effectiveness of the proposed method.
+        - This metric will be used for calculating the performance gap (GAP) between the proposed method and baselines.
+        - Choose a metric that best represents the success of addressing the identified problem (e.g., "accuracy", "f1_score", "bleu", "perplexity").
+        - Use a clear, standard metric name that can be directly extracted from experimental results.
     - experimental_code
         - Output the core Python code of the new research idea to be used in the experiment.
         - Create it based on the experimental code of the study used as the foundation.
     - expected_result
         - Describe the expected experimental results based on the "experimental_setup."
+        - Include specific quantitative predictions for the primary metric and other key evaluation metrics.
+        - These predictions help determine whether higher or lower metric values indicate better performance.
     - expected_conclusion
         - Summarize the academic and practical value of the new method based on the experimental results.
         - Discuss its potential for future development."""

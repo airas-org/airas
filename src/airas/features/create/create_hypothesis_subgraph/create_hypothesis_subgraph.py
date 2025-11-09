@@ -1,6 +1,7 @@
 import logging
 from typing import cast
 
+from dependency_injector.wiring import inject
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
@@ -66,6 +67,7 @@ class CreateHypothesisSubgraphLLMMapping(BaseModel):
     search_arxiv_id_from_title: LLM_MODEL = DEFAULT_NODE_LLMS[
         "search_arxiv_id_from_title"
     ]
+    embedding_model: LLM_MODEL = "gemini-embedding-001"
 
 
 class CreateHypothesisSubgraphInputState(TypedDict):
@@ -97,6 +99,7 @@ class CreateHypothesisSubgraph(BaseSubgraph):
     InputState = CreateHypothesisSubgraphInputState
     OutputState = CreateHypothesisSubgraphOutputState
 
+    @inject
     def __init__(
         self,
         qdrant_client: QdrantClient,
@@ -165,7 +168,6 @@ class CreateHypothesisSubgraph(BaseSubgraph):
         self, state: CreateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
         related_research_study_list = []  # Reset the list of related studies for re-execution.
-
         retrieved_titles = get_paper_titles_from_qdrant(
             queries=[state["research_hypothesis"].method],
             num_retrieve_paper=self.num_retrieve_related_papers,

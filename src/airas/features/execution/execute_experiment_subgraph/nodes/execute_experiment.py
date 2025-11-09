@@ -47,7 +47,6 @@ async def _execute_workflow_on_branch(
 @inject
 async def execute_trial_experiment(
     github_repository: GitHubRepositoryInfo,
-    experiment_iteration: int,
     runner_type: RunnerType,
     research_session: ResearchSession,
     workflow_file: str = "run_trial_experiment_with_claude_code_v2.yml",
@@ -65,6 +64,7 @@ async def execute_trial_experiment(
 
     branch_name = github_repository.branch_name
     run_ids = [run.run_id for run in research_session.current_iteration.experiment_runs]
+    iteration_id = research_session.current_iteration.iteration_id
 
     logger.info(
         f"Executing trial experiment: {len(run_ids)} run_ids on branch '{branch_name}'"
@@ -72,7 +72,7 @@ async def execute_trial_experiment(
     logger.info(f"Run IDs: {', '.join(run_ids)}")
 
     inputs = {
-        "experiment_iteration": str(experiment_iteration),
+        "experiment_iteration": str(iteration_id),
         "runner_type": runner_type_setting,
         "run_ids": json.dumps(run_ids),
     }
@@ -92,7 +92,6 @@ async def execute_trial_experiment(
 @inject
 async def execute_full_experiments(
     github_repository: GitHubRepositoryInfo,
-    experiment_iteration: int,
     runner_type: RunnerType,
     research_session: ResearchSession,
     workflow_file: str = "run_full_experiment_with_claude_code_v2.yml",
@@ -107,9 +106,10 @@ async def execute_full_experiments(
 
     executor = WorkflowExecutor(github_client)
     runner_type_setting = runner_info_dict[runner_type]["runner_setting"]
+    iteration_id = research_session.current_iteration.iteration_id
 
     base_inputs = {
-        "experiment_iteration": str(experiment_iteration),
+        "experiment_iteration": str(iteration_id),
         "runner_type": runner_type_setting,
     }
 
@@ -166,7 +166,6 @@ async def execute_full_experiments(
 @inject
 async def execute_evaluation(
     github_repository: GitHubRepositoryInfo,
-    experiment_iteration: int,
     research_session: ResearchSession,
     workflow_file: str = "run_evaluation_with_claude_code.yml",
     github_client: GithubClient = Provide[SyncContainer.github_client],
@@ -182,12 +181,13 @@ async def execute_evaluation(
 
     branch_name = github_repository.branch_name
     run_ids = [run.run_id for run in research_session.current_iteration.experiment_runs]
+    iteration_id = research_session.current_iteration.iteration_id
 
     logger.info(f"Executing evaluation on main branch '{branch_name}'")
     logger.info(f"Evaluation will process {len(run_ids)} runs: {', '.join(run_ids)}")
 
     inputs = {
-        "experiment_iteration": str(experiment_iteration),
+        "experiment_iteration": str(iteration_id),
         "run_ids": json.dumps(run_ids),
     }
 

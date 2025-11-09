@@ -1,4 +1,5 @@
 import json
+import logging
 
 from dependency_injector import providers
 from dependency_injector.wiring import Provide, inject
@@ -22,6 +23,8 @@ from airas.services.api_client.llm_client.llm_facade_client import (
 )
 from airas.types.research_iteration import ExperimentalDesign
 from airas.types.research_session import ResearchSession
+
+logger = logging.getLogger(__name__)
 
 
 class HyperParameter(BaseModel):
@@ -83,9 +86,18 @@ def generate_experiment_design(
         hp["name"]: hp["range"] for hp in output["hyperparameters_to_search"]
     }
 
+    primary_metric = research_session.hypothesis.primary_metric
+    evaluation_metrics = output["evaluation_metrics"]
+    if primary_metric not in evaluation_metrics:
+        logger.warning(
+            f"Primary metric '{primary_metric}' not found in evaluation_metrics. "
+            f"Adding it to the list."
+        )
+        evaluation_metrics.append(primary_metric)
+
     return ExperimentalDesign(
         experiment_summary=output["experiment_summary"],
-        evaluation_metrics=output["evaluation_metrics"],
+        evaluation_metrics=evaluation_metrics,
         models_to_use=output["models_to_use"],
         datasets_to_use=output["datasets_to_use"],
         proposed_method=output["proposed_method"],

@@ -95,14 +95,32 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         self, state: CreateExperimentalDesignState
     ) -> dict[str, ResearchSession]:
         research_session = state["research_session"]
+        is_first_iteration = len(research_session.iterations) == 1
+
         experiment_design = generate_experiment_design(
             llm_name=self.llm_mapping.generate_experiment_design,
             research_session=research_session,
             runner_type=cast(RunnerType, self.runner_type),
             num_models_to_use=self.num_models_to_use,
             num_datasets_to_use=self.num_datasets_to_use,
-            num_comparative_methods=self.num_comparative_methods,
+            num_comparative_methods=self.num_comparative_methods
+            if is_first_iteration
+            else 0,
         )
+
+        # HACK: Running solely to change the hyperparameters during loop execution.
+        # However, it's not ideal that it implicitly fixes the fields.
+        FIXED_FIELDS = (
+            "models_to_use",
+            "datasets_to_use",
+            "evaluation_metrics",
+            "comparative_methods",
+        )
+        if not is_first_iteration:
+            first_design = research_session.iterations[0].experimental_design
+            for field in FIXED_FIELDS:
+                setattr(experiment_design, field, getattr(first_design, field))
+
         research_session.current_iteration.experimental_design = experiment_design
         return {"research_session": research_session}
 

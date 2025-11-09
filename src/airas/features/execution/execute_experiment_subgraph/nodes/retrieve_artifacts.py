@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 
 from dependency_injector.wiring import Provide, inject
@@ -95,11 +96,11 @@ async def _retrieve_artifacts_from_branch(
     github_owner: str,
     repository_name: str,
     branch_name: str,
-    experiment_iteration: int,
+    iteration_id: int,
     include_code: bool = False,
     experiment_runs: list[ExperimentRun] | None = None,
 ) -> tuple[str, str, list[str], ExperimentCode | None]:
-    iteration_path = f".research/iteration{experiment_iteration}"
+    iteration_path = f".research/iteration{iteration_id}"
     stdout_file_path = f"{iteration_path}/stdout.txt"
     stderr_file_path = f"{iteration_path}/stderr.txt"
     image_directory_path = f"{iteration_path}/images"
@@ -158,7 +159,6 @@ async def _retrieve_artifacts_from_branch(
 @inject
 async def retrieve_trial_experiment_artifacts(
     github_repository: GitHubRepositoryInfo,
-    experiment_iteration: int,
     research_session: ResearchSession,
     github_client: GithubClient = Provide[SyncContainer.github_client],
 ) -> tuple[ResearchSession, ExperimentalResults]:
@@ -168,6 +168,8 @@ async def retrieve_trial_experiment_artifacts(
     ):
         logger.error("No experiment runs found in current_iteration")
         return research_session, ExperimentalResults()
+
+    iteration_id = research_session.current_iteration.iteration_id
 
     (
         stdout_text,
@@ -179,7 +181,7 @@ async def retrieve_trial_experiment_artifacts(
         github_repository.github_owner,
         github_repository.repository_name,
         github_repository.branch_name,
-        experiment_iteration,
+        iteration_id,
         include_code=True,
         experiment_runs=research_session.current_iteration.experiment_runs,
     )
@@ -204,11 +206,11 @@ async def retrieve_trial_experiment_artifacts(
 @inject
 async def retrieve_evaluation_artifacts(
     github_repository: GitHubRepositoryInfo,
-    experiment_iteration: int,
     research_session: ResearchSession,
     github_client: GithubClient = Provide[SyncContainer.github_client],
 ) -> ResearchSession:
-    iteration_path = f".research/iteration{experiment_iteration}"
+    iteration_id = research_session.current_iteration.iteration_id
+    iteration_path = f".research/iteration{iteration_id}"
 
     for run in research_session.current_iteration.experiment_runs:
         run_dir = f"{iteration_path}/{run.run_id}"
@@ -248,7 +250,7 @@ async def retrieve_evaluation_artifacts(
             logger.warning(f"Could not retrieve figures for run {run.run_id}: {e}")
 
     comparison_dir = f"{iteration_path}/comparison"
-    aggregated_metrics = ""
+    aggregated_metrics = None
     try:
         aggregated_file = _get_single_file_content(
             github_client,
@@ -258,7 +260,8 @@ async def retrieve_evaluation_artifacts(
             github_repository.branch_name,
         )
         if aggregated_file and "content" in aggregated_file:
-            aggregated_metrics = _decode_base64_content(aggregated_file["content"])
+            aggregated_metrics_str = _decode_base64_content(aggregated_file["content"])
+            aggregated_metrics = json.loads(aggregated_metrics_str)
             logger.info("Retrieved aggregated metrics")
     except Exception as e:
         logger.warning(f"Could not retrieve aggregated metrics: {e}")

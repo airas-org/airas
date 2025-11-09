@@ -63,7 +63,7 @@ The following methods have been tried in previous iterations:
 
 {% if research_session.current_iteration.experimental_analysis.aggregated_metrics %}
 ## Aggregated Metrics
-{{ research_session.current_iteration.experimental_analysis.aggregated_metrics }}
+{{ research_session.current_iteration.experimental_analysis.aggregated_metrics | tojson(indent=2) }}
 {% endif %}
 {% endif %}
 

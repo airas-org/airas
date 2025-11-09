@@ -87,8 +87,34 @@ Check if the generated experiment code meets ALL of the following requirements:
      * Generate run-specific figures (learning curves, confusion matrices) to: `{results_dir}/{run_id}/`
      * Each run should have its own subdirectory with its metrics and figures
    - **STEP 2: Aggregated Analysis** (after processing all runs):
-     * Export aggregated metrics to: `{results_dir}/comparison/aggregated_metrics.json`
-     * Compute secondary/derived metrics (e.g., improvement rate: (proposed - baseline) / baseline)
+     * Export aggregated metrics to: `{results_dir}/comparison/aggregated_metrics.json` with the following structure:
+       ```json
+       {
+         "primary_metric": "{{ research_session.hypothesis.primary_metric }}",
+         "metrics": {
+           "metric_name_1": {"run_id_1": value1, "run_id_2": value2, ...},
+           "metric_name_2": {"run_id_1": value1, "run_id_2": value2, ...}
+         },
+         "best_proposed": {
+           "run_id": "proposed-iter2-model-dataset",
+           "value": 0.92
+         },
+         "best_baseline": {
+           "run_id": "comparative-1-model-dataset",
+           "value": 0.88
+         },
+         "gap": 4.55
+       }
+       ```
+       The structure must include:
+       - "primary_metric": The primary evaluation metric name from the hypothesis
+       - "metrics": All collected metrics organized by metric name, then by run_id
+       - "best_proposed": The run_id and value of the proposed method with the best primary_metric performance (run_id contains "proposed")
+       - "best_baseline": The run_id and value of the baseline/comparative method with the best primary_metric performance (run_id contains "comparative" or "baseline")
+       - "gap": Performance gap calculated as: (best_proposed.value - best_baseline.value) / best_baseline.value * 100
+         * Must use the expected results from the hypothesis to determine metric direction (higher vs lower is better)
+         * If the metric should be minimized, reverse the sign of the gap
+         * The gap represents the percentage improvement of the proposed method over the best baseline
      * Generate comparison figures to: `{results_dir}/comparison/`
      * Cross-run comparison charts (bar charts, box plots)
      * Performance metrics tables
@@ -142,5 +168,19 @@ Respond with a JSON object containing:
 
 # Generated Experiment Code (To be validated)
 {{ research_session.current_iteration.experimental_design.experiment_code.model_dump() | tojson }}
+
+{% if research_session.current_iteration.iteration_id > 1 and research_session.iterations|length > 0 %}
+# Reference Code from First Iteration
+
+The following code from Iteration 1 should be used as a reference to verify consistency:
+
+{{ research_session.iterations[0].experimental_design.experiment_code.model_dump() | tojson(indent=2) }}
+
+**Additional Validation for Iteration 2+**:
+- Verify that comparative/baseline methods implementation is consistent with Iteration 1
+- The core logic for comparative methods (model architecture, data preprocessing, training loop) should remain algorithmically equivalent
+- Only the proposed method should have significant changes
+- Minor differences (variable names, code structure) are acceptable, but algorithmic changes to baselines are NOT
+{% endif %}
 
 Analyze the experiment code thoroughly. Ensure it is complete, executable, and ready for publication-quality research experiments."""
