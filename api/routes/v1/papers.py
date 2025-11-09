@@ -6,6 +6,9 @@ from fastapi import APIRouter, Depends
 from airas.features.retrieve.retrieve_paper_content_subgraph.retrieve_paper_content_subgraph import (
     RetrievePaperContentSubgraph,
 )
+from airas.features.retrieve.summarize_paper_subgraph.summarize_paper_subgraph import (
+    SummarizePaperSubgraph,
+)
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
 from airas.services.api_client.qdrant_client import QdrantClient
@@ -15,6 +18,8 @@ from api.schemas.papers import (
     GetPaperTitleResponseBody,
     RetrievePaperContentRequestBody,
     RetrievePaperContentResponseBody,
+    SummarizePaperRequestBody,
+    SummarizePaperResponseBody,
 )
 from src.airas.features.retrieve.get_paper_titles_subgraph.get_paper_titles_from_db_subgraph import (
     GetPaperTitlesFromDBSubgraph,
@@ -41,7 +46,7 @@ async def get_paper_title(
     result = await GetPaperTitlesFromDBSubgraph(
         qdrant_client=qdrant_client,
         llm_client=llm_client,
-        max_results_per_query=3,
+        max_results_per_query=10,
         semantic_search=True,
     ).arun(request)
     return GetPaperTitleResponseBody(research_study_list=result["research_study_list"])
@@ -69,3 +74,17 @@ async def retrieve_paper_content(
     return RetrievePaperContentResponseBody(
         research_study_list=result["research_study_list"]
     )
+
+
+@router.get("/summarize", response_model=SummarizePaperResponseBody)
+@inject
+async def summarize_paper_content(
+    request: SummarizePaperRequestBody,
+    llm_client: Annotated[
+        LLMFacadeClient, Depends(Provide[AsyncContainer.gemini_2_5_flash])
+    ],
+) -> SummarizePaperResponseBody:
+    result = await SummarizePaperSubgraph(
+        llm_client=llm_client,
+    ).arun(request)
+    return SummarizePaperResponseBody(research_study_list=result["research_study_list"])

@@ -17,3 +17,11 @@ class RetrievePaperContentRequestBody(TypedDict):
 
 class RetrievePaperContentResponseBody(TypedDict):
     research_study_list: list[ResearchStudy]
+
+
+class SummarizePaperRequestBody(TypedDict):
+    research_study_list: list[ResearchStudy]
+
+
+class SummarizePaperResponseBody(TypedDict):
+    research_study_list: list[ResearchStudy]

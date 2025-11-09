@@ -72,7 +72,8 @@ retrieve_paper_content = RetrievePaperContentSubgraph(
     paper_provider=settings.retrieve_paper_content.paper_provider,
 )
 summarize_paper = SummarizePaperSubgraph(
-    llm_mapping={"summarize_paper": settings.llm_mapping.summarize_paper}
+    llm_mapping={"summarize_paper": settings.llm_mapping.summarize_paper},
+    llm_client=Provide[AsyncContainer.gemini_2_5_flash],
 )
 retrieve_code = RetrieveCodeSubgraph(
     llm_mapping={

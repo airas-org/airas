@@ -17,7 +17,10 @@ from airas.features.retrieve.summarize_paper_subgraph.nodes.summarize_paper impo
 from airas.features.retrieve.summarize_paper_subgraph.prompt.summarize_paper_prompt import (
     summarize_paper_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.research_study import ResearchStudy
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -58,8 +61,10 @@ class SummarizePaperSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        llm_client: LLMFacadeClient,
         llm_mapping: dict[str, str] | SummarizePaperLLMMapping | None = None,
     ):
+        self.llm_client = llm_client
         if llm_mapping is None:
             self.llm_mapping = SummarizePaperLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -79,6 +84,7 @@ class SummarizePaperSubgraph(BaseSubgraph):
     ) -> dict[str, list[ResearchStudy]]:
         research_study_list = await summarize_paper(
             llm_name=self.llm_mapping.summarize_paper,
+            llm_client=self.llm_client,
             prompt_template=summarize_paper_prompt,
             research_study_list=state["research_study_list"],
         )
