@@ -79,7 +79,9 @@ retrieve_code = RetrieveCodeSubgraph(
     llm_mapping={
         "extract_github_url_from_text": settings.llm_mapping.extract_github_url_from_text,
         "extract_experimental_info": settings.llm_mapping.extract_experimental_info,
-    }
+    },
+    llm_client=Provide[AsyncContainer.gemini_2_5_flash],
+    github_client=Provide[AsyncContainer.github_client],
 )
 reference_extractor = ExtractReferenceTitlesSubgraph(
     llm_mapping={

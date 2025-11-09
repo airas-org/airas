@@ -25,3 +25,11 @@ class SummarizePaperRequestBody(TypedDict):
 
 class SummarizePaperResponseBody(TypedDict):
     research_study_list: list[ResearchStudy]
+
+
+class RetrieveCodeRequestBody(TypedDict):
+    research_study_list: list[ResearchStudy]
+
+
+class RetrieveCodeResponseBody(TypedDict):
+    research_study_list: list[ResearchStudy]

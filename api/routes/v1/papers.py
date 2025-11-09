@@ -3,6 +3,9 @@ from typing import Annotated
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 
+from airas.features.retrieve.retrieve_code_subgraph.retrieve_code_subgraph import (
+    RetrieveCodeSubgraph,
+)
 from airas.features.retrieve.retrieve_paper_content_subgraph.retrieve_paper_content_subgraph import (
     RetrievePaperContentSubgraph,
 )
@@ -10,12 +13,15 @@ from airas.features.retrieve.summarize_paper_subgraph.summarize_paper_subgraph i
     SummarizePaperSubgraph,
 )
 from airas.services.api_client.arxiv_client import ArxivClient
+from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
 from airas.services.api_client.qdrant_client import QdrantClient
 from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
 from api.schemas.papers import (
     GetPaperTitleRequestBody,
     GetPaperTitleResponseBody,
+    RetrieveCodeRequestBody,
+    RetrieveCodeResponseBody,
     RetrievePaperContentRequestBody,
     RetrievePaperContentResponseBody,
     SummarizePaperRequestBody,
@@ -88,3 +94,21 @@ async def summarize_paper_content(
         llm_client=llm_client,
     ).arun(request)
     return SummarizePaperResponseBody(research_study_list=result["research_study_list"])
+
+
+@router.get("/code", response_model=RetrieveCodeResponseBody)
+@inject
+async def retrieve_code(
+    request: RetrieveCodeRequestBody,
+    llm_client: Annotated[
+        LLMFacadeClient, Depends(Provide[AsyncContainer.gemini_2_5_flash])
+    ],
+    github_client: Annotated[
+        GithubClient, Depends(Provide[AsyncContainer.github_client])
+    ],
+) -> RetrieveCodeResponseBody:
+    result = await RetrieveCodeSubgraph(
+        llm_client=llm_client,
+        github_client=github_client,
+    ).arun(request)
+    return RetrieveCodeResponseBody(research_study_list=result["research_study_list"])

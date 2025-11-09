@@ -11,7 +11,6 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import MetaData, ResearchStudy
 
 logger = getLogger(__name__)
@@ -92,13 +91,9 @@ async def extract_github_url_from_text(
     llm_name: LLM_MODEL,
     prompt_template: str,
     research_study_list: list[ResearchStudy],
-    github_repository_info: GitHubRepositoryInfo | None = None,
-    llm_client: LLMFacadeClient | None = None,
-    github_client: GithubClient | None = None,
+    llm_client: LLMFacadeClient,
+    github_client: GithubClient,
 ) -> list[ResearchStudy]:
-    llm_client = llm_client or LLMFacadeClient(llm_name=llm_name)
-    github_client = github_client or GithubClient()
-
     candidates_list: list[list[str]] = []
     for research_study in research_study_list:
         title = research_study.title or "N/A"
