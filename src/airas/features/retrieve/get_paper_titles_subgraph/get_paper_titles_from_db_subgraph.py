@@ -40,7 +40,7 @@ get_paper_titles_from_db_timed = lambda f: time_node(get_paper_titles_from_db_st
 
 
 class GetPaperTitlesFromDBLLMMapping(BaseModel):
-    get_paper_titles_from_qdrant: LLM_MODEL = "gemini-embedding-001"
+    embedding_model: LLM_MODEL = "gemini-embedding-001"
 
 
 class GetPaperTitlesFromDBInputState(TypedDict):
@@ -113,7 +113,7 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
             queries=state["queries"],
             qdrant_client=self.qdrant_client,
             llm_client=self.llm_facade_provider(
-                llm_name=self.llm_mapping.get_paper_titles_from_qdrant
+                llm_name=self.llm_mapping.embedding_model
             ),
         )
         research_study_list = [ResearchStudy(title=title) for title in (titles or [])]

@@ -5,7 +5,6 @@ from dependency_injector.wiring import Provide, register_loader_containers
 from tqdm import tqdm
 
 from airas.services.api_client.api_clients_container import (
-    AsyncContainer,
     SyncContainer,
     async_container,
     sync_container,
@@ -92,12 +91,10 @@ retrieve_reference_paper_content = RetrievePaperContentSubgraph(
 )
 
 create_hypothesis = CreateHypothesisSubgraph(
-    qdrant_client=Provide[SyncContainer.qdrant_client],
-    llm_client=Provide[AsyncContainer.llm_facade_client],
     llm_mapping={
-        "generate_idea_and_research_summary": settings.llm_mapping.generate_idea_and_research_summary,
+        "generate_hypothesis": settings.llm_mapping.generate_idea_and_research_summary,
         "evaluate_novelty_and_significance": settings.llm_mapping.evaluate_novelty_and_significance,
-        "refine_idea_and_research_summary": settings.llm_mapping.refine_idea_and_research_summary,
+        "refine_hypothesis": settings.llm_mapping.refine_idea_and_research_summary,
         "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
     },
     refinement_rounds=settings.create_hypothesis.refinement_rounds,
