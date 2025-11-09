@@ -1,8 +1,6 @@
 import json
 import logging
 
-from dependency_injector import providers
-from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 from pydantic import BaseModel, Field
 
@@ -16,7 +14,6 @@ from airas.data.model.language_model import (
 from airas.features.create.create_experimental_design_subgraph.prompt.generate_experiment_design_prompt import (
     generate_experiment_design_prompt,
 )
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -44,19 +41,15 @@ class LLMOutput(BaseModel):
     hyperparameters_to_search: list[HyperParameter]
 
 
-@inject
 def generate_experiment_design(
     llm_name: LLM_MODEL,
+    llm_client: LLMFacadeClient,
     research_session: ResearchSession,
     runner_type: RunnerType,
     num_models_to_use: int,
     num_datasets_to_use: int,
     num_comparative_methods: int,
-    llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
-        SyncContainer.llm_facade_provider
-    ],
 ) -> ExperimentalDesign:
-    client = llm_facade_provider(llm_name=llm_name)
     env = Environment()
 
     template = env.from_string(generate_experiment_design_prompt)
@@ -75,7 +68,7 @@ def generate_experiment_design(
         "num_comparative_methods": num_comparative_methods,
     }
     messages = template.render(data)
-    output, _ = client.structured_outputs(
+    output, _ = llm_client.structured_outputs(
         message=messages,
         data_model=LLMOutput,
     )

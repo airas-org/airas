@@ -123,6 +123,7 @@ create_method = CreateMethodSubgraph(
 )
 
 create_experimental_design = CreateExperimentalDesignSubgraph(
+    llm_client=Provide[AsyncContainer.o3_2025_04_16],
     runner_type=settings.runner_type,
     num_models_to_use=settings.create_experimental_design.num_models_to_use,
     num_datasets_to_use=settings.create_experimental_design.num_datasets_to_use,

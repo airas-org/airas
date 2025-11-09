@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from dependency_injector.wiring import Provide
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 
 from airas.features.retrieve.retrieve_code_subgraph.retrieve_code_subgraph import (
@@ -39,6 +39,7 @@ router = APIRouter(prefix="/papers", tags=["papers"])
 
 
 @router.get("/search/title", response_model=GetPaperTitleResponseBody)
+@inject
 async def get_paper_title(
     request: GetPaperTitleRequestBody,
     qdrant_client: Annotated[
@@ -58,6 +59,7 @@ async def get_paper_title(
 
 
 @router.get("/content", response_model=RetrievePaperContentResponseBody)
+@inject
 async def retrieve_paper_content(
     request: RetrievePaperContentRequestBody,
     arxiv_client: Annotated[ArxivClient, Depends(Provide[SyncContainer.arxiv_client])],
@@ -81,6 +83,7 @@ async def retrieve_paper_content(
 
 
 @router.get("/summarize", response_model=SummarizePaperResponseBody)
+@inject
 async def summarize_paper_content(
     request: SummarizePaperRequestBody,
     llm_client: Annotated[
@@ -94,6 +97,7 @@ async def summarize_paper_content(
 
 
 @router.get("/code", response_model=RetrieveCodeResponseBody)
+@inject
 async def retrieve_code(
     request: RetrieveCodeRequestBody,
     llm_client: Annotated[

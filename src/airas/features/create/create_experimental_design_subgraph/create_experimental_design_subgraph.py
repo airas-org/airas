@@ -15,7 +15,10 @@ from airas.features.create.create_experimental_design_subgraph.nodes.generate_ex
 from airas.features.create.create_experimental_design_subgraph.nodes.generate_experiment_runs import (
     generate_experiment_runs,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.research_session import ResearchSession
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -60,12 +63,14 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        llm_client: LLMFacadeClient,
         runner_type: RunnerType = "ubuntu-latest",
         llm_mapping: dict[str, str] | CreateExperimentalDesignLLMMapping | None = None,
         num_models_to_use: int = 2,
         num_datasets_to_use: int = 2,
         num_comparative_methods: int = 2,
     ):
+        self.llm_client = llm_client
         self.runner_type = runner_type
         self.num_models_to_use = num_models_to_use
         self.num_datasets_to_use = num_datasets_to_use
@@ -99,6 +104,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
 
         experiment_design = generate_experiment_design(
             llm_name=self.llm_mapping.generate_experiment_design,
+            llm_client=self.llm_client,
             research_session=research_session,
             runner_type=cast(RunnerType, self.runner_type),
             num_models_to_use=self.num_models_to_use,

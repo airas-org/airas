@@ -13,3 +13,19 @@ class CreateHypothesisRequestBody(TypedDict):
 class CreateHypothesisResponseBody(TypedDict):
     research_session: ResearchSession
     evaluated_hypothesis_history: list[EvaluatedHypothesis]
+
+
+class CreateMethodRequestBody(TypedDict):
+    research_session: ResearchSession
+
+
+class CreateMethodResponseBody(TypedDict):
+    research_session: ResearchSession
+
+
+class CreateExperimentalDesignRequestBody(TypedDict):
+    research_session: ResearchSession
+
+
+class CreateExperimentalDesignResponseBody(TypedDict):
+    research_session: ResearchSession

@@ -1,16 +1,29 @@
 from typing import Annotated
 
-from dependency_injector.wiring import Provide
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 
+from airas.features.create.create_experimental_design_subgraph.create_experimental_design_subgraph import (
+    CreateExperimentalDesignSubgraph,
+)
 from airas.features.create.create_hypothesis_subgraph.create_hypothesis_subgraph import (
     CreateHypothesisSubgraph,
+)
+from airas.features.create.create_method_subgraph.create_method_subgraph import (
+    CreateMethodSubgraph,
 )
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
 from airas.services.api_client.qdrant_client import QdrantClient
 from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
-from api.schemas.create import CreateHypothesisRequestBody, CreateHypothesisResponseBody
+from api.schemas.create import (
+    CreateExperimentalDesignRequestBody,
+    CreateExperimentalDesignResponseBody,
+    CreateHypothesisRequestBody,
+    CreateHypothesisResponseBody,
+    CreateMethodRequestBody,
+    CreateMethodResponseBody,
+)
 from src.airas.services.api_client.api_clients_container import (
     AsyncContainer,
     SyncContainer,
@@ -20,6 +33,7 @@ router = APIRouter(prefix="/create", tags=["papers"])
 
 
 @router.get("/hypothesis", response_model=CreateHypothesisResponseBody)
+@inject
 async def create_hypothesis(
     request: CreateHypothesisRequestBody,
     qdrant_client: Annotated[
@@ -47,4 +61,31 @@ async def create_hypothesis(
     return CreateHypothesisResponseBody(
         research_session=result["research_session"],
         evaluated_hypothesis_history=result["evaluated_hypothesis_history"],
+    )
+
+
+@router.get("/method", response_model=CreateMethodResponseBody)
+@inject
+async def create_method(
+    request: CreateMethodRequestBody,
+) -> CreateMethodResponseBody:
+    result = await CreateMethodSubgraph().arun(request)
+    return CreateMethodResponseBody(
+        research_session=result["research_session"],
+    )
+
+
+@router.get("/experimental_design", response_model=CreateExperimentalDesignResponseBody)
+@inject
+async def create_experimental_design(
+    request: CreateExperimentalDesignRequestBody,
+    llm_client: Annotated[
+        LLMFacadeClient, Depends(Provide[AsyncContainer.o3_2025_04_16])
+    ],
+) -> CreateExperimentalDesignResponseBody:
+    result = await CreateExperimentalDesignSubgraph(
+        llm_client=llm_client,
+    ).arun(request)
+    return CreateExperimentalDesignResponseBody(
+        research_session=result["research_session"],
     )

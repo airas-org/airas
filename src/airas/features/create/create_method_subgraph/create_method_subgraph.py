@@ -11,7 +11,6 @@ from airas.features.create.create_method_subgraph.nodes.improve_method import (
     improve_method,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_iteration import ResearchIteration
 from airas.types.research_session import ResearchSession
 from airas.utils.check_api_key import check_api_key
@@ -30,7 +29,6 @@ class CreateMethodLLMMapping(BaseModel):
 
 class CreateMethodSubgraphInputState(TypedDict):
     research_session: ResearchSession
-    github_repository_info: GitHubRepositoryInfo
 
 
 class CreateMethodSubgraphHiddenState(TypedDict): ...
