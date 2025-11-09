@@ -1,4 +1,3 @@
-import json
 from logging import getLogger
 
 from jinja2 import Environment
@@ -8,9 +7,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ExperimentEvaluation, ResearchHypothesis
-from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -24,7 +21,6 @@ def evaluate_experimental_consistency(
     llm_name: LLM_MODEL,
     prompt_template: str,
     new_method: ResearchHypothesis,
-    github_repository_info: GitHubRepositoryInfo,
     consistency_score_threshold: int = 7,
     client: LLMFacadeClient | None = None,
 ) -> ResearchHypothesis:
@@ -60,14 +56,6 @@ def evaluate_experimental_consistency(
                 f"No response from LLM for experiment {experiment.experiment_id}"
             )
             continue
-
-        save_io_on_github(
-            github_repository_info=github_repository_info,
-            input=messages,
-            output=json.dumps(output, ensure_ascii=False, indent=4),
-            subgraph_name="evaluate_experimental_consistency_subgraph",
-            node_name=f"evaluate_experimental_consistency_{experiment.experiment_id}",
-        )
 
         consistency_score = output["consistency_score"]
         is_selected = consistency_score >= consistency_score_threshold

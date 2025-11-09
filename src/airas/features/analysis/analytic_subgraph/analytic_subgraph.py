@@ -116,7 +116,6 @@ class AnalyticSubgraph(BaseSubgraph):
         analysis_report = analytic_node(
             llm_name=self.llm_mapping.analytic_node,
             research_session=research_session,
-            github_repository_info=state["github_repository_info"],
         )
         research_session.current_iteration.experimental_analysis.analysis_report = (
             analysis_report
@@ -131,7 +130,6 @@ class AnalyticSubgraph(BaseSubgraph):
         method_feedback = evaluate_method(
             llm_name=self.llm_mapping.evaluate_method,
             research_session=research_session,
-            github_repository_info=state["github_repository_info"],
         )
         if not research_session.current_iteration.experimental_analysis.evaluation:
             research_session.current_iteration.experimental_analysis.evaluation = (
@@ -191,6 +189,7 @@ def main():
         analytic_subgraph_input_data,
     )
     from airas.services.api_client.api_clients_container import sync_container
+
     sync_container.wire(modules=[__name__])
     input = analytic_subgraph_input_data
     result = AnalyticSubgraph().run(input)

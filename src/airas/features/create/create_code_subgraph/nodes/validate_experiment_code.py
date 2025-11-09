@@ -1,4 +1,3 @@
-import json
 from logging import getLogger
 
 from dependency_injector import providers
@@ -14,10 +13,8 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_session import ResearchSession
 from airas.types.wandb import WandbInfo
-from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -31,7 +28,6 @@ class ValidationOutput(BaseModel):
 def validate_experiment_code(
     llm_name: LLM_MODEL,
     research_session: ResearchSession,
-    github_repository_info: GitHubRepositoryInfo,
     wandb_info: WandbInfo | None = None,
     prompt_template: str = validate_experiment_code_prompt,
     llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
@@ -55,14 +51,5 @@ def validate_experiment_code(
             "No response from LLM in validate_experiment_code. Defaulting to False."
         )
         return False, ""
-
-    save_io_on_github(
-        github_repository_info=github_repository_info,
-        input=messages,
-        output=json.dumps(output, ensure_ascii=False, indent=4),
-        subgraph_name="create_code_subgraph",
-        node_name="validate_experiment_code",
-        llm_name=llm_name,
-    )
 
     return output["is_code_ready"], output["code_issue"]

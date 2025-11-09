@@ -1,4 +1,3 @@
-import json
 from logging import getLogger
 
 from jinja2 import Environment
@@ -10,7 +9,6 @@ from airas.services.api_client.llm_client.llm_facade_client import (
 )
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent
-from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -40,14 +38,6 @@ def evaluate_paper_results(
 
     if output is None:
         raise ValueError("No response from LLM in evaluate_paper_results node.")
-    save_io_on_github(
-        github_repository_info=github_repository_info,
-        input=messages,
-        output=json.dumps(output, ensure_ascii=False, indent=4),
-        subgraph_name="evaluate_paper_results_subgraph",
-        node_name="evaluate_paper_results",
-        llm_name=llm_name,
-    )
     return (
         output["was_experiment_executed"],
         output["is_better_than_baseline"],

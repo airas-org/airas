@@ -1,4 +1,3 @@
-import json
 from logging import getLogger
 
 from dependency_injector import providers
@@ -16,10 +15,8 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.types.research_study import ResearchStudy
-from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -29,7 +26,6 @@ def generate_hypothesis(
     llm_name: LLM_MODEL,
     research_topic: str,
     research_study_list: list[ResearchStudy],
-    github_repository_info: GitHubRepositoryInfo,
     llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
         SyncContainer.llm_facade_provider
     ],
@@ -51,12 +47,5 @@ def generate_hypothesis(
     )
     if output is None:
         raise ValueError("No response from LLM in generate_hypothesis.")
-    save_io_on_github(
-        github_repository_info=github_repository_info,
-        input=messages,
-        output=json.dumps(output, ensure_ascii=False, indent=4),
-        subgraph_name="create_hypothesis_subgraph",
-        node_name="generate_hypothesis",
-        llm_name=llm_name,
-    )
+
     return ResearchHypothesis(**output)

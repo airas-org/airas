@@ -12,9 +12,7 @@ from airas.features.create.fix_code_with_devin_subgraph.prompt.code_fix_devin_pr
 )
 from airas.services.api_client.devin_client import DevinClient
 from airas.types.devin import DevinInfo
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
-from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -25,7 +23,6 @@ def fix_code_with_devin(
     runner_type: RunnerType,
     devin_info: DevinInfo,
     error_list: list[str],
-    github_repository_info: GitHubRepositoryInfo,
     client: DevinClient | None = None,
 ):
     client = client or DevinClient()
@@ -44,14 +41,6 @@ def fix_code_with_devin(
     template = env.from_string(code_fix_devin_prompt)
     message = template.render(data)
     message = _adjust_string_length(message)
-    save_io_on_github(
-        github_repository_info=github_repository_info,
-        input=message,
-        output="Devin session",
-        subgraph_name="fix_code_with_devin_subgraph",
-        node_name=f"fix_code_with_devin_{experiment_iteration}",
-        llm_name="Devin",
-    )
     try:
         client.send_message(
             session_id=devin_info.session_id,

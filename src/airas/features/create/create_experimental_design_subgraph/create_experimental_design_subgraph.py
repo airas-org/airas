@@ -16,7 +16,6 @@ from airas.features.create.create_experimental_design_subgraph.nodes.generate_ex
     generate_experiment_runs,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_session import ResearchSession
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -37,7 +36,6 @@ class CreateExperimentalDesignLLMMapping(BaseModel):
 
 class CreateExperimentalDesignSubgraphInputState(TypedDict, total=False):
     research_session: ResearchSession
-    github_repository_info: GitHubRepositoryInfo
 
 
 class CreateExperimentalDesignHiddenState(TypedDict): ...
@@ -104,7 +102,6 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
             num_models_to_use=self.num_models_to_use,
             num_datasets_to_use=self.num_datasets_to_use,
             num_comparative_methods=self.num_comparative_methods,
-            github_repository_info=state["github_repository_info"],
         )
         research_session.current_iteration.experimental_design = experiment_design
         return {"research_session": research_session}
@@ -141,6 +138,7 @@ def main():
         create_experimental_design_subgraph_input_data,
     )
     from airas.services.api_client.api_clients_container import sync_container
+
     sync_container.wire(modules=[__name__])
 
     input = create_experimental_design_subgraph_input_data

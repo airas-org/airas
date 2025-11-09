@@ -1,4 +1,3 @@
-import json
 import logging
 
 from jinja2 import Environment
@@ -12,9 +11,7 @@ from airas.services.api_client.llm_client.openai_client import (
     OPENAI_MODEL,
     OpenAIClient,
 )
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_session import ResearchSession
-from airas.utils.save_prompt import save_io_on_github
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +35,6 @@ def generate_run_config(
     llm_name: OPENAI_MODEL,
     research_session: ResearchSession,
     runner_type: RunnerType,
-    github_repository_info: GitHubRepositoryInfo,
 ) -> list[RunConfigOutput]:
     client = OpenAIClient(reasoning_effort="high")
     env = Environment()
@@ -64,16 +60,6 @@ def generate_run_config(
 
     if output is None:
         raise ValueError("No response from LLM in generate_run_config.")
-
-    save_io_on_github(
-        github_repository_info=github_repository_info,
-        input=messages,
-        output=json.dumps(output, ensure_ascii=False, indent=2),
-        subgraph_name="create_code_subgraph",
-        node_name="generate_run_config",
-        llm_name=llm_name,
-    )
-
     output_model = RunConfigListOutput(**output)
 
     experiment_runs = research_session.current_iteration.experiment_runs

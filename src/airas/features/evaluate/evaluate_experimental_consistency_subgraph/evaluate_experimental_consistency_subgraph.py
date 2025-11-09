@@ -17,7 +17,6 @@ from airas.features.evaluate.evaluate_experimental_consistency_subgraph.prompts.
     evaluate_experimental_consistency_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -39,7 +38,6 @@ class EvaluateExperimentalConsistencyLLMMapping(BaseModel):
 
 class EvaluateExperimentalConsistencySubgraphInputState(TypedDict, total=False):
     new_method: ResearchHypothesis
-    github_repository_info: GitHubRepositoryInfo
 
 
 class EvaluateExperimentalConsistencySubgraphHiddenState(TypedDict): ...
@@ -96,7 +94,6 @@ class EvaluateExperimentalConsistencySubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.evaluate_experimental_consistency,
             prompt_template=self.prompt_template,
             new_method=state["new_method"],
-            github_repository_info=state["github_repository_info"],
             consistency_score_threshold=self.consistency_score_threshold,
         )
         return {"new_method": new_method}

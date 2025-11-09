@@ -10,13 +10,11 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_hypothesis import (
     EvaluatedHypothesis,
     ResearchHypothesis,
 )
 from airas.types.research_study import ResearchStudy
-from airas.utils.save_prompt import save_io_on_github
 
 
 @inject
@@ -25,8 +23,6 @@ def refine_hypothesis(
     research_topic: str,
     evaluated_hypothesis_history: list[EvaluatedHypothesis],
     research_study_list: list[ResearchStudy],
-    refine_iterations: int,
-    github_repository_info: GitHubRepositoryInfo,
     llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
         SyncContainer.llm_facade_provider
     ],
@@ -59,12 +55,5 @@ def refine_hypothesis(
     )
     if output is None:
         raise ValueError("No response from LLM in refine_hypothesis")
-    save_io_on_github(
-        github_repository_info=github_repository_info,
-        input=messages,
-        output=str(output),
-        subgraph_name="create_hypothesis_subgraph",
-        node_name=f"refine_hypothesis_{refine_iterations}",
-        llm_name=llm_name,
-    )
+
     return ResearchHypothesis(**output)

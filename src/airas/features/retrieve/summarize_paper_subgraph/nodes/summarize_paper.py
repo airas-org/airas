@@ -8,7 +8,6 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import LLMExtractedInfo, ResearchStudy
 
 logger = logging.getLogger(__name__)
@@ -23,11 +22,8 @@ class LLMOutput(BaseModel):
 
 
 async def _summarize_single_study(
-    index: int,
     research_study: ResearchStudy,
     rendered_template: Template,
-    llm_name: LLM_MODEL,
-    github_repository_info: GitHubRepositoryInfo,
     client: LLMFacadeClient,
 ) -> None:
     if not research_study.full_text:
@@ -59,7 +55,6 @@ async def summarize_paper(
     llm_name: LLM_MODEL,
     prompt_template: str,
     research_study_list: list[ResearchStudy],
-    github_repository_info: GitHubRepositoryInfo | None = None,
     client: LLMFacadeClient | None = None,
 ) -> list[ResearchStudy]:
     if client is None:
@@ -70,11 +65,8 @@ async def summarize_paper(
 
     tasks = [
         _summarize_single_study(
-            index,
             research_study,
             template,
-            llm_name,
-            github_repository_info,
             client,
         )
         for index, research_study in enumerate(research_study_list)

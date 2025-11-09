@@ -1,4 +1,3 @@
-import json
 from logging import getLogger
 
 from jinja2 import Environment
@@ -8,9 +7,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent, PaperReviewScores
-from airas.utils.save_prompt import save_io_on_github
 
 logger = getLogger(__name__)
 
@@ -26,7 +23,6 @@ def review_paper(
     llm_name: LLM_MODEL,
     prompt_template: str,
     paper_content: PaperContent,
-    github_repository_info: GitHubRepositoryInfo,
     client: LLMFacadeClient | None = None,
 ) -> dict[str, PaperReviewScores]:
     client = client or LLMFacadeClient(llm_name=llm_name)
@@ -45,14 +41,7 @@ def review_paper(
 
     if output is None:
         raise ValueError("No response from LLM in paper_review_node.")
-    save_io_on_github(
-        github_repository_info=github_repository_info,
-        input=messages,
-        output=json.dumps(output, ensure_ascii=False, indent=4),
-        subgraph_name="review_paper_subgraph",
-        node_name="review_paper",
-        llm_name=llm_name,
-    )
+
     paper_review_scores = PaperReviewScores(
         novelty_score=output["novelty_score"],
         significance_score=output["significance_score"],

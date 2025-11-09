@@ -1,5 +1,3 @@
-import json
-
 from dependency_injector import providers
 from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
@@ -13,9 +11,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_session import ResearchSession
-from airas.utils.save_prompt import save_io_on_github
 
 
 class LLMOutput(BaseModel):
@@ -26,7 +22,6 @@ class LLMOutput(BaseModel):
 def extract_code_in_readme(
     llm_name: LLM_MODEL,
     research_session: ResearchSession,
-    github_repository_info: GitHubRepositoryInfo,
     llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
         SyncContainer.llm_facade_provider
     ],
@@ -45,9 +40,7 @@ def extract_code_in_readme(
     client = llm_facade_provider(llm_name=llm_name)
     env = Environment()
     template = env.from_string(extract_code_in_readme_prompt)
-    for index, huggingface_data in enumerate(
-        experimental_design.external_resources.hugging_face.models
-    ):
+    for huggingface_data in experimental_design.external_resources.hugging_face.models:
         if huggingface_data.readme == "":
             huggingface_data.extracted_code = ""
             continue
@@ -62,14 +55,7 @@ def extract_code_in_readme(
         if output is None:
             huggingface_data.extracted_code = ""
             continue
-        save_io_on_github(
-            github_repository_info=github_repository_info,
-            input=messages,
-            output=json.dumps(output, ensure_ascii=False, indent=4),
-            subgraph_name="retrieve_hugging_face_subgraph",
-            node_name=f"extract_code_in_readme_model_{index}",
-            llm_name=llm_name,
-        )
+
         huggingface_data.extracted_code = output["extracted_code"]
 
     return research_session
