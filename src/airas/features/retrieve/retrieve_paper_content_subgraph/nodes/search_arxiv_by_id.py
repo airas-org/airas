@@ -11,10 +11,8 @@ logger = getLogger(__name__)
 
 def search_arxiv_by_id(
     research_study_list: list[ResearchStudy],
-    client: ArxivClient | None = None,
+    arxiv_client: ArxivClient,
 ) -> list[ResearchStudy]:
-    client = client or ArxivClient()
-
     for research_study in research_study_list:
         arxiv_id = (
             research_study.meta_data.arxiv_id if research_study.meta_data else None
@@ -23,7 +21,7 @@ def search_arxiv_by_id(
             continue
 
         try:
-            xml_feed = client.get_paper_by_id(arxiv_id=arxiv_id.strip())
+            xml_feed = arxiv_client.get_paper_by_id(arxiv_id=arxiv_id.strip())
         except Exception as e:
             logger.error(
                 f"Failed to process arXiv ID {arxiv_id}: {e}. Skipping to the next."

@@ -15,17 +15,16 @@ OPENAI_MODEL_SET = set(OPENAI_MODEL.__args__)
 
 def search_arxiv_id_from_title(
     llm_name: OPENAI_MODEL,
+    client: LLMFacadeClient,
     prompt_template: str,
     research_study_list: list[ResearchStudy],
     conference_preference: str | None = None,
-    client: LLMFacadeClient | None = None,
 ) -> list[ResearchStudy]:
     # TODO:Reflect the following judgment logic in llm_config.py.
     if llm_name not in OPENAI_MODEL_SET:
         raise ValueError(
             f"It needs to be an OpenAI model. Invalid model name: {llm_name}"
         )
-    client = client or LLMFacadeClient(llm_name=llm_name)
     template = Environment().from_string(prompt_template)
 
     for idx, research_study in enumerate(research_study_list):

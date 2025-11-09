@@ -9,10 +9,8 @@ logger = getLogger(__name__)
 
 def search_ss_by_id(
     research_study_list: list[ResearchStudy],
-    client: SemanticScholarClient | None = None,
+    ss_client: SemanticScholarClient,
 ) -> list[ResearchStudy]:
-    client = client or SemanticScholarClient()
-
     for research_study in research_study_list:
         arxiv_id = (
             research_study.meta_data.arxiv_id if research_study.meta_data else None
@@ -38,7 +36,7 @@ def search_ss_by_id(
             "isOpenAccess",
         )
         try:
-            response_data = client.get_paper_by_arxiv_id(
+            response_data = ss_client.get_paper_by_arxiv_id(
                 arxiv_id=arxiv_id.strip(), fields=fields
             )
         except Exception as e:

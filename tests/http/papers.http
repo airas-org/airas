@@ -1,8 +1,28 @@
-
+### Search paper by title
 
 GET http://127.0.0.1:8000/airas/v1/papers/search/title
 Content-Type: application/json
 
 {
     "queries": ["world models"]
+}
+
+
+### Retrieve paper content
+
+GET http://127.0.0.1:8001/airas/v1/papers/content
+Content-Type: application/json
+
+{
+  "research_study_list": [
+    {
+      "title": "Active World Model Learning in Agent-rich Environments with Progress Curiosity",
+      "abstract": null,
+      "full_text": null,
+      "image_data": null,
+      "references": null,
+      "meta_data": null,
+      "llm_extracted_info": null
+    }
+  ]
 }

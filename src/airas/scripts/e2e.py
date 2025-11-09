@@ -57,7 +57,7 @@ generate_queries = GenerateQueriesSubgraph(
 )
 get_paper_titles = GetPaperTitlesFromDBSubgraph(
     qdrant_client=Provide[SyncContainer.qdrant_client],
-    llm_client=Provide[AsyncContainer.llm_facade_client],
+    llm_client=Provide[AsyncContainer.gemini_embedding_001],
     max_results_per_query=settings.get_paper_titles_from_db.max_results_per_query,
     semantic_search=settings.get_paper_titles_from_db.semantic_search,
 )
@@ -66,6 +66,9 @@ retrieve_paper_content = RetrievePaperContentSubgraph(
     llm_mapping={
         "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
     },
+    arxiv_client=Provide[SyncContainer.arxiv_client],
+    ss_client=Provide[SyncContainer.semantic_scholar_client],
+    llm_client=Provide[AsyncContainer.gpt_5_mini_2025_08_07],
     paper_provider=settings.retrieve_paper_content.paper_provider,
 )
 summarize_paper = SummarizePaperSubgraph(
@@ -88,6 +91,9 @@ retrieve_reference_paper_content = RetrievePaperContentSubgraph(
     llm_mapping={
         "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
     },
+    arxiv_client=Provide[SyncContainer.arxiv_client],
+    ss_client=Provide[SyncContainer.semantic_scholar_client],
+    llm_client=Provide[AsyncContainer.gpt_5_mini_2025_08_07],
     paper_provider=settings.retrieve_paper_content.paper_provider,
 )
 
