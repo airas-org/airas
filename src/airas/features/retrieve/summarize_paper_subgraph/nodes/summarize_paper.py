@@ -53,13 +53,10 @@ async def _summarize_single_study(
 
 async def summarize_paper(
     llm_name: LLM_MODEL,
+    llm_client: LLMFacadeClient,
     prompt_template: str,
     research_study_list: list[ResearchStudy],
-    client: LLMFacadeClient | None = None,
 ) -> list[ResearchStudy]:
-    if client is None:
-        client = LLMFacadeClient(llm_name=llm_name)
-
     env = Environment()
     template = env.from_string(prompt_template)
 
@@ -67,7 +64,7 @@ async def summarize_paper(
         _summarize_single_study(
             research_study,
             template,
-            client,
+            llm_client,
         )
         for index, research_study in enumerate(research_study_list)
     ]

@@ -1,8 +1,6 @@
 import logging
 from typing import cast
 
-from dependency_injector import providers
-from dependency_injector.wiring import Provide, inject
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
@@ -37,13 +35,13 @@ from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_ss_by_
 from airas.features.retrieve.retrieve_paper_content_subgraph.prompt.openai_websearch_arxiv_ids_prompt import (
     openai_websearch_arxiv_ids_prompt,
 )
-from airas.services.api_client.api_clients_container import SyncContainer
+from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
 from airas.services.api_client.qdrant_client import QdrantClient
-from airas.types.github import GitHubRepositoryInfo
+from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
 from airas.types.research_hypothesis import EvaluatedHypothesis, ResearchHypothesis
 from airas.types.research_session import ResearchSession
 from airas.types.research_study import ResearchStudy
@@ -74,7 +72,6 @@ class CreateHypothesisSubgraphLLMMapping(BaseModel):
 class CreateHypothesisSubgraphInputState(TypedDict):
     research_topic: str
     research_study_list: list[ResearchStudy]
-    github_repository_info: GitHubRepositoryInfo
 
 
 class CreateHypothesisSubgraphHiddenState(TypedDict):
@@ -101,20 +98,23 @@ class CreateHypothesisSubgraph(BaseSubgraph):
     InputState = CreateHypothesisSubgraphInputState
     OutputState = CreateHypothesisSubgraphOutputState
 
-    @inject
     def __init__(
         self,
+        qdrant_client: QdrantClient,
+        arxiv_client: ArxivClient,
+        ss_client: SemanticScholarClient,
+        llm_client: LLMFacadeClient,
+        llm_embedding_client: LLMFacadeClient,
         llm_mapping: dict[str, str] | CreateHypothesisSubgraphLLMMapping | None = None,
         refinement_rounds: int = 2,
         paper_provider: str = "arxiv",
         num_retrieve_related_papers: int = 10,
-        qdrant_client: QdrantClient = Provide[SyncContainer.qdrant_client],
-        llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
-            SyncContainer.llm_facade_provider
-        ],
     ):
         self.qdrant_client = qdrant_client
-        self.llm_facade_provider = llm_facade_provider
+        self.arxiv_client = arxiv_client
+        self.ss_client = ss_client
+        self.llm_client = llm_client
+        self.llm_embedding_client = llm_embedding_client
         if llm_mapping is None:
             self.llm_mapping = CreateHypothesisSubgraphLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -154,6 +154,7 @@ class CreateHypothesisSubgraph(BaseSubgraph):
     ) -> dict[str, ResearchHypothesis]:
         research_hypothesis = generate_hypothesis(
             llm_name=self.llm_mapping.generate_hypothesis,
+            llm_client=self.llm_client,
             research_topic=state["research_topic"],
             research_study_list=state["research_study_list"],
         )
@@ -169,9 +170,7 @@ class CreateHypothesisSubgraph(BaseSubgraph):
             queries=[state["research_hypothesis"].method],
             num_retrieve_paper=self.num_retrieve_related_papers,
             qdrant_client=self.qdrant_client,
-            llm_client=self.llm_facade_provider(
-                llm_name=self.llm_mapping.embedding_model
-            ),
+            llm_client=self.llm_embedding_client,
         )
         retrieved_studies = [
             ResearchStudy(title=title) for title in (retrieved_titles or [])
@@ -189,6 +188,7 @@ class CreateHypothesisSubgraph(BaseSubgraph):
     ) -> dict[str, list[ResearchStudy]]:
         related_research_study_list = search_arxiv_id_from_title(
             llm_name=self.llm_mapping.search_arxiv_id_from_title,
+            client=self.llm_client,
             prompt_template=openai_websearch_arxiv_ids_prompt,
             research_study_list=state["related_research_study_list"],
         )
@@ -199,7 +199,8 @@ class CreateHypothesisSubgraph(BaseSubgraph):
         self, state: CreateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
         related_research_study_list = search_arxiv_by_id(
-            research_study_list=state["related_research_study_list"]
+            arxiv_client=self.arxiv_client,
+            research_study_list=state["related_research_study_list"],
         )
         return {"related_research_study_list": related_research_study_list}
 
@@ -208,7 +209,8 @@ class CreateHypothesisSubgraph(BaseSubgraph):
         self, state: CreateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
         related_research_study_list = search_ss_by_id(
-            research_study_list=state["related_research_study_list"]
+            ss_client=self.ss_client,
+            research_study_list=state["related_research_study_list"],
         )
         return {"related_research_study_list": related_research_study_list}
 
@@ -242,6 +244,7 @@ class CreateHypothesisSubgraph(BaseSubgraph):
             + state.get("related_research_study_list", []),
             research_hypothesis=state["research_hypothesis"],
             llm_name=self.llm_mapping.evaluate_novelty_and_significance,
+            llm_client=self.llm_client,
         )
         return {
             "evaluated_hypothesis_history": state["evaluated_hypothesis_history"]
@@ -267,6 +270,7 @@ class CreateHypothesisSubgraph(BaseSubgraph):
     ) -> dict[str, ResearchHypothesis | int]:
         refined_hypothesis = refine_hypothesis(
             llm_name=self.llm_mapping.refine_hypothesis,
+            llm_client=self.llm_client,
             research_topic=state["research_topic"],
             evaluated_hypothesis_history=state["evaluated_hypothesis_history"],
             research_study_list=state["research_study_list"],

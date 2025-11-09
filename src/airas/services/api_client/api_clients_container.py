@@ -170,6 +170,30 @@ class AsyncContainer(containers.DeclarativeContainer):
         google_genai_client=google_genai_client,
     )
 
+    gpt_5_mini_2025_08_07: providers.Factory[LLMFacadeClient] = providers.Factory(
+        LLMFacadeClient,
+        llm_name="gpt-5-mini-2025-08-07",
+        openai_client=openai_client,
+        anthropic_client=anthropic_client,
+        google_genai_client=google_genai_client,
+    )
+
+    gemini_2_5_flash: providers.Factory[LLMFacadeClient] = providers.Factory(
+        LLMFacadeClient,
+        llm_name="gemini-2.5-flash",
+        openai_client=openai_client,
+        anthropic_client=anthropic_client,
+        google_genai_client=google_genai_client,
+    )
+
+    o3_2025_04_16: providers.Factory[LLMFacadeClient] = providers.Factory(
+        LLMFacadeClient,
+        llm_name="o3-2025-04-16",
+        openai_client=openai_client,
+        anthropic_client=anthropic_client,
+        google_genai_client=google_genai_client,
+    )
+
     # --- Code & Experiment Platforms ---
     github_client: providers.Singleton[GithubClient] = providers.Singleton(
         GithubClient,

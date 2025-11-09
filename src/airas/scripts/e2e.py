@@ -5,6 +5,7 @@ from dependency_injector.wiring import Provide, register_loader_containers
 from tqdm import tqdm
 
 from airas.services.api_client.api_clients_container import (
+    AsyncContainer,
     SyncContainer,
     async_container,
     sync_container,
@@ -55,26 +56,32 @@ generate_queries = GenerateQueriesSubgraph(
     n_queries=settings.generate_queries.n_queries,
 )
 get_paper_titles = GetPaperTitlesFromDBSubgraph(
+    qdrant_client=Provide[SyncContainer.qdrant_client],
+    llm_client=Provide[AsyncContainer.gemini_embedding_001],
     max_results_per_query=settings.get_paper_titles_from_db.max_results_per_query,
     semantic_search=settings.get_paper_titles_from_db.semantic_search,
-    qdrant_client=Provide[SyncContainer.qdrant_client],
-    llm_facade_provider=Provide[SyncContainer.llm_facade_provider],
 )
 retrieve_paper_content = RetrievePaperContentSubgraph(
     target_study_list_source="research_study_list",
     llm_mapping={
         "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
     },
+    arxiv_client=Provide[SyncContainer.arxiv_client],
+    ss_client=Provide[SyncContainer.semantic_scholar_client],
+    llm_client=Provide[AsyncContainer.gpt_5_mini_2025_08_07],
     paper_provider=settings.retrieve_paper_content.paper_provider,
 )
 summarize_paper = SummarizePaperSubgraph(
-    llm_mapping={"summarize_paper": settings.llm_mapping.summarize_paper}
+    llm_mapping={"summarize_paper": settings.llm_mapping.summarize_paper},
+    llm_client=Provide[AsyncContainer.gemini_2_5_flash],
 )
 retrieve_code = RetrieveCodeSubgraph(
     llm_mapping={
         "extract_github_url_from_text": settings.llm_mapping.extract_github_url_from_text,
         "extract_experimental_info": settings.llm_mapping.extract_experimental_info,
-    }
+    },
+    llm_client=Provide[AsyncContainer.gemini_2_5_flash],
+    github_client=Provide[AsyncContainer.github_client],
 )
 reference_extractor = ExtractReferenceTitlesSubgraph(
     llm_mapping={
@@ -87,10 +94,18 @@ retrieve_reference_paper_content = RetrievePaperContentSubgraph(
     llm_mapping={
         "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
     },
+    arxiv_client=Provide[SyncContainer.arxiv_client],
+    ss_client=Provide[SyncContainer.semantic_scholar_client],
+    llm_client=Provide[AsyncContainer.gpt_5_mini_2025_08_07],
     paper_provider=settings.retrieve_paper_content.paper_provider,
 )
 
 create_hypothesis = CreateHypothesisSubgraph(
+    qdrant_client=Provide[SyncContainer.qdrant_client],
+    arxiv_client=Provide[SyncContainer.arxiv_client],
+    ss_client=Provide[SyncContainer.semantic_scholar_client],
+    llm_client=Provide[AsyncContainer.o3_2025_04_16],
+    llm_embedding_client=Provide[AsyncContainer.gemini_embedding_001],
     llm_mapping={
         "generate_hypothesis": settings.llm_mapping.generate_idea_and_research_summary,
         "evaluate_novelty_and_significance": settings.llm_mapping.evaluate_novelty_and_significance,
@@ -108,6 +123,7 @@ create_method = CreateMethodSubgraph(
 )
 
 create_experimental_design = CreateExperimentalDesignSubgraph(
+    llm_client=Provide[AsyncContainer.o3_2025_04_16],
     runner_type=settings.runner_type,
     num_models_to_use=settings.create_experimental_design.num_models_to_use,
     num_datasets_to_use=settings.create_experimental_design.num_datasets_to_use,

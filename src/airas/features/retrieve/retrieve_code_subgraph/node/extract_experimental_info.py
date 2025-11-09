@@ -11,7 +11,6 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import ResearchStudy
 
 logger = logging.getLogger(__name__)
@@ -27,9 +26,6 @@ async def _extract_experimental_info_from_study(
     code_str: str,
     template: str,
     client: LLMFacadeClient,
-    github_repository_info: GitHubRepositoryInfo,
-    llm_name: LLM_MODEL,
-    index: int,
 ) -> None:
     title = research_study.title or "N/A"
 
@@ -77,15 +73,12 @@ async def _extract_experimental_info_from_study(
 
 async def extract_experimental_info(
     llm_name: LLM_MODEL,
+    client: LLMFacadeClient,
     research_study_list: list[ResearchStudy],
     code_str_list: list[str],
-    github_repository_info: GitHubRepositoryInfo,
     prompt_template: str = extract_experimental_info_prompt,
-    client: LLMFacadeClient | None = None,
     max_workers: int = 3,
 ) -> list[ResearchStudy]:
-    client = client or LLMFacadeClient(llm_name=llm_name)
-
     if len(research_study_list) != len(code_str_list):
         raise ValueError(
             "research_study_list and code_str_list must have the same length"
@@ -100,12 +93,9 @@ async def extract_experimental_info(
             code_str,
             prompt_template,
             client,
-            github_repository_info,
-            llm_name,
-            index,
         )
-        for index, (research_study, code_str) in enumerate(
-            zip(research_study_list, code_str_list, strict=True)
+        for research_study, code_str in zip(
+            research_study_list, code_str_list, strict=True
         )
     ]
     await asyncio.gather(*tasks)

@@ -5,7 +5,8 @@
 	"workspaceFolder": "/workspaces/airas",
     "overrideCommand": true,
     "mounts": [
-        "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind"
+        "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind",
+        "source=${env:HOME}/.gitconfig,target=/root/.gitconfig,type=bind,consistency=cached"
     ],
 	"customizations": {
 		"vscode": {

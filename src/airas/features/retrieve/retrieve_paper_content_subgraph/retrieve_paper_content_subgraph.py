@@ -26,7 +26,12 @@ from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_ss_by_
 from airas.features.retrieve.retrieve_paper_content_subgraph.prompt.openai_websearch_arxiv_ids_prompt import (
     openai_websearch_arxiv_ids_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.arxiv_client import ArxivClient
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
+from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
 from airas.types.research_study import ResearchStudy
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -78,6 +83,9 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
     def __init__(
         self,
         target_study_list_source: UsedStudyListSource,
+        llm_client: LLMFacadeClient,
+        arxiv_client: ArxivClient,
+        ss_client: SemanticScholarClient,
         llm_mapping: dict[str, str] | RetrievePaperContentLLMMapping | None = None,
         # TODO: Literal["arxiv", "semantic_scholar"]の実装に変更する
         paper_provider: str = "arxiv",
@@ -100,6 +108,9 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or RetrievePaperContentLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
+        self.llm_client = llm_client
+        self.arxiv_client = arxiv_client
+        self.ss_client = ss_client
         self.paper_provider = paper_provider
         self.target_study_list_source = target_study_list_source
 
@@ -128,6 +139,7 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
 
         research_study_list = search_arxiv_id_from_title(
             llm_name=self.llm_mapping.search_arxiv_id_from_title,
+            client=self.llm_client,
             prompt_template=openai_websearch_arxiv_ids_prompt,
             research_study_list=research_study_list,
         )
@@ -139,7 +151,9 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
     ) -> dict[str, list[ResearchStudy]]:
         research_study_list = state["tmp_research_study_list"]
 
-        research_study_list = search_arxiv_by_id(research_study_list)
+        research_study_list = search_arxiv_by_id(
+            research_study_list, arxiv_client=self.arxiv_client
+        )
         return {"tmp_research_study_list": research_study_list}
 
     @retrieve_paper_content_timed
@@ -148,7 +162,9 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
     ) -> dict[str, list[ResearchStudy]]:
         research_study_list = state["tmp_research_study_list"]
 
-        research_study_list = search_ss_by_id(research_study_list)
+        research_study_list = search_ss_by_id(
+            research_study_list, ss_client=self.ss_client
+        )
         return {"tmp_research_study_list": research_study_list}
 
     @retrieve_paper_content_timed

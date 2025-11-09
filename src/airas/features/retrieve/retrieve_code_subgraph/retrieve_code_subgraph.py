@@ -23,8 +23,11 @@ from airas.features.retrieve.retrieve_code_subgraph.node.retrieve_repository_con
 from airas.features.retrieve.retrieve_code_subgraph.prompt.extract_github_url_prompt import (
     extract_github_url_from_text_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
-from airas.types.github import GitHubRepositoryInfo
+from airas.services.api_client.github_client import GithubClient
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -47,7 +50,6 @@ class RetrieveCodeLLMMapping(BaseModel):
 
 class RetrieveCodeInputState(TypedDict):
     research_study_list: list[ResearchStudy]
-    github_repository_info: GitHubRepositoryInfo
 
 
 class RetrieveCodeHiddenState(TypedDict):
@@ -73,8 +75,9 @@ class RetrieveCodeSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        llm_client: LLMFacadeClient,
+        github_client: GithubClient,
         llm_mapping: dict[str, str] | RetrieveCodeLLMMapping | None = None,
-        save_prompts: bool = True,
     ):
         if llm_mapping is None:
             self.llm_mapping = RetrieveCodeLLMMapping()
@@ -88,7 +91,8 @@ class RetrieveCodeSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or RetrieveCodeLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
-        self.save_prompts = save_prompts
+        self.llm_client = llm_client
+        self.github_client = github_client
         check_api_key(llm_api_key_check=True)
 
     @retrieve_code_timed
@@ -99,7 +103,8 @@ class RetrieveCodeSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.extract_github_url_from_text,
             prompt_template=extract_github_url_from_text_prompt,
             research_study_list=state["research_study_list"],
-            github_repository_info=state.get("github_repository_info"),
+            llm_client=self.llm_client,
+            github_client=self.github_client,
         )
         return {
             "research_study_list": research_study_list,
@@ -122,9 +127,9 @@ class RetrieveCodeSubgraph(BaseSubgraph):
     ) -> dict[str, list[ResearchStudy]]:
         research_study_list = await extract_experimental_info(
             llm_name=self.llm_mapping.extract_experimental_info,
+            client=self.llm_client,
             research_study_list=state["research_study_list"],
             code_str_list=state["code_str_list"],
-            github_repository_info=state.get("github_repository_info"),
         )
         return {"research_study_list": research_study_list}
 
