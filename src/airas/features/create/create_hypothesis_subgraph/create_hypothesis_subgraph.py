@@ -1,7 +1,6 @@
 import logging
 from typing import cast
 
-from dependency_injector.wiring import inject
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
@@ -99,7 +98,6 @@ class CreateHypothesisSubgraph(BaseSubgraph):
     InputState = CreateHypothesisSubgraphInputState
     OutputState = CreateHypothesisSubgraphOutputState
 
-    @inject
     def __init__(
         self,
         qdrant_client: QdrantClient,

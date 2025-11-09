@@ -1,8 +1,6 @@
 import logging
 from typing import Any
 
-from dependency_injector import providers
-from dependency_injector.wiring import Provide, inject
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
@@ -21,7 +19,6 @@ from airas.features.retrieve.get_paper_titles_subgraph.nodes.get_paper_title_fro
 from airas.features.retrieve.get_paper_titles_subgraph.nodes.get_paper_titles_from_airas_db import (
     get_paper_titles_from_airas_db,
 )
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -67,18 +64,15 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
     InputState = GetPaperTitlesFromDBInputState
     OutputState = GetPaperTitlesFromDBOutputState
 
-    @inject
     def __init__(
         self,
+        qdrant_client: QdrantClient,
+        llm_embedding_client: LLMFacadeClient,
         max_results_per_query: int = 3,
         semantic_search: bool = False,
-        qdrant_client: QdrantClient = Provide[SyncContainer.qdrant_client],
-        llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
-            SyncContainer.llm_facade_provider
-        ],
     ):
         self.qdrant_client = qdrant_client
-        self.llm_facade_provider = llm_facade_provider
+        self.llm_embedding_client = llm_embedding_client
         self.max_results_per_query = max_results_per_query
         self.semantic_search = semantic_search
         self.llm_mapping = GetPaperTitlesFromDBLLMMapping()
@@ -112,9 +106,7 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
             num_retrieve_paper=self.max_results_per_query,
             queries=state["queries"],
             qdrant_client=self.qdrant_client,
-            llm_client=self.llm_facade_provider(
-                llm_name=self.llm_mapping.embedding_model
-            ),
+            llm_client=self.llm_embedding_client,
         )
         research_study_list = [ResearchStudy(title=title) for title in (titles or [])]
         return {"research_study_list": research_study_list}

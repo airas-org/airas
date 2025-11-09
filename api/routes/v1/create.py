@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from dependency_injector.wiring import Provide, inject
+from dependency_injector.wiring import Provide
 from fastapi import APIRouter, Depends
 
 from airas.features.create.create_hypothesis_subgraph.create_hypothesis_subgraph import (
@@ -20,7 +20,6 @@ router = APIRouter(prefix="/create", tags=["papers"])
 
 
 @router.get("/hypothesis", response_model=CreateHypothesisResponseBody)
-@inject
 async def create_hypothesis(
     request: CreateHypothesisRequestBody,
     qdrant_client: Annotated[
