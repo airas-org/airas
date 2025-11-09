@@ -14,7 +14,7 @@ class GenerateQueriesSubgraphConfig(BaseModel):
 
 class GetPaperTitlesFromDBSubgraphConfig(BaseModel):
     max_results_per_query: int = 2  # 論文検索時の各サブクエリに対する論文数
-    semantic_search: bool = False  # QDRANTの意味検索を使用
+    semantic_search: bool = True  # QDRANTの意味検索を使用
 
 
 class RetrievePaperContentSubgraphConfig(BaseModel):
@@ -57,10 +57,6 @@ class CreateBibfileSubgraphConfig(BaseModel):
 
 class WriterSubgraphConfig(BaseModel):
     writing_refinement_rounds: int = 2  # 論文の推敲回数
-
-
-class AnalyticSubgraphConfig(BaseModel):
-    max_method_iterations: int = 1  # 手法のイテレーション最大回数
 
 
 class WandbConfig(BaseModel):
@@ -129,7 +125,7 @@ class LLMMappingConfig(BaseModel):
 
 
 class Settings(BaseSettings):
-    profile: Literal["test", "prod"] = "test"
+    profile: Literal["test", "prod"] = "prod"
 
     # 手法イテレーション回数
     method_iteration_attempts: int = 3
@@ -165,7 +161,6 @@ class Settings(BaseSettings):
     create_code: CreateCodeSubgraphConfig = CreateCodeSubgraphConfig()
     create_bibfile: CreateBibfileSubgraphConfig = CreateBibfileSubgraphConfig()
     writer: WriterSubgraphConfig = WriterSubgraphConfig()
-    analytic: AnalyticSubgraphConfig = AnalyticSubgraphConfig()
     wandb: WandbConfig = WandbConfig()
 
     # LLMの設定
@@ -173,14 +168,14 @@ class Settings(BaseSettings):
 
     def apply_profile_overrides(self) -> Self:
         self.wandb.entity = "gengaru617-personal"
-        self.wandb.project = "251106-test"
+        self.wandb.project = "251109"
 
         if self.profile == "test":
             self.method_iteration_attempts = 1
             self.generate_queries.n_queries = 5
             self.get_paper_titles_from_db.max_results_per_query = 2
             self.extract_reference_titles.num_reference_paper = 1
-            self.create_hypothesis.num_retrieve_related_papers = 0
+            self.create_hypothesis.num_retrieve_related_papers = 1
             self.create_hypothesis.refinement_rounds = 0
             self.create_experimental_design.num_models_to_use = 1
             self.create_experimental_design.num_datasets_to_use = 1
@@ -191,7 +186,6 @@ class Settings(BaseSettings):
             self.create_code.max_code_validations = 10
             self.create_bibfile.max_filtered_references = 2
             self.writer.writing_refinement_rounds = 1
-            self.analytic.max_method_iterations = 1
         elif self.profile == "prod":
             # 本番はリッチに
             self.method_iteration_attempts = 3
@@ -209,5 +203,4 @@ class Settings(BaseSettings):
             self.create_code.max_code_validations = 10
             self.create_bibfile.max_filtered_references = 15
             self.writer.writing_refinement_rounds = 3
-            self.analytic.max_method_iterations = 1
         return self

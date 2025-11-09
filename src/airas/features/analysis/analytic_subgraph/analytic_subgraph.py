@@ -11,6 +11,9 @@ from airas.features.analysis.analytic_subgraph.nodes.analytic_node import analyt
 from airas.features.analysis.analytic_subgraph.nodes.evaluate_method import (
     evaluate_method,
 )
+from airas.features.analysis.analytic_subgraph.nodes.select_best_iteration import (
+    select_best_iteration,
+)
 from airas.features.execution.execute_experiment_subgraph.nodes.execute_experiment import (
     execute_evaluation,
 )
@@ -39,7 +42,6 @@ class AnalyticLLMMapping(BaseModel):
 class AnalyticSubgraphInputState(TypedDict, total=False):
     research_session: ResearchSession
     github_repository_info: GitHubRepositoryInfo
-    experiment_iteration: int  # TODO?: This will be removed.
 
 
 class AnalyticSubgraphHiddenState(TypedDict): ...
@@ -65,9 +67,7 @@ class AnalyticSubgraph(BaseSubgraph):
     def __init__(
         self,
         llm_mapping: dict[str, str] | AnalyticLLMMapping | None = None,
-        max_method_iterations: int = 1,
     ):
-        self.max_method_iterations = max_method_iterations
         if llm_mapping is None:
             self.llm_mapping = AnalyticLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -92,7 +92,6 @@ class AnalyticSubgraph(BaseSubgraph):
     ) -> dict[str, bool]:
         success = await execute_evaluation(
             github_repository=state["github_repository_info"],
-            experiment_iteration=state["experiment_iteration"],
             research_session=state["research_session"],
         )
         return {"executed_flag": success}
@@ -103,7 +102,6 @@ class AnalyticSubgraph(BaseSubgraph):
     ) -> dict[str, ResearchSession]:
         research_session = await retrieve_evaluation_artifacts(
             github_repository=state["github_repository_info"],
-            experiment_iteration=state["experiment_iteration"],
             research_session=state["research_session"],
         )
         return {"research_session": research_session}
@@ -139,23 +137,12 @@ class AnalyticSubgraph(BaseSubgraph):
 
         return {"research_session": research_session}
 
-    def _should_iterate(self, state: AnalyticSubgraphState) -> str:
-        research_session = state["research_session"]
-        iteration_count = (
-            len(research_session.iterations) if research_session.iterations else 0
-        )
-
-        logger.info(
-            f"Decision: Checking iteration count "
-            f"({iteration_count}/{self.max_method_iterations})"
-        )
-
-        if iteration_count < self.max_method_iterations:
-            logger.info("Decision: Iteration needed. Continuing to the next iteration.")
-            return "iterate_method"
-        else:
-            logger.info("Decision: No iteration needed. Maximum iterations reached.")
-            return "no_iteration"
+    @analytic_timed
+    def _select_best_iteration(
+        self, state: AnalyticSubgraphState
+    ) -> dict[str, ResearchSession]:
+        research_session = select_best_iteration(state["research_session"])
+        return {"research_session": research_session}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(AnalyticSubgraphState)
@@ -166,20 +153,14 @@ class AnalyticSubgraph(BaseSubgraph):
         )
         graph_builder.add_node("analytic_node", self._analytic_node)
         graph_builder.add_node("evaluate_method", self._evaluate_method)
+        graph_builder.add_node("select_best_iteration", self._select_best_iteration)
 
         graph_builder.add_edge(START, "execute_evaluation")
         graph_builder.add_edge("execute_evaluation", "retrieve_evaluation_artifacts")
         graph_builder.add_edge("retrieve_evaluation_artifacts", "analytic_node")
-
-        graph_builder.add_conditional_edges(
-            "analytic_node",
-            self._should_iterate,
-            {
-                "no_iteration": END,
-                "iterate_method": "evaluate_method",
-            },
-        )
-        graph_builder.add_edge("evaluate_method", END)
+        graph_builder.add_edge("analytic_node", "evaluate_method")
+        graph_builder.add_edge("evaluate_method", "select_best_iteration")
+        graph_builder.add_edge("select_best_iteration", END)
 
         return graph_builder.compile()
 

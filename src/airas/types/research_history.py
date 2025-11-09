@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent, PaperReviewScores
+from airas.types.research_hypothesis import EvaluatedHypothesis
 from airas.types.research_session import ResearchSession
 from airas.types.research_study import ResearchStudy
 
@@ -25,8 +26,10 @@ class ResearchHistory(BaseModel):
     )
 
     # --- Hypothesis & Experimentation ---
+    evaluated_hypothesis_history: Optional[list[EvaluatedHypothesis]] = Field(
+        None, description=""
+    )
     research_session: Optional[ResearchSession] = Field(None, description="")
-    experiment_iteration: Optional[int] = Field(None, description="")
 
     # --- Writing & Publication ---
     paper_content: Optional[PaperContent] = Field(

@@ -5,7 +5,6 @@ from dependency_injector.wiring import Provide, register_loader_containers
 from tqdm import tqdm
 
 from airas.services.api_client.api_clients_container import (
-    AsyncContainer,
     SyncContainer,
     async_container,
     sync_container,
@@ -56,10 +55,10 @@ generate_queries = GenerateQueriesSubgraph(
     n_queries=settings.generate_queries.n_queries,
 )
 get_paper_titles = GetPaperTitlesFromDBSubgraph(
-    qdrant_client=Provide[SyncContainer.qdrant_client],
-    llm_client=Provide[AsyncContainer.llm_facade_client],
     max_results_per_query=settings.get_paper_titles_from_db.max_results_per_query,
     semantic_search=settings.get_paper_titles_from_db.semantic_search,
+    qdrant_client=Provide[SyncContainer.qdrant_client],
+    llm_facade_provider=Provide[SyncContainer.llm_facade_provider],
 )
 retrieve_paper_content = RetrievePaperContentSubgraph(
     target_study_list_source="research_study_list",
@@ -92,12 +91,10 @@ retrieve_reference_paper_content = RetrievePaperContentSubgraph(
 )
 
 create_hypothesis = CreateHypothesisSubgraph(
-    qdrant_client=Provide[SyncContainer.qdrant_client],
-    llm_client=Provide[AsyncContainer.llm_facade_client],
     llm_mapping={
-        "generate_idea_and_research_summary": settings.llm_mapping.generate_idea_and_research_summary,
+        "generate_hypothesis": settings.llm_mapping.generate_idea_and_research_summary,
         "evaluate_novelty_and_significance": settings.llm_mapping.evaluate_novelty_and_significance,
-        "refine_idea_and_research_summary": settings.llm_mapping.refine_idea_and_research_summary,
+        "refine_hypothesis": settings.llm_mapping.refine_idea_and_research_summary,
         "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
     },
     refinement_rounds=settings.create_hypothesis.refinement_rounds,
@@ -149,7 +146,6 @@ analysis = AnalyticSubgraph(
         "analytic_node": settings.llm_mapping.analytic_node,
         "evaluate_method": settings.llm_mapping.evaluate_method,
     },
-    max_method_iterations=settings.analytic.max_method_iterations,
 )
 create_bibfile = CreateBibfileSubgraph(
     llm_mapping={
@@ -336,11 +332,21 @@ def execute_workflow(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    suffix = "tanaka"
+    suffix = "matsuzawa"
     exec_time = datetime.now().strftime("%Y%m%d-%H%M%S")
     repository_name = f"airas-{exec_time}-{suffix}"
 
-    research_topic_list = "Improving fine-tuning performance of language models."
+    research_topic_list = "Learning rate optimization for fine-tuning Qwen3-0.6B on GSM8K elementary math problems"
+    # research_topic_list = "Optimal learning rate scheduling for fine-tuning small language models on GSM8K elementary math problems"
+    # research_topic_list = "Finding optimal LoRA rank for parameter-efficient fine-tuning on mathematical reasoning tasks"
+    # research_topic_list = "Batch size optimization for memory-efficient fine-tuning of small transformers on math problems"
+    # research_topic_list = "Weight decay regularization effects on small model fine-tuning for arithmetic reasoning"
+    # research_topic_list = "Data efficiency analysis: minimum training samples needed for effective math reasoning fine-tuning"
+    # research_topic_list = "Joint fine-tuning on GSM8K and MATH datasets for improved mathematical reasoning in small models"
+    # research_topic_list = "Joint optimization of LoRA rank and alpha hyperparameters for efficient adaptation on mathematical tasks"
+    # research_topic_list = "Optimal training epochs for small model fine-tuning: balancing performance and computational cost"
+    # research_topic_list = "Comprehensive hyperparameter optimization for fine-tuning Qwen3-4B on mathematical reasoning tasks"
+    # research_topic_list = "Comparing fine-tuning efficiency across small model sizes (0.6B to 4B) on mathematical reasoning"
 
     try:
         execute_workflow(

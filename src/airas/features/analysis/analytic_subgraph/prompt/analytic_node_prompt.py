@@ -54,7 +54,7 @@ Your task is to analyze the experimental results and generate a comprehensive an
 {% if research_session.current_iteration.experimental_analysis %}
 {% if research_session.current_iteration.experimental_analysis.aggregated_metrics %}
 ## Aggregated Metrics
-{{ research_session.current_iteration.experimental_analysis.aggregated_metrics }}
+{{ research_session.current_iteration.experimental_analysis.aggregated_metrics | tojson(indent=2) }}
 {% endif %}
 
 {% if research_session.current_iteration.experimental_analysis.comparison_figures %}

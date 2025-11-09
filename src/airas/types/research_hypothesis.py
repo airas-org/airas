@@ -10,6 +10,7 @@ class ResearchHypothesis(BaseModel):
     open_problems: str
     method: str
     experimental_setup: str
+    primary_metric: str
     experimental_code: str
     expected_result: str
     expected_conclusion: str
@@ -19,6 +20,7 @@ class ResearchHypothesis(BaseModel):
             "Open Problems": self.open_problems,
             "Methods": self.method,
             "Experimental Setup": self.experimental_setup,
+            "Primary Metric": self.primary_metric,
             "Experimental Code": self.experimental_code,
             "Expected Result": self.expected_result,
             "Expected Conclusion": self.expected_conclusion,

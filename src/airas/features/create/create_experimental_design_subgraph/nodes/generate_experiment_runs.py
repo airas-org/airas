@@ -9,14 +9,17 @@ logger = logging.getLogger(__name__)
 
 
 def _sanitize_for_branch_name(text: str) -> str:
-    # Allow alphanumeric, dots, hyphens, underscores
-    sanitized = re.sub(r"[^a-zA-Z0-9._-]+", "-", text)
-    # Remove leading/trailing dots and hyphens
-    sanitized = sanitized.strip(".-")
-    # Replace consecutive dots with single dot (.. is not allowed)
-    sanitized = re.sub(r"\.{2,}", ".", sanitized)
-    # Remove .lock suffix if present
-    if sanitized.endswith(".lock"):
+    sanitized = re.sub(
+        r"[^a-zA-Z0-9._-]+", "-", text
+    )  # Allow alphanumeric, dots, hyphens, underscores
+    sanitized = sanitized.strip(".-")  # Remove leading/trailing dots and hyphens
+    sanitized = re.sub(
+        r"\.{2,}", ".", sanitized
+    )  # Replace consecutive dots with single dot (.. is not allowed)
+    sanitized = re.sub(
+        r"-{2,}", "-", sanitized
+    )  # Replace consecutive hyphens with single hyphen
+    if sanitized.endswith(".lock"):  # Remove .lock suffix if present
         sanitized = sanitized[:-5]
     return sanitized
 
@@ -27,6 +30,8 @@ def generate_experiment_runs(
     if not (design := research_session.current_iteration.experimental_design):
         logger.error("No experimental_design found in current_iteration")
         return []
+
+    iteration_id = research_session.current_iteration.iteration_id
 
     methods = ["proposed"]
     comparative_ids = [
@@ -48,7 +53,7 @@ def generate_experiment_runs(
     return [
         ExperimentRun(
             run_id=_sanitize_for_branch_name(
-                "-".join(filter(None, [method, model, dataset]))
+                "-".join(filter(None, [method, f"iter{iteration_id}", model, dataset]))
             ),
             method_name=method,
             model_name=model,
