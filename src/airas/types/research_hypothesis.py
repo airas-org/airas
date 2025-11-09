@@ -50,6 +50,6 @@ class EvaluatedHypothesis(BaseModel):
     @classmethod
     def format_list(cls, hypotheses: list[EvaluatedHypothesis]) -> str:
         return (
-            "".join(iter.to_formatted_string() for hypothesis in hypotheses)
+            "".join(hypothesis.to_formatted_string() for hypothesis in hypotheses)
             or "No previous hypotheses."
         )
