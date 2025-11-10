@@ -3,7 +3,7 @@ from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
-from pydantic import BaseModel, validate_call
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
@@ -20,7 +20,10 @@ from airas.features.write.create_bibfile_subgraph.nodes.update_repository_bibfil
 from airas.features.write.create_bibfile_subgraph.prompt.filter_references_prompt import (
     filter_references_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
 from airas.types.research_session import ResearchSession
@@ -65,9 +68,10 @@ class CreateBibfileSubgraph(BaseSubgraph):
     InputState = CreateBibfileSubgraphInputState
     OutputState = CreateBibfileSubgraphOutputState
 
-    @validate_call
+    # @validate_call
     def __init__(
         self,
+        llm_client: LLMFacadeClient,
         llm_mapping: dict[str, str] | CreateBibfileLLMMapping | None = None,
         latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
         max_filtered_references: int = 30,
@@ -88,6 +92,7 @@ class CreateBibfileSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or CreateBibfileLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
+        self.llm_client = llm_client
         self.latex_template_name = latex_template_name
         self.max_filtered_references = max_filtered_references
         check_api_key(llm_api_key_check=True)
@@ -103,6 +108,7 @@ class CreateBibfileSubgraph(BaseSubgraph):
             reference_study_list=state["reference_research_study_list"],
             research_session=state["research_session"],
             max_results=self.max_filtered_references,
+            llm_client=self.llm_client,
         )
         return {"reference_research_study_list": filtered_references}
 

@@ -56,6 +56,7 @@ async def _select_github_url(
     candidates: list[str],
     prompt_template: str,
     llm_client: LLMFacadeClient,
+    llm_name: LLM_MODEL,
 ) -> None:
     paper_summary = (
         research_study.llm_extracted_info.methodology
@@ -66,8 +67,10 @@ async def _select_github_url(
     messages = template.render(
         {"paper_summary": paper_summary, "extract_github_url_list": candidates}
     )
-    output, _ = await llm_client.structured_outputs_async(
-        message=messages, data_model=LLMOutput
+    output, _ = await llm_client.structured_outputs(
+        message=messages,
+        data_model=LLMOutput,
+        llm_name=llm_name,
     )
     if output is None:
         logger.warning("Error during LLM selection")
@@ -119,10 +122,7 @@ async def extract_github_url_from_text(
 
     tasks = [
         _select_github_url(
-            research_study,
-            candidates,
-            prompt_template,
-            llm_client,
+            research_study, candidates, prompt_template, llm_client, llm_name
         )
         for research_study, candidates in zip(
             research_study_list, candidates_list, strict=True

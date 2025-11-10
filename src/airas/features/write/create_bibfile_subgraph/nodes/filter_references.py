@@ -1,11 +1,8 @@
 from typing import Annotated
 
-from dependency_injector import providers
-from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 from pydantic import BaseModel, Field
 
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -21,19 +18,15 @@ class FilteredReferencesOutput(BaseModel):
     ]
 
 
-@inject
 def filter_references(
     llm_name: LLM_MODEL,
     prompt_template: str,
     research_study_list: list[ResearchStudy],
     reference_study_list: list[ResearchStudy],
     research_session: ResearchSession,
+    llm_client: LLMFacadeClient,
     max_results: int = 30,
-    llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
-        SyncContainer.llm_facade_provider
-    ],
 ) -> list[ResearchStudy]:
-    client = llm_facade_provider(llm_name=llm_name)
     data = {
         "research_study_list": [study.model_dump() for study in research_study_list],
         "reference_study_list": [study.model_dump() for study in reference_study_list],
@@ -45,8 +38,10 @@ def filter_references(
     template = env.from_string(prompt_template)
     messages = template.render(data)
 
-    output, _ = client.structured_outputs(
-        message=messages, data_model=FilteredReferencesOutput
+    output, _ = llm_client.structured_outputs(
+        message=messages,
+        data_model=FilteredReferencesOutput,
+        llm_name=llm_name,
     )
     if output is None:
         raise ValueError("Error: No response from LLM in filter_references.")

@@ -66,10 +66,10 @@ class GetPaperTitlesFromWebSubgraph(BaseSubgraph):
         self.max_results_per_query = max_results_per_query
 
     @get_paper_titles_from_web_timed
-    def _openai_websearch_titles(
+    async def _openai_websearch_titles(
         self, state: GetPaperTitlesFromWebState
     ) -> dict[str, list[ResearchStudy]]:
-        titles = openai_websearch_titles(
+        titles = await openai_websearch_titles(
             llm_name=self.llm_mapping.openai_websearch_titles,
             queries=state["queries"],
             prompt_template=openai_websearch_titles_prompt,

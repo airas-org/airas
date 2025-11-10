@@ -15,7 +15,7 @@ from airas.types.research_hypothesis import (
 from airas.types.research_study import ResearchStudy
 
 
-def evaluate_novelty_and_significance(
+async def evaluate_novelty_and_significance(
     research_topic: str,
     research_study_list: list[ResearchStudy],
     research_hypothesis: ResearchHypothesis,
@@ -31,9 +31,10 @@ def evaluate_novelty_and_significance(
         "new_hypothesis": research_hypothesis.to_formatted_json(),
     }
     messages = template.render(data)
-    output, cost = llm_client.structured_outputs(
+    output, cost = await llm_client.structured_outputs(
         message=messages,
         data_model=HypothesisEvaluation,
+        llm_name=llm_name,
     )
 
     if output is None:

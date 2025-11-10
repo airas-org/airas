@@ -25,6 +25,7 @@ from airas.features.execution.execute_experiment_subgraph.nodes.execute_experime
 from airas.features.execution.execute_experiment_subgraph.nodes.retrieve_artifacts import (
     retrieve_trial_experiment_artifacts,
 )
+from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_iteration import ExperimentalResults
@@ -73,9 +74,11 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        github_client: GithubClient,
         runner_type: RunnerType = "ubuntu-latest",
         llm_mapping: dict[str, str] | ExecuteExperimentLLMMapping | None = None,
     ):
+        self.github_client = github_client
         self.runner_type = runner_type
 
         if llm_mapping is None:
@@ -110,6 +113,7 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
             github_repository=state["github_repository_info"],
             runner_type=cast(RunnerType, self.runner_type),
             research_session=state["research_session"],
+            github_client=self.github_client,
         )
         return {"executed_flag": success}
 
@@ -123,6 +127,7 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
         ) = await retrieve_trial_experiment_artifacts(
             github_repository=state["github_repository_info"],
             research_session=state["research_session"],
+            github_client=self.github_client,
         )
         return {
             "research_session": research_session,
@@ -168,6 +173,7 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
             github_repository=state["github_repository_info"],
             runner_type=cast(RunnerType, self.runner_type),
             research_session=state["research_session"],
+            github_client=self.github_client,
         )
         return {"executed_flag": success}
 

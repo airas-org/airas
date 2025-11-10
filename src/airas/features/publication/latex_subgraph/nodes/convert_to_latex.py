@@ -17,10 +17,9 @@ logger = getLogger(__name__)
 def convert_to_latex_str(
     llm_name: LLM_MODEL,
     paper_content: PaperContent,
+    llm_client: LLMFacadeClient,
     figures_dir: str = "images",
-    client: LLMFacadeClient | None = None,
 ) -> PaperContent:
-    client = client or LLMFacadeClient(llm_name)
     env = Environment()
 
     data = {
@@ -37,7 +36,7 @@ def convert_to_latex_str(
     template = env.from_string(convert_to_latex_prompt)
     messages = template.render(data)
 
-    output, cost = client.structured_outputs(
+    output, cost = llm_client.structured_outputs(
         message=messages,
         data_model=PaperContent,
     )

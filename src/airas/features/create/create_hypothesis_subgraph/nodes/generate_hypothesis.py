@@ -18,7 +18,7 @@ from airas.types.research_study import ResearchStudy
 logger = getLogger(__name__)
 
 
-def generate_hypothesis(
+async def generate_hypothesis(
     llm_name: LLM_MODEL,
     llm_client: LLMFacadeClient,
     research_topic: str,
@@ -34,9 +34,10 @@ def generate_hypothesis(
         "research_study_list": ResearchStudy.format_list(research_study_list),
     }
     messages = template.render(data)
-    output, cost = llm_client.structured_outputs(
+    output, cost = await llm_client.structured_outputs(
         message=messages,
         data_model=ResearchHypothesis,
+        llm_name=llm_name,
     )
     if output is None:
         raise ValueError("No response from LLM in generate_hypothesis.")

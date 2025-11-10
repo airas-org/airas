@@ -14,7 +14,7 @@ from airas.types.research_hypothesis import (
 from airas.types.research_study import ResearchStudy
 
 
-def refine_hypothesis(
+async def refine_hypothesis(
     llm_name: LLM_MODEL,
     llm_client: LLMFacadeClient,
     research_topic: str,
@@ -42,9 +42,10 @@ def refine_hypothesis(
         "research_study_list": ResearchStudy.format_list(research_study_list),
     }
     messages = template.render(data)
-    output, cost = llm_client.structured_outputs(
+    output, cost = await llm_client.structured_outputs(
         message=messages,
         data_model=ResearchHypothesis,
+        llm_name=llm_name,
     )
     if output is None:
         raise ValueError("No response from LLM in refine_hypothesis")

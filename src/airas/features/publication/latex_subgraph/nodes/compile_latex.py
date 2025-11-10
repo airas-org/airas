@@ -14,15 +14,15 @@ logger = getLogger(__name__)
 async def compile_latex(
     github_repository_info: GitHubRepositoryInfo,
     research_session: ResearchSession,
+    github_client: GithubClient,
     workflow_file: str = "compile_latex_with_open_code.yml",
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
-    client: GithubClient | None = None,
 ) -> bool:
     github_owner = github_repository_info.github_owner
     repository_name = github_repository_info.repository_name
     branch_name = github_repository_info.branch_name
 
-    executor = WorkflowExecutor(client)
+    executor = WorkflowExecutor(github_client)
 
     if not (iteration := research_session.best_iteration):
         logger.error(

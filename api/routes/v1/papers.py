@@ -45,13 +45,13 @@ async def get_paper_title(
     qdrant_client: Annotated[
         QdrantClient, Depends(Provide[SyncContainer.qdrant_client])
     ],
-    llm_embedding_client: Annotated[
-        LLMFacadeClient, Depends(Provide[AsyncContainer.gemini_embedding_001])
+    llm_client: Annotated[
+        LLMFacadeClient, Depends(Provide[AsyncContainer.llm_facade_client])
     ],
 ) -> GetPaperTitleResponseBody:
     result = await GetPaperTitlesFromDBSubgraph(
         qdrant_client=qdrant_client,
-        llm_embedding_client=llm_embedding_client,
+        llm_client=llm_client,
         max_results_per_query=10,
         semantic_search=True,
     ).arun(request)
@@ -67,7 +67,7 @@ async def retrieve_paper_content(
         SemanticScholarClient, Depends(Provide[SyncContainer.semantic_scholar_client])
     ],
     llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[AsyncContainer.gpt_5_mini_2025_08_07])
+        LLMFacadeClient, Depends(Provide[AsyncContainer.llm_facade_client])
     ],
 ) -> RetrievePaperContentResponseBody:
     result = await RetrievePaperContentSubgraph(
@@ -87,7 +87,7 @@ async def retrieve_paper_content(
 async def summarize_paper_content(
     request: SummarizePaperRequestBody,
     llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[AsyncContainer.gemini_2_5_flash])
+        LLMFacadeClient, Depends(Provide[AsyncContainer.llm_facade_client])
     ],
 ) -> SummarizePaperResponseBody:
     result = await SummarizePaperSubgraph(
@@ -101,7 +101,7 @@ async def summarize_paper_content(
 async def retrieve_code(
     request: RetrieveCodeRequestBody,
     llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[AsyncContainer.gemini_2_5_flash])
+        LLMFacadeClient, Depends(Provide[AsyncContainer.llm_facade_client])
     ],
     github_client: Annotated[
         GithubClient, Depends(Provide[AsyncContainer.github_client])

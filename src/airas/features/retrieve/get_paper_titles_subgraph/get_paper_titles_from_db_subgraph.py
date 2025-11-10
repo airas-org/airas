@@ -99,10 +99,10 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
         return {"research_study_list": research_study_list}
 
     @get_paper_titles_from_db_timed
-    def get_paper_titles_from_qdrant(
+    async def get_paper_titles_from_qdrant(
         self, state: GetPaperTitlesFromDBState
     ) -> dict[str, list[ResearchStudy]]:
-        titles = get_paper_titles_from_qdrant(
+        titles = await get_paper_titles_from_qdrant(
             num_retrieve_paper=self.max_results_per_query,
             queries=state["queries"],
             qdrant_client=self.qdrant_client,

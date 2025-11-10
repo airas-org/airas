@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 OPENAI_MODEL_SET = set(OPENAI_MODEL.__args__)
 
 
-def search_arxiv_id_from_title(
+async def search_arxiv_id_from_title(
     llm_name: OPENAI_MODEL,
     client: LLMFacadeClient,
     prompt_template: str,
@@ -38,7 +38,7 @@ def search_arxiv_id_from_title(
             }
         )
         try:
-            output, _ = client.web_search(message=prompt)
+            output, _ = await client.web_search(message=prompt, llm_name=llm_name)
         except Exception as e:
             logger.error(
                 f"Web search failed for '{research_study.title}': {e}. Skipping to the next."
@@ -62,22 +62,3 @@ def search_arxiv_id_from_title(
         logger.info(f"Found arXiv ID for '{research_study.title}': {arxiv_id}")
 
     return research_study_list
-
-
-if __name__ == "__main__":
-    from airas.features.retrieve.retrieve_paper_content_subgraph.prompt.openai_websearch_arxiv_ids_prompt import (
-        openai_websearch_arxiv_ids_prompt,
-    )
-
-    research_study = ResearchStudy(title="Attention Is All You Need")
-
-    result = search_arxiv_id_from_title(
-        llm_name="gpt-4o-2024-11-20",
-        prompt_template=openai_websearch_arxiv_ids_prompt,
-        research_study_list=[research_study],
-    )
-
-    if result and result[0].meta_data and result[0].meta_data.arxiv_id:
-        print(f"arXiv ID found: {result[0].meta_data.arxiv_id}")
-    else:
-        print("No arXiv ID found")

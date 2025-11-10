@@ -44,10 +44,7 @@ async def create_hypothesis(
         SemanticScholarClient, Depends(Provide[SyncContainer.semantic_scholar_client])
     ],
     llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[AsyncContainer.o3_2025_04_16])
-    ],
-    llm_embedding_client: Annotated[
-        LLMFacadeClient, Depends(Provide[AsyncContainer.gemini_embedding_001])
+        LLMFacadeClient, Depends(Provide[AsyncContainer.llm_facade_client])
     ],
 ) -> CreateHypothesisResponseBody:
     result = await CreateHypothesisSubgraph(
@@ -55,7 +52,6 @@ async def create_hypothesis(
         arxiv_client=arxiv_client,
         ss_client=ss_client,
         llm_client=llm_client,
-        llm_embedding_client=llm_embedding_client,
         refinement_rounds=0,
     ).arun(request)
     return CreateHypothesisResponseBody(
@@ -68,8 +64,13 @@ async def create_hypothesis(
 @inject
 async def create_method(
     request: CreateMethodRequestBody,
+    llm_client: Annotated[
+        LLMFacadeClient, Depends(Provide[AsyncContainer.llm_facade_client])
+    ],
 ) -> CreateMethodResponseBody:
-    result = await CreateMethodSubgraph().arun(request)
+    result = await CreateMethodSubgraph(
+        llm_client=llm_client,
+    ).arun(request)
     return CreateMethodResponseBody(
         research_session=result["research_session"],
     )
@@ -80,7 +81,7 @@ async def create_method(
 async def create_experimental_design(
     request: CreateExperimentalDesignRequestBody,
     llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[AsyncContainer.o3_2025_04_16])
+        LLMFacadeClient, Depends(Provide[AsyncContainer.llm_facade_client])
     ],
 ) -> CreateExperimentalDesignResponseBody:
     result = await CreateExperimentalDesignSubgraph(

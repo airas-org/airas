@@ -20,7 +20,7 @@ def _is_excluded_title(title: str) -> bool:
     return any(word in lowered for word in _EXCLUDE_KEYWORDS)
 
 
-def openai_websearch_titles(
+async def openai_websearch_titles(
     llm_name: LLM_MODEL,
     prompt_template: str,
     queries: list[str],
@@ -46,7 +46,7 @@ def openai_websearch_titles(
         prompt = template.render(data)
 
         try:
-            output, cost = client.web_search(message=prompt)
+            output, cost = await client.web_search(message=prompt, llm_name=llm_name)
         except Exception as exc:
             logger.warning(f"OpenAI web search failed for '{query}': {exc}")
             continue

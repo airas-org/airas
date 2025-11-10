@@ -132,12 +132,12 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
         return {"tmp_research_study_list": research_study_list}
 
     @retrieve_paper_content_timed
-    def _search_arxiv_id_from_title(
+    async def _search_arxiv_id_from_title(
         self, state: RetrievePaperContentState
     ) -> dict[str, list[ResearchStudy]]:
         research_study_list = state["tmp_research_study_list"]
 
-        research_study_list = search_arxiv_id_from_title(
+        research_study_list = await search_arxiv_id_from_title(
             llm_name=self.llm_mapping.search_arxiv_id_from_title,
             client=self.llm_client,
             prompt_template=openai_websearch_arxiv_ids_prompt,

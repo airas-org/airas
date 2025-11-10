@@ -24,7 +24,8 @@ class LLMOutput(BaseModel):
 async def _summarize_single_study(
     research_study: ResearchStudy,
     rendered_template: Template,
-    client: LLMFacadeClient,
+    llm_client: LLMFacadeClient,
+    llm_name: LLM_MODEL,
 ) -> None:
     if not research_study.full_text:
         logger.warning(
@@ -38,9 +39,10 @@ async def _summarize_single_study(
     messages = rendered_template.render(data)
 
     try:
-        output, _ = await client.structured_outputs_async(
+        output, _ = await llm_client.structured_outputs(
             message=messages,
             data_model=LLMOutput,
+            llm_name=llm_name,
         )
         logger.info(f"Successfully summarized '{research_study.title or 'N/A'}'")
     except Exception as e:
@@ -61,12 +63,8 @@ async def summarize_paper(
     template = env.from_string(prompt_template)
 
     tasks = [
-        _summarize_single_study(
-            research_study,
-            template,
-            llm_client,
-        )
-        for index, research_study in enumerate(research_study_list)
+        _summarize_single_study(research_study, template, llm_client, llm_name)
+        for research_study in research_study_list
     ]
 
     await asyncio.gather(*tasks)

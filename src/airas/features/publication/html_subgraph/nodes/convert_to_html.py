@@ -1,9 +1,6 @@
-from dependency_injector import providers
-from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -16,18 +13,13 @@ class LLMOutput(BaseModel):
     generated_html_text: str
 
 
-@inject
 def convert_to_html(
     llm_name: LLM_MODEL,
     paper_content: PaperContent,
     research_session: ResearchSession,
     prompt_template: str,
-    llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
-        SyncContainer.llm_facade_provider
-    ],
+    llm_client: LLMFacadeClient,
 ) -> str:
-    client = llm_facade_provider(llm_name=llm_name)
-
     image_file_name_list: list[str] = []
 
     if not (best_iter := research_session.best_iteration):
@@ -56,7 +48,7 @@ def convert_to_html(
     template = env.from_string(prompt_template)
     messages = template.render(data)
 
-    output, _ = client.structured_outputs(
+    output, _ = llm_client.structured_outputs(
         message=messages,
         data_model=LLMOutput,
     )

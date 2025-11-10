@@ -24,7 +24,10 @@ from airas.features.create.create_code_subgraph.nodes.set_github_actions_secrets
 from airas.features.create.create_code_subgraph.nodes.validate_experiment_code import (
     validate_experiment_code,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_session import ResearchSession
 from airas.types.wandb import WandbInfo
@@ -73,6 +76,7 @@ class CreateCodeSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        llm_client: LLMFacadeClient,
         runner_type: RunnerType = "ubuntu-latest",
         llm_mapping: dict[str, str] | CreateCodeLLMMapping | None = None,
         secret_names: list[str] | None = None,
@@ -99,6 +103,7 @@ class CreateCodeSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or CreateCodeLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
+        self.llm_client = llm_client
         check_api_key(
             llm_api_key_check=True,
             github_personal_access_token_check=True,
@@ -156,6 +161,7 @@ class CreateCodeSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.validate_experiment_code,
             research_session=state["research_session"],
             wandb_info=self.wandb_info,
+            llm_client=self.llm_client,
         )
         return {
             "code_validation": code_validation,
