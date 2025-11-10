@@ -1,14 +1,11 @@
 import logging
 
-from dependency_injector import providers
-from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 from pydantic import BaseModel
 
 from airas.features.retrieve.retrieve_hugging_face_subgraph.prompt.select_resources_prompt import (
     select_resources_prompt,
 )
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -24,20 +21,15 @@ class LLMOutput(BaseModel):
     selected_datasets: list[str]
 
 
-@inject
 def select_resources(
     llm_name: LLM_MODEL,
     research_session: ResearchSession,
     huggingface_search_results: HuggingFace,
+    llm_client: LLMFacadeClient,
     prompt_template: str = select_resources_prompt,
-    llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
-        SyncContainer.llm_facade_provider
-    ],
     max_models: int = 10,
     max_datasets: int = 10,
 ) -> HuggingFace:
-    client = llm_facade_provider(llm_name=llm_name)
-
     env = Environment()
     template = env.from_string(prompt_template)
     messages = template.render(
@@ -51,7 +43,11 @@ def select_resources(
         }
     )
 
-    output, _cost = client.structured_outputs(message=messages, data_model=LLMOutput)
+    output, _cost = llm_client.structured_outputs(
+        message=messages,
+        data_model=LLMOutput,
+        llm_name=llm_name,
+    )
     if output is None:
         raise ValueError("Error: No response from LLM in select_resources.")
 

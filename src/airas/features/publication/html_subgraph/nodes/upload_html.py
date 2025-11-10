@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 def upload_html(
     github_repository: GitHubRepositoryInfo,
     full_html: str,
+    github_client: GithubClient,
     upload_branch: str = "gh-pages",
     html_filename: str = "index.html",
 ) -> bool:
@@ -16,8 +17,7 @@ def upload_html(
         branch_name = github_repository.branch_name
         file_path = f"branches/{branch_name}/{html_filename}"
 
-        client = GithubClient()
-        success = client.commit_file_bytes(
+        success = github_client.commit_file_bytes(
             github_owner=github_repository.github_owner,
             repository_name=github_repository.repository_name,
             branch_name=upload_branch,

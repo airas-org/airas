@@ -29,7 +29,11 @@ from airas.features.publication.latex_subgraph.nodes.retrieve_github_repository_
 from airas.features.publication.latex_subgraph.nodes.upload_latex_file import (
     upload_latex_file,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.github_client import GithubClient
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
 from airas.types.paper import PaperContent
@@ -80,6 +84,8 @@ class LatexSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        llm_client: LLMFacadeClient,
+        github_client: GithubClient,
         llm_mapping: dict[str, str] | LatexLLMMapping | None = None,
         latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
         paper_name: str = "generated_paper.pdf",
@@ -95,6 +101,8 @@ class LatexSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or LatexLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
+        self.llm_client = llm_client
+        self.github_client = github_client
         self.latex_template_name = latex_template_name
         self.paper_name = paper_name
         check_api_key(llm_api_key_check=True)
@@ -111,6 +119,7 @@ class LatexSubgraph(BaseSubgraph):
         latex_formatted_paper_content = convert_to_latex_str(
             llm_name=self.llm_mapping.convert_to_latex,
             paper_content=state["paper_content"],
+            llm_client=self.llm_client,
         )
         return {"latex_formatted_paper_content": latex_formatted_paper_content}
 
@@ -119,6 +128,7 @@ class LatexSubgraph(BaseSubgraph):
         latex_template_text = retrieve_github_repository_file(
             github_repository=state["github_repository_info"],
             file_path=f".research/latex/{self.latex_template_name}/template.tex",
+            github_client=self.github_client,
         )
         return {"latex_template_text": latex_template_text}
 
@@ -136,6 +146,7 @@ class LatexSubgraph(BaseSubgraph):
             github_repository=state["github_repository_info"],
             latex_text=state["latex_text"],
             latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
+            github_client=self.github_client,
         )
         return {"is_upload_successful": is_upload_successful}
 
@@ -145,6 +156,7 @@ class LatexSubgraph(BaseSubgraph):
             github_repository_info=state["github_repository_info"],
             research_session=state["research_session"],
             latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
+            github_client=self.github_client,
         )
         return {"is_compiled": is_compiled}
 

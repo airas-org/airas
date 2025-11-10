@@ -104,7 +104,6 @@ class CreateHypothesisSubgraph(BaseSubgraph):
         arxiv_client: ArxivClient,
         ss_client: SemanticScholarClient,
         llm_client: LLMFacadeClient,
-        llm_embedding_client: LLMFacadeClient,
         llm_mapping: dict[str, str] | CreateHypothesisSubgraphLLMMapping | None = None,
         refinement_rounds: int = 2,
         paper_provider: str = "arxiv",
@@ -114,7 +113,6 @@ class CreateHypothesisSubgraph(BaseSubgraph):
         self.arxiv_client = arxiv_client
         self.ss_client = ss_client
         self.llm_client = llm_client
-        self.llm_embedding_client = llm_embedding_client
         if llm_mapping is None:
             self.llm_mapping = CreateHypothesisSubgraphLLMMapping()
         elif isinstance(llm_mapping, dict):
@@ -149,10 +147,10 @@ class CreateHypothesisSubgraph(BaseSubgraph):
 
     # TODO: Include the scope of models and datasets within the hypotheses generated.
     @create_hypothesis_timed
-    def _generate_hypothesis(
+    async def _generate_hypothesis(
         self, state: CreateHypothesisSubgraphState
     ) -> dict[str, ResearchHypothesis]:
-        research_hypothesis = generate_hypothesis(
+        research_hypothesis = await generate_hypothesis(
             llm_name=self.llm_mapping.generate_hypothesis,
             llm_client=self.llm_client,
             research_topic=state["research_topic"],
@@ -162,15 +160,15 @@ class CreateHypothesisSubgraph(BaseSubgraph):
 
     # TODO: If QDrant doesn't work, consider skipping the paper search or using airas_db.
     @create_hypothesis_timed
-    def _retrieve_related_papers(
+    async def _retrieve_related_papers(
         self, state: CreateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
         related_research_study_list = []  # Reset the list of related studies for re-execution.
-        retrieved_titles = get_paper_titles_from_qdrant(
+        retrieved_titles = await get_paper_titles_from_qdrant(
             queries=[state["research_hypothesis"].method],
             num_retrieve_paper=self.num_retrieve_related_papers,
             qdrant_client=self.qdrant_client,
-            llm_client=self.llm_embedding_client,
+            llm_client=self.llm_client,
         )
         retrieved_studies = [
             ResearchStudy(title=title) for title in (retrieved_titles or [])
@@ -183,10 +181,10 @@ class CreateHypothesisSubgraph(BaseSubgraph):
         return {"related_research_study_list": related_research_study_list}
 
     @create_hypothesis_timed
-    def _search_arxiv_id_from_title(
+    async def _search_arxiv_id_from_title(
         self, state: CreateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
-        related_research_study_list = search_arxiv_id_from_title(
+        related_research_study_list = await search_arxiv_id_from_title(
             llm_name=self.llm_mapping.search_arxiv_id_from_title,
             client=self.llm_client,
             prompt_template=openai_websearch_arxiv_ids_prompt,
@@ -235,10 +233,10 @@ class CreateHypothesisSubgraph(BaseSubgraph):
         else:
             return "retrieve_related_papers"
 
-    def _evaluate_novelty_and_significance(
+    async def _evaluate_novelty_and_significance(
         self, state: CreateHypothesisSubgraphState
     ) -> dict[str, list[EvaluatedHypothesis]]:
-        evaluated_hypothesis = evaluate_novelty_and_significance(
+        evaluated_hypothesis = await evaluate_novelty_and_significance(
             research_topic=state["research_topic"],
             research_study_list=state["research_study_list"]
             + state.get("related_research_study_list", []),
@@ -265,10 +263,10 @@ class CreateHypothesisSubgraph(BaseSubgraph):
             return "end"
 
     @create_hypothesis_timed
-    def _refine_hypothesis(
+    async def _refine_hypothesis(
         self, state: CreateHypothesisSubgraphState
     ) -> dict[str, ResearchHypothesis | int]:
-        refined_hypothesis = refine_hypothesis(
+        refined_hypothesis = await refine_hypothesis(
             llm_name=self.llm_mapping.refine_hypothesis,
             llm_client=self.llm_client,
             research_topic=state["research_topic"],

@@ -23,7 +23,11 @@ from airas.features.publication.html_subgraph.nodes.upload_html import upload_ht
 from airas.features.publication.html_subgraph.prompt.convert_to_html_prompt import (
     convert_to_html_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.github_client import GithubClient
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent
 from airas.types.research_session import ResearchSession
@@ -72,6 +76,8 @@ class HtmlSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        llm_client: LLMFacadeClient,
+        github_client: GithubClient,
         llm_mapping: dict[str, str] | HtmlLLMMapping | None = None,
     ):
         if llm_mapping is None:
@@ -85,6 +91,8 @@ class HtmlSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or HtmlLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
+        self.llm_client = llm_client
+        self.github_client = github_client
         check_api_key(llm_api_key_check=True)
 
     @html_timed
@@ -94,6 +102,7 @@ class HtmlSubgraph(BaseSubgraph):
             paper_content=state["paper_content"],
             research_session=state["research_session"],
             prompt_template=convert_to_html_prompt,
+            llm_client=self.llm_client,
         )
         return {"paper_content_html": paper_content_html}
 
@@ -119,6 +128,7 @@ class HtmlSubgraph(BaseSubgraph):
         ok = upload_html(
             github_repository=state["github_repository_info"],
             full_html=state["full_html"],
+            github_client=self.github_client,
         )
         return {"html_upload": ok}
 
@@ -130,6 +140,7 @@ class HtmlSubgraph(BaseSubgraph):
         github_pages_url = await prepare_images_for_html(
             github_repository=state["github_repository_info"],
             research_session=state["research_session"],
+            github_client=self.github_client,
         )
 
         return {

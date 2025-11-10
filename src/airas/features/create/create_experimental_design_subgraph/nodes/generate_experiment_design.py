@@ -41,7 +41,7 @@ class LLMOutput(BaseModel):
     hyperparameters_to_search: list[HyperParameter]
 
 
-def generate_experiment_design(
+async def generate_experiment_design(
     llm_name: LLM_MODEL,
     llm_client: LLMFacadeClient,
     research_session: ResearchSession,
@@ -68,9 +68,10 @@ def generate_experiment_design(
         "num_comparative_methods": num_comparative_methods,
     }
     messages = template.render(data)
-    output, _ = llm_client.structured_outputs(
+    output, _ = await llm_client.structured_outputs(
         message=messages,
         data_model=LLMOutput,
+        llm_name=llm_name,
     )
     if output is None:
         raise ValueError("No response from LLM in generate_experiment_design.")

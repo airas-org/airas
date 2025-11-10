@@ -13,14 +13,14 @@ logger = getLogger(__name__)
 async def prepare_images_for_html(
     github_repository: GitHubRepositoryInfo,
     research_session: ResearchSession,
+    github_client: GithubClient,
     workflow_file: str = "prepare_images_for_html.yml",
-    client: GithubClient | None = None,
 ) -> str | None:
     github_owner = github_repository.github_owner
     repository_name = github_repository.repository_name
     branch_name = github_repository.branch_name or "main"
 
-    executor = WorkflowExecutor(client)
+    executor = WorkflowExecutor(github_client)
 
     if not (iteration := research_session.best_iteration):
         logger.error(

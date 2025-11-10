@@ -12,7 +12,6 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import ResearchStudy
 
 logger = getLogger(__name__)
@@ -35,8 +34,6 @@ def _normalize_title(title: str) -> str:
 async def _extract_references_from_study(
     research_study: ResearchStudy,
     template: str,
-    github_repository_info: GitHubRepositoryInfo,
-    index: int,
     client: LLMFacadeClient,
     llm_name: LLM_MODEL,
 ) -> list[str]:
@@ -50,8 +47,10 @@ async def _extract_references_from_study(
     messages = jinja_template.render(data)
 
     try:
-        output, _ = await client.structured_outputs_async(
-            message=messages, data_model=LLMOutput
+        output, _ = await client.structured_outputs(
+            message=messages,
+            data_model=LLMOutput,
+            llm_name=llm_name,
         )
     except Exception as e:
         logger.error(f"Error extracting references for '{research_study.title}': {e}")
@@ -73,7 +72,6 @@ async def _extract_references_from_study(
 async def extract_reference_titles(
     llm_name: LLM_MODEL,
     research_study_list: list[ResearchStudy],
-    github_repository_info: GitHubRepositoryInfo | None = None,
     client: LLMFacadeClient | None = None,
 ) -> list[ResearchStudy]:
     client = client or LLMFacadeClient(llm_name=llm_name)
@@ -124,12 +122,10 @@ async def extract_reference_titles(
         _extract_references_from_study(
             study,
             extract_reference_titles_prompt,
-            github_repository_info,
-            index,
             client,
             llm_name,
         )
-        for index, study in enumerate(valid_studies)
+        for study in valid_studies
     ]
     result = await asyncio.gather(*tasks)
     all_reference_titles = [x for sublist in result for x in sublist]

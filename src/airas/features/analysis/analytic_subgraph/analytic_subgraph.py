@@ -20,7 +20,11 @@ from airas.features.execution.execute_experiment_subgraph.nodes.execute_experime
 from airas.features.execution.execute_experiment_subgraph.nodes.retrieve_artifacts import (
     retrieve_evaluation_artifacts,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.github_client import GithubClient
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_iteration import ExperimentEvaluation
 from airas.types.research_session import ResearchSession
@@ -66,6 +70,8 @@ class AnalyticSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        llm_client: LLMFacadeClient,
+        github_client: GithubClient,
         llm_mapping: dict[str, str] | AnalyticLLMMapping | None = None,
     ):
         if llm_mapping is None:
@@ -84,6 +90,8 @@ class AnalyticSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or AnalyticLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
+        self.llm_client = llm_client
+        self.github_client = github_client
         check_api_key(llm_api_key_check=True)
 
     @analytic_timed
@@ -93,6 +101,7 @@ class AnalyticSubgraph(BaseSubgraph):
         success = await execute_evaluation(
             github_repository=state["github_repository_info"],
             research_session=state["research_session"],
+            github_client=self.github_client,
         )
         return {"executed_flag": success}
 
@@ -103,6 +112,7 @@ class AnalyticSubgraph(BaseSubgraph):
         research_session = await retrieve_evaluation_artifacts(
             github_repository=state["github_repository_info"],
             research_session=state["research_session"],
+            github_client=self.github_client,
         )
         return {"research_session": research_session}
 
@@ -114,6 +124,7 @@ class AnalyticSubgraph(BaseSubgraph):
         analysis_report = analytic_node(
             llm_name=self.llm_mapping.analytic_node,
             research_session=research_session,
+            llm_client=self.llm_client,
         )
         research_session.current_iteration.experimental_analysis.analysis_report = (
             analysis_report
@@ -128,6 +139,7 @@ class AnalyticSubgraph(BaseSubgraph):
         method_feedback = evaluate_method(
             llm_name=self.llm_mapping.evaluate_method,
             research_session=research_session,
+            llm_client=self.llm_client,
         )
         if not research_session.current_iteration.experimental_analysis.evaluation:
             research_session.current_iteration.experimental_analysis.evaluation = (

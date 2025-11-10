@@ -2,9 +2,6 @@ import base64
 import json
 import logging
 
-from dependency_injector.wiring import Provide, inject
-
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_iteration import (
@@ -156,11 +153,10 @@ async def _retrieve_artifacts_from_branch(
     return stdout_text_data, stderr_text_data, image_file_name_list, experiment_code
 
 
-@inject
 async def retrieve_trial_experiment_artifacts(
     github_repository: GitHubRepositoryInfo,
     research_session: ResearchSession,
-    github_client: GithubClient = Provide[SyncContainer.github_client],
+    github_client: GithubClient,
 ) -> tuple[ResearchSession, ExperimentalResults]:
     if (
         not research_session.current_iteration
@@ -203,11 +199,10 @@ async def retrieve_trial_experiment_artifacts(
     return research_session, trial_experiment_results
 
 
-@inject
 async def retrieve_evaluation_artifacts(
     github_repository: GitHubRepositoryInfo,
     research_session: ResearchSession,
-    github_client: GithubClient = Provide[SyncContainer.github_client],
+    github_client: GithubClient,
 ) -> ResearchSession:
     iteration_id = research_session.current_iteration.iteration_id
     iteration_path = f".research/iteration{iteration_id}"

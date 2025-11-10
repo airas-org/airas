@@ -11,11 +11,9 @@ def upload_latex_file(
     github_repository: GitHubRepositoryInfo,
     latex_text: str,
     latex_template_name: LATEX_TEMPLATE_NAME,
-    client: GithubClient | None = None,
+    github_client: GithubClient,
 ) -> bool:
-    client = client or GithubClient()
-
-    is_uploaded = client.commit_file_bytes(
+    is_uploaded = github_client.commit_file_bytes(
         github_owner=github_repository.github_owner,
         repository_name=github_repository.repository_name,
         branch_name=github_repository.branch_name,

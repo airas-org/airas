@@ -10,7 +10,10 @@ from airas.core.base import BaseSubgraph
 from airas.features.create.create_method_subgraph.nodes.improve_method import (
     improve_method,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.research_iteration import ResearchIteration
 from airas.types.research_session import ResearchSession
 from airas.utils.check_api_key import check_api_key
@@ -53,6 +56,7 @@ class CreateMethodSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        llm_client: LLMFacadeClient,
         llm_mapping: dict[str, str] | CreateMethodLLMMapping | None = None,
     ):
         if llm_mapping is None:
@@ -71,6 +75,7 @@ class CreateMethodSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or CreateMethodLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
+        self.llm_client = llm_client
         check_api_key(llm_api_key_check=True)
 
     def _is_initial_creation(self, state: CreateMethodSubgraphState) -> str:
@@ -99,16 +104,17 @@ class CreateMethodSubgraph(BaseSubgraph):
         return {"research_session": research_session}
 
     @create_method_timed
-    def _improve_method(
+    async def _improve_method(
         self, state: CreateMethodSubgraphState
     ) -> dict[str, ResearchSession]:
         research_session = state["research_session"]
         research_session.iterations.append(
             ResearchIteration(
                 iteration_id=len(research_session.iterations) + 1,
-                method=improve_method(
+                method=await improve_method(
                     research_session=state["research_session"],
                     llm_name=self.llm_mapping.improve_method,
+                    llm_client=self.llm_client,
                 ),
             )
         )

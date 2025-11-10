@@ -96,13 +96,13 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         check_api_key(llm_api_key_check=True)
 
     @create_experimental_design_timed
-    def _generate_experiment_design(
+    async def _generate_experiment_design(
         self, state: CreateExperimentalDesignState
     ) -> dict[str, ResearchSession]:
         research_session = state["research_session"]
         is_first_iteration = len(research_session.iterations) == 1
 
-        experiment_design = generate_experiment_design(
+        experiment_design = await generate_experiment_design(
             llm_name=self.llm_mapping.generate_experiment_design,
             llm_client=self.llm_client,
             research_session=research_session,
