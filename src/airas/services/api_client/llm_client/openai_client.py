@@ -175,6 +175,7 @@ class OpenAIClient:
         )
         return output, cost
 
+    # NOTE: Reimplemented for backward compatibility. It can be removed once fully replaced with async.
     def structured_outputs(
         self,
         model_name: OPENAI_MODEL,
