@@ -39,68 +39,27 @@ async def init_async_session() -> AsyncGenerator[httpx.AsyncClient, None]:
 
 
 # NOTE: LLM clients are handled as separate resources because they use their own SDKs.
-def init_openai_client_sync() -> Generator[OpenAIClient, None, None]:
-    client = OpenAIClient()
-    yield client
-    client.close()
-
-
-def init_anthropic_client_sync() -> Generator[AnthropicClient, None, None]:
-    client = AnthropicClient()
-    yield client
-    client.close()
-
-
-def init_google_genai_client_sync() -> Generator[GoogleGenAIClient, None, None]:
-    client = GoogleGenAIClient()
-    yield client
-    client.close()
-
-
 async def init_openai_client_async() -> AsyncGenerator[OpenAIClient, None]:
     client = OpenAIClient()
     yield client
-    client.close()
-    await client.aclose()
+    await client.close()
 
 
 async def init_anthropic_client_async() -> AsyncGenerator[AnthropicClient, None]:
     client = AnthropicClient()
     yield client
-    client.close()
-    await client.aclose()
+    await client.close()
 
 
 async def init_google_genai_client_async() -> AsyncGenerator[GoogleGenAIClient, None]:
     client = GoogleGenAIClient()
     yield client
-    client.close()
-    await client.aclose()
+    await client.close()
 
 
 class SyncContainer(containers.DeclarativeContainer):
     # --- HTTP Session ---
     session = providers.Resource(init_sync_session)
-
-    # --- LLM Clients ---
-    openai_client: providers.Resource[OpenAIClient] = providers.Resource(
-        init_openai_client_sync
-    )
-    anthropic_client: providers.Resource[AnthropicClient] = providers.Resource(
-        init_anthropic_client_sync
-    )
-    google_genai_client: providers.Resource[GoogleGenAIClient] = providers.Resource(
-        init_google_genai_client_sync
-    )
-
-    # --- LLM Facade ---
-    llm_facade_client: providers.Factory[LLMFacadeClient] = providers.Factory(
-        LLMFacadeClient,
-        openai_client=openai_client,
-        anthropic_client=anthropic_client,
-        google_genai_client=google_genai_client,
-    )
-    llm_facade_provider: providers.Delegate = providers.Delegate(llm_facade_client)
 
     # --- Code & Experiment Platforms ---
     github_client: providers.Singleton[GithubClient] = providers.Singleton(
@@ -153,42 +112,8 @@ class AsyncContainer(containers.DeclarativeContainer):
     )
 
     # --- LLM Facade ---
-    llm_facade_client: providers.Factory[LLMFacadeClient] = providers.Factory(
+    llm_facade_client: providers.Singleton[LLMFacadeClient] = providers.Singleton(
         LLMFacadeClient,
-        openai_client=openai_client,
-        anthropic_client=anthropic_client,
-        google_genai_client=google_genai_client,
-    )
-    llm_facade_provider: providers.Delegate = providers.Delegate(llm_facade_client)
-
-    # NOTE: 現状だとインスタンス変数にモデル名を渡しているため、モデルごとにクラスを作る必要があるが、モデル名をメソッドから渡せるように変更する
-    gemini_embedding_001: providers.Factory[LLMFacadeClient] = providers.Factory(
-        LLMFacadeClient,
-        llm_name="gemini-embedding-001",
-        openai_client=openai_client,
-        anthropic_client=anthropic_client,
-        google_genai_client=google_genai_client,
-    )
-
-    gpt_5_mini_2025_08_07: providers.Factory[LLMFacadeClient] = providers.Factory(
-        LLMFacadeClient,
-        llm_name="gpt-5-mini-2025-08-07",
-        openai_client=openai_client,
-        anthropic_client=anthropic_client,
-        google_genai_client=google_genai_client,
-    )
-
-    gemini_2_5_flash: providers.Factory[LLMFacadeClient] = providers.Factory(
-        LLMFacadeClient,
-        llm_name="gemini-2.5-flash",
-        openai_client=openai_client,
-        anthropic_client=anthropic_client,
-        google_genai_client=google_genai_client,
-    )
-
-    o3_2025_04_16: providers.Factory[LLMFacadeClient] = providers.Factory(
-        LLMFacadeClient,
-        llm_name="o3-2025-04-16",
         openai_client=openai_client,
         anthropic_client=anthropic_client,
         google_genai_client=google_genai_client,

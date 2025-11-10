@@ -179,7 +179,7 @@ class GoogleGenAIClient:
         )
         return result.embeddings[0].values
 
-    async def aclose(self) -> None:
+    async def close(self) -> None:
         """Close method for consistency (Google GenAI SDK doesn't have explicit close)."""
 
 

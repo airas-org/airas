@@ -1,9 +1,6 @@
-from dependency_injector import providers
-from dependency_injector.wiring import Provide, inject
 from jinja2 import Environment
 from pydantic import BaseModel, create_model
 
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -15,18 +12,13 @@ def _build_generated_query_model(n_queries: int) -> type[BaseModel]:
     return create_model("LLMOutput", **fields)
 
 
-@inject
-def generate_queries(
+async def generate_queries(
     llm_name: LLM_MODEL,
+    llm_client: LLMFacadeClient,
     prompt_template: str,
     research_topic: str,
     n_queries: int,
-    llm_facade_provider: providers.Factory[LLMFacadeClient] = Provide[
-        SyncContainer.llm_facade_provider
-    ],
 ) -> list[str]:
-    client = llm_facade_provider(llm_name=llm_name)
-
     data = {
         "research_topic": research_topic,
         "n_queries": n_queries,
@@ -37,8 +29,8 @@ def generate_queries(
     messages = template.render(data)
 
     DynamicLLMOutput = _build_generated_query_model(n_queries)
-    output, cost = client.structured_outputs(
-        message=messages, data_model=DynamicLLMOutput
+    output, cost = await llm_client.structured_outputs(
+        message=messages, data_model=DynamicLLMOutput, llm_name=llm_name
     )
     if output is None:
         raise ValueError("Error: No response from LLM in generate_queries_node.")

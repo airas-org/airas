@@ -247,7 +247,7 @@ class OpenAIClient:
         )
         return output, cost
 
-    async def aclose(self) -> None:
+    async def close(self) -> None:
         if hasattr(self, "aclient") and self.aclient:
             await self.aclient.close()
 
