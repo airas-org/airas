@@ -20,63 +20,53 @@ LLM_MODEL = Literal[OPENAI_MODEL, VERTEXAI_MODEL, CLAUDE_MODEL]
 class LLMFacadeClient:
     def __init__(
         self,
-        llm_name: LLM_MODEL,
         openai_client: Optional[OpenAIClient] = None,
         anthropic_client: Optional[AnthropicClient] = None,
         google_genai_client: Optional[GoogleGenAIClient] = None,
     ):
-        self.llm_name = llm_name
         # For backward compatibility: A new client instance is automatically created if called without arguments.
+        self.openai_client = openai_client or OpenAIClient()
+        self.google_genai_client = google_genai_client or GoogleGenAIClient()
+        self.anthropic_client = anthropic_client or AnthropicClient()
+
+    def _get_client(self, llm_name: LLM_MODEL):
         if llm_name in OPENAI_MODEL.__args__:
-            self.client = openai_client or OpenAIClient()
+            return self.openai_client
         elif llm_name in VERTEXAI_MODEL.__args__:
-            self.client = google_genai_client or GoogleGenAIClient()
+            return self.google_genai_client
         elif llm_name in CLAUDE_MODEL.__args__:
-            self.client = anthropic_client or AnthropicClient()
+            return self.anthropic_client
         else:
             raise ValueError(f"Unsupported LLM model: {llm_name}")
 
     @LLM_RETRY
-    def generate(self, message: str):
-        return self.client.generate(model_name=self.llm_name, message=message)
+    async def generate(self, message: str, llm_name: LLM_MODEL):
+        client = self._get_client(llm_name)
+        return await client.generate(model_name=llm_name, message=message)
 
     @LLM_RETRY
-    def structured_outputs(self, message: str, data_model):
+    async def structured_outputs(self, message: str, data_model, llm_name: LLM_MODEL):
         # NOTE:The Anthropic model does not support structured output.
-        if self.llm_name in CLAUDE_MODEL.__args__:
+        if llm_name in CLAUDE_MODEL.__args__:
             raise NotImplementedError(
                 "Structured output is not supported for Anthropic models."
             )
-        return self.client.structured_outputs(
-            model_name=self.llm_name, message=message, data_model=data_model
+        client = self._get_client(llm_name)
+        return await client.structured_outputs(
+            model_name=llm_name, message=message, data_model=data_model
         )
 
     @LLM_RETRY
-    async def structured_outputs_async(self, message: str, data_model):
-        # NOTE:The Anthropic model does not support structured output.
-        if self.llm_name in CLAUDE_MODEL.__args__:
-            raise NotImplementedError(
-                "Structured output is not supported for Anthropic models."
-            )
-        return await self.client.structured_outputs_async(
-            model_name=self.llm_name, message=message, data_model=data_model
-        )
+    async def text_embedding(
+        self, message: str, llm_name: str = "gemini-embedding-001"
+    ):
+        client = self._get_client(llm_name)
+        return await client.text_embedding(message=message, model_name=llm_name)
 
     @LLM_RETRY
-    def text_embedding(self, message: str, model_name: str = "gemini-embedding-001"):
-        return self.client.text_embedding(message=message, model_name=model_name)
-
-    @LLM_RETRY
-    def web_search(self, message: str):
-        """
-        Perform web search using OpenAI API (only available for OpenAI models).
-
-        Args:
-            message: The search prompt
-
-        Returns:
-            Tuple of (response_text, cost)
-        """
-        if not hasattr(self.client, "web_search"):
-            raise ValueError(f"Web search not supported for {self.llm_name}")
-        return self.client.web_search(model_name=self.llm_name, message=message)
+    async def web_search(self, message: str, llm_name: LLM_MODEL):
+        # NOTE: Perform web search using OpenAI API (only available for OpenAI models).
+        client = self._get_client(llm_name)
+        if not hasattr(client, "web_search"):
+            raise ValueError(f"Web search not supported for {llm_name}")
+        return await client.web_search(model_name=llm_name, message=message)

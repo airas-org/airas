@@ -106,7 +106,7 @@ class GoogleGenAIClient:
 
         return params
 
-    def generate(
+    async def generate(
         self,
         model_name: VERTEXAI_MODEL,
         message: str,
@@ -117,7 +117,7 @@ class GoogleGenAIClient:
         message = self._truncate_prompt(model_name, message)
         params = self._get_params()
 
-        response = self.client.models.generate_content(
+        response = await self.client.aio.models.generate_content(
             model=model_name,
             contents=message,
             **params,
@@ -130,17 +130,7 @@ class GoogleGenAIClient:
         )
         return output, cost
 
-    def structured_outputs(
-        self,
-        model_name: VERTEXAI_MODEL,
-        message: str,
-        data_model: type[BaseModel],
-    ) -> tuple[dict | None, float]:
-        return asyncio.run(
-            self.structured_outputs_async(model_name, message, data_model)
-        )
-
-    async def structured_outputs_async(
+    async def structured_outputs(
         self,
         model_name: VERTEXAI_MODEL,
         message: str,
@@ -181,25 +171,23 @@ class GoogleGenAIClient:
         )
         return output, cost
 
-    def text_embedding(
+    async def text_embedding(
         self, message: str, model_name: str = "gemini-embedding-001"
     ) -> list[float]:
-        result = self.client.models.embed_content(model=model_name, contents=message)
+        result = await self.client.aio.models.embed_content(
+            model=model_name, contents=message
+        )
         return result.embeddings[0].values
 
-    def close(self) -> None:
-        """Close method for consistency (Google GenAI SDK doesn't have explicit close)."""
-
     async def aclose(self) -> None:
-        """Async close method for consistency."""
-        self.close()
+        """Close method for consistency (Google GenAI SDK doesn't have explicit close)."""
 
 
 async def main(
     model_name: VERTEXAI_MODEL, message: str, data_model: type[BaseModel]
 ) -> None:
     client = GoogleGenAIClient()
-    output, cost = await client.structured_outputs_async(
+    output, cost = await client.structured_outputs(
         model_name=model_name,
         message=message,
         data_model=data_model,

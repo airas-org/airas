@@ -10,8 +10,9 @@ from airas.services.api_client.llm_client.anthropic_client import (
 ALL_CLAUDE_MODEL_NAMES = [t for t in CLAUDE_MODEL.__args__]
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("model_name", ALL_CLAUDE_MODEL_NAMES)
-def test_real_generate_all_models(model_name):
+async def test_real_generate_all_models(model_name):
     if "ANTHROPIC_API_KEY" not in os.environ:
         pytest.skip("ANTHROPIC_API_KEY is not set. Skipping real API test.")
 
@@ -19,7 +20,7 @@ def test_real_generate_all_models(model_name):
     message = "こんにちは、自己紹介をしてください。"
 
     try:
-        output, cost = client.generate(
+        output, cost = await client.generate(
             model_name=model_name,
             message=message,
         )
