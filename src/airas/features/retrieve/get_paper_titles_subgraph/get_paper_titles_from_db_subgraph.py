@@ -67,12 +67,12 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
     def __init__(
         self,
         qdrant_client: QdrantClient,
-        llm_embedding_client: LLMFacadeClient,
+        llm_client: LLMFacadeClient,
         max_results_per_query: int = 3,
         semantic_search: bool = False,
     ):
         self.qdrant_client = qdrant_client
-        self.llm_embedding_client = llm_embedding_client
+        self.llm_client = llm_client
         self.max_results_per_query = max_results_per_query
         self.semantic_search = semantic_search
         self.llm_mapping = GetPaperTitlesFromDBLLMMapping()
@@ -106,7 +106,7 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
             num_retrieve_paper=self.max_results_per_query,
             queries=state["queries"],
             qdrant_client=self.qdrant_client,
-            llm_client=self.llm_embedding_client,
+            llm_client=self.llm_client,
         )
         research_study_list = [ResearchStudy(title=title) for title in (titles or [])]
         return {"research_study_list": research_study_list}

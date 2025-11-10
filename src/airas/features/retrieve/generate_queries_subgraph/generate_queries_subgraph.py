@@ -17,7 +17,10 @@ from airas.features.retrieve.generate_queries_subgraph.nodes.generate_queries im
 from airas.features.retrieve.generate_queries_subgraph.prompt.generate_queries_prompt import (
     generate_queries_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -58,6 +61,7 @@ class GenerateQueriesSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        llm_client: LLMFacadeClient,
         llm_mapping: dict[str, str] | GenerateQueriesLLMMapping | None = None,
         n_queries: Annotated[int, Field(gt=0)] = 5,
     ):
@@ -74,12 +78,16 @@ class GenerateQueriesSubgraph(BaseSubgraph):
                 f"but got {type(llm_mapping)}"
             )
         self.n_queries = n_queries
+        self.llm_client = llm_client
         check_api_key(llm_api_key_check=True)
 
     @generate_queries_timed
-    def _generate_queries(self, state: GenerateQueriesState) -> dict[str, list[str]]:
-        generated_queries = generate_queries(
+    async def _generate_queries(
+        self, state: GenerateQueriesState
+    ) -> dict[str, list[str]]:
+        generated_queries = await generate_queries(
             llm_name=self.llm_mapping.generate_queries,
+            llm_client=self.llm_client,
             prompt_template=generate_queries_prompt,
             research_topic=state["research_topic"],
             n_queries=self.n_queries,
