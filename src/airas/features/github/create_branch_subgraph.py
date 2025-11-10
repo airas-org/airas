@@ -8,6 +8,7 @@ from typing_extensions import TypedDict
 from airas.core.base import BaseSubgraph
 from airas.features.github.nodes.create_branch import create_branch
 from airas.features.github.nodes.find_commit_sha import find_commit_sha
+from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -44,8 +45,14 @@ class CreateBranchSubgraph(BaseSubgraph):
     InputState = CreateBranchSubgraphInputState
     OutputState = CreateBranchSubgraphOutputState
 
-    def __init__(self, new_branch_name: str, start_subgraph_name: str):
+    def __init__(
+        self,
+        github_client: GithubClient,
+        new_branch_name: str,
+        start_subgraph_name: str,
+    ):
         check_api_key(github_personal_access_token_check=True)
+        self.github_client = github_client
         self.new_branch_name = new_branch_name
         self.start_subgraph_name = start_subgraph_name
 
@@ -53,6 +60,7 @@ class CreateBranchSubgraph(BaseSubgraph):
     def _find_commit_sha(self, state: CreateBranchSubgraphState) -> dict[str, str]:
         target_sha = find_commit_sha(
             github_repository_info=state["github_repository_info"],
+            github_client=self.github_client,
             subgraph_name=self.start_subgraph_name,
         )
         return {"target_sha": target_sha}
@@ -66,6 +74,7 @@ class CreateBranchSubgraph(BaseSubgraph):
         )
         is_branch_created = create_branch(
             github_repository_info=new_branch_info,
+            github_client=self.github_client,
             sha=state["target_sha"],
         )
         if not is_branch_created:

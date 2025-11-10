@@ -1,9 +1,6 @@
 import logging
 import os
 
-from dependency_injector.wiring import Provide, inject
-
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient
 
 logger = logging.getLogger(__name__)
@@ -40,15 +37,14 @@ def _upload_single_file(
         return False
 
 
-@inject
 def upload_files(
     github_owner: str,
     repository_name: str,
     branch_name: str,
+    client: GithubClient,
     upload_dir: str,
     local_file_paths: list[str],
     commit_message: str = "Upload files",
-    client: GithubClient = Provide[SyncContainer.github_client],
 ) -> bool:
     if not isinstance(local_file_paths, list):
         raise TypeError("local_file_paths must be a list of file paths")

@@ -2,9 +2,7 @@ import json
 import logging
 
 import requests  # type: ignore[import-untyped]
-from dependency_injector.wiring import Provide, inject
 
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_history import ResearchHistory
@@ -12,11 +10,10 @@ from airas.types.research_history import ResearchHistory
 logger = logging.getLogger(__name__)
 
 
-@inject
 def github_download(
     github_repository_info: GitHubRepositoryInfo,
+    client: GithubClient,
     file_path: str = ".research/research_history.json",
-    client: GithubClient = Provide[SyncContainer.github_client],
 ) -> ResearchHistory:
     logger.info(
         f"[GitHub I/O] Download: {github_repository_info.github_owner}/{github_repository_info.repository_name}@{github_repository_info.branch_name}:{file_path}"

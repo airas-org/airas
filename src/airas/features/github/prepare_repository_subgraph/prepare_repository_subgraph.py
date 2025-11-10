@@ -23,6 +23,7 @@ from airas.features.github.prepare_repository_subgraph.nodes.create_repository_f
 from airas.features.github.prepare_repository_subgraph.nodes.retrieve_main_branch_sha import (
     retrieve_main_branch_sha,
 )
+from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -66,14 +67,18 @@ class PrepareRepositorySubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        github_client: GithubClient,
         template_owner: str = "airas-org",
         template_repo: str = "airas-template",
+        is_private: bool = False,
     ):
         check_api_key(
             github_personal_access_token_check=True,
         )
+        self.github_client = github_client
         self.template_owner = template_owner
         self.template_repo = template_repo
+        self.is_private = is_private
 
     @prepare_repository_timed
     def _check_repository_from_template(
@@ -81,6 +86,7 @@ class PrepareRepositorySubgraph(BaseSubgraph):
     ) -> dict[str, bool]:
         is_repository_from_template = check_repository_from_template(
             github_repository_info=state["github_repository_info"],
+            github_client=self.github_client,
             template_owner=self.template_owner,
             template_repo=self.template_repo,
         )
@@ -92,8 +98,10 @@ class PrepareRepositorySubgraph(BaseSubgraph):
     ) -> dict[str, Literal[True]]:
         is_repository_from_template = create_repository_from_template(
             github_repository_info=state["github_repository_info"],
+            github_client=self.github_client,
             template_owner=self.template_owner,
             template_repo=self.template_repo,
+            is_private=self.is_private,
         )
         return {"is_repository_from_template": is_repository_from_template}
 
@@ -104,6 +112,7 @@ class PrepareRepositorySubgraph(BaseSubgraph):
         time.sleep(5)
         target_branch_sha = check_branch_existence(
             github_repository_info=state["github_repository_info"],
+            github_client=self.github_client,
         )
         return {
             "target_branch_sha": target_branch_sha,
@@ -116,6 +125,7 @@ class PrepareRepositorySubgraph(BaseSubgraph):
     ) -> dict[str, str]:
         main_branch_sha = retrieve_main_branch_sha(
             github_repository_info=state["github_repository_info"],
+            github_client=self.github_client,
         )
         return {"main_branch_sha": main_branch_sha}
 
@@ -123,6 +133,7 @@ class PrepareRepositorySubgraph(BaseSubgraph):
     def _create_branch(self, state: PrepareRepositoryState) -> dict[str, bool]:
         is_branch_created = create_branch(
             github_repository_info=state["github_repository_info"],
+            github_client=self.github_client,
             sha=state["main_branch_sha"],
         )
         return {"is_branch_created": is_branch_created}
