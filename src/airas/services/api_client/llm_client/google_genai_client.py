@@ -136,9 +136,40 @@ class GoogleGenAIClient:
         message: str,
         data_model: type[BaseModel],
     ) -> tuple[dict | None, float]:
-        return asyncio.run(
-            self.structured_outputs_async(model_name, message, data_model)
+        if not isinstance(message, str):
+            raise TypeError("message must be a string")
+        message = message.encode("utf-8", "ignore").decode("utf-8")
+        message = self._truncate_prompt(model_name, message)
+        params = self._get_params()
+
+        config = {
+            "response_mime_type": "application/json",
+            "response_schema": list[data_model],
+        }
+
+        # Add thinking config if present
+        if "config" in params:
+            config.update(params["config"].model_dump(exclude_none=True))
+
+        response = self.client.models.generate_content(
+            model=model_name,
+            contents=message,
+            config=config,
         )
+        output = response.text
+        if "null" in output:
+            output = re.sub(r"(?<=[:,\s])null(?=[,\s}])", "None", output)
+        try:
+            output = json.loads(output)[0]
+        except json.JSONDecodeError:
+            output = ast.literal_eval(output)[0]
+
+        cost = self._calculate_cost(
+            model_name,
+            response.usage_metadata.prompt_token_count,
+            response.usage_metadata.candidates_token_count,
+        )
+        return output, cost
 
     async def structured_outputs_async(
         self,

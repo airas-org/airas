@@ -181,9 +181,23 @@ class OpenAIClient:
         message: str,
         data_model: type[BaseModel],
     ) -> tuple[dict | None, float]:
-        return asyncio.run(
-            self.structured_outputs_async(model_name, message, data_model)
+        if not isinstance(message, str):
+            raise TypeError("message must be a string")
+        message = message.encode("utf-8", "ignore").decode("utf-8")
+        message = self._truncate_prompt(model_name, message)
+        params = self._get_params()
+
+        response = self.client.responses.parse(
+            model=model_name, input=message, text_format=data_model, **params
         )
+        output = response.output_text
+        output = json.loads(output)
+        cost = self._calculate_cost(
+            model_name,
+            response.usage.input_tokens,
+            response.usage.output_tokens,
+        )
+        return output, cost
 
     async def structured_outputs_async(
         self,
