@@ -9,6 +9,7 @@ from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
 from airas.features.github.nodes.github_download import github_download
+from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_history import ResearchHistory
 from airas.utils.check_api_key import check_api_key
@@ -46,11 +47,12 @@ class GithubDownloadSubgraph(BaseSubgraph):
     InputState = GithubDownloadInputState
     OutputState = GithubDownloadOutputState
 
-    def __init__(self):
+    def __init__(self, github_client: GithubClient):
         check_api_key(
             github_personal_access_token_check=True,
         )
         self.research_file_path = ".research/research_history.json"
+        self.github_client = github_client
 
     @gh_download_timed
     def _github_download(
@@ -58,6 +60,7 @@ class GithubDownloadSubgraph(BaseSubgraph):
     ) -> dict[str, ResearchHistory]:
         research_history = github_download(
             github_repository_info=state["github_repository_info"],
+            github_client=self.github_client,
         )
         return {
             "research_history": research_history,

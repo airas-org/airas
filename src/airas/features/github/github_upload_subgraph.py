@@ -12,6 +12,7 @@ from airas.core.base import BaseSubgraph
 from airas.features.github.nodes.github_download import github_download
 from airas.features.github.nodes.github_upload import github_upload
 from airas.features.github.nodes.merge_history import merge_history
+from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_history import ResearchHistory
 from airas.utils.check_api_key import check_api_key
@@ -50,11 +51,12 @@ class GithubUploadSubgraph(BaseSubgraph):
     InputState = GithubUploadInputState
     OutputState = GithubUploadOutputState
 
-    def __init__(self):
+    def __init__(self, github_client: GithubClient):
         check_api_key(
             github_personal_access_token_check=True,
         )
         self.research_file_path = ".research/research_history.json"
+        self.github_client = github_client
 
     @gh_upload_timed
     def _github_download_node(
@@ -62,6 +64,7 @@ class GithubUploadSubgraph(BaseSubgraph):
     ) -> dict[str, ResearchHistory]:
         research_history = github_download(
             github_repository_info=state["github_repository_info"],
+            github_client=self.github_client,
             file_path=self.research_file_path,
         )
         return {"research_history": research_history}
@@ -84,6 +87,7 @@ class GithubUploadSubgraph(BaseSubgraph):
 
         is_github_upload_success = github_upload(
             github_repository_info=state["github_repository_info"],
+            github_client=self.github_client,
             research_history=state["research_history"],
             file_path=self.research_file_path,
             commit_message=commit_message,

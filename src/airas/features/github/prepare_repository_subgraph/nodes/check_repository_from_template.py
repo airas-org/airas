@@ -1,20 +1,16 @@
 from logging import getLogger
 
-from dependency_injector.wiring import Provide, inject
-
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient, GithubClientError
 from airas.types.github import GitHubRepositoryInfo
 
 logger = getLogger(__name__)
 
 
-@inject
 def check_repository_from_template(
     github_repository_info: GitHubRepositoryInfo,
+    client: GithubClient,
     template_owner: str,
     template_repo: str,
-    client: GithubClient = Provide[SyncContainer.github_client],
 ) -> bool:
     try:
         response = client.get_repository(

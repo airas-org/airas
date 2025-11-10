@@ -1,18 +1,14 @@
 from logging import getLogger
 
-from dependency_injector.wiring import Provide, inject
-
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 
 logger = getLogger(__name__)
 
 
-@inject
 def check_branch_existence(
     github_repository_info: GitHubRepositoryInfo,
-    client: GithubClient = Provide[SyncContainer.github_client],
+    client: GithubClient,
 ) -> str | None:
     response = client.get_branch(
         github_owner=github_repository_info.github_owner,
