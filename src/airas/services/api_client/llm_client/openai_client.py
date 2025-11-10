@@ -5,7 +5,7 @@ import re
 from typing import Any, Literal
 
 import tiktoken
-from openai import AsyncOpenAI, OpenAI
+from openai import AsyncOpenAI
 from pydantic import BaseModel
 
 from airas.utils.logging_utils import setup_logging
@@ -120,7 +120,6 @@ ReasoningEffort = Literal["low", "medium", "high"]
 class OpenAIClient:
     def __init__(self, reasoning_effort: ReasoningEffort | None = None) -> None:
         self.logger = logging.getLogger(__name__)
-        self.client = OpenAI()
         self.aclient = AsyncOpenAI()
         self.reasoning_effort = reasoning_effort
 
@@ -151,7 +150,7 @@ class OpenAIClient:
             params["reasoning"] = {"effort": self.reasoning_effort}
         return params
 
-    def generate(
+    async def generate(
         self,
         model_name: OPENAI_MODEL,
         message: str,
@@ -162,7 +161,7 @@ class OpenAIClient:
         message = self._truncate_prompt(model_name, message)
         params = self._get_params()
 
-        response = self.client.responses.create(
+        response = await self.aclient.responses.create(
             model=model_name,
             input=message,
             **params,
@@ -175,32 +174,7 @@ class OpenAIClient:
         )
         return output, cost
 
-    # NOTE: Reimplemented for backward compatibility. It can be removed once fully replaced with async.
-    def structured_outputs(
-        self,
-        model_name: OPENAI_MODEL,
-        message: str,
-        data_model: type[BaseModel],
-    ) -> tuple[dict | None, float]:
-        if not isinstance(message, str):
-            raise TypeError("message must be a string")
-        message = message.encode("utf-8", "ignore").decode("utf-8")
-        message = self._truncate_prompt(model_name, message)
-        params = self._get_params()
-
-        response = self.client.responses.parse(
-            model=model_name, input=message, text_format=data_model, **params
-        )
-        output = response.output_text
-        output = json.loads(output)
-        cost = self._calculate_cost(
-            model_name,
-            response.usage.input_tokens,
-            response.usage.output_tokens,
-        )
-        return output, cost
-
-    async def structured_outputs_async(
+    async def structured_outputs(
         self,
         model_name: OPENAI_MODEL,
         message: str,
@@ -224,10 +198,12 @@ class OpenAIClient:
         )
         return output, cost
 
-    def text_embedding(self, message: str, model_name: str = "gemini-embedding-001"):
+    async def text_embedding(
+        self, message: str, model_name: str = "gemini-embedding-001"
+    ):
         return
 
-    def web_search(
+    async def web_search(
         self,
         model_name: OPENAI_MODEL,
         message: str,
@@ -238,7 +214,7 @@ class OpenAIClient:
         message = message.encode("utf-8", "ignore").decode("utf-8")
         message = self._truncate_prompt(model_name, message)
 
-        response = self.client.responses.create(
+        response = await self.aclient.responses.create(
             model=model_name,
             tools=[{"type": "web_search_preview"}],
             input=message,
@@ -271,10 +247,6 @@ class OpenAIClient:
         )
         return output, cost
 
-    def close(self) -> None:
-        if hasattr(self, "client") and self.client:
-            self.client.close()
-
     async def aclose(self) -> None:
         if hasattr(self, "aclient") and self.aclient:
             await self.aclient.close()
@@ -284,7 +256,7 @@ async def main(
     model_name: OPENAI_MODEL, message: str, data_model: type[BaseModel]
 ) -> None:
     client = OpenAIClient()
-    output, cost = await client.structured_outputs_async(
+    output, cost = await client.structured_outputs(
         model_name=model_name,
         message=message,
         data_model=data_model,

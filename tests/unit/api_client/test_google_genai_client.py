@@ -12,8 +12,9 @@ ALL_VERTEXAI_MODEL_NAMES = [t for t in VERTEXAI_MODEL.__args__]
 ALL_VERTEXAI_MODEL_NAMES.remove("gemini-embedding-001")
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("model_name", ALL_VERTEXAI_MODEL_NAMES)
-def test_real_generate_all_models(model_name):
+async def test_real_generate_all_models(model_name):
     if "GEMINI_API_KEY" not in os.environ:
         pytest.skip("GEMINI_API_KEY is not set. Skipping real API test.")
 
@@ -21,7 +22,7 @@ def test_real_generate_all_models(model_name):
     message = "こんにちは、自己紹介をしてください。"
 
     try:
-        output, cost = client.generate(
+        output, cost = await client.generate(
             model_name=model_name,
             message=message,
         )
@@ -37,8 +38,9 @@ class DummyDataModel(BaseModel):
     description: str
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("model_name", ALL_VERTEXAI_MODEL_NAMES)
-def test_real_structured_outputs_all_models(model_name):
+async def test_real_structured_outputs_all_models(model_name):
     if "GEMINI_API_KEY" not in os.environ:
         pytest.skip("GEMINI_API_KEY is not set. Skipping real API test.")
 
@@ -50,7 +52,7 @@ def test_real_structured_outputs_all_models(model_name):
     )
 
     try:
-        output, cost = client.structured_outputs(
+        output, cost = await client.structured_outputs(
             model_name=model_name,
             message=message,
             data_model=DummyDataModel,

@@ -106,7 +106,7 @@ class GoogleGenAIClient:
 
         return params
 
-    def generate(
+    async def generate(
         self,
         model_name: VERTEXAI_MODEL,
         message: str,
@@ -117,7 +117,7 @@ class GoogleGenAIClient:
         message = self._truncate_prompt(model_name, message)
         params = self._get_params()
 
-        response = self.client.models.generate_content(
+        response = await self.client.aio.models.generate_content(
             model=model_name,
             contents=message,
             **params,
@@ -130,48 +130,7 @@ class GoogleGenAIClient:
         )
         return output, cost
 
-    def structured_outputs(
-        self,
-        model_name: VERTEXAI_MODEL,
-        message: str,
-        data_model: type[BaseModel],
-    ) -> tuple[dict | None, float]:
-        if not isinstance(message, str):
-            raise TypeError("message must be a string")
-        message = message.encode("utf-8", "ignore").decode("utf-8")
-        message = self._truncate_prompt(model_name, message)
-        params = self._get_params()
-
-        config = {
-            "response_mime_type": "application/json",
-            "response_schema": list[data_model],
-        }
-
-        # Add thinking config if present
-        if "config" in params:
-            config.update(params["config"].model_dump(exclude_none=True))
-
-        response = self.client.models.generate_content(
-            model=model_name,
-            contents=message,
-            config=config,
-        )
-        output = response.text
-        if "null" in output:
-            output = re.sub(r"(?<=[:,\s])null(?=[,\s}])", "None", output)
-        try:
-            output = json.loads(output)[0]
-        except json.JSONDecodeError:
-            output = ast.literal_eval(output)[0]
-
-        cost = self._calculate_cost(
-            model_name,
-            response.usage_metadata.prompt_token_count,
-            response.usage_metadata.candidates_token_count,
-        )
-        return output, cost
-
-    async def structured_outputs_async(
+    async def structured_outputs(
         self,
         model_name: VERTEXAI_MODEL,
         message: str,
@@ -212,25 +171,23 @@ class GoogleGenAIClient:
         )
         return output, cost
 
-    def text_embedding(
+    async def text_embedding(
         self, message: str, model_name: str = "gemini-embedding-001"
     ) -> list[float]:
-        result = self.client.models.embed_content(model=model_name, contents=message)
+        result = await self.client.aio.models.embed_content(
+            model=model_name, contents=message
+        )
         return result.embeddings[0].values
 
-    def close(self) -> None:
-        """Close method for consistency (Google GenAI SDK doesn't have explicit close)."""
-
     async def aclose(self) -> None:
-        """Async close method for consistency."""
-        self.close()
+        """Close method for consistency (Google GenAI SDK doesn't have explicit close)."""
 
 
 async def main(
     model_name: VERTEXAI_MODEL, message: str, data_model: type[BaseModel]
 ) -> None:
     client = GoogleGenAIClient()
-    output, cost = await client.structured_outputs_async(
+    output, cost = await client.structured_outputs(
         model_name=model_name,
         message=message,
         data_model=data_model,

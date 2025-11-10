@@ -11,8 +11,9 @@ from airas.services.api_client.llm_client.openai_client import (
 ALL_MODEL_NAMES = [t for t in OPENAI_MODEL.__args__]
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("model_name", ALL_MODEL_NAMES)
-def test_real_generate_all_models(model_name):
+async def test_real_generate_all_models(model_name):
     if "OPENAI_API_KEY" not in os.environ:
         pytest.skip("OPENAI_API_KEY is not set. Skipping real API test.")
 
@@ -20,7 +21,7 @@ def test_real_generate_all_models(model_name):
     message = "Hello, please introduce yourself."
 
     try:
-        output, cost = client.generate(
+        output, cost = await client.generate(
             model_name=model_name,
             message=message,
         )
@@ -38,8 +39,9 @@ class DummyDataModel(BaseModel):
     description: str
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("model_name", ALL_MODEL_NAMES)
-def test_real_structured_outputs_all_models(model_name):
+async def test_real_structured_outputs_all_models(model_name):
     if "OPENAI_API_KEY" not in os.environ:
         pytest.skip("OPENAI_API_KEY is not set. Skipping real API test.")
 
@@ -51,7 +53,7 @@ def test_real_structured_outputs_all_models(model_name):
     )
 
     try:
-        output, cost = client.structured_outputs(
+        output, cost = await client.structured_outputs(
             model_name=model_name,
             message=message,
             data_model=DummyDataModel,

@@ -2,8 +2,7 @@ import logging
 import os
 from typing import Any, Literal
 
-from anthropic import Anthropic
-from pydantic import BaseModel
+from anthropic import AsyncAnthropic
 
 from airas.utils.logging_utils import setup_logging
 
@@ -55,14 +54,15 @@ CLAUDE_MODEL = Literal[
 class AnthropicClient:
     def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
-        self.client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        self.aclient = AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
-    def _truncate_prompt(self, model_name: CLAUDE_MODEL, message: str) -> str:
+    async def _truncate_prompt(self, model_name: CLAUDE_MODEL, message: str) -> str:
         """Shorten the prompt so that it does not exceed the maximum number of tokens."""
-        total_tokens = self.client.messages.count_tokens(
+        count_result = await self.aclient.messages.count_tokens(
             model=model_name,
             messages=[{"role": "user", "content": f"{message}"}],
-        ).input_tokens
+        )
+        total_tokens = count_result.input_tokens
         max_tokens = int(CLAUDE_MODEL_INFO[model_name].get("max_input_tokens", 4096))
 
         if total_tokens > max_tokens:
@@ -83,7 +83,7 @@ class AnthropicClient:
         output_cost = output_tokens * model_info["output_token_cost"]
         return input_cost + output_cost
 
-    def generate(
+    async def generate(
         self,
         model_name: CLAUDE_MODEL,
         message: str,
@@ -91,9 +91,9 @@ class AnthropicClient:
         if not isinstance(message, str):
             raise TypeError("message must be a string")
         message = message.encode("utf-8", "ignore").decode("utf-8")
-        message = self._truncate_prompt(model_name, message)
+        message = await self._truncate_prompt(model_name, message)
 
-        response = self.client.messages.create(
+        response = await self.aclient.messages.create(
             model=model_name,
             max_tokens=CLAUDE_MODEL_INFO[model_name]["max_output_tokens"],
             messages=[{"role": "user", "content": f"{message}"}],
@@ -110,30 +110,27 @@ class AnthropicClient:
         )
         return output, cost
 
-    def close(self) -> None:
-        if hasattr(self, "client") and self.client:
-            self.client.close()
-
-    async def aclose(self) -> None:
-        self.close()
+    async def close(self) -> None:
+        if hasattr(self, "aclient") and self.aclient:
+            await self.aclient.close()
 
 
-if __name__ == "__main__":
-
-    class UserModel(BaseModel):
-        name: str
-        age: int
-        email: str
-
-    model_name = "claude-opus-4-20250514"
+async def main() -> None:
+    model_name: CLAUDE_MODEL = "claude-opus-4-20250514"
     message = """
 以下の文章から，名前，年齢，メールアドレスを抽出してください。
 「田中太郎さん（35歳）は、東京在住のソフトウェアエンジニアです。現在、新しいAI技術の研究に取り組んでおり、業界内でも注目を集めています。お問い合わせは、taro.tanaka@example.com までお願いします。」
 """
     anthropic_client = AnthropicClient()
-    output, cost = anthropic_client.generate(
+    output, cost = await anthropic_client.generate(
         model_name=model_name,
         message=message,
     )
     print(output)
     print(cost)
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(main())
