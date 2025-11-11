@@ -18,40 +18,35 @@ class BaseHTTPClient:
         self.base_url = base_url.rstrip("/")
         self.default_headers = default_headers or {}
 
-        # NOTE: For backward compatibility: auto-create sessions if not provided
-        self.sync_session = sync_session or requests.Session()
-        self.async_session = async_session or httpx.AsyncClient(follow_redirects=True)
+        # NOTE: Strict DI enforcement: at least one session must be provided
+        if sync_session is None and async_session is None:
+            raise ValueError(
+                f"{self.__class__.__name__}: Either sync_session or async_session "
+                "must be provided by DI container"
+            )
 
-        # TODO: Future strict DI enforcement
-        # Uncomment below to require DI container to provide sessions
-        # if sync_session is None and async_session is None:
-        #     raise ValueError(
-        #         f"{self.__class__.__name__}: Either sync_session or async_session "
-        #         "must be provided by DI container"
-        #     )
-        #
-        # self._sync_session = sync_session
-        # self._async_session = async_session
+        self._sync_session = sync_session
+        self._async_session = async_session
 
-    # TODO: Future strict DI enforcement
-    # Uncomment @property to enforce DI-provided sessions
-    # @property
-    # def sync_session(self) -> requests.Session:
-    #     if self._sync_session is None:
-    #         raise RuntimeError(
-    #             f"{self.__class__.__name__}: Sync session not available. "
-    #             "Use SyncContainer for synchronous operations."
-    #         )
-    #     return self._sync_session
-    #
-    # @property
-    # def async_session(self) -> httpx.AsyncClient:
-    #     if self._async_session is None:
-    #         raise RuntimeError(
-    #             f"{self.__class__.__name__}: Async session not available. "
-    #             "Use AsyncContainer for asynchronous operations."
-    #         )
-    #     return self._async_session
+    @property
+    def sync_session(self) -> requests.Session:
+        if self._sync_session is None:
+            raise RuntimeError(
+                f"{self.__class__.__name__}: Sync session not available. "
+                "This client was initialized with async_session only. "
+                "Provide sync_session from DI container to use synchronous methods."
+            )
+        return self._sync_session
+
+    @property
+    def async_session(self) -> httpx.AsyncClient:
+        if self._async_session is None:
+            raise RuntimeError(
+                f"{self.__class__.__name__}: Async session not available. "
+                "This client was initialized with sync_session only. "
+                "Provide async_session from DI container to use asynchronous methods."
+            )
+        return self._async_session
 
     def request(
         self,

@@ -100,7 +100,7 @@ class AsyncContainer(containers.DeclarativeContainer):
     # --- HTTP Session ---
     session = providers.Resource(init_async_session)
 
-    # --- LLM Clients ---
+    # --- LLM Clients (Resource for default instances with lifecycle management) ---
     openai_client: providers.Resource[OpenAIClient] = providers.Resource(
         init_openai_client_async
     )
@@ -109,6 +109,18 @@ class AsyncContainer(containers.DeclarativeContainer):
     )
     google_genai_client: providers.Resource[GoogleGenAIClient] = providers.Resource(
         init_google_genai_client_async
+    )
+
+    # --- LLM Client Factories (for parameterized instantiation) ---
+    # e.g. openai_client_factory(reasoning_effort="high")
+    openai_client_factory: providers.Factory[OpenAIClient] = providers.Factory(
+        OpenAIClient
+    )
+    anthropic_client_factory: providers.Factory[AnthropicClient] = providers.Factory(
+        AnthropicClient
+    )
+    google_genai_client_factory: providers.Factory[GoogleGenAIClient] = (
+        providers.Factory(GoogleGenAIClient)
     )
 
     # --- LLM Facade ---

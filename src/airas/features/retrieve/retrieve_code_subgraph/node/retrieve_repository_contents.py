@@ -90,9 +90,9 @@ def _retrieve_single_repository_contents(
 
 
 def retrieve_repository_contents(
-    research_study_list: list[ResearchStudy], client: GithubClient | None = None
+    research_study_list: list[ResearchStudy],
+    github_client: GithubClient,
 ) -> list[str]:
-    client = client or GithubClient()
     code_str_list = []
 
     for research_study in research_study_list:
@@ -106,7 +106,7 @@ def retrieve_repository_contents(
             continue
 
         content = _retrieve_single_repository_contents(
-            client, research_study.meta_data.github_url, title
+            github_client, research_study.meta_data.github_url, title
         )
         code_str_list.append(content)
 

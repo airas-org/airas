@@ -17,14 +17,15 @@ from airas.types.wandb import WandbInfo
 logger = logging.getLogger(__name__)
 
 
-def generate_experiment_code(
+async def generate_experiment_code(
     llm_name: OPENAI_MODEL,
+    openai_client: OpenAIClient,
     research_session: ResearchSession,
     runner_type: RunnerType,
     wandb_info: WandbInfo | None = None,
     code_validation: tuple[bool, str] | None = None,
 ) -> ExperimentCode:
-    client = OpenAIClient(reasoning_effort="high")
+    llm_client = openai_client(reasoning_effort="high")
     env = Environment()
     template = env.from_string(generate_experiment_code_prompt)
 
@@ -36,7 +37,7 @@ def generate_experiment_code(
     }
     messages = template.render(data)
 
-    output, _ = client.structured_outputs(
+    output, _ = await llm_client.structured_outputs(
         model_name=llm_name,
         message=messages,
         data_model=ExperimentCode,

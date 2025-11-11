@@ -34,7 +34,7 @@ def _normalize_title(title: str) -> str:
 async def _extract_references_from_study(
     research_study: ResearchStudy,
     template: str,
-    client: LLMFacadeClient,
+    llm_client: LLMFacadeClient,
     llm_name: LLM_MODEL,
 ) -> list[str]:
     if not research_study.full_text:
@@ -47,7 +47,7 @@ async def _extract_references_from_study(
     messages = jinja_template.render(data)
 
     try:
-        output, _ = await client.structured_outputs(
+        output, _ = await llm_client.structured_outputs(
             message=messages,
             data_model=LLMOutput,
             llm_name=llm_name,

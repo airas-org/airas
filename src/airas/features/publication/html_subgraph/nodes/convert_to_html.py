@@ -13,7 +13,7 @@ class LLMOutput(BaseModel):
     generated_html_text: str
 
 
-def convert_to_html(
+async def convert_to_html(
     llm_name: LLM_MODEL,
     paper_content: PaperContent,
     research_session: ResearchSession,
@@ -48,9 +48,8 @@ def convert_to_html(
     template = env.from_string(prompt_template)
     messages = template.render(data)
 
-    output, _ = llm_client.structured_outputs(
-        message=messages,
-        data_model=LLMOutput,
+    output, _ = await llm_client.structured_outputs(
+        message=messages, data_model=LLMOutput, llm_name=llm_name
     )
     if output is None:
         raise ValueError("No response from the model in convert_to_html.")

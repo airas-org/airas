@@ -115,7 +115,8 @@ class RetrieveCodeSubgraph(BaseSubgraph):
         self, state: RetrieveCodeState
     ) -> dict[str, list[str]]:
         code_str_list = retrieve_repository_contents(
-            research_study_list=state["research_study_list"]
+            github_client=self.github_client,
+            research_study_list=state["research_study_list"],
         )
         return {
             "code_str_list": code_str_list,
@@ -127,7 +128,7 @@ class RetrieveCodeSubgraph(BaseSubgraph):
     ) -> dict[str, list[ResearchStudy]]:
         research_study_list = await extract_experimental_info(
             llm_name=self.llm_mapping.extract_experimental_info,
-            client=self.llm_client,
+            llm_client=self.llm_client,
             research_study_list=state["research_study_list"],
             code_str_list=state["code_str_list"],
         )

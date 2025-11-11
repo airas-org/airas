@@ -19,10 +19,10 @@ class LLMOutput(BaseModel):
     analysis_report: str
 
 
-def analytic_node(
+async def analytic_node(
     llm_name: LLM_MODEL,
-    research_session: ResearchSession,
     llm_client: LLMFacadeClient,
+    research_session: ResearchSession,
 ) -> str:
     if not research_session.current_iteration:
         logger.error("No current_iteration found in research_session")
@@ -32,7 +32,9 @@ def analytic_node(
     template = env.from_string(analytic_node_prompt)
 
     messages = template.render({"research_session": research_session})
-    output, cost = llm_client.structured_outputs(message=messages, data_model=LLMOutput)
+    output, cost = await llm_client.structured_outputs(
+        message=messages, data_model=LLMOutput, llm_name=llm_name
+    )
     if output is None:
         raise ValueError("No response from LLM in analytic_node.")
 

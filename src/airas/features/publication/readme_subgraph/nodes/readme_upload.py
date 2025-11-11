@@ -27,13 +27,11 @@ def _build_markdown(
 
 def readme_upload(
     github_repository_info: GitHubRepositoryInfo,
+    github_client: GithubClient,
     title: str,
     abstract: str,
     github_pages_url: str,
-    client: GithubClient | None = None,
 ) -> bool:
-    if client is None:
-        client = GithubClient()
     logger.info("Preparing README content for upload")
 
     research_history_url = (
@@ -50,7 +48,7 @@ def readme_upload(
     markdown_bytes = markdown.encode("utf-8")
 
     logger.info("Uploading README.md via GithubClient.commit_file_bytes")
-    return client.commit_file_bytes(
+    return github_client.commit_file_bytes(
         github_owner=github_repository_info.github_owner,
         repository_name=github_repository_info.repository_name,
         branch_name=github_repository_info.branch_name,

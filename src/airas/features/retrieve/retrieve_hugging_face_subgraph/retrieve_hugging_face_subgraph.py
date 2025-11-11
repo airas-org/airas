@@ -16,7 +16,11 @@ from airas.features.retrieve.retrieve_hugging_face_subgraph.nodes.search_hugging
 from airas.features.retrieve.retrieve_hugging_face_subgraph.nodes.select_resources import (
     select_resources,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.hugging_face_client import HuggingFaceClient
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.hugging_face import HuggingFace
 from airas.types.research_iteration import ExternalResources
 from airas.types.research_session import ResearchSession
@@ -70,12 +74,16 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        hf_client: HuggingFaceClient,
+        llm_client: LLMFacadeClient,
         llm_mapping: dict[str, str] | RetrieveHuggingFaceLLMMapping | None = None,
         include_gated: bool = False,
         max_results_per_search: int = 10,
         max_models: int = 10,
         max_datasets: int = 10,
     ):
+        self.hf_client = hf_client
+        self.llm_client = llm_client
         self.max_results_per_search = max_results_per_search
         self.max_models = max_models
         self.max_datasets = max_datasets
@@ -106,6 +114,7 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
         self, state: RetrieveHuggingFaceState
     ) -> dict[str, HuggingFace]:
         huggingface_search_results = await search_hugging_face(
+            hf_client=self.hf_client,
             research_session=state["research_session"],
             max_results_per_search=self.max_results_per_search,
             include_gated=self.include_gated,
@@ -118,6 +127,7 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
         research_session = state["research_session"]
         selected_resources = select_resources(
             llm_name=self.llm_mapping.select_resources,
+            llm_client=self.llm_client,
             research_session=research_session,
             huggingface_search_results=state["huggingface_search_results"],
             max_models=self.max_models,
@@ -133,6 +143,7 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
     ) -> dict[str, ResearchSession]:
         research_session = extract_code_in_readme(
             llm_name=self.llm_mapping.extract_code_in_readme,
+            llm_client=self.llm_client,
             research_session=state["research_session"],
         )
         return {"research_session": research_session}

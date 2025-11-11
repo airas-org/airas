@@ -11,13 +11,11 @@ from airas.services.api_client.llm_client.llm_facade_client import (
 from airas.types.paper import PaperContent
 
 
-def write_paper(
+async def write_paper(
     llm_name: LLM_MODEL,
+    llm_client: LLMFacadeClient,
     note: str,
-    client: LLMFacadeClient | None = None,
 ) -> PaperContent:
-    client = client or LLMFacadeClient(llm_name=llm_name)
-
     env = Environment()
     template = env.from_string(write_prompt)
     messages = template.render(
@@ -25,7 +23,9 @@ def write_paper(
         tips_dict=section_tips_prompt,
     )
 
-    output, cost = client.structured_outputs(message=messages, data_model=PaperContent)
+    output, cost = await llm_client.structured_outputs(
+        message=messages, data_model=PaperContent, llm_name=llm_name
+    )
     if output is None:
         raise ValueError("Error: No response from LLM in write.")
 

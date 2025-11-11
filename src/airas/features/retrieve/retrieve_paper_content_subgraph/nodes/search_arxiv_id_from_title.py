@@ -15,7 +15,7 @@ OPENAI_MODEL_SET = set(OPENAI_MODEL.__args__)
 
 async def search_arxiv_id_from_title(
     llm_name: OPENAI_MODEL,
-    client: LLMFacadeClient,
+    llm_client: LLMFacadeClient,
     prompt_template: str,
     research_study_list: list[ResearchStudy],
     conference_preference: str | None = None,
@@ -38,7 +38,7 @@ async def search_arxiv_id_from_title(
             }
         )
         try:
-            output, _ = await client.web_search(message=prompt, llm_name=llm_name)
+            output, _ = await llm_client.web_search(message=prompt, llm_name=llm_name)
         except Exception as e:
             logger.error(
                 f"Web search failed for '{research_study.title}': {e}. Skipping to the next."
