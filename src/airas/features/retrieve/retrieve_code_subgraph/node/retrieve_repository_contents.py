@@ -56,7 +56,7 @@ def _extract_python_files_from_zip(zip_data: bytes, title: str, github_url: str)
 
 
 def _retrieve_single_repository_contents(
-    client: GithubClient, github_url: str, title: str
+    github_client: GithubClient, github_url: str, title: str
 ) -> str:
     if not (url_parts := _parse_github_url(github_url)):
         logger.warning(f"Invalid GitHub URL format for '{title}': {github_url}")
@@ -65,10 +65,10 @@ def _retrieve_single_repository_contents(
     github_owner, repository_name = url_parts
 
     try:
-        repo_info = client.get_repository(github_owner, repository_name)
+        repo_info = github_client.get_repository(github_owner, repository_name)
         default_branch = repo_info.get("default_branch", "master")
 
-        zip_data = client.download_repository_zip(
+        zip_data = github_client.download_repository_zip(
             github_owner, repository_name, default_branch
         )
         contents = _extract_python_files_from_zip(zip_data, title, github_url)

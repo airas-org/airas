@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def github_upload(
     github_repository_info: GitHubRepositoryInfo,
-    client: GithubClient,
+    github_client: GithubClient,
     research_history: ResearchHistory,
     file_path: str = ".research/research_history.json",
     commit_message: str = "Update history via github_upload",
@@ -23,7 +23,7 @@ def github_upload(
     # Convert ResearchHistory to dict for JSON serialization with datetime handling
     research_history_dict = research_history.model_dump(exclude_none=True, mode="json")
 
-    ok_json = client.commit_file_bytes(
+    ok_json = github_client.commit_file_bytes(
         github_owner=github_repository_info.github_owner,
         repository_name=github_repository_info.repository_name,
         branch_name=github_repository_info.branch_name,

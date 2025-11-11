@@ -13,7 +13,7 @@ def _upload_single_file(
     upload_dir: str,
     local_path: str,
     commit_message: str,
-    client: GithubClient,
+    github_client: GithubClient,
 ) -> bool:
     try:
         with open(local_path, "rb") as f:
@@ -23,7 +23,7 @@ def _upload_single_file(
             "\\", "/"
         )
 
-        ok = client.commit_file_bytes(
+        ok = github_client.commit_file_bytes(
             github_owner=github_owner,
             repository_name=repository_name,
             branch_name=branch_name,
@@ -41,7 +41,7 @@ def upload_files(
     github_owner: str,
     repository_name: str,
     branch_name: str,
-    client: GithubClient,
+    github_client: GithubClient,
     upload_dir: str,
     local_file_paths: list[str],
     commit_message: str = "Upload files",
@@ -58,7 +58,7 @@ def upload_files(
             upload_dir=upload_dir,
             local_path=path,
             commit_message=commit_message,
-            client=client,
+            github_client=github_client,
         )
         for path in local_file_paths
     ]

@@ -9,14 +9,14 @@ logger = getLogger(__name__)
 
 def create_repository_from_template(
     github_repository_info: GitHubRepositoryInfo,
-    client: GithubClient,
+    github_client: GithubClient,
     template_owner: str,
     template_repo: str,
     include_all_branches: bool = True,
     is_private: bool = False,
 ) -> Literal[True]:
     try:
-        result = client.create_repository_from_template(
+        result = github_client.create_repository_from_template(
             github_owner=github_repository_info.github_owner,
             repository_name=github_repository_info.repository_name,
             template_owner=template_owner,
