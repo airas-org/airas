@@ -16,6 +16,8 @@ class QdrantClient(BaseHTTPClient):
         self,
         base_url: str = "https://06e0f5e0-2a43-41fe-913c-82fce00a7bd2.us-east4-0.gcp.cloud.qdrant.io:6333",
         default_headers: dict[str, str] | None = None,
+        sync_session=None,
+        async_session=None,
     ):
         api_key = os.getenv("QDRANT_API_KEY")
         if not api_key:
@@ -28,6 +30,8 @@ class QdrantClient(BaseHTTPClient):
         super().__init__(
             base_url=base_url,
             default_headers={**auth_headers, **(default_headers or {})},
+            sync_session=sync_session,
+            async_session=async_session,
         )
         self._parser = ResponseParser()
 
