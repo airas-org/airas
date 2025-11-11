@@ -171,3 +171,4 @@ tmp/*
 .github/instructions/*
 .serena/*
 .mcp.json
+.claude
