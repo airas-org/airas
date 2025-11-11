@@ -14,11 +14,11 @@ def _iter_commits(
     per_page: int = 100,
     max_pages: int = 10,
     *,
-    client: GithubClient,
+    github_client: GithubClient,
 ) -> Iterator[dict[str, Any]]:
     page = 1
     while max_pages is None or page <= max_pages:
-        commits = client.list_commits(
+        commits = github_client.list_commits(
             github_owner,
             repository_name,
             sha=branch_name,
@@ -35,7 +35,7 @@ def _iter_commits(
 
 def find_commit_sha(
     github_repository_info: GitHubRepositoryInfo,
-    client: GithubClient,
+    github_client: GithubClient,
     subgraph_name: str,
     max_pages: int = 10,
 ) -> str:
@@ -46,7 +46,7 @@ def find_commit_sha(
         github_repository_info.repository_name,
         github_repository_info.branch_name,
         max_pages,
-        client=client,
+        github_client=github_client,
     )
 
     try:

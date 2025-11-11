@@ -8,9 +8,9 @@ logger = getLogger(__name__)
 
 def check_branch_existence(
     github_repository_info: GitHubRepositoryInfo,
-    client: GithubClient,
+    github_client: GithubClient,
 ) -> str | None:
-    response = client.get_branch(
+    response = github_client.get_branch(
         github_owner=github_repository_info.github_owner,
         repository_name=github_repository_info.repository_name,
         branch_name=github_repository_info.branch_name,

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def github_download(
     github_repository_info: GitHubRepositoryInfo,
-    client: GithubClient,
+    github_client: GithubClient,
     file_path: str = ".research/research_history.json",
 ) -> ResearchHistory:
     logger.info(
@@ -20,7 +20,7 @@ def github_download(
     )
 
     try:
-        blob = client.get_repository_content(
+        blob = github_client.get_repository_content(
             github_owner=github_repository_info.github_owner,
             repository_name=github_repository_info.repository_name,
             file_path=file_path,
