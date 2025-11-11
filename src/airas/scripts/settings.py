@@ -188,7 +188,7 @@ class Settings(BaseSettings):
             self.writer.writing_refinement_rounds = 1
         elif self.profile == "prod":
             # 本番はリッチに
-            self.method_iteration_attempts = 3
+            self.method_iteration_attempts = 1
             self.generate_queries.n_queries = 5
             self.get_paper_titles_from_db.max_results_per_query = 5
             self.extract_reference_titles.num_reference_paper = 20
