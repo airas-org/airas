@@ -93,7 +93,11 @@ class SyncContainer(containers.DeclarativeContainer):
     )
 
     # --- Database Client ---
-    qdrant_client: providers.Singleton = providers.Singleton(QdrantClient)
+    qdrant_client: providers.Singleton = providers.Singleton(
+        QdrantClient,
+        sync_session=session,
+        async_session=None,
+    )
 
 
 class AsyncContainer(containers.DeclarativeContainer):
