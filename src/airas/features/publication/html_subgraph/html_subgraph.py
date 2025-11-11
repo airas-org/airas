@@ -96,8 +96,8 @@ class HtmlSubgraph(BaseSubgraph):
         check_api_key(llm_api_key_check=True)
 
     @html_timed
-    def _convert_to_html(self, state: HtmlSubgraphState) -> dict[str, str]:
-        paper_content_html = convert_to_html(
+    async def _convert_to_html(self, state: HtmlSubgraphState) -> dict[str, str]:
+        paper_content_html = await convert_to_html(
             llm_name=self.llm_mapping.convert_to_html,
             paper_content=state["paper_content"],
             research_session=state["research_session"],

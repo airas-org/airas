@@ -16,7 +16,10 @@ from airas.features.retrieve.get_paper_titles_subgraph.nodes.openai_websearch_ti
 from airas.features.retrieve.get_paper_titles_subgraph.prompt.openai_websearch_titles_prompt import (
     openai_websearch_titles_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_client.openai_client import (
+    OPENAI_MODEL,
+    OpenAIClient,
+)
 from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -30,7 +33,7 @@ get_paper_titles_from_web_timed = lambda f: time_node(get_paper_titles_from_web_
 
 
 class GetPaperTitlesFromWebLLMMapping(BaseModel):
-    openai_websearch_titles: LLM_MODEL = DEFAULT_NODE_LLMS["openai_websearch_titles"]
+    openai_websearch_titles: OPENAI_MODEL = DEFAULT_NODE_LLMS["openai_websearch_titles"]
 
 
 class GetPaperTitlesFromWebInputState(TypedDict):
@@ -58,10 +61,12 @@ class GetPaperTitlesFromWebSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        openai_client: OpenAIClient,
         llm_mapping: GetPaperTitlesFromWebLLMMapping | None = None,
         max_results_per_query: int = 5,
     ):
         check_api_key(llm_api_key_check=True)
+        self.openai_client = openai_client
         self.llm_mapping = llm_mapping or GetPaperTitlesFromWebLLMMapping()
         self.max_results_per_query = max_results_per_query
 

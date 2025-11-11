@@ -15,7 +15,7 @@ class LLMOutput(BaseModel):
     extracted_code: str
 
 
-def extract_code_in_readme(
+async def extract_code_in_readme(
     llm_name: LLM_MODEL,
     research_session: ResearchSession,
     llm_client: LLMFacadeClient,
@@ -42,7 +42,7 @@ def extract_code_in_readme(
                 "huggingface_readme": huggingface_data.readme,
             }
         )
-        output, _cost = llm_client.structured_outputs(
+        output, _cost = await llm_client.structured_outputs(
             message=messages,
             data_model=LLMOutput,
             llm_name=llm_name,

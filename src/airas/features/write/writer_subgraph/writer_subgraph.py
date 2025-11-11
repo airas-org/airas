@@ -13,7 +13,10 @@ from airas.features.write.writer_subgraph.input_data import (
 from airas.features.write.writer_subgraph.nodes.generate_note import generate_note
 from airas.features.write.writer_subgraph.nodes.refine_paper import refine_paper
 from airas.features.write.writer_subgraph.nodes.write_paper import write_paper
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.paper import PaperContent
 from airas.types.research_session import ResearchSession
 from airas.types.research_study import ResearchStudy
@@ -63,6 +66,7 @@ class WriterSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        llm_client: LLMFacadeClient,
         llm_mapping: dict[str, str] | WriterLLMMapping | None = None,
         writing_refinement_rounds: int = 2,
     ):
@@ -78,6 +82,7 @@ class WriterSubgraph(BaseSubgraph):
                 f"but got {type(llm_mapping)}"
             )
         self.writing_refinement_rounds = writing_refinement_rounds
+        self.llm_client = llm_client
         check_api_key(llm_api_key_check=True)
 
     @writer_timed
@@ -97,19 +102,21 @@ class WriterSubgraph(BaseSubgraph):
         return {"note": note}
 
     @writer_timed
-    def _write_paper(self, state: WriterSubgraphState) -> dict[str, PaperContent]:
-        paper_content = write_paper(
+    async def _write_paper(self, state: WriterSubgraphState) -> dict[str, PaperContent]:
+        paper_content = await write_paper(
             llm_name=self.llm_mapping.write_paper,
+            llm_client=self.llm_client,
             note=state["note"],
         )
         return {"paper_content": paper_content}
 
     @writer_timed
-    def _refine_paper(
+    async def _refine_paper(
         self, state: WriterSubgraphState
     ) -> dict[str, PaperContent | int]:
-        paper_content = refine_paper(
+        paper_content = await refine_paper(
             llm_name=self.llm_mapping.refine_paper,
+            llm_client=self.llm_client,
             paper_content=state["paper_content"],
             note=state["note"],
         )

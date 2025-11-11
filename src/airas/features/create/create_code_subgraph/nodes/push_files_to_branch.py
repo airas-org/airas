@@ -1,8 +1,5 @@
 import logging
 
-from dependency_injector.wiring import Provide, inject
-
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_session import ResearchSession
@@ -10,12 +7,11 @@ from airas.types.research_session import ResearchSession
 logger = logging.getLogger(__name__)
 
 
-@inject
 def push_files_to_branch(
     github_repository_info: GitHubRepositoryInfo,
     research_session: ResearchSession,
     commit_message: str,
-    github_client: GithubClient = Provide[SyncContainer.github_client],
+    github_client: GithubClient,
 ) -> bool:
     if not (current_iteration := research_session.current_iteration):
         logger.error("No current iteration found")

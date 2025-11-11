@@ -9,9 +9,6 @@ from typing_extensions import TypedDict
 from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.config.runner_type_info import RunnerType
 from airas.core.base import BaseSubgraph
-from airas.features.evaluate.judge_execution_subgraph.nodes.judge_execution import (
-    judge_execution,
-)
 from airas.features.execution.execute_experiment_subgraph.input_data import (
     execute_experiment_subgraph_input_data,
 )
@@ -22,11 +19,17 @@ from airas.features.execution.execute_experiment_subgraph.nodes.execute_experime
     execute_full_experiments,
     execute_trial_experiment,
 )
+from airas.features.execution.execute_experiment_subgraph.nodes.judge_execution import (
+    judge_execution,
+)
 from airas.features.execution.execute_experiment_subgraph.nodes.retrieve_artifacts import (
     retrieve_trial_experiment_artifacts,
 )
 from airas.services.api_client.github_client import GithubClient
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_client.llm_facade_client import (
+    LLM_MODEL,
+    LLMFacadeClient,
+)
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_iteration import ExperimentalResults
 from airas.types.research_session import ResearchSession
@@ -75,10 +78,12 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
     def __init__(
         self,
         github_client: GithubClient,
+        llm_client: LLMFacadeClient,
         runner_type: RunnerType = "ubuntu-latest",
         llm_mapping: dict[str, str] | ExecuteExperimentLLMMapping | None = None,
     ):
         self.github_client = github_client
+        self.llm_client = llm_client
         self.runner_type = runner_type
 
         if llm_mapping is None:
@@ -135,15 +140,18 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
         }
 
     @executor_timed
-    def _judge_execution(self, state: ExecutorSubgraphState) -> dict[str, bool | int]:
+    async def _judge_execution(
+        self, state: ExecutorSubgraphState
+    ) -> dict[str, bool | int]:
         if not (trial_experiment_results := state["trial_experiment_results"]):
             logger.error("No trial_experiment_results found in state")
             return {
                 "trial_experiment_passed": False,
             }
 
-        is_successful = judge_execution(
+        is_successful = await judge_execution(
             llm_name=self.llm_mapping.judge_execution,
+            llm_client=self.llm_client,
             stdout_text=trial_experiment_results.stdout or "",
             stderr_text=trial_experiment_results.stderr or "",
         )

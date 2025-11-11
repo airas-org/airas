@@ -115,8 +115,8 @@ class LatexSubgraph(BaseSubgraph):
         return {"paper_content": paper_content}
 
     @latex_timed
-    def _convert_to_latex_str(self, state: LatexSubgraphState) -> dict:
-        latex_formatted_paper_content = convert_to_latex_str(
+    async def _convert_to_latex_str(self, state: LatexSubgraphState) -> dict:
+        latex_formatted_paper_content = await convert_to_latex_str(
             llm_name=self.llm_mapping.convert_to_latex,
             paper_content=state["paper_content"],
             llm_client=self.llm_client,

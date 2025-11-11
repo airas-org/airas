@@ -20,6 +20,7 @@ from airas.features.write.create_bibfile_subgraph.nodes.update_repository_bibfil
 from airas.features.write.create_bibfile_subgraph.prompt.filter_references_prompt import (
     filter_references_prompt,
 )
+from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -72,6 +73,7 @@ class CreateBibfileSubgraph(BaseSubgraph):
     def __init__(
         self,
         llm_client: LLMFacadeClient,
+        github_client: GithubClient,
         llm_mapping: dict[str, str] | CreateBibfileLLMMapping | None = None,
         latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
         max_filtered_references: int = 30,
@@ -93,15 +95,16 @@ class CreateBibfileSubgraph(BaseSubgraph):
                 f"but got {type(llm_mapping)}"
             )
         self.llm_client = llm_client
+        self.github_client = github_client
         self.latex_template_name = latex_template_name
         self.max_filtered_references = max_filtered_references
         check_api_key(llm_api_key_check=True)
 
     @create_bibfile_timed
-    def _filter_references(
+    async def _filter_references(
         self, state: CreateBibfileSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
-        filtered_references = filter_references(
+        filtered_references = await filter_references(
             llm_name=self.llm_mapping.filter_references,
             prompt_template=filter_references_prompt,
             research_study_list=state["research_study_list"],
@@ -126,6 +129,7 @@ class CreateBibfileSubgraph(BaseSubgraph):
     ) -> dict[str, Any]:
         success = update_repository_bibfile(
             github_repository_info=state["github_repository_info"],
+            github_client=self.github_client,
             references_bib=state["references_bib"],
             latex_template_name=self.latex_template_name,
         )

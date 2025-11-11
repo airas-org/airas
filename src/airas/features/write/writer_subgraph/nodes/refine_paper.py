@@ -12,14 +12,12 @@ from airas.services.api_client.llm_client.llm_facade_client import (
 from airas.types.paper import PaperContent
 
 
-def refine_paper(
+async def refine_paper(
     llm_name: LLM_MODEL,
+    llm_client: LLMFacadeClient,
     paper_content: PaperContent,
     note: str,
-    client: LLMFacadeClient | None = None,
 ) -> PaperContent:
-    client = client or LLMFacadeClient(llm_name=llm_name)
-
     env = Environment()
     write_prompt_template = env.from_string(write_prompt)
     rendered_system_prompt = write_prompt_template.render(
@@ -32,7 +30,9 @@ def refine_paper(
 
     messages = rendered_system_prompt + refine_message
 
-    output, cost = client.structured_outputs(message=messages, data_model=PaperContent)
+    output, cost = await llm_client.structured_outputs(
+        message=messages, data_model=PaperContent, llm_name=llm_name
+    )
     if output is None:
         raise ValueError("Error: No response from LLM in refine.")
 

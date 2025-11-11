@@ -31,12 +31,13 @@ class RunConfigListOutput(BaseModel):
     )
 
 
-def generate_run_config(
+async def generate_run_config(
     llm_name: OPENAI_MODEL,
+    openai_client: OpenAIClient,
     research_session: ResearchSession,
     runner_type: RunnerType,
 ) -> list[RunConfigOutput]:
-    client = OpenAIClient(reasoning_effort="high")
+    llm_client = openai_client(reasoning_effort="high")
     env = Environment()
 
     template = env.from_string(generate_run_config_prompt)
@@ -52,7 +53,7 @@ def generate_run_config(
         f"Generating run configs for {len(experiment_runs)} experiment runs using LLM..."
     )
 
-    output, _ = client.structured_outputs(
+    output, _ = await llm_client.structured_outputs(
         model_name=llm_name,
         message=messages,
         data_model=RunConfigListOutput,

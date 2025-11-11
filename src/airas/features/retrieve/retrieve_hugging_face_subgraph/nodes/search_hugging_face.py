@@ -2,9 +2,6 @@ import asyncio
 import logging
 from typing import Any
 
-from dependency_injector.wiring import Provide, inject
-
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.hugging_face_client import (
     HF_RESOURCE_TYPE,
     HuggingFaceClient,
@@ -20,11 +17,10 @@ from airas.types.research_session import ResearchSession
 logger = logging.getLogger(__name__)
 
 
-@inject
 async def search_hugging_face(
+    hf_client: HuggingFaceClient,
     research_session: ResearchSession,
     max_results_per_search: int = 20,
-    hf_client: HuggingFaceClient = Provide[SyncContainer.hugging_face_client],
     include_gated: bool = False,
 ) -> HuggingFace:
     if not research_session.current_iteration:

@@ -117,11 +117,11 @@ class AnalyticSubgraph(BaseSubgraph):
         return {"research_session": research_session}
 
     @analytic_timed
-    def _analytic_node(
+    async def _analytic_node(
         self, state: AnalyticSubgraphState
     ) -> dict[str, ResearchSession]:
         research_session = state["research_session"]
-        analysis_report = analytic_node(
+        analysis_report = await analytic_node(
             llm_name=self.llm_mapping.analytic_node,
             research_session=research_session,
             llm_client=self.llm_client,
@@ -132,11 +132,11 @@ class AnalyticSubgraph(BaseSubgraph):
         return {"research_session": research_session}
 
     @analytic_timed
-    def _evaluate_method(
+    async def _evaluate_method(
         self, state: AnalyticSubgraphState
     ) -> dict[str, ResearchSession]:
         research_session = state["research_session"]
-        method_feedback = evaluate_method(
+        method_feedback = await evaluate_method(
             llm_name=self.llm_mapping.evaluate_method,
             research_session=research_session,
             llm_client=self.llm_client,

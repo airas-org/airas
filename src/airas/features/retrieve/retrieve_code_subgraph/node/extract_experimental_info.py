@@ -25,7 +25,7 @@ async def _extract_experimental_info_from_study(
     research_study: ResearchStudy,
     code_str: str,
     template: str,
-    client: LLMFacadeClient,
+    llm_client: LLMFacadeClient,
     llm_name: LLM_MODEL,
 ) -> None:
     title = research_study.title or "N/A"
@@ -55,7 +55,7 @@ async def _extract_experimental_info_from_study(
     )
 
     try:
-        output, _ = await client.structured_outputs(
+        output, _ = await llm_client.structured_outputs(
             message=messages,
             data_model=LLMOutput,
             llm_name=llm_name,
@@ -76,7 +76,7 @@ async def _extract_experimental_info_from_study(
 
 async def extract_experimental_info(
     llm_name: LLM_MODEL,
-    client: LLMFacadeClient,
+    llm_client: LLMFacadeClient,
     research_study_list: list[ResearchStudy],
     code_str_list: list[str],
     prompt_template: str = extract_experimental_info_prompt,
@@ -92,7 +92,7 @@ async def extract_experimental_info(
     )
     tasks = [
         _extract_experimental_info_from_study(
-            research_study, code_str, prompt_template, client, llm_name
+            research_study, code_str, prompt_template, llm_client, llm_name
         )
         for research_study, code_str in zip(
             research_study_list, code_str_list, strict=True

@@ -1,9 +1,6 @@
 import asyncio
 import logging
 
-from dependency_injector.wiring import Provide, inject
-
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_iteration import ExperimentRun
@@ -76,11 +73,10 @@ async def _create_single_branch(
         return False
 
 
-@inject
 async def create_experiment_branches(
     github_repository_info: GitHubRepositoryInfo,
+    github_client: GithubClient,
     research_session: ResearchSession,
-    github_client: GithubClient = Provide[SyncContainer.github_client],
 ) -> ResearchSession:
     if (
         not research_session.current_iteration

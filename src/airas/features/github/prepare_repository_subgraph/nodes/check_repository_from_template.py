@@ -8,12 +8,12 @@ logger = getLogger(__name__)
 
 def check_repository_from_template(
     github_repository_info: GitHubRepositoryInfo,
-    client: GithubClient,
+    github_client: GithubClient,
     template_owner: str,
     template_repo: str,
 ) -> bool:
     try:
-        response = client.get_repository(
+        response = github_client.get_repository(
             github_owner=github_repository_info.github_owner,
             repository_name=github_repository_info.repository_name,
         )

@@ -14,7 +14,7 @@ from airas.types.paper import PaperContent
 logger = getLogger(__name__)
 
 
-def convert_to_latex_str(
+async def convert_to_latex_str(
     llm_name: LLM_MODEL,
     paper_content: PaperContent,
     llm_client: LLMFacadeClient,
@@ -36,9 +36,8 @@ def convert_to_latex_str(
     template = env.from_string(convert_to_latex_prompt)
     messages = template.render(data)
 
-    output, cost = llm_client.structured_outputs(
-        message=messages,
-        data_model=PaperContent,
+    output, cost = await llm_client.structured_outputs(
+        message=messages, data_model=PaperContent, llm_name=llm_name
     )
     if output is None:
         raise ValueError("Error: No response from the model in convert_to_latex.")

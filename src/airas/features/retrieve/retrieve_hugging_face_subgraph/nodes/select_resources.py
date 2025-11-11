@@ -21,7 +21,7 @@ class LLMOutput(BaseModel):
     selected_datasets: list[str]
 
 
-def select_resources(
+async def select_resources(
     llm_name: LLM_MODEL,
     research_session: ResearchSession,
     huggingface_search_results: HuggingFace,
@@ -43,7 +43,7 @@ def select_resources(
         }
     )
 
-    output, _cost = llm_client.structured_outputs(
+    output, _cost = await llm_client.structured_outputs(
         message=messages,
         data_model=LLMOutput,
         llm_name=llm_name,

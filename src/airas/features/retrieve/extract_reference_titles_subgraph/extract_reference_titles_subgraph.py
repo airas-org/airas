@@ -16,6 +16,7 @@ from airas.features.retrieve.extract_reference_titles_subgraph.nodes.extract_ref
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
+    LLMFacadeClient,
 )
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import ResearchStudy
@@ -59,6 +60,7 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
 
     def __init__(
         self,
+        llm_client: LLMFacadeClient,
         llm_mapping: dict[str, str] | ExtractReferenceTitlesLLMMapping | None = None,
         num_reference_paper: int | None = None,
     ):
@@ -80,6 +82,7 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or ExtractReferenceTitlesLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
+        self.llm_client = llm_client
         self.num_reference_paper = num_reference_paper
 
     # TODO: async support
@@ -89,6 +92,7 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
     ) -> dict[str, list[ResearchStudy]]:
         reference_research_study_list = await extract_reference_titles(
             llm_name=self.llm_mapping.extract_reference_titles,
+            llm_client=self.llm_client,
             research_study_list=state["research_study_list"],
             github_repository_info=state.get("github_repository_info"),
         )

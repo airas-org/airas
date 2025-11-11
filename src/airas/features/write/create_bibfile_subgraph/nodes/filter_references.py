@@ -18,7 +18,7 @@ class FilteredReferencesOutput(BaseModel):
     ]
 
 
-def filter_references(
+async def filter_references(
     llm_name: LLM_MODEL,
     prompt_template: str,
     research_study_list: list[ResearchStudy],
@@ -38,7 +38,7 @@ def filter_references(
     template = env.from_string(prompt_template)
     messages = template.render(data)
 
-    output, _ = llm_client.structured_outputs(
+    output, _ = await llm_client.structured_outputs(
         message=messages,
         data_model=FilteredReferencesOutput,
         llm_name=llm_name,
@@ -97,7 +97,7 @@ def main():
     research_hypothesis = "Deep learning models with attention mechanisms significantly improve performance on natural language understanding tasks compared to traditional approaches."
 
     try:
-        filtered_refs = filter_references(
+        filtered_refs: list[ResearchStudy] = filter_references(
             llm_name=llm_name,
             prompt_template=filter_references_prompt,
             research_study_list=research_study_list,

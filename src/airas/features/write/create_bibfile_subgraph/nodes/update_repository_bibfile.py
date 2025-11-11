@@ -1,9 +1,6 @@
 import base64
 import logging
 
-from dependency_injector.wiring import Provide, inject
-
-from airas.services.api_client.api_clients_container import SyncContainer
 from airas.services.api_client.github_client import GithubClient, GithubClientFatalError
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.latex import LATEX_TEMPLATE_NAME
@@ -21,12 +18,11 @@ def _merge_bibtex_content(existing: str, new: str) -> str:
     return existing.strip() + "\n\n" + new.strip()
 
 
-@inject
 def update_repository_bibfile(
     github_repository_info: GitHubRepositoryInfo,
+    github_client: GithubClient,
     references_bib: str,
     latex_template_name: LATEX_TEMPLATE_NAME,
-    github_client: GithubClient = Provide[SyncContainer.github_client],
 ) -> bool:
     github_owner = github_repository_info.github_owner
     repository_name = github_repository_info.repository_name

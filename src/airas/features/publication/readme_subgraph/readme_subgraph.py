@@ -9,6 +9,7 @@ from airas.features.publication.readme_subgraph.input_data import (
     readme_subgraph_input_data,
 )
 from airas.features.publication.readme_subgraph.nodes.readme_upload import readme_upload
+from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -45,15 +46,14 @@ class ReadmeSubgraph(BaseSubgraph):
     InputState = ReadmeSubgraphInputState
     OutputState = ReadmeSubgraphOutputState
 
-    def __init__(
-        self,
-    ) -> None:
-        pass
+    def __init__(self, github_client: GithubClient) -> None:
+        self.github_client = github_client
 
     @readme_timed
     def _readme_upload_node(self, state: ReadmeSubgraphState) -> dict:
         readme_upload_result = readme_upload(
             github_repository_info=state["github_repository_info"],
+            github_client=self.github_client,
             title=state["paper_content"].title,
             abstract=state["paper_content"].abstract,
             github_pages_url=state["github_pages_url"],
