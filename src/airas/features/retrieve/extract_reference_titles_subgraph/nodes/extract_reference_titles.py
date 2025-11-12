@@ -71,11 +71,9 @@ async def _extract_references_from_study(
 
 async def extract_reference_titles(
     llm_name: LLM_MODEL,
+    llm_client: LLMFacadeClient,
     research_study_list: list[ResearchStudy],
-    client: LLMFacadeClient | None = None,
 ) -> list[ResearchStudy]:
-    client = client or LLMFacadeClient(llm_name=llm_name)
-
     valid_studies = [
         research_study
         for research_study in research_study_list
@@ -122,7 +120,7 @@ async def extract_reference_titles(
         _extract_references_from_study(
             study,
             extract_reference_titles_prompt,
-            client,
+            llm_client,
             llm_name,
         )
         for study in valid_studies
