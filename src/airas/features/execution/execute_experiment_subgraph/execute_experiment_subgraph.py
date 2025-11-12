@@ -169,6 +169,7 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
     ) -> dict[str, ResearchSession]:
         research_session = await create_experiment_branches(
             github_repository_info=state["github_repository_info"],
+            github_client=self.github_client,
             research_session=state["research_session"],
         )
         return {"research_session": research_session}
