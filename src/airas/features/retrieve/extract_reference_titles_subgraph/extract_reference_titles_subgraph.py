@@ -94,7 +94,6 @@ class ExtractReferenceTitlesSubgraph(BaseSubgraph):
             llm_name=self.llm_mapping.extract_reference_titles,
             llm_client=self.llm_client,
             research_study_list=state["research_study_list"],
-            github_repository_info=state.get("github_repository_info"),
         )
         if self.num_reference_paper is not None:
             reference_research_study_list = reference_research_study_list[
