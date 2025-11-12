@@ -39,7 +39,9 @@ async def validate_experiment_code(
         }
     )
     output, _ = await llm_client.structured_outputs(
-        message=messages, data_model=ValidationOutput, llm_name=llm_name
+        message=messages,
+        data_model=ValidationOutput,
+        model_name=llm_name,
     )
 
     if output is None:
