@@ -57,52 +57,10 @@ async def init_google_genai_client_async() -> AsyncGenerator[GoogleGenAIClient, 
     await client.close()
 
 
-class SyncContainer(containers.DeclarativeContainer):
+class Container(containers.DeclarativeContainer):
     # --- HTTP Session ---
-    session = providers.Resource(init_sync_session)
-
-    # --- Code & Experiment Platforms ---
-    github_client: providers.Singleton[GithubClient] = providers.Singleton(
-        GithubClient,
-        sync_session=session,
-        async_session=None,
-    )
-    hugging_face_client: providers.Singleton[HuggingFaceClient] = providers.Singleton(
-        HuggingFaceClient,
-        sync_session=session,
-        async_session=None,
-    )
-
-    # --- Academic Research APIs ---
-    arxiv_client: providers.Singleton[ArxivClient] = providers.Singleton(
-        ArxivClient,
-        sync_session=session,
-        async_session=None,
-    )
-    semantic_scholar_client: providers.Singleton[SemanticScholarClient] = (
-        providers.Singleton(
-            SemanticScholarClient,
-            sync_session=session,
-            async_session=None,
-        )
-    )
-    openalex_client: providers.Singleton[OpenAlexClient] = providers.Singleton(
-        OpenAlexClient,
-        sync_session=session,
-        async_session=None,
-    )
-
-    # --- Database Client ---
-    qdrant_client: providers.Singleton = providers.Singleton(
-        QdrantClient,
-        sync_session=session,
-        async_session=None,
-    )
-
-
-class AsyncContainer(containers.DeclarativeContainer):
-    # --- HTTP Session ---
-    session = providers.Resource(init_async_session)
+    sync_session = providers.Resource(init_sync_session)
+    async_session = providers.Resource(init_async_session)
 
     # --- LLM Clients (Resource for default instances with lifecycle management) ---
     openai_client: providers.Resource[OpenAIClient] = providers.Resource(
@@ -116,7 +74,7 @@ class AsyncContainer(containers.DeclarativeContainer):
     )
 
     # --- LLM Client Factories (for parameterized instantiation) ---
-    # e.g. openai_client_factory(reasoning_effort="high")
+    # Example usage: openai_client_factory(reasoning_effort="high")
     openai_client_factory: providers.Factory[OpenAIClient] = providers.Factory(
         OpenAIClient
     )
@@ -138,35 +96,40 @@ class AsyncContainer(containers.DeclarativeContainer):
     # --- Code & Experiment Platforms ---
     github_client: providers.Singleton[GithubClient] = providers.Singleton(
         GithubClient,
-        sync_session=None,
-        async_session=session,
+        sync_session=sync_session,
+        async_session=async_session,
     )
     hugging_face_client: providers.Singleton[HuggingFaceClient] = providers.Singleton(
         HuggingFaceClient,
-        sync_session=None,
-        async_session=session,
+        sync_session=sync_session,
+        async_session=async_session,
     )
 
     # --- Academic Research APIs ---
     arxiv_client: providers.Singleton[ArxivClient] = providers.Singleton(
         ArxivClient,
-        sync_session=None,
-        async_session=session,
+        sync_session=sync_session,
+        async_session=None,
     )
     semantic_scholar_client: providers.Singleton[SemanticScholarClient] = (
         providers.Singleton(
             SemanticScholarClient,
-            sync_session=None,
-            async_session=session,
+            sync_session=sync_session,
+            async_session=None,
         )
     )
     openalex_client: providers.Singleton[OpenAlexClient] = providers.Singleton(
         OpenAlexClient,
-        sync_session=None,
-        async_session=session,
+        sync_session=sync_session,
+        async_session=None,
+    )
+
+    # --- Database Client ---
+    qdrant_client: providers.Singleton = providers.Singleton(
+        QdrantClient,
+        sync_session=sync_session,
+        async_session=None,
     )
 
 
-# Create container instances for direct use
-sync_container = SyncContainer()
-async_container = AsyncContainer()
+container = Container()

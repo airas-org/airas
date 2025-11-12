@@ -1,25 +1,15 @@
+import asyncio
 import logging
+import sys
 from datetime import datetime
 
-from dependency_injector.wiring import Provide, register_loader_containers
-from tqdm import tqdm
+from dependency_injector.wiring import Provide, inject
+from tqdm.asyncio import tqdm as atqdm
 
-from airas.services.api_client.api_clients_container import (
-    AsyncContainer,
-    SyncContainer,
-    async_container,
-    sync_container,
-)
-
-# Register import hook before importing features to enable automatic dependency injection
-register_loader_containers(sync_container)
-register_loader_containers(async_container)
-
-
-from airas.features import (  # noqa: E402
+from airas.core.container import Container, container
+from airas.features import (
     AnalyticSubgraph,
     CreateBibfileSubgraph,
-    # CreateBranchSubgraph,
     CreateCodeSubgraph,
     CreateExperimentalDesignSubgraph,
     CreateHypothesisSubgraph,
@@ -40,235 +30,314 @@ from airas.features import (  # noqa: E402
     SummarizePaperSubgraph,
     WriterSubgraph,
 )
-from airas.scripts.settings import Settings  # noqa: E402
-from airas.types.github import GitHubRepositoryInfo  # noqa: E402
-from airas.utils.logging_utils import setup_logging  # noqa: E402
+from airas.scripts.settings import Settings
+from airas.services.api_client.arxiv_client import ArxivClient
+from airas.services.api_client.github_client import GithubClient
+from airas.services.api_client.hugging_face_client import HuggingFaceClient
+from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
+from airas.services.api_client.llm_client.openai_client import OpenAIClient
+from airas.services.api_client.openalex_client import OpenAlexClient
+from airas.services.api_client.qdrant_client import QdrantClient
+from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
+from airas.types.github import GitHubRepositoryInfo
+from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
 
-settings = Settings().apply_profile_overrides()
 
-generate_queries = GenerateQueriesSubgraph(
-    llm_mapping={
-        "generate_queries": settings.llm_mapping.generate_queries,
-    },
-    llm_client=Provide[AsyncContainer.llm_facade_client],
-    n_queries=settings.generate_queries.n_queries,
-)
-get_paper_titles = GetPaperTitlesFromDBSubgraph(
-    qdrant_client=Provide[SyncContainer.qdrant_client],
-    llm_client=Provide[AsyncContainer.llm_facade_client],
-    max_results_per_query=settings.get_paper_titles_from_db.max_results_per_query,
-    semantic_search=settings.get_paper_titles_from_db.semantic_search,
-)
-retrieve_paper_content = RetrievePaperContentSubgraph(
-    target_study_list_source="research_study_list",
-    llm_mapping={
-        "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
-    },
-    arxiv_client=Provide[SyncContainer.arxiv_client],
-    ss_client=Provide[SyncContainer.semantic_scholar_client],
-    llm_client=Provide[AsyncContainer.llm_facade_client],
-    paper_provider=settings.retrieve_paper_content.paper_provider,
-)
-summarize_paper = SummarizePaperSubgraph(
-    llm_mapping={"summarize_paper": settings.llm_mapping.summarize_paper},
-    llm_client=Provide[AsyncContainer.llm_facade_client],
-)
-retrieve_code = RetrieveCodeSubgraph(
-    llm_mapping={
-        "extract_github_url_from_text": settings.llm_mapping.extract_github_url_from_text,
-        "extract_experimental_info": settings.llm_mapping.extract_experimental_info,
-    },
-    llm_client=Provide[AsyncContainer.llm_facade_client],
-    github_client=Provide[AsyncContainer.github_client],
-)
-reference_extractor = ExtractReferenceTitlesSubgraph(
-    llm_mapping={
-        "extract_reference_titles": settings.llm_mapping.extract_reference_titles
-    },
-    num_reference_paper=settings.extract_reference_titles.num_reference_paper,
-)
-retrieve_reference_paper_content = RetrievePaperContentSubgraph(
-    target_study_list_source="reference_research_study_list",
-    llm_mapping={
-        "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
-    },
-    arxiv_client=Provide[SyncContainer.arxiv_client],
-    ss_client=Provide[SyncContainer.semantic_scholar_client],
-    llm_client=Provide[AsyncContainer.llm_facade_client],
-    paper_provider=settings.retrieve_paper_content.paper_provider,
-)
+@inject
+async def create_subgraphs(
+    settings: Settings,
+    github_client: GithubClient = Provide[Container.github_client],
+    arxiv_client: ArxivClient = Provide[Container.arxiv_client],
+    semantic_scholar_client: SemanticScholarClient = Provide[
+        Container.semantic_scholar_client
+    ],
+    openalex_client: OpenAlexClient = Provide[Container.openalex_client],
+    hugging_face_client: HuggingFaceClient = Provide[Container.hugging_face_client],
+    qdrant_client: QdrantClient = Provide[Container.qdrant_client],
+    llm_facade_client: LLMFacadeClient = Provide[Container.llm_facade_client],
+    openai_client_factory: OpenAIClient = Provide[
+        Container.openai_client_factory.provider
+    ],
+):
+    # Debug: Check if DI is working
+    logger.info(f"github_client type: {type(github_client)}")
+    logger.info(f"llm_facade_client type: {type(llm_facade_client)}")
+    if not hasattr(github_client, "get_repository"):
+        logger.error("github_client is not properly injected - it's a Provide object!")
+        raise RuntimeError("Dependency injection failed for github_client")
 
-create_hypothesis = CreateHypothesisSubgraph(
-    qdrant_client=Provide[SyncContainer.qdrant_client],
-    arxiv_client=Provide[SyncContainer.arxiv_client],
-    ss_client=Provide[SyncContainer.semantic_scholar_client],
-    llm_client=Provide[AsyncContainer.llm_facade_client],
-    llm_mapping={
-        "generate_hypothesis": settings.llm_mapping.generate_idea_and_research_summary,
-        "evaluate_novelty_and_significance": settings.llm_mapping.evaluate_novelty_and_significance,
-        "refine_hypothesis": settings.llm_mapping.refine_idea_and_research_summary,
-        "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
-    },
-    refinement_rounds=settings.create_hypothesis.refinement_rounds,
-    num_retrieve_related_papers=settings.create_hypothesis.num_retrieve_related_papers,
-)
+    # GitHub subgraphs
+    prepare_repository = PrepareRepositorySubgraph(
+        github_client=github_client,
+        is_private=True,
+    )
+    github_downloader = GithubDownloadSubgraph(github_client=github_client)
+    github_uploader = GithubUploadSubgraph(github_client=github_client)
 
-create_method = CreateMethodSubgraph(
-    llm_mapping={
-        "improve_method": settings.llm_mapping.improve_method,
-    },
-)
+    # --- Initial Phase: Research & Investigation ---
+    generate_queries = GenerateQueriesSubgraph(
+        llm_mapping={
+            "generate_queries": settings.llm_mapping.generate_queries,
+        },
+        llm_client=llm_facade_client,
+        n_queries=settings.generate_queries.n_queries,
+    )
 
-create_experimental_design = CreateExperimentalDesignSubgraph(
-    llm_client=Provide[AsyncContainer.llm_facade_client],
-    runner_type=settings.runner_type,
-    num_models_to_use=settings.create_experimental_design.num_models_to_use,
-    num_datasets_to_use=settings.create_experimental_design.num_datasets_to_use,
-    num_comparative_methods=settings.create_experimental_design.num_comparative_methods,
-    llm_mapping={
-        "generate_experiment_design": settings.llm_mapping.generate_experiment_design,
-    },
-)
-retrieve_hugging_face = RetrieveHuggingFaceSubgraph(
-    include_gated=False,
-    max_results_per_search=settings.retrieve_hugging_face.max_results_per_search,
-    max_models=settings.retrieve_hugging_face.max_models,
-    max_datasets=settings.retrieve_hugging_face.max_datasets,
-    llm_mapping={
-        "select_resources": settings.llm_mapping.select_resources,
-    },
-)
-coder = CreateCodeSubgraph(
-    runner_type=settings.runner_type,
-    secret_names=settings.secret_names,
-    wandb_info=settings.wandb.to_wandb_info(),
-    llm_mapping={
-        "generate_run_config": settings.llm_mapping.generate_run_config,
-        "generate_experiment_code": settings.llm_mapping.generate_experiment_code,
-        "validate_experiment_code": settings.llm_mapping.validate_experiment_code,
-    },
-    max_code_validations=settings.create_code.max_code_validations,
-)
+    get_paper_titles = GetPaperTitlesFromDBSubgraph(
+        qdrant_client=qdrant_client,
+        llm_client=llm_facade_client,
+        max_results_per_query=settings.get_paper_titles_from_db.max_results_per_query,
+        semantic_search=settings.get_paper_titles_from_db.semantic_search,
+    )
 
-executor = ExecuteExperimentSubgraph(
-    runner_type=settings.runner_type,
-)
+    retrieve_paper_content = RetrievePaperContentSubgraph(
+        target_study_list_source="research_study_list",
+        llm_mapping={
+            "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
+        },
+        arxiv_client=arxiv_client,
+        ss_client=semantic_scholar_client,
+        llm_client=llm_facade_client,
+        paper_provider=settings.retrieve_paper_content.paper_provider,
+    )
 
-analysis = AnalyticSubgraph(
-    llm_mapping={
-        "analytic_node": settings.llm_mapping.analytic_node,
-        "evaluate_method": settings.llm_mapping.evaluate_method,
-    },
-)
-create_bibfile = CreateBibfileSubgraph(
-    llm_mapping={
-        "filter_references": settings.llm_mapping.filter_references,
-    },
-    latex_template_name=settings.latex_template_name,
-    max_filtered_references=settings.create_bibfile.max_filtered_references,
-)
-writer = WriterSubgraph(
-    llm_mapping={
-        "write_paper": settings.llm_mapping.write_paper,
-        "refine_paper": settings.llm_mapping.refine_paper,
-    },
-    writing_refinement_rounds=settings.writer.writing_refinement_rounds,
-)
-latex = LatexSubgraph(
-    llm_mapping={
-        "convert_to_latex": settings.llm_mapping.convert_to_latex,
-    },
-    latex_template_name=settings.latex_template_name,
-)
-html = HtmlSubgraph(
-    llm_mapping={
-        "convert_to_html": settings.llm_mapping.convert_to_html,
+    summarize_paper = SummarizePaperSubgraph(
+        llm_mapping={"summarize_paper": settings.llm_mapping.summarize_paper},
+        llm_client=llm_facade_client,
+    )
+
+    retrieve_code = RetrieveCodeSubgraph(
+        llm_mapping={
+            "extract_github_url_from_text": settings.llm_mapping.extract_github_url_from_text,
+            "extract_experimental_info": settings.llm_mapping.extract_experimental_info,
+        },
+        llm_client=llm_facade_client,
+        github_client=github_client,
+    )
+
+    create_hypothesis = CreateHypothesisSubgraph(
+        qdrant_client=qdrant_client,
+        arxiv_client=arxiv_client,
+        ss_client=semantic_scholar_client,
+        llm_client=llm_facade_client,
+        llm_mapping={
+            "generate_hypothesis": settings.llm_mapping.generate_idea_and_research_summary,
+            "evaluate_novelty_and_significance": settings.llm_mapping.evaluate_novelty_and_significance,
+            "refine_hypothesis": settings.llm_mapping.refine_idea_and_research_summary,
+            "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
+        },
+        refinement_rounds=settings.create_hypothesis.refinement_rounds,
+        num_retrieve_related_papers=settings.create_hypothesis.num_retrieve_related_papers,
+    )
+
+    # --- Iteration Phase: Method Development ---
+    create_method = CreateMethodSubgraph(
+        llm_client=llm_facade_client,
+        llm_mapping={
+            "improve_method": settings.llm_mapping.improve_method,
+        },
+    )
+
+    create_experimental_design = CreateExperimentalDesignSubgraph(
+        llm_client=llm_facade_client,
+        runner_type=settings.runner_type,
+        num_models_to_use=settings.create_experimental_design.num_models_to_use,
+        num_datasets_to_use=settings.create_experimental_design.num_datasets_to_use,
+        num_comparative_methods=settings.create_experimental_design.num_comparative_methods,
+        llm_mapping={
+            "generate_experiment_design": settings.llm_mapping.generate_experiment_design,
+        },
+    )
+
+    retrieve_hugging_face = RetrieveHuggingFaceSubgraph(
+        hf_client=hugging_face_client,
+        llm_client=llm_facade_client,
+        include_gated=False,
+        max_results_per_search=settings.retrieve_hugging_face.max_results_per_search,
+        max_models=settings.retrieve_hugging_face.max_models,
+        max_datasets=settings.retrieve_hugging_face.max_datasets,
+        llm_mapping={
+            "select_resources": settings.llm_mapping.select_resources,
+        },
+    )
+
+    coder = CreateCodeSubgraph(
+        openai_client=openai_client_factory,
+        github_client=github_client,
+        runner_type=settings.runner_type,
+        secret_names=settings.secret_names,
+        wandb_info=settings.wandb.to_wandb_info(),
+        llm_mapping={
+            "generate_run_config": settings.llm_mapping.generate_run_config,
+            "generate_experiment_code": settings.llm_mapping.generate_experiment_code,
+            "validate_experiment_code": settings.llm_mapping.validate_experiment_code,
+        },
+        max_code_validations=settings.create_code.max_code_validations,
+    )
+
+    executor = ExecuteExperimentSubgraph(
+        llm_client=llm_facade_client,
+        github_client=github_client,
+        runner_type=settings.runner_type,
+    )
+
+    analysis = AnalyticSubgraph(
+        llm_client=llm_facade_client,
+        github_client=github_client,
+        llm_mapping={
+            "analytic_node": settings.llm_mapping.analytic_node,
+            "evaluate_method": settings.llm_mapping.evaluate_method,
+        },
+    )
+
+    # --- Final Phase: Publication ---
+    reference_extractor = ExtractReferenceTitlesSubgraph(
+        llm_client=llm_facade_client,
+        llm_mapping={
+            "extract_reference_titles": settings.llm_mapping.extract_reference_titles
+        },
+        num_reference_paper=settings.extract_reference_titles.num_reference_paper,
+    )
+
+    retrieve_reference_paper_content = RetrievePaperContentSubgraph(
+        target_study_list_source="reference_research_study_list",
+        llm_mapping={
+            "search_arxiv_id_from_title": settings.llm_mapping.search_arxiv_id_from_title,
+        },
+        arxiv_client=arxiv_client,
+        ss_client=semantic_scholar_client,
+        llm_client=llm_facade_client,
+        paper_provider=settings.retrieve_paper_content.paper_provider,
+    )
+
+    create_bibfile = CreateBibfileSubgraph(
+        llm_client=llm_facade_client,
+        github_client=github_client,
+        llm_mapping={
+            "filter_references": settings.llm_mapping.filter_references,
+        },
+        latex_template_name=settings.latex_template_name,
+        max_filtered_references=settings.create_bibfile.max_filtered_references,
+    )
+
+    writer = WriterSubgraph(
+        llm_client=llm_facade_client,
+        llm_mapping={
+            "write_paper": settings.llm_mapping.write_paper,
+            "refine_paper": settings.llm_mapping.refine_paper,
+        },
+        writing_refinement_rounds=settings.writer.writing_refinement_rounds,
+    )
+
+    latex = LatexSubgraph(
+        llm_client=llm_facade_client,
+        github_client=github_client,
+        llm_mapping={
+            "convert_to_latex": settings.llm_mapping.convert_to_latex,
+        },
+        latex_template_name=settings.latex_template_name,
+    )
+
+    html = HtmlSubgraph(
+        llm_client=llm_facade_client,
+        github_client=github_client,
+        llm_mapping={
+            "convert_to_html": settings.llm_mapping.convert_to_html,
+        },
+    )
+
+    readme = ReadmeSubgraph(
+        github_client=github_client,
+    )
+
+    # Organize subgraphs by workflow phase
+    initial_subgraph_list = [
+        generate_queries,
+        get_paper_titles,
+        retrieve_paper_content,
+        summarize_paper,
+        retrieve_code,
+        create_hypothesis,
+    ]
+
+    iteration_subgraph_list = [
+        create_method,
+        create_experimental_design,
+        retrieve_hugging_face,
+        coder,
+        executor,
+        analysis,
+    ]
+
+    final_subgraph_list = [
+        reference_extractor,
+        retrieve_reference_paper_content,
+        create_bibfile,
+        writer,
+        latex,
+        html,
+        readme,
+    ]
+
+    return {
+        "prepare_repository": prepare_repository,
+        "github_downloader": github_downloader,
+        "github_uploader": github_uploader,
+        "initial_subgraphs": initial_subgraph_list,
+        "iteration_subgraphs": iteration_subgraph_list,
+        "final_subgraphs": final_subgraph_list,
     }
-)
-readme = ReadmeSubgraph()
-uploader = GithubUploadSubgraph()
 
 
-# Subgraph lists organized by workflow phase
-initial_subgraph_list = [
-    # --- Search & Investigation ---
-    generate_queries,
-    get_paper_titles,
-    retrieve_paper_content,
-    summarize_paper,
-    retrieve_code,
-    # --- Hypothesis Creation ---
-    create_hypothesis,
-]
-
-# Method iteration loop subgraphs
-iteration_subgraph_list = [
-    create_method,
-    create_experimental_design,
-    retrieve_hugging_face,
-    coder,
-    executor,
-    analysis,
-]
-
-# Final publication subgraphs
-final_subgraph_list = [
-    reference_extractor,
-    retrieve_reference_paper_content,
-    create_bibfile,
-    writer,
-    latex,
-    html,
-    readme,
-]
-
-subgraph_list = initial_subgraph_list + iteration_subgraph_list + final_subgraph_list
-
-
-def run_subgraphs(subgraph_list, state):
-    for subgraph in tqdm(subgraph_list, desc="Executing AIRAS"):
+async def run_subgraphs(subgraph_list, state, uploader):
+    for subgraph in atqdm(subgraph_list, desc="Executing AIRAS"):
         subgraph_name = subgraph.__class__.__name__
-        print(f"--- Running Subgraph: {subgraph_name} ---")
+        logger.info(f"--- Running Subgraph: {subgraph_name} ---")
 
-        state = subgraph.run(state)
-        _ = uploader.run(state)
-        print(f"--- Finished Subgraph: {subgraph_name} ---\n")
+        state = await subgraph.arun(state)
+        _ = await uploader.arun(state)
+        logger.info(f"--- Finished Subgraph: {subgraph_name} ---\n")
 
     return state
 
 
-def execute_workflow(
+async def execute_workflow(
     github_owner: str,
     repository_name: str,
     research_topic: str,
     branch_name: str = "main",
 ):
+    settings = Settings().apply_profile_overrides()
     method_iteration_attempts = settings.method_iteration_attempts
 
-    state = {
-        "github_repository_info": GitHubRepositoryInfo(
-            github_owner=github_owner,
-            repository_name=repository_name,
-            branch_name=branch_name,
-        ),
-        "research_topic": research_topic,
-    }
-
-    _ = PrepareRepositorySubgraph().run(state)
-
-    # Download existing state if available (for resuming from a specific subgraph)
-    logger.info("Attempting to download existing research state...")
-    state = GithubDownloadSubgraph().run(state)
+    # Initialize DI container
+    await container.init_resources()
 
     try:
-        # Phase 1: Initial phase (research + hypothesis)
-        logger.info("=== Phase 1: Initial Research & Hypothesis Creation ===")
-        state = run_subgraphs(initial_subgraph_list, state)
+        subgraphs = await create_subgraphs(settings)
 
-        # Phase 2: Method iteration loop
+        state = {
+            "github_repository_info": GitHubRepositoryInfo(
+                github_owner=github_owner,
+                repository_name=repository_name,
+                branch_name=branch_name,
+            ),
+            "research_topic": research_topic,
+        }
+
+        _ = await subgraphs["prepare_repository"].arun(state)
+
+        logger.info("Attempting to download existing research state...")
+        state = await subgraphs["github_downloader"].arun(state)
+
+        logger.info("=== Phase 1: Initial Research & Hypothesis Creation ===")
+        state = await run_subgraphs(
+            subgraphs["initial_subgraphs"], state, subgraphs["github_uploader"]
+        )
+
         logger.info(
             f"=== Phase 2: Method Iteration Loop ({method_iteration_attempts} iterations) ==="
         )
@@ -276,74 +345,24 @@ def execute_workflow(
             logger.info(
                 f"--- Method Iteration {iteration + 1}/{method_iteration_attempts} ---"
             )
-            state = run_subgraphs(iteration_subgraph_list, state)
+            state = await run_subgraphs(
+                subgraphs["iteration_subgraphs"], state, subgraphs["github_uploader"]
+            )
 
-            # After analysis, create a new iteration in research_session
             if iteration < method_iteration_attempts - 1:
                 logger.info("Preparing for next iteration...")
-                # The next iteration will be created by create_method subgraph
 
-        # Phase 3: Final publication phase
         logger.info("=== Phase 3: Final Publication ===")
-        state = run_subgraphs(final_subgraph_list, state)
+        state = await run_subgraphs(
+            subgraphs["final_subgraphs"], state, subgraphs["github_uploader"]
+        )
 
     except Exception:
         raise
-
-
-# def resume_workflow(
-#     github_owner: str,
-#     repository_name: str,
-#     source_branch_name: str,
-#     start_subgraph_name: str,
-#     target_branch_name: str,
-#     subgraph_list: list = subgraph_list,
-# ):
-#     start_index = None
-#     for i, subgraph in enumerate(subgraph_list):
-#         if subgraph.__class__.__name__ == start_subgraph_name:
-#             start_index = i
-#             break
-
-#     if start_index is None:
-#         raise ValueError(
-#             f"Subgraph '{start_subgraph_name}' not found in subgraph_list. "
-#             f"Available: {[sg.__class__.__name__ for sg in subgraph_list]}"
-#         )
-
-#     logger.info(
-#         f"Resuming workflow from subgraph: {start_subgraph_name} (index {start_index})"
-#     )
-
-#     state = {
-#         "github_repository_info": GitHubRepositoryInfo(
-#             github_owner=github_owner,
-#             repository_name=repository_name,
-#             branch_name=source_branch_name,
-#         ),
-#     }
-
-#     logger.info(
-#         f"Creating new branch '{target_branch_name}' from '{source_branch_name}' "
-#         f"at subgraph '{start_subgraph_name}'"
-#     )
-#     state = CreateBranchSubgraph(
-#         new_branch_name=target_branch_name,
-#         start_subgraph_name=start_subgraph_name,
-#     ).run(state)
-
-#     logger.info(f"Downloading existing state from branch: {target_branch_name}")
-#     state = GithubDownloadSubgraph().run(state)
-
-#     remaining_subgraphs = subgraph_list[start_index:]
-#     logger.info(
-#         f"Executing {len(remaining_subgraphs)} subgraphs starting from {start_subgraph_name}"
-#     )
-
-#     try:
-#         run_subgraphs(remaining_subgraphs, state)
-#     except Exception:
-#         raise
+    finally:
+        logger.info("Shutting down DI container resources...")
+        await container.shutdown_resources()
+        logger.info("Resource cleanup completed.")
 
 
 if __name__ == "__main__":
@@ -352,38 +371,19 @@ if __name__ == "__main__":
     exec_time = datetime.now().strftime("%Y%m%d-%H%M%S")
     repository_name = f"airas-{exec_time}-{suffix}"
 
-    research_topic_list = "Learning rate optimization for fine-tuning Qwen3-0.6B on GSM8K elementary math problems"
-    # research_topic_list = "Optimal learning rate scheduling for fine-tuning small language models on GSM8K elementary math problems"
-    # research_topic_list = "Finding optimal LoRA rank for parameter-efficient fine-tuning on mathematical reasoning tasks"
-    # research_topic_list = "Batch size optimization for memory-efficient fine-tuning of small transformers on math problems"
-    # research_topic_list = "Weight decay regularization effects on small model fine-tuning for arithmetic reasoning"
-    # research_topic_list = "Data efficiency analysis: minimum training samples needed for effective math reasoning fine-tuning"
-    # research_topic_list = "Joint fine-tuning on GSM8K and MATH datasets for improved mathematical reasoning in small models"
-    # research_topic_list = "Joint optimization of LoRA rank and alpha hyperparameters for efficient adaptation on mathematical tasks"
-    # research_topic_list = "Optimal training epochs for small model fine-tuning: balancing performance and computational cost"
-    # research_topic_list = "Comprehensive hyperparameter optimization for fine-tuning Qwen3-4B on mathematical reasoning tasks"
-    # research_topic_list = "Comparing fine-tuning efficiency across small model sizes (0.6B to 4B) on mathematical reasoning"
+    research_topic = "Learning rate optimization for fine-tuning Qwen3-0.6B on GSM8K elementary math problems"
+
+    # Wire the container to enable dependency injection
+    container.wire(modules=[sys.modules[__name__]])
 
     try:
-        execute_workflow(
-            github_owner, repository_name, research_topic=research_topic_list
+        asyncio.run(
+            execute_workflow(
+                github_owner,
+                repository_name,
+                research_topic=research_topic,
+            )
         )
-
-        # resume_workflow(
-        #     github_owner=github_owner,
-        #     repository_name="experiment_matsuzawa_251002",
-        #     source_branch_name="research-0-retry-5",
-        #     target_branch_name="research-0-retry-5-opencode-latex",
-        #     start_subgraph_name="LatexSubgraph",
-        #     subgraph_list=subgraph_list,
-        # )
-
-        # TODO: The current CreateBranchSubgraph traces the f"[subgraph: {subgraph_name}]" marker in the commit message.
-        # However, if ExecuteExperimentSubgraph stops with an error,
-        # for example, no commit will exist, forcing a re-execution from the previous subgraph (CreateCodeSubgraph).
-        # It seems desirable to change the specification to absorb the changes up to the previous marker into a new branch.
-    finally:
-        logger.info("Shutting down DI container resources...")
-        sync_container.shutdown_resources()
-        async_container.shutdown_resources()
-        logger.info("Resource cleanup completed.")
+    except Exception as e:
+        logger.exception(f"Workflow execution failed: {e}")
+        raise
