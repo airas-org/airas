@@ -6,6 +6,7 @@ from datetime import datetime
 from dependency_injector.wiring import Provide, inject
 from tqdm.asyncio import tqdm as atqdm
 
+from airas.core.container import Container, container
 from airas.features import (
     AnalyticSubgraph,
     CreateBibfileSubgraph,
@@ -30,7 +31,6 @@ from airas.features import (
     WriterSubgraph,
 )
 from airas.scripts.settings import Settings
-from airas.services.api_client.api_clients_container_2 import Container, container
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.hugging_face_client import HuggingFaceClient
