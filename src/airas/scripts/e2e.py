@@ -292,8 +292,8 @@ async def create_subgraphs(
     }
 
 
-async def run_subgraphs(subgraph_list, state, uploader):
-    for subgraph in atqdm(subgraph_list, desc="Executing AIRAS"):
+async def run_subgraphs(subgraph_list, state, uploader, description="Executing AIRAS"):
+    for subgraph in atqdm(subgraph_list, desc=description):
         subgraph_name = subgraph.__class__.__name__
         logger.info(f"--- Running Subgraph: {subgraph_name} ---")
 
@@ -333,28 +333,41 @@ async def execute_workflow(
         logger.info("Attempting to download existing research state...")
         state = await subgraphs["github_downloader"].arun(state)
 
-        logger.info("=== Phase 1: Initial Research & Hypothesis Creation ===")
+        phase_1_desc = "Phase 1: Investigation & Hypothesis Creation"
+        logger.info(f"=== {phase_1_desc} ===")
         state = await run_subgraphs(
-            subgraphs["initial_subgraphs"], state, subgraphs["github_uploader"]
+            subgraphs["initial_subgraphs"],
+            state,
+            subgraphs["github_uploader"],
+            phase_1_desc,
         )
 
-        logger.info(
-            f"=== Phase 2: Method Iteration Loop ({method_iteration_attempts} iterations) ==="
+        phase_2_header = (
+            f"Phase 2: Method Iteration Loop ({method_iteration_attempts} iterations)"
         )
+        logger.info(f"=== {phase_2_header} ===")
         for iteration in range(method_iteration_attempts):
-            logger.info(
-                f"--- Method Iteration {iteration + 1}/{method_iteration_attempts} ---"
+            phase_2_desc = (
+                f"Method Iteration {iteration + 1}/{method_iteration_attempts}"
             )
+            logger.info(f"--- {phase_2_desc} ---")
             state = await run_subgraphs(
-                subgraphs["iteration_subgraphs"], state, subgraphs["github_uploader"]
+                subgraphs["iteration_subgraphs"],
+                state,
+                subgraphs["github_uploader"],
+                phase_2_desc,
             )
 
             if iteration < method_iteration_attempts - 1:
                 logger.info("Preparing for next iteration...")
 
-        logger.info("=== Phase 3: Final Publication ===")
+        phase_3_desc = "Phase 3: Writing & Publication"
+        logger.info(f"=== {phase_3_desc} ===")
         state = await run_subgraphs(
-            subgraphs["final_subgraphs"], state, subgraphs["github_uploader"]
+            subgraphs["final_subgraphs"],
+            state,
+            subgraphs["github_uploader"],
+            phase_3_desc,
         )
 
     except Exception:

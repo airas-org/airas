@@ -121,11 +121,11 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
         )
         return {"huggingface_search_results": huggingface_search_results}
 
-    def _select_resources(
+    async def _select_resources(
         self, state: RetrieveHuggingFaceState
     ) -> dict[str, ResearchSession]:
         research_session = state["research_session"]
-        selected_resources = select_resources(
+        selected_resources = await select_resources(
             llm_name=self.llm_mapping.select_resources,
             llm_client=self.llm_client,
             research_session=research_session,
@@ -138,10 +138,10 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
         )
         return {"research_session": research_session}
 
-    def _extract_code_in_readme(
+    async def _extract_code_in_readme(
         self, state: RetrieveHuggingFaceState
     ) -> dict[str, ResearchSession]:
-        research_session = extract_code_in_readme(
+        research_session = await extract_code_in_readme(
             llm_name=self.llm_mapping.extract_code_in_readme,
             llm_client=self.llm_client,
             research_session=state["research_session"],
