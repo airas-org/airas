@@ -3,10 +3,12 @@ import os
 from typing import Any, Literal
 
 from anthropic import AsyncAnthropic
+from pydantic import BaseModel
 
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
+
 
 # https://docs.anthropic.com/en/docs/about-claude/models/overview#model-comparison-table
 CLAUDE_MODEL_INFO: dict[str, dict[str, Any]] = {
@@ -51,10 +53,23 @@ CLAUDE_MODEL = Literal[
 ]
 
 
+class AnthropicParams(BaseModel):
+    provider_type: Literal["anthropic"] = "anthropic"
+
+
 class AnthropicClient:
     def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
         self.aclient = AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+    def _get_params(self, params: AnthropicParams | None) -> dict[str, Any]:
+        if not params:
+            return {}
+
+        api_params: dict[str, Any] = {}
+        # Future extension
+
+        return api_params
 
     async def _truncate_prompt(self, model_name: CLAUDE_MODEL, message: str) -> str:
         """Shorten the prompt so that it does not exceed the maximum number of tokens."""
@@ -87,11 +102,13 @@ class AnthropicClient:
         self,
         model_name: CLAUDE_MODEL,
         message: str,
+        params: AnthropicParams | None = None,
     ) -> tuple[str | None, float]:
         if not isinstance(message, str):
             raise TypeError("message must be a string")
         message = message.encode("utf-8", "ignore").decode("utf-8")
         message = await self._truncate_prompt(model_name, message)
+        api_params = self._get_params(params)
 
         response = await self.aclient.messages.create(
             model=model_name,
@@ -101,6 +118,7 @@ class AnthropicClient:
             # "Streaming is required..." errors for requests that may take longer than 10 minutes.
             # However, streaming mode is still the recommended approach for very long generations.
             timeout=900.0,
+            **api_params,
         )
         output = response.content[0].text
         cost = self._calculate_cost(

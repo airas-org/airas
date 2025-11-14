@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 import tiktoken
 from openai import AsyncOpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from airas.utils.logging_utils import setup_logging
 
@@ -120,15 +120,35 @@ OPENAI_MODEL = Literal[
     "gpt-4o-mini-2024-07-18",
 ]
 
-ReasoningEffort = Literal["low", "medium", "high"]
+
 # TODO?: Add error handling for models that do not support reasoning effort
+ReasoningEffort = Literal["none", "low", "medium", "high"]
+
+
+class OpenAIParams(BaseModel):
+    provider_type: Literal["openai"] = "openai"
+    reasoning_effort: ReasoningEffort | None = Field(
+        None, description="Reasoning effort level for reasoning models"
+    )
+    # Future extensions:
+    # temperature: float | None = None
+    # verbosity: Literal[...] | None = None
 
 
 class OpenAIClient:
-    def __init__(self, reasoning_effort: ReasoningEffort | None = None) -> None:
+    def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
         self.aclient = AsyncOpenAI()
-        self.reasoning_effort = reasoning_effort
+
+    def _get_params(self, params: OpenAIParams | None) -> dict[str, Any]:
+        if not params:
+            return {}
+
+        api_params: dict[str, Any] = {}
+        if params.reasoning_effort:
+            api_params["reasoning"] = {"effort": params.reasoning_effort}
+
+        return api_params
 
     def _truncate_prompt(self, model_name: OPENAI_MODEL, message: str) -> str:
         """Shorten the prompt so that it does not exceed the maximum number of tokens."""
@@ -151,27 +171,22 @@ class OpenAIClient:
         output_cost = output_tokens * OPENAI_MODEL_INFO[model_name]["output_token_cost"]
         return input_cost + output_cost
 
-    def _get_params(self) -> dict[str, Any]:
-        params: dict[str, Any] = {}
-        if self.reasoning_effort:
-            params["reasoning"] = {"effort": self.reasoning_effort}
-        return params
-
     async def generate(
         self,
         model_name: OPENAI_MODEL,
         message: str,
+        params: OpenAIParams | None = None,
     ) -> tuple[str | None, float]:
         if not isinstance(message, str):
             raise TypeError("message must be a string")
         message = message.encode("utf-8", "ignore").decode("utf-8")
         message = self._truncate_prompt(model_name, message)
-        params = self._get_params()
+        api_params = self._get_params(params)
 
         response = await self.aclient.responses.create(
             model=model_name,
             input=message,
-            **params,
+            **api_params,
         )
         output = response.output_text
         cost = self._calculate_cost(
@@ -186,15 +201,16 @@ class OpenAIClient:
         model_name: OPENAI_MODEL,
         message: str,
         data_model: type[BaseModel],
+        params: OpenAIParams | None = None,
     ) -> tuple[dict | None, float]:
         if not isinstance(message, str):
             raise TypeError("message must be a string")
         message = message.encode("utf-8", "ignore").decode("utf-8")
         message = self._truncate_prompt(model_name, message)
-        params = self._get_params()
+        api_params = self._get_params(params)
 
         response = await self.aclient.responses.parse(
-            model=model_name, input=message, text_format=data_model, **params
+            model=model_name, input=message, text_format=data_model, **api_params
         )
         output = response.output_text
         output = json.loads(output)
@@ -214,17 +230,20 @@ class OpenAIClient:
         self,
         model_name: OPENAI_MODEL,
         message: str,
+        params: OpenAIParams | None = None,
     ) -> tuple[dict | None, float]:
         if not isinstance(message, str):
             raise TypeError("message must be a string")
 
         message = message.encode("utf-8", "ignore").decode("utf-8")
         message = self._truncate_prompt(model_name, message)
+        api_params = self._get_params(params)
 
         response = await self.aclient.responses.create(
             model=model_name,
             tools=[{"type": "web_search_preview"}],
             input=message,
+            **api_params,
         )
 
         assistant_msgs = [
