@@ -39,7 +39,7 @@ async def generate_experiment_code(
 
     params = OpenAIParams(reasoning_effort="high")
     output, _ = await llm_client.structured_outputs(
-        model_name=llm_name,
+        llm_name=llm_name,
         message=messages,
         data_model=ExperimentCode,
         params=params,
