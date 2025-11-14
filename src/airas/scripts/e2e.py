@@ -35,7 +35,6 @@ from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.hugging_face_client import HuggingFaceClient
 from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
-from airas.services.api_client.llm_client.openai_client import OpenAIClient
 from airas.services.api_client.openalex_client import OpenAlexClient
 from airas.services.api_client.qdrant_client import QdrantClient
 from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
@@ -58,21 +57,11 @@ async def create_subgraphs(
     hugging_face_client: HuggingFaceClient = Provide[Container.hugging_face_client],
     qdrant_client: QdrantClient = Provide[Container.qdrant_client],
     llm_facade_client: LLMFacadeClient = Provide[Container.llm_facade_client],
-    openai_client_factory: OpenAIClient = Provide[
-        Container.openai_client_factory.provider
-    ],
 ):
-    # Debug: Check if DI is working
-    logger.info(f"github_client type: {type(github_client)}")
-    logger.info(f"llm_facade_client type: {type(llm_facade_client)}")
-    if not hasattr(github_client, "get_repository"):
-        logger.error("github_client is not properly injected - it's a Provide object!")
-        raise RuntimeError("Dependency injection failed for github_client")
-
     # GitHub subgraphs
     prepare_repository = PrepareRepositorySubgraph(
         github_client=github_client,
-        is_private=True,
+        is_private=False,
     )
     github_downloader = GithubDownloadSubgraph(github_client=github_client)
     github_uploader = GithubUploadSubgraph(github_client=github_client)
@@ -165,7 +154,7 @@ async def create_subgraphs(
     )
 
     coder = CreateCodeSubgraph(
-        openai_client=openai_client_factory,
+        llm_client=llm_facade_client,
         github_client=github_client,
         runner_type=settings.runner_type,
         secret_names=settings.secret_names,
