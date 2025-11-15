@@ -8,11 +8,12 @@ from typing import Any, Literal
 
 from google import genai
 from google.genai import types
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
+
 
 # https://ai.google.dev/gemini-api/docs/models?hl=ja
 VERTEXAI_MODEL_INFO: dict[str, dict[str, Any]] = {
@@ -62,11 +63,39 @@ VERTEXAI_MODEL = Literal[
 ]
 
 
+# TODO: Add error handling for models that support thinking_config and validate thinking_budget ranges
+# Currently supports gemini-2.5-pro with thinking_budget: 0 (off), 1024-32768 (fixed), -1 (dynamic)
+class GoogleGenAIParams(BaseModel):
+    provider_type: Literal["google_genai"] = "google_genai"
+    thinking_budget: int | None = Field(
+        None,
+        description="Thinking budget for reasoning (0=off, 1024-32768=fixed, -1=dynamic)",
+    )
+    # Future extensions:
+    # temperature: float | None = None
+    # top_k: int | None = None
+    # top_p: float | None = None
+
+
 class GoogleGenAIClient:
-    def __init__(self, thinking_budget: int | None = None) -> None:
+    def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
         self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        self.thinking_budget = thinking_budget
+
+    def _get_params(self, params: GoogleGenAIParams | None) -> dict[str, Any]:
+        if not params:
+            return {}
+
+        api_params: dict[str, Any] = {}
+
+        if params.thinking_budget is not None:
+            api_params["config"] = types.GenerateContentConfig(
+                thinking_config=types.ThinkingConfig(
+                    thinking_budget=params.thinking_budget
+                )
+            )
+
+        return api_params
 
     def _truncate_prompt(self, model_name: VERTEXAI_MODEL, message: str) -> str:
         """Shorten the prompt so that it does not exceed the maximum number of tokens."""
@@ -93,34 +122,22 @@ class GoogleGenAIClient:
         output_cost = output_tokens * model_info["output_token_cost"]
         return input_cost + output_cost
 
-    def _get_params(self) -> dict[str, Any]:
-        params: dict[str, Any] = {}
-        # TODO: Add error handling for models that support thinking_config and validate thinking_budget ranges
-        # Currently supports gemini-2.5-pro with thinking_budget: 0 (off), 1024-32768 (fixed), -1 (dynamic)
-        if self.thinking_budget is not None:
-            params["config"] = types.GenerateContentConfig(
-                thinking_config=types.ThinkingConfig(
-                    thinking_budget=self.thinking_budget
-                )
-            )
-
-        return params
-
     async def generate(
         self,
         model_name: VERTEXAI_MODEL,
         message: str,
+        params: GoogleGenAIParams | None = None,
     ) -> tuple[str | None, float]:
         if not isinstance(message, str):
             raise TypeError("message must be a string")
         message = message.encode("utf-8", "ignore").decode("utf-8")
         message = self._truncate_prompt(model_name, message)
-        params = self._get_params()
+        api_params = self._get_params(params)
 
         response = await self.client.aio.models.generate_content(
             model=model_name,
             contents=message,
-            **params,
+            **api_params,
         )
         output = response.text
         cost = self._calculate_cost(
@@ -135,12 +152,13 @@ class GoogleGenAIClient:
         model_name: VERTEXAI_MODEL,
         message: str,
         data_model: type[BaseModel],
+        params: GoogleGenAIParams | None = None,
     ) -> tuple[dict | None, float]:
         if not isinstance(message, str):
             raise TypeError("message must be a string")
         message = message.encode("utf-8", "ignore").decode("utf-8")
         message = self._truncate_prompt(model_name, message)
-        params = self._get_params()
+        api_params = self._get_params(params)
 
         config = {
             "response_mime_type": "application/json",
@@ -148,8 +166,8 @@ class GoogleGenAIClient:
         }
 
         # Add thinking config if present
-        if "config" in params:
-            config.update(params["config"].model_dump(exclude_none=True))
+        if "config" in api_params:
+            config.update(api_params["config"].model_dump(exclude_none=True))
 
         response = await self.client.aio.models.generate_content(
             model=model_name,

@@ -16,10 +16,8 @@ from airas.features.retrieve.get_paper_titles_subgraph.nodes.openai_websearch_ti
 from airas.features.retrieve.get_paper_titles_subgraph.prompt.openai_websearch_titles_prompt import (
     openai_websearch_titles_prompt,
 )
-from airas.services.api_client.llm_client.openai_client import (
-    OPENAI_MODEL,
-    OpenAIClient,
-)
+from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
+from airas.services.api_client.llm_client.openai_client import OPENAI_MODEL
 from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -61,13 +59,23 @@ class GetPaperTitlesFromWebSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        openai_client: OpenAIClient,
+        llm_client: LLMFacadeClient,
         llm_mapping: GetPaperTitlesFromWebLLMMapping | None = None,
         max_results_per_query: int = 5,
     ):
         check_api_key(llm_api_key_check=True)
-        self.openai_client = openai_client
-        self.llm_mapping = llm_mapping or GetPaperTitlesFromWebLLMMapping()
+        if llm_mapping is None:
+            self.llm_mapping = GetPaperTitlesFromWebLLMMapping()
+        elif isinstance(llm_mapping, dict):
+            self.llm_mapping = GetPaperTitlesFromWebLLMMapping(**llm_mapping)
+        elif isinstance(llm_mapping, GetPaperTitlesFromWebLLMMapping):
+            self.llm_mapping = llm_mapping
+        else:
+            raise TypeError(
+                f"llm_mapping must be None, dict[str, str], or GetPaperTitlesFromWebLLMMapping, "
+                f"but got {type(llm_mapping)}"
+            )
+        self.llm_client = llm_client
         self.max_results_per_query = max_results_per_query
 
     @get_paper_titles_from_web_timed
@@ -76,6 +84,7 @@ class GetPaperTitlesFromWebSubgraph(BaseSubgraph):
     ) -> dict[str, list[ResearchStudy]]:
         titles = await openai_websearch_titles(
             llm_name=self.llm_mapping.openai_websearch_titles,
+            llm_client=self.llm_client,
             queries=state["queries"],
             prompt_template=openai_websearch_titles_prompt,
             max_results=self.max_results_per_query,

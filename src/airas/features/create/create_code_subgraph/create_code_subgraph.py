@@ -25,10 +25,8 @@ from airas.features.create.create_code_subgraph.nodes.validate_experiment_code i
     validate_experiment_code,
 )
 from airas.services.api_client.github_client import GithubClient
-from airas.services.api_client.llm_client.openai_client import (
-    OPENAI_MODEL,
-    OpenAIClient,
-)
+from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
+from airas.services.api_client.llm_client.openai_client import OPENAI_MODEL
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_session import ResearchSession
 from airas.types.wandb import WandbInfo
@@ -82,7 +80,7 @@ class CreateCodeSubgraph(BaseSubgraph):
     def __init__(
         self,
         github_client: GithubClient,
-        openai_client: OpenAIClient,
+        llm_client: LLMFacadeClient,
         runner_type: RunnerType = "ubuntu-latest",
         llm_mapping: dict[str, str] | CreateCodeLLMMapping | None = None,
         secret_names: list[str] | None = None,
@@ -110,7 +108,7 @@ class CreateCodeSubgraph(BaseSubgraph):
                 f"but got {type(llm_mapping)}"
             )
         self.github_client = github_client
-        self.openai_client = openai_client
+        self.llm_client = llm_client
         check_api_key(
             llm_api_key_check=True,
             github_personal_access_token_check=True,
@@ -132,7 +130,7 @@ class CreateCodeSubgraph(BaseSubgraph):
         research_session = state["research_session"]
         run_configs = await generate_run_config(
             llm_name=self.llm_mapping.generate_run_config,
-            openai_client=self.openai_client,
+            llm_client=self.llm_client,
             research_session=research_session,
             runner_type=cast(RunnerType, self.runner_type),
         )
@@ -150,7 +148,7 @@ class CreateCodeSubgraph(BaseSubgraph):
         research_session = state["research_session"]
         experiment_code = await generate_experiment_code(
             llm_name=self.llm_mapping.generate_experiment_code,
-            openai_client=self.openai_client,
+            llm_client=self.llm_client,
             research_session=research_session,
             runner_type=cast(RunnerType, self.runner_type),
             wandb_info=self.wandb_info,
@@ -168,7 +166,7 @@ class CreateCodeSubgraph(BaseSubgraph):
     ) -> dict[str, tuple[bool, str] | int]:
         code_validation = await validate_experiment_code(
             llm_name=self.llm_mapping.validate_experiment_code,
-            openai_client=self.openai_client,
+            llm_client=self.llm_client,
             research_session=state["research_session"],
             wandb_info=self.wandb_info,
         )

@@ -1,20 +1,29 @@
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
+
+from pydantic import Field
 
 from airas.services.api_client.llm_client.anthropic_client import (
     CLAUDE_MODEL,
     AnthropicClient,
+    AnthropicParams,
 )
 from airas.services.api_client.llm_client.google_genai_client import (
     VERTEXAI_MODEL,
     GoogleGenAIClient,
+    GoogleGenAIParams,
 )
 from airas.services.api_client.llm_client.openai_client import (
     OPENAI_MODEL,
     OpenAIClient,
+    OpenAIParams,
 )
 from airas.services.api_client.llm_client.retry import LLM_RETRY
 
 LLM_MODEL = Literal[OPENAI_MODEL, VERTEXAI_MODEL, CLAUDE_MODEL]
+LLMParams = Annotated[
+    OpenAIParams | GoogleGenAIParams | AnthropicParams,
+    Field(discriminator="provider_type"),
+]
 
 
 class LLMFacadeClient:
@@ -40,12 +49,22 @@ class LLMFacadeClient:
             raise ValueError(f"Unsupported LLM model: {llm_name}")
 
     @LLM_RETRY
-    async def generate(self, message: str, llm_name: LLM_MODEL):
+    async def generate(
+        self, message: str, llm_name: LLM_MODEL, params: LLMParams | None = None
+    ):
         client = self._get_client(llm_name)
-        return await client.generate(model_name=llm_name, message=message)
+        return await client.generate(
+            model_name=llm_name, message=message, params=params
+        )
 
     @LLM_RETRY
-    async def structured_outputs(self, message: str, data_model, llm_name: LLM_MODEL):
+    async def structured_outputs(
+        self,
+        message: str,
+        data_model,
+        llm_name: LLM_MODEL,
+        params: LLMParams | None = None,
+    ):
         # NOTE:The Anthropic model does not support structured output.
         if llm_name in CLAUDE_MODEL.__args__:
             raise NotImplementedError(
@@ -53,7 +72,7 @@ class LLMFacadeClient:
             )
         client = self._get_client(llm_name)
         return await client.structured_outputs(
-            model_name=llm_name, message=message, data_model=data_model
+            model_name=llm_name, message=message, data_model=data_model, params=params
         )
 
     @LLM_RETRY
@@ -64,9 +83,13 @@ class LLMFacadeClient:
         return await client.text_embedding(message=message, model_name=llm_name)
 
     @LLM_RETRY
-    async def web_search(self, message: str, llm_name: LLM_MODEL):
+    async def web_search(
+        self, message: str, llm_name: LLM_MODEL, params: LLMParams | None = None
+    ):
         # NOTE: Perform web search using OpenAI API (only available for OpenAI models).
         client = self._get_client(llm_name)
         if not hasattr(client, "web_search"):
             raise ValueError(f"Web search not supported for {llm_name}")
-        return await client.web_search(model_name=llm_name, message=message)
+        return await client.web_search(
+            model_name=llm_name, message=message, params=params
+        )

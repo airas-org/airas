@@ -73,18 +73,6 @@ class Container(containers.DeclarativeContainer):
         init_google_genai_client_async
     )
 
-    # --- LLM Client Factories (for parameterized instantiation) ---
-    # Example usage: openai_client_factory(reasoning_effort="high")
-    openai_client_factory: providers.Factory[OpenAIClient] = providers.Factory(
-        OpenAIClient
-    )
-    anthropic_client_factory: providers.Factory[AnthropicClient] = providers.Factory(
-        AnthropicClient
-    )
-    google_genai_client_factory: providers.Factory[GoogleGenAIClient] = (
-        providers.Factory(GoogleGenAIClient)
-    )
-
     # --- LLM Facade ---
     llm_facade_client: providers.Singleton[LLMFacadeClient] = providers.Singleton(
         LLMFacadeClient,
