@@ -24,10 +24,7 @@ from api.schemas.create import (
     CreateMethodRequestBody,
     CreateMethodResponseBody,
 )
-from src.airas.services.api_client.api_clients_container import (
-    AsyncContainer,
-    SyncContainer,
-)
+from src.airas.core.container import Container
 
 router = APIRouter(prefix="/create", tags=["papers"])
 
@@ -36,15 +33,13 @@ router = APIRouter(prefix="/create", tags=["papers"])
 @inject
 async def create_hypothesis(
     request: CreateHypothesisRequestBody,
-    qdrant_client: Annotated[
-        QdrantClient, Depends(Provide[SyncContainer.qdrant_client])
-    ],
-    arxiv_client: Annotated[ArxivClient, Depends(Provide[SyncContainer.arxiv_client])],
+    qdrant_client: Annotated[QdrantClient, Depends(Provide[Container.qdrant_client])],
+    arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
     ss_client: Annotated[
-        SemanticScholarClient, Depends(Provide[SyncContainer.semantic_scholar_client])
+        SemanticScholarClient, Depends(Provide[Container.semantic_scholar_client])
     ],
     llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[AsyncContainer.llm_facade_client])
+        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
     ],
 ) -> CreateHypothesisResponseBody:
     result = await CreateHypothesisSubgraph(
@@ -65,7 +60,7 @@ async def create_hypothesis(
 async def create_method(
     request: CreateMethodRequestBody,
     llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[AsyncContainer.llm_facade_client])
+        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
     ],
 ) -> CreateMethodResponseBody:
     result = await CreateMethodSubgraph(
@@ -81,7 +76,7 @@ async def create_method(
 async def create_experimental_design(
     request: CreateExperimentalDesignRequestBody,
     llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[AsyncContainer.llm_facade_client])
+        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
     ],
 ) -> CreateExperimentalDesignResponseBody:
     result = await CreateExperimentalDesignSubgraph(
