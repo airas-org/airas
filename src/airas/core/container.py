@@ -7,6 +7,7 @@ import httpx
 import requests
 import requests_cache
 from dependency_injector import containers, providers
+from hishel import CacheOptions, SpecificationPolicy
 from hishel.httpx import AsyncCacheClient
 
 from airas.services.api_client.qdrant_client import QdrantClient
@@ -56,16 +57,16 @@ async def init_async_session() -> AsyncGenerator[httpx.AsyncClient, None]:
     enable_cache = os.getenv("ENABLE_HTTP_CACHE", "false").lower() == "true"
 
     if enable_cache:
-        from hishel import Controller
-
-        # Match sync session settings
-        controller = Controller(
-            cacheable_methods=["GET"],
-            cacheable_status_codes=[200, 201, 301, 302],
+        policy = SpecificationPolicy(
+            cache_options=CacheOptions(
+                shared=False,
+                supported_methods=["GET"],
+                allow_stale=False,
+            )
         )
         client = AsyncCacheClient(
             follow_redirects=True,
-            controller=controller,
+            policy=policy,
         )
     else:
         client = httpx.AsyncClient(follow_redirects=True)
@@ -94,15 +95,16 @@ async def init_llm_client(
     enable_cache = os.getenv("ENABLE_HTTP_CACHE", "false").lower() == "true"
 
     if enable_cache:
-        from hishel import Controller
-
-        controller = Controller(
-            cacheable_methods=["GET"],
-            cacheable_status_codes=[200, 201, 301, 302],
+        policy = SpecificationPolicy(
+            cache_options=CacheOptions(
+                shared=False,
+                supported_methods=["GET"],
+                allow_stale=False,
+            )
         )
         http_client = AsyncCacheClient(
             follow_redirects=True,
-            controller=controller,
+            policy=policy,
         )
     else:
         http_client = None
