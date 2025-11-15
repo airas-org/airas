@@ -58,9 +58,14 @@ class AnthropicParams(BaseModel):
 
 
 class AnthropicClient:
-    def __init__(self) -> None:
+    def __init__(self, http_client=None) -> None:
         self.logger = logging.getLogger(__name__)
-        self.aclient = AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        if http_client:
+            self.aclient = AsyncAnthropic(
+                api_key=os.environ["ANTHROPIC_API_KEY"], http_client=http_client
+            )
+        else:
+            self.aclient = AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
     def _get_params(self, params: AnthropicParams | None) -> dict[str, Any]:
         if not params:

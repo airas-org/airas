@@ -1,8 +1,13 @@
+import os
 from collections.abc import AsyncGenerator, Generator
+from functools import partial
+from typing import Type, TypeVar
 
 import httpx
 import requests
+import requests_cache
 from dependency_injector import containers, providers
+from hishel.httpx import AsyncCacheClient
 
 from airas.services.api_client.qdrant_client import QdrantClient
 
@@ -25,34 +30,91 @@ from airas.services.api_client.llm_client.openai_client import OpenAIClient
 from airas.services.api_client.openalex_client import OpenAlexClient
 from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
 
+T = TypeVar("T")
+
 
 def init_sync_session() -> Generator[requests.Session, None, None]:
-    session = requests.Session()
+    enable_cache = os.getenv("ENABLE_HTTP_CACHE", "false").lower() == "true"
+
+    if enable_cache:
+        session = requests_cache.CachedSession(
+            cache_name=".cache/http_cache",
+            backend="sqlite",
+            expire_after=604800,  # 7 days
+            allowable_codes=[200, 201, 301, 302],
+            allowable_methods=["GET"],
+            ignored_parameters=["api_key", "token", "key"],
+        )
+    else:
+        session = requests.Session()
+
     yield session
     session.close()
 
 
 async def init_async_session() -> AsyncGenerator[httpx.AsyncClient, None]:
+    enable_cache = os.getenv("ENABLE_HTTP_CACHE", "false").lower() == "true"
+
+    if enable_cache:
+        from hishel import Controller
+
+        # Match sync session settings
+        controller = Controller(
+            cacheable_methods=["GET"],
+            cacheable_status_codes=[200, 201, 301, 302],
+        )
+        client = AsyncCacheClient(
+            follow_redirects=True,
+            controller=controller,
+        )
+    else:
+        client = httpx.AsyncClient(follow_redirects=True)
+
+    yield client
+    await client.aclose()
+
+
+# NOTE:  GitHub-specific sessions (no caching to avoid stale SHA conflicts)
+def init_github_sync_session() -> Generator[requests.Session, None, None]:
+    session = requests.Session()
+    yield session
+    session.close()
+
+
+async def init_github_async_session() -> AsyncGenerator[httpx.AsyncClient, None]:
     client = httpx.AsyncClient(follow_redirects=True)
     yield client
     await client.aclose()
 
 
 # NOTE: LLM clients are handled as separate resources because they use their own SDKs.
-async def init_openai_client_async() -> AsyncGenerator[OpenAIClient, None]:
-    client = OpenAIClient()
-    yield client
-    await client.close()
+async def init_llm_client(
+    client_class: Type[T],
+) -> AsyncGenerator[T, None]:
+    enable_cache = os.getenv("ENABLE_HTTP_CACHE", "false").lower() == "true"
 
+    if enable_cache:
+        from hishel import Controller
 
-async def init_anthropic_client_async() -> AsyncGenerator[AnthropicClient, None]:
-    client = AnthropicClient()
-    yield client
-    await client.close()
+        controller = Controller(
+            cacheable_methods=["GET"],
+            cacheable_status_codes=[200, 201, 301, 302],
+        )
+        http_client = AsyncCacheClient(
+            follow_redirects=True,
+            controller=controller,
+        )
+    else:
+        http_client = None
 
+    try:
+        client = (
+            client_class(http_client=http_client) if http_client else client_class()
+        )
+    except TypeError:
+        # Fallback if SDK doesn't support custom http_client
+        client = client_class()
 
-async def init_google_genai_client_async() -> AsyncGenerator[GoogleGenAIClient, None]:
-    client = GoogleGenAIClient()
     yield client
     await client.close()
 
@@ -62,15 +124,19 @@ class Container(containers.DeclarativeContainer):
     sync_session = providers.Resource(init_sync_session)
     async_session = providers.Resource(init_async_session)
 
+    # GitHub-specific sessions (no caching)
+    github_sync_session = providers.Resource(init_github_sync_session)
+    github_async_session = providers.Resource(init_github_async_session)
+
     # --- LLM Clients (Resource for default instances with lifecycle management) ---
     openai_client: providers.Resource[OpenAIClient] = providers.Resource(
-        init_openai_client_async
+        partial(init_llm_client, OpenAIClient)
     )
     anthropic_client: providers.Resource[AnthropicClient] = providers.Resource(
-        init_anthropic_client_async
+        partial(init_llm_client, AnthropicClient)
     )
     google_genai_client: providers.Resource[GoogleGenAIClient] = providers.Resource(
-        init_google_genai_client_async
+        partial(init_llm_client, GoogleGenAIClient)
     )
 
     # --- LLM Facade ---
@@ -84,8 +150,8 @@ class Container(containers.DeclarativeContainer):
     # --- Code & Experiment Platforms ---
     github_client: providers.Singleton[GithubClient] = providers.Singleton(
         GithubClient,
-        sync_session=sync_session,
-        async_session=async_session,
+        sync_session=github_sync_session,  # Use non-cached session
+        async_session=github_async_session,  # Use non-cached session
     )
     hugging_face_client: providers.Singleton[HuggingFaceClient] = providers.Singleton(
         HuggingFaceClient,
