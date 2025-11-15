@@ -27,12 +27,9 @@ from api.schemas.papers import (
     SummarizePaperRequestBody,
     SummarizePaperResponseBody,
 )
+from src.airas.core.container import Container
 from src.airas.features.retrieve.get_paper_titles_subgraph.get_paper_titles_from_db_subgraph import (
     GetPaperTitlesFromDBSubgraph,
-)
-from src.airas.services.api_client.api_clients_container import (
-    AsyncContainer,
-    SyncContainer,
 )
 
 router = APIRouter(prefix="/papers", tags=["papers"])
@@ -42,11 +39,9 @@ router = APIRouter(prefix="/papers", tags=["papers"])
 @inject
 async def get_paper_title(
     request: GetPaperTitleRequestBody,
-    qdrant_client: Annotated[
-        QdrantClient, Depends(Provide[SyncContainer.qdrant_client])
-    ],
+    qdrant_client: Annotated[QdrantClient, Depends(Provide[Container.qdrant_client])],
     llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[AsyncContainer.llm_facade_client])
+        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
     ],
 ) -> GetPaperTitleResponseBody:
     result = await GetPaperTitlesFromDBSubgraph(
@@ -62,12 +57,12 @@ async def get_paper_title(
 @inject
 async def retrieve_paper_content(
     request: RetrievePaperContentRequestBody,
-    arxiv_client: Annotated[ArxivClient, Depends(Provide[SyncContainer.arxiv_client])],
+    arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
     ss_client: Annotated[
-        SemanticScholarClient, Depends(Provide[SyncContainer.semantic_scholar_client])
+        SemanticScholarClient, Depends(Provide[Container.semantic_scholar_client])
     ],
     llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[AsyncContainer.llm_facade_client])
+        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
     ],
 ) -> RetrievePaperContentResponseBody:
     result = await RetrievePaperContentSubgraph(
@@ -87,7 +82,7 @@ async def retrieve_paper_content(
 async def summarize_paper_content(
     request: SummarizePaperRequestBody,
     llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[AsyncContainer.llm_facade_client])
+        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
     ],
 ) -> SummarizePaperResponseBody:
     result = await SummarizePaperSubgraph(
@@ -101,11 +96,9 @@ async def summarize_paper_content(
 async def retrieve_code(
     request: RetrieveCodeRequestBody,
     llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[AsyncContainer.llm_facade_client])
+        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
     ],
-    github_client: Annotated[
-        GithubClient, Depends(Provide[AsyncContainer.github_client])
-    ],
+    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
 ) -> RetrieveCodeResponseBody:
     result = await RetrieveCodeSubgraph(
         llm_client=llm_client,
