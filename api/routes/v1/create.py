@@ -3,6 +3,9 @@ from typing import Annotated
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 
+from airas.features.create.create_code_subgraph.create_code_subgraph import (
+    CreateCodeSubgraph,
+)
 from airas.features.create.create_experimental_design_subgraph.create_experimental_design_subgraph import (
     CreateExperimentalDesignSubgraph,
 )
@@ -17,6 +20,8 @@ from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClie
 from airas.services.api_client.qdrant_client import QdrantClient
 from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
 from api.schemas.create import (
+    CreateCodeRequestBody,
+    CreateCodeResponseBody,
     CreateExperimentalDesignRequestBody,
     CreateExperimentalDesignResponseBody,
     CreateHypothesisRequestBody,
@@ -26,7 +31,7 @@ from api.schemas.create import (
 )
 from src.airas.core.container import Container
 
-router = APIRouter(prefix="/create", tags=["papers"])
+router = APIRouter(prefix="/create", tags=["create"])
 
 
 @router.get("/hypothesis", response_model=CreateHypothesisResponseBody)
@@ -83,5 +88,21 @@ async def create_experimental_design(
         llm_client=llm_client,
     ).arun(request)
     return CreateExperimentalDesignResponseBody(
+        research_session=result["research_session"],
+    )
+
+
+@router.get("/code", response_model=CreateCodeResponseBody)
+@inject
+async def create_code(
+    request: CreateCodeRequestBody,
+    llm_client: Annotated[
+        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
+    ],
+) -> CreateCodeResponseBody:
+    result = await CreateCodeSubgraph(
+        llm_client=llm_client,
+    ).arun(request)
+    return CreateCodeResponseBody(
         research_session=result["research_session"],
     )

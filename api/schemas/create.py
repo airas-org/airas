@@ -29,3 +29,11 @@ class CreateExperimentalDesignRequestBody(TypedDict):
 
 class CreateExperimentalDesignResponseBody(TypedDict):
     research_session: ResearchSession
+
+
+class CreateCodeRequestBody(TypedDict):
+    research_session: ResearchSession
+
+
+class CreateCodeResponseBody(TypedDict):
+    research_session: ResearchSession
