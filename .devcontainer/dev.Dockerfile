@@ -17,11 +17,13 @@ ENV LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
     PATH="/root/.uv/bin:$PATH"
 
+# Backend
 RUN curl -LsSf https://astral.sh/uv/0.7.2/install.sh | sh
 
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get update && apt-get install -y nodejs && \
-    npm install -g yarn && \
+## Frontend & Docs
+RUN apt-get install -y curl ca-certificates gnupg && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
 CMD [ "bash" ]
