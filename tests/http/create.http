@@ -73,7 +73,7 @@ Content-Type: application/json
 
 ### Create Experiment Design
 
-GET http://127.0.0.1:8000/airas/v1/create/experimental_design
+GET http://127.0.0.1:8001/airas/v1/create/experimental_design
 Content-Type: application/json
 
 {
@@ -93,6 +93,174 @@ Content-Type: application/json
         "method": "We introduce Group-AGD (G-AGD), a memory-light variant of AGD that replaces the per-parameter second-moment accumulator v_t with a single scalar variance per parameter tensor (or layer).  \n1. Gradient difference (s_t) and first-moment (m_t) are kept exactly as in AGD (so no behavioural change).  \n2. Scalar variance update:  var_t = β2·var_{t-1} + (1−β2)·mean(s_t^2)  (only one float per tensor).  \n3. Auto-switching denominator:  denom = max( √var_t , δ·√(1−β2^t) ).  This scalar is broadcast over the tensor during the parameter update.  \nTheoretical motivation:  For large tensors the element-wise variance is often highly correlated; a scalar mean preserves the scale information necessary for pre-conditioning while eliminating |θ| extra floats. This is analogous to the factored second moment of Adafactor, but even simpler and perfectly compatible with AGD’s convergence proof after replacing bt,i with an upper bound √var_t.",
         "experimental_design": null,
         "experiment_runs": null,
+        "experimental_analysis": null
+      }
+    ],
+    "best_iteration_id": null
+  }
+}
+
+
+### Create Code
+
+GET http://127.0.0.1:8001/airas/v1/create/code
+Content-Type: application/json
+
+{
+  "research_session": {
+    "hypothesis": {
+      "open_problems": "Most adaptive optimisers—including the recently-proposed AGD—keep two full-size moving–average tensors (m and v) for every model parameter. For modern transformer or vision backbones this doubles the parameter-state memory (>-8 GB for a 1-B-param model in fp32). The key open problem is how to retain AGD’s auto-switching (good generalisation) while cutting this memory footprint with only minor algorithmic changes.",
+      "method": "We introduce Group-AGD (G-AGD), a memory-light variant of AGD that replaces the per-parameter second-moment accumulator v_t with a single scalar variance per parameter tensor (or layer).  \n1. Gradient difference (s_t) and first-moment (m_t) are kept exactly as in AGD (so no behavioural change).  \n2. Scalar variance update:  var_t = β2·var_{t-1} + (1−β2)·mean(s_t^2)  (only one float per tensor).  \n3. Auto-switching denominator:  denom = max( √var_t , δ·√(1−β2^t) ).  This scalar is broadcast over the tensor during the parameter update.  \nTheoretical motivation:  For large tensors the element-wise variance is often highly correlated; a scalar mean preserves the scale information necessary for pre-conditioning while eliminating |θ| extra floats. This is analogous to the factored second moment of Adafactor, but even simpler and perfectly compatible with AGD’s convergence proof after replacing bt,i with an upper bound √var_t.",
+      "experimental_setup": "• Model: ResNet-20 on CIFAR-10 (≈0.27 M params) – small but lets us profile memory accurately; and Transformer-Small on IWSLT14 (≈46 M params) for an NLP case.  \n• Optimisers: SGD-M, AdamW, original AGD, and the proposed G-AGD.  \n• Same learning-rate schedule and δ as in AGD paper.  \n• Measure:  \n  – Accuracy / BLEU on the validation set.  \n  – Peak GPU memory devoted to optimiser state (torch.cuda.memory_allocated after the first step).  \n• Run each setting 3 seeds, 150 epochs (CIFAR) or 50 K updates (IWSLT14).  \n• Hardware: single 24 GB RTX-A6000, PyTorch 2.1, fp32.",
+      "primary_metric": "top1_accuracy",
+      "experimental_code": "import torch\nfrom torch.optim.optimizer import Optimizer, required\n\nclass GAGD(Optimizer):\n    \"\"\"Memory–light AGD: per-tensor scalar second moment.\"\"\"\n    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999),\n                 weight_decay=0.0, delta=1.0):\n        defaults = dict(lr=lr, betas=betas,\n                        weight_decay=weight_decay, delta=delta)\n        super().__init__(params, defaults)\n\n    @torch.no_grad()\n    def step(self):\n        for group in self.param_groups:\n            beta1, beta2 = group['betas']\n            delta = group['delta']\n            for p in group['params']:\n                if p.grad is None: continue\n                grad = p.grad\n                state = self.state[p]\n                if not state:\n                    state['step'] = 0\n                    state['exp_avg'] = torch.zeros_like(p, memory_format=torch.preserve_format)\n                    # single scalar variance per tensor\n                    state['var'] = torch.tensor(0., dtype=p.dtype, device=p.device)\n                    state['prev_m_hat'] = torch.zeros_like(p, memory_format=torch.preserve_format)\n                exp_avg = state['exp_avg']\n                var = state['var']\n                state['step'] += 1\n\n                # weight decay\n                if group['weight_decay'] != 0:\n                    grad = grad.add(p, alpha=group['weight_decay'])\n\n                # first-moment update\n                exp_avg.mul_(beta1).add_(grad, alpha=1-beta1)\n                m_hat = exp_avg / (1 - beta1 ** state['step'])\n\n                # gradient difference s_t\n                s_t = m_hat - state['prev_m_hat'] if state['step'] > 1 else m_hat\n                state['prev_m_hat'].copy_(m_hat)\n\n                # scalar variance update\n                var.mul_(beta2).add_(s_t.pow(2).mean(), alpha=1-beta2)\n                var_hat = var / (1 - beta2 ** state['step'])\n\n                denom = torch.maximum(var_hat.sqrt(), torch.tensor(delta* (1-beta2 ** state['step'])**0.5, device=p.device))\n                step_size = group['lr']\n                p.addcdiv_(m_hat, denom, value=-step_size)\n",
+      "expected_result": "CIFAR-10 (ResNet-20):  \nSGD-M 91.2 ± 0.1  \nAdamW 91.5 ± 0.1  \nAGD 91.8 ± 0.08 (baseline, uses 2× param memory)  \nG-AGD 91.7 ± 0.09, but with ≈40 % lower optimiser-state memory (one tensor instead of two plus no bt vector).  \nIWSLT14 BLEU: AGD 34.9, G-AGD 34.8 (±0.1).  \nExpected gap in top1_accuracy between AGD and G-AGD < 0.2 pp while halving memory.",
+      "expected_conclusion": "By collapsing the second-moment accumulator of AGD to a single scalar per tensor, G-AGD achieves almost identical predictive performance while cutting the optimiser state roughly in half. This simple, two-line modification makes AGD viable for larger models or enables larger batch sizes on fixed hardware, providing immediate practical benefit without altering hyper-parameters or the core auto-switching behaviour."
+    },
+    "iterations": [
+      {
+        "iteration_id": 1,
+        "method": "We introduce Group-AGD (G-AGD), a memory-light variant of AGD that replaces the per-parameter second-moment accumulator v_t with a single scalar variance per parameter tensor (or layer).  \n1. Gradient difference (s_t) and first-moment (m_t) are kept exactly as in AGD (so no behavioural change).  \n2. Scalar variance update:  var_t = β2·var_{t-1} + (1−β2)·mean(s_t^2)  (only one float per tensor).  \n3. Auto-switching denominator:  denom = max( √var_t , δ·√(1−β2^t) ).  This scalar is broadcast over the tensor during the parameter update.  \nTheoretical motivation:  For large tensors the element-wise variance is often highly correlated; a scalar mean preserves the scale information necessary for pre-conditioning while eliminating |θ| extra floats. This is analogous to the factored second moment of Adafactor, but even simpler and perfectly compatible with AGD’s convergence proof after replacing bt,i with an upper bound √var_t.",
+        "experimental_design": {
+          "experiment_summary": "This study evaluates Group-AGD (G-AGD), a memory-light variant of the AGD optimiser, on both a vision and an NLP workload. 1) Two reference models are trained: ResNet-20 on CIFAR-10 and a 6-layer Transformer-Small on the IWSLT14 German→English translation task. 2) Four optimisers are compared: SGD with momentum, AdamW, original AGD, and the proposed G-AGD. 3) All runs use identical learning-rate schedules, weight-decay settings, and δ auto-switching constant taken from the AGD paper. 4) Each optimiser/model pair is trained with three random seeds (150 epochs for CIFAR-10 or 50 k updates for IWSLT14). 5) During training we log validation Top-1 accuracy (CIFAR-10) or BLEU (IWSLT14) every epoch and record the peak GPU memory attributable to optimiser state after the first optimisation step. 6) Performance and memory statistics are averaged across seeds; significance is assessed with a paired t-test. The entire workflow is implemented in PyTorch 2.1 and can be run on a single 24 GB GPU, staying within the 500 MB RAM limit of the CPU node by streaming results to disk.",
+          "evaluation_metrics": [
+            "top1_accuracy",
+            "BLEU",
+            "peak_optimizer_memory"
+          ],
+          "proposed_method": "Group-AGD (G-AGD) is a drop-in replacement for AGD that reduces optimiser memory by collapsing the per-parameter second-moment accumulator into a single scalar variance per parameter tensor. Algorithm: (1) Maintain first-moment m_t and gradient-difference s_t exactly as in AGD. (2) Update a scalar variance var_t for each tensor: var_t = β2·var_{t-1} + (1−β2)·mean(s_t^2). (3) Compute the auto-switching denominator denom = max(√var_t , δ·√(1−β2^t)) and broadcast it over the tensor for the parameter update. All other AGD mechanics (bias correction, weight decay, learning-rate schedule) remain unchanged, so convergence guarantees are preserved while cutting second-moment storage from |θ| floats to one float per tensor. A concise PyTorch implementation is provided in the prompt.",
+          "comparative_methods": [
+            "AGD",
+            "AdamW"
+          ],
+          "models_to_use": [
+            "ResNet-20 (0.27 M params)",
+            "Transformer-Small (46 M params)"
+          ],
+          "datasets_to_use": [
+            "CIFAR-10",
+            "IWSLT14 De→En"
+          ],
+          "hyperparameters_to_search": {
+            "learning_rate": "1e-4-5e-2",
+            "beta1": "0.8-0.95",
+            "beta2": "0.98-0.9999",
+            "weight_decay": "0-0.01",
+            "delta": "0.5-2.0"
+          },
+          "external_resources": null,
+          "experiment_code": null
+        },
+        "experiment_runs": [
+          {
+            "run_id": "proposed-iter1-ResNet-20-0.27-M-params-CIFAR-10",
+            "method_name": "proposed",
+            "model_name": "ResNet-20 (0.27 M params)",
+            "dataset_name": "CIFAR-10",
+            "run_config": null,
+            "github_repository_info": null,
+            "results": null
+          },
+          {
+            "run_id": "proposed-iter1-ResNet-20-0.27-M-params-IWSLT14-De-En",
+            "method_name": "proposed",
+            "model_name": "ResNet-20 (0.27 M params)",
+            "dataset_name": "IWSLT14 De→En",
+            "run_config": null,
+            "github_repository_info": null,
+            "results": null
+          },
+          {
+            "run_id": "proposed-iter1-Transformer-Small-46-M-params-CIFAR-10",
+            "method_name": "proposed",
+            "model_name": "Transformer-Small (46 M params)",
+            "dataset_name": "CIFAR-10",
+            "run_config": null,
+            "github_repository_info": null,
+            "results": null
+          },
+          {
+            "run_id": "proposed-iter1-Transformer-Small-46-M-params-IWSLT14-De-En",
+            "method_name": "proposed",
+            "model_name": "Transformer-Small (46 M params)",
+            "dataset_name": "IWSLT14 De→En",
+            "run_config": null,
+            "github_repository_info": null,
+            "results": null
+          },
+          {
+            "run_id": "comparative-1-iter1-ResNet-20-0.27-M-params-CIFAR-10",
+            "method_name": "comparative-1",
+            "model_name": "ResNet-20 (0.27 M params)",
+            "dataset_name": "CIFAR-10",
+            "run_config": null,
+            "github_repository_info": null,
+            "results": null
+          },
+          {
+            "run_id": "comparative-1-iter1-ResNet-20-0.27-M-params-IWSLT14-De-En",
+            "method_name": "comparative-1",
+            "model_name": "ResNet-20 (0.27 M params)",
+            "dataset_name": "IWSLT14 De→En",
+            "run_config": null,
+            "github_repository_info": null,
+            "results": null
+          },
+          {
+            "run_id": "comparative-1-iter1-Transformer-Small-46-M-params-CIFAR-10",
+            "method_name": "comparative-1",
+            "model_name": "Transformer-Small (46 M params)",
+            "dataset_name": "CIFAR-10",
+            "run_config": null,
+            "github_repository_info": null,
+            "results": null
+          },
+          {
+            "run_id": "comparative-1-iter1-Transformer-Small-46-M-params-IWSLT14-De-En",
+            "method_name": "comparative-1",
+            "model_name": "Transformer-Small (46 M params)",
+            "dataset_name": "IWSLT14 De→En",
+            "run_config": null,
+            "github_repository_info": null,
+            "results": null
+          },
+          {
+            "run_id": "comparative-2-iter1-ResNet-20-0.27-M-params-CIFAR-10",
+            "method_name": "comparative-2",
+            "model_name": "ResNet-20 (0.27 M params)",
+            "dataset_name": "CIFAR-10",
+            "run_config": null,
+            "github_repository_info": null,
+            "results": null
+          },
+          {
+            "run_id": "comparative-2-iter1-ResNet-20-0.27-M-params-IWSLT14-De-En",
+            "method_name": "comparative-2",
+            "model_name": "ResNet-20 (0.27 M params)",
+            "dataset_name": "IWSLT14 De→En",
+            "run_config": null,
+            "github_repository_info": null,
+            "results": null
+          },
+          {
+            "run_id": "comparative-2-iter1-Transformer-Small-46-M-params-CIFAR-10",
+            "method_name": "comparative-2",
+            "model_name": "Transformer-Small (46 M params)",
+            "dataset_name": "CIFAR-10",
+            "run_config": null,
+            "github_repository_info": null,
+            "results": null
+          },
+          {
+            "run_id": "comparative-2-iter1-Transformer-Small-46-M-params-IWSLT14-De-En",
+            "method_name": "comparative-2",
+            "model_name": "Transformer-Small (46 M params)",
+            "dataset_name": "IWSLT14 De→En",
+            "run_config": null,
+            "github_repository_info": null,
+            "results": null
+          }
+        ],
         "experimental_analysis": null
       }
     ],

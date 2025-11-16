@@ -15,19 +15,11 @@ from airas.features.create.create_code_subgraph.nodes.generate_experiment_code i
 from airas.features.create.create_code_subgraph.nodes.generate_run_config import (
     generate_run_config,
 )
-from airas.features.create.create_code_subgraph.nodes.push_files_to_branch import (
-    push_files_to_branch,
-)
-from airas.features.create.create_code_subgraph.nodes.set_github_actions_secrets import (
-    set_github_actions_secrets,
-)
 from airas.features.create.create_code_subgraph.nodes.validate_experiment_code import (
     validate_experiment_code,
 )
-from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
 from airas.services.api_client.llm_client.openai_client import OPENAI_MODEL
-from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_session import ResearchSession
 from airas.types.wandb import WandbInfo
 from airas.utils.check_api_key import check_api_key
@@ -37,7 +29,7 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-create_code_timed = lambda f: time_node("create_code_subgraph")(f)  # noqa: E731
+record_execution_time = lambda f: time_node("create_code_subgraph")(f)  # noqa: E731
 
 
 class CreateCodeLLMMapping(BaseModel):
@@ -51,7 +43,6 @@ class CreateCodeLLMMapping(BaseModel):
 
 
 class CreateCodeSubgraphInputState(TypedDict, total=False):
-    github_repository_info: GitHubRepositoryInfo
     research_session: ResearchSession
 
 
@@ -79,7 +70,6 @@ class CreateCodeSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        github_client: GithubClient,
         llm_client: LLMFacadeClient,
         runner_type: RunnerType = "ubuntu-latest",
         llm_mapping: dict[str, str] | CreateCodeLLMMapping | None = None,
@@ -107,14 +97,13 @@ class CreateCodeSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or CreateCodeLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
-        self.github_client = github_client
         self.llm_client = llm_client
         check_api_key(
             llm_api_key_check=True,
             github_personal_access_token_check=True,
         )
 
-    @create_code_timed
+    @record_execution_time
     def _initialize(
         self, state: CreateCodeSubgraphState
     ) -> dict[str, int | tuple[bool, str]]:
@@ -123,7 +112,7 @@ class CreateCodeSubgraph(BaseSubgraph):
             "code_validation_count": 0,
         }
 
-    @create_code_timed
+    @record_execution_time
     async def _generate_run_config(
         self, state: CreateCodeSubgraphState
     ) -> dict[str, ResearchSession]:
@@ -141,7 +130,7 @@ class CreateCodeSubgraph(BaseSubgraph):
 
         return {"research_session": research_session}
 
-    @create_code_timed
+    @record_execution_time
     async def _generate_experiment_code(
         self, state: CreateCodeSubgraphState
     ) -> dict[str, ResearchSession]:
@@ -160,7 +149,7 @@ class CreateCodeSubgraph(BaseSubgraph):
 
         return {"research_session": research_session}
 
-    @create_code_timed
+    @record_execution_time
     async def _validate_experiment_code(
         self, state: CreateCodeSubgraphState
     ) -> dict[str, tuple[bool, str] | int]:
@@ -183,52 +172,18 @@ class CreateCodeSubgraph(BaseSubgraph):
 
         if is_code_ready:
             logger.info("Code validation passed. Proceeding to push files to GitHub...")
-            return "push_files_to_branch"
+            return "end"
 
         if code_validation_count >= self.max_code_validations:
             logger.warning(
                 f"Maximum code validation attempts ({self.max_code_validations}) reached. Proceeding to push files..."
             )
-            return "push_files_to_branch"
+            return "end"
 
         logger.warning(
             f"Code validation failed: {issue}. Re-running generate_experiment_code... (attempt {code_validation_count}/{self.max_code_validations})"
         )
         return "generate_experiment_code"
-
-    @create_code_timed
-    def _push_files_to_branch(
-        self, state: CreateCodeSubgraphState
-    ) -> dict[str, ResearchSession]:
-        commit_message = "Add generated experiment files."
-
-        research_session = state["research_session"]
-        success = push_files_to_branch(
-            github_repository_info=state["github_repository_info"],
-            github_client=self.github_client,
-            research_session=research_session,
-            commit_message=commit_message,
-        )
-
-        if not success:
-            logger.warning("Failed to push files to branch, but continuing...")
-
-        return {"research_session": research_session}
-
-    @create_code_timed
-    def _set_github_actions_secrets(self, state: CreateCodeSubgraphState) -> dict:
-        if not self.secret_names:
-            logger.info(
-                "No secret names provided, skipping GitHub Actions secrets setup"
-            )
-            return {}
-
-        set_github_actions_secrets(
-            github_repository_info=state["github_repository_info"],
-            github_client=self.github_client,
-            secret_names=self.secret_names,
-        )
-        return {}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(CreateCodeSubgraphState)
@@ -240,10 +195,6 @@ class CreateCodeSubgraph(BaseSubgraph):
         graph_builder.add_node(
             "validate_experiment_code", self._validate_experiment_code
         )
-        graph_builder.add_node("push_files_to_branch", self._push_files_to_branch)
-        graph_builder.add_node(
-            "set_github_actions_secrets", self._set_github_actions_secrets
-        )
 
         graph_builder.add_edge(START, "initialize")
         graph_builder.add_edge("initialize", "generate_run_config")
@@ -254,11 +205,9 @@ class CreateCodeSubgraph(BaseSubgraph):
             self._should_continue_after_experiment_code_validation,
             {
                 "generate_experiment_code": "generate_experiment_code",
-                "push_files_to_branch": "push_files_to_branch",
+                "end": END,
             },
         )
-        graph_builder.add_edge("push_files_to_branch", "set_github_actions_secrets")
-        graph_builder.add_edge("set_github_actions_secrets", END)
 
         return graph_builder.compile()
 
