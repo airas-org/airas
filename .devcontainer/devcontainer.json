@@ -15,11 +15,14 @@
                 "ms-python.debugpy",
                 "ms-python.mypy-type-checker",
                 "charliermarsh.ruff",
-                "humao.rest-client"
+                "humao.rest-client",
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode"
 			]
 		},
         "settings" : {
-            "python.defaultInterpreterPath": ".venv/bin/python3",
+            "python.defaultInterpreterPath": "backend/.venv/bin/python3",
+            "python.testing.cwd": "backend",
             "python.testing.pytestArgs": [
                 "tests"
             ],
@@ -54,7 +57,7 @@
                         "name": "Python: FastAPI Server",
                         "type": "debugpy",
                         "request": "launch",
-                        "python": "${workspaceFolder}/.venv/bin/python",
+                        "python": "${workspaceFolder}/backend/.venv/bin/python",
                         "module": "uvicorn",
                         "args": [
                             "api.main:app",
@@ -62,7 +65,7 @@
                             "--log-level=debug",
                             "--reload"
                         ],
-                        "cwd": "${workspaceFolder}",
+                        "cwd": "${workspaceFolder}/backend",
                         "console": "integratedTerminal",
                         "env": {
                             "PYTHONASYNCIODEBUG": "1"
@@ -73,5 +76,5 @@
         }
     },
     "postCreateCommand": "bash .devcontainer/setup.sh",
-    "postStartCommand": "uv run uvicorn api.main:app --host 0.0.0.0 --port 8000 --log-level debug --reload"
+    "postStartCommand": "bash -lc 'cd backend && uv run uvicorn api.main:app --host 0.0.0.0 --port 8000 --log-level debug --reload'"
 }

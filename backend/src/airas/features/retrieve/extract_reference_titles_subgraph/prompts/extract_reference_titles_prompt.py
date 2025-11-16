@@ -1,5 +1,5 @@
 extract_reference_titles_prompt = """\
-You are an expert in academic paper analysis. 
+You are an expert in academic paper analysis.
 Your task is to extract reference paper titles from the full text of research papers.
 
 Instructions:
