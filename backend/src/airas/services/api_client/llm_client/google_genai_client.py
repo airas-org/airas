@@ -78,9 +78,23 @@ class GoogleGenAIParams(BaseModel):
 
 
 class GoogleGenAIClient:
-    def __init__(self) -> None:
+    def __init__(self, http_client=None) -> None:
         self.logger = logging.getLogger(__name__)
-        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        # Note: Google GenAI SDK may not support custom HTTP clients
+        # If http_client is provided but not supported, it will be ignored
+        if http_client:
+            try:
+                self.client = genai.Client(
+                    api_key=os.getenv("GEMINI_API_KEY"), http_client=http_client
+                )
+            except TypeError:
+                # Fallback if http_client parameter is not supported
+                self.logger.warning(
+                    "Google GenAI SDK does not support custom http_client, using default"
+                )
+                self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        else:
+            self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
     def _get_params(self, params: GoogleGenAIParams | None) -> dict[str, Any]:
         if not params:

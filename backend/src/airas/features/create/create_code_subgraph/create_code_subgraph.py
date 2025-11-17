@@ -73,12 +73,10 @@ class CreateCodeSubgraph(BaseSubgraph):
         llm_client: LLMFacadeClient,
         runner_type: RunnerType = "ubuntu-latest",
         llm_mapping: dict[str, str] | CreateCodeLLMMapping | None = None,
-        secret_names: list[str] | None = None,
         wandb_info: WandbInfo | None = None,
-        max_code_validations: int = 3,
+        max_code_validations: int = 10,
     ):
         self.runner_type = runner_type
-        self.secret_names = secret_names or []
         self.wandb_info = wandb_info
         self.max_code_validations = max_code_validations
         if llm_mapping is None:
@@ -213,19 +211,18 @@ class CreateCodeSubgraph(BaseSubgraph):
 
 
 def main():
+    from airas.core.container import container
     from airas.features.create.create_code_subgraph.input_data import (
         create_code_subgraph_input_data,
     )
-    from airas.services.api_client.api_clients_container import sync_container
     from airas.types.wandb import WandbInfo
 
-    sync_container.wire(modules=[__name__])
+    container.wire(modules=[__name__])
 
-    secret_names = ["HF_TOKEN", "WANDB_API_KEY", "ANTHROPIC_API_KEY"]
-    wandb_info = WandbInfo(entity="gengaru617-personal", project="251017-test")
+    wandb_info = WandbInfo(entity="your-entity", project="your-project")
     max_code_validations = 10
     result = CreateCodeSubgraph(
-        secret_names=secret_names,
+        llm_client=container.llm_facade_client,
         wandb_info=wandb_info,
         max_code_validations=max_code_validations,
     ).run(create_code_subgraph_input_data)

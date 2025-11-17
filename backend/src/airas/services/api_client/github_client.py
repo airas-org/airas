@@ -140,6 +140,9 @@ class GithubClient(BaseHTTPClient):
                 raise GithubClientFatalError(f"Resource not found (404): {path}")
             case _:
                 self._raise_for_status(response, path)
+                raise GithubClientFatalError(
+                    f"Unexpected response: {response.status_code}"
+                )
 
     def _fetch_content(
         self,
@@ -170,6 +173,9 @@ class GithubClient(BaseHTTPClient):
                 raise GithubClientFatalError(f"Access forbidden (403): {path}")
             case _:
                 self._raise_for_status(response, path)
+                raise GithubClientFatalError(
+                    f"Unexpected response: {response.status_code}"
+                )
 
     @GITHUB_RETRY
     def get_repository_content(
@@ -401,6 +407,7 @@ class GithubClient(BaseHTTPClient):
         if response.status_code == 200:
             return self._parser.parse(response, as_="json")
         self._raise_for_status(response, path)
+        raise GithubClientFatalError(f"Unexpected response: {response.status_code}")
 
     @GITHUB_RETRY
     def download_repository_zip(
@@ -409,7 +416,7 @@ class GithubClient(BaseHTTPClient):
         # https://docs.github.com/en/rest/repos/contents#download-a-repository-archive-zip
         path = f"/repos/{github_owner}/{repository_name}/zipball/{ref}"
 
-        response = self.get(path=path, stream=True)
+        response = self.get(path=path)
         match response.status_code:
             case 200:
                 logger.info(f"Successfully downloaded ZIP: {path}")
@@ -423,8 +430,14 @@ class GithubClient(BaseHTTPClient):
                         return redirect_response.content
                 logger.warning(f"Failed to follow redirect for ZIP download: {path}")
                 self._raise_for_status(response, path)
+                raise GithubClientFatalError(
+                    f"Unexpected response: {response.status_code}"
+                )
             case _:
                 self._raise_for_status(response, path)
+                raise GithubClientFatalError(
+                    f"Unexpected response: {response.status_code}"
+                )
 
     # --------------------------------------------------
     # Tree
@@ -794,7 +807,7 @@ class GithubClient(BaseHTTPClient):
         # https://docs.github.com/ja/rest/actions/artifacts?apiVersion=2022-11-28#download-an-artifact
         path = f"/repos/{github_owner}/{repository_name}/actions/artifacts/{artifact_id}/zip"
 
-        response = self.get(path=path, stream=True)
+        response = self.get(path=path)
         match response.status_code:
             case 200:
                 logger.info(f"Success (200): {path}")
@@ -1041,6 +1054,9 @@ class GithubClient(BaseHTTPClient):
                 raise GithubClientFatalError(f"Access forbidden (403): {path}")
             case _:
                 self._raise_for_status(response, path)
+                raise GithubClientFatalError(
+                    f"Unexpected response: {response.status_code}"
+                )
 
     async def acommit_multiple_files(
         self,

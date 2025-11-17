@@ -136,9 +136,12 @@ class OpenAIParams(BaseModel):
 
 
 class OpenAIClient:
-    def __init__(self) -> None:
+    def __init__(self, http_client=None) -> None:
         self.logger = logging.getLogger(__name__)
-        self.aclient = AsyncOpenAI()
+        if http_client:
+            self.aclient = AsyncOpenAI(http_client=http_client)
+        else:
+            self.aclient = AsyncOpenAI()
 
     def _get_params(self, params: OpenAIParams | None) -> dict[str, Any]:
         if not params:

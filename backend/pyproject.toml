@@ -36,6 +36,7 @@ dependencies = [
     "fastapi>=0.120.4",
     "uvicorn>=0.34.2",
     "pytest-asyncio>=1.2.0",
+    "hishel[async]>=1.1.5",
 ]
 
 [project.urls]
