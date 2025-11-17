@@ -15,7 +15,7 @@ async def compile_latex(
     github_repository_info: GitHubRepositoryInfo,
     research_session: ResearchSession,
     github_client: GithubClient,
-    workflow_file: str = "compile_latex_with_open_code.yml",
+    workflow_file: str = "compile_latex_with_claude_code.yml",
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
 ) -> bool:
     github_owner = github_repository_info.github_owner
