@@ -23,6 +23,7 @@ from airas.features import (
     HtmlSubgraph,
     LatexSubgraph,
     PrepareRepositorySubgraph,
+    PushCodeSubgraph,
     ReadmeSubgraph,
     RetrieveCodeSubgraph,
     RetrieveHuggingFaceSubgraph,
@@ -155,9 +156,7 @@ async def create_subgraphs(
 
     coder = CreateCodeSubgraph(
         llm_client=llm_facade_client,
-        github_client=github_client,
         runner_type=settings.runner_type,
-        secret_names=settings.secret_names,
         wandb_info=settings.wandb.to_wandb_info(),
         llm_mapping={
             "generate_run_config": settings.llm_mapping.generate_run_config,
@@ -165,6 +164,11 @@ async def create_subgraphs(
             "validate_experiment_code": settings.llm_mapping.validate_experiment_code,
         },
         max_code_validations=settings.create_code.max_code_validations,
+    )
+
+    push_code = PushCodeSubgraph(
+        github_client=github_client,
+        secret_names=settings.secret_names,
     )
 
     executor = ExecuteExperimentSubgraph(
@@ -257,6 +261,7 @@ async def create_subgraphs(
         create_experimental_design,
         retrieve_hugging_face,
         coder,
+        push_code,
         executor,
         analysis,
     ]

@@ -18,6 +18,9 @@ from .github.github_upload_subgraph import GithubUploadSubgraph
 from .github.prepare_repository_subgraph.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,
 )
+from .github.push_code_subgraph.push_code_subgraph import (
+    PushCodeSubgraph,
+)
 from .publication.html_subgraph.html_subgraph import HtmlSubgraph
 from .publication.latex_subgraph.latex_subgraph import LatexSubgraph
 from .publication.readme_subgraph.readme_subgraph import ReadmeSubgraph
@@ -66,6 +69,7 @@ __all__ = [
     "HtmlSubgraph",
     "LatexSubgraph",
     "PrepareRepositorySubgraph",
+    "PushCodeSubgraph",
     "ReadmeSubgraph",
     "RetrieveCodeSubgraph",
     "RetrieveHuggingFaceSubgraph",

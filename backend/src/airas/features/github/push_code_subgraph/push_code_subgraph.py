@@ -112,17 +112,13 @@ def main():
     from airas.features.create.create_code_subgraph.input_data import (
         create_code_subgraph_input_data,
     )
-    from airas.types.wandb import WandbInfo
 
     container.wire(modules=[__name__])
 
     secret_names = ["HF_TOKEN", "WANDB_API_KEY", "ANTHROPIC_API_KEY"]
-    wandb_info = WandbInfo(entity="your-entity", project="your-project")
-    max_code_validations = 10
     result = PushCodeSubgraph(
+        github_client=container.github_client,
         secret_names=secret_names,
-        wandb_info=wandb_info,
-        max_code_validations=max_code_validations,
     ).run(create_code_subgraph_input_data)
     print(f"result: {result}")
 
