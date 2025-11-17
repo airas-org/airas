@@ -2,7 +2,7 @@ import time
 from logging import getLogger
 from typing import Any
 
-import requests
+import httpx
 
 logger = getLogger(__name__)
 
@@ -11,28 +11,29 @@ def _load_papers_from_urls(json_urls: list[str]) -> list[dict[str, Any]]:
     combined_papers = []
     logger.info("Starting to load paper data...")
 
-    for url in json_urls:
-        logger.info(f"Fetching data from '{url}'...")
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-            data_dict = (
-                response.json()
-            )  # keys: (['count', 'next', 'previous', 'results'])
+    with httpx.Client() as client:
+        for url in json_urls:
+            logger.info(f"Fetching data from '{url}'...")
+            try:
+                response = client.get(url)
+                response.raise_for_status()
+                data_dict = (
+                    response.json()
+                )  # keys: (['count', 'next', 'previous', 'results'])
 
-            papers_from_this_url = data_dict.get("results", [])
-            combined_papers.extend(papers_from_this_url)
+                papers_from_this_url = data_dict.get("results", [])
+                combined_papers.extend(papers_from_this_url)
 
-        except requests.exceptions.RequestException as e:
-            logger.error(
-                f"  -> An error occurred while fetching '{url}': {e}. Skipping this URL."
-            )
-            continue
-        except Exception as e:
-            logger.error(
-                f"  -> An unexpected error occurred while processing '{url}': {e}. Skipping this URL."
-            )
-            continue
+            except httpx.HTTPError as e:
+                logger.error(
+                    f"  -> An error occurred while fetching '{url}': {e}. Skipping this URL."
+                )
+                continue
+            except Exception as e:
+                logger.error(
+                    f"  -> An unexpected error occurred while processing '{url}': {e}. Skipping this URL."
+                )
+                continue
 
     return combined_papers
 

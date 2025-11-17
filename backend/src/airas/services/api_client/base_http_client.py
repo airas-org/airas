@@ -1,7 +1,6 @@
 import logging
 
 import httpx
-import requests
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +11,7 @@ class BaseHTTPClient:
         base_url: str,
         *,
         default_headers: dict[str, str] | None = None,
-        sync_session: requests.Session | None = None,
+        sync_session: httpx.Client | None = None,
         async_session: httpx.AsyncClient | None = None,
     ):
         self.base_url = base_url.rstrip("/")
@@ -29,7 +28,7 @@ class BaseHTTPClient:
         self._async_session = async_session
 
     @property
-    def sync_session(self) -> requests.Session:
+    def sync_session(self) -> httpx.Client:
         if self._sync_session is None:
             raise RuntimeError(
                 f"{self.__class__.__name__}: Sync session not available. "
@@ -59,7 +58,7 @@ class BaseHTTPClient:
         stream: bool = False,
         timeout: float = 10.0,
         full_url: str | None = None,
-    ) -> requests.Response:
+    ) -> httpx.Response:
         """Synchronous HTTP request."""
         if full_url:
             url = full_url
@@ -115,16 +114,16 @@ class BaseHTTPClient:
             raise
 
     # Synchronous methods
-    def get(self, path: str, **kwargs) -> requests.Response:
+    def get(self, path: str, **kwargs) -> httpx.Response:
         return self.request("GET", path, **kwargs)
 
-    def post(self, path: str, **kwargs) -> requests.Response:
+    def post(self, path: str, **kwargs) -> httpx.Response:
         return self.request("POST", path, **kwargs)
 
-    def put(self, path: str, **kwargs) -> requests.Response:
+    def put(self, path: str, **kwargs) -> httpx.Response:
         return self.request("PUT", path, **kwargs)
 
-    def patch(self, path: str, **kwargs) -> requests.Response:
+    def patch(self, path: str, **kwargs) -> httpx.Response:
         return self.request("PATCH", path, **kwargs)
 
     # Asynchronous methods
@@ -141,9 +140,9 @@ class BaseHTTPClient:
         return await self.arequest("PATCH", path, **kwargs)
 
     def close(self) -> None:
-        if self.sync_session is not None:
-            self.sync_session.close()
+        if self._sync_session is not None:
+            self._sync_session.close()
 
     async def aclose(self) -> None:
-        if self.async_session is not None:
-            await self.async_session.aclose()
+        if self._async_session is not None:
+            await self._async_session.aclose()

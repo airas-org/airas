@@ -3,7 +3,6 @@ from logging import getLogger
 from typing import Any, Literal
 
 import httpx
-import requests  # type: ignore[import-untyped]
 
 from airas.services.api_client.base_http_client import BaseHTTPClient
 from airas.services.api_client.response_parser import ResponseParser
@@ -21,7 +20,7 @@ class HuggingFaceClient(BaseHTTPClient):
         self,
         base_url: str = "https://huggingface.co/api",
         default_headers: dict[str, str] | None = None,
-        sync_session: requests.Session | None = None,
+        sync_session: httpx.Client | None = None,
         async_session: httpx.AsyncClient | None = None,
     ):
         # HuggingFace API token is optional for public models/datasets
