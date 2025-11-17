@@ -3,7 +3,6 @@ from logging import getLogger
 from typing import Any, Protocol, runtime_checkable
 
 import httpx
-import requests  # type: ignore[import-untyped]
 
 from airas.services.api_client.base_http_client import BaseHTTPClient
 from airas.services.api_client.response_parser import ResponseParser
@@ -16,7 +15,7 @@ OPENALEX_RETRY = make_retry_policy()
 
 @runtime_checkable
 class ResponseParserProtocol(Protocol):
-    def parse(self, response: requests.Response, *, as_: str) -> Any: ...
+    def parse(self, response: httpx.Response, *, as_: str) -> Any: ...
 
 
 class OpenAlexClient(BaseHTTPClient):
@@ -26,7 +25,7 @@ class OpenAlexClient(BaseHTTPClient):
         base_url: str = "https://api.openalex.org",
         default_headers: dict[str, str] | None = None,
         parser: ResponseParserProtocol | None = None,
-        sync_session: requests.Session | None = None,
+        sync_session: httpx.Client | None = None,
         async_session: httpx.AsyncClient | None = None,
     ):
         api_key = os.getenv("OPENALEX_API_KEY")

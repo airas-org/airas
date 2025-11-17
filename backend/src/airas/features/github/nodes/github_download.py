@@ -1,7 +1,7 @@
 import json
 import logging
 
-import requests  # type: ignore[import-untyped]
+import httpx
 
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
@@ -33,9 +33,10 @@ def github_download(
             return ResearchHistory()
 
         logger.info(f"Downloading file directly: {download_url}")
-        response = requests.get(download_url)
-        response.raise_for_status()
-        raw = response.content
+        with httpx.Client() as client:
+            response = client.get(download_url)
+            response.raise_for_status()
+            raw = response.content
 
         if not raw:
             logger.warning("Raw content is empty, returning empty ResearchHistory")

@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from typing import Any, Literal, Protocol, runtime_checkable
 
 import httpx
-import requests  # type: ignore[import-untyped]
 from nacl import public
 from tenacity import (
     before_sleep_log,
@@ -26,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 @runtime_checkable
 class ResponseParserProtocol(Protocol):
-    def parse(self, response: requests.Response, *, as_: str) -> Any: ...
+    def parse(self, response: httpx.Response, *, as_: str) -> Any: ...
 
 
 class GithubClientError(RuntimeError): ...
@@ -48,7 +47,7 @@ GITHUB_RETRY = retry(
     reraise=True,
     retry=(
         retry_if_exception_type(GithubClientRetryableError)
-        | retry_if_exception_type(requests.RequestException)
+        | retry_if_exception_type(httpx.HTTPError)
     ),
 )
 
@@ -62,7 +61,7 @@ class GithubClient(BaseHTTPClient):
         base_url: str = "https://api.github.com",
         default_headers: dict[str, str] | None = None,
         parser: ResponseParserProtocol | None = None,
-        sync_session: requests.Session | None = None,
+        sync_session: httpx.Client | None = None,
         async_session: httpx.AsyncClient | None = None,
     ) -> None:
         auth_headers = {
@@ -79,9 +78,7 @@ class GithubClient(BaseHTTPClient):
         self._parser = parser or ResponseParser()
 
     @staticmethod
-    def _raise_for_status(
-        response: requests.Response | httpx.Response, path: str
-    ) -> None:
+    def _raise_for_status(response: httpx.Response, path: str) -> None:
         code = response.status_code
 
         if 200 <= code < 300:
@@ -421,7 +418,7 @@ class GithubClient(BaseHTTPClient):
                 # Handle redirect
                 location = response.headers.get("Location")
                 if location:
-                    redirect_response = requests.get(location)
+                    redirect_response = self.sync_session.get(location)
                     if redirect_response.status_code == 200:
                         return redirect_response.content
                 logger.warning(f"Failed to follow redirect for ZIP download: {path}")
@@ -725,9 +722,7 @@ class GithubClient(BaseHTTPClient):
                 # Follow redirect to download logs
                 log_url = response.headers.get("Location")
                 if log_url:
-                    import requests
-
-                    log_response = requests.get(log_url)
+                    log_response = self.sync_session.get(log_url)
                     if log_response.status_code == 200:
                         return log_response.content
                 return None

@@ -2,11 +2,10 @@ import logging
 from typing import Any, Literal, overload
 
 import httpx
-import requests
 
 logger = logging.getLogger(__name__)
 
-Response = requests.Response | httpx.Response
+Response = httpx.Response
 
 
 class UnexpectedContentTypeError(RuntimeError): ...

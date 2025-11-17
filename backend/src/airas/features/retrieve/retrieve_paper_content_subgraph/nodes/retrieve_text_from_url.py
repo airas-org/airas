@@ -1,7 +1,7 @@
 from io import BytesIO
 from logging import getLogger
 
-import requests
+import httpx
 from pypdf import PdfReader
 
 from airas.types.research_study import ResearchStudy
@@ -12,24 +12,27 @@ logger = getLogger(__name__)
 def retrieve_text_from_url(
     research_study_list: list[ResearchStudy],
 ) -> list[ResearchStudy]:
-    for research_study in research_study_list:
-        pdf_url = research_study.meta_data.pdf_url if research_study.meta_data else None
-        if not pdf_url:
-            continue
-
-        try:
-            response = requests.get(pdf_url, timeout=30)
-            response.raise_for_status()
-
-            pdf_reader = PdfReader(BytesIO(response.content))
-            text = "".join(page.extract_text() for page in pdf_reader.pages)
-            research_study.full_text = text.replace("\n", " ")
-            logger.info(
-                f"Successfully extracted text from '{research_study.title or 'N/A'}'"
+    with httpx.Client() as client:
+        for research_study in research_study_list:
+            pdf_url = (
+                research_study.meta_data.pdf_url if research_study.meta_data else None
             )
-        except Exception as e:
-            logger.error(f"Failed to extract text from PDF {pdf_url}: {e}")
-            continue
+            if not pdf_url:
+                continue
+
+            try:
+                response = client.get(pdf_url, timeout=30)
+                response.raise_for_status()
+
+                pdf_reader = PdfReader(BytesIO(response.content))
+                text = "".join(page.extract_text() for page in pdf_reader.pages)
+                research_study.full_text = text.replace("\n", " ")
+                logger.info(
+                    f"Successfully extracted text from '{research_study.title or 'N/A'}'"
+                )
+            except Exception as e:
+                logger.error(f"Failed to extract text from PDF {pdf_url}: {e}")
+                continue
 
     return research_study_list
 

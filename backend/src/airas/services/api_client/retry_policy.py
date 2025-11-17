@@ -1,7 +1,7 @@
 import logging
 from logging import getLogger
 
-from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
+import httpx
 from tenacity import (
     before_log,
     before_sleep_log,
@@ -29,10 +29,10 @@ _DEFAULT_MAX_RETRIES = 10
 _DEFAULT_WAIT = wait_exponential(multiplier=1.0, max=180.0)
 _DEFAULT_EXC: tuple[type[BaseException], ...] = (
     HTTPClientRetryableError,
-    ConnectionError,
-    HTTPError,
-    Timeout,
-    RequestException,
+    httpx.ConnectError,
+    httpx.HTTPStatusError,
+    httpx.TimeoutException,
+    httpx.HTTPError,
 )
 
 
