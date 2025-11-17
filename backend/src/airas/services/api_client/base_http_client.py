@@ -55,7 +55,6 @@ class BaseHTTPClient:
         headers: dict[str, str] | None = None,
         params: dict | None = None,
         json: dict | None = None,
-        stream: bool = False,
         timeout: float = 10.0,
         full_url: str | None = None,
     ) -> httpx.Response:
@@ -73,7 +72,6 @@ class BaseHTTPClient:
                 headers=headers,
                 params=params,
                 json=json,
-                stream=stream,
                 timeout=timeout,
             )
             return response

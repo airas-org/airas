@@ -4,11 +4,9 @@ from functools import partial
 from typing import Type, TypeVar
 
 import httpx
-import requests
-import requests_cache
 from dependency_injector import containers, providers
 from hishel import CacheOptions, SpecificationPolicy
-from hishel.httpx import AsyncCacheClient
+from hishel.httpx import AsyncCacheClient, SyncCacheClient
 
 from airas.services.api_client.qdrant_client import QdrantClient
 
@@ -34,28 +32,33 @@ from airas.services.api_client.semantic_scholar_client import SemanticScholarCli
 T = TypeVar("T")
 
 
-def init_sync_session() -> Generator[requests.Session, None, None]:
+def init_sync_session() -> Generator[httpx.Client, None, None]:
     enable_cache = os.getenv("ENABLE_HTTP_CACHE", "false").lower() == "true"
 
+    client: httpx.Client
     if enable_cache:
-        session = requests_cache.CachedSession(
-            cache_name=".cache/http_cache",
-            backend="sqlite",
-            expire_after=604800,  # 7 days
-            allowable_codes=[200, 201, 301, 302],
-            allowable_methods=["GET"],
-            ignored_parameters=["api_key", "token", "key"],
+        policy = SpecificationPolicy(
+            cache_options=CacheOptions(
+                shared=False,
+                supported_methods=["GET"],
+                allow_stale=False,
+            )
+        )
+        client = SyncCacheClient(
+            follow_redirects=True,
+            policy=policy,
         )
     else:
-        session = requests.Session()
+        client = httpx.Client(follow_redirects=True)
 
-    yield session
-    session.close()
+    yield client
+    client.close()
 
 
 async def init_async_session() -> AsyncGenerator[httpx.AsyncClient, None]:
     enable_cache = os.getenv("ENABLE_HTTP_CACHE", "false").lower() == "true"
 
+    client: httpx.AsyncClient
     if enable_cache:
         policy = SpecificationPolicy(
             cache_options=CacheOptions(
@@ -76,10 +79,10 @@ async def init_async_session() -> AsyncGenerator[httpx.AsyncClient, None]:
 
 
 # NOTE:  GitHub-specific sessions (no caching to avoid stale SHA conflicts)
-def init_github_sync_session() -> Generator[requests.Session, None, None]:
-    session = requests.Session()
-    yield session
-    session.close()
+def init_github_sync_session() -> Generator[httpx.Client, None, None]:
+    client = httpx.Client(follow_redirects=True)
+    yield client
+    client.close()
 
 
 async def init_github_async_session() -> AsyncGenerator[httpx.AsyncClient, None]:
@@ -111,14 +114,14 @@ async def init_llm_client(
 
     try:
         client = (
-            client_class(http_client=http_client) if http_client else client_class()
+            client_class(http_client=http_client) if http_client else client_class()  # type: ignore[call-arg]
         )
     except TypeError:
         # Fallback if SDK doesn't support custom http_client
         client = client_class()
 
     yield client
-    await client.close()
+    await client.close()  # type: ignore[attr-defined]
 
 
 class Container(containers.DeclarativeContainer):
