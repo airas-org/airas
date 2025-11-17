@@ -2,10 +2,9 @@ import json
 import logging
 from logging import getLogger
 
+import httpx
 from google.genai import errors as genai_errors
-from httpx import HTTPStatusError
 from pydantic import ValidationError
-from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 from tenacity import (
     before_log,
     before_sleep_log,
@@ -22,10 +21,10 @@ DEFAULT_MAX_RETRIES = 10
 WAIT_POLICY = wait_exponential(multiplier=1.0, max=180.0)
 
 RETRY_EXC = (
-    ConnectionError,
-    HTTPError,
-    Timeout,
-    RequestException,
+    httpx.ConnectError,
+    httpx.HTTPStatusError,
+    httpx.TimeoutException,
+    httpx.HTTPError,
     genai_errors.APIError,
     json.JSONDecodeError,
     ValidationError,
@@ -34,10 +33,10 @@ RETRY_EXC = (
 
 def _is_transient(e: BaseException) -> bool:
     # HTTPStatusError from httpx
-    if isinstance(e, HTTPStatusError):
+    if isinstance(e, httpx.HTTPStatusError):
         return e.response.status_code in (429, 500, 502, 503, 504)
     # Network-related errors are retryable
-    if isinstance(e, (ConnectionError, Timeout, RequestException)):
+    if isinstance(e, (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPError)):
         return True
     # Check if error message contains transient failure keywords (basic support for Google SDK)
     msg = str(e).upper()

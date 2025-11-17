@@ -1,7 +1,7 @@
 from logging import getLogger
 from typing import Any
 
-import requests
+import httpx
 
 logger = getLogger(__name__)
 
@@ -18,21 +18,22 @@ CONFERENCES_AND_YEARS = {
 
 def _fetch_all_papers() -> list[dict[str, Any]]:
     all_papers = []
-    for conference, years in CONFERENCES_AND_YEARS.items():
-        for year in years:
-            url = f"{DB_BASE_URL}/{conference}/{year}.json"
-            logger.info(f"Fetching paper data from {url}...")
-            try:
-                response = requests.get(url, timeout=60)
-                response.raise_for_status()
-                papers = response.json()
-                all_papers.extend(papers)
-            except requests.exceptions.RequestException as e:
-                logger.error(
-                    f"  -> An error occurred while fetching data from {url}: {e}"
-                )
-            except ValueError as e:
-                logger.error(f"  -> Failed to parse JSON from {url}: {e}")
+    with httpx.Client() as client:
+        for conference, years in CONFERENCES_AND_YEARS.items():
+            for year in years:
+                url = f"{DB_BASE_URL}/{conference}/{year}.json"
+                logger.info(f"Fetching paper data from {url}...")
+                try:
+                    response = client.get(url, timeout=60)
+                    response.raise_for_status()
+                    papers = response.json()
+                    all_papers.extend(papers)
+                except httpx.HTTPStatusError as e:
+                    logger.error(
+                        f"  -> An error occurred while fetching data from {url}: {e}"
+                    )
+                except ValueError as e:
+                    logger.error(f"  -> Failed to parse JSON from {url}: {e}")
     return all_papers
 
 
