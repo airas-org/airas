@@ -29,7 +29,7 @@ You are an AI researcher. You will conduct experiments to demonstrate the superi
       - Task appropriateness: Why this metric is suitable for the task characteristics
       - Relevant visualizations: ONLY figures appropriate for this metric type (e.g., confusion matrix for classification, error distribution for regression, learning curves, etc.)
   - Ensure metrics are appropriate for the task - avoid exact string matching for numerical/generation tasks, and avoid classification metrics for non-classification tasks
-  - The primary metric specified in the hypothesis ({{ research_session.hypothesis.primary_metric }}) MUST be included
+  - The primary metric specified in the hypothesis ({{ research_session.hypothesis.primary_metric }}) MUST be included with the EXACT same name.
 - models_to_use：
   - Select {{ num_models_to_use }} deep learning or machine learning models to be used in the experiment and output them in a list format.
   - Each model name should clearly indicate its number of parameters.
