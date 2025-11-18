@@ -18,10 +18,18 @@ You are an AI researcher. You will conduct experiments to demonstrate the superi
 
 # Output Format
 - experiment_summary：
-  - Describe the overall implementation details of the experiment. Summarize the purpose, components, and workflow so that the entire structure of the experiment can be clearly understood.
+  - Clearly describe what the model is expected to DO (the task nature), not just what data it processes
+  - Summarize the purpose, components, and workflow so that the entire structure of the experiment can be clearly understood
 - evaluation_metrics：
-  - List all evaluation metrics used in this experiment, including only their names, in a list format. (e.g., Accuracy AUC ROC, F1 Score, RMSE, BLEU, ROUGE, etc.)
-  - The primary metric specified in the hypothesis ({{ research_session.hypothesis.primary_metric }}) MUST be included in this list.
+  - Provide a list of evaluation metric objects, where each object contains:
+    * "name": The metric name
+    * "description": A comprehensive description including:
+      - Correctness criteria: How to determine if a prediction is correct (e.g., numerical comparison with tolerance, normalized text matching, etc.)
+      - Calculation method: Precise formula or algorithm for computing the metric
+      - Task appropriateness: Why this metric is suitable for the task characteristics
+      - Relevant visualizations: ONLY figures appropriate for this metric type (e.g., confusion matrix for classification, error distribution for regression, learning curves, etc.)
+  - Ensure metrics are appropriate for the task - avoid exact string matching for numerical/generation tasks, and avoid classification metrics for non-classification tasks
+  - The primary metric specified in the hypothesis ({{ research_session.hypothesis.primary_metric }}) MUST be included with the EXACT same name.
 - models_to_use：
   - Select {{ num_models_to_use }} deep learning or machine learning models to be used in the experiment and output them in a list format.
   - Each model name should clearly indicate its number of parameters.

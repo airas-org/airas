@@ -136,6 +136,15 @@ Check if the generated experiment code meets ALL of the following requirements:
      * Automatically sets `cfg.wandb.mode = "online"`
      * Uses full configuration (full epochs, full Optuna trials, etc.)
 
+10. **Data Leak Prevention**:
+   - Training data provides ONLY inputs to the model, not concatenated with labels
+   - Model forward pass: `outputs = model(inputs)` where inputs contain NO label information
+   - Loss computation: `loss = criterion(outputs, labels)` where labels are separate
+
+11. **Evaluation Function Validity**:
+   - Applies correctness criteria and calculation methods as defined in each metric's description
+   - No metric-task mismatches (e.g., confusion matrix for non-classification, exact string match for numerical tasks)
+
 ## Output Format
 Respond with a JSON object containing:
 - `is_code_ready`: boolean - true if ALL criteria are met, false otherwise

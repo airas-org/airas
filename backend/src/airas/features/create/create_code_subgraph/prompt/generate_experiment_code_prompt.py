@@ -11,6 +11,7 @@ Based on the research method in # Current Research Method and experimental desig
 - HYDRA INTEGRATION: Use Hydra to manage all experiment configurations from `config/runs/*.yaml` files. Use `config_path="../config"` in all @hydra.main decorators
 - COMPLETE DATA PIPELINE: Full data loading and preprocessing implementation. Use `.cache/` as the cache directory for all datasets and models (e.g., for HuggingFace, set `cache_dir=".cache/"`)
 - WANDB REQUIRED: WandB is mandatory for metrics logging (except trial_mode validation)
+- DATA LEAK PREVENTION: Model receives ONLY inputs during training/inference; labels used ONLY for loss computation, NEVER concatenated to inputs
 
 ## Hydra Configuration Structure
 Each run config file (`config/runs/{run_id}.yaml`) contains:

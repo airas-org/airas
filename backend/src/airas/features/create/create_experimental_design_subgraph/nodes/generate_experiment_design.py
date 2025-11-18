@@ -2,7 +2,7 @@ import json
 import logging
 
 from jinja2 import Environment
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from airas.config.runner_type_info import RunnerType, runner_info_dict
 from airas.data.dataset.language_model_fine_tuning_dataset import (
@@ -18,22 +18,19 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.research_iteration import ExperimentalDesign
+from airas.types.research_iteration import (
+    EvaluationMetric,
+    ExperimentalDesign,
+    HyperParameter,
+)
 from airas.types.research_session import ResearchSession
 
 logger = logging.getLogger(__name__)
 
 
-class HyperParameter(BaseModel):
-    name: str = Field(..., description="Name of the hyperparameter")
-    range: str = Field(
-        ..., description="Search range (e.g., '0.001-0.01' or '16,32,64')"
-    )
-
-
 class LLMOutput(BaseModel):
     experiment_summary: str
-    evaluation_metrics: list[str]
+    evaluation_metrics: list[EvaluationMetric]
     models_to_use: list[str]
     datasets_to_use: list[str]
     proposed_method: str
@@ -76,18 +73,22 @@ async def generate_experiment_design(
     if output is None:
         raise ValueError("No response from LLM in generate_experiment_design.")
 
-    hyperparameters_dict = {
-        hp["name"]: hp["range"] for hp in output["hyperparameters_to_search"]
-    }
-
     primary_metric = research_session.hypothesis.primary_metric
-    evaluation_metrics = output["evaluation_metrics"]
-    if primary_metric not in evaluation_metrics:
+    evaluation_metrics = [
+        EvaluationMetric(**metric) for metric in output["evaluation_metrics"]
+    ]
+
+    if primary_metric not in {metric.name for metric in evaluation_metrics}:
         logger.warning(
             f"Primary metric '{primary_metric}' not found in evaluation_metrics. "
             f"Adding it to the list."
         )
-        evaluation_metrics.append(primary_metric)
+        evaluation_metrics.append(
+            EvaluationMetric(
+                name=primary_metric,
+                description=f"Primary metric as specified in hypothesis: {primary_metric}",
+            )
+        )
 
     return ExperimentalDesign(
         experiment_summary=output["experiment_summary"],
@@ -96,5 +97,5 @@ async def generate_experiment_design(
         datasets_to_use=output["datasets_to_use"],
         proposed_method=output["proposed_method"],
         comparative_methods=output["comparative_methods"],
-        hyperparameters_to_search=hyperparameters_dict,
+        hyperparameters_to_search=output["hyperparameters_to_search"],
     )
