@@ -1,11 +1,85 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.hugging_face import HuggingFace
+
+
+class ResearchIteration(BaseModel):
+    iteration_id: int = Field(..., description="Unique identifier for this iteration")
+    method: str = Field(..., description="The proposed research method")
+    experimental_design: Optional[ExperimentalDesign] = Field(
+        None,
+        description="Experimental design including datasets, models, metrics, and comparative methods",
+    )
+    experiment_runs: Optional[list[ExperimentRun]] = Field(
+        None,
+        description="List of individual experiment runs with their configurations and results",
+    )
+    experimental_analysis: Optional[ExperimentalAnalysis] = Field(
+        None,
+        description="Comprehensive analysis of experimental results including reports and aggregated metrics",
+    )
+
+
+class ExperimentalDesign(BaseModel):
+    experiment_summary: Optional[str] = Field(
+        None,
+        description="Overall experimental design including task definition, data handling approach, and implementation details",
+    )
+    evaluation_metrics: Optional[list[EvaluationMetric]] = Field(
+        None,
+        description="Evaluation metrics with detailed calculation methods and visualizations",
+    )
+    proposed_method: Optional[str] = Field(
+        None, description="A detailed description of the new method to be implemented"
+    )
+    # TODO: Enhance baseline implementation: list[str] -> list[ComparativeMethod]
+    # It is preferable to pass research_study_list (containing information such as experimental_code and experimental_info)
+    # to create_experimental_design or new subgraph.
+    comparative_methods: Optional[list[str]] = Field(
+        None, description="Existing methods selected for comparison"
+    )
+    models_to_use: Optional[list[str]] = Field(
+        None, description="List of models to be used in the experiments"
+    )
+    datasets_to_use: Optional[list[str]] = Field(
+        None, description="List of datasets to be used in the experiments"
+    )
+    hyperparameters_to_search: Optional[list[HyperParameter]] = Field(
+        None, description="Hyperparameters to be explored in the experiments"
+    )
+    external_resources: Optional[ExternalResources] = Field(
+        None,
+        description="External resources including models, datasets, and other resources",
+    )
+    experiment_code: Optional[ExperimentCode] = Field(None, description="")
+
+    @model_validator(mode="after")
+    def validate_methods(self) -> Self:
+        if not self.proposed_method and not self.comparative_methods:
+            raise ValueError(
+                "Either proposed_method or comparative_methods must be provided"
+            )
+        return self
+
+
+class EvaluationMetric(BaseModel):
+    name: str = Field(..., description="Metric name")
+    description: str = Field(
+        ...,
+        description="Detailed description including calculation method, correctness criteria, task appropriateness, and relevant visualizations",
+    )
+
+
+class HyperParameter(BaseModel):
+    name: str = Field(..., description="Name of the hyperparameter")
+    range: str = Field(
+        ..., description="Search range (e.g., '0.001-0.01' or '16,32,64')"
+    )
 
 
 class ExternalResources(BaseModel):
@@ -44,42 +118,6 @@ class ExperimentCode(BaseModel):
                 }
             )
         return files
-
-
-class ExperimentEvaluation(BaseModel):
-    method_feedback: Optional[str] = Field(
-        None,
-        description="",
-    )
-
-
-class ExperimentalDesign(BaseModel):
-    experiment_summary: str = Field(
-        None, description="A summary of the overall experimental design"
-    )
-    evaluation_metrics: list[str] = Field(
-        None, description="Metrics used to evaluate the experiments"
-    )
-    proposed_method: str = Field(
-        None, description="A detailed description of the new method to be implemented"
-    )
-    comparative_methods: list[str] = Field(
-        None, description="Existing methods selected for comparison"
-    )
-    models_to_use: Optional[list[str]] = Field(
-        None, description="List of models to be used in the experiments"
-    )
-    datasets_to_use: Optional[list[str]] = Field(
-        None, description="List of datasets to be used in the experiments"
-    )
-    hyperparameters_to_search: Optional[dict[str, str]] = Field(
-        None, description="Hyperparameters to be explored in the experiments"
-    )
-    external_resources: Optional[ExternalResources] = Field(
-        None,
-        description="External resources including models, datasets, and other resources",
-    )
-    experiment_code: Optional[ExperimentCode] = Field(None, description="")
 
 
 class ExperimentRun(BaseModel):
@@ -135,18 +173,8 @@ class ExperimentalAnalysis(BaseModel):
     evaluation: Optional[ExperimentEvaluation] = Field(None, description="")
 
 
-class ResearchIteration(BaseModel):
-    iteration_id: int = Field(..., description="Unique identifier for this iteration")
-    method: str = Field(..., description="The proposed research method")
-    experimental_design: Optional[ExperimentalDesign] = Field(
+class ExperimentEvaluation(BaseModel):
+    method_feedback: Optional[str] = Field(
         None,
-        description="Experimental design including datasets, models, metrics, and comparative methods",
-    )
-    experiment_runs: Optional[list[ExperimentRun]] = Field(
-        None,
-        description="List of individual experiment runs with their configurations and results",
-    )
-    experimental_analysis: Optional[ExperimentalAnalysis] = Field(
-        None,
-        description="Comprehensive analysis of experimental results including reports and aggregated metrics",
+        description="",
     )
