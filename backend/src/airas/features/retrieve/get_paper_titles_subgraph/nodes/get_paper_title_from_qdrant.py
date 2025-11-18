@@ -9,15 +9,24 @@ async def get_paper_titles_from_qdrant(
     llm_client: LLMFacadeClient,
 ) -> list[str]:
     COLLECTION_NAME = "airas_database"
-    results = []
+    seen: set[str] = set()
+    results: list[str] = []
+
     for query in queries:
         query_vector = await llm_client.text_embedding(message=query)
-        if query_vector:
-            result = qdrant_client.query_points(
-                collection_name=COLLECTION_NAME,
-                query_vector=query_vector,
-                limit=num_retrieve_paper,
-            )
-            for i in result["result"]["points"]:
-                results.append(i["payload"]["title"])
+        if not query_vector:
+            continue
+
+        result = qdrant_client.query_points(
+            collection_name=COLLECTION_NAME,
+            query_vector=query_vector,
+            limit=num_retrieve_paper,
+        )
+
+        for point in result["result"]["points"]:
+            title = point["payload"]["title"]
+            if title not in seen:
+                seen.add(title)
+                results.append(title)
+
     return results
