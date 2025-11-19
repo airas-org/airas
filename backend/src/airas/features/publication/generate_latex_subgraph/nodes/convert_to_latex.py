@@ -2,7 +2,7 @@ from logging import getLogger
 
 from jinja2 import Environment
 
-from airas.features.publication.latex_subgraph.prompt.convert_to_latex_prompt import (
+from airas.features.publication.generate_latex_subgraph.prompts.convert_to_latex_prompt import (
     convert_to_latex_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
@@ -14,7 +14,7 @@ from airas.types.paper import PaperContent
 logger = getLogger(__name__)
 
 
-async def convert_to_latex_str(
+async def convert_to_latex(
     llm_name: LLM_MODEL,
     paper_content: PaperContent,
     llm_client: LLMFacadeClient,
