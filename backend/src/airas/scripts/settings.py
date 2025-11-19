@@ -84,7 +84,7 @@ class LLMMappingConfig(BaseModel):
     extract_experimental_info: str = "gemini-2.5-flash"
 
     # ExtractReferenceTitlesSubgraph
-    extract_reference_titles: str = "gemini-2.5-flash-lite-preview-06-17"
+    extract_reference_titles: str = "gemini-2.5-flash-lite-preview-09-2025"
 
     # CreateHypothesisSubgraph
     generate_idea_and_research_summary: str = "o3-2025-04-16"
@@ -106,8 +106,8 @@ class LLMMappingConfig(BaseModel):
     generate_experiment_code: str = "o3-2025-04-16"
     validate_experiment_code: str = "o3-2025-04-16"
 
-    # AnalyticSubgraph
-    analytic_node: str = "o3-2025-04-16"
+    # AnalyzeExperimentSubgraph
+    analyze_experiment: str = "o3-2025-04-16"
     evaluate_method: str = "o3-2025-04-16"
 
     # CreateBibfileSubgraph
@@ -117,10 +117,10 @@ class LLMMappingConfig(BaseModel):
     write_paper: str = "gpt-5-2025-08-07"
     refine_paper: str = "o3-2025-04-16"
 
-    # LatexSubgraph
+    # GenerateLatexSubgraph
     convert_to_latex: str = "gpt-5-2025-08-07"
 
-    # HtmlSubgraph
+    # GenerateHtmlSubgraph
     convert_to_html: str = "gpt-5-2025-08-07"
 
 
@@ -168,7 +168,7 @@ class Settings(BaseSettings):
 
     def apply_profile_overrides(self) -> Self:
         self.wandb.entity = "gengaru617-personal"
-        self.wandb.project = "2025-11-17"
+        self.wandb.project = "2025-11-19"
 
         if self.profile == "test":
             self.method_iteration_attempts = 1

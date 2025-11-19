@@ -19,6 +19,9 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "extract_experimental_info": BASE_MODEL,
     # SummarizePaperSubgraph
     "summarize_paper": BASE_MODEL,
+    # RetrieveHuggingFaceSubgraph
+    "select_resources": BASE_MODEL,
+    "extract_code_in_readme": BASE_MODEL,
 
     # --- features/create ---
     # CreateHypothesisSubgraph
@@ -35,13 +38,13 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "generate_experiment_code": BASE_MODEL,
     "validate_experiment_code": BASE_MODEL,
 
-    # --- features/analysis ---
+    # --- features/execution ---
     # ExecuteExperimentSubgraph
-    "extract_required_info": BASE_MODEL,
+    "judge_execution": BASE_MODEL,
 
     # --- features/analysis ---
-    # AnalyticSubgraph
-    "analytic_node": BASE_MODEL,
+    # AnalyzeExperimentSubgraph
+    "analyze_experiment": BASE_MODEL,
     "evaluate_method": BASE_MODEL,
 
     # --- features/write ---
@@ -51,25 +54,10 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "write_paper": BASE_MODEL,
     "refine_paper": BASE_MODEL,
 
-    # --- features/retrieve ---
-    # RetrieveHuggingFaceSubgraph
-    "select_resources": BASE_MODEL,
-    "extract_code_in_readme": BASE_MODEL,
-
-    # --- features/evaluate ---
-    # JudgeExecutionSubgraph
-    "judge_execution": BASE_MODEL,
-    # EvaluateExperimentalConsistencySubgraph
-    "evaluate_experimental_consistency": BASE_MODEL,
-    # EvaluatePaperResultsSubgraph
-    "evaluate_paper_results": BASE_MODEL,
-    # ReviewPaperSubgraph
-    "review_paper": BASE_MODEL,
-
     # --- features/publication ---
-    # HtmlSubgraph
+    # GenerateHtmlSubgraph
     "convert_to_html": BASE_MODEL,
-    # LatexSubgraph
+    # GenerateLatexSubgraph
     "convert_to_latex": BASE_MODEL,
 }
 # fmt: on

@@ -8,21 +8,24 @@ from tqdm.asyncio import tqdm as atqdm
 
 from airas.core.container import Container, container
 from airas.features import (
-    AnalyticSubgraph,
+    AnalyzeExperimentSubgraph,
     CreateBibfileSubgraph,
     CreateCodeSubgraph,
     CreateExperimentalDesignSubgraph,
     CreateHypothesisSubgraph,
     CreateMethodSubgraph,
+    ExecuteEvaluationSubgraph,
     ExecuteExperimentSubgraph,
     ExtractReferenceTitlesSubgraph,
+    GenerateHtmlSubgraph,
+    GenerateLatexSubgraph,
     GenerateQueriesSubgraph,
     GetPaperTitlesFromDBSubgraph,
     GithubDownloadSubgraph,
     GithubUploadSubgraph,
-    HtmlSubgraph,
-    LatexSubgraph,
     PrepareRepositorySubgraph,
+    PublishHtmlSubgraph,
+    PublishLatexSubgraph,
     PushCodeSubgraph,
     ReadmeSubgraph,
     RetrieveCodeSubgraph,
@@ -177,11 +180,14 @@ async def create_subgraphs(
         runner_type=settings.runner_type,
     )
 
-    analysis = AnalyticSubgraph(
-        llm_client=llm_facade_client,
+    execute_evaluation = ExecuteEvaluationSubgraph(
         github_client=github_client,
+    )
+
+    analyze_experiment = AnalyzeExperimentSubgraph(
+        llm_client=llm_facade_client,
         llm_mapping={
-            "analytic_node": settings.llm_mapping.analytic_node,
+            "analyze_experiment": settings.llm_mapping.analyze_experiment,
             "evaluate_method": settings.llm_mapping.evaluate_method,
         },
     )
@@ -225,21 +231,27 @@ async def create_subgraphs(
         writing_refinement_rounds=settings.writer.writing_refinement_rounds,
     )
 
-    latex = LatexSubgraph(
+    generate_latex = GenerateLatexSubgraph(
         llm_client=llm_facade_client,
-        github_client=github_client,
         llm_mapping={
             "convert_to_latex": settings.llm_mapping.convert_to_latex,
         },
+    )
+
+    publish_latex = PublishLatexSubgraph(
+        github_client=github_client,
         latex_template_name=settings.latex_template_name,
     )
 
-    html = HtmlSubgraph(
+    generate_html = GenerateHtmlSubgraph(
         llm_client=llm_facade_client,
-        github_client=github_client,
         llm_mapping={
             "convert_to_html": settings.llm_mapping.convert_to_html,
         },
+    )
+
+    publish_html = PublishHtmlSubgraph(
+        github_client=github_client,
     )
 
     readme = ReadmeSubgraph(
@@ -263,7 +275,8 @@ async def create_subgraphs(
         coder,
         push_code,
         executor,
-        analysis,
+        execute_evaluation,
+        analyze_experiment,
     ]
 
     final_subgraph_list = [
@@ -271,8 +284,10 @@ async def create_subgraphs(
         retrieve_reference_paper_content,
         create_bibfile,
         writer,
-        latex,
-        html,
+        generate_latex,
+        publish_latex,
+        generate_html,
+        publish_html,
         readme,
     ]
 

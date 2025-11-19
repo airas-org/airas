@@ -1,4 +1,4 @@
-analytic_node_prompt = """\
+analyze_experiment_prompt = """\
 You are an expert in machine learning research.
 
 Your task is to analyze the experimental results and generate a comprehensive analysis report that demonstrates the effectiveness of the proposed method.
