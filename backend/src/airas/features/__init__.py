@@ -1,4 +1,6 @@
-from .analysis.analytic_subgraph.analytic_subgraph import AnalyticSubgraph
+from .analysis.analyze_experiment_subgraph.analyze_experiment_subgraph import (
+    AnalyzeExperimentSubgraph,
+)
 from .create.create_code_subgraph.create_code_subgraph import CreateCodeSubgraph
 from .create.create_experimental_design_subgraph.create_experimental_design_subgraph import (
     CreateExperimentalDesignSubgraph,
@@ -8,6 +10,9 @@ from .create.create_hypothesis_subgraph.create_hypothesis_subgraph import (
 )
 from .create.create_method_subgraph.create_method_subgraph import (
     CreateMethodSubgraph,
+)
+from .execution.execute_evaluation_subgraph.execute_evaluation_subgraph import (
+    ExecuteEvaluationSubgraph,
 )
 from .execution.execute_experiment_subgraph.execute_experiment_subgraph import (
     ExecuteExperimentSubgraph,
@@ -21,8 +26,16 @@ from .github.prepare_repository_subgraph.prepare_repository_subgraph import (
 from .github.push_code_subgraph.push_code_subgraph import (
     PushCodeSubgraph,
 )
-from .publication.html_subgraph.html_subgraph import HtmlSubgraph
-from .publication.latex_subgraph.latex_subgraph import LatexSubgraph
+from .publication.generate_html_subgraph.generate_html_subgraph import (
+    GenerateHtmlSubgraph,
+)
+from .publication.generate_latex_subgraph.generate_latex_subgraph import (
+    GenerateLatexSubgraph,
+)
+from .publication.publish_html_subgraph.publish_html_subgraph import PublishHtmlSubgraph
+from .publication.publish_latex_subgraph.publish_latex_subgraph import (
+    PublishLatexSubgraph,
+)
 from .publication.readme_subgraph.readme_subgraph import ReadmeSubgraph
 from .retrieve.extract_reference_titles_subgraph.extract_reference_titles_subgraph import (
     ExtractReferenceTitlesSubgraph,
@@ -52,23 +65,26 @@ from .write.create_bibfile_subgraph.create_bibfile_subgraph import (
 from .write.writer_subgraph.writer_subgraph import WriterSubgraph
 
 __all__ = [
-    "AnalyticSubgraph",
+    "AnalyzeExperimentSubgraph",
     "CreateBibfileSubgraph",
     "CreateBranchSubgraph",
     "CreateCodeSubgraph",
     "CreateExperimentalDesignSubgraph",
     "CreateMethodSubgraph",
     "CreateHypothesisSubgraph",
+    "ExecuteEvaluationSubgraph",
     "ExecuteExperimentSubgraph",
     "ExtractReferenceTitlesSubgraph",
+    "GenerateHtmlSubgraph",
+    "GenerateLatexSubgraph",
     "GenerateQueriesSubgraph",
     "GetPaperTitlesFromDBSubgraph",
     "GetPaperTitlesFromWebSubgraph",
     "GithubDownloadSubgraph",
     "GithubUploadSubgraph",
-    "HtmlSubgraph",
-    "LatexSubgraph",
     "PrepareRepositorySubgraph",
+    "PublishHtmlSubgraph",
+    "PublishLatexSubgraph",
     "PushCodeSubgraph",
     "ReadmeSubgraph",
     "RetrieveCodeSubgraph",
