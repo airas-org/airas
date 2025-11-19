@@ -17,6 +17,16 @@ setup_logging()
 
 # https://ai.google.dev/gemini-api/docs/models?hl=ja
 VERTEXAI_MODEL_INFO: dict[str, dict[str, Any]] = {
+    "gemini-3-pro-preview": {
+        "max_input_tokens": 1048576,
+        "max_output_tokens": 65536,
+        "cost_fn": lambda input_tokens, output_tokens: (
+            (2.00 / 1000000 if input_tokens <= 200000 else 4.00 / 1000000)
+            * input_tokens
+            + (12.00 / 1000000 if input_tokens <= 200000 else 18.00 / 1000000)
+            * output_tokens
+        ),
+    },
     "gemini-2.5-pro": {
         "max_input_tokens": 1048576,
         "max_output_tokens": 65536,
@@ -33,19 +43,31 @@ VERTEXAI_MODEL_INFO: dict[str, dict[str, Any]] = {
         "input_token_cost": 0.30 * 1 / 1000000,
         "output_token_cost": 2.50 * 1 / 1000000,
     },
-    "gemini-2.5-flash-lite-preview-06-17": {
-        "max_input_tokens": 1000000,
-        "max_output_tokens": 64000,
+    "gemini-2.5-flash-preview-09-2025": {
+        "max_input_tokens": 1048576,
+        "max_output_tokens": 65536,
+        "input_token_cost": 0.30 * 1 / 1000000,
+        "output_token_cost": 2.50 * 1 / 1000000,
+    },
+    "gemini-2.5-flash-lite": {
+        "max_input_tokens": 1048576,
+        "max_output_tokens": 65536,
         "input_token_cost": 0.10 * 1 / 1000000,
         "output_token_cost": 0.40 * 1 / 1000000,
     },
-    "gemini-2.0-flash-001": {
+    "gemini-2.5-flash-lite-preview-09-2025": {
+        "max_input_tokens": 1048576,
+        "max_output_tokens": 65536,
+        "input_token_cost": 0.10 * 1 / 1000000,
+        "output_token_cost": 0.40 * 1 / 1000000,
+    },
+    "gemini-2.0-flash": {
         "max_input_tokens": 1048576,
         "max_output_tokens": 8192,
         "input_token_cost": 0.10 * 1 / 1000000,
         "output_token_cost": 0.40 * 1 / 1000000,
     },
-    "gemini-2.0-flash-lite-001": {
+    "gemini-2.0-flash-lite": {
         "max_input_tokens": 1048576,
         "max_output_tokens": 8192,
         "input_token_cost": 0.075 * 1 / 1000000,
@@ -54,11 +76,14 @@ VERTEXAI_MODEL_INFO: dict[str, dict[str, Any]] = {
 }
 
 VERTEXAI_MODEL = Literal[
+    "gemini-3-pro-preview",
     "gemini-2.5-pro",
     "gemini-2.5-flash",
-    "gemini-2.5-flash-lite-preview-06-17",
-    "gemini-2.0-flash-001",
-    "gemini-2.0-flash-lite-001",
+    "gemini-2.5-flash-preview-09-2025",
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-flash-lite-preview-09-2025",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
     "gemini-embedding-001",
 ]
 
