@@ -15,18 +15,24 @@ async def prepare_images_for_html(
     research_session: ResearchSession,
     github_client: GithubClient,
     workflow_file: str = "prepare_images_for_html.yml",
-) -> str | None:
+) -> str:
     github_owner = github_repository.github_owner
     repository_name = github_repository.repository_name
     branch_name = github_repository.branch_name or "main"
 
+    relative_path = f"branches/{branch_name}/index.html"
+    github_pages_url = (
+        f"https://{github_owner}.github.io/{repository_name}/{relative_path}"
+    )
+
     executor = WorkflowExecutor(github_client)
 
     if not (iteration := research_session.best_iteration):
-        logger.error(
-            "No best_iteration found in research_session. Cannot prepare images without iteration_id."
+        logger.warning(
+            "No best_iteration found in research_session. Skipping image preparation. "
+            f"HTML will be available at: {github_pages_url}"
         )
-        return None
+        return github_pages_url
 
     inputs: dict = {
         "iteration_id": str(iteration.iteration_id),
@@ -42,13 +48,12 @@ async def prepare_images_for_html(
         )
 
         if not result.success:
-            logger.error(f"Workflow failed: {result.error_message}")
-            return None
+            logger.warning(
+                f"Image preparation workflow failed: {result.error_message}. "
+                f"HTML will be available without images at: {github_pages_url}"
+            )
+            return github_pages_url
 
-        relative_path = f"branches/{branch_name}/index.html"
-        github_pages_url = (
-            f"https://{github_owner}.github.io/{repository_name}/{relative_path}"
-        )
         logger.info(f"Workflow {workflow_file} completed successfully")
         logger.info(
             f"GitHub Pages build triggered. HTML will be available at: {github_pages_url} "
@@ -57,5 +62,8 @@ async def prepare_images_for_html(
         return github_pages_url
 
     except Exception as e:
-        logger.error(f"Failed to execute workflow: {e}")
-        return None
+        logger.warning(
+            f"Failed to execute image preparation workflow: {e}. "
+            f"HTML will be available without images at: {github_pages_url}"
+        )
+        return github_pages_url
