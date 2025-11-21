@@ -88,7 +88,7 @@ class LLMMappingConfig(BaseModel):
     extract_experimental_info: LLM_MODEL = "gemini-2.5-flash"
 
     # ExtractReferenceTitlesSubgraph
-    extract_reference_titles: LLM_MODEL = "gemini-2.5-flash-lite-preview-06-17"
+    extract_reference_titles: LLM_MODEL = "gemini-2.5-flash-lite-preview-09-2025"
 
     # CreateHypothesisSubgraph
     generate_idea_and_research_summary: LLM_MODEL = BASE_MODEL
