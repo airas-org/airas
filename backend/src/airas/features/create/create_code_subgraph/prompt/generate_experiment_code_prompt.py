@@ -8,10 +8,20 @@ Based on the research method in # Current Research Method and experimental desig
 ## Core Requirements
 - COMPLETE IMPLEMENTATION: Every component must be fully functional, production-ready, publication-worthy code. No "omitted for brevity", no "simplified version", no TODO, PLACEHOLDER, pass, or ...
 - PYTORCH EXCLUSIVELY: Use PyTorch as the deep learning framework
-- HYDRA INTEGRATION: Use Hydra to manage all experiment configurations from `config/runs/*.yaml` files. Use `config_path="../config"` in all @hydra.main decorators
+- HYDRA INTEGRATION: Use Hydra to manage all experiment configurations from `config/runs/*.yaml` files
 - COMPLETE DATA PIPELINE: Full data loading and preprocessing implementation. Use `.cache/` as the cache directory for all datasets and models (e.g., for HuggingFace, set `cache_dir=".cache/"`)
 - WANDB REQUIRED: WandB is mandatory for metrics logging (except trial_mode validation)
 - DATA LEAK PREVENTION: Model receives ONLY inputs during training/inference; labels used ONLY for loss computation, NEVER concatenated to inputs
+
+## Safety & Reliability Standards
+1. **Defensive Implementation**:
+   - **Component Robustness**: Handle missing or invalid defaults explicitly (e.g., tokenizer `pad_token`, image normalization stats, or dataset-specific configs).
+   - **Gradient Integrity**: Use `torch.autograd.grad(create_graph=False)` for auxiliary updates to protect main gradients.
+
+2. **Critical Lifecycle Assertions**: Insert assertions at key stages in `train.py`:
+   - **Post-Init**: Assert critical attributes are valid immediately after loading (e.g., tokenizer `pad_token_id`, model output dimensions).
+   - **Batch-Start**: Assert input/label shapes match at the start of the loop (at least for step 0).
+   - **Pre-Optimizer**: **CRITICAL:** Before `optimizer.step()`, assert that gradients exist (not None) and are not zero. This detects if custom logic accidentally erased gradients.
 
 ## Hydra Configuration Structure
 Each run config file (`config/runs/{run_id}.yaml`) contains:
@@ -140,11 +150,8 @@ Generate complete code for these files ONLY. Do not create any additional files 
 
 **`src/main.py`**: Main orchestrator
 - Receives run_id via Hydra, launches train.py as subprocess, manages logs
-- **DOES NOT call evaluate.py** (evaluate.py runs independently in separate workflow)
 - Use `@hydra.main(config_path="../config")` since execution is from repository root
-- **Mode handling**: Automatically configure based on `cfg.mode`:
-  * When `cfg.mode == "trial"`: Set `cfg.wandb.mode = "disabled"`, `cfg.optuna.n_trials = 0`, epochs=1, etc.
-  * When `cfg.mode == "full"`: Set `cfg.wandb.mode = "online"` and use full configuration
+- Implements mode-based configuration as described in CLI section above
 
 **`config/config.yaml`**: Main Hydra configuration file
 - MUST include WandB configuration:
@@ -164,12 +171,7 @@ Generate complete code for these files ONLY. Do not create any additional files 
 ## Key Implementation Focus Areas
 1. **Hydra-Driven Configuration**: All parameters loaded from run configs dynamically
 2. **Algorithm Core**: Full implementation of the proposed method with proper abstraction
-3. **Mode-Based Behavior**: Code must automatically configure based on `cfg.mode` ("trial" vs "full")
-   - `mode=trial`: Set `cfg.wandb.mode="disabled"`, `cfg.optuna.n_trials=0`, epochs=1, limited batches
-   - `mode=full`: Set `cfg.wandb.mode="online"`, use full configuration
-4. **Run Execution**: main.py executes a single run_id passed via CLI (GitHub Actions dispatches multiple runs separately)
-5. **WandB Integration**: All metrics logged to WandB; train.py does NOT output JSON to stdout or save results.json
-6. **Independent Evaluation**: evaluate.py runs separately, fetches data from WandB API, generates all figures
+3. **Run Execution**: main.py executes a single run_id passed via CLI (GitHub Actions dispatches multiple runs separately)
 
 
 {% if code_validation %}
@@ -242,5 +244,4 @@ Use the following code from Iteration 1 as a reference to ensure consistency, es
 
 For comparative/baseline methods, follow the same implementation approach as Iteration 1 to maintain consistency across iterations.
 {% endif %}
-
-Generate complete, production-ready experiment code that integrates with Hydra configuration system."""
+"""
