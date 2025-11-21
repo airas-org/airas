@@ -5,7 +5,8 @@ Output True if the script SUCCEEDED, False if it FAILED.
 Follow the rules below:
 
 # Rules:
-- Output False if "Standard Error" contains any error messages or exceptions.
+- Output False if "Standard Error" contains actual error messages, exceptions, or tracebacks (e.g., "Error", "Exception", "Traceback").
+- Ignore warnings (e.g., DeprecationWarning, FutureWarning, UserWarning) - they should NOT cause a failure.
 - Output True if the script completed without errors and "Standard Output" shows evidence of successful execution, such as:
   - Completion messages indicating the script finished normally
   - Progress logs showing the script ran through its stages
