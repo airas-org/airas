@@ -58,6 +58,18 @@ OPENAI_MODEL_INFO = {
         "input_token_cost": 15 * 1 / 1_000_000,
         "output_token_cost": 120 * 1 / 1_000_000,
     },
+    # "gpt-5.1-codex-max": {
+    #     "max_input_tokens": 400_000 - 128_000,
+    #     "max_output_tokens": 128_000,
+    #     "input_token_cost": 1.25 * 1 / 1_000_000,
+    #     "output_token_cost": 10.00 * 1 / 1_000_000,
+    # },
+    "gpt-5.1-codex": {
+        "max_input_tokens": 400_000 - 128_000,
+        "max_output_tokens": 128_000,
+        "input_token_cost": 1.25 * 1 / 1_000_000,
+        "output_token_cost": 10.00 * 1 / 1_000_000,
+    },
     "gpt-5-codex": {
         "max_input_tokens": 400_000 - 128_000,
         "max_output_tokens": 128_000,
@@ -111,6 +123,8 @@ OPENAI_MODEL = Literal[
     "o1-2024-12-17",
     "gpt-5.1-2025-11-13",
     "gpt-5-pro-2025-10-06",
+    # "gpt-5.1-codex-max",
+    "gpt-5.1-codex",
     "gpt-5-codex",
     "gpt-5-2025-08-07",
     "gpt-5-mini-2025-08-07",

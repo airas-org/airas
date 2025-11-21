@@ -2,7 +2,8 @@ from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 
 LLM_CONFIG_TYPE = dict[str, LLM_MODEL]
 
-BASE_MODEL: LLM_MODEL = "o3-2025-04-16"
+BASE_MODEL: LLM_MODEL = "gpt-5.1-2025-11-13"
+CODING_MODEL: LLM_MODEL = "gpt-5.1-codex"
 
 
 # fmt:off
@@ -34,9 +35,9 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     # CreateExperimentalDesignSubgraph
     "generate_experiment_design": BASE_MODEL,
     # CreateCodeSubgraph
-    "generate_run_config": BASE_MODEL,
-    "generate_experiment_code": BASE_MODEL,
-    "validate_experiment_code": BASE_MODEL,
+    "generate_run_config": CODING_MODEL,
+    "generate_experiment_code": CODING_MODEL,
+    "validate_experiment_code": CODING_MODEL,
 
     # --- features/execution ---
     # ExecuteExperimentSubgraph

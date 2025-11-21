@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
 from airas.config.runner_type_info import RunnerType
+from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.latex import LATEX_TEMPLATE_NAME
 from airas.types.wandb import WandbInfo
 
@@ -68,60 +69,63 @@ class WandbConfig(BaseModel):
 
 
 class LLMMappingConfig(BaseModel):
+    BASE_MODEL: LLM_MODEL = "gpt-5.1-2025-11-13"
+    CODING_MODEL: LLM_MODEL = "gpt-5.1-codex"
+
     # GenerateQueriesSubgraph
-    generate_queries: str = "o4-mini-2025-04-16"
+    generate_queries: LLM_MODEL = "o4-mini-2025-04-16"
 
     # RetrievePaperContentSubgraph and CreateMethodSubgraphV2
-    search_arxiv_id_from_title: str = (
+    search_arxiv_id_from_title: LLM_MODEL = (
         "gpt-5-mini-2025-08-07"  # Only openAI models are available.
     )
 
     # SummarizePaperSubgraph
-    summarize_paper: str = "gemini-2.5-flash"
+    summarize_paper: LLM_MODEL = "gemini-2.5-flash"
 
     # RetrieveCodeSubgraph
-    extract_github_url_from_text: str = "gemini-2.5-flash"
-    extract_experimental_info: str = "gemini-2.5-flash"
+    extract_github_url_from_text: LLM_MODEL = "gemini-2.5-flash"
+    extract_experimental_info: LLM_MODEL = "gemini-2.5-flash"
 
     # ExtractReferenceTitlesSubgraph
-    extract_reference_titles: str = "gemini-2.5-flash-lite-preview-09-2025"
+    extract_reference_titles: LLM_MODEL = "gemini-2.5-flash-lite-preview-06-17"
 
     # CreateHypothesisSubgraph
-    generate_idea_and_research_summary: str = "o3-2025-04-16"
-    evaluate_novelty_and_significance: str = "o3-2025-04-16"
-    refine_idea_and_research_summary: str = "o3-2025-04-16"
+    generate_idea_and_research_summary: LLM_MODEL = BASE_MODEL
+    evaluate_novelty_and_significance: LLM_MODEL = BASE_MODEL
+    refine_idea_and_research_summary: LLM_MODEL = BASE_MODEL
 
     # CreateMethodSubgraph
-    improve_method: str = "o3-2025-04-16"
+    improve_method: LLM_MODEL = BASE_MODEL
 
     # CreateExperimentalDesignSubgraph
-    generate_experiment_design: str = "o3-2025-04-16"
+    generate_experiment_design: LLM_MODEL = BASE_MODEL
 
     # RetrieveHuggingFaceSubgraph
-    select_resources: str = "gemini-2.5-flash"
-    extract_code_in_readme: str = "gemini-2.5-flash"
+    select_resources: LLM_MODEL = "gemini-2.5-flash"
+    extract_code_in_readme: LLM_MODEL = "gemini-2.5-flash"
 
     # CreateCodeSubgraph
-    generate_run_config: str = "o3-2025-04-16"
-    generate_experiment_code: str = "o3-2025-04-16"
-    validate_experiment_code: str = "o3-2025-04-16"
+    generate_run_config: LLM_MODEL = CODING_MODEL
+    generate_experiment_code: LLM_MODEL = CODING_MODEL
+    validate_experiment_code: LLM_MODEL = CODING_MODEL
 
-    # AnalyzeExperimentSubgraph
-    analyze_experiment: str = "o3-2025-04-16"
-    evaluate_method: str = "o3-2025-04-16"
+    # AnalyticSubgraph
+    analytic_node: LLM_MODEL = BASE_MODEL
+    evaluate_method: LLM_MODEL = BASE_MODEL
 
     # CreateBibfileSubgraph
-    filter_references: str = "gemini-2.5-flash"
+    filter_references: LLM_MODEL = "gemini-2.5-flash"
 
     # WriterSubgraph
-    write_paper: str = "gpt-5-2025-08-07"
-    refine_paper: str = "o3-2025-04-16"
+    write_paper: LLM_MODEL = BASE_MODEL
+    refine_paper: LLM_MODEL = BASE_MODEL
 
-    # GenerateLatexSubgraph
-    convert_to_latex: str = "gpt-5-2025-08-07"
+    # LatexSubgraph
+    convert_to_latex: LLM_MODEL = BASE_MODEL
 
-    # GenerateHtmlSubgraph
-    convert_to_html: str = "gpt-5-2025-08-07"
+    # HtmlSubgraph
+    convert_to_html: LLM_MODEL = BASE_MODEL
 
 
 class Settings(BaseSettings):
