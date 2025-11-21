@@ -111,7 +111,7 @@ class LLMMappingConfig(BaseModel):
     validate_experiment_code: LLM_MODEL = CODING_MODEL
 
     # AnalyticSubgraph
-    analytic_node: LLM_MODEL = BASE_MODEL
+    analyze_experiment: LLM_MODEL = BASE_MODEL
     evaluate_method: LLM_MODEL = BASE_MODEL
 
     # CreateBibfileSubgraph
