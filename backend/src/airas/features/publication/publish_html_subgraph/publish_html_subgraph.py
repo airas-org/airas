@@ -2,7 +2,6 @@ import logging
 import time
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -79,7 +78,7 @@ class PublishHtmlSubgraph(BaseSubgraph):
             "github_pages_url": github_pages_url,
         }
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(PublishHtmlSubgraphState)
         graph_builder.add_node("upload_html", self._upload_html)
         graph_builder.add_node("prepare_images_for_html", self._prepare_images_for_html)

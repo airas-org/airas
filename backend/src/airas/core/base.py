@@ -3,15 +3,13 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, TypedDict
 
-from langgraph.graph.graph import CompiledGraph
-
 
 class BaseSubgraph(ABC):
     InputState: type[TypedDict]
     OutputState: type[TypedDict]
 
     @abstractmethod
-    def build_graph(self) -> CompiledGraph: ...
+    def build_graph(self): ...
 
     def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
         return asyncio.run(self.arun(state, config=config))

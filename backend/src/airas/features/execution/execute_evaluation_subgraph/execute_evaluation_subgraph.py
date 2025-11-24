@@ -1,7 +1,6 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -77,7 +76,7 @@ class ExecuteEvaluationSubgraph(BaseSubgraph):
         )
         return {"research_session": research_session}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(ExecuteEvaluationSubgraphState)
 
         graph_builder.add_node("execute_evaluation", self._execute_evaluation)

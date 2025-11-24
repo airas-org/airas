@@ -1,7 +1,6 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -96,7 +95,7 @@ class EvaluatePaperResultsSubgraph(BaseSubgraph):
             "is_better_than_baseline": is_better_than_baseline,
         }
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(EvaluatePaperResultsSubgraphState)
         graph_builder.add_node("evaluate_paper_results", self._evaluate_paper_results)
 

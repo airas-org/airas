@@ -2,7 +2,6 @@ import json
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -92,7 +91,7 @@ class ReviewPaperSubgraph(BaseSubgraph):
         )
         return review_result
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(ReviewPaperSubgraphState)
         graph_builder.add_node("review_paper", self._review_paper)
 

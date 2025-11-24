@@ -2,7 +2,6 @@ import logging
 from typing import Any
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -92,7 +91,7 @@ class JudgeExecutionSubgraph(BaseSubgraph):
             "is_experiment_successful": is_experiment_successful,
         }
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(JudgeExecutionSubgraphState)
         graph_builder.add_node("judge_execution", self._judge_execution)
 

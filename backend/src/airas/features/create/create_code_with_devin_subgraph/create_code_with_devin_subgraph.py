@@ -1,7 +1,6 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -91,7 +90,7 @@ class CreateCodeWithDevinSubgraph(BaseSubgraph):
             return {"push_completion": False}
         return {"push_completion": True}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(CreateCodeWithDevinSubgraphState)
         graph_builder.add_node("init_state", self._init_state)
         graph_builder.add_node(
