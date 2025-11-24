@@ -1,7 +1,6 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -114,7 +113,7 @@ class GenerateHtmlSubgraph(BaseSubgraph):
         )
         return {"full_html": full_html}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(GenerateHtmlSubgraphState)
         graph_builder.add_node("convert_to_html", self._convert_to_html)
         graph_builder.add_node(

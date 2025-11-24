@@ -2,7 +2,6 @@ import logging
 from typing import cast
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -183,7 +182,7 @@ class CreateCodeSubgraph(BaseSubgraph):
         )
         return "generate_experiment_code"
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(CreateCodeSubgraphState)
         graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node("generate_run_config", self._generate_run_config)

@@ -2,7 +2,6 @@ import logging
 from typing import cast
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -113,7 +112,7 @@ class PublishLatexSubgraph(BaseSubgraph):
         )
         return {"is_compiled": is_compiled}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(PublishLatexSubgraphState)
 
         graph_builder.add_node("retrieve_latex_template", self._retrieve_latex_template)

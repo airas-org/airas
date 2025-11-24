@@ -2,7 +2,6 @@ import logging
 from typing import cast
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -141,7 +140,7 @@ class CreateExperimentalDesignSubgraph(BaseSubgraph):
         research_session.current_iteration.experiment_runs = experiment_runs
         return {"research_session": research_session}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(CreateExperimentalDesignState)
         graph_builder.add_node(
             "generate_experiment_design", self._generate_experiment_design

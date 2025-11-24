@@ -4,7 +4,6 @@ import logging
 from typing import Any
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -66,7 +65,7 @@ class GithubDownloadSubgraph(BaseSubgraph):
             "research_history": research_history,
         }
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         sg = StateGraph(GithubDownloadSubgraphState)
         sg.add_node("github_download", self._github_download)
 

@@ -2,7 +2,6 @@ import logging
 from typing import Any
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -135,7 +134,7 @@ class CreateBibfileSubgraph(BaseSubgraph):
         )
         return {"update_success": success}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(CreateBibfileSubgraphState)
         graph_builder.add_node("filter_references", self._filter_references)
         graph_builder.add_node("create_bibtex", self._create_bibtex)
