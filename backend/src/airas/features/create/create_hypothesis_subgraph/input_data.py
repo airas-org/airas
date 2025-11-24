@@ -1,7 +1,8 @@
+from airas.types.github import GitHubRepositoryInfo
 from airas.types.research_study import ResearchStudy
 
-generate_hypothesis_subgraph_input_data = {
-    "research_objective": "Deep Learning for Natural Language Processing",
+create_hypothesis_subgraph_input_data = {
+    "research_topic": "Deep Learning for Natural Language Processing",
     "research_study_list": [
         ResearchStudy(
             title="Attention is All You Need",
@@ -16,4 +17,9 @@ generate_hypothesis_subgraph_input_data = {
             abstract="Recent work has demonstrated substantial gains on many NLP tasks and benchmarks by pre-training on a large corpus of text followed by fine-tuning on a specific task. While typically task-agnostic in architecture, this method still requires task-specific fine-tuning datasets of thousands or tens of thousands of examples.",
         ),
     ],
+    "github_repository_info": GitHubRepositoryInfo(
+        github_owner="auto-res2",
+        repository_name="airas-20251009-055033-matsuzawa",
+        branch_name="main",
+    ),
 }

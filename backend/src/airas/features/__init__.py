@@ -5,6 +5,9 @@ from .create.create_code_subgraph.create_code_subgraph import CreateCodeSubgraph
 from .create.create_experimental_design_subgraph.create_experimental_design_subgraph import (
     CreateExperimentalDesignSubgraph,
 )
+from .create.create_hypothesis_subgraph.create_hypothesis_subgraph import (
+    CreateHypothesisSubgraph,
+)
 from .create.create_method_subgraph.create_method_subgraph import (
     CreateMethodSubgraph,
 )
@@ -13,9 +16,6 @@ from .execution.execute_evaluation_subgraph.execute_evaluation_subgraph import (
 )
 from .execution.execute_experiment_subgraph.execute_experiment_subgraph import (
     ExecuteExperimentSubgraph,
-)
-from .generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph import (
-    GenerateHypothesisSubgraph,
 )
 from .github.create_branch_subgraph import CreateBranchSubgraph
 from .github.github_download_subgraph import GithubDownloadSubgraph
@@ -76,7 +76,6 @@ __all__ = [
     "ExecuteExperimentSubgraph",
     "ExtractReferenceTitlesSubgraph",
     "GenerateHtmlSubgraph",
-    "GenerateHypothesisSubgraph",
     "GenerateLatexSubgraph",
     "GenerateQueriesSubgraph",
     "GetPaperTitlesFromDBSubgraph",

@@ -24,10 +24,10 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "extract_code_in_readme": BASE_MODEL,
 
     # --- features/create ---
-    # GenerateHypothesisSubgraph
-    "generate_hypothesis": BASE_MODEL,
+    # CreateHypothesisSubgraph
+    "generate_idea_and_research_summary": BASE_MODEL,
     "evaluate_novelty_and_significance": BASE_MODEL,
-    "refine_hypothesis": BASE_MODEL,
+    "refine_idea_and_research_summary": BASE_MODEL,
     "search_arxiv_id_from_title": BASE_MODEL,
     # CreateMethodSubgraph
     "improve_method": BASE_MODEL,

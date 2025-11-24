@@ -1,6 +1,6 @@
 from jinja2 import Environment
 
-from airas.features.generators.generate_hypothesis_subgraph.prompts.evaluate_novelty_and_significance_prompt import (
+from airas.features.create.create_hypothesis_subgraph.prompt.evaluate_novelty_and_significance_prompt import (
     evaluate_novelty_and_significance_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
@@ -16,7 +16,7 @@ from airas.types.research_study import ResearchStudy
 
 
 async def evaluate_novelty_and_significance(
-    research_objective: str,
+    research_topic: str,
     research_study_list: list[ResearchStudy],
     research_hypothesis: ResearchHypothesis,
     llm_name: LLM_MODEL,
@@ -26,7 +26,7 @@ async def evaluate_novelty_and_significance(
 
     template = env.from_string(evaluate_novelty_and_significance_prompt)
     data = {
-        "research_objective": research_objective,
+        "research_topic": research_topic,
         "research_study_list": ResearchStudy.format_list(research_study_list),
         "new_hypothesis": research_hypothesis.to_formatted_json(),
     }
@@ -38,7 +38,7 @@ async def evaluate_novelty_and_significance(
     )
 
     if output is None:
-        raise ValueError("No response from LLM in evaluate_novelty_and_significance.")
+        raise ValueError("No response from LLM in idea_generator.")
     return EvaluatedHypothesis(
         hypothesis=research_hypothesis, evaluation=HypothesisEvaluation(**output)
     )
