@@ -1,35 +1,13 @@
-from typing_extensions import TypedDict
+from typing import Any
 
-from airas.types.research_study import ResearchStudy
-
-
-class GetPaperTitleRequestBody(TypedDict):
-    queries: list[str]
+from pydantic import BaseModel
 
 
-class GetPaperTitleResponseBody(TypedDict):
-    research_study_list: list[ResearchStudy]
+class RetrievePaperSubgraphRequestBody(BaseModel):
+    query_list: list[str]
+    max_results_per_query: int
 
 
-class RetrievePaperContentRequestBody(TypedDict):
-    research_study_list: list[ResearchStudy]
-
-
-class RetrievePaperContentResponseBody(TypedDict):
-    research_study_list: list[ResearchStudy]
-
-
-class SummarizePaperRequestBody(TypedDict):
-    research_study_list: list[ResearchStudy]
-
-
-class SummarizePaperResponseBody(TypedDict):
-    research_study_list: list[ResearchStudy]
-
-
-class RetrieveCodeRequestBody(TypedDict):
-    research_study_list: list[ResearchStudy]
-
-
-class RetrieveCodeResponseBody(TypedDict):
-    research_study_list: list[ResearchStudy]
+class RetrievePaperSubgraphResponseBody(BaseModel):
+    arxiv_info_list: list[list[Any]]
+    execution_time: dict[str, dict[str, list[float]]]

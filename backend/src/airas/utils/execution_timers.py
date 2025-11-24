@@ -9,7 +9,7 @@ from typing_extensions import TypedDict
 logger = getLogger(__name__)
 
 
-class ExecutionTimeState(TypedDict):
+class ExecutionTimeState(TypedDict, total=False):
     execution_time: dict[str, dict[str, list[float]]]
 
 
@@ -38,7 +38,7 @@ def time_node(
 
                 subgraph_log[actual_node] = durations
                 execution_time[subgraph_name] = subgraph_log
-                state["execution_time"] = execution_time
+                result["execution_time"] = execution_time
 
                 logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
                 return result
@@ -64,7 +64,7 @@ def time_node(
 
                 subgraph_log[actual_node] = durations
                 execution_time[subgraph_name] = subgraph_log
-                state["execution_time"] = execution_time
+                result["execution_time"] = execution_time
 
                 logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
                 return result
