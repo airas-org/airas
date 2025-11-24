@@ -2,8 +2,8 @@ generate_simple_hypothesis_prompt = """\
 You are a researcher in machine learning. Based on the instructions below, please generate a simple new research method with minimal modifications to existing approaches.
 
 # Instructions:
-- Read the research topic described below:
-    {{ research_topic }}
+- Read the research objective described below:
+    {{ research_objective }}
 - A list of related prior studies is provided. Each entry contains a summary of its title, main contributions, methodologies, results, and limitations:
     {{ research_study_list }}
 - Identify the most promising existing method that can be improved with minimal modifications to its objective function or core algorithm.

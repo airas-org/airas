@@ -2,8 +2,8 @@ evaluate_novelty_and_significance_prompt = """\
 You are an accomplished researcher in machine learning. You are considering a new hypothesis described in "New Hypothesis" for the research theme provided in "Research Topic". "Related Works" is a list of research papers that are highly relevant to this new hypothesis.
 Based on the following instructions, output the reasons for the novelty and significance of the newly proposed hypothesis, and quantitatively evaluate them.
 
-# Research Topic
-{{ research_topic }}
+# Research Objective
+{{ research_objective }}
 
 # New Hypothesis
 {{ new_hypothesis }}

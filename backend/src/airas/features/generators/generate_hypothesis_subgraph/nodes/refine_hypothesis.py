@@ -1,6 +1,6 @@
 from jinja2 import Environment
 
-from airas.features.create.create_hypothesis_subgraph.prompt.refine_hypothesis_prompt import (
+from airas.features.generators.generate_hypothesis_subgraph.prompts.refine_hypothesis_prompt import (
     refine_hypothesis_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
@@ -17,7 +17,7 @@ from airas.types.research_study import ResearchStudy
 async def refine_hypothesis(
     llm_name: LLM_MODEL,
     llm_client: LLMFacadeClient,
-    research_topic: str,
+    research_objective: str,
     evaluated_hypothesis_history: list[EvaluatedHypothesis],
     research_study_list: list[ResearchStudy],
 ) -> ResearchHypothesis:
@@ -32,7 +32,7 @@ async def refine_hypothesis(
 
     template = env.from_string(refine_hypothesis_prompt)
     data = {
-        "research_topic": research_topic,
+        "research_objective": research_objective,
         "current_hypothesis": latest.hypothesis.to_formatted_json(),
         "novelty_reason": latest.evaluation.novelty_reason,
         "significance_reason": latest.evaluation.significance_reason,

@@ -2,7 +2,7 @@ generate_hypothesis_prompt = """\
 You are an accomplished researcher in machine learning. Based on the instructions below, please generate a new research idea.
 # Instructions:
 - Carefully read the research topic described below and understand the problems this research should address as well as the broader impact it aims to achieve.
-    {{ research_topic }}
+    {{ research_objective }}
 - A list of related prior studies is provided. Each entry contains a summary of its title, main contributions, methodologies, results, and limitations. Read through these summaries to understand the direction and focus of research in this field.
     {{ research_study_list }}
 - Pay attention to how each study builds upon previous work and which limitations remain unresolved. Organize this information to form a clear picture of the current research landscape.
