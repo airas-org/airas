@@ -14,7 +14,7 @@ from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.retrieve_text
     retrieve_text_from_url,
 )
 from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_arxiv_by_id import (
-    search_arxiv_by_id,
+    search_arxiv_info_by_id,
 )
 from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_arxiv_id_from_title import (
     search_arxiv_id_from_title,
@@ -150,7 +150,7 @@ class RetrievePaperContentSubgraph(BaseSubgraph):
     ) -> dict[str, list[ResearchStudy]]:
         research_study_list = state["tmp_research_study_list"]
 
-        research_study_list = search_arxiv_by_id(
+        research_study_list = search_arxiv_info_by_id(
             research_study_list, arxiv_client=self.arxiv_client
         )
         return {"tmp_research_study_list": research_study_list}

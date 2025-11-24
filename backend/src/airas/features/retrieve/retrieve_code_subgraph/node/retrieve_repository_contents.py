@@ -111,3 +111,21 @@ def retrieve_repository_contents(
         code_str_list.append(content)
 
     return code_str_list
+
+
+def retrieve_repository_contents_from_url_groups(
+    github_url_list: list[list[str]],
+    github_client: GithubClient,
+) -> list[list[str]]:
+    github_code_list: list[list[str]] = []
+
+    for group_idx, url_group in enumerate(github_url_list):
+        code_group: list[str] = []
+        for url_idx, github_url in enumerate(url_group):
+            title = f"GitHub Repository {group_idx + 1}-{url_idx + 1}"
+            code_group.append(
+                _retrieve_single_repository_contents(github_client, github_url, title)
+            )
+        github_code_list.append(code_group)
+
+    return github_code_list

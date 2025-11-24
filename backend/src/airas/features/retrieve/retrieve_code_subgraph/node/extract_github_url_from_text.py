@@ -132,3 +132,22 @@ async def extract_github_url_from_text(
     await asyncio.gather(*tasks)
 
     return research_study_list
+
+
+def extract_github_urls_from_text_groups(
+    arxiv_full_text_list: list[list[str]], github_client: GithubClient
+) -> list[list[str]]:
+    github_url_list: list[list[str]] = []
+
+    for text_group in arxiv_full_text_list:
+        group_urls: list[str] = []
+        group_seen: set[str] = set()
+        for text in text_group:
+            for url in _extract_github_urls_from_text(text, github_client):
+                if url in group_seen:
+                    continue
+                group_seen.add(url)
+                group_urls.append(url)
+        github_url_list.append(group_urls)
+
+    return github_url_list

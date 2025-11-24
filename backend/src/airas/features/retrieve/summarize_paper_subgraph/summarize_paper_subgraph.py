@@ -20,7 +20,7 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.research_study import ResearchStudy
+from airas.types.research_study import LLMExtractedInfo, ResearchStudy
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -81,12 +81,24 @@ class SummarizePaperSubgraph(BaseSubgraph):
     async def _summarize_paper(
         self, state: SummarizePaperState
     ) -> dict[str, list[ResearchStudy]]:
-        research_study_list = await summarize_paper(
+        research_study_list = state["research_study_list"]
+        arxiv_full_text_list = [
+            [study.full_text or ""] for study in research_study_list
+        ]
+
+        llm_outputs = await summarize_paper(
             llm_name=self.llm_mapping.summarize_paper,
             llm_client=self.llm_client,
             prompt_template=summarize_paper_prompt,
-            research_study_list=state["research_study_list"],
+            arxiv_full_text_list=arxiv_full_text_list,
         )
+        for study, outputs in zip(research_study_list, llm_outputs, strict=False):
+            if not outputs:
+                continue
+            summary = outputs[0]
+            if summary is None:
+                continue
+            study.llm_extracted_info = LLMExtractedInfo(**summary.model_dump())
         return {"research_study_list": research_study_list}
 
     def build_graph(self):
@@ -100,7 +112,7 @@ class SummarizePaperSubgraph(BaseSubgraph):
 
 async def main():
     input_data = summarize_paper_subgraph_input_data
-    result = await SummarizePaperSubgraph().arun(input_data)
+    result = await SummarizePaperSubgraph(llm_client=LLMFacadeClient()).arun(input_data)
     print(f"result: {result}")
 
 

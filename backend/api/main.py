@@ -15,11 +15,9 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
-        await app.state.container.close()
+        await app.state.container.shutdown_resources()
         app.state.container.unwire()
 
 
 app = FastAPI(title="AIRAS API", version="0.0.1", lifespan=lifespan)
 app.include_router(papers.router, prefix="/airas/v1")
-# app.include_router(create.router, prefix="/airas/v1")
-# app.include_router(github.router, prefix="/airas/v1")

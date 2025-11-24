@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Any, cast
 
 from jinja2 import Environment, Template
 from pydantic import BaseModel
@@ -8,9 +9,10 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.types.research_study import LLMExtractedInfo, ResearchStudy
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_FIELD_VALUE = "Not mentioned"
 
 
 class LLMOutput(BaseModel):
@@ -21,20 +23,34 @@ class LLMOutput(BaseModel):
     future_research_directions: str
 
 
-async def _summarize_single_study(
-    research_study: ResearchStudy,
+def _default_llm_output() -> LLMOutput:
+    return LLMOutput(
+        main_contributions=DEFAULT_FIELD_VALUE,
+        methodology=DEFAULT_FIELD_VALUE,
+        experimental_setup=DEFAULT_FIELD_VALUE,
+        limitations=DEFAULT_FIELD_VALUE,
+        future_research_directions=DEFAULT_FIELD_VALUE,
+    )
+
+
+async def _summarize_single_text(
+    paper_text: str,
     rendered_template: Template,
     llm_client: LLMFacadeClient,
     llm_name: LLM_MODEL,
-) -> None:
-    if not research_study.full_text:
+    group_idx: int,
+    paper_idx: int,
+) -> tuple[int, int, LLMOutput]:
+    if not paper_text.strip():
         logger.warning(
-            f"No full text available for '{research_study.title or 'N/A'}', skipping summarization."
+            "No full text available for group %s, index %s; skipping summarization.",
+            group_idx,
+            paper_idx,
         )
-        return
+        return group_idx, paper_idx, _default_llm_output()
 
     data = {
-        "paper_text": research_study.full_text,
+        "paper_text": paper_text,
     }
     messages = rendered_template.render(data)
 
@@ -44,29 +60,66 @@ async def _summarize_single_study(
             data_model=LLMOutput,
             llm_name=llm_name,
         )
-        logger.info(f"Successfully summarized '{research_study.title or 'N/A'}'")
+        if output is None:
+            logger.error(
+                "LLM returned no data (group=%s, index=%s)",
+                group_idx,
+                paper_idx,
+            )
+            return group_idx, paper_idx, _default_llm_output()
+        logger.info(
+            "Successfully summarized paper (group=%s, index=%s)",
+            group_idx,
+            paper_idx,
+        )
+        output_payload: dict[str, Any]
+        if isinstance(output, BaseModel):
+            output_payload = cast(BaseModel, output).model_dump()
+        else:
+            output_payload = cast(dict[str, Any], output)
+        return group_idx, paper_idx, LLMOutput(**output_payload)
     except Exception as e:
-        logger.error(f"Failed to summarize '{research_study.title or 'N/A'}': {e}")
-        return
-
-    # 生成結果を study に反映
-    research_study.llm_extracted_info = LLMExtractedInfo(**output)
+        logger.error(
+            "Failed to summarize paper (group=%s, index=%s): %s",
+            group_idx,
+            paper_idx,
+            e,
+        )
+        return group_idx, paper_idx, _default_llm_output()
 
 
 async def summarize_paper(
     llm_name: LLM_MODEL,
     llm_client: LLMFacadeClient,
     prompt_template: str,
-    research_study_list: list[ResearchStudy],
-) -> list[ResearchStudy]:
+    arxiv_full_text_list: list[list[str]],
+) -> list[list[LLMOutput]]:
     env = Environment()
     template = env.from_string(prompt_template)
 
-    tasks = [
-        _summarize_single_study(research_study, template, llm_client, llm_name)
-        for research_study in research_study_list
+    summaries: list[list[LLMOutput]] = [
+        [_default_llm_output() for _ in text_group]
+        for text_group in arxiv_full_text_list
     ]
 
-    await asyncio.gather(*tasks)
+    tasks = [
+        _summarize_single_text(
+            paper_text=paper_text,
+            rendered_template=template,
+            llm_client=llm_client,
+            llm_name=llm_name,
+            group_idx=group_idx,
+            paper_idx=paper_idx,
+        )
+        for group_idx, text_group in enumerate(arxiv_full_text_list)
+        for paper_idx, paper_text in enumerate(text_group)
+    ]
 
-    return research_study_list
+    if not tasks:
+        return summaries
+
+    results = await asyncio.gather(*tasks)
+    for group_idx, paper_idx, llm_output in results:
+        summaries[group_idx][paper_idx] = llm_output
+
+    return summaries

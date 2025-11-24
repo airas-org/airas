@@ -168,7 +168,7 @@ class Container(containers.DeclarativeContainer):
     arxiv_client: providers.Singleton[ArxivClient] = providers.Singleton(
         ArxivClient,
         sync_session=sync_session,
-        async_session=None,
+        async_session=async_session,
     )
     semantic_scholar_client: providers.Singleton[SemanticScholarClient] = (
         providers.Singleton(

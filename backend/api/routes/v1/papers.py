@@ -3,6 +3,7 @@ from typing import Annotated
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 
+from airas.services.api_client.github_client import GithubClient
 from api.schemas.papers import (
     RetrievePaperSubgraphRequestBody,
     RetrievePaperSubgraphResponseBody,
@@ -25,17 +26,21 @@ async def get_paper_title(
         LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
     ],
     arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
+    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
 ) -> RetrievePaperSubgraphResponseBody:
     result = (
         await RetrievePaperSubgraph(
             llm_client=llm_client,
             arxiv_client=arxiv_client,
+            github_client=github_client,
             max_results_per_query=request.max_results_per_query,
         )
         .build_graph()
         .ainvoke(request.model_dump())
     )
     return RetrievePaperSubgraphResponseBody(
-        arxiv_info_list=result["arxiv_info_list"],
+        arxiv_full_text_list=result["arxiv_full_text_list"],
+        arxiv_summary_list=result.get("arxiv_summary_list", []),
+        github_code_list=result.get("github_code_list", []),
         execution_time=result["execution_time"],
     )

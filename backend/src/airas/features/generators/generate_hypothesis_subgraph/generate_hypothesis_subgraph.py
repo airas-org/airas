@@ -23,7 +23,7 @@ from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.retrieve_text
     retrieve_text_from_url,
 )
 from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_arxiv_by_id import (
-    search_arxiv_by_id,
+    search_arxiv_info_by_id,
 )
 from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_arxiv_id_from_title import (
     search_arxiv_id_from_title,
@@ -193,7 +193,7 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
     def _search_arxiv_by_id(
         self, state: GenerateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
-        related_research_study_list = search_arxiv_by_id(
+        related_research_study_list = search_arxiv_info_by_id(
             arxiv_client=self.arxiv_client,
             research_study_list=state["related_research_study_list"],
         )
