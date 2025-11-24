@@ -1,7 +1,6 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -127,7 +126,7 @@ class AnalyzeExperimentSubgraph(BaseSubgraph):
         research_session = select_best_iteration(state["research_session"])
         return {"research_session": research_session}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(AnalyzeExperimentSubgraphState)
 
         graph_builder.add_node("analyze_experiment", self._analyze_experiment)

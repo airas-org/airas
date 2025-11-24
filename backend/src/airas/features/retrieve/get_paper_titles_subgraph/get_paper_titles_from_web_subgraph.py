@@ -1,7 +1,6 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -93,7 +92,7 @@ class GetPaperTitlesFromWebSubgraph(BaseSubgraph):
         research_study_list = [ResearchStudy(title=title) for title in (titles or [])]
         return {"research_study_list": research_study_list}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(GetPaperTitlesFromWebState)
         graph_builder.add_node("openai_websearch_titles", self._openai_websearch_titles)
 

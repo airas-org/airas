@@ -2,7 +2,6 @@ import logging
 from typing import Any
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -116,7 +115,7 @@ class GetPaperTitlesFromDBSubgraph(BaseSubgraph):
             return "qdrant"
         return "airas_db"
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(GetPaperTitlesFromDBState)
         graph_builder.add_node(
             "get_paper_titles_from_airas_db", self._get_paper_titles_from_airas_db

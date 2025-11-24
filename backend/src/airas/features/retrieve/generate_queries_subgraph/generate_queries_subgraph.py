@@ -2,7 +2,6 @@ import logging
 from typing import Annotated
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
@@ -94,7 +93,7 @@ class GenerateQueriesSubgraph(BaseSubgraph):
         )
         return {"queries": generated_queries}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(GenerateQueriesState)
         graph_builder.add_node("generate_queries", self._generate_queries)
         graph_builder.add_edge(START, "generate_queries")

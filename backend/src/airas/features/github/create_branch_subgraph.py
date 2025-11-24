@@ -2,7 +2,6 @@ import argparse
 from logging import getLogger
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -81,7 +80,7 @@ class CreateBranchSubgraph(BaseSubgraph):
             raise RuntimeError("Failed to create branch")
         return {"github_repository_info": new_branch_info}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         sg = StateGraph(CreateBranchSubgraphState)
         sg.add_node("find_commit_sha", self._find_commit_sha)
         sg.add_node("create_branch", self._create_branch)

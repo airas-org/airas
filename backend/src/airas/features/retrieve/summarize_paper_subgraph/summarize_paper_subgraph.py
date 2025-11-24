@@ -2,7 +2,6 @@ import asyncio
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -90,7 +89,7 @@ class SummarizePaperSubgraph(BaseSubgraph):
         )
         return {"research_study_list": research_study_list}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(SummarizePaperState)
         graph_builder.add_node("summarize_paper", self._summarize_paper)
 

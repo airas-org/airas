@@ -2,7 +2,6 @@ import asyncio
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -134,7 +133,7 @@ class RetrieveCodeSubgraph(BaseSubgraph):
         )
         return {"research_study_list": research_study_list}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(RetrieveCodeState)
         graph_builder.add_node(
             "extract_github_url_from_text", self._extract_github_url_from_text

@@ -1,7 +1,6 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -98,7 +97,7 @@ class EvaluateExperimentalConsistencySubgraph(BaseSubgraph):
         )
         return {"new_method": new_method}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(EvaluateExperimentalConsistencySubgraphState)
         graph_builder.add_node(
             "evaluate_experimental_consistency", self._evaluate_experimental_consistency

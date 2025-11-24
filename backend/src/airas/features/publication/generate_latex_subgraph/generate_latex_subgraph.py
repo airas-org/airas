@@ -1,7 +1,6 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -96,7 +95,7 @@ class GenerateLatexSubgraph(BaseSubgraph):
         )
         return {"latex_formatted_paper_content": latex_formatted_paper_content}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(GenerateLatexSubgraphState)
         graph_builder.add_node(
             "convert_placeholders_to_citations", self._convert_placeholders_to_citations

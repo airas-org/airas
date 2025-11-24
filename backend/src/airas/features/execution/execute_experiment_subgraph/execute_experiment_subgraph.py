@@ -2,7 +2,6 @@ import logging
 from typing import cast
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -197,7 +196,7 @@ class ExecuteExperimentSubgraph(BaseSubgraph):
             logger.warning("Trial experiment failed, retrying...")
             return "execute_trial_experiment"
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(ExecutorSubgraphState)
 
         graph_builder.add_node(

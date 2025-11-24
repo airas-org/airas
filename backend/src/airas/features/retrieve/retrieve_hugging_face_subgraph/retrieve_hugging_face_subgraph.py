@@ -1,7 +1,6 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -148,7 +147,7 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
         )
         return {"research_session": research_session}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(RetrieveHuggingFaceState)
         graph_builder.add_node("search_hugging_face", self._search_hugging_face)
         graph_builder.add_node("select_resources", self._select_resources)
