@@ -1,7 +1,6 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -60,7 +59,7 @@ class ReadmeSubgraph(BaseSubgraph):
         )
         return {"readme_upload_result": readme_upload_result}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(ReadmeSubgraphState)
         graph_builder.add_node("readme_upload_node", self._readme_upload_node)
 

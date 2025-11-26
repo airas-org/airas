@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Any
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -94,7 +93,7 @@ class GithubUploadSubgraph(BaseSubgraph):
         )
         return {"is_github_upload_success": is_github_upload_success}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         sg = StateGraph(GithubUploadSubgraphState)
         sg.add_node("github_download", self._github_download_node)
         sg.add_node("merge_history", self._merge_history_node)

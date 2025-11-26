@@ -1,7 +1,6 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -93,7 +92,7 @@ class PushCodeSubgraph(BaseSubgraph):
         )
         return {}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(PushCodeSubgraphState)
         graph_builder.add_node("push_files_to_branch", self._push_files_to_branch)
         graph_builder.add_node(

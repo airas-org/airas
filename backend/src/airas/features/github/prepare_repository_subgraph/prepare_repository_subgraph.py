@@ -4,7 +4,6 @@ import time
 from typing import Literal
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -161,7 +160,7 @@ class PrepareRepositorySubgraph(BaseSubgraph):
         else:
             return "Skip"
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(PrepareRepositoryState)
 
         graph_builder.add_node(

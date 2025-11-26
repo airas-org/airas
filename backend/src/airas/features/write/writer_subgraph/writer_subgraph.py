@@ -1,7 +1,6 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -131,7 +130,7 @@ class WriterSubgraph(BaseSubgraph):
             return "end"
         return "refine"
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(WriterSubgraphState)
         graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node("generate_note", self._generate_note)
