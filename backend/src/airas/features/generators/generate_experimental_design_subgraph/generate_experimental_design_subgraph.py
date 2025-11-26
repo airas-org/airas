@@ -1,7 +1,6 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -108,8 +107,12 @@ class GenerateExperimentalDesignSubgraph(BaseSubgraph):
 
         return {"experimental_design": experimental_design}
 
-    def build_graph(self) -> CompiledGraph:
-        graph_builder = StateGraph(GenerateExperimentalDesignState)
+    def build_graph(self):
+        graph_builder = StateGraph(
+            GenerateExperimentalDesignState,
+            input_schema=GenerateExperimentalDesignSubgraphInputState,
+            output_schema=GenerateExperimentalDesignSubgraphOutputState,
+        )
         graph_builder.add_node(
             "generate_experiment_design", self._generate_experiment_design
         )
