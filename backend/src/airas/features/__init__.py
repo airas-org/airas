@@ -20,6 +20,7 @@ from .generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph impor
 from .github.create_branch_subgraph import CreateBranchSubgraph
 from .github.github_download_subgraph import GithubDownloadSubgraph
 from .github.github_upload_subgraph import GithubUploadSubgraph
+from .github.poll_workflow_subgraph.poll_workflow_subgraph import PollWorkflowSubgraph
 from .github.prepare_repository_subgraph.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,
 )
@@ -83,6 +84,7 @@ __all__ = [
     "GetPaperTitlesFromWebSubgraph",
     "GithubDownloadSubgraph",
     "GithubUploadSubgraph",
+    "PollWorkflowSubgraph",
     "PrepareRepositorySubgraph",
     "PublishHtmlSubgraph",
     "PublishLatexSubgraph",
