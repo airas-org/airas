@@ -3,7 +3,7 @@ from logging import getLogger
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.features.create.create_code_subgraph.prompt.validate_experiment_code_prompt import (
+from airas.features.generators.generate_code_subgraph.prompts.validate_experiment_code_prompt import (
     validate_experiment_code_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
@@ -11,8 +11,10 @@ from airas.services.api_client.llm_client.openai_client import (
     OPENAI_MODEL,
     OpenAIParams,
 )
-from airas.types.research_session import ResearchSession
-from airas.types.wandb import WandbInfo
+from airas.types.experiment_code import ExperimentCode
+from airas.types.experimental_design import ExperimentalDesign
+from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.wandb import WandbConfig
 
 logger = getLogger(__name__)
 
@@ -25,8 +27,10 @@ class ValidationOutput(BaseModel):
 async def validate_experiment_code(
     llm_name: OPENAI_MODEL,
     llm_client: LLMFacadeClient,
-    research_session: ResearchSession,
-    wandb_info: WandbInfo | None = None,
+    research_hypothesis: ResearchHypothesis,
+    experimental_design: ExperimentalDesign,
+    experiment_code: ExperimentCode,
+    wandb_config: WandbConfig,
     prompt_template: str = validate_experiment_code_prompt,
 ) -> tuple[bool, str]:
     env = Environment()
@@ -34,8 +38,10 @@ async def validate_experiment_code(
 
     messages = template.render(
         {
-            "research_session": research_session,
-            "wandb_info": wandb_info.model_dump() if wandb_info else None,
+            "research_hypothesis": research_hypothesis,
+            "experimental_design": experimental_design,
+            "experiment_code": experiment_code,
+            "wandb_config": wandb_config.model_dump(),
         }
     )
 

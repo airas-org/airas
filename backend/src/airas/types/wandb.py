@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 
-class WandbInfo(BaseModel):
+class WandbConfig(BaseModel):
     entity: str = Field(..., description="Wandb entity (username or team name)")
     project: str = Field(..., description="Wandb project name")
     run_ids: list[str] | None = Field(
