@@ -23,7 +23,7 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "select_resources": BASE_MODEL,
     "extract_code_in_readme": BASE_MODEL,
 
-    # --- features/create ---
+    # --- features/generators ---
     # GenerateHypothesisSubgraph
     "generate_hypothesis": BASE_MODEL,
     "evaluate_novelty_and_significance": BASE_MODEL,
@@ -31,8 +31,8 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "search_arxiv_id_from_title": BASE_MODEL,
     # CreateMethodSubgraph
     "improve_method": BASE_MODEL,
-    # CreateExperimentalDesignSubgraph
-    "generate_experiment_design": BASE_MODEL,
+    # GenerateExperimentalDesignSubgraph
+    "generate_experimental_design": BASE_MODEL,
     # CreateCodeSubgraph
     "generate_run_config": BASE_MODEL,
     "generate_experiment_code": BASE_MODEL,

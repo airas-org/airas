@@ -1,6 +1,7 @@
 from .analysis.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
+from .create.create_code_subgraph.create_code_subgraph import CreateCodeSubgraph
 from .create.create_method_subgraph.create_method_subgraph import (
     CreateMethodSubgraph,
 )
@@ -9,9 +10,6 @@ from .execution.execute_evaluation_subgraph.execute_evaluation_subgraph import (
 )
 from .execution.execute_experiment_subgraph.execute_experiment_subgraph import (
     ExecuteExperimentSubgraph,
-)
-from .generators.generate_code_subgraph.generate_code_subgraph import (
-    GenerateCodeSubgraph,
 )
 from .generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignSubgraph,
@@ -77,7 +75,6 @@ __all__ = [
     "ExecuteExperimentSubgraph",
     "ExtractReferenceTitlesSubgraph",
     "GenerateExperimentalDesignSubgraph",
-    "GenerateCodeSubgraph",
     "GenerateHtmlSubgraph",
     "GenerateHypothesisSubgraph",
     "GenerateLatexSubgraph",
