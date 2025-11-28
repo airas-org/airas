@@ -86,13 +86,13 @@ Check if the generated experiment code meets ALL of the following requirements:
      * Export aggregated metrics to: `{results_dir}/comparison/aggregated_metrics.json` with the following structure:
       ```json
       {
-        "primary_metric": "{{ research_session.hypothesis.primary_metric }}",
+        "primary_metric": "{{ research_hypothesis.primary_metric }}",
         "metrics": {
           "metric_name_1": {"run_id_1": value1, "run_id_2": value2, ...},
           "metric_name_2": {"run_id_1": value1, "run_id_2": value2, ...}
         },
         "best_proposed": {
-          "run_id": "proposed-iter2-model-dataset",
+          "run_id": "proposed-model-dataset",
           "value": 0.92
         },
         "best_baseline": {
@@ -103,12 +103,12 @@ Check if the generated experiment code meets ALL of the following requirements:
       }
       ```
       The structure must include:
-      - "primary_metric": The primary evaluation metric name from the hypothesis
+      - "primary_metric": The primary evaluation metric name from the hypothesis ({{ research_hypothesis.primary_metric }})
       - "metrics": All collected metrics organized by metric name, then by run_id
       - "best_proposed": The run_id and value of the proposed method with the best primary_metric performance (run_id contains "proposed")
       - "best_baseline": The run_id and value of the baseline/comparative method with the best primary_metric performance (run_id contains "comparative" or "baseline")
       - "gap": Performance gap calculated as: (best_proposed.value - best_baseline.value) / best_baseline.value * 100
-         * Must use the expected results from the hypothesis to determine metric direction (higher vs lower is better)
+         * Must use the expected results from the hypothesis ({{ research_hypothesis.expected_result }}) to determine metric direction (higher vs lower is better)
          * If the metric should be minimized, reverse the sign of the gap
          * The gap represents the percentage improvement of the proposed method over the best baseline
      * Generate comparison figures to: `{results_dir}/comparison/`
@@ -155,46 +155,27 @@ Respond with a JSON object containing:
 - `is_code_ready`: boolean - true if ALL criteria are met, false otherwise
 - `code_issue`: string - specific issues found if any criteria are not met, focusing on what needs to be fixed
 
-# Hypothesis
-{{ research_session.hypothesis }}
-
-# Current Research Method
-{{ research_session.current_iteration.method }}
+# Research Hypothesis
+{{ research_hypothesis }}
 
 # Experimental Design
-- Strategy: {{ research_session.current_iteration.experimental_design.experiment_summary }}
-- Proposed Method: {{ research_session.current_iteration.experimental_design.proposed_method }}
-- Evaluation Metrics: {{ research_session.current_iteration.experimental_design.evaluation_metrics }}
+- Summary: {{ experimental_design.experiment_summary }}
+- Proposed Method: {{ experimental_design.proposed_method }}
+- Comparative Methods: {{ experimental_design.comparative_methods }}
+- Evaluation Metrics: {{ experimental_design.evaluation_metrics }}
 
-# Experiment Runs
-{% for run in research_session.current_iteration.experiment_runs %}
-- Run ID: {{ run.run_id }}
-  Method: {{ run.method_name }}
-  Model: {{ run.model_name }}
-  Dataset: {{ run.dataset_name }}
-  {% if run.run_config %}
+# Experiment Run Configurations
+{% if experiment_code.run_configs %}
+{% for run_id, yaml_content in experiment_code.run_configs.items() %}
+- Run ID: {{ run_id }}
   Config Content:
   ```yaml
-  {{ run.run_config }}
+  {{ yaml_content }}
   ```
-  {% endif %}
 {% endfor %}
+{% endif %}
 
 # Generated Experiment Code (To be validated)
-{{ research_session.current_iteration.experimental_design.experiment_code.model_dump() | tojson }}
-
-{% if research_session.current_iteration.iteration_id > 1 and research_session.iterations|length > 0 %}
-# Reference Code from First Iteration
-
-The following code from Iteration 1 should be used as a reference to verify consistency:
-
-{{ research_session.iterations[0].experimental_design.experiment_code.model_dump() | tojson(indent=2) }}
-
-**Additional Validation for Iteration 2+**:
-- Verify that comparative/baseline methods implementation is consistent with Iteration 1
-- The core logic for comparative methods (model architecture, data preprocessing, training loop) should remain algorithmically equivalent
-- Only the proposed method should have significant changes
-- Minor differences (variable names, code structure) are acceptable, but algorithmic changes to baselines are NOT
-{% endif %}
+{{ experiment_code.model_dump() | tojson }}
 
 Analyze the experiment code thoroughly. Ensure it is complete, executable, and ready for publication-quality research experiments."""

@@ -106,13 +106,13 @@ Generate complete code for these files ONLY. Do not create any additional files 
     - Export aggregated metrics to: `{results_dir}/comparison/aggregated_metrics.json` with the following structure:
       ```json
       {
-        "primary_metric": "{{ research_session.hypothesis.primary_metric }}",
+        "primary_metric": "{{ research_hypothesis.primary_metric }}",
         "metrics": {
           "metric_name_1": {"run_id_1": value1, "run_id_2": value2, ...},
           "metric_name_2": {"run_id_1": value1, "run_id_2": value2, ...}
         },
         "best_proposed": {
-          "run_id": "proposed-iter2-model-dataset",
+          "run_id": "proposed-model-dataset",
           "value": 0.92
         },
         "best_baseline": {
@@ -123,12 +123,12 @@ Generate complete code for these files ONLY. Do not create any additional files 
       }
       ```
       The structure includes:
-      - "primary_metric": The primary evaluation metric name from the hypothesis ({{ research_session.hypothesis.primary_metric }})
+      - "primary_metric": The primary evaluation metric name from the hypothesis ({{ research_hypothesis.primary_metric }})
       - "metrics": All collected metrics organized by metric name, then by run_id
       - "best_proposed": The run_id and value of the proposed method with the best primary_metric performance (run_id contains "proposed")
       - "best_baseline": The run_id and value of the baseline/comparative method with the best primary_metric performance (run_id contains "comparative" or "baseline")
       - "gap": Performance gap calculated as: (best_proposed.value - best_baseline.value) / best_baseline.value * 100
-        * Use the expected results from the hypothesis ({{ research_session.hypothesis.expected_result }}) to determine metric direction
+        * Use the expected results from the hypothesis ({{ research_hypothesis.expected_result }}) to determine metric direction
         * If the metric should be minimized (like "loss", "perplexity", "error"), reverse the sign of the gap
         * The gap represents the percentage improvement of the proposed method over the best baseline
     - Generate comparison figures to: `{results_dir}/comparison/`:
@@ -157,8 +157,8 @@ Generate complete code for these files ONLY. Do not create any additional files 
 - MUST include WandB configuration:
   ```yaml
   wandb:
-    entity: {{ wandb_info.entity }}
-    project: {{ wandb_info.project }}
+    entity: {{ wandb_config.entity }}
+    project: {{ wandb_config.project }}
     mode: online  # Automatically set to "disabled" in trial_mode
   ```
 - `WANDB_API_KEY` environment variable is automatically available for authentication
@@ -181,45 +181,51 @@ Generate complete code for these files ONLY. Do not create any additional files 
 **Previous Validation Issue**: {{ issue }}
 **Action Required**: Address this issue in the implementation.
 
-**Previous Code (for reference)**:
-{{ research_session.current_iteration.experimental_design.experiment_code.model_dump() | tojson }}
-
 Fix the issues identified above while preserving the correct parts of the implementation.
 {% endif %}
 {% endif %}
 
 # Experimental Environment
-{{ runner_type_prompt }}
+Runner: {{ experimental_design.runner_config.runner_label }}
+{{ experimental_design.runner_config.description }}
 
-# Hypothesis
-{{ research_session.hypothesis }}
-
-# Current Research Method
-{{ research_session.current_iteration.method }}
+# Research Hypothesis
+{{ research_hypothesis }}
 
 # Experimental Design
-- Summary: {{ research_session.current_iteration.experimental_design.experiment_summary }}
-- Evaluation metrics: {{ research_session.current_iteration.experimental_design.evaluation_metrics }}
+- Summary: {{ experimental_design.experiment_summary }}
+- Evaluation metrics: {{ experimental_design.evaluation_metrics }}
+- Proposed Method: {{ experimental_design.proposed_method }}
+- Comparative Methods: {{ experimental_design.comparative_methods }}
 
-# Experiment Runs
-{% for run in research_session.current_iteration.experiment_runs %}
-- Run ID: {{ run.run_id }}
-  Method: {{ run.method_name }}
-  Model: {{ run.model_name }}
-  Dataset: {{ run.dataset_name }}
-  Config File: config/runs/{{ run.run_id }}.yaml
-  {% if run.run_config %}
+# Experiment Run Configurations
+The following run configurations have been generated. Use these to understand which experiments need to be supported:
+{% if experiment_code.run_configs %}
+{% for run_id, yaml_content in experiment_code.run_configs.items() %}
+- Run ID: {{ run_id }}
+  Config File: config/runs/{{ run_id }}.yaml
   Config Content:
   ```yaml
-  {{ run.run_config }}
+  {{ yaml_content }}
   ```
-  {% endif %}
 {% endfor %}
+{% else %}
+Generate code that supports all combinations of:
+- Models: {{ experimental_design.models_to_use }}
+- Datasets: {{ experimental_design.datasets_to_use }}
+- Methods: Proposed ({{ experimental_design.proposed_method.method_name }}) and Comparative ({% for method in experimental_design.comparative_methods %}{{ method.method_name }}{% if not loop.last %}, {% endif %}{% endfor %})
+{% endif %}
+
+{% if experiment_code.train_py or experiment_code.main_py %}
+# Previous Code (for reference during validation re-generation)
+This is the previous version of the code that failed validation. Use it as reference and fix the issues:
+{{ experiment_code.model_dump() | tojson }}
+{% endif %}
 
 # External Resources (Use these for implementation)
-{% if research_session.current_iteration.experimental_design.external_resources and research_session.current_iteration.experimental_design.external_resources.hugging_face %}
+{% if experimental_design.external_resources and experimental_design.external_resources.hugging_face %}
 **HuggingFace Models:**
-{% for model in research_session.current_iteration.experimental_design.external_resources.hugging_face.models %}
+{% for model in experimental_design.external_resources.hugging_face.models %}
 - ID: {{ model.id }}
 {% if model.extracted_code %}
 - Code: {{ model.extracted_code }}
@@ -227,21 +233,11 @@ Fix the issues identified above while preserving the correct parts of the implem
 {% endfor %}
 
 **HuggingFace Datasets:**
-{% for dataset in research_session.current_iteration.experimental_design.external_resources.hugging_face.datasets %}
+{% for dataset in experimental_design.external_resources.hugging_face.datasets %}
 - ID: {{ dataset.id }}
 {% if dataset.extracted_code %}
 - Code: {{ dataset.extracted_code }}
 {% endif %}
 {% endfor %}
-{% endif %}
-
-{% if research_session.current_iteration.iteration_id > 1 and research_session.iterations|length > 0 %}
-# Reference Code from First Iteration
-
-Use the following code from Iteration 1 as a reference to ensure consistency, especially for comparative/baseline methods:
-
-{{ research_session.iterations[0].experimental_design.experiment_code.model_dump() | tojson(indent=2) }}
-
-For comparative/baseline methods, follow the same implementation approach as Iteration 1 to maintain consistency across iterations.
 {% endif %}
 """
