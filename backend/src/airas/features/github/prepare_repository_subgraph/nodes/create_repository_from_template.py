@@ -2,13 +2,13 @@ from logging import getLogger
 from typing import Literal
 
 from airas.services.api_client.github_client import GithubClient
-from airas.types.github import GitHubRepositoryInfo
+from airas.types.github import GitHubConfig
 
 logger = getLogger(__name__)
 
 
 def create_repository_from_template(
-    github_repository_info: GitHubRepositoryInfo,
+    github_config: GitHubConfig,
     github_client: GithubClient,
     template_owner: str,
     template_repo: str,
@@ -17,8 +17,8 @@ def create_repository_from_template(
 ) -> Literal[True]:
     try:
         result = github_client.create_repository_from_template(
-            github_owner=github_repository_info.github_owner,
-            repository_name=github_repository_info.repository_name,
+            github_owner=github_config.github_owner,
+            repository_name=github_config.repository_name,
             template_owner=template_owner,
             template_repo=template_repo,
             include_all_branches=include_all_branches,
@@ -33,7 +33,7 @@ def create_repository_from_template(
             raise RuntimeError(error)
 
         print(
-            f"Repository created from template: {template_owner}/{template_repo} -> {github_repository_info.github_owner}/{github_repository_info.repository_name}"
+            f"Repository created from template: {template_owner}/{template_repo} -> {github_config.github_owner}/{github_config.repository_name}"
         )
         return True
 

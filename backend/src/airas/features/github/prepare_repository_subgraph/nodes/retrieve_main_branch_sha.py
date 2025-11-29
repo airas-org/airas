@@ -1,43 +1,34 @@
 from logging import getLogger
 
 from airas.services.api_client.github_client import GithubClient
-from airas.types.github import GitHubRepositoryInfo
+from airas.types.github import GitHubConfig
 
 logger = getLogger(__name__)
 
 
 def retrieve_main_branch_sha(
-    github_repository_info: GitHubRepositoryInfo,
+    github_config: GitHubConfig,
     github_client: GithubClient,
 ) -> str:
     response = github_client.get_branch(
-        github_owner=github_repository_info.github_owner,
-        repository_name=github_repository_info.repository_name,
+        github_owner=github_config.github_owner,
+        repository_name=github_config.repository_name,
         branch_name="main",
     )
 
     if not response or not isinstance(response, dict):
         raise RuntimeError(
-            f"Failed to retrieve branch info for 'main' branch of {github_repository_info.github_owner}/{github_repository_info.repository_name}"
+            f"Failed to retrieve branch info for 'main' branch of {github_config.github_owner}/{github_config.repository_name}"
         )
 
     try:
         sha = response["commit"]["sha"]
     except (TypeError, KeyError):
-        msg = f"Invalid response format for 'main' branch of {github_repository_info.github_owner}/{github_repository_info.repository_name}"
+        msg = f"Invalid response format for 'main' branch of {github_config.github_owner}/{github_config.repository_name}"
         raise RuntimeError(msg)  # noqa: B904
 
     if not sha:
         raise RuntimeError(
-            f"Empty SHA for 'main' branch of {github_repository_info.github_owner}/{github_repository_info.repository_name}"
+            f"Empty SHA for 'main' branch of {github_config.github_owner}/{github_config.repository_name}"
         )
     return sha
-
-
-if __name__ == "__main__":
-    # Example usage
-    github_repository_info = GitHubRepositoryInfo(
-        github_owner="auto-res2", repository_name="test-branch", branch_name="test"
-    )
-    output = retrieve_main_branch_sha(github_repository_info)
-    print(output)
