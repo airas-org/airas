@@ -14,8 +14,6 @@ OPENAI_MODEL_NAMES = get_args(OPENAI_MODEL)
 
 
 class LangChainClient:
-    def __init__(self):
-        pass
 
     def _create_chat_model(self, llm_name: LLM_MODEL):
         """Return the LangChain chat model implementation that matches the LLM name."""
