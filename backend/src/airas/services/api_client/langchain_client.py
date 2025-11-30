@@ -14,7 +14,6 @@ OPENAI_MODEL_NAMES = get_args(OPENAI_MODEL)
 
 
 class LangChainClient:
-
     def _create_chat_model(self, llm_name: LLM_MODEL):
         """Return the LangChain chat model implementation that matches the LLM name."""
         if llm_name in GOOGLE_MODEL_NAMES:
@@ -48,6 +47,19 @@ class LangChainClient:
         data_model,
         params: LLMParams | None = None,
     ) -> tuple[Any, float]:
+        """
+        Generate a structured response from the specified language model using a Pydantic data model.
+
+        Args:
+            llm_name (LLM_MODEL): The name of the language model to use.
+            message (str): The input message to send to the language model.
+            data_model: A Pydantic BaseModel class that defines the expected structure of the response.
+            params (LLMParams | None, optional): Additional parameters for the language model. Defaults to None.
+
+        Returns:
+            tuple[Any, float]: A tuple containing the structured response as an instance of the data_model
+                and a float representing the cost (currently always 0.0).
+        """
         model = self._create_chat_model(llm_name)
         model_with_structure = model.with_structured_output(
             schema=data_model, method="json_schema"
