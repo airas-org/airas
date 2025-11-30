@@ -18,7 +18,7 @@ from src.airas.services.api_client.llm_client.llm_facade_client import LLMFacade
 router = APIRouter(prefix="/papers", tags=["papers"])
 
 
-@router.get("/search", response_model=RetrievePaperSubgraphResponseBody)
+@router.get("", response_model=RetrievePaperSubgraphResponseBody)
 @inject
 async def get_paper_title(
     request: RetrievePaperSubgraphRequestBody,
@@ -39,8 +39,9 @@ async def get_paper_title(
         .ainvoke(request.model_dump())
     )
     return RetrievePaperSubgraphResponseBody(
-        arxiv_full_text_list=result["arxiv_full_text_list"],
-        arxiv_summary_list=result.get("arxiv_summary_list", []),
-        github_code_list=result.get("github_code_list", []),
+        research_study_list=[
+            [study.model_dump() for study in chunk]
+            for chunk in result["research_study_list"]
+        ],
         execution_time=result["execution_time"],
     )

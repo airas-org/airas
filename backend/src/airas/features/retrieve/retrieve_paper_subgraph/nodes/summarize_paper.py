@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_FIELD_VALUE = "Not mentioned"
 
 
-class LLMOutput(BaseModel):
+class PaperSummary(BaseModel):
     main_contributions: str
     methodology: str
     experimental_setup: str
@@ -23,8 +23,8 @@ class LLMOutput(BaseModel):
     future_research_directions: str
 
 
-def _default_llm_output() -> LLMOutput:
-    return LLMOutput(
+def _default_llm_output() -> PaperSummary:
+    return PaperSummary(
         main_contributions=DEFAULT_FIELD_VALUE,
         methodology=DEFAULT_FIELD_VALUE,
         experimental_setup=DEFAULT_FIELD_VALUE,
@@ -40,7 +40,7 @@ async def _summarize_single_text(
     llm_name: LLM_MODEL,
     group_idx: int,
     paper_idx: int,
-) -> tuple[int, int, LLMOutput]:
+) -> tuple[int, int, PaperSummary]:
     if not paper_text.strip():
         logger.warning(
             "No full text available for group %s, index %s; skipping summarization.",
@@ -57,7 +57,7 @@ async def _summarize_single_text(
     try:
         output, _ = await llm_client.structured_outputs(
             message=messages,
-            data_model=LLMOutput,
+            data_model=PaperSummary,
             llm_name=llm_name,
         )
         if output is None:
@@ -77,7 +77,7 @@ async def _summarize_single_text(
             output_payload = cast(BaseModel, output).model_dump()
         else:
             output_payload = cast(dict[str, Any], output)
-        return group_idx, paper_idx, LLMOutput(**output_payload)
+        return group_idx, paper_idx, PaperSummary(**output_payload)
     except Exception as e:
         logger.error(
             "Failed to summarize paper (group=%s, index=%s): %s",
@@ -93,11 +93,11 @@ async def summarize_paper(
     llm_client: LLMFacadeClient,
     prompt_template: str,
     arxiv_full_text_list: list[list[str]],
-) -> list[list[LLMOutput]]:
+) -> list[list[PaperSummary]]:
     env = Environment()
     template = env.from_string(prompt_template)
 
-    summaries: list[list[LLMOutput]] = [
+    summaries: list[list[PaperSummary]] = [
         [_default_llm_output() for _ in text_group]
         for text_group in arxiv_full_text_list
     ]

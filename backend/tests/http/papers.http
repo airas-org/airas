@@ -1,9 +1,9 @@
 ### Search paper by title
 
-GET http://127.0.0.1:8000/airas/v1/papers/search
+GET http://127.0.0.1:8000/airas/v1/papers
 Content-Type: application/json
 
 {
     "query_list": ["LLM", "Optimizer"],
-    "max_results_per_query": 2
+    "max_results_per_query": 1
 }

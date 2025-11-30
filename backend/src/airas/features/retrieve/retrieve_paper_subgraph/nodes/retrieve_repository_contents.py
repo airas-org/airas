@@ -123,9 +123,11 @@ def retrieve_repository_contents_from_url_groups(
         code_group: list[str] = []
         for url_idx, github_url in enumerate(url_group):
             title = f"GitHub Repository {group_idx + 1}-{url_idx + 1}"
-            code_group.append(
-                _retrieve_single_repository_contents(github_client, github_url, title)
+            content = _retrieve_single_repository_contents(
+                github_client, github_url, title
             )
+            # NOTE: Always store a placeholder string when content could not be retrieved.
+            code_group.append(content if content else "")
         github_code_list.append(code_group)
 
     return github_code_list

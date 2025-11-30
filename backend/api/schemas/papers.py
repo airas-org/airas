@@ -1,8 +1,6 @@
 from pydantic import BaseModel
 
-from airas.features.retrieve.summarize_paper_subgraph.nodes.summarize_paper import (
-    LLMOutput,
-)
+from src.airas.types.research_study import ResearchStudy
 
 
 class RetrievePaperSubgraphRequestBody(BaseModel):
@@ -11,7 +9,5 @@ class RetrievePaperSubgraphRequestBody(BaseModel):
 
 
 class RetrievePaperSubgraphResponseBody(BaseModel):
-    arxiv_full_text_list: list[list[str]]
-    arxiv_summary_list: list[list[LLMOutput]]
-    github_code_list: list[list[str]]
-    execution_time: dict[str, dict[str, list[float]]]
+    research_study_list: list[list[ResearchStudy]]
+    execution_time: dict[str, list[float]]
