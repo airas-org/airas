@@ -5,10 +5,8 @@ from typing import Any, cast
 from jinja2 import Environment, Template
 from pydantic import BaseModel
 
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
-    LLMFacadeClient,
-)
+from airas.services.api_client.langchain_client import LangChainClient
+from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +34,7 @@ def _default_llm_output() -> PaperSummary:
 async def _summarize_single_text(
     paper_text: str,
     rendered_template: Template,
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
     llm_name: LLM_MODEL,
     group_idx: int,
     paper_idx: int,
@@ -90,7 +88,7 @@ async def _summarize_single_text(
 
 async def summarize_paper(
     llm_name: LLM_MODEL,
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
     prompt_template: str,
     arxiv_full_text_list: list[list[str]],
 ) -> list[list[PaperSummary]]:

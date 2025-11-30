@@ -29,7 +29,7 @@ class LangChainClient:
         self, message: str, llm_name: LLM_MODEL, params: LLMParams | None = None
     ) -> tuple[str, float]:
         model = self._create_chat_model(llm_name)
-        response = model.invoke(message)
+        response = await model.ainvoke(message)
         return response.content, 0.0
 
     async def structured_outputs(
@@ -43,7 +43,7 @@ class LangChainClient:
         model_with_structure = model.with_structured_output(
             schema=data_model, method="json_schema"
         )
-        response = model_with_structure.invoke(message)
+        response = await model_with_structure.ainvoke(message)
         return response, 0.0
 
 

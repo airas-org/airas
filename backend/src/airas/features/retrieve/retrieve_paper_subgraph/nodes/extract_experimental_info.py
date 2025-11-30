@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import TypeVar
+from typing import TypeVar, cast
 
 from jinja2 import Environment
 from pydantic import BaseModel
@@ -11,9 +11,9 @@ from airas.features.retrieve.retrieve_paper_subgraph.nodes.summarize_paper impor
 from airas.features.retrieve.retrieve_paper_subgraph.prompt.extract_experimental_info_prompt import (
     extract_experimental_info_prompt,
 )
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
-    LLMFacadeClient,
 )
 
 T = TypeVar("T")
@@ -30,7 +30,7 @@ async def _extract_experimental_info_from_study(
     paper_summary: PaperSummary,
     code_str: str,
     template: str,
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
     llm_name: LLM_MODEL,
 ) -> tuple[str, str]:
     env = Environment()
@@ -52,14 +52,14 @@ async def _extract_experimental_info_from_study(
         logger.error(f"Error extracting experimental info for study: {e}")
         return "", ""
 
-    llm_output = LLMOutput(**output)
+    llm_output = cast(LLMOutput, output)
 
     return llm_output.experimental_info, llm_output.experimental_code
 
 
 async def extract_experimental_info(
     llm_name: LLM_MODEL,
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
     paper_summary_list: list[list[PaperSummary]],
     github_code_list: list[list[str]],
     prompt_template: str = extract_experimental_info_prompt,

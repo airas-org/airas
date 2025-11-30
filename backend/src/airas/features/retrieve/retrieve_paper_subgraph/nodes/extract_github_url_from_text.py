@@ -10,9 +10,9 @@ from airas.features.retrieve.retrieve_paper_subgraph.nodes.summarize_paper impor
     PaperSummary,
 )
 from airas.services.api_client.github_client import GithubClient
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
-    LLMFacadeClient,
 )
 
 logger = getLogger(__name__)
@@ -55,7 +55,7 @@ async def _select_github_url(
     paper_summary: PaperSummary | None,
     candidates: list[str],
     prompt_template: Template,
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
     llm_name: LLM_MODEL,
 ) -> str:
     messages = prompt_template.render(
@@ -91,7 +91,7 @@ async def extract_github_url_from_text(
     prompt_template: str,
     arxiv_full_text_list: list[list[str]],
     paper_summary_list: list[list[PaperSummary]],
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
     github_client: GithubClient,
 ) -> list[list[str]]:
     template = Environment().from_string(prompt_template)

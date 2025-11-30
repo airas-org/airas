@@ -9,9 +9,9 @@ from pydantic import BaseModel
 from airas.features.retrieve.retrieve_paper_subgraph.prompt.extract_reference_titles_prompt import (
     extract_reference_titles_prompt,
 )
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
-    LLMFacadeClient,
 )
 
 logger = getLogger(__name__)
@@ -34,7 +34,7 @@ def _normalize_title(title: str) -> str:
 async def _extract_references_from_text(
     full_text: str,
     template: str,
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
     llm_name: LLM_MODEL,
     context_label: str,
 ) -> list[str]:
@@ -87,7 +87,7 @@ def _deduplicate_titles(reference_titles: list[str]) -> list[str]:
 
 async def extract_reference_titles(
     llm_name: LLM_MODEL,
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
     arxiv_full_text_list: list[list[str]],
 ) -> list[list[list[str]]]:
     reference_groups: list[list[list[str]]] = [
