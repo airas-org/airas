@@ -14,14 +14,21 @@ OPENAI_MODEL_NAMES = get_args(OPENAI_MODEL)
 
 
 class LangChainClient:
+    def __init__(self):
+        self._model_cache = {}
 
     def _create_chat_model(self, llm_name: LLM_MODEL):
-        """Return the LangChain chat model implementation that matches the LLM name."""
+        """Return the LangChain chat model implementation that matches the LLM name, using a cache."""
+        if llm_name in self._model_cache:
+            return self._model_cache[llm_name]
         if llm_name in GOOGLE_MODEL_NAMES:
-            return ChatGoogleGenerativeAI(model=llm_name)
+            model = ChatGoogleGenerativeAI(model=llm_name)
         elif llm_name in OPENAI_MODEL_NAMES:
-            return ChatOpenAI(model=llm_name)
-        raise ValueError(f"Unsupported LLM model: {llm_name}")
+            model = ChatOpenAI(model=llm_name)
+        else:
+            raise ValueError(f"Unsupported LLM model: {llm_name}")
+        self._model_cache[llm_name] = model
+        return model
 
     async def generate(
         self, message: str, llm_name: LLM_MODEL, params: LLMParams | None = None
@@ -48,6 +55,18 @@ class LangChainClient:
         data_model,
         params: LLMParams | None = None,
     ) -> tuple[Any, float]:
+        """
+        Generate structured data from the specified language model by enforcing the provided schema.
+
+        Args:
+            llm_name (LLM_MODEL): The name of the language model to use.
+            message (str): The input message containing the information to extract.
+            data_model: The pydantic model used as the target schema for structured output.
+            params (LLMParams | None, optional): Additional parameters for the language model. Defaults to None.
+
+        Returns:
+            tuple[Any, float]: A tuple containing the structured data parsed into the target schema and the cost (currently always 0.0).
+        """
         model = self._create_chat_model(llm_name)
         model_with_structure = model.with_structured_output(
             schema=data_model, method="json_schema"
