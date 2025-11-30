@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -49,31 +48,7 @@ class MetaData(BaseModel):
 
 class ResearchStudy(BaseModel):
     title: str = Field(..., description="")
-    abstract: Optional[str] = Field(None, description="")
-    full_text: Optional[str] = Field(None, description="")
-    image_data: Optional[Any] = Field(None, description="")
+    full_text: str = Field(..., description="")
     references: Optional[dict[str, dict[str, Any]]] = Field(None, description="")
-    meta_data: Optional[MetaData] = Field(None, description="")
-    llm_extracted_info: Optional[LLMExtractedInfo] = Field(None, description="")
-
-    def to_formatted_dict(self) -> dict[str, Any]:
-        if not (info := self.llm_extracted_info):
-            return {}
-        return {
-            "Title": self.title,
-            "Main Contributions": info.main_contributions,
-            "Methodology": info.methodology,
-            "Experimental Setup": info.experimental_setup,
-            "Limitations": info.limitations,
-            "Future Research Directions": info.future_research_directions,
-            "Experiment Code": info.experimental_code,
-            "Experiment Result": info.experimental_info,
-        }
-
-    @classmethod
-    def format_list(cls, research_study_list: list[ResearchStudy]) -> str:
-        return "".join(
-            json.dumps(data_dict, ensure_ascii=False, indent=4)
-            for research_study in research_study_list
-            if (data_dict := research_study.to_formatted_dict())
-        )
+    meta_data: MetaData = Field(..., description="")
+    llm_extracted_info: LLMExtractedInfo

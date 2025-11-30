@@ -16,23 +16,20 @@ from airas.features.generators.generate_hypothesis_subgraph.nodes.generate_hypot
 from airas.features.generators.generate_hypothesis_subgraph.nodes.refine_hypothesis import (
     refine_hypothesis,
 )
-from airas.features.retrieve.get_paper_titles_subgraph.nodes.get_paper_title_from_qdrant import (
+from airas.features.retrieve.retrieve_paper_subgraph.nodes.get_paper_title_from_qdrant import (
     get_paper_titles_from_qdrant,
 )
-from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.retrieve_text_from_url import (
+from airas.features.retrieve.retrieve_paper_subgraph.nodes.retrieve_text_from_url import (
     retrieve_text_from_url,
 )
-from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_arxiv_by_id import (
-    search_arxiv_by_id,
-)
-from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_arxiv_id_from_title import (
+from airas.features.retrieve.retrieve_paper_subgraph.nodes.search_arxiv_id_from_title import (
     search_arxiv_id_from_title,
 )
-from airas.features.retrieve.retrieve_paper_content_subgraph.nodes.search_ss_by_id import (
-    search_ss_by_id,
+from airas.features.retrieve.retrieve_paper_subgraph.nodes.search_arxiv_info_by_id import (
+    search_arxiv_info_by_id,
 )
-from airas.features.retrieve.retrieve_paper_content_subgraph.prompt.openai_websearch_arxiv_ids_prompt import (
-    openai_websearch_arxiv_ids_prompt,
+from airas.features.retrieve.retrieve_paper_subgraph.nodes.search_ss_by_id import (
+    search_ss_by_id,
 )
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.llm_client.llm_facade_client import (
@@ -46,6 +43,9 @@ from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
+from src.airas.features.retrieve.retrieve_paper_subgraph.prompt.openai_websearch_arxiv_ids_prompt import (
+    openai_websearch_arxiv_ids_prompt,
+)
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -193,7 +193,7 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
     def _search_arxiv_by_id(
         self, state: GenerateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
-        related_research_study_list = search_arxiv_by_id(
+        related_research_study_list = search_arxiv_info_by_id(
             arxiv_client=self.arxiv_client,
             research_study_list=state["related_research_study_list"],
         )

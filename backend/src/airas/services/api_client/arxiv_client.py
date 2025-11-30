@@ -1,3 +1,4 @@
+import asyncio
 from logging import getLogger
 from typing import Any, Protocol, runtime_checkable
 
@@ -34,47 +35,17 @@ class ArxivClient(BaseHTTPClient):
         )
         self._parser = parser or ResponseParser()
 
-    @ARXIV_RETRY
-    def search_papers(
+    def _build_search_query(
         self,
-        query: str | None = None,
+        query: str | None,
         *,
-        title: str | None = None,
-        author: str | None = None,
-        start: int = 0,
-        max_results: int = 10,
-        sort_by: str = "relevance",
-        sort_order: str = "descending",
-        from_date: str | None = None,
-        to_date: str | None = None,
-        search_field: str = "all",
-        timeout: float = 15.0,
+        title: str | None,
+        author: str | None,
+        from_date: str | None,
+        to_date: str | None,
+        search_field: str,
     ) -> str:
-        """
-        Search papers using arXiv API with flexible search options.
-
-        Args:
-            query: Free-text search query
-            title: Title-specific search (uses ti: field)
-            author: Author-specific search (uses au: field)
-            start: Starting index for pagination
-            max_results: Maximum number of results to return
-            sort_by: Sort criteria ("relevance", "lastUpdatedDate", "submittedDate")
-            sort_order: Sort order ("ascending", "descending")
-            from_date: Start date filter (YYYY-MM-DD format)
-            to_date: End date filter (YYYY-MM-DD format)
-            search_field: Field to search in for general query ("all", "ti", "au", "abs", etc.)
-            timeout: Request timeout in seconds
-
-        Returns:
-            XML string response from arXiv API
-
-        Note:
-            - If title/author are provided, structured search takes precedence over general query
-            - Either query OR title/author must be provided
-        """
-
-        search_parts = []
+        search_parts: list[str] = []
         if title or author:
             if title and title.strip():
                 exact_title = f'"{title.strip()}"'
@@ -95,14 +66,109 @@ class ArxivClient(BaseHTTPClient):
         if from_date and to_date:
             search_q = f"({search_q}) AND submittedDate:[{from_date} TO {to_date}]"
 
-        params = {
+        return search_q
+
+    def _build_search_params(
+        self,
+        query: str | None,
+        *,
+        title: str | None,
+        author: str | None,
+        start: int,
+        max_results: int,
+        sort_by: str,
+        sort_order: str,
+        from_date: str | None,
+        to_date: str | None,
+        search_field: str,
+    ) -> dict[str, Any]:
+        search_q = self._build_search_query(
+            query,
+            title=title,
+            author=author,
+            from_date=from_date,
+            to_date=to_date,
+            search_field=search_field,
+        )
+
+        return {
             "search_query": search_q,
             "start": start,
             "max_results": max_results,
             "sortBy": sort_by,
             "sortOrder": sort_order,
         }
-        response = self.get(path="query", params=params, timeout=timeout)
+
+    @staticmethod
+    def _normalize_arxiv_id(arxiv_id: str) -> str:
+        if not arxiv_id.strip():
+            raise ValueError("arxiv_id must be provided")
+
+        return arxiv_id.strip().split("v")[0]
+
+    @ARXIV_RETRY
+    def search_papers(
+        self,
+        query: str | None = None,
+        *,
+        title: str | None = None,
+        author: str | None = None,
+        start: int = 0,
+        max_results: int = 10,
+        sort_by: str = "relevance",
+        sort_order: str = "descending",
+        from_date: str | None = None,
+        to_date: str | None = None,
+        search_field: str = "all",
+        timeout: float = 15.0,
+    ) -> str:
+        """Synchronous wrapper around ``asearch_papers`` for flexible searches."""
+
+        return asyncio.run(
+            self.asearch_papers(
+                query,
+                title=title,
+                author=author,
+                start=start,
+                max_results=max_results,
+                sort_by=sort_by,
+                sort_order=sort_order,
+                from_date=from_date,
+                to_date=to_date,
+                search_field=search_field,
+                timeout=timeout,
+            )
+        )
+
+    @ARXIV_RETRY
+    async def asearch_papers(
+        self,
+        query: str | None = None,
+        *,
+        title: str | None = None,
+        author: str | None = None,
+        start: int = 0,
+        max_results: int = 10,
+        sort_by: str = "relevance",
+        sort_order: str = "descending",
+        from_date: str | None = None,
+        to_date: str | None = None,
+        search_field: str = "all",
+        timeout: float = 15.0,
+    ) -> str:
+        params = self._build_search_params(
+            query,
+            title=title,
+            author=author,
+            start=start,
+            max_results=max_results,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            from_date=from_date,
+            to_date=to_date,
+            search_field=search_field,
+        )
+        response = await self.aget(path="query", params=params, timeout=timeout)
         raise_for_status(response, path="query")
 
         return self._parser.parse(response, as_="xml")
@@ -114,25 +180,28 @@ class ArxivClient(BaseHTTPClient):
         timeout: float = 15.0,
     ) -> str:
         """
-        Get paper details by arXiv ID.
+        Get paper details by arXiv ID synchronously.
 
-        Args:
-            arxiv_id: arXiv ID (e.g., "1706.03762" or "1706.03762v1")
-            timeout: Request timeout in seconds
-
-        Returns:
-            XML string response from arXiv API
+        This wraps the asynchronous implementation for reuse.
         """
-        if not arxiv_id.strip():
-            raise ValueError("arxiv_id must be provided")
 
-        clean_id = arxiv_id.strip().split("v")[0]
+        return asyncio.run(self.aget_paper_by_id(arxiv_id=arxiv_id, timeout=timeout))
+
+    @ARXIV_RETRY
+    async def aget_paper_by_id(
+        self,
+        arxiv_id: str,
+        timeout: float = 15.0,
+    ) -> str:
+        """Asynchronously fetch paper details by arXiv ID."""
+
+        clean_id = self._normalize_arxiv_id(arxiv_id)
 
         params = {
             "id_list": clean_id,
             "max_results": 1,
         }
-        response = self.get(path="query", params=params, timeout=timeout)
+        response = await self.aget(path="query", params=params, timeout=timeout)
         raise_for_status(response, path="query")
 
         return self._parser.parse(response, as_="xml")

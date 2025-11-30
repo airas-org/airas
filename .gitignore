@@ -167,5 +167,4 @@ cython_debug/
 !.gitkeep
 .github/instructions/*
 .serena/*
-.mcp.json
 .claude

@@ -2,7 +2,7 @@ from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 
 LLM_CONFIG_TYPE = dict[str, LLM_MODEL]
 
-BASE_MODEL: LLM_MODEL = "o3-2025-04-16"
+BASE_MODEL: LLM_MODEL = "gpt-5-mini-2025-08-07"
 
 
 # fmt:off
@@ -29,6 +29,7 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "evaluate_novelty_and_significance": BASE_MODEL,
     "refine_hypothesis": BASE_MODEL,
     "search_arxiv_id_from_title": BASE_MODEL,
+    "refine_idea_and_research_summary": BASE_MODEL,
     # CreateMethodSubgraph
     "improve_method": BASE_MODEL,
     # GenerateExperimentalDesignSubgraph

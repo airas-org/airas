@@ -70,17 +70,3 @@ async def openai_websearch_titles(
         return None
 
     return sorted(collected)
-
-
-if __name__ == "__main__":
-    from airas.features.retrieve.get_paper_titles_subgraph.prompt.openai_websearch_titles_prompt import (
-        openai_websearch_titles_prompt,
-    )
-
-    results = openai_websearch_titles(
-        llm_name="gpt-4o-2024-11-20",
-        prompt_template=openai_websearch_titles_prompt,
-        queries=["vision transformer image recognition"],
-        max_results=10,
-    )
-    print(f"results: {results}")

@@ -7,8 +7,22 @@ You are a researcher with expertise in engineering in the field of machine learn
     - experimental_code：Extract the implementation sections that are directly related to the method described in “Method.”
     - experimental_info：Extract and output the experimental settings related to the method described in “Method.”
 
-# Method
-{{ method_text }}
+# Paper Summary
+
+## Main Contributions
+{{ paper_summary.main_contributions }}
+
+## Methodology
+{{ paper_summary.methodology }}
+
+## Experimental Setup
+{{ paper_summary.experimental_setup }}
+
+## Limitations
+{{ paper_summary.limitations }}
+
+## Future Research Directions
+{{ paper_summary.future_research_directions }}
 
 # Repository Content
 {{ repository_content_str }}"""
