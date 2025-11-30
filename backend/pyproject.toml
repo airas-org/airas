@@ -37,6 +37,8 @@ dependencies = [
     "uvicorn>=0.34.2",
     "pytest-asyncio>=1.2.0",
     "hishel[async]>=1.1.5",
+    "langchain-openai>=1.1.0",
+    "langchain-google-genai>=3.2.0",
 ]
 
 [project.urls]

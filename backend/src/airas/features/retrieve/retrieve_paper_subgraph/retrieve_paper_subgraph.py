@@ -34,6 +34,7 @@ from airas.features.retrieve.retrieve_paper_subgraph.prompt.extract_github_url_f
     extract_github_url_from_text_prompt,
 )
 from airas.services.api_client.github_client import GithubClient
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
@@ -107,11 +108,13 @@ class RetrievePaperSubgraph:
     def __init__(
         self,
         llm_client: LLMFacadeClient,
+        langchain_client: LangChainClient,
         arxiv_client: ArxivClient,
         github_client: GithubClient,
         max_results_per_query: int = 3,
     ):
         self.llm_client = llm_client
+        self.langchain_client = langchain_client
         self.arxiv_client = arxiv_client
         self.github_client = github_client
         self.max_results_per_query = max_results_per_query
@@ -172,7 +175,7 @@ class RetrievePaperSubgraph:
     ) -> RetrievePaperSubgraphState:
         paper_summary_list = await summarize_paper(
             llm_name=self.llm_mapping.summarize_paper,
-            llm_client=self.llm_client,
+            llm_client=self.langchain_client,
             prompt_template=summarize_paper_prompt,
             arxiv_full_text_list=state.get("arxiv_full_text_list", []),
         )
@@ -187,7 +190,7 @@ class RetrievePaperSubgraph:
             prompt_template=extract_github_url_from_text_prompt,
             arxiv_full_text_list=state.get("arxiv_full_text_list", []),
             paper_summary_list=state.get("paper_summary_list", []),
-            llm_client=self.llm_client,
+            llm_client=self.langchain_client,
             github_client=self.github_client,
         )
         return {"github_url_list": github_url_list}
@@ -223,7 +226,7 @@ class RetrievePaperSubgraph:
             experimental_code_list,
         ) = await extract_experimental_info(
             llm_name=self.llm_mapping.extract_experimental_info,
-            llm_client=self.llm_client,
+            llm_client=self.langchain_client,
             paper_summary_list=paper_summary_list,
             github_code_list=github_code_list,
         )
@@ -238,7 +241,7 @@ class RetrievePaperSubgraph:
     ) -> RetrievePaperSubgraphState:
         reference_title_list = await extract_reference_titles(
             llm_name=self.llm_mapping.extract_reference_titles,
-            llm_client=self.llm_client,
+            llm_client=self.langchain_client,
             arxiv_full_text_list=state.get("arxiv_full_text_list", []),
         )
         return {"reference_title_list": reference_title_list}
