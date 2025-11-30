@@ -8,6 +8,7 @@ from dependency_injector import containers, providers
 from hishel import CacheOptions, SpecificationPolicy
 from hishel.httpx import AsyncCacheClient, SyncCacheClient
 
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.qdrant_client import QdrantClient
 
 # Workaround for OpenAI SDK lazy initialization issue
@@ -151,6 +152,8 @@ class Container(containers.DeclarativeContainer):
         anthropic_client=anthropic_client,
         google_genai_client=google_genai_client,
     )
+
+    langchain_client: providers.Singleton = providers.Singleton(LangChainClient)
 
     # --- Code & Experiment Platforms ---
     github_client: providers.Singleton[GithubClient] = providers.Singleton(
