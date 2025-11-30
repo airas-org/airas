@@ -26,6 +26,17 @@ class LangChainClient:
     async def generate(
         self, message: str, llm_name: LLM_MODEL, params: LLMParams | None = None
     ) -> tuple[str, float]:
+        """
+        Generate a response from the specified language model given an input message.
+
+        Args:
+            message (str): The input message to send to the language model.
+            llm_name (LLM_MODEL): The name of the language model to use.
+            params (LLMParams | None, optional): Additional parameters for the language model. Defaults to None.
+
+        Returns:
+            tuple[str, float]: A tuple containing the generated response as a string and a float representing the cost (currently always 0.0).
+        """
         model = self._create_chat_model(llm_name)
         response = await model.ainvoke(message)
         return response.content, 0.0
