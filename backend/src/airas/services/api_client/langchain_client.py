@@ -53,7 +53,7 @@ class LangChainClient:
         Args:
             llm_name (LLM_MODEL): The name of the language model to use.
             message (str): The input message to send to the language model.
-            data_model: A Pydantic BaseModel class that defines the expected structure of the response.
+            data_model (type[BaseModel]): A Pydantic BaseModel class that defines the expected structure of the response.
             params (LLMParams | None, optional): Additional parameters for the language model. Defaults to None.
 
         Returns:
