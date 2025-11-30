@@ -32,9 +32,9 @@ class LangChainClient:
 
     async def structured_outputs(
         self,
+        llm_name: LLM_MODEL,
         message: str,
         data_model,
-        llm_name: LLM_MODEL,
         params: LLMParams | None = None,
     ) -> tuple[Any, float]:
         model = self._create_chat_model(llm_name)
