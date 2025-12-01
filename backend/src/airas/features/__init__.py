@@ -10,6 +10,9 @@ from .execution.execute_evaluation_subgraph.execute_evaluation_subgraph import (
 from .execution.execute_experiment_subgraph.execute_experiment_subgraph import (
     ExecuteExperimentSubgraph,
 )
+from .executors.execute_trial_experiment_subgraph.execute_trial_experiment_subgraph import (
+    ExecuteTrialExperimentSubgraph,
+)
 from .generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignSubgraph,
 )
@@ -55,6 +58,7 @@ __all__ = [
     "CreateMethodSubgraph",
     "ExecuteEvaluationSubgraph",
     "ExecuteExperimentSubgraph",
+    "ExecuteTrialExperimentSubgraph",
     "GenerateExperimentalDesignSubgraph",
     "GenerateHtmlSubgraph",
     "GenerateHypothesisSubgraph",

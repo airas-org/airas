@@ -1,4 +1,3 @@
-import argparse
 import asyncio
 import logging
 import time
@@ -39,6 +38,7 @@ class PollWorkflowInputState(TypedDict):
 
 class PollWorkflowHiddenState(TypedDict):
     baseline_count: int | None
+    previous_count: int | None
     workflow_runs_response: dict | None
     start_time: float
     poll_count: int
@@ -100,6 +100,7 @@ class PollWorkflowSubgraph(BaseSubgraph):
         return Command(
             update={
                 "baseline_count": baseline_count,
+                "previous_count": None,
                 "start_time": time.time(),
                 "poll_count": 0,
             },
@@ -148,9 +149,10 @@ class PollWorkflowSubgraph(BaseSubgraph):
                 goto=END,
             )
 
-        run_id, is_completed = check_workflow_completion(
+        run_id, is_completed, current_count = check_workflow_completion(
             workflow_runs_response=state.get("workflow_runs_response"),
             baseline_count=baseline_count,
+            previous_count=state.get("previous_count"),
         )
 
         if is_completed:
@@ -159,6 +161,7 @@ class PollWorkflowSubgraph(BaseSubgraph):
                 update={
                     "run_id": run_id,
                     "is_completed": True,
+                    "previous_count": current_count,
                 },
                 goto=END,
             )
@@ -169,6 +172,7 @@ class PollWorkflowSubgraph(BaseSubgraph):
         return Command(
             update={
                 "is_completed": False,
+                "previous_count": current_count,
             },
             goto="sleep_and_retry",
         )
@@ -195,29 +199,18 @@ class PollWorkflowSubgraph(BaseSubgraph):
 
 async def main():
     from airas.core.container import container
-
-    parser = argparse.ArgumentParser(description="PollWorkflowSubgraph")
-    parser.add_argument(
-        "--github-owner",
-        default="auto-res2",
-        help="Your GitHub owner (default: auto-res2)",
-    )
-    parser.add_argument("repository_name", help="Your repository name")
-    parser.add_argument("branch_name", help="Your branch name")
-    args = parser.parse_args()
-
-    github_config = GitHubConfig(
-        github_owner=args.github_owner,
-        repository_name=args.repository_name,
-        branch_name=args.branch_name,
+    from airas.features.github.poll_workflow_subgraph.input_data import (
+        poll_workflow_subgraph_input_data,
     )
 
     container.wire(modules=[__name__])
+    await container.init_resources()
 
     try:
+        github_client = await container.github_client()
         result = await PollWorkflowSubgraph(
-            github_client=container.github_client,
-        ).arun({"github_config": github_config})
+            github_client=github_client,
+        ).arun(poll_workflow_subgraph_input_data)
         print(f"Result: {result}")
     finally:
         await container.shutdown_resources()

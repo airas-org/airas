@@ -5,6 +5,7 @@ from functools import wraps
 from logging import getLogger
 from typing import Callable
 
+from langgraph.types import Command
 from typing_extensions import Annotated, TypedDict
 
 logger = getLogger(__name__)
@@ -56,7 +57,18 @@ def time_node(
                 execution_time = state.get("execution_time", {})
                 existing = execution_time.get(actual_node, [])
                 execution_time[actual_node] = [*existing, duration]
-                result["execution_time"] = execution_time
+
+                # Handle Command objects
+                if isinstance(result, Command):
+                    result = Command(
+                        update={
+                            **(result.update or {}),
+                            "execution_time": execution_time,
+                        },
+                        goto=result.goto,
+                    )
+                else:
+                    result["execution_time"] = execution_time
 
                 logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
                 return result
@@ -78,7 +90,18 @@ def time_node(
                 execution_time = state.get("execution_time", {})
                 existing = execution_time.get(actual_node, [])
                 execution_time[actual_node] = [*existing, duration]
-                result["execution_time"] = execution_time
+
+                # Handle Command objects
+                if isinstance(result, Command):
+                    result = Command(
+                        update={
+                            **(result.update or {}),
+                            "execution_time": execution_time,
+                        },
+                        goto=result.goto,
+                    )
+                else:
+                    result["execution_time"] = execution_time
 
                 logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
                 return result
