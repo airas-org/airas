@@ -216,10 +216,12 @@ async def main():
     )
 
     container.wire(modules=[__name__])
+    await container.init_resources()
 
     try:
+        github_client = await container.github_client()
         result = await PrepareRepositorySubgraph(
-            github_client=container.github_client,
+            github_client=github_client,
         ).arun({"github_config": github_config})
         print(f"Result: {result}")
     finally:

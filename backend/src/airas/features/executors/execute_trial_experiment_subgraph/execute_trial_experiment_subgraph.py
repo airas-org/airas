@@ -33,6 +33,7 @@ class ExecuteTrialExperimentSubgraphOutputState(ExecutionTimeState, total=False)
 class ExecuteTrialExperimentSubgraphState(
     ExecuteTrialExperimentSubgraphInputState,
     ExecuteTrialExperimentSubgraphOutputState,
+    total=False,
 ):
     run_ids: list[str]
 
@@ -42,7 +43,7 @@ class ExecuteTrialExperimentSubgraph:
         self,
         github_client: GithubClient,
         runner_label: str = "ubuntu-latest",
-        workflow_file: str = "run_trial_experiment_with_claude_code_v2.yml",
+        workflow_file: str = "run_trial_experiment_with_claude_code.yml",
     ):
         self.github_client = github_client
         self.runner_label = runner_label
@@ -77,7 +78,7 @@ class ExecuteTrialExperimentSubgraph:
         logger.info(f"Run IDs: {', '.join(run_ids)}")
 
         inputs = {
-            "runner_type": self.runner_label,
+            "runner_label": json.dumps([self.runner_label]),
             "run_ids": json.dumps(run_ids),
         }
 
@@ -123,11 +124,13 @@ async def main():
     )
 
     container.wire(modules=[__name__])
+    await container.init_resources()
 
     try:
+        github_client = await container.github_client()
         result = (
             await ExecuteTrialExperimentSubgraph(
-                github_client=container.github_client,
+                github_client=github_client,
             )
             .build_graph()
             .ainvoke(execute_trial_experiment_subgraph_input_data)

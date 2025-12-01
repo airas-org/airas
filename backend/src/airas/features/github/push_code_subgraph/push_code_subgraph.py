@@ -122,10 +122,12 @@ async def main():
     )
 
     container.wire(modules=[__name__])
+    await container.init_resources()
 
     try:
+        github_client = await container.github_client()
         result = await PushCodeSubgraph(
-            github_client=container.github_client,
+            github_client=github_client,
         ).arun(push_code_subgraph_input_data)
         print(f"result: {result}")
     finally:

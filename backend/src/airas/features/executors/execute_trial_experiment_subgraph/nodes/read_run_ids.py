@@ -12,11 +12,11 @@ async def read_run_ids_from_repository(
     config_dir: str = "config/runs",
 ) -> list[str]:
     try:
-        contents = await github_client.aget_repository_contents(
+        contents = await github_client.aget_repository_content(
             github_config.github_owner,
             github_config.repository_name,
             config_dir,
-            ref=github_config.branch_name,
+            branch_name=github_config.branch_name,
         )
 
         if not contents:
