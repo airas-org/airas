@@ -59,7 +59,6 @@ __all__ = [
     "ExecuteEvaluationSubgraph",
     "ExecuteExperimentSubgraph",
     "ExecuteTrialExperimentSubgraph",
-    "ExtractReferenceTitlesSubgraph",
     "GenerateExperimentalDesignSubgraph",
     "GenerateHtmlSubgraph",
     "GenerateHypothesisSubgraph",
