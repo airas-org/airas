@@ -31,6 +31,9 @@ from airas.features.retrieve.retrieve_paper_subgraph.nodes.search_arxiv_info_by_
 from airas.features.retrieve.retrieve_paper_subgraph.nodes.search_ss_by_id import (
     search_ss_by_id,
 )
+from airas.features.retrieve.retrieve_paper_subgraph.prompt.openai_websearch_arxiv_ids_prompt import (
+    openai_websearch_arxiv_ids_prompt,
+)
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
@@ -43,9 +46,6 @@ from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
-from src.airas.features.retrieve.retrieve_paper_subgraph.prompt.openai_websearch_arxiv_ids_prompt import (
-    openai_websearch_arxiv_ids_prompt,
-)
 
 setup_logging()
 logger = logging.getLogger(__name__)

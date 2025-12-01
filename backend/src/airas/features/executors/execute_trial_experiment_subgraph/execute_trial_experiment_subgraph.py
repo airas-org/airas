@@ -114,3 +114,34 @@ class ExecuteTrialExperimentSubgraph:
         graph_builder.add_edge("dispatch_trial_experiment", END)
 
         return graph_builder.compile()
+
+
+async def main():
+    from airas.core.container import container
+    from airas.features.executors.execute_trial_experiment_subgraph.input_data import (
+        execute_trial_experiment_subgraph_input_data,
+    )
+
+    container.wire(modules=[__name__])
+
+    try:
+        result = (
+            await ExecuteTrialExperimentSubgraph(
+                github_client=container.github_client,
+            )
+            .build_graph()
+            .ainvoke(execute_trial_experiment_subgraph_input_data)
+        )
+        print(f"result: {result}")
+    finally:
+        await container.shutdown_resources()
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        logger.error(f"Error running ExecuteTrialExperimentSubgraph: {e}")
+        raise
