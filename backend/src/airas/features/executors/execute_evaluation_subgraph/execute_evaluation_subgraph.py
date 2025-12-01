@@ -19,41 +19,39 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-record_execution_time = lambda f: time_node("execute_trial_experiment_subgraph")(f)  # noqa: E731
+record_execution_time = lambda f: time_node("execute_evaluation_subgraph")(f)  # noqa: E731
 
 
-class ExecuteTrialExperimentSubgraphInputState(TypedDict):
+class ExecuteEvaluationSubgraphInputState(TypedDict):
     github_config: GitHubConfig
 
 
-class ExecuteTrialExperimentSubgraphOutputState(ExecutionTimeState, total=False):
+class ExecuteEvaluationSubgraphOutputState(ExecutionTimeState, total=False):
     dispatched: bool
 
 
-class ExecuteTrialExperimentSubgraphState(
-    ExecuteTrialExperimentSubgraphInputState,
-    ExecuteTrialExperimentSubgraphOutputState,
+class ExecuteEvaluationSubgraphState(
+    ExecuteEvaluationSubgraphInputState,
+    ExecuteEvaluationSubgraphOutputState,
     total=False,
 ):
     run_ids: list[str]
 
 
-class ExecuteTrialExperimentSubgraph:
+class ExecuteEvaluationSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
-        runner_label: str = "ubuntu-latest",
-        workflow_file: str = "run_trial_experiment_with_claude_code.yml",
+        workflow_file: str = "run_evaluation_with_claude_code.yml",
     ):
         self.github_client = github_client
-        self.runner_label = runner_label
         self.workflow_file = workflow_file
 
         check_api_key(github_personal_access_token_check=True)
 
     @record_execution_time
     async def _read_run_ids(
-        self, state: ExecuteTrialExperimentSubgraphState
+        self, state: ExecuteEvaluationSubgraphState
     ) -> dict[str, list[str]]:
         run_ids = await read_run_ids_from_repository(
             self.github_client,
@@ -62,8 +60,8 @@ class ExecuteTrialExperimentSubgraph:
         return {"run_ids": run_ids}
 
     @record_execution_time
-    async def _dispatch_trial_experiment(
-        self, state: ExecuteTrialExperimentSubgraphState
+    async def _dispatch_evaluation(
+        self, state: ExecuteEvaluationSubgraphState
     ) -> dict[str, bool]:
         run_ids = state.get("run_ids", [])
         if not run_ids:
@@ -73,12 +71,11 @@ class ExecuteTrialExperimentSubgraph:
         github_config = state["github_config"]
 
         logger.info(
-            f"Dispatching trial experiment: {len(run_ids)} run_ids on branch '{github_config.branch_name}'"
+            f"Dispatching evaluation: {len(run_ids)} run_ids on branch '{github_config.branch_name}'"
         )
         logger.info(f"Run IDs: {', '.join(run_ids)}")
 
         inputs = {
-            "runner_label": json.dumps([self.runner_label]),
             "run_ids": json.dumps(run_ids),
         }
 
@@ -92,35 +89,33 @@ class ExecuteTrialExperimentSubgraph:
         )
 
         if success:
-            logger.info("Trial experiment dispatch successful")
+            logger.info("Evaluation dispatch successful")
         else:
-            logger.error("Trial experiment dispatch failed")
+            logger.error("Evaluation dispatch failed")
 
         return {"dispatched": success}
 
     def build_graph(self):
         graph_builder = StateGraph(
-            ExecuteTrialExperimentSubgraphState,
-            input_schema=ExecuteTrialExperimentSubgraphInputState,
-            output_schema=ExecuteTrialExperimentSubgraphOutputState,
+            ExecuteEvaluationSubgraphState,
+            input_schema=ExecuteEvaluationSubgraphInputState,
+            output_schema=ExecuteEvaluationSubgraphOutputState,
         )
 
         graph_builder.add_node("read_run_ids", self._read_run_ids)
-        graph_builder.add_node(
-            "dispatch_trial_experiment", self._dispatch_trial_experiment
-        )
+        graph_builder.add_node("dispatch_evaluation", self._dispatch_evaluation)
 
         graph_builder.add_edge(START, "read_run_ids")
-        graph_builder.add_edge("read_run_ids", "dispatch_trial_experiment")
-        graph_builder.add_edge("dispatch_trial_experiment", END)
+        graph_builder.add_edge("read_run_ids", "dispatch_evaluation")
+        graph_builder.add_edge("dispatch_evaluation", END)
 
         return graph_builder.compile()
 
 
 async def main():
     from airas.core.container import container
-    from airas.features.executors.execute_trial_experiment_subgraph.input_data import (
-        execute_trial_experiment_subgraph_input_data,
+    from airas.features.executors.execute_evaluation_subgraph.input_data import (
+        execute_evaluation_subgraph_input_data,
     )
 
     container.wire(modules=[__name__])
@@ -129,11 +124,11 @@ async def main():
     try:
         github_client = await container.github_client()
         result = (
-            await ExecuteTrialExperimentSubgraph(
+            await ExecuteEvaluationSubgraph(
                 github_client=github_client,
             )
             .build_graph()
-            .ainvoke(execute_trial_experiment_subgraph_input_data)
+            .ainvoke(execute_evaluation_subgraph_input_data)
         )
         print(f"result: {result}")
     finally:
@@ -146,5 +141,5 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except Exception as e:
-        logger.error(f"Error running ExecuteTrialExperimentSubgraph: {e}")
+        logger.error(f"Error running ExecuteEvaluationSubgraph: {e}")
         raise
