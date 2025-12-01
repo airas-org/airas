@@ -1,12 +1,32 @@
+<!-- frontend/index.html -->
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>ML Research Automation</title>
+    <meta
+      name="description"
+      content="Machine Learning Research Automation Platform"
+    />
+    <meta name="generator" content="v0.app" />
+
+    <!-- icon 設定 -->
+    <link
+      rel="icon"
+      href="/icon-light-32x32.png"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="icon"
+      href="/icon-dark-32x32.png"
+      media="(prefers-color-scheme: dark)"
+    />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-icon.png" />
+
+    <!-- 必要なら Google Fonts の link をここに追加 -->
   </head>
-  <body>
+  <body class="font-sans antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
