@@ -4,7 +4,6 @@ import logging
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
-from airas.core.base import BaseSubgraph
 from airas.features.executors.execute_trial_experiment_subgraph.nodes.read_run_ids import (
     read_run_ids_from_repository,
 )
@@ -14,36 +13,31 @@ from airas.features.github.nodes.dispatch_workflow import (
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubConfig
 from airas.utils.check_api_key import check_api_key
+from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+record_execution_time = lambda f: time_node("execute_trial_experiment_subgraph")(f)  # noqa: E731
 
 
 class ExecuteTrialExperimentSubgraphInputState(TypedDict):
     github_config: GitHubConfig
 
 
-class ExecuteTrialExperimentSubgraphHiddenState(TypedDict):
-    run_ids: list[str]
-
-
-class ExecuteTrialExperimentSubgraphOutputState(TypedDict):
+class ExecuteTrialExperimentSubgraphOutputState(ExecutionTimeState, total=False):
     dispatched: bool
 
 
 class ExecuteTrialExperimentSubgraphState(
     ExecuteTrialExperimentSubgraphInputState,
-    ExecuteTrialExperimentSubgraphHiddenState,
     ExecuteTrialExperimentSubgraphOutputState,
 ):
-    pass
+    run_ids: list[str]
 
 
-class ExecuteTrialExperimentSubgraph(BaseSubgraph):
-    InputState = ExecuteTrialExperimentSubgraphInputState
-    OutputState = ExecuteTrialExperimentSubgraphOutputState
-
+class ExecuteTrialExperimentSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
@@ -56,6 +50,7 @@ class ExecuteTrialExperimentSubgraph(BaseSubgraph):
 
         check_api_key(github_personal_access_token_check=True)
 
+    @record_execution_time
     async def _read_run_ids(
         self, state: ExecuteTrialExperimentSubgraphState
     ) -> dict[str, list[str]]:
@@ -65,6 +60,7 @@ class ExecuteTrialExperimentSubgraph(BaseSubgraph):
         )
         return {"run_ids": run_ids}
 
+    @record_execution_time
     async def _dispatch_trial_experiment(
         self, state: ExecuteTrialExperimentSubgraphState
     ) -> dict[str, bool]:
@@ -102,7 +98,11 @@ class ExecuteTrialExperimentSubgraph(BaseSubgraph):
         return {"dispatched": success}
 
     def build_graph(self):
-        graph_builder = StateGraph(ExecuteTrialExperimentSubgraphState)
+        graph_builder = StateGraph(
+            ExecuteTrialExperimentSubgraphState,
+            input_schema=ExecuteTrialExperimentSubgraphInputState,
+            output_schema=ExecuteTrialExperimentSubgraphOutputState,
+        )
 
         graph_builder.add_node("read_run_ids", self._read_run_ids)
         graph_builder.add_node(
