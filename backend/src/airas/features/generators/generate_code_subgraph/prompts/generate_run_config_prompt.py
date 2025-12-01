@@ -89,6 +89,7 @@ Runner: {{ experimental_design.runner_config.runner_label }}
 2. Use the MethodConfig's training_config and optuna_config when available
 3. Ensure configurations reflect the differences between proposed and comparative methods
 4. Follow the run_id naming convention strictly
-5. Output a list of RunConfigOutput objects with run_id and run_config_yaml fields
+5. The `run_id` field in RunConfigOutput MUST exactly match the `run_id:` field at the top of the YAML content.
+6. Output a list of RunConfigOutput objects with run_id and run_config_yaml fields
 
 Generate all configurations now:"""
