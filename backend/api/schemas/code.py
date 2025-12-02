@@ -15,3 +15,4 @@ class GenerateCodeSubgraphRequestBody(BaseModel):
 
 class GenerateCodeSubgraphResponseBody(BaseModel):
     experiment_code: ExperimentCode
+    execution_time: dict[str, list[float]]
