@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from airas.features.generators.generate_code_subgraph.prompts.validate_experiment_code_prompt import (
     validate_experiment_code_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.openai_client import (
     OPENAI_MODEL,
     OpenAIParams,
@@ -26,7 +26,7 @@ class ValidationOutput(BaseModel):
 
 async def validate_experiment_code(
     llm_name: OPENAI_MODEL,
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
     research_hypothesis: ResearchHypothesis,
     experimental_design: ExperimentalDesign,
     experiment_code: ExperimentCode,
@@ -59,4 +59,4 @@ async def validate_experiment_code(
         )
         return False, ""
 
-    return output["is_code_ready"], output["code_issue"]
+    return output.is_code_ready, output.code_issue
