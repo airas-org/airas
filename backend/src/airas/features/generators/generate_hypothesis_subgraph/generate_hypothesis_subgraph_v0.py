@@ -69,7 +69,7 @@ class GenerateHypothesisSubgraphV0:
         self.refinement_rounds = refinement_rounds
         check_api_key(llm_api_key_check=True)
 
-    @recode_execution_time
+    @record_execution_time
     def _initialize(
         self, state: GenerateHypothesisSubgraphV0State
     ) -> dict[str, list[EvaluatedHypothesis] | int]:
@@ -78,7 +78,7 @@ class GenerateHypothesisSubgraphV0:
             "refine_iterations": 0,
         }
 
-    @recode_execution_time
+    @record_execution_time
     async def _generate_hypothesis(
         self, state: GenerateHypothesisSubgraphV0State
     ) -> dict[str, ResearchHypothesis]:
@@ -90,7 +90,7 @@ class GenerateHypothesisSubgraphV0:
         )
         return {"research_hypothesis": research_hypothesis}
 
-    @recode_execution_time
+    @record_execution_time
     async def _evaluate_novelty_and_significance(
         self, state: GenerateHypothesisSubgraphV0State
     ) -> dict[str, list[EvaluatedHypothesis]]:
@@ -119,7 +119,7 @@ class GenerateHypothesisSubgraphV0:
             logger.info("Refinement iterations exceeded, passing.")
             return "end"
 
-    @recode_execution_time
+    @record_execution_time
     async def _refine_hypothesis(
         self, state: GenerateHypothesisSubgraphV0State
     ) -> dict[str, ResearchHypothesis | int]:
@@ -143,7 +143,11 @@ class GenerateHypothesisSubgraphV0:
         }
 
     def build_graph(self):
-        graph_builder = StateGraph(GenerateHypothesisSubgraphV0State)
+        graph_builder = StateGraph(
+            GenerateHypothesisSubgraphV0State,
+            input_schema=GenerateHypothesisSubgraphV0InputState,
+            output_schema=GenerateHypothesisSubgraphV0OutputState,
+        )
         graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node("generate_hypothesis", self._generate_hypothesis)
         graph_builder.add_node(

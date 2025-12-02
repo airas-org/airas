@@ -3,15 +3,15 @@ from typing import Annotated
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 
-from airas.features.generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph_v0 import (
-    GenerateHypothesisSubgraphV0,
-)
-from airas.services.api_client.langchain_client import LangChainClient
 from api.schemas.hypotheses import (
     GenerateHypothesisSubgraphV0RequestBody,
     GenerateHypothesisSubgraphV0ResponseBody,
 )
-from airas.core.container import Container
+from src.airas.core.container import Container
+from src.airas.features.generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph_v0 import (
+    GenerateHypothesisSubgraphV0,
+)
+from src.airas.services.api_client.langchain_client import LangChainClient
 
 router = APIRouter(prefix="/hypotheses", tags=["hypotheses"])
 
@@ -30,7 +30,7 @@ async def generate_hypotheses(
             refinement_rounds=request.refinement_rounds,
         )
         .build_graph()
-        .ainvoke(request.model_dump())
+        .ainvoke(request)
     )
     return GenerateHypothesisSubgraphV0ResponseBody(
         research_hypothesis=result["research_hypothesis"],
