@@ -27,7 +27,7 @@ async def analyze_experiment(
     llm_client: LLMFacadeClient,
     research_hypothesis: ResearchHypothesis,
     experimental_design: ExperimentalDesign,
-    experimental_code: ExperimentCode,
+    experiment_code: ExperimentCode,
     experimental_results: ExperimentalResults,
 ) -> str:
     env = Environment()
@@ -37,7 +37,7 @@ async def analyze_experiment(
         {
             "research_hypothesis": research_hypothesis,
             "experimental_design": experimental_design,
-            "experimental_code": experimental_code,
+            "experiment_code": experiment_code,
             "experimental_results": experimental_results,
         }
     )

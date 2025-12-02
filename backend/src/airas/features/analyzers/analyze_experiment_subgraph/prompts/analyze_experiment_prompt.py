@@ -64,6 +64,11 @@ Your task is to analyze the experimental results and generate a comprehensive an
 {% endif %}
 {% endif %}
 
+{% if experiment_code %}
+# Experiment Code
+{{ experiment_code }}
+{% endif %}
+
 # Experimental Results
 {% if experimental_results %}
 {% if experimental_results.metrics_data %}

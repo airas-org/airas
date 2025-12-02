@@ -34,7 +34,7 @@ class AnalyzeExperimentLLMMapping(BaseModel):
 class AnalyzeExperimentSubgraphInputState(TypedDict, total=False):
     research_hypothesis: ResearchHypothesis
     experimental_design: ExperimentalDesign
-    experimental_code: ExperimentCode
+    experiment_code: ExperimentCode
     experimental_results: ExperimentalResults
 
 
@@ -84,7 +84,7 @@ class AnalyzeExperimentSubgraph:
             llm_name=self.llm_mapping.analyze_experiment,
             research_hypothesis=state["research_hypothesis"],
             experimental_design=state["experimental_design"],
-            experimental_code=state["experimental_code"],
+            experiment_code=state["experiment_code"],
             experimental_results=state["experimental_results"],
             llm_client=self.llm_client,
         )
