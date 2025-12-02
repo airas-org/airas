@@ -57,7 +57,7 @@ analyze_experiment_subgraph_input_data = {
             ),
         ],
     ),
-    "experimental_code": ExperimentCode(
+    "experiment_code": ExperimentCode(
         train_py="# Training script placeholder",
         evaluate_py="# Evaluation script placeholder",
         preprocess_py="# Preprocessing script placeholder",
