@@ -6,13 +6,13 @@ from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
-from airas.features.evaluate.evaluate_experimental_consistency_subgraph.input_data import (
+from airas.features.evaluators.evaluate_experimental_consistency_subgraph.input_data import (
     evaluate_experimental_consistency_subgraph_input_data,
 )
-from airas.features.evaluate.evaluate_experimental_consistency_subgraph.nodes.evaluate_experimental_consistency import (
+from airas.features.evaluators.evaluate_experimental_consistency_subgraph.nodes.evaluate_experimental_consistency import (
     evaluate_experimental_consistency,
 )
-from airas.features.evaluate.evaluate_experimental_consistency_subgraph.prompts.evaluate_experimental_consistency_prompt import (
+from airas.features.evaluators.evaluate_experimental_consistency_subgraph.prompts.evaluate_experimental_consistency_prompt import (
     evaluate_experimental_consistency_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
