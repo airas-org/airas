@@ -32,7 +32,7 @@ def merge_execution_time(
     return merged
 
 
-class ExecutionTimeState(TypedDict, total=False):
+class ExecutionTimeState(TypedDict):
     execution_time: Annotated[ExecutionTime, merge_execution_time]
 
 

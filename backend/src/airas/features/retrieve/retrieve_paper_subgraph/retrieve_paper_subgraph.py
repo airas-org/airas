@@ -78,11 +78,11 @@ class RetrievePaperSubgraphLLMMapping(BaseModel):
     extract_reference_titles: LLM_MODEL = DEFAULT_NODE_LLMS["extract_reference_titles"]
 
 
-class RetrievePaperSubgraphInputState(TypedDict, total=False):
+class RetrievePaperSubgraphInputState(TypedDict):
     query_list: list[str]
 
 
-class RetrievePaperSubgraphOutputState(ExecutionTimeState, total=False):
+class RetrievePaperSubgraphOutputState(ExecutionTimeState):
     research_study_list: list[list[ResearchStudy]]
 
 
@@ -123,14 +123,14 @@ class RetrievePaperSubgraph:
     @record_execution_time
     def _get_paper_titles_from_airas_db(
         self, state: RetrievePaperSubgraphState
-    ) -> RetrievePaperSubgraphState:
+    ) -> dict[str, Any]:
         all_papers = get_paper_titles_from_airas_db()
         return {"all_papers": all_papers or []}
 
     @record_execution_time
     def _filter_titles_by_queries(
         self, state: RetrievePaperSubgraphState
-    ) -> RetrievePaperSubgraphState:
+    ) -> dict[str, Any]:
         retrieve_paper_title_list = filter_titles_by_queries(
             papers=state.get("all_papers", []),
             queries=state.get("query_list", []),
@@ -141,7 +141,7 @@ class RetrievePaperSubgraph:
     @record_execution_time
     async def _search_arxiv_id_from_title(
         self, state: RetrievePaperSubgraphState
-    ) -> RetrievePaperSubgraphState:
+    ) -> dict[str, Any]:
         arxiv_id_list = await search_arxiv_id_from_title(
             llm_name=self.llm_mapping.search_arxiv_id_from_title,
             llm_client=self.llm_client,
@@ -153,7 +153,7 @@ class RetrievePaperSubgraph:
     @record_execution_time
     async def _search_arxiv_info_by_id(
         self, state: RetrievePaperSubgraphState
-    ) -> RetrievePaperSubgraphState:
+    ) -> dict[str, Any]:
         arxiv_info_list = await search_arxiv_info_by_id(
             arxiv_id_list=state.get("arxiv_id_list", []),
             arxiv_client=self.arxiv_client,
@@ -163,7 +163,7 @@ class RetrievePaperSubgraph:
     @record_execution_time
     async def _retrieve_text_from_url(
         self, state: RetrievePaperSubgraphState
-    ) -> RetrievePaperSubgraphState:
+    ) -> dict[str, Any]:
         arxiv_full_text_list = await retrieve_text_from_url(
             arxiv_info_groups=state.get("arxiv_info_list", []),
         )
@@ -172,7 +172,7 @@ class RetrievePaperSubgraph:
     # @record_execution_time
     async def _summarize_paper(
         self, state: RetrievePaperSubgraphState
-    ) -> RetrievePaperSubgraphState:
+    ) -> dict[str, Any]:
         paper_summary_list = await summarize_paper(
             llm_name=self.llm_mapping.summarize_paper,
             llm_client=self.langchain_client,
@@ -184,7 +184,7 @@ class RetrievePaperSubgraph:
     @record_execution_time
     async def _extract_github_url_from_text(
         self, state: RetrievePaperSubgraphState
-    ) -> RetrievePaperSubgraphState:
+    ) -> dict[str, Any]:
         github_url_list = await extract_github_url_from_text(
             llm_name=self.llm_mapping.extract_github_url_from_text,
             prompt_template=extract_github_url_from_text_prompt,
@@ -198,7 +198,7 @@ class RetrievePaperSubgraph:
     @record_execution_time
     def _retrieve_repository_contents(
         self, state: RetrievePaperSubgraphState
-    ) -> RetrievePaperSubgraphState:
+    ) -> dict[str, Any]:
         github_url_list = state.get("github_url_list")
         if github_url_list is None:
             raise ValueError(
@@ -213,7 +213,7 @@ class RetrievePaperSubgraph:
     @record_execution_time
     async def _extract_experimental_info(
         self, state: RetrievePaperSubgraphState
-    ) -> RetrievePaperSubgraphState:
+    ) -> dict[str, Any]:
         paper_summary_list = state.get("paper_summary_list")
         github_code_list = state.get("github_code_list")
         if paper_summary_list is None or github_code_list is None:
@@ -238,7 +238,7 @@ class RetrievePaperSubgraph:
     # @record_execution_time
     async def _extract_reference_titles(
         self, state: RetrievePaperSubgraphState
-    ) -> RetrievePaperSubgraphState:
+    ) -> dict[str, Any]:
         reference_title_list = await extract_reference_titles(
             llm_name=self.llm_mapping.extract_reference_titles,
             llm_client=self.langchain_client,
@@ -249,7 +249,7 @@ class RetrievePaperSubgraph:
     @record_execution_time
     async def _formatted_output(
         self, state: RetrievePaperSubgraphState
-    ) -> RetrievePaperSubgraphState:
+    ) -> dict[str, Any]:
         retrieve_paper_title_list = state.get("retrieve_paper_title_list", [])
         arxiv_info_list = state.get("arxiv_info_list", [])
         arxiv_full_text_list = state.get("arxiv_full_text_list", [])

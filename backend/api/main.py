@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from api.routes.v1 import papers
+from api.routes.v1 import hypotheses, papers
 from src.airas.core.container import Container
 
 
@@ -21,3 +21,4 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AIRAS API", version="0.0.1", lifespan=lifespan)
 app.include_router(papers.router, prefix="/airas/v1")
+app.include_router(hypotheses.router, prefix="/airas/v1")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -52,3 +53,18 @@ class ResearchStudy(BaseModel):
     references: Optional[dict[str, dict[str, Any]]] = Field(None, description="")
     meta_data: MetaData = Field(..., description="")
     llm_extracted_info: LLMExtractedInfo
+
+    def to_formatted_json(self) -> str:
+        data_dict = {
+            "Title": self["title"],
+            "Main Contributions": self["llm_extracted_info"]["main_contributions"],
+            "Methods": self["llm_extracted_info"]["methodology"],
+            "Experimental Setup": self["llm_extracted_info"]["experimental_setup"],
+            "Limitations": self["llm_extracted_info"]["limitations"],
+            "Future Research Directions": self["llm_extracted_info"][
+                "future_research_directions"
+            ],
+            "Experimental Code": self["llm_extracted_info"]["experimental_code"],
+            "Experimental Info": self["llm_extracted_info"]["experimental_info"],
+        }
+        return json.dumps(data_dict, ensure_ascii=False, indent=4)
