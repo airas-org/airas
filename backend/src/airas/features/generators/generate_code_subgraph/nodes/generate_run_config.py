@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from airas.features.generators.generate_code_subgraph.prompts.generate_run_config_prompt import (
     generate_run_config_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.openai_client import (
     OPENAI_MODEL,
     OpenAIParams,
@@ -34,7 +34,7 @@ class RunConfigListOutput(BaseModel):
 
 async def generate_run_config(
     llm_name: OPENAI_MODEL,
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
     research_hypothesis: ResearchHypothesis,
     experimental_design: ExperimentalDesign,
 ) -> dict[str, str]:
@@ -59,11 +59,7 @@ async def generate_run_config(
 
     if output is None:
         raise ValueError("No response from LLM in generate_run_config.")
-    output_model = RunConfigListOutput(**output)
-
-    run_configs_dict = {
-        cfg.run_id: cfg.run_config_yaml for cfg in output_model.run_configs
-    }
+    run_configs_dict = {cfg.run_id: cfg.run_config_yaml for cfg in output.run_configs}
 
     logger.info(f"Successfully generated {len(run_configs_dict)} run configs")
     return run_configs_dict
