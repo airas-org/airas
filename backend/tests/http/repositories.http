@@ -1,0 +1,12 @@
+
+POST http://127.0.0.1:8001/airas/v1/repositories
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "airas-api-test",
+        "branch_name": "develop-2"
+    },
+    "is_private": true
+}
