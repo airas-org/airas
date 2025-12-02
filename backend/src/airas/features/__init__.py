@@ -1,4 +1,4 @@
-from .analysis.analyze_experiment_subgraph.analyze_experiment_subgraph import (
+from .analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
 from .create.create_method_subgraph.create_method_subgraph import (
