@@ -70,7 +70,10 @@ async def create_branches_for_run_ids(
         github_config.branch_name,
     )
     if not base_branch_info:
-        raise ValueError(f"Base branch '{github_config.branch_name}' not found.")
+        raise ValueError(
+            f"Base branch '{github_config.branch_name}' not found in "
+            f"'{github_config.github_owner}/{github_config.repository_name}'"
+        )
 
     base_commit_sha = base_branch_info["commit"]["sha"]
 
