@@ -3,9 +3,7 @@ from jinja2 import Environment
 from airas.features.generators.generate_hypothesis_subgraph.prompts.refine_hypothesis_prompt import (
     refine_hypothesis_prompt,
 )
-from airas.features.retrieve.retrieve_paper_subgraph.nodes.extract_reference_titles import (
-    LangChainClient,
-)
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.research_hypothesis import (
     EvaluatedHypothesis,
