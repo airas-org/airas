@@ -5,7 +5,7 @@ from jinja2 import Environment
 from airas.features.generators.generate_code_subgraph.prompts.generate_experiment_code_prompt import (
     generate_experiment_code_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.openai_client import (
     OPENAI_MODEL,
     OpenAIParams,
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 async def generate_experiment_code(
     llm_name: OPENAI_MODEL,
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
     research_hypothesis: ResearchHypothesis,
     experimental_design: ExperimentalDesign,
     experiment_code: ExperimentCode,
@@ -49,4 +49,4 @@ async def generate_experiment_code(
     if output is None:
         raise ValueError("No response from LLM in generate_experiment_code.")
 
-    return ExperimentCode(**output)
+    return output
