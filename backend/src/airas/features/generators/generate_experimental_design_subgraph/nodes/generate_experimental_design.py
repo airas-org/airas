@@ -13,9 +13,9 @@ from airas.data.model.language_model import (
 from airas.features.generators.generate_experimental_design_subgraph.prompts.generate_experimental_design_prompt import (
     generate_experimental_design_prompt,
 )
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
-    LLMFacadeClient,
 )
 from airas.services.api_client.llm_client.openai_client import OpenAIParams
 from airas.types.experimental_design import (
@@ -40,7 +40,7 @@ class LLMOutput(BaseModel):
 
 async def generate_experimental_design(
     llm_name: LLM_MODEL,
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
     research_hypothesis: ResearchHypothesis,
     runner_config: RunnerConfig,
     num_models_to_use: int,
@@ -76,9 +76,7 @@ async def generate_experimental_design(
         raise ValueError("No response from LLM in generate_experiment_design.")
 
     primary_metric = research_hypothesis.primary_metric
-    evaluation_metrics = [
-        EvaluationMetric(**metric) for metric in output["evaluation_metrics"]
-    ]
+    evaluation_metrics = output.evaluation_metrics
 
     if primary_metric not in {metric.name for metric in evaluation_metrics}:
         logger.warning(
@@ -93,13 +91,11 @@ async def generate_experimental_design(
         )
 
     return ExperimentalDesign(
-        experiment_summary=output["experiment_summary"],
+        experiment_summary=output.experiment_summary,
         runner_config=runner_config,
         evaluation_metrics=evaluation_metrics,
-        models_to_use=output["models_to_use"],
-        datasets_to_use=output["datasets_to_use"],
-        proposed_method=MethodConfig(**output["proposed_method"]),
-        comparative_methods=[
-            MethodConfig(**method) for method in output["comparative_methods"]
-        ],
+        models_to_use=output.models_to_use,
+        datasets_to_use=output.datasets_to_use,
+        proposed_method=output.proposed_method,
+        comparative_methods=output.comparative_methods,
     )
