@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 from airas.types.research_hypothesis import ResearchHypothesis
-from src.airas.types.research_study import ResearchStudy
+from airas.types.research_study import ResearchStudy
 
 
 class GenerateHypothesisSubgraphV0RequestBody(BaseModel):
