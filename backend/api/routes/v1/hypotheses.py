@@ -11,7 +11,7 @@ from api.schemas.hypotheses import (
     GenerateHypothesisSubgraphV0RequestBody,
     GenerateHypothesisSubgraphV0ResponseBody,
 )
-from src.airas.core.container import Container
+from airas.core.container import Container
 
 router = APIRouter(prefix="/hypotheses", tags=["hypotheses"])
 
