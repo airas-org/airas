@@ -87,7 +87,7 @@ Content-Type: application/json
 }
 
 
-### Search paper by title
+### Push experiment code to GitHub branch
 
 POST http://127.0.0.1:8000/airas/v1/code/push
 Content-Type: application/json
