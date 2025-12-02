@@ -1,4 +1,3 @@
-import argparse
 import logging
 import time
 from typing import Literal
@@ -7,7 +6,6 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from typing_extensions import TypedDict
 
-from airas.core.base import BaseSubgraph
 from airas.features.github.nodes.create_branch import (
     create_branch,
 )
@@ -39,32 +37,20 @@ class PrepareRepositoryInputState(TypedDict):
     github_config: GitHubConfig
 
 
-class PrepareRepositoryHiddenState(TypedDict):
+class PrepareRepositoryOutputState(ExecutionTimeState):
+    is_repository_ready: bool
+    is_branch_ready: bool
+
+
+class PrepareRepositoryState(PrepareRepositoryInputState, PrepareRepositoryOutputState):
     target_branch_sha: str
     main_branch_sha: str
     is_repository_from_template: bool
     is_branch_already_exists: bool
     is_branch_created: bool
-    is_repository_ready: bool
-    is_branch_ready: bool
 
 
-class PrepareRepositoryOutputState(TypedDict): ...
-
-
-class PrepareRepositoryState(
-    PrepareRepositoryInputState,
-    PrepareRepositoryHiddenState,
-    PrepareRepositoryOutputState,
-    ExecutionTimeState,
-):
-    pass
-
-
-class PrepareRepositorySubgraph(BaseSubgraph):
-    InputState = PrepareRepositoryInputState
-    OutputState = PrepareRepositoryOutputState
-
+class PrepareRepositorySubgraph:
     def __init__(
         self,
         github_client: GithubClient,
@@ -151,11 +137,13 @@ class PrepareRepositorySubgraph(BaseSubgraph):
         return {"main_branch_sha": main_branch_sha}
 
     @recode_execution_time
-    def _create_branch(self, state: PrepareRepositoryState) -> dict[str, bool]:
-        is_branch_created = create_branch(
-            github_config=state["github_config"],
+    async def _create_branch(self, state: PrepareRepositoryState) -> dict[str, bool]:
+        is_branch_created = await create_branch(
             github_client=self.github_client,
-            sha=state["main_branch_sha"],
+            github_owner=state["github_config"].github_owner,
+            repository_name=state["github_config"].repository_name,
+            new_branch_name=state["github_config"].branch_name,
+            from_sha=state["main_branch_sha"],
         )
         return {"is_branch_created": is_branch_created}
 
@@ -171,7 +159,11 @@ class PrepareRepositorySubgraph(BaseSubgraph):
         }
 
     def build_graph(self):
-        graph_builder = StateGraph(PrepareRepositoryState)
+        graph_builder = StateGraph(
+            PrepareRepositoryState,
+            input_schema=PrepareRepositoryInputState,
+            output_schema=PrepareRepositoryOutputState,
+        )
 
         graph_builder.add_node(
             "check_repository_from_template", self._check_repository_from_template
@@ -194,46 +186,3 @@ class PrepareRepositorySubgraph(BaseSubgraph):
         graph_builder.add_edge("create_branch", "finalize_state")
         graph_builder.add_edge("finalize_state", END)
         return graph_builder.compile()
-
-
-async def main():
-    from airas.core.container import container
-
-    parser = argparse.ArgumentParser(description="PrepareRepositorySubgraph")
-    parser.add_argument(
-        "--github-owner",
-        default="auto-res2",
-        help="Your GitHub owner (default: auto-res2)",
-    )
-    parser.add_argument("repository_name", help="Your repository name")
-    parser.add_argument("branch_name", help="Your branch name")
-    args = parser.parse_args()
-
-    github_config = GitHubConfig(
-        github_owner=args.github_owner,
-        repository_name=args.repository_name,
-        branch_name=args.branch_name,
-    )
-
-    container.wire(modules=[__name__])
-    await container.init_resources()
-
-    try:
-        github_client = await container.github_client()
-        result = await PrepareRepositorySubgraph(
-            github_client=github_client,
-        ).arun({"github_config": github_config})
-        print(f"Result: {result}")
-    finally:
-        await container.shutdown_resources()
-
-
-if __name__ == "__main__":
-    import asyncio
-    import sys
-
-    try:
-        asyncio.run(main())
-    except Exception as e:
-        logger.error(f"Error running PrepareRepository: {e}")
-        sys.exit(1)
