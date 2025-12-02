@@ -82,14 +82,14 @@ class RetrievePaperSubgraphInputState(TypedDict):
     query_list: list[str]
 
 
-class RetrievePaperSubgraphOutputState(ExecutionTimeState):
+class RetrievePaperSubgraphOutputState(TypedDict):
     research_study_list: list[list[ResearchStudy]]
 
 
 class RetrievePaperSubgraphState(
     RetrievePaperSubgraphInputState,
     RetrievePaperSubgraphOutputState,
-    total=False,
+    ExecutionTimeState,
 ):
     all_papers: list[dict[str, Any]]
     retrieve_paper_title_list: list[list[str]]
