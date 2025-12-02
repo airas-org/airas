@@ -26,7 +26,7 @@ class ExecuteFullExperimentSubgraphInputState(TypedDict):
 
 class ExecuteFullExperimentSubgraphOutputState(ExecutionTimeState, total=False):
     all_dispatched: bool
-    experiment_branches: list[str]
+    branch_creation_results: list[tuple[str, str, bool]]
 
 
 class ExecuteFullExperimentSubgraphState(
@@ -63,10 +63,10 @@ class ExecuteFullExperimentSubgraph:
     @record_execution_time
     async def _create_branches(
         self, state: ExecuteFullExperimentSubgraphState
-    ) -> dict[str, list[str]]:
+    ) -> dict[str, list[tuple[str, str, bool]]]:
         if not (run_ids := state.get("run_ids")):
             logger.error("No run_ids found in state")
-            return {"experiment_branches": []}
+            return {"branch_creation_results": []}
 
         github_config = state["github_config"]
         logger.info(f"Creating branches for {len(run_ids)} run_ids")
@@ -77,35 +77,38 @@ class ExecuteFullExperimentSubgraph:
             run_ids,
         )
 
-        successful_branches = [
-            branch_name for run_id, branch_name, success in branch_results if success
-        ]
+        successful_count = sum(1 for _, _, success in branch_results if success)
 
-        if not successful_branches:
+        if successful_count == 0:
             logger.error("No branches were created successfully")
-            return {"experiment_branches": []}
+        else:
+            logger.info(
+                f"Successfully created {successful_count} out of {len(run_ids)} branches"
+            )
 
-        logger.info(
-            f"Successfully created {len(successful_branches)} out of {len(run_ids)} branches"
-        )
-
-        return {"experiment_branches": successful_branches}
+        return {"branch_creation_results": branch_results}
 
     @record_execution_time
     async def _dispatch_full_experiments(
         self, state: ExecuteFullExperimentSubgraphState
     ) -> dict[str, bool]:
-        run_ids: list[str] = state.get("run_ids", [])
+        if not (branch_creation_results := state.get("branch_creation_results")):
+            logger.error("No branch_creation_results found in state")
+            return {"all_dispatched": False}
 
-        if not (experiment_branches := state.get("experiment_branches")):
-            logger.error("No experiment_branches found in state")
+        successful_pairs = [
+            (run_id, branch_name)
+            for run_id, branch_name, success in branch_creation_results
+            if success
+        ]
+
+        if not successful_pairs:
+            logger.error("No successful branches to dispatch workflows")
             return {"all_dispatched": False}
 
         github_config = state["github_config"]
         runner_label_json = json.dumps([self.runner_label])
-        logger.info(
-            f"Dispatching full experiments on {len(experiment_branches)} branches"
-        )
+        logger.info(f"Dispatching full experiments on {len(successful_pairs)} branches")
 
         tasks = [
             dispatch_workflow(
@@ -116,13 +119,13 @@ class ExecuteFullExperimentSubgraph:
                 self.workflow_file,
                 {"runner_label": runner_label_json, "run_id": run_id},
             )
-            for run_id, branch_name in zip(run_ids, experiment_branches, strict=True)
+            for run_id, branch_name in successful_pairs
         ]
 
         results = await asyncio.gather(*tasks)
 
         failed_count = 0
-        for run_id, success in zip(run_ids, results, strict=True):
+        for (run_id, _), success in zip(successful_pairs, results, strict=True):
             if success:
                 logger.info(
                     f"Full experiment dispatch successful for run_id '{run_id}'"
@@ -133,12 +136,12 @@ class ExecuteFullExperimentSubgraph:
 
         if failed_count > 0:
             logger.error(
-                f"{failed_count} out of {len(experiment_branches)} experiment dispatches failed"
+                f"{failed_count} out of {len(successful_pairs)} experiment dispatches failed"
             )
             return {"all_dispatched": False}
 
         logger.info(
-            f"All {len(experiment_branches)} full experiment dispatches completed successfully"
+            f"All {len(successful_pairs)} full experiment dispatches completed successfully"
         )
         return {"all_dispatched": True}
 
@@ -187,7 +190,6 @@ async def main():
 
 
 if __name__ == "__main__":
-
     try:
         asyncio.run(main())
     except Exception as e:
