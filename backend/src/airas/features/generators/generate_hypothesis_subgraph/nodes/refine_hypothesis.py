@@ -3,10 +3,8 @@ from jinja2 import Environment
 from airas.features.generators.generate_hypothesis_subgraph.prompts.refine_hypothesis_prompt import (
     refine_hypothesis_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
-    LLMFacadeClient,
-)
+from airas.services.api_client.langchain_client import LangChainClient
+from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.research_hypothesis import (
     EvaluatedHypothesis,
     ResearchHypothesis,
@@ -16,7 +14,7 @@ from airas.types.research_study import ResearchStudy
 
 async def refine_hypothesis(
     llm_name: LLM_MODEL,
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
     research_objective: str,
     evaluated_hypothesis_history: list[EvaluatedHypothesis],
     research_study_list: list[ResearchStudy],
@@ -39,7 +37,10 @@ async def refine_hypothesis(
         "evaluated_hypothesis_history": EvaluatedHypothesis.format_list(
             evaluated_hypothesis_history[:-1]
         ),
-        "research_study_list": ResearchStudy.format_list(research_study_list),
+        "research_study_list": [
+            ResearchStudy.to_formatted_json(research_study)
+            for research_study in research_study_list
+        ],
     }
     messages = template.render(data)
     output, cost = await llm_client.structured_outputs(
@@ -50,4 +51,4 @@ async def refine_hypothesis(
     if output is None:
         raise ValueError("No response from LLM in refine_hypothesis")
 
-    return ResearchHypothesis(**output)
+    return output
