@@ -3,7 +3,6 @@ import logging
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
-from airas.core.base import BaseSubgraph
 from airas.features.github.push_code_subgraph.nodes.push_files_to_branch import (
     push_files_to_branch,
 )
@@ -14,7 +13,7 @@ from airas.services.api_client.github_client import GithubClient
 from airas.types.experiment_code import ExperimentCode
 from airas.types.github import GitHubConfig
 from airas.utils.check_api_key import check_api_key
-from airas.utils.execution_timers import time_node
+from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
 setup_logging()
@@ -28,26 +27,18 @@ class PushCodeSubgraphInputState(TypedDict):
     experiment_code: ExperimentCode
 
 
-class PushCodeSubgraphHiddenState(TypedDict):
-    secrets_set: bool
-
-
-class PushCodeSubgraphOutputState(TypedDict):
+class PushCodeSubgraphOutputState(ExecutionTimeState):
     files_pushed: bool
 
 
 class PushCodeSubgraphState(
     PushCodeSubgraphInputState,
-    PushCodeSubgraphHiddenState,
     PushCodeSubgraphOutputState,
 ):
-    pass
+    secrets_set: bool
 
 
-class PushCodeSubgraph(BaseSubgraph):
-    InputState = PushCodeSubgraphInputState
-    OutputState = PushCodeSubgraphOutputState
-
+class PushCodeSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
@@ -113,32 +104,3 @@ class PushCodeSubgraph(BaseSubgraph):
         graph_builder.add_edge("push_files_to_branch", END)
 
         return graph_builder.compile()
-
-
-async def main():
-    from airas.core.container import container
-    from airas.features.github.push_code_subgraph.input_data import (
-        push_code_subgraph_input_data,
-    )
-
-    container.wire(modules=[__name__])
-    await container.init_resources()
-
-    try:
-        github_client = await container.github_client()
-        result = await PushCodeSubgraph(
-            github_client=github_client,
-        ).arun(push_code_subgraph_input_data)
-        print(f"result: {result}")
-    finally:
-        await container.shutdown_resources()
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    try:
-        asyncio.run(main())
-    except Exception as e:
-        logger.error(f"Error running PushCodeSubgraph: {e}")
-        raise
