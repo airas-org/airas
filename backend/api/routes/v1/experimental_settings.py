@@ -20,7 +20,7 @@ router = APIRouter(prefix="/experimental_settings", tags=["experimental_settings
     "/generations", response_model=GenerateExperimentalDesignSubgraphResponseBody
 )
 @inject
-async def generate_hypotheses(
+async def generate_experimental_design(
     request: GenerateExperimentalDesignSubgraphRequestBody,
     langchain_client: Annotated[
         LangChainClient, Depends(Provide[Container.langchain_client])
