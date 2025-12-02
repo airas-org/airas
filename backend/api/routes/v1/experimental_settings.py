@@ -13,7 +13,7 @@ from src.airas.features.generators.generate_experimental_design_subgraph.generat
 )
 from src.airas.services.api_client.langchain_client import LangChainClient
 
-router = APIRouter(prefix="/experimental_settings", tags=["hypotheses"])
+router = APIRouter(prefix="/experimental_settings", tags=["experimental_settings"])
 
 
 @router.post(
