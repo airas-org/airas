@@ -44,14 +44,12 @@ class GenerateHypothesisSubgraphV0InputState(TypedDict):
     research_study_list: list[ResearchStudy]
 
 
-class GenerateHypothesisSubgraphV0OutputState(TypedDict):
+class GenerateHypothesisSubgraphV0OutputState(ExecutionTimeState):
     research_hypothesis: ResearchHypothesis
 
 
 class GenerateHypothesisSubgraphV0State(
-    GenerateHypothesisSubgraphV0InputState,
-    GenerateHypothesisSubgraphV0OutputState,
-    ExecutionTimeState,
+    GenerateHypothesisSubgraphV0InputState, GenerateHypothesisSubgraphV0OutputState
 ):
     refine_iterations: int
     evaluated_hypothesis_history: list[EvaluatedHypothesis]
@@ -97,7 +95,7 @@ class GenerateHypothesisSubgraphV0:
         evaluated_hypothesis = await evaluate_novelty_and_significance(
             research_objective=state["research_objective"],
             research_study_list=state["research_study_list"],
-            research_hypothesis=state["research_hypothesis"],
+            research_hypothesis=state.get("research_hypothesis"),
             llm_name=self.llm_mapping.evaluate_novelty_and_significance,
             llm_client=self.langchain_client,
         )
