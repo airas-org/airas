@@ -7,13 +7,13 @@ from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.core.base import BaseSubgraph
-from airas.features.evaluate.review_paper_subgraph.input_data import (
+from airas.features.evaluators.review_paper_subgraph.input_data import (
     review_paper_subgraph_input_data,
 )
-from airas.features.evaluate.review_paper_subgraph.nodes.review_paper import (
+from airas.features.evaluators.review_paper_subgraph.nodes.review_paper import (
     review_paper,
 )
-from airas.features.evaluate.review_paper_subgraph.prompts.review_paper_prompt import (
+from airas.features.evaluators.review_paper_subgraph.prompts.review_paper_prompt import (
     review_paper_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
