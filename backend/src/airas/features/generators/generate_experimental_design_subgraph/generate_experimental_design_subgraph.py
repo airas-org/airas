@@ -5,13 +5,12 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
-from airas.core.base import BaseSubgraph
 from airas.features.generators.generate_experimental_design_subgraph.nodes.generate_experimental_design import (
     generate_experimental_design,
 )
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
-    LLMFacadeClient,
 )
 from airas.types.experimental_design import ExperimentalDesign, RunnerConfig
 from airas.types.research_hypothesis import ResearchHypothesis
@@ -35,60 +34,33 @@ class GenerateExperimentalDesignSubgraphInputState(TypedDict):
     research_hypothesis: ResearchHypothesis
 
 
-class GenerateExperimentalDesignHiddenState(TypedDict): ...
-
-
-class GenerateExperimentalDesignSubgraphOutputState(TypedDict):
+class GenerateExperimentalDesignSubgraphOutputState(ExecutionTimeState):
     experimental_design: ExperimentalDesign
 
 
 class GenerateExperimentalDesignState(
     GenerateExperimentalDesignSubgraphInputState,
-    GenerateExperimentalDesignHiddenState,
     GenerateExperimentalDesignSubgraphOutputState,
-    ExecutionTimeState,
 ):
     pass
 
 
-class GenerateExperimentalDesignSubgraph(BaseSubgraph):
-    InputState = GenerateExperimentalDesignSubgraphInputState
-    OutputState = GenerateExperimentalDesignSubgraphOutputState
-
+class GenerateExperimentalDesignSubgraph:
     def __init__(
         self,
-        llm_client: LLMFacadeClient,
+        langchain_client: LangChainClient,
         runner_config: RunnerConfig,
-        llm_mapping: dict[str, str]
-        | GenerateExperimentalDesignLLMMapping
-        | None = None,
+        llm_mapping: GenerateExperimentalDesignLLMMapping | None = None,
         num_models_to_use: int = 2,
         num_datasets_to_use: int = 2,
         num_comparative_methods: int = 2,
     ):
-        self.llm_client = llm_client
+        self.langchain_client = langchain_client
+        self.llm_mapping = llm_mapping or GenerateExperimentalDesignLLMMapping()
         self.runner_config = runner_config
         self.num_models_to_use = num_models_to_use
         self.num_datasets_to_use = num_datasets_to_use
         self.num_comparative_methods = num_comparative_methods
-        if llm_mapping is None:
-            self.llm_mapping = GenerateExperimentalDesignLLMMapping()
-        elif isinstance(llm_mapping, dict):
-            try:
-                self.llm_mapping = GenerateExperimentalDesignLLMMapping.model_validate(
-                    llm_mapping
-                )
-            except Exception as e:
-                raise TypeError(
-                    f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
-                ) from e
-        elif isinstance(llm_mapping, GenerateExperimentalDesignLLMMapping):
-            self.llm_mapping = llm_mapping
-        else:
-            raise TypeError(
-                f"llm_mapping must be None, dict[str, str], or GenerateExperimentalDesignLLMMapping, "
-                f"but got {type(llm_mapping)}"
-            )
         check_api_key(llm_api_key_check=True)
 
     @record_execution_time
@@ -97,7 +69,7 @@ class GenerateExperimentalDesignSubgraph(BaseSubgraph):
     ) -> dict[str, ExperimentalDesign]:
         experimental_design = await generate_experimental_design(
             llm_name=self.llm_mapping.generate_experimental_design,
-            llm_client=self.llm_client,
+            llm_client=self.langchain_client,
             research_hypothesis=state["research_hypothesis"],
             runner_config=self.runner_config,
             num_models_to_use=self.num_models_to_use,
@@ -121,34 +93,3 @@ class GenerateExperimentalDesignSubgraph(BaseSubgraph):
         graph_builder.add_edge("generate_experiment_design", END)
 
         return graph_builder.compile()
-
-
-async def main():
-    from airas.core.container import container
-    from airas.features.generators.generate_experimental_design_subgraph.input_data import (
-        default_runner_config,
-        generate_experimental_design_subgraph_input_data,
-    )
-
-    container.wire(modules=[__name__])
-
-    try:
-        llm_client = await container.llm_facade_client()
-
-        result = await GenerateExperimentalDesignSubgraph(
-            llm_client=llm_client,
-            runner_config=default_runner_config,
-        ).arun(generate_experimental_design_subgraph_input_data)
-        print(f"result: {result}")
-    finally:
-        await container.shutdown_resources()
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    try:
-        asyncio.run(main())
-    except Exception as e:
-        logger.error(f"Error running GenerateExperimentalDesignSubgraph: {e}")
-        raise
