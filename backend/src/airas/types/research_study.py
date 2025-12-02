@@ -56,15 +56,13 @@ class ResearchStudy(BaseModel):
 
     def to_formatted_json(self) -> str:
         data_dict = {
-            "Title": self["title"],
-            "Main Contributions": self["llm_extracted_info"]["main_contributions"],
-            "Methods": self["llm_extracted_info"]["methodology"],
-            "Experimental Setup": self["llm_extracted_info"]["experimental_setup"],
-            "Limitations": self["llm_extracted_info"]["limitations"],
-            "Future Research Directions": self["llm_extracted_info"][
-                "future_research_directions"
-            ],
-            "Experimental Code": self["llm_extracted_info"]["experimental_code"],
-            "Experimental Info": self["llm_extracted_info"]["experimental_info"],
+            "Title": self.title,
+            "Main Contributions": self.llm_extracted_info.main_contributions,
+            "Methods": self.llm_extracted_info.methodology,
+            "Experimental Setup": self.llm_extracted_info.experimental_setup,
+            "Limitations": self.llm_extracted_info.limitations,
+            "Future Research Directions": self.llm_extracted_info.future_research_directions,
+            "Experimental Code": self.llm_extracted_info.experimental_code,
+            "Experimental Info": self.llm_extracted_info.experimental_info,
         }
         return json.dumps(data_dict, ensure_ascii=False, indent=4)
