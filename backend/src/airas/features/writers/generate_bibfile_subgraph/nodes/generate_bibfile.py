@@ -58,7 +58,7 @@ def _generate_bibfile_entry(ref: ResearchStudy, index: int) -> dict:
     year = None
     if published_date:
         year_match = re.match(r"(\d{4})", str(published_date))
-        year = year_match.group(1) if year_match else published_date
+        year = year_match.group(1) if year_match else None
 
     citation_key = _generate_citation_key(title, authors, year)
 
