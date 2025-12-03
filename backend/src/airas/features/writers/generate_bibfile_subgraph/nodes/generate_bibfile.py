@@ -53,7 +53,7 @@ def _generate_bibfile_entry(ref: ResearchStudy, index: int) -> dict:
 
     title = ref.title or f"ref{index}"
     authors = meta_data.authors or []
-    published_date = meta_data.published_date
+    published_date = meta_data.published_date if meta_data is not None else None
 
     year = None
     if published_date:
