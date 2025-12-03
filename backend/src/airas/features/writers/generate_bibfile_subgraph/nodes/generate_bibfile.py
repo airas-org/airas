@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def _generate_citation_key(title: str, authors: list[str], year) -> str:
     first_author = ""
-    if authors and len(authors) > 0:
+    if authors:
         author_parts = authors[0].split()
         first_author = author_parts[-1].lower() if author_parts else "author"
     else:
