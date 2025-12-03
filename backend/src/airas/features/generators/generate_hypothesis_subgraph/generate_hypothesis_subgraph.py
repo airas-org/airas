@@ -163,6 +163,7 @@ class GenerateHypothesisSubgraph:
         if self.qdrant_client is None:
             raise ValueError("qdrant_client is required for retrieving related papers")
         related_research_study_list = []  # Reset the list of related studies for re-execution.
+        # TODO: Should we switch to using `state("research_hypothesis").get()` and explicitly verify the existence?
         retrieved_titles = await get_paper_titles_from_qdrant(
             queries=[state["research_hypothesis"].method],  # type: ignore[typeddict-item]
             num_retrieve_paper=self.num_retrieve_related_papers,
