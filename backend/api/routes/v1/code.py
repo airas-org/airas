@@ -21,6 +21,8 @@ from src.airas.services.api_client.langchain_client import LangChainClient
 
 router = APIRouter(prefix="/code", tags=["code"])
 
+MAX_CODE_VALIDATIONS = 10
+
 
 @router.post("/generations", response_model=GenerateCodeSubgraphResponseBody)
 @inject
@@ -34,7 +36,7 @@ async def generate_code(
         await GenerateCodeSubgraph(
             wandb_config=request.wandb_config,
             langchain_client=langchain_client,
-            max_code_validations=request.max_code_validations,
+            max_code_validations=MAX_CODE_VALIDATIONS,
         )
         .build_graph()
         .ainvoke(request)
