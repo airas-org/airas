@@ -52,8 +52,8 @@ def _generate_bibfile_entry(ref: ResearchStudy, index: int) -> dict:
     meta_data = ref.meta_data
 
     title = ref.title or f"ref{index}"
-    authors = getattr(meta_data, "authors", None) or []
-    published_date = getattr(meta_data, "published_date", None)
+    authors = meta_data.authors or []
+    published_date = meta_data.published_date
 
     year = None
     if published_date:
@@ -79,25 +79,25 @@ def _generate_bibfile_entry(ref: ResearchStudy, index: int) -> dict:
     if year:
         entry["year"] = str(year)
 
-    if journal := getattr(meta_data, "venue", None):
+    if journal := meta_data.venue:
         entry["journal"] = journal
 
-    if volume := getattr(meta_data, "volume", None):
+    if volume := meta_data.volume:
         entry["volume"] = str(volume)
 
-    if number := getattr(meta_data, "issue", None):
+    if number := meta_data.issue:
         entry["number"] = str(number)
 
-    if pages := getattr(meta_data, "pages", None):
+    if pages := meta_data.pages:
         entry["pages"] = str(pages)
 
-    if doi := getattr(meta_data, "doi", None):
+    if doi := meta_data.doi:
         entry["doi"] = doi
 
-    if arxiv_url := getattr(meta_data, "pdf_url", None):
+    if arxiv_url := meta_data.pdf_url:
         entry["arxiv_url"] = arxiv_url
 
-    if github_url := getattr(meta_data, "github_url", None):
+    if github_url := meta_data.github_url:
         entry["github_url"] = github_url
 
     return entry
