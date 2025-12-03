@@ -49,7 +49,7 @@ def generate_bibfile(
 
 
 def _generate_bibfile_entry(ref: ResearchStudy, index: int) -> dict:
-    meta_data = ref.meta_data or {}
+    meta_data = ref.meta_data
 
     title = ref.title or f"ref{index}"
     authors = getattr(meta_data, "authors", None) or []
