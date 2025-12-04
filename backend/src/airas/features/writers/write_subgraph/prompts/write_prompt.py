@@ -23,16 +23,21 @@ The paper should contain the following sections with specific requirements:
 - You must include all relevant details of methods, experiments, and results—including mathematical equations, pseudocode (if applicable), experimental setups, configurations, numerical results, and figures/tables
 
 ## Citation Requirements
-- Insert citation placeholders throughout the paper using citation keys from the "### BibTeX References" section
-- Citation format: [citation_key] (e.g., [ashish_2017_attention], [b_2020_gpt])
-- Extract citation keys from the @article{key, ...} format in the references
-- Cite relevant papers when:
+- Insert citation placeholders throughout the paper using Pandoc/Quarto citation format: [@citation_key]
+- Citation format examples:
+    - Single citation: [@vaswani-2017-attention]
+    - Multiple citations: [@vaswani-2017-attention; @devlin-2018-bert]
+    - With page numbers: [@vaswani-2017-attention, p. 23]
+- The "Reference Candidates" section in the context provides papers with their citation keys
+- **You do NOT need to cite all papers listed in Reference Candidates**. Only cite papers that are directly relevant to your research
+- Cite papers selectively when:
     - Discussing related work and comparing approaches
     - Introducing methods or techniques from other papers
     - Presenting comparative results or baselines
     - Supporting claims with prior research
-- Use multiple citations where appropriate (e.g., [ashish_2017_attention, b_2020_gpt])
-- Ensure citations are contextually relevant and enhance the academic rigor of the paper
+- Each citation must be contextually relevant and enhance the academic rigor of the paper
+- Always use the [@key] format with @ symbol and square brackets
+- Only use citation keys explicitly provided in the "Reference Candidates" section
 
 ## Mathematical and Technical Content Standards
 - When beneficial for clarity, describe mathematical equations, parameter settings, and procedures in a structured and easy-to-follow way, using natural language or numbered steps

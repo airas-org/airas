@@ -8,11 +8,14 @@ from airas.services.api_client.langchain_client import LangChainClient
 from api.schemas.papers import (
     RetrievePaperSubgraphRequestBody,
     RetrievePaperSubgraphResponseBody,
+    WriteSubgraphRequestBody,
+    WriteSubgraphResponseBody,
 )
 from src.airas.core.container import Container
 from src.airas.features.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
 )
+from src.airas.features.writers.write_subgraph.write_subgraph import WriteSubgraph
 from src.airas.services.api_client.arxiv_client import ArxivClient
 from src.airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
 
@@ -48,5 +51,27 @@ async def get_paper_title(
             [study.model_dump() for study in chunk]
             for chunk in result["research_study_list"]
         ],
+        execution_time=result["execution_time"],
+    )
+
+
+@router.post("/generations", response_model=WriteSubgraphResponseBody)
+@inject
+async def generate_paper(
+    request: WriteSubgraphRequestBody,
+    llm_client: Annotated[
+        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
+    ],
+) -> WriteSubgraphResponseBody:
+    result = (
+        await WriteSubgraph(
+            llm_client=llm_client,
+            writing_refinement_rounds=request.writing_refinement_rounds,
+        )
+        .build_graph()
+        .ainvoke(request)
+    )
+    return WriteSubgraphResponseBody(
+        paper_content=result["paper_content"],
         execution_time=result["execution_time"],
     )

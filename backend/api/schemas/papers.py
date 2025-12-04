@@ -1,6 +1,12 @@
 from pydantic import BaseModel
 
-from src.airas.types.research_study import ResearchStudy
+from airas.types.experiment_code import ExperimentCode
+from airas.types.experimental_analysis import ExperimentalAnalysis
+from airas.types.experimental_design import ExperimentalDesign
+from airas.types.experimental_results import ExperimentalResults
+from airas.types.paper import PaperContent
+from airas.types.research_hypothesis import ResearchHypothesis
+from airas.types.research_study import ResearchStudy
 
 
 class RetrievePaperSubgraphRequestBody(BaseModel):
@@ -10,4 +16,20 @@ class RetrievePaperSubgraphRequestBody(BaseModel):
 
 class RetrievePaperSubgraphResponseBody(BaseModel):
     research_study_list: list[list[ResearchStudy]]
+    execution_time: dict[str, list[float]]
+
+
+class WriteSubgraphRequestBody(BaseModel):
+    research_hypothesis: ResearchHypothesis
+    experimental_design: ExperimentalDesign
+    experiment_code: ExperimentCode
+    experimental_results: ExperimentalResults
+    experimental_analysis: ExperimentalAnalysis
+    research_study_list: list[ResearchStudy]
+    references_bib: str
+    writing_refinement_rounds: int = 2
+
+
+class WriteSubgraphResponseBody(BaseModel):
+    paper_content: PaperContent
     execution_time: dict[str, list[float]]
