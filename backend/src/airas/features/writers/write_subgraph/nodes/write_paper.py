@@ -25,14 +25,6 @@ async def write_paper(
         message=messages, data_model=PaperContent, llm_name=llm_name
     )
     if output is None:
-        raise ValueError("Error: No response from LLM in write.")
+        raise ValueError("Error: No response from LLM in write_paper.")
 
-    missing_fields = [
-        field
-        for field in PaperContent.model_fields
-        if field not in output or not output[field].strip()
-    ]
-    if missing_fields:
-        raise ValueError(f"Missing or empty fields in model response: {missing_fields}")
-
-    return PaperContent(**output)
+    return output
