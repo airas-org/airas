@@ -1,10 +1,10 @@
 from jinja2 import Environment
 
-from airas.features.write.writer_subgraph.prompt.refine_prompt import refine_prompt
-from airas.features.write.writer_subgraph.prompt.section_tips_prompt import (
+from airas.features.writers.write_subgraph.prompts.refine_prompt import refine_prompt
+from airas.features.writers.write_subgraph.prompts.section_tips_prompt import (
     section_tips_prompt,
 )
-from airas.features.write.writer_subgraph.prompt.write_prompt import write_prompt
+from airas.features.writers.write_subgraph.prompts.write_prompt import write_prompt
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
     LLMFacadeClient,
