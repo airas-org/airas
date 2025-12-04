@@ -10,10 +10,8 @@ from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.features.writers.write_subgraph.nodes.generate_note import generate_note
 from airas.features.writers.write_subgraph.nodes.refine_paper import refine_paper
 from airas.features.writers.write_subgraph.nodes.write_paper import write_paper
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
-    LLMFacadeClient,
-)
+from airas.services.api_client.langchain_client import LangChainClient
+from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_analysis import ExperimentalAnalysis
 from airas.types.experimental_design import ExperimentalDesign
@@ -69,7 +67,7 @@ class WriteSubgraphState(
 class WriteSubgraph:
     def __init__(
         self,
-        llm_client: LLMFacadeClient,
+        langchain_client: LangChainClient,
         llm_mapping: dict[str, str] | WriteLLMMapping | None = None,
         writing_refinement_rounds: int = 2,
     ):
@@ -85,7 +83,7 @@ class WriteSubgraph:
                 f"but got {type(llm_mapping)}"
             )
         self.writing_refinement_rounds = writing_refinement_rounds
-        self.llm_client = llm_client
+        self.langchain_client = langchain_client
         check_api_key(llm_api_key_check=True)
 
     @record_execution_time
@@ -111,7 +109,7 @@ class WriteSubgraph:
     async def _write_paper(self, state: WriteSubgraphState) -> dict[str, PaperContent]:
         paper_content = await write_paper(
             llm_name=self.llm_mapping.write_paper,
-            llm_client=self.llm_client,
+            langchain_client=self.langchain_client,
             note=state["note"],
         )
         return {"paper_content": paper_content}
@@ -122,7 +120,7 @@ class WriteSubgraph:
     ) -> Command[Literal["refine_paper", "__end__"]]:
         paper_content = await refine_paper(
             llm_name=self.llm_mapping.refine_paper,
-            llm_client=self.llm_client,
+            langchain_client=self.langchain_client,
             paper_content=state["paper_content"],  # type: ignore[typeddict-item]
             note=state["note"],
         )

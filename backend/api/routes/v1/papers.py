@@ -59,13 +59,13 @@ async def get_paper_title(
 @inject
 async def generate_paper(
     request: WriteSubgraphRequestBody,
-    llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
+    langchain_client: Annotated[
+        LangChainClient, Depends(Provide[Container.langchain_client])
     ],
 ) -> WriteSubgraphResponseBody:
     result = (
         await WriteSubgraph(
-            llm_client=llm_client,
+            langchain_client=langchain_client,
             writing_refinement_rounds=request.writing_refinement_rounds,
         )
         .build_graph()
