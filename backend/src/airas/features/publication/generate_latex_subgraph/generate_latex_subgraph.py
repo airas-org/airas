@@ -5,17 +5,22 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.config.llm_config import DEFAULT_NODE_LLMS
-from airas.core.base import BaseSubgraph
-from airas.features.publication.generate_latex_subgraph.nodes.convert_placeholders_to_citations import (
-    convert_placeholders_to_citations,
+from airas.features.github.nodes.retrieve_github_repository_file import (
+    retrieve_github_repository_file,
+)
+from airas.features.publication.generate_latex_subgraph.nodes.convert_pandoc_citations_to_latex import (
+    convert_pandoc_citations_to_latex,
 )
 from airas.features.publication.generate_latex_subgraph.nodes.convert_to_latex import (
     convert_to_latex,
 )
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
-    LLMFacadeClient,
+from airas.features.publication.generate_latex_subgraph.nodes.embed_in_latex_template import (
+    embed_in_latex_template,
 )
+from airas.services.api_client.github_client import GithubClient
+from airas.services.api_client.langchain_client import LangChainClient
+from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.types.latex import LATEX_TEMPLATE_NAME, LATEX_TEMPLATE_REPOSITORY_INFO
 from airas.types.paper import PaperContent
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -23,7 +28,7 @@ from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
-latex_timed = lambda f: time_node("generate_latex_subgraph")(f)  # noqa: E731
+record_execution_time = lambda f: time_node("generate_latex_subgraph")(f)  # noqa: E731
 
 
 class GenerateLatexLLMMapping(BaseModel):
@@ -35,29 +40,25 @@ class GenerateLatexSubgraphInputState(TypedDict):
     paper_content: PaperContent
 
 
-class GenerateLatexSubgraphHiddenState(TypedDict): ...
-
-
-class GenerateLatexSubgraphOutputState(TypedDict):
-    latex_formatted_paper_content: PaperContent
+class GenerateLatexSubgraphOutputState(ExecutionTimeState):
+    latex_text: str
 
 
 class GenerateLatexSubgraphState(
     GenerateLatexSubgraphInputState,
-    GenerateLatexSubgraphHiddenState,
     GenerateLatexSubgraphOutputState,
-    ExecutionTimeState,
+    total=False,
 ):
-    pass
+    latex_template_text: str
+    latex_paper_content: PaperContent
 
 
-class GenerateLatexSubgraph(BaseSubgraph):
-    InputState = GenerateLatexSubgraphInputState
-    OutputState = GenerateLatexSubgraphOutputState
-
+class GenerateLatexSubgraph:
     def __init__(
         self,
-        llm_client: LLMFacadeClient,
+        langchain_client: LangChainClient,
+        github_client: GithubClient,
+        latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
         llm_mapping: dict[str, str] | GenerateLatexLLMMapping | None = None,
     ):
         if llm_mapping is None:
@@ -71,56 +72,75 @@ class GenerateLatexSubgraph(BaseSubgraph):
                 f"llm_mapping must be None, dict[str, str], or GenerateLatexLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
-        self.llm_client = llm_client
+        self.langchain_client = langchain_client
+        self.github_client = github_client
+        self.latex_template_name = latex_template_name
         check_api_key(llm_api_key_check=True)
 
-    @latex_timed
-    def _convert_placeholders_to_citations(
+    @record_execution_time
+    def _retrieve_latex_template(
+        self, state: GenerateLatexSubgraphState
+    ) -> dict[str, str]:
+        latex_template_text = retrieve_github_repository_file(
+            github_repository=LATEX_TEMPLATE_REPOSITORY_INFO,
+            file_path=f".research/latex/{self.latex_template_name}/template.tex",
+            github_client=self.github_client,
+        )
+        return {"latex_template_text": latex_template_text}
+
+    @record_execution_time
+    def _convert_pandoc_citations_to_latex(
         self, state: GenerateLatexSubgraphState
     ) -> dict[str, PaperContent]:
-        paper_content = convert_placeholders_to_citations(
+        paper_content = convert_pandoc_citations_to_latex(
             paper_content=state["paper_content"],
             references_bib=state["references_bib"],
         )
         return {"paper_content": paper_content}
 
-    @latex_timed
-    async def _convert_to_latex_str(
+    @record_execution_time
+    async def _convert_to_latex(
         self, state: GenerateLatexSubgraphState
     ) -> dict[str, PaperContent]:
-        latex_formatted_paper_content = await convert_to_latex(
+        latex_paper_content = await convert_to_latex(
             llm_name=self.llm_mapping.convert_to_latex,
+            langchain_client=self.langchain_client,
             paper_content=state["paper_content"],
-            llm_client=self.llm_client,
+            references_bib=state["references_bib"],
+            latex_template_text=state["latex_template_text"],
         )
-        return {"latex_formatted_paper_content": latex_formatted_paper_content}
+        return {"latex_paper_content": latex_paper_content}
+
+    @record_execution_time
+    def _embed_in_latex_template(
+        self, state: GenerateLatexSubgraphState
+    ) -> dict[str, str]:
+        latex_text = embed_in_latex_template(
+            latex_formatted_paper_content=state["latex_paper_content"],
+            latex_template_text=state["latex_template_text"],
+        )
+        return {
+            "latex_text": latex_text,
+        }
 
     def build_graph(self):
-        graph_builder = StateGraph(GenerateLatexSubgraphState)
-        graph_builder.add_node(
-            "convert_placeholders_to_citations", self._convert_placeholders_to_citations
+        graph_builder = StateGraph(
+            GenerateLatexSubgraphState,
+            input_schema=GenerateLatexSubgraphInputState,
+            output_schema=GenerateLatexSubgraphOutputState,
         )
-        graph_builder.add_node("convert_to_latex", self._convert_to_latex_str)
+        graph_builder.add_node("retrieve_latex_template", self._retrieve_latex_template)
+        graph_builder.add_node(
+            "convert_pandoc_citations_to_latex", self._convert_pandoc_citations_to_latex
+        )
+        graph_builder.add_node("convert_to_latex", self._convert_to_latex)
+        graph_builder.add_node("embed_in_latex_template", self._embed_in_latex_template)
 
-        graph_builder.add_edge(START, "convert_placeholders_to_citations")
-        graph_builder.add_edge("convert_placeholders_to_citations", "convert_to_latex")
-        graph_builder.add_edge("convert_to_latex", END)
+        graph_builder.add_edge(START, "retrieve_latex_template")
+        graph_builder.add_edge(START, "convert_pandoc_citations_to_latex")
+        graph_builder.add_edge("retrieve_latex_template", "convert_to_latex")
+        graph_builder.add_edge("convert_pandoc_citations_to_latex", "convert_to_latex")
+        graph_builder.add_edge("convert_to_latex", "embed_in_latex_template")
+        graph_builder.add_edge("embed_in_latex_template", END)
 
         return graph_builder.compile()
-
-
-def main():
-    from airas.features.publication.generate_latex_subgraph.input_data import (
-        generate_latex_subgraph_input_data,
-    )
-
-    output = GenerateLatexSubgraph().run(generate_latex_subgraph_input_data)
-    print(output)
-
-
-if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        logger.error(f"Error running GenerateLatexSubgraph: {e}")
-        raise
