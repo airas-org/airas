@@ -2,7 +2,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from api.routes.v1 import code, experimental_settings, hypotheses, papers, repositories
+from api.routes.v1 import (
+    bibfile,
+    code,
+    experimental_settings,
+    hypotheses,
+    papers,
+    repositories,
+)
 from src.airas.core.container import Container
 
 
@@ -25,3 +32,4 @@ app.include_router(hypotheses.router, prefix="/airas/v1")
 app.include_router(experimental_settings.router, prefix="/airas/v1")
 app.include_router(code.router, prefix="/airas/v1")
 app.include_router(repositories.router, prefix="/airas/v1")
+app.include_router(bibfile.router, prefix="/airas/v1")
