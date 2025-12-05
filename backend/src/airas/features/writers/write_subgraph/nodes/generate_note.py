@@ -1,9 +1,9 @@
 import re
 from typing import Any
 
-import bibtexparser
 from jinja2 import Template
 
+from airas.features.publication.nodes.parse_bibtex_to_dict import parse_bibtex_to_dict
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_analysis import ExperimentalAnalysis
 from airas.types.experimental_design import ExperimentalDesign
@@ -21,12 +21,12 @@ def _normalize(text: str) -> str:
 def _map_studies_to_bibtex(
     research_study_list: list[ResearchStudy], references_bib: str
 ) -> list[dict[str, Any]]:
-    bib = bibtexparser.loads(references_bib)
+    parsed_references = parse_bibtex_to_dict(references_bib)
 
     # { normalized_title: citation_key }
     bib_map = {
         _normalize(entry.get("title", "")): entry.get("ID")
-        for entry in bib.entries
+        for entry in parsed_references.values()
         if entry.get("title") and entry.get("ID")
     }
 
@@ -73,7 +73,7 @@ def generate_note(
 ## 6. Reference Candidates (Source Material)
 This section lists papers available for citation.
 **Instructions for Writer:**
-- The **Citation Key** (e.g., `[@vaswani2017]`) matches the entry in the BibTeX references.
+- The **Citation Key** (e.g., `[@vaswani-2017-attention]`) matches the entry in the BibTeX references.
 - Select and use the appropriate Citation Key when citing these works in the text.
 - You do NOT need to cite all papers listed here. Only cite papers that are relevant to your research.
 
