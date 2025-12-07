@@ -22,18 +22,5 @@ def retrieve_github_repository_file(
 
     file_data_dict = cast(dict, file_data)
     decoded_bytes = base64.b64decode(file_data_dict["content"])
-    latex_content = decoded_bytes.decode("utf-8")
-    return latex_content
-
-
-if __name__ == "__main__":
-    github_repository = {
-        "github_owner": "auto-res2",
-        "repository_name": "tanaka-20250729-v3",
-        "branch_name": "main",
-    }
-    latex_template = retrieve_github_repository_file(
-        github_repository=github_repository,
-        file_path=".research/latex/iclr2024/template.tex",
-    )
-    print(latex_template)
+    content = decoded_bytes.decode("utf-8")
+    return content
