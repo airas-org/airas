@@ -1,10 +1,10 @@
 from pydantic import BaseModel
 
-from airas.types.experimental_design import Subfield
+from airas.types.experimental_design import ModelSubfield
 
 
 class RetrieveModelsSubgraphRequestBody(BaseModel):
-    subfields: Subfield
+    model_subfield: ModelSubfield
 
 
 class RetrieveModelsSubgraphResponseBody(BaseModel):

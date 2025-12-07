@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 
 ModelSubfield = Literal["transformer_decoder_based_models"]
 
+DatasetSubfield = Literal["language_model_fine_tuning_dataset"]
+
 
 class ExperimentalDesign(BaseModel):
     experiment_summary: Optional[str] = Field(
