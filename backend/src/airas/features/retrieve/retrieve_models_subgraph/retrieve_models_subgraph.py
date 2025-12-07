@@ -17,7 +17,7 @@ record_execution_time = lambda f: time_node("retrieve_models_subgraph")(f)  # no
 
 
 class RetrieveModelsSubgraphInputState(TypedDict):
-    subfields: ModelSubfield
+    model_subfield: ModelSubfield
 
 
 class RetrieveModelsSubgraphOutputState(ExecutionTimeState):
@@ -40,7 +40,7 @@ class RetrieveModelsSubgraph:
     @record_execution_time
     def _retrieve_models(self, state: RetrieveModelsSubgraphState) -> dict:
         models_dict = retrieve_models(
-            subfields=state["subfields"],
+            model_subfield=state["model_subfield"],
         )
         return {"models_dict": models_dict}
 
