@@ -1,10 +1,11 @@
 from pydantic import BaseModel
 
+from airas.types.github import GitHubConfig
 from airas.types.latex import LATEX_TEMPLATE_NAME
 from airas.types.paper import PaperContent
-from src.airas.types.github import GitHubConfig
 
 
+# TODO: Latex関連の各APIのrequest bodyにlatex_template_nameがあるのを取り除き、GenerateLatexSubgraphRequestBodyだけがもつ様に変更する
 class GenerateLatexSubgraphRequestBody(BaseModel):
     references_bib: str
     paper_content: PaperContent
@@ -25,4 +26,15 @@ class PushLatexSubgraphRequestBody(BaseModel):
 class PushLatexSubgraphResponseBody(BaseModel):
     is_upload_successful: bool
     is_images_prepared: bool
+    execution_time: dict[str, list[float]]
+
+
+class CompileLatexSubgraphRequestBody(BaseModel):
+    github_config: GitHubConfig
+    latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024"
+
+
+class CompileLatexSubgraphResponseBody(BaseModel):
+    is_compiled: bool
+    paper_url: str | None
     execution_time: dict[str, list[float]]
