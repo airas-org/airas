@@ -1,4 +1,4 @@
-LANGUAGE_MODEL_LIST = {
+TRANSFORMER_DECODER_BASED_MODELS_LIST = {
     # Llama 4
     "Llama-4-Scout-17B-16E": {
         "model_parameters": {
