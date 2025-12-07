@@ -7,6 +7,7 @@ from api.routes.v1 import (
     code,
     experimental_settings,
     hypotheses,
+    latex,
     papers,
     repositories,
 )
@@ -33,3 +34,4 @@ app.include_router(experimental_settings.router, prefix="/airas/v1")
 app.include_router(code.router, prefix="/airas/v1")
 app.include_router(repositories.router, prefix="/airas/v1")
 app.include_router(bibfile.router, prefix="/airas/v1")
+app.include_router(latex.router, prefix="/airas/v1")
