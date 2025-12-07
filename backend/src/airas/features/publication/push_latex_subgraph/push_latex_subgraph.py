@@ -25,7 +25,8 @@ class PushLatexSubgraphInputState(TypedDict):
 
 
 class PushLatexSubgraphOutputState(ExecutionTimeState):
-    is_ready_for_compilation: bool
+    is_upload_successful: bool
+    is_images_prepared: bool
 
 
 class PushLatexSubgraphState(
@@ -33,8 +34,7 @@ class PushLatexSubgraphState(
     PushLatexSubgraphOutputState,
     total=False,
 ):
-    is_upload_successful: bool
-    is_images_prepared: bool
+    pass
 
 
 class PushLatexSubgraph:
@@ -72,11 +72,7 @@ class PushLatexSubgraph:
             },
         )
 
-        return {
-            "is_images_prepared": is_images_prepared,
-            "is_ready_for_compilation": state.get("is_upload_successful", False)
-            and is_images_prepared,
-        }
+        return {"is_images_prepared": is_images_prepared}
 
     def build_graph(self):
         graph_builder = StateGraph(
