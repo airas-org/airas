@@ -5,6 +5,7 @@ from airas.types.latex import LATEX_TEMPLATE_NAME
 from airas.types.paper import PaperContent
 
 
+# TODO: Latex関連の各APIのrequest bodyにlatex_template_nameがあるのを取り除き、GenerateLatexSubgraphRequestBodyだけがもつ様に変更する
 class GenerateLatexSubgraphRequestBody(BaseModel):
     references_bib: str
     paper_content: PaperContent
