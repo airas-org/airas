@@ -59,19 +59,9 @@ class GenerateLatexSubgraph:
         langchain_client: LangChainClient,
         github_client: GithubClient,
         latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
-        llm_mapping: dict[str, str] | GenerateLatexLLMMapping | None = None,
+        llm_mapping: GenerateLatexLLMMapping | None = None,
     ):
-        if llm_mapping is None:
-            self.llm_mapping = GenerateLatexLLMMapping()
-        elif isinstance(llm_mapping, dict):
-            self.llm_mapping = GenerateLatexLLMMapping(**llm_mapping)
-        elif isinstance(llm_mapping, GenerateLatexLLMMapping):
-            self.llm_mapping = llm_mapping
-        else:
-            raise TypeError(
-                f"llm_mapping must be None, dict[str, str], or GenerateLatexLLMMapping, "
-                f"but got {type(llm_mapping)}"
-            )
+        self.llm_mapping = llm_mapping or GenerateLatexLLMMapping()
         self.langchain_client = langchain_client
         self.github_client = github_client
         self.latex_template_name = latex_template_name

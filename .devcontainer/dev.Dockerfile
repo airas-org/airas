@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     vim \
+    lsof \
     build-essential \
     locales \
     && locale-gen en_US.UTF-8 && \
