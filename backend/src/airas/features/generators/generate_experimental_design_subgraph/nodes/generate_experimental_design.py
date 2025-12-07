@@ -4,11 +4,11 @@ import logging
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.data.dataset.language_model_fine_tuning_dataset import (
+from airas.data.datasets.language_model_fine_tuning_dataset import (
     LANGUAGE_MODEL_FINE_TUNING_DATASET_LIST,
 )
-from airas.data.model.language_model import (
-    LANGUAGE_MODEL_LIST,
+from airas.data.models.transformer_decoder_based_models import (
+    TRANSFORMER_DECODER_BASED_MODELS_LIST,
 )
 from airas.features.generators.generate_experimental_design_subgraph.prompts.generate_experimental_design_prompt import (
     generate_experimental_design_prompt,
@@ -56,7 +56,9 @@ async def generate_experimental_design(
     data = {
         "research_hypothesis": research_hypothesis,
         "runner_config": runner_config,
-        "model_list": json.dumps(LANGUAGE_MODEL_LIST, indent=4, ensure_ascii=False),
+        "model_list": json.dumps(
+            TRANSFORMER_DECODER_BASED_MODELS_LIST, indent=4, ensure_ascii=False
+        ),
         "dataset_list": json.dumps(
             LANGUAGE_MODEL_FINE_TUNING_DATASET_LIST, indent=4, ensure_ascii=False
         ),

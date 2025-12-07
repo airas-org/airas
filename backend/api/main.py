@@ -8,6 +8,7 @@ from api.routes.v1 import (
     experimental_settings,
     hypotheses,
     latex,
+    models,
     papers,
     repositories,
 )
@@ -29,6 +30,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AIRAS API", version="0.0.1", lifespan=lifespan)
 app.include_router(papers.router, prefix="/airas/v1")
+app.include_router(models.router, prefix="/airas/v1")
 app.include_router(hypotheses.router, prefix="/airas/v1")
 app.include_router(experimental_settings.router, prefix="/airas/v1")
 app.include_router(code.router, prefix="/airas/v1")
