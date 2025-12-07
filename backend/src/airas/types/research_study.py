@@ -6,7 +6,6 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, Field
 
 
-# ExperimentalDesignを使ってまとめたい
 class LLMExtractedInfo(BaseModel):
     main_contributions: Optional[str] = Field(None, description="")
     methodology: Optional[str] = Field(None, description="")

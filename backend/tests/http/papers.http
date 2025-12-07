@@ -7,3 +7,85 @@ Content-Type: application/json
     "query_list": ["LLM", "Optimizer"],
     "max_results_per_query": 1
 }
+
+### Generate paper from research data
+
+POST http://127.0.0.1:8001/airas/v1/papers/generations
+Content-Type: application/json
+
+{
+    "research_hypothesis": {
+        "open_problems": "Traditional SGD converges slowly on deep networks with complex loss landscapes",
+        "method": "Apply adaptive learning rate scheduling with momentum to dynamically adjust step sizes during training",
+        "experimental_setup": "Train ResNet-18 and VGG-16 on CIFAR-10 and CIFAR-100 datasets using various optimizers",
+        "primary_metric": "Test accuracy on held-out test set",
+        "experimental_code": "PyTorch implementation with torchvision models and standard data augmentation",
+        "expected_result": "AdamW with cosine annealing will achieve higher test accuracy and faster convergence than baseline SGD",
+        "expected_conclusion": "Adaptive learning rate methods provide better optimization dynamics for deep neural network training"
+    },
+    "experimental_design": {
+        "experiment_summary": "Compare adaptive learning rate methods (Adam, AdamW) against SGD with momentum on image classification tasks",
+        "runner_config": {
+            "runner_label": "ubuntu-latest",
+            "description": "Standard GitHub Actions runner with 2-core CPU and 7 GB RAM"
+        },
+        "evaluation_metrics": [
+            {
+                "name": "Test Accuracy",
+                "description": "Classification accuracy on test set, measured as (correct predictions / total examples)"
+            }
+        ],
+        "models_to_use": ["ResNet-18", "VGG-16"],
+        "datasets_to_use": ["CIFAR-10", "CIFAR-100"],
+        "proposed_method": {
+            "method_name": "AdamW-Cosine",
+            "description": "AdamW optimizer with cosine annealing learning rate schedule"
+        },
+        "comparative_methods": [
+            {
+                "method_name": "SGD-Momentum",
+                "description": "Standard SGD with momentum=0.9"
+            }
+        ]
+    },
+    "experiment_code": {
+        "train_py": "import torch\nimport torch.nn as nn\n# Training code here",
+        "evaluate_py": "import torch\n# Evaluation code here",
+        "preprocess_py": "# Data preprocessing code",
+        "model_py": "import torch.nn as nn\n# Model definition",
+        "main_py": "# Main experiment entry point",
+        "pyproject_toml": "[project]\nname = \"optimizer-comparison\"\nversion = \"0.1.0\"",
+        "config_yaml": "learning_rate: 0.001\nbatch_size: 128"
+    },
+    "experimental_results": {
+        "stdout": "Epoch 1/100: Train Loss: 1.234, Test Acc: 85.2%\nEpoch 100/100: Train Loss: 0.234, Test Acc: 92.5%",
+        "stderr": "",
+        "figures": ["accuracy_plot.png", "loss_curve.png"],
+        "metrics_data": {
+            "adamw": {"test_accuracy": 0.925, "convergence_epoch": 75},
+            "sgd": {"test_accuracy": 0.902, "convergence_epoch": 95}
+        }
+    },
+    "experimental_analysis": {
+        "analysis_report": "The proposed AdamW method shows faster convergence and higher final accuracy compared to baseline SGD. AdamW achieved 92.5% accuracy on CIFAR-10, converging at epoch 75, while SGD reached only 90.2% accuracy and required 95 epochs to converge."
+    },
+    "research_study_list": [
+        {
+            "title": "Adam: A Method for Stochastic Optimization",
+            "full_text": "We introduce Adam, an algorithm for first-order gradient-based optimization...",
+            "meta_data": {
+                "arxiv_id": "1412.6980",
+                "authors": ["Diederik P. Kingma", "Jimmy Ba"],
+                "published_date": "2014-12-22",
+                "venue": "ICLR",
+                "pdf_url": "https://arxiv.org/pdf/1412.6980.pdf"
+            },
+            "llm_extracted_info": {
+                "main_contributions": "Introduced Adam optimizer",
+                "methodology": "Adaptive learning rates"
+            }
+        }
+    ],
+    "references_bib": "@article{kingma-2014-adam,\n  title={Adam: A Method for Stochastic Optimization},\n  author={Kingma, Diederik P. and Ba, Jimmy},\n  journal={arXiv preprint arXiv:1412.6980},\n  year={2014}\n}",
+    "writing_refinement_rounds": 2
+}
