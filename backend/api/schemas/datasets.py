@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from airas.types.experimental_design import DatasetSubfield
+from airas.types.experimental_design import DatasetConfig, DatasetSubfield
 
 
 class RetrieveDatasetsSubgraphRequestBody(BaseModel):
@@ -8,5 +8,5 @@ class RetrieveDatasetsSubgraphRequestBody(BaseModel):
 
 
 class RetrieveDatasetsSubgraphResponseBody(BaseModel):
-    datasets_dict: dict
+    datasets_dict: dict[str, DatasetConfig]
     execution_time: dict[str, list[float]]

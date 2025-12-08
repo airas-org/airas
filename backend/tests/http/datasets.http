@@ -1,9 +1,9 @@
 ### Retrieve Datasets
 
-GET http://127.0.0.1:8001/airas/v1/datasets
+GET http://127.0.0.1:8000/airas/v1/datasets
 Content-Type: application/json
 
 {
-    "dataset_subfield": "language_model_fine_tuning_dataset"
+    "dataset_subfield": "language_model_fine_tuning_datasets"
 }
     
