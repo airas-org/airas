@@ -4,6 +4,6 @@ GET http://127.0.0.1:8000/airas/v1/datasets
 Content-Type: application/json
 
 {
-    "dataset_subfield": "image_datasets"
+    "dataset_subfield": "language_model_fine_tuning_datasets"
 }
     

@@ -21,10 +21,20 @@ TextTaskType = Literal["text-generation"]
 
 ImageTaskType = Literal[
     "object-detection",
-    "segmentation",
+    "semantic-segmentation",
+    "instance-segmentation",
+    "panoptic-segmentation",
+    "video-object-segmentation",
     "image-classification",
     "image-captioning",
     "image-embeddings",
+    "face-detection",
+    "face-verification",  # 顔認証(本人確認)
+    "face-identification",  # 顔識別(誰かを特定)
+    "few-shot-classification",  # Meta-learningにおける少数ショット学習タスク
+    "one-shot-classification",  # Meta-learningにおける一ショット学習タスク
+    "facial-expression-recognition",
+    "valence-arousal-prediction",  # 感情推定（Affective Computing）における連続値回帰タスク
 ]
 
 TaskType = TextTaskType | ImageTaskType
@@ -48,6 +58,20 @@ class ModelConfig(BaseModel):
     output_modalities: Optional[list[DataModalities]] = None
     language_distribution: Optional[str] = None
     image_size: Optional[str] = None
+
+
+class DatasetConfig(BaseModel):
+    description: str
+    num_training_samples: int | str
+    num_validation_samples: int | str
+    huggingface_url: HttpUrl
+    dependent_packages: list[str]
+    code: str
+    citation: str
+    task_type: list[TaskType]
+    language_distribution: Optional[str] = None
+    image_size: Optional[str] = None
+    sample_data: Optional[dict] = None
 
 
 class ExperimentalDesign(BaseModel):
