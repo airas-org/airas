@@ -2,11 +2,52 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
-ModelSubfield = Literal["transformer_decoder_based_models"]
+ModelSubfield = Literal[
+    "transformer_decoder_based_models",
+    "image_models",
+    "multi_modal_models",
+]
 
-DatasetSubfield = Literal["language_model_fine_tuning_dataset"]
+DatasetSubfield = Literal["language_model_fine_tuning_datasets", "image_datasets"]
+
+DataModalities = Literal[
+    "text", "image", "audio", "video", "tabular", "time_series", "graph", "embeddings"
+]
+
+
+TextTaskType = Literal["text-generation"]
+
+ImageTaskType = Literal[
+    "object-detection",
+    "segmentation",
+    "image-classification",
+    "image-captioning",
+    "image-embeddings",
+]
+
+TaskType = TextTaskType | ImageTaskType
+
+
+class ModelParameters(BaseModel):
+    total_parameters: str
+    active_parameters: str
+
+
+class ModelConfig(BaseModel):
+    model_parameters: ModelParameters | str
+    model_architecture: str
+    training_data_sources: Optional[str]
+    huggingface_url: HttpUrl
+    input_modalities: list[DataModalities]
+    dependent_packages: list[str]
+    code: str
+    citation: str
+    task_type: TaskType
+    output_modalities: Optional[list[DataModalities]] = None
+    language_distribution: Optional[str] = None
+    image_size: Optional[str] = None
 
 
 class ExperimentalDesign(BaseModel):

@@ -1,4 +1,4 @@
-TRANSFORMER_DECODER_BASED_MODELS_LIST = {
+TRANSFORMER_DECODER_BASED_MODELS = {
     # Llama 4
     "Llama-4-Scout-17B-16E": {
         "model_parameters": {
@@ -8,14 +8,30 @@ TRANSFORMER_DECODER_BASED_MODELS_LIST = {
         "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E",
+        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text", "image"],
         "output_modalities": ["text"],
-        "dependent packages": [],
+        "dependent_packages": [],
         "code": """\
-""",
+from transformers import pipeline
+model_id = "meta-llama/Llama-4-Scout-17B-16E"
+pipe = pipeline(
+    "text-generation",
+    model=model_id,
+    device_map="auto",
+    torch_dtype=torch.bfloat16,
+)
+prompt = "Give me a short introduction to large language model."
+output = pipe(prompt, max_new_tokens=150)
+print(output)""",
         "citation": """\
-""",
+@misc{meta2024llama4,
+  title = {Introducing LLaMA 4: Advancing Multimodal Intelligence},
+  author = {Meta AI},
+  year = {2024},
+  url = {https://ai.meta.com/blog/llama-4-multimodal-intelligence/}
+}""",
     },
     "Llama-4-Maverick-17B-128E": {
         "model_parameters": {
@@ -25,14 +41,30 @@ TRANSFORMER_DECODER_BASED_MODELS_LIST = {
         "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text", "image"],
         "output_modalities": ["text"],
-        "dependent packages": [],
+        "dependent_packages": [],
         "code": """\
-""",
+from transformers import pipeline
+model_id = "meta-llama/Llama-4-Maverick-17B-128E"
+pipe = pipeline(
+    "text-generation",
+    model=model_id,
+    device_map="auto",
+    torch_dtype=torch.bfloat16,
+)
+prompt = "Give me a short introduction to large language model."
+output = pipe(prompt, max_new_tokens=150)
+print(output)""",
         "citation": """\
-""",
+@misc{meta2024llama4,
+  title = {Introducing LLaMA 4: Advancing Multimodal Intelligence},
+  author = {Meta AI},
+  year = {2024},
+  url = {https://ai.meta.com/blog/llama-4-multimodal-intelligence/}
+}""",
     },
     # Qwen 3
     "Qwen3-0.6B": {
@@ -40,10 +72,11 @@ TRANSFORMER_DECODER_BASED_MODELS_LIST = {
         "model_architecture": "Transformer",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/Qwen/Qwen3-0.6B",
+        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
-        "dependent packages": ["transformers>=4.51.0"],
+        "dependent_packages": ["transformers>=4.51.0"],
         "code": """\
 from transformers import AutoModelForCausalLM, AutoTokenizer
 model_name = "Qwen/Qwen3-0.6B"
@@ -88,10 +121,11 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
         "model_architecture": "Transformer",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/Qwen/Qwen3-1.7B",
+        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
-        "dependent packages": ["transformers>=4.51.0"],
+        "dependent_packages": ["transformers>=4.51.0"],
         "code": """\
 from transformers import AutoModelForCausalLM, AutoTokenizer
 model_name = "Qwen/Qwen3-1.7B"
@@ -139,10 +173,11 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
         "model_architecture": "Transformer",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/Qwen/Qwen3-4B",
+        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
-        "dependent packages": ["transformers>=4.51.0"],
+        "dependent_packages": ["transformers>=4.51.0"],
         "code": """\
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -191,10 +226,11 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
         "model_architecture": "Transformer",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/Qwen/Qwen3-8B",
+        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
-        "dependent packages": ["transformers>=4.51.0"],
+        "dependent_packages": ["transformers>=4.51.0"],
         "code": """\
 from transformers import AutoModelForCausalLM, AutoTokenizer
 model_name = "Qwen/Qwen3-8B"
@@ -239,10 +275,11 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
         "model_architecture": "Transformer",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/Qwen/Qwen3-14B",
+        "task_type": "text-generation",
         "language_distribution": "",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
-        "dependent packages": ["transformers>=4.51.0"],
+        "dependent_packages": ["transformers>=4.51.0"],
         "code": """\
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -288,10 +325,11 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
         "model_architecture": "Transformer",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/Qwen/Qwen3-32B",
+        "task_type": "text-generation",
         "language_distribution": "",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
-        "dependent packages": ["transformers>=4.51.0"],
+        "dependent_packages": ["transformers>=4.51.0"],
         "code": """\
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -344,10 +382,11 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
         "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3",
+        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
-        "dependent packages": [],
+        "dependent_packages": [],
         "code": """\
 """,
         "citation": """\
@@ -369,10 +408,11 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
         "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+        "task_type": "text-generation",
         "language_distribution": "Multilingual",
-        "input_modalities": ["Text"],
-        "output_modalities": ["Text"],
-        "dependent packages": [],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "dependent_packages": [],
         "code": """\
 """,
         "citation": """\
@@ -394,10 +434,11 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
         "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
+        "task_type": "text-generation",
         "language_distribution": "Multilingual",
-        "input_modalities": ["Text"],
-        "output_modalities": ["Text"],
-        "dependent packages": [],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "dependent_packages": [],
         "code": """\
 """,
         "citation": """\
@@ -416,11 +457,12 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
         "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/openai/gpt-oss-20b",
+        "task_type": "text-generation",
         "context_length": "",
         "language_distribution": "multilingual",
-        "input_modalities": "text",
-        "output_modalities": "text",
-        "dependent packages": ["accelerate", "transformers", "kernels"],
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "dependent_packages": ["accelerate", "transformers", "kernels"],
         "code": """\
 from transformers import AutoModelForCausalLM, AutoTokenizer
 model_id = "openai/gpt-oss-20b"
@@ -461,10 +503,11 @@ print(tokenizer.decode(generated[0][inputs["input_ids"].shape[-1]:]))
         "model_architecture": "Transformer",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/google/gemma-3-1b-it",
+        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text", "image"],
         "output_modalities": ["text"],
-        "dependent packages": ["transformers"],
+        "dependent_packages": ["transformers"],
         "code": """\
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
@@ -498,10 +541,11 @@ year={2025}
         "model_architecture": "Transformer",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/google/gemma-3-4b-it",
+        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text", "image"],
         "output_modalities": ["text"],
-        "dependent packages": ["transformers"],
+        "dependent_packages": ["transformers"],
         "code": """\
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
@@ -535,10 +579,11 @@ year={2025}
         "model_architecture": "Transformer",
         "training_data_sources": "",
         "huggingface_url": "https://huggingface.co/google/gemma-3-27b-it",
+        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text", "image"],
         "output_modalities": ["text"],
-        "dependent packages": ["transformers"],
+        "dependent_packages": ["transformers"],
         "code": """\
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
@@ -568,19 +613,30 @@ year={2025}
 }""",
     },
     # Mistral
-    # Sample
-    #         "sample": {
-    #             "model_parameters": "",
-    #             "model_architecture": "",
-    #             "training_data_sources": "",
-    #             "huggingface_url": "",
-    #             "language_distribution": "",
-    #             "input_modalities": [],
-    #             "output_modalities": [],
-    #             "dependent packages": [],
-    #             "code": """\
-    # """,
-    #             "citation": """\
-    # """
-    #         },
+    "Mistral-7B-v0.3": {
+        "model_parameters": "7.3B",
+        "model_architecture": "Transformer decoder with Grouped-Query Attention (GQA), Sliding-Window Attention, Byte-fallback BPE tokenizer, extended vocabulary to 32,768 tokens",
+        "training_data_sources": "Large-scale web data (proprietary, not publicly disclosed in detail)",
+        "huggingface_url": "https://huggingface.co/mistralai/Mistral-7B-v0.3",
+        "task_type": "text-generation",
+        "language_distribution": "Primarily English (multilingual capabilities present)",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "dependent_packages": [
+            "transformers",
+            "torch",
+            "mistral-inference (recommended)",
+            "huggingface-hub",
+        ],
+        "code": """\
+from transformers import AutoModelForCausalLM, AutoTokenizer
+model_id = "mistralai/Mistral-7B-v0.3"
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForCausalLM.from_pretrained(model_id)
+
+inputs = tokenizer("Hello my name is", return_tensors="pt")
+outputs = model.generate(**inputs, max_new_tokens=20)
+print(tokenizer.decode(outputs[0], skip_special_tokens=True))""",
+        "citation": "@article{jiang2023mistral, title={Mistral 7B}, author={Albert Q. Jiang and Alexandre Sablayrolles and Arthur Mensch and others}, journal={arXiv preprint arXiv:2310.06825}, year={2023}}",
+    },
 }
