@@ -42,7 +42,7 @@ class ExecuteEvaluationSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
-        workflow_file: str = "run_evaluation_with_claude_code.yml",
+        workflow_file: str = "dev_run_evaluation_with_claude_code.yml",
     ):
         self.github_client = github_client
         self.workflow_file = workflow_file
@@ -110,36 +110,3 @@ class ExecuteEvaluationSubgraph:
         graph_builder.add_edge("dispatch_evaluation", END)
 
         return graph_builder.compile()
-
-
-async def main():
-    from airas.core.container import container
-    from airas.features.executors.execute_evaluation_subgraph.input_data import (
-        execute_evaluation_subgraph_input_data,
-    )
-
-    container.wire(modules=[__name__])
-    await container.init_resources()
-
-    try:
-        github_client = await container.github_client()
-        result = (
-            await ExecuteEvaluationSubgraph(
-                github_client=github_client,
-            )
-            .build_graph()
-            .ainvoke(execute_evaluation_subgraph_input_data)
-        )
-        print(f"result: {result}")
-    finally:
-        await container.shutdown_resources()
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    try:
-        asyncio.run(main())
-    except Exception as e:
-        logger.error(f"Error running ExecuteEvaluationSubgraph: {e}")
-        raise

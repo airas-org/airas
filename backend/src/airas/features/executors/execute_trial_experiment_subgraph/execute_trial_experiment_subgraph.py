@@ -26,8 +26,9 @@ class ExecuteTrialExperimentSubgraphInputState(TypedDict):
     github_config: GitHubConfig
 
 
-class ExecuteTrialExperimentSubgraphOutputState(ExecutionTimeState, total=False):
+class ExecuteTrialExperimentSubgraphOutputState(ExecutionTimeState):
     dispatched: bool
+    run_ids: list[str]
 
 
 class ExecuteTrialExperimentSubgraphState(
@@ -35,7 +36,7 @@ class ExecuteTrialExperimentSubgraphState(
     ExecuteTrialExperimentSubgraphOutputState,
     total=False,
 ):
-    run_ids: list[str]
+    pass
 
 
 class ExecuteTrialExperimentSubgraph:
@@ -43,7 +44,7 @@ class ExecuteTrialExperimentSubgraph:
         self,
         github_client: GithubClient,
         runner_label: str = "ubuntu-latest",
-        workflow_file: str = "run_trial_experiment_with_claude_code.yml",
+        workflow_file: str = "dev_run_trial_experiment_with_claude_code.yml",
     ):
         self.github_client = github_client
         self.runner_label = runner_label
@@ -115,36 +116,3 @@ class ExecuteTrialExperimentSubgraph:
         graph_builder.add_edge("dispatch_trial_experiment", END)
 
         return graph_builder.compile()
-
-
-async def main():
-    from airas.core.container import container
-    from airas.features.executors.execute_trial_experiment_subgraph.input_data import (
-        execute_trial_experiment_subgraph_input_data,
-    )
-
-    container.wire(modules=[__name__])
-    await container.init_resources()
-
-    try:
-        github_client = await container.github_client()
-        result = (
-            await ExecuteTrialExperimentSubgraph(
-                github_client=github_client,
-            )
-            .build_graph()
-            .ainvoke(execute_trial_experiment_subgraph_input_data)
-        )
-        print(f"result: {result}")
-    finally:
-        await container.shutdown_resources()
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    try:
-        asyncio.run(main())
-    except Exception as e:
-        logger.error(f"Error running ExecuteTrialExperimentSubgraph: {e}")
-        raise

@@ -41,12 +41,12 @@ def check_workflow_completion(
         )
 
         if status == "completed" and conclusion is not None:
-            run_id = latest_run.get("id")
+            workflow_run_id = latest_run.get("id")
             logger.info(
-                f"Recursive workflow chain completed. Final workflow {run_id} "
+                f"Recursive workflow chain completed. Final workflow {workflow_run_id} "
                 f"with conclusion: {conclusion}"
             )
-            return run_id, True, current_count
+            return workflow_run_id, True, current_count
 
     logger.info("Workflow chain still in progress")
     return None, False, current_count
