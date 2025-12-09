@@ -55,7 +55,7 @@ class ExecuteFullExperimentSubgraph:
         self, state: ExecuteFullExperimentSubgraphState
     ) -> dict[str, list[tuple[str, str, bool]]]:
         if not (run_ids := state["run_ids"]):
-            logger.error("No run_ids provided")
+            logger.error("run_ids list is empty")
             return {"branch_creation_results": []}
 
         github_config = state["github_config"]
