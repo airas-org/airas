@@ -1,0 +1,75 @@
+### Fetch run IDs from repository
+POST http://127.0.0.1:8000/airas/v1/experiments/run-ids
+Content-Type: application/json
+
+# NOTE: The repo or branch name may contain confidential company information, 
+# so it was included in the request body as a POST method.
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "your-repo",
+        "branch_name": "your-branch"
+    }
+}
+
+###
+
+### Fetch experimental results
+POST http://127.0.0.1:8000/airas/v1/experiments/results
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "your-repo",
+        "branch_name": "your-branch"
+    }
+}
+
+###
+
+### Execute trial experiment
+POST http://127.0.0.1:8000/airas/v1/experiments/test-runs
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "your-repo",
+        "branch_name": "your-branch"
+    }
+}
+
+###
+
+### Execute full experiment
+POST http://127.0.0.1:8000/airas/v1/experiments/full-runs
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "your-repo",
+        "branch_name": "your-branch"
+    },
+    "run_ids": [
+        "run-id-1",
+        "run-id-2"
+    ]
+}
+
+###
+
+### Execute evaluation
+POST http://127.0.0.1:8000/airas/v1/experiments/evaluations
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "your-repo",
+        "branch_name": "your-branch"
+    }
+}
+
+###

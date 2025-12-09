@@ -1,6 +1,6 @@
 ### Generate BibTeX from research studies
 
-POST http://127.0.0.1:8001/airas/v1/bibfile/generations
+POST http://127.0.0.1:8000/airas/v1/bibfile/generations
 Content-Type: application/json
 
 {
