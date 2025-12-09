@@ -45,7 +45,7 @@ class PollWorkflowHiddenState(TypedDict):
 
 
 class PollWorkflowOutputState(TypedDict):
-    run_id: int | None
+    workflow_run_id: int | None
     is_completed: bool
 
 
@@ -92,7 +92,7 @@ class PollWorkflowSubgraph(BaseSubgraph):
             return Command(
                 update={
                     "is_completed": False,
-                    "run_id": None,
+                    "workflow_run_id": None,
                 },
                 goto=END,
             )
@@ -115,7 +115,7 @@ class PollWorkflowSubgraph(BaseSubgraph):
             return Command(
                 update={
                     "is_completed": False,
-                    "run_id": None,
+                    "workflow_run_id": None,
                 },
                 goto=END,
             )
@@ -144,22 +144,22 @@ class PollWorkflowSubgraph(BaseSubgraph):
             return Command(
                 update={
                     "is_completed": False,
-                    "run_id": None,
+                    "workflow_run_id": None,
                 },
                 goto=END,
             )
 
-        run_id, is_completed, current_count = check_workflow_completion(
+        workflow_run_id, is_completed, current_count = check_workflow_completion(
             workflow_runs_response=state.get("workflow_runs_response"),
             baseline_count=baseline_count,
             previous_count=state.get("previous_count"),
         )
 
         if is_completed:
-            logger.info(f"Workflow {run_id} completed successfully")
+            logger.info(f"Workflow {workflow_run_id} completed successfully")
             return Command(
                 update={
-                    "run_id": run_id,
+                    "workflow_run_id": workflow_run_id,
                     "is_completed": True,
                     "previous_count": current_count,
                 },

@@ -90,36 +90,3 @@ class FetchExperimentResultsSubgraph:
         graph_builder.add_edge("fetch_results", END)
 
         return graph_builder.compile()
-
-
-async def main():
-    from airas.core.container import container
-    from airas.features.executors.fetch_experiment_results_subgraph.input_data import (
-        fetch_experiment_results_subgraph_input_data,
-    )
-
-    container.wire(modules=[__name__])
-    await container.init_resources()
-
-    try:
-        github_client = await container.github_client()
-        result = (
-            await FetchExperimentResultsSubgraph(
-                github_client=github_client,
-            )
-            .build_graph()
-            .ainvoke(fetch_experiment_results_subgraph_input_data)
-        )
-        print(f"result: {result}")
-    finally:
-        await container.shutdown_resources()
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    try:
-        asyncio.run(main())
-    except Exception as e:
-        logger.error(f"Error running FetchExperimentResultsSubgraph: {e}")
-        raise
