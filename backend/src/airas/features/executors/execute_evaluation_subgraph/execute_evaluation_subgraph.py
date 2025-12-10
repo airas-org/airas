@@ -26,7 +26,7 @@ class ExecuteEvaluationSubgraphInputState(TypedDict):
     github_config: GitHubConfig
 
 
-class ExecuteEvaluationSubgraphOutputState(ExecutionTimeState, total=False):
+class ExecuteEvaluationSubgraphOutputState(ExecutionTimeState):
     dispatched: bool
 
 

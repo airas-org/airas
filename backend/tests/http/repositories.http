@@ -1,5 +1,5 @@
 
-POST http://127.0.0.1:8001/airas/v1/repositories
+POST http://127.0.0.1:8000/airas/v1/repositories
 Content-Type: application/json
 
 {

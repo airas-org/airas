@@ -1,6 +1,6 @@
 ### Generate latex
 
-POST http://127.0.0.1:8001/airas/v1/latex/generations
+POST http://127.0.0.1:8000/airas/v1/latex/generations
 Content-Type: application/json
 
 {
@@ -22,7 +22,7 @@ Content-Type: application/json
 
 ### Push latex
 
-POST http://127.0.0.1:8001/airas/v1/latex/push
+POST http://127.0.0.1:8000/airas/v1/latex/push
 Content-Type: application/json
 
 {
@@ -38,7 +38,7 @@ Content-Type: application/json
 
 ### Compile latex
 
-POST http://127.0.0.1:8001/airas/v1/latex/compile
+POST http://127.0.0.1:8000/airas/v1/latex/compile
 Content-Type: application/json
 
 {
