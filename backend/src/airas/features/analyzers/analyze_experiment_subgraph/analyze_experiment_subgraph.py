@@ -8,9 +8,9 @@ from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.features.analyzers.analyze_experiment_subgraph.nodes.analyze_experiment import (
     analyze_experiment,
 )
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLM_MODEL,
-    LLMFacadeClient,
 )
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_analysis import ExperimentalAnalysis
@@ -24,7 +24,7 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-analytic_timed = lambda f: time_node("analyze_experiment_subgraph")(f)  # noqa: E731
+record_execution_time = lambda f: time_node("analyze_experiment_subgraph")(f)  # noqa: E731
 
 
 class AnalyzeExperimentLLMMapping(BaseModel):
@@ -38,13 +38,14 @@ class AnalyzeExperimentSubgraphInputState(TypedDict, total=False):
     experimental_results: ExperimentalResults
 
 
-class AnalyzeExperimentSubgraphOutputState(ExecutionTimeState, total=False):
+class AnalyzeExperimentSubgraphOutputState(ExecutionTimeState):
     experimental_analysis: ExperimentalAnalysis
 
 
 class AnalyzeExperimentSubgraphState(
     AnalyzeExperimentSubgraphInputState,
     AnalyzeExperimentSubgraphOutputState,
+    total=False,
 ):
     pass
 
@@ -52,7 +53,7 @@ class AnalyzeExperimentSubgraphState(
 class AnalyzeExperimentSubgraph:
     def __init__(
         self,
-        llm_client: LLMFacadeClient,
+        langchain_client: LangChainClient,
         llm_mapping: dict[str, str] | AnalyzeExperimentLLMMapping | None = None,
     ):
         if llm_mapping is None:
@@ -73,10 +74,10 @@ class AnalyzeExperimentSubgraph:
                 f"llm_mapping must be None, dict[str, str], or AnalyzeExperimentLLMMapping, "
                 f"but got {type(llm_mapping)}"
             )
-        self.llm_client = llm_client
+        self.langchain_client = langchain_client
         check_api_key(llm_api_key_check=True)
 
-    @analytic_timed
+    @record_execution_time
     async def _analyze_experiment(
         self, state: AnalyzeExperimentSubgraphState
     ) -> dict[str, ExperimentalAnalysis]:
@@ -86,7 +87,7 @@ class AnalyzeExperimentSubgraph:
             experimental_design=state["experimental_design"],
             experiment_code=state["experiment_code"],
             experimental_results=state["experimental_results"],
-            llm_client=self.llm_client,
+            langchain_client=self.langchain_client,
         )
         experimental_analysis = ExperimentalAnalysis(analysis_report=analysis_report)
         return {"experimental_analysis": experimental_analysis}
@@ -104,32 +105,3 @@ class AnalyzeExperimentSubgraph:
         graph_builder.add_edge("analyze_experiment", END)
 
         return graph_builder.compile()
-
-
-async def main():
-    from airas.core.container import container
-    from airas.features.analyzers.analyze_experiment_subgraph.input_data import (
-        analyze_experiment_subgraph_input_data,
-    )
-
-    container.wire(modules=[__name__])
-
-    try:
-        llm_client = await container.llm_facade_client()
-
-        subgraph = AnalyzeExperimentSubgraph(llm_client=llm_client)
-        graph = subgraph.build_graph()
-        result = await graph.ainvoke(analyze_experiment_subgraph_input_data)
-        print(f"result: {result}")
-    finally:
-        await container.shutdown_resources()
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    try:
-        asyncio.run(main())
-    except Exception as e:
-        logger.error(f"Error running AnalyzeExperimentSubgraph: {e}")
-        raise
