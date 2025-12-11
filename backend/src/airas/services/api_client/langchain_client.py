@@ -1,4 +1,6 @@
 import asyncio
+import os
+from enum import Enum
 from typing import Any, get_args
 
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -11,22 +13,113 @@ from airas.services.api_client.llm_client.openai_client import OPENAI_MODEL
 
 GOOGLE_MODEL_NAMES = get_args(VERTEXAI_MODEL)
 OPENAI_MODEL_NAMES = get_args(OPENAI_MODEL)
+OPENROUTER_MODEL_NAMES = tuple(set(GOOGLE_MODEL_NAMES) | set(OPENAI_MODEL_NAMES))
+
+
+class LLMProvider(str, Enum):
+    GOOGLE = "google"
+    OPENAI = "openai"
+    OPENROUTER = "openrouter"
+
+
+PROVIDER_REQUIRED_ENV_VARS: dict[LLMProvider, list[str]] = {
+    LLMProvider.GOOGLE: [
+        "GEMINI_API_KEY",
+    ],
+    LLMProvider.OPENAI: [
+        "OPENAI_API_KEY",
+    ],
+    LLMProvider.OPENROUTER: [
+        "OPENROUTER_API_KEY",
+    ],
+}
+
+
+class MissingEnvironmentVariablesError(RuntimeError):
+    def __init__(self, provider: LLMProvider, missing_vars: list[str]) -> None:
+        self.provider = provider
+        self.missing_vars = missing_vars
+        msg = (
+            f"Missing environment variables for provider '{provider.value}': "
+            f"{', '.join(missing_vars)}"
+        )
+        super().__init__(msg)
 
 
 class LangChainClient:
-    def __init__(self):
-        self._model_cache = {}
+    def __init__(self) -> None:
+        self._model_cache: dict[str, object] = {}
+        self._available_providers: set[LLMProvider] = self._detect_available_providers()
+
+    def _detect_available_providers(self) -> set[LLMProvider]:
+        available: set[LLMProvider] = set()
+        for provider, vars_ in PROVIDER_REQUIRED_ENV_VARS.items():
+            missing = [name for name in vars_ if not os.getenv(name)]
+            if missing:
+                continue
+            available.add(provider)
+        return available
+
+
+    def _select_provider_for_model(self, llm_name: LLM_MODEL) -> LLMProvider:
+        """
+        Select a provider that can handle llm_name from the available providers according to priority.
+        """
+        if not self._available_providers:
+            raise RuntimeError(
+                "No LLM providers are available. Check environment variables."
+            )
+
+        provider_priority: list[LLMProvider] = [
+            LLMProvider.OPENROUTER,
+            LLMProvider.OPENAI,
+            LLMProvider.GOOGLE,
+        ]
+
+        for provider in provider_priority:
+            if provider not in self._available_providers:
+                continue
+
+            if (
+                provider == LLMProvider.OPENROUTER
+                and llm_name in OPENROUTER_MODEL_NAMES
+            ):
+                return provider
+            if provider == LLMProvider.OPENAI and llm_name in OPENAI_MODEL_NAMES:
+                return provider
+            if provider == LLMProvider.GOOGLE and llm_name in GOOGLE_MODEL_NAMES:
+                return provider
+
+        raise ValueError(
+            f"Model '{llm_name}' is not supported by any available provider. "
+            f"Available providers: {[p.value for p in self._available_providers]}"
+        )
 
     def _create_chat_model(self, llm_name: LLM_MODEL):
-        """Return the LangChain chat model implementation that matches the LLM name, using a cache."""
         if llm_name in self._model_cache:
             return self._model_cache[llm_name]
-        if llm_name in GOOGLE_MODEL_NAMES:
-            model = ChatGoogleGenerativeAI(model=llm_name)
-        elif llm_name in OPENAI_MODEL_NAMES:
+
+        provider = self._select_provider_for_model(llm_name)
+
+        if provider is LLMProvider.OPENROUTER:
+            base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+            api_key = os.getenv("OPENROUTER_API_KEY")
+
+            # NOTE: When using a Google model via OpenRouter, you must add the google/ prefix.
+            if llm_name in GOOGLE_MODEL_NAMES:
+                llm_name = "google/" + llm_name
+
+            model = ChatOpenAI(api_key=api_key, base_url=base_url, model=llm_name)
+
+        elif provider is LLMProvider.OPENAI:
             model = ChatOpenAI(model=llm_name)
+
+        elif provider is LLMProvider.GOOGLE:
+            model = ChatGoogleGenerativeAI(model=llm_name)
+
         else:
-            raise ValueError(f"Unsupported LLM model: {llm_name}")
+            raise ValueError(f"Unsupported provider: {provider}")
+
         self._model_cache[llm_name] = model
         return model
 
