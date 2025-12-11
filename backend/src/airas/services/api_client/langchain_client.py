@@ -69,7 +69,7 @@ class LangChainClient:
 
     def _select_provider_for_model(self, llm_name: LLM_MODEL) -> LLMProvider:
         """
-        利用可能なプロバイダーの中から、llm_name を扱えるプロバイダーを優先順位に従って選択する。
+        Select a provider that can handle llm_name from the available providers according to priority.
         """
         if not self._available_providers:
             raise RuntimeError(
