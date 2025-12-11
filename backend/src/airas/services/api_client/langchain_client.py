@@ -81,13 +81,13 @@ class LangChainClient:
                 continue
 
             if (
-                provider is LLMProvider.OPENROUTER
+                provider == LLMProvider.OPENROUTER
                 and llm_name in OPENROUTER_MODEL_NAMES
             ):
                 return provider
-            if provider is LLMProvider.OPENAI and llm_name in OPENAI_MODEL_NAMES:
+            if provider == LLMProvider.OPENAI and llm_name in OPENAI_MODEL_NAMES:
                 return provider
-            if provider is LLMProvider.GOOGLE and llm_name in GOOGLE_MODEL_NAMES:
+            if provider == LLMProvider.GOOGLE and llm_name in GOOGLE_MODEL_NAMES:
                 return provider
 
         raise ValueError(
