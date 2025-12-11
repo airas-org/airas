@@ -1,0 +1,32 @@
+### Download research history from GitHub
+POST http://127.0.0.1:8000/airas/v1/research-history/download
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "test_matsuzawa_20251211",
+        "branch_name": "main"
+    }
+}
+
+###
+
+### Upload research history to GitHub
+POST http://127.0.0.1:8000/airas/v1/research-history/upload
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "test_matsuzawa_20251211",
+        "branch_name": "main"
+    },
+    "research_history": {
+        "research_objective": "Test research objective",
+        "query_list": ["test query 1", "test query 2"]
+    },
+    "commit_message": "Test upload from API"
+}
+
+###

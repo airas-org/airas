@@ -13,6 +13,7 @@ from api.routes.v1 import (
     models,
     papers,
     repositories,
+    research_history,
 )
 from src.airas.core.container import Container
 
@@ -41,3 +42,4 @@ app.include_router(code.router, prefix="/airas/v1")
 app.include_router(repositories.router, prefix="/airas/v1")
 app.include_router(bibfile.router, prefix="/airas/v1")
 app.include_router(latex.router, prefix="/airas/v1")
+app.include_router(research_history.router, prefix="/airas/v1")

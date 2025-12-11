@@ -2,50 +2,65 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
-from airas.types.github import GitHubRepositoryInfo
+from airas.types.experiment_code import ExperimentCode
+from airas.types.experimental_analysis import ExperimentalAnalysis
+from airas.types.experimental_design import ExperimentalDesign
+from airas.types.experimental_results import ExperimentalResults
 from airas.types.paper import PaperContent, PaperReviewScores
-from airas.types.research_hypothesis import EvaluatedHypothesis
-from airas.types.research_session import ResearchSession
+from airas.types.research_hypothesis import ResearchHypothesis
 from airas.types.research_study import ResearchStudy
 
 
 class ResearchHistory(BaseModel):
     # --- Project Management ---
-    github_repository_info: Optional[GitHubRepositoryInfo] = Field(
-        None, description="GitHub repository information"
+    research_objective: Optional[str] = Field(
+        None, description="Main research objective or topic"
     )
-    research_topic: Optional[str] = Field(None, description="Main research topic")
 
     # --- Search & Investigation ---
-    queries: Optional[list[str]] = Field(None, description="Search queries used")
-    research_study_list: Optional[list[ResearchStudy]] = Field(
-        None, description="Main research studies"
+    query_list: Optional[list[str]] = Field(
+        None, description="List of search queries used for paper retrieval"
     )
-    reference_research_study_list: Optional[list[ResearchStudy]] = Field(
-        None, description="Reference research studies"
+    research_study_list: Optional[list[ResearchStudy]] = Field(
+        None, description="List of main research studies analyzed"
     )
 
     # --- Hypothesis & Experimentation ---
-    evaluated_hypothesis_history: Optional[list[EvaluatedHypothesis]] = Field(
-        None, description=""
+    research_hypothesis: Optional[ResearchHypothesis] = Field(
+        None, description="Research hypothesis generated"
     )
-    research_session: Optional[ResearchSession] = Field(None, description="")
+    experimental_design: Optional[ExperimentalDesign] = Field(
+        None, description="Experimental design and methodology"
+    )
+    experiment_code: Optional[ExperimentCode] = Field(
+        None, description="Generated experiment code and implementation"
+    )
+    experiment_results: Optional[ExperimentalResults] = Field(
+        None, description="Results from running experiments"
+    )
+    experimental_analysis: Optional[ExperimentalAnalysis] = Field(
+        None, description="Analysis and interpretation of experimental results"
+    )
 
     # --- Writing & Publication ---
     paper_content: Optional[PaperContent] = Field(
-        None, description="Generated paper content"
+        None, description="Generated paper content including sections and text"
     )
-    references_bib: Optional[str] = Field(None, description="Bibliography references")
-
-    latex_text: Optional[str] = Field(None, description="LaTeX formatted text")
-    full_html: Optional[str] = Field(None, description="Full HTML content")
-    github_pages_url: Optional[str] = Field(None, description="GitHub Pages URL")
-    readme_upload_result: Optional[bool] = Field(
-        None, description="README upload success status"
+    references_bib: Optional[str] = Field(
+        None, description="Bibliography references in BibTeX format"
     )
-
+    latex_text: Optional[str] = Field(None, description="LaTeX formatted paper text")
+    paper_url: Optional[str] = Field(
+        None, description="URL to the published or hosted paper"
+    )
+    full_html: Optional[str] = Field(
+        None, description="Full HTML content of the generated paper"
+    )
+    github_pages_url: Optional[str] = Field(
+        None, description="GitHub Pages URL for the published paper"
+    )
     paper_review_scores: Optional[PaperReviewScores] = Field(
-        None, description="Review scores from ReviewPaperSubgraph"
+        None, description="Review scores and feedback for the paper"
     )
 
     # --- Miscellaneous ---

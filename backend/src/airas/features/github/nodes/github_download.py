@@ -4,27 +4,27 @@ import logging
 import httpx
 
 from airas.services.api_client.github_client import GithubClient
-from airas.types.github import GitHubRepositoryInfo
+from airas.types.github import GitHubConfig
 from airas.types.research_history import ResearchHistory
 
 logger = logging.getLogger(__name__)
 
 
 def github_download(
-    github_repository_info: GitHubRepositoryInfo,
+    github_config: GitHubConfig,
     github_client: GithubClient,
     file_path: str = ".research/research_history.json",
 ) -> ResearchHistory:
     logger.info(
-        f"[GitHub I/O] Download: {github_repository_info.github_owner}/{github_repository_info.repository_name}@{github_repository_info.branch_name}:{file_path}"
+        f"[GitHub I/O] Download: {github_config.github_owner}/{github_config.repository_name}@{github_config.branch_name}:{file_path}"
     )
 
     try:
         blob = github_client.get_repository_content(
-            github_owner=github_repository_info.github_owner,
-            repository_name=github_repository_info.repository_name,
+            github_owner=github_config.github_owner,
+            repository_name=github_config.repository_name,
             file_path=file_path,
-            branch_name=github_repository_info.branch_name,
+            branch_name=github_config.branch_name,
         )
 
         download_url = blob.get("download_url")
