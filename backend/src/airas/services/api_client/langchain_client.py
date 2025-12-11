@@ -60,12 +60,6 @@ class LangChainClient:
             available.add(provider)
         return available
 
-    def _validate_env_for_provider(self, provider: LLMProvider) -> None:
-        """Check required environment variables for the provider."""
-        required = PROVIDER_REQUIRED_ENV_VARS.get(provider, [])
-        missing = [name for name in required if not os.getenv(name)]
-        if missing:
-            raise MissingEnvironmentVariablesError(provider, missing)
 
     def _select_provider_for_model(self, llm_name: LLM_MODEL) -> LLMProvider:
         """
