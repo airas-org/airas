@@ -54,7 +54,7 @@ class LangChainClient:
     def _detect_available_providers(self) -> set[LLMProvider]:
         available: set[LLMProvider] = set()
         for provider, vars_ in PROVIDER_REQUIRED_ENV_VARS.items():
-            missing = [name for name in vars_ if vars_ and not os.getenv(name)]
+            missing = [name for name in vars_ if not os.getenv(name)]
             if missing:
                 continue
             available.add(provider)
