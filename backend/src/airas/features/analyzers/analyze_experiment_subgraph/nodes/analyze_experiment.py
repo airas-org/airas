@@ -6,9 +6,7 @@ from pydantic import BaseModel
 from airas.features.analyzers.analyze_experiment_subgraph.prompts.analyze_experiment_prompt import (
     analyze_experiment_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLMFacadeClient,
-)
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_design import ExperimentalDesign
@@ -24,7 +22,7 @@ class LLMOutput(BaseModel):
 
 async def analyze_experiment(
     llm_name: LLM_MODELS,
-    llm_client: LLMFacadeClient,
+    langchain_client: LangChainClient,
     research_hypothesis: ResearchHypothesis,
     experimental_design: ExperimentalDesign,
     experiment_code: ExperimentCode,
@@ -41,10 +39,10 @@ async def analyze_experiment(
             "experimental_results": experimental_results,
         }
     )
-    output, cost = await llm_client.structured_outputs(
+    output, cost = await langchain_client.structured_outputs(
         message=messages, data_model=LLMOutput, llm_name=llm_name
     )
     if output is None:
         raise ValueError("No response from LLM in analyze_experiment.")
 
-    return output["analysis_report"]
+    return output.analysis_report

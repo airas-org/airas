@@ -7,12 +7,8 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from typing_extensions import TypedDict
 
-from airas.core.base import BaseSubgraph
-from airas.features.github.poll_workflow_subgraph.nodes.check_workflow_completion import (
-    check_workflow_completion,
-)
-from airas.features.github.poll_workflow_subgraph.nodes.get_baseline_workflow_count import (
-    get_baseline_workflow_count,
+from airas.features.github.poll_workflow_subgraph.nodes.get_latest_workflow_status import (
+    get_latest_workflow_status,
 )
 from airas.features.github.poll_workflow_subgraph.nodes.get_workflow_runs import (
     get_workflow_runs,
@@ -36,32 +32,23 @@ class PollWorkflowInputState(TypedDict):
     github_config: GitHubConfig
 
 
-class PollWorkflowHiddenState(TypedDict):
-    baseline_count: int | None
-    previous_count: int | None
-    workflow_runs_response: dict | None
-    start_time: float
-    poll_count: int
-
-
-class PollWorkflowOutputState(TypedDict):
+class PollWorkflowOutputState(ExecutionTimeState):
     workflow_run_id: int | None
-    is_completed: bool
+    status: str | None
+    conclusion: str | None
 
 
 class PollWorkflowState(
     PollWorkflowInputState,
-    PollWorkflowHiddenState,
     PollWorkflowOutputState,
-    ExecutionTimeState,
+    total=False,
 ):
-    pass
+    current_workflow_id: int | None
+    start_time: float
+    poll_count: int
 
 
-class PollWorkflowSubgraph(BaseSubgraph):
-    InputState = PollWorkflowInputState
-    OutputState = PollWorkflowOutputState
-
+class PollWorkflowSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
@@ -76,31 +63,15 @@ class PollWorkflowSubgraph(BaseSubgraph):
         self.timeout_sec = timeout_sec
 
     @recode_execution_time
-    async def _get_baseline_count(self, state: PollWorkflowState) -> Command:
+    async def _initialize(self, state: PollWorkflowState) -> Command:
         cfg = state["github_config"]
         logger.info(
             f"Starting workflow polling for {cfg.repository_name} on branch {cfg.branch_name}"
         )
 
-        baseline_count = await get_baseline_workflow_count(
-            github_config=cfg,
-            github_client=self.github_client,
-        )
-
-        if baseline_count is None:
-            logger.error("Failed to get baseline workflow count")
-            return Command(
-                update={
-                    "is_completed": False,
-                    "workflow_run_id": None,
-                },
-                goto=END,
-            )
-
         return Command(
             update={
-                "baseline_count": baseline_count,
-                "previous_count": None,
+                "current_workflow_id": None,
                 "start_time": time.time(),
                 "poll_count": 0,
             },
@@ -114,8 +85,9 @@ class PollWorkflowSubgraph(BaseSubgraph):
             logger.error(f"Workflow polling timed out after {elapsed_time:.2f} seconds")
             return Command(
                 update={
-                    "is_completed": False,
                     "workflow_run_id": None,
+                    "status": None,
+                    "conclusion": None,
                 },
                 goto=END,
             )
@@ -128,9 +100,15 @@ class PollWorkflowSubgraph(BaseSubgraph):
             github_client=self.github_client,
         )
 
+        workflow_run_id, status, conclusion = get_latest_workflow_status(
+            workflow_runs_response
+        )
+
         return Command(
             update={
-                "workflow_runs_response": workflow_runs_response,
+                "workflow_run_id": workflow_run_id,
+                "status": status,
+                "conclusion": conclusion,
                 "poll_count": poll_count,
             },
             goto="check_completion",
@@ -138,44 +116,53 @@ class PollWorkflowSubgraph(BaseSubgraph):
 
     @recode_execution_time
     async def _check_completion(self, state: PollWorkflowState) -> Command:
-        baseline_count = state.get("baseline_count")
-        if baseline_count is None:
-            logger.error("Baseline count is not set")
+        workflow_run_id = state.get("workflow_run_id")
+        status = state.get("status")
+        conclusion = state.get("conclusion")
+        current_workflow_id = state.get("current_workflow_id")
+
+        if workflow_run_id is None:
+            logger.info("No workflow found, waiting...")
+            return Command(goto="sleep_and_retry")
+
+        if status in ("queued", "in_progress", "waiting", "pending"):
+            logger.info(f"Workflow {workflow_run_id} is {status}, waiting...")
             return Command(
-                update={
-                    "is_completed": False,
-                    "workflow_run_id": None,
-                },
-                goto=END,
+                update={"current_workflow_id": workflow_run_id},
+                goto="sleep_and_retry",
             )
 
-        workflow_run_id, is_completed, current_count = check_workflow_completion(
-            workflow_runs_response=state.get("workflow_runs_response"),
-            baseline_count=baseline_count,
-            previous_count=state.get("previous_count"),
-        )
+        if status == "completed":
+            if (
+                current_workflow_id is not None
+                and workflow_run_id != current_workflow_id
+            ):
+                logger.info(
+                    f"New workflow {workflow_run_id} detected (was tracking {current_workflow_id}), "
+                    "waiting to see if it triggers another..."
+                )
+                return Command(
+                    update={"current_workflow_id": workflow_run_id},
+                    goto="sleep_and_retry",
+                )
 
-        if is_completed:
-            logger.info(f"Workflow {workflow_run_id} completed successfully")
-            return Command(
-                update={
-                    "workflow_run_id": workflow_run_id,
-                    "is_completed": True,
-                    "previous_count": current_count,
-                },
-                goto=END,
+            if current_workflow_id is None:
+                logger.info(
+                    f"Workflow {workflow_run_id} completed, waiting to check for recursive triggers..."
+                )
+                return Command(
+                    update={"current_workflow_id": workflow_run_id},
+                    goto="sleep_and_retry",
+                )
+
+            logger.info(
+                f"Workflow chain completed. Final workflow {workflow_run_id} "
+                f"with conclusion: {conclusion}"
             )
+            return Command(goto=END)
 
-        logger.info(
-            f"Workflow not yet completed, will retry after {self.poll_interval_sec}s"
-        )
-        return Command(
-            update={
-                "is_completed": False,
-                "previous_count": current_count,
-            },
-            goto="sleep_and_retry",
-        )
+        logger.warning(f"Unknown workflow status: {status}, waiting...")
+        return Command(goto="sleep_and_retry")
 
     @recode_execution_time
     async def _sleep_and_retry(
@@ -187,40 +174,11 @@ class PollWorkflowSubgraph(BaseSubgraph):
     def build_graph(self):
         graph_builder = StateGraph(PollWorkflowState)
 
-        graph_builder.add_node("get_baseline_count", self._get_baseline_count)
+        graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node("poll_workflow_status", self._poll_workflow_status)
         graph_builder.add_node("check_completion", self._check_completion)
         graph_builder.add_node("sleep_and_retry", self._sleep_and_retry)
 
-        graph_builder.add_edge(START, "get_baseline_count")
+        graph_builder.add_edge(START, "initialize")
 
         return graph_builder.compile()
-
-
-async def main():
-    from airas.core.container import container
-    from airas.features.github.poll_workflow_subgraph.input_data import (
-        poll_workflow_subgraph_input_data,
-    )
-
-    container.wire(modules=[__name__])
-    await container.init_resources()
-
-    try:
-        github_client = await container.github_client()
-        result = await PollWorkflowSubgraph(
-            github_client=github_client,
-        ).arun(poll_workflow_subgraph_input_data)
-        print(f"Result: {result}")
-    finally:
-        await container.shutdown_resources()
-
-
-if __name__ == "__main__":
-    import sys
-
-    try:
-        asyncio.run(main())
-    except Exception as e:
-        logger.error(f"Error running PollWorkflow: {e}")
-        sys.exit(1)

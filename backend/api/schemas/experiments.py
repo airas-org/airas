@@ -1,7 +1,11 @@
 from pydantic import BaseModel
 
+from airas.types.experiment_code import ExperimentCode
+from airas.types.experimental_analysis import ExperimentalAnalysis
+from airas.types.experimental_design import ExperimentalDesign
 from airas.types.experimental_results import ExperimentalResults
 from airas.types.github import GitHubConfig
+from airas.types.research_hypothesis import ResearchHypothesis
 
 
 class FetchRunIdsRequestBody(BaseModel):
@@ -49,4 +53,16 @@ class ExecuteEvaluationRequestBody(BaseModel):
 
 class ExecuteEvaluationResponseBody(BaseModel):
     dispatched: bool
+    execution_time: dict[str, list[float]]
+
+
+class AnalyzeExperimentRequestBody(BaseModel):
+    research_hypothesis: ResearchHypothesis
+    experimental_design: ExperimentalDesign
+    experiment_code: ExperimentCode
+    experimental_results: ExperimentalResults
+
+
+class AnalyzeExperimentResponseBody(BaseModel):
+    experimental_analysis: ExperimentalAnalysis
     execution_time: dict[str, list[float]]
