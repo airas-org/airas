@@ -12,9 +12,7 @@ from airas.features.retrieve.retrieve_paper_subgraph.prompt.extract_experimental
     extract_experimental_info_prompt,
 )
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
-)
+from airas.services.api_client.llm_specs import LLM_MODELS
 
 T = TypeVar("T")
 
@@ -31,7 +29,7 @@ async def _extract_experimental_info_from_study(
     code_str: str,
     template: str,
     llm_client: LangChainClient,
-    llm_name: LLM_MODEL,
+    llm_name: LLM_MODELS,
 ) -> tuple[str, str]:
     env = Environment()
     jinja_template = env.from_string(template)
@@ -58,7 +56,7 @@ async def _extract_experimental_info_from_study(
 
 
 async def extract_experimental_info(
-    llm_name: LLM_MODEL,
+    llm_name: LLM_MODELS,
     llm_client: LangChainClient,
     paper_summary_list: list[list[PaperSummary]],
     github_code_list: list[list[str]],

@@ -15,7 +15,7 @@ from airas.features.evaluators.evaluate_experimental_consistency_subgraph.nodes.
 from airas.features.evaluators.evaluate_experimental_consistency_subgraph.prompts.evaluate_experimental_consistency_prompt import (
     evaluate_experimental_consistency_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -30,7 +30,7 @@ def evaluate_experimental_consistency_timed(f):
 
 
 class EvaluateExperimentalConsistencyLLMMapping(BaseModel):
-    evaluate_experimental_consistency: LLM_MODEL = DEFAULT_NODE_LLMS[
+    evaluate_experimental_consistency: LLM_MODELS = DEFAULT_NODE_LLMS[
         "evaluate_experimental_consistency"
     ]
 

@@ -16,7 +16,7 @@ from airas.features.evaluators.review_paper_subgraph.nodes.review_paper import (
 from airas.features.evaluators.review_paper_subgraph.prompts.review_paper_prompt import (
     review_paper_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent, PaperReviewScores
 from airas.utils.check_api_key import check_api_key
@@ -30,7 +30,7 @@ review_paper_timed = lambda f: time_node("review_paper_subgraph")(f)  # noqa: E7
 
 
 class ReviewPaperLLMMapping(BaseModel):
-    review_paper: LLM_MODEL = DEFAULT_NODE_LLMS["review_paper"]
+    review_paper: LLM_MODELS = DEFAULT_NODE_LLMS["review_paper"]
 
 
 class ReviewPaperSubgraphInputState(TypedDict):

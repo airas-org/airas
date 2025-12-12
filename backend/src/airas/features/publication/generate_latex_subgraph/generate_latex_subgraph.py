@@ -19,7 +19,7 @@ from airas.features.publication.generate_latex_subgraph.nodes.embed_in_latex_tem
 )
 from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.latex import LATEX_TEMPLATE_NAME, LATEX_TEMPLATE_REPOSITORY_INFO
 from airas.types.paper import PaperContent
 from airas.utils.check_api_key import check_api_key
@@ -32,7 +32,7 @@ record_execution_time = lambda f: time_node("generate_latex_subgraph")(f)  # noq
 
 
 class GenerateLatexLLMMapping(BaseModel):
-    convert_to_latex: LLM_MODEL = DEFAULT_NODE_LLMS["convert_to_latex"]
+    convert_to_latex: LLM_MODELS = DEFAULT_NODE_LLMS["convert_to_latex"]
 
 
 class GenerateLatexSubgraphInputState(TypedDict):

@@ -9,9 +9,7 @@ from airas.features.analyzers.analyze_experiment_subgraph.nodes.analyze_experime
     analyze_experiment,
 )
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
-)
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_analysis import ExperimentalAnalysis
 from airas.types.experimental_design import ExperimentalDesign
@@ -28,7 +26,7 @@ record_execution_time = lambda f: time_node("analyze_experiment_subgraph")(f)  #
 
 
 class AnalyzeExperimentLLMMapping(BaseModel):
-    analyze_experiment: LLM_MODEL = DEFAULT_NODE_LLMS["analyze_experiment"]
+    analyze_experiment: LLM_MODELS = DEFAULT_NODE_LLMS["analyze_experiment"]
 
 
 class AnalyzeExperimentSubgraphInputState(TypedDict, total=False):

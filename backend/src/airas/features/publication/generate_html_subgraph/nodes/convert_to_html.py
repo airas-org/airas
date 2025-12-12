@@ -2,9 +2,9 @@ from jinja2 import Environment
 from pydantic import BaseModel
 
 from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.paper import PaperContent
 from airas.types.research_session import ResearchSession
 
@@ -14,7 +14,7 @@ class LLMOutput(BaseModel):
 
 
 async def convert_to_html(
-    llm_name: LLM_MODEL,
+    llm_name: LLM_MODELS,
     paper_content: PaperContent,
     research_session: ResearchSession,
     prompt_template: str,

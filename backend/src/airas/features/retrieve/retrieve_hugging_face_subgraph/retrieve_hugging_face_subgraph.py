@@ -17,9 +17,9 @@ from airas.features.retrieve.retrieve_hugging_face_subgraph.nodes.select_resourc
 )
 from airas.services.api_client.hugging_face_client import HuggingFaceClient
 from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.hugging_face import HuggingFace
 from airas.types.research_iteration import ExternalResources
 from airas.types.research_session import ResearchSession
@@ -38,10 +38,10 @@ def retrieve_hugging_face_timed(f):
 
 
 class RetrieveHuggingFaceLLMMapping(BaseModel):
-    select_resources: LLM_MODEL = DEFAULT_NODE_LLMS.get(
+    select_resources: LLM_MODELS = DEFAULT_NODE_LLMS.get(
         "select_resources", "o3-2025-04-16"
     )
-    extract_code_in_readme: LLM_MODEL = DEFAULT_NODE_LLMS.get(
+    extract_code_in_readme: LLM_MODELS = DEFAULT_NODE_LLMS.get(
         "extract_code_in_readme", "o3-2025-04-16"
     )
 
