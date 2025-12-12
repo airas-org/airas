@@ -4,6 +4,8 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 
 from api.schemas.experiments import (
+    AnalyzeExperimentRequestBody,
+    AnalyzeExperimentResponseBody,
     ExecuteEvaluationRequestBody,
     ExecuteEvaluationResponseBody,
     ExecuteFullRequestBody,
@@ -16,6 +18,9 @@ from api.schemas.experiments import (
     FetchRunIdsResponseBody,
 )
 from src.airas.core.container import Container
+from src.airas.features.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
+    AnalyzeExperimentSubgraph,
+)
 from src.airas.features.executors.execute_evaluation_subgraph.execute_evaluation_subgraph import (
     ExecuteEvaluationSubgraph,
 )
@@ -32,6 +37,7 @@ from src.airas.features.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph 
     FetchRunIdsSubgraph,
 )
 from src.airas.services.api_client.github_client import GithubClient
+from src.airas.services.api_client.langchain_client import LangChainClient
 
 router = APIRouter(prefix="/experiments", tags=["experiments"])
 
@@ -119,5 +125,24 @@ async def execute_evaluation(
     )
     return ExecuteEvaluationResponseBody(
         dispatched=result["dispatched"],
+        execution_time=result["execution_time"],
+    )
+
+
+@router.post("/analyses", response_model=AnalyzeExperimentResponseBody)
+@inject
+async def analyze_experiment(
+    request: AnalyzeExperimentRequestBody,
+    langchain_client: Annotated[
+        LangChainClient, Depends(Provide[Container.langchain_client])
+    ],
+) -> AnalyzeExperimentResponseBody:
+    result = (
+        await AnalyzeExperimentSubgraph(langchain_client=langchain_client)
+        .build_graph()
+        .ainvoke(request)
+    )
+    return AnalyzeExperimentResponseBody(
+        experimental_analysis=result["experimental_analysis"],
         execution_time=result["execution_time"],
     )
