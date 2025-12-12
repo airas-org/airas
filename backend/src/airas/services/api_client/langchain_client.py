@@ -187,7 +187,7 @@ if __name__ == "__main__":
             # llm_name="gpt-5-mini-2025-08-07",
             # llm_name="claude-sonnet-4-5",
             # llm_name="anthropic/claude-sonnet-4.5",
-            llm_name="anthropic.claude-haiku-4-5-20251001-v1:0",
+            llm_name="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
             # llm_name="openai.gpt-oss-120b-1:0",
             params=None,
         )
@@ -205,8 +205,7 @@ if __name__ == "__main__":
             # llm_name="gpt-5-mini-2025-08-07",
             # llm_name="claude-sonnet-4-5",
             # llm_name="anthropic/claude-sonnet-4.5",
-            llm_name="anthropic.claude-haiku-4-5-20251001-v1:0",
-            # llm_name="openai.gpt-oss-120b-1:0",
+            llm_name="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
             params=None,
         )
         print(structured)

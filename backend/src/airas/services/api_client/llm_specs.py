@@ -126,14 +126,13 @@ OPENROUTER_MODELS: TypeAlias = Literal[
     *get_args(ANTHROPIC_MODELS_FOR_OPENROUTER),
 ]
 
-BEDROCK_MODELS = Literal[
-    "anthropic.claude-opus-4-5-20251101-v1:0",
-    "anthropic.claude-sonnet-4-5-20250929-v1:0",
-    "anthropic.claude-haiku-4-5-20251001-v1:0",
-    "anthropic.claude-sonnet-4-20250514-v1:0",
-    "anthropic.claude-3-5-sonnet-20240620-v1:0",
-    "mistral.mistral-large-3-675b-instruct",  # Not support structured output
-    "openai.gpt-oss-120b-1:0",  # Not support structured output
+# https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-support.html
+BEDROCK_MODELS: TypeAlias = Literal[
+    "global.anthropic.claude-opus-4-5-20251101-v1:0",
+    "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "global.anthropic.claude-sonnet-4-20250514-v1:0",
+    "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "openai.gpt-oss-120b-1:0",  # Does not support structured output
 ]
 
 
