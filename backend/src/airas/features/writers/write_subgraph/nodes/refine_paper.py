@@ -6,12 +6,12 @@ from airas.features.writers.write_subgraph.prompts.section_tips_prompt import (
 )
 from airas.features.writers.write_subgraph.prompts.write_prompt import write_prompt
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.paper import PaperContent
 
 
 async def refine_paper(
-    llm_name: LLM_MODEL,
+    llm_name: LLM_MODELS,
     langchain_client: LangChainClient,
     paper_content: PaperContent,
     note: str,

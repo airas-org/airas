@@ -36,9 +36,9 @@ from airas.features.retrieve.retrieve_paper_subgraph.prompt.openai_websearch_arx
 )
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.services.api_client.qdrant_client import QdrantClient
 from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
 from airas.types.research_hypothesis import EvaluatedHypothesis, ResearchHypothesis
@@ -54,15 +54,15 @@ recode_execution_time = lambda f: time_node("generate_hypothesis_subgraph")(f)  
 
 
 class GenerateHypothesisSubgraphLLMMapping(BaseModel):
-    generate_hypothesis: LLM_MODEL = DEFAULT_NODE_LLMS["generate_hypothesis"]
-    evaluate_novelty_and_significance: LLM_MODEL = DEFAULT_NODE_LLMS[
+    generate_hypothesis: LLM_MODELS = DEFAULT_NODE_LLMS["generate_hypothesis"]
+    evaluate_novelty_and_significance: LLM_MODELS = DEFAULT_NODE_LLMS[
         "evaluate_novelty_and_significance"
     ]
-    refine_hypothesis: LLM_MODEL = DEFAULT_NODE_LLMS["refine_hypothesis"]
-    search_arxiv_id_from_title: LLM_MODEL = DEFAULT_NODE_LLMS[
+    refine_hypothesis: LLM_MODELS = DEFAULT_NODE_LLMS["refine_hypothesis"]
+    search_arxiv_id_from_title: LLM_MODELS = DEFAULT_NODE_LLMS[
         "search_arxiv_id_from_title"
     ]
-    embedding_model: LLM_MODEL = "gemini-embedding-001"
+    embedding_model: LLM_MODELS = "gemini-embedding-001"
 
 
 class GenerateHypothesisSubgraphInputState(TypedDict):

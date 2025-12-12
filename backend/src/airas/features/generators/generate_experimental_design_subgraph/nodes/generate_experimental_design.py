@@ -14,10 +14,8 @@ from airas.features.generators.generate_experimental_design_subgraph.prompts.gen
     generate_experimental_design_prompt,
 )
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
-)
 from airas.services.api_client.llm_client.openai_client import OpenAIParams
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.experimental_design import (
     EvaluationMetric,
     ExperimentalDesign,
@@ -39,7 +37,7 @@ class LLMOutput(BaseModel):
 
 
 async def generate_experimental_design(
-    llm_name: LLM_MODEL,
+    llm_name: LLM_MODELS,
     llm_client: LangChainClient,
     research_hypothesis: ResearchHypothesis,
     runner_config: RunnerConfig,

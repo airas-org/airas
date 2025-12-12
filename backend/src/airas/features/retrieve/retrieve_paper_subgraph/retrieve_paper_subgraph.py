@@ -36,9 +36,9 @@ from airas.features.retrieve.retrieve_paper_subgraph.prompt.extract_github_url_f
 from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.research_study import LLMExtractedInfo, MetaData, ResearchStudy
 from airas.utils.logging_utils import setup_logging
 from src.airas.config.llm_config import DEFAULT_NODE_LLMS
@@ -65,17 +65,17 @@ record_execution_time = lambda f: time_node("retrieve_paper_subgraph")(f)  # noq
 
 
 class RetrievePaperSubgraphLLMMapping(BaseModel):
-    search_arxiv_id_from_title: LLM_MODEL = DEFAULT_NODE_LLMS[
+    search_arxiv_id_from_title: LLM_MODELS = DEFAULT_NODE_LLMS[
         "search_arxiv_id_from_title"
     ]
-    summarize_paper: LLM_MODEL = DEFAULT_NODE_LLMS["summarize_paper"]
-    extract_github_url_from_text: LLM_MODEL = DEFAULT_NODE_LLMS[
+    summarize_paper: LLM_MODELS = DEFAULT_NODE_LLMS["summarize_paper"]
+    extract_github_url_from_text: LLM_MODELS = DEFAULT_NODE_LLMS[
         "extract_github_url_from_text"
     ]
-    extract_experimental_info: LLM_MODEL = DEFAULT_NODE_LLMS[
+    extract_experimental_info: LLM_MODELS = DEFAULT_NODE_LLMS[
         "extract_experimental_info"
     ]
-    extract_reference_titles: LLM_MODEL = DEFAULT_NODE_LLMS["extract_reference_titles"]
+    extract_reference_titles: LLM_MODELS = DEFAULT_NODE_LLMS["extract_reference_titles"]
 
 
 class RetrievePaperSubgraphInputState(TypedDict):

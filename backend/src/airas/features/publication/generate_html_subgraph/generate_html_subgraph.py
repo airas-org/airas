@@ -19,9 +19,9 @@ from airas.features.publication.generate_html_subgraph.prompts.convert_to_html_p
     convert_to_html_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.paper import PaperContent
 from airas.types.research_session import ResearchSession
 from airas.utils.check_api_key import check_api_key
@@ -34,7 +34,7 @@ html_timed = lambda f: time_node("generate_html_subgraph")(f)  # noqa: E731
 
 
 class GenerateHtmlLLMMapping(BaseModel):
-    convert_to_html: LLM_MODEL = DEFAULT_NODE_LLMS["convert_to_html"]
+    convert_to_html: LLM_MODELS = DEFAULT_NODE_LLMS["convert_to_html"]
 
 
 class GenerateHtmlSubgraphInputState(TypedDict):

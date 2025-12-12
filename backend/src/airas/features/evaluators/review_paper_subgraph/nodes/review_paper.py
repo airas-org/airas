@@ -4,9 +4,9 @@ from jinja2 import Environment
 from pydantic import BaseModel
 
 from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.paper import PaperContent, PaperReviewScores
 
 logger = getLogger(__name__)
@@ -20,7 +20,7 @@ class PaperReviewOutput(BaseModel):
 
 
 def review_paper(
-    llm_name: LLM_MODEL,
+    llm_name: LLM_MODELS,
     prompt_template: str,
     paper_content: PaperContent,
     client: LLMFacadeClient | None = None,

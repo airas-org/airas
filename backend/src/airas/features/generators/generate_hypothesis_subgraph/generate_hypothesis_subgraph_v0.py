@@ -16,9 +16,7 @@ from airas.features.generators.generate_hypothesis_subgraph.nodes.refine_hypothe
     refine_hypothesis,
 )
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
-)
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.research_hypothesis import EvaluatedHypothesis, ResearchHypothesis
 from airas.types.research_study import ResearchStudy
 from airas.utils.check_api_key import check_api_key
@@ -32,11 +30,11 @@ record_execution_time = lambda f: time_node("generate_hypothesis_subgraph")(f)  
 
 
 class GenerateHypothesisSubgraphV0LLMMapping(BaseModel):
-    generate_hypothesis: LLM_MODEL = DEFAULT_NODE_LLMS["generate_hypothesis"]
-    evaluate_novelty_and_significance: LLM_MODEL = DEFAULT_NODE_LLMS[
+    generate_hypothesis: LLM_MODELS = DEFAULT_NODE_LLMS["generate_hypothesis"]
+    evaluate_novelty_and_significance: LLM_MODELS = DEFAULT_NODE_LLMS[
         "evaluate_novelty_and_significance"
     ]
-    refine_hypothesis: LLM_MODEL = DEFAULT_NODE_LLMS["refine_hypothesis"]
+    refine_hypothesis: LLM_MODELS = DEFAULT_NODE_LLMS["refine_hypothesis"]
 
 
 class GenerateHypothesisSubgraphV0InputState(TypedDict):
