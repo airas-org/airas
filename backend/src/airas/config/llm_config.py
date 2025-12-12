@@ -1,8 +1,8 @@
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_specs import LLM_MODELS
 
-LLM_CONFIG_TYPE = dict[str, LLM_MODEL]
+LLM_CONFIG_TYPE = dict[str, LLM_MODELS]
 
-BASE_MODEL: LLM_MODEL = "gpt-5-mini-2025-08-07"
+BASE_MODEL: LLM_MODELS = "gpt-5-mini-2025-08-07"
 
 
 # fmt:off

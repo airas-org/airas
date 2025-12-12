@@ -17,9 +17,9 @@ from airas.features.retrieve.generate_queries_subgraph.prompt.generate_queries_p
     generate_queries_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -32,7 +32,7 @@ generate_queries_timed = lambda f: time_node(generate_queries_str)(f)  # noqa: E
 
 
 class GenerateQueriesLLMMapping(BaseModel):
-    generate_queries: LLM_MODEL = DEFAULT_NODE_LLMS["generate_queries"]
+    generate_queries: LLM_MODELS = DEFAULT_NODE_LLMS["generate_queries"]
 
 
 class GenerateQueriesInputState(TypedDict):

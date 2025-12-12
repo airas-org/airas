@@ -6,7 +6,7 @@ from jinja2 import Environment, Template
 from pydantic import BaseModel
 
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_specs import LLM_MODELS
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ async def _summarize_single_text(
     paper_text: str,
     rendered_template: Template,
     llm_client: LangChainClient,
-    llm_name: LLM_MODEL,
+    llm_name: LLM_MODELS,
     group_idx: int,
     paper_idx: int,
 ) -> tuple[int, int, PaperSummary]:
@@ -87,7 +87,7 @@ async def _summarize_single_text(
 
 
 async def summarize_paper(
-    llm_name: LLM_MODEL,
+    llm_name: LLM_MODELS,
     llm_client: LangChainClient,
     prompt_template: str,
     arxiv_full_text_list: list[list[str]],

@@ -6,14 +6,14 @@ from airas.features.publication.generate_latex_subgraph.prompts.convert_to_latex
     convert_to_latex_prompt,
 )
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.paper import PaperContent
 
 logger = getLogger(__name__)
 
 
 async def convert_to_latex(
-    llm_name: LLM_MODEL,
+    llm_name: LLM_MODELS,
     langchain_client: LangChainClient,
     paper_content: PaperContent,
     references_bib: str,

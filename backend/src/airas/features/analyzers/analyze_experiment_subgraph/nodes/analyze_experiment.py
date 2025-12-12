@@ -7,9 +7,9 @@ from airas.features.analyzers.analyze_experiment_subgraph.prompts.analyze_experi
     analyze_experiment_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_design import ExperimentalDesign
 from airas.types.experimental_results import ExperimentalResults
@@ -23,7 +23,7 @@ class LLMOutput(BaseModel):
 
 
 async def analyze_experiment(
-    llm_name: LLM_MODEL,
+    llm_name: LLM_MODELS,
     llm_client: LLMFacadeClient,
     research_hypothesis: ResearchHypothesis,
     experimental_design: ExperimentalDesign,

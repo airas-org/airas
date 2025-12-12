@@ -9,9 +9,7 @@ from airas.features.generators.generate_experimental_design_subgraph.nodes.gener
     generate_experimental_design,
 )
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
-)
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.experimental_design import ExperimentalDesign, RunnerConfig
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.utils.check_api_key import check_api_key
@@ -25,7 +23,7 @@ record_execution_time = lambda f: time_node("generate_experimental_design_subgra
 
 
 class GenerateExperimentalDesignLLMMapping(BaseModel):
-    generate_experimental_design: LLM_MODEL = DEFAULT_NODE_LLMS[
+    generate_experimental_design: LLM_MODELS = DEFAULT_NODE_LLMS[
         "generate_experimental_design"
     ]
 

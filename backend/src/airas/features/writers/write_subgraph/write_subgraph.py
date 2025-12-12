@@ -11,7 +11,7 @@ from airas.features.writers.write_subgraph.nodes.generate_note import generate_n
 from airas.features.writers.write_subgraph.nodes.refine_paper import refine_paper
 from airas.features.writers.write_subgraph.nodes.write_paper import write_paper
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.llm_facade_client import LLM_MODEL
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_analysis import ExperimentalAnalysis
 from airas.types.experimental_design import ExperimentalDesign
@@ -29,8 +29,8 @@ record_execution_time = lambda f: time_node("write_subgraph")(f)  # noqa: E731
 
 
 class WriteLLMMapping(BaseModel):
-    write_paper: LLM_MODEL = DEFAULT_NODE_LLMS["write_paper"]
-    refine_paper: LLM_MODEL = DEFAULT_NODE_LLMS["refine_paper"]
+    write_paper: LLM_MODELS = DEFAULT_NODE_LLMS["write_paper"]
+    refine_paper: LLM_MODELS = DEFAULT_NODE_LLMS["refine_paper"]
 
 
 class WriteSubgraphInputState(TypedDict):
