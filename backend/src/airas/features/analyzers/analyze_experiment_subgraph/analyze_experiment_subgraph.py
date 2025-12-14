@@ -54,7 +54,7 @@ class AnalyzeExperimentSubgraph:
         langchain_client: LangChainClient,
         llm_mapping: AnalyzeExperimentLLMMapping | None = None,
     ):
-        self.llm_mapping = llm_mapping or AnalyzeExperimentLLMMapping
+        self.llm_mapping = llm_mapping or AnalyzeExperimentLLMMapping()
         self.langchain_client = langchain_client
         check_api_key(llm_api_key_check=True)
 
