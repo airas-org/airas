@@ -35,6 +35,7 @@ async def generate_code(
             wandb_config=request.wandb_config,
             langchain_client=langchain_client,
             max_code_validations=request.max_code_validations,
+            llm_mapping=request.llm_mapping,
         )
         .build_graph()
         .ainvoke(request)

@@ -33,6 +33,7 @@ async def generate_experimental_design(
             num_models_to_use=request.num_models_to_use,
             num_datasets_to_use=request.num_datasets_to_use,
             num_comparative_methods=request.num_comparative_methods,
+            llm_mapping=request.llm_mapping,
         )
         .build_graph()
         .ainvoke(request)

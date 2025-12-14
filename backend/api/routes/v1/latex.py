@@ -41,6 +41,7 @@ async def generate_latex(
             langchain_client=langchain_client,
             github_client=github_client,
             latex_template_name=request.latex_template_name,
+            llm_mapping=request.llm_mapping,
         )
         .build_graph()
         .ainvoke(request)

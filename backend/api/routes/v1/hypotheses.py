@@ -28,6 +28,7 @@ async def generate_hypotheses(
         await GenerateHypothesisSubgraphV0(
             langchain_client=langchain_client,
             refinement_rounds=request.refinement_rounds,
+            llm_mapping=request.llm_mapping,
         )
         .build_graph()
         .ainvoke(request)

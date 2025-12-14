@@ -1,5 +1,5 @@
 
-POST http://127.0.0.1:8000/airas/v1/hypotheses/generations
+POST http://127.0.0.1:8001/airas/v1/hypotheses/generations
 Content-Type: application/json
 
 {
@@ -48,5 +48,10 @@ Content-Type: application/json
             }
         }
     ],
-    "refinement_rounds": 1
+    "refinement_rounds": 1,
+    "llm_mapping": {
+        "generate_hypothesis": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "evaluate_novelty_and_significance": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "refine_hypothesis": "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+    }
 }

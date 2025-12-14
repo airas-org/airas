@@ -1,5 +1,8 @@
 from pydantic import BaseModel
 
+from airas.features.generators.generate_code_subgraph.generate_code_subgraph import (
+    GenerateCodeLLMMapping,
+)
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_design import ExperimentalDesign
 from airas.types.github import GitHubConfig
@@ -12,6 +15,7 @@ class GenerateCodeSubgraphRequestBody(BaseModel):
     experimental_design: ExperimentalDesign
     wandb_config: WandbConfig
     max_code_validations: int
+    llm_mapping: GenerateCodeLLMMapping
 
 
 class GenerateCodeSubgraphResponseBody(BaseModel):
