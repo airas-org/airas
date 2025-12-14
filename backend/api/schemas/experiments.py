@@ -64,7 +64,7 @@ class AnalyzeExperimentRequestBody(BaseModel):
     experimental_design: ExperimentalDesign
     experiment_code: ExperimentCode
     experimental_results: ExperimentalResults
-    llm_mapping: AnalyzeExperimentLLMMapping
+    llm_mapping: AnalyzeExperimentLLMMapping | None = None
 
 
 class AnalyzeExperimentResponseBody(BaseModel):
