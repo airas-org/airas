@@ -13,7 +13,7 @@ class GenerateExperimentalDesignSubgraphRequestBody(BaseModel):
     num_models_to_use: int
     num_datasets_to_use: int
     num_comparative_methods: int
-    llm_mapping: GenerateExperimentalDesignLLMMapping
+    llm_mapping: GenerateExperimentalDesignLLMMapping | None = None
 
 
 class GenerateExperimentalDesignSubgraphResponseBody(BaseModel):
