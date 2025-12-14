@@ -10,7 +10,7 @@ Content-Type: application/json
 
 ### Generate paper from research data
 
-POST http://127.0.0.1:8000/airas/v1/papers/generations
+POST http://127.0.0.1:8001/airas/v1/papers/generations
 Content-Type: application/json
 
 {
@@ -87,5 +87,9 @@ Content-Type: application/json
         }
     ],
     "references_bib": "@article{kingma-2014-adam,\n  title={Adam: A Method for Stochastic Optimization},\n  author={Kingma, Diederik P. and Ba, Jimmy},\n  journal={arXiv preprint arXiv:1412.6980},\n  year={2014}\n}",
-    "writing_refinement_rounds": 2
+    "writing_refinement_rounds": 2,
+    "llm_mapping": {
+        "write_paper": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "refine_paper": "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+    }
 }

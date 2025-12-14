@@ -67,6 +67,7 @@ async def generate_paper(
         await WriteSubgraph(
             langchain_client=langchain_client,
             writing_refinement_rounds=request.writing_refinement_rounds,
+            llm_mapping=request.llm_mapping,
         )
         .build_graph()
         .ainvoke(request)

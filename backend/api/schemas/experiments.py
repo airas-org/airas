@@ -1,5 +1,8 @@
 from pydantic import BaseModel
 
+from airas.features.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
+    AnalyzeExperimentLLMMapping,
+)
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_analysis import ExperimentalAnalysis
 from airas.types.experimental_design import ExperimentalDesign
@@ -61,6 +64,7 @@ class AnalyzeExperimentRequestBody(BaseModel):
     experimental_design: ExperimentalDesign
     experiment_code: ExperimentCode
     experimental_results: ExperimentalResults
+    llm_mapping: AnalyzeExperimentLLMMapping | None = None
 
 
 class AnalyzeExperimentResponseBody(BaseModel):

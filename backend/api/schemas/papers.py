@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+from airas.features.writers.write_subgraph.write_subgraph import WriteLLMMapping
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_analysis import ExperimentalAnalysis
 from airas.types.experimental_design import ExperimentalDesign
@@ -28,6 +29,7 @@ class WriteSubgraphRequestBody(BaseModel):
     research_study_list: list[ResearchStudy]
     references_bib: str
     writing_refinement_rounds: int = 2
+    llm_mapping: WriteLLMMapping | None = None
 
 
 class WriteSubgraphResponseBody(BaseModel):

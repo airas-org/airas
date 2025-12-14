@@ -138,7 +138,10 @@ async def analyze_experiment(
     ],
 ) -> AnalyzeExperimentResponseBody:
     result = (
-        await AnalyzeExperimentSubgraph(langchain_client=langchain_client)
+        await AnalyzeExperimentSubgraph(
+            langchain_client=langchain_client,
+            llm_mapping=request.llm_mapping,
+        )
         .build_graph()
         .ainvoke(request)
     )

@@ -1,5 +1,8 @@
 from pydantic import BaseModel
 
+from airas.features.publication.generate_latex_subgraph.generate_latex_subgraph import (
+    GenerateLatexLLMMapping,
+)
 from airas.types.github import GitHubConfig
 from airas.types.latex import LATEX_TEMPLATE_NAME
 from airas.types.paper import PaperContent
@@ -10,6 +13,7 @@ class GenerateLatexSubgraphRequestBody(BaseModel):
     references_bib: str
     paper_content: PaperContent
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024"
+    llm_mapping: GenerateLatexLLMMapping | None = None
 
 
 class GenerateLatexSubgraphResponseBody(BaseModel):

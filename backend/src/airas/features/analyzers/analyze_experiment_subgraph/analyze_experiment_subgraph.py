@@ -52,26 +52,9 @@ class AnalyzeExperimentSubgraph:
     def __init__(
         self,
         langchain_client: LangChainClient,
-        llm_mapping: dict[str, str] | AnalyzeExperimentLLMMapping | None = None,
+        llm_mapping: AnalyzeExperimentLLMMapping | None = None,
     ):
-        if llm_mapping is None:
-            self.llm_mapping = AnalyzeExperimentLLMMapping()
-        elif isinstance(llm_mapping, dict):
-            try:
-                self.llm_mapping = AnalyzeExperimentLLMMapping.model_validate(
-                    llm_mapping
-                )
-            except Exception as e:
-                raise TypeError(
-                    f"Invalid llm_mapping values. Must contain valid LLM model names. Error: {e}"
-                ) from e
-        elif isinstance(llm_mapping, AnalyzeExperimentLLMMapping):
-            self.llm_mapping = llm_mapping
-        else:
-            raise TypeError(
-                f"llm_mapping must be None, dict[str, str], or AnalyzeExperimentLLMMapping, "
-                f"but got {type(llm_mapping)}"
-            )
+        self.llm_mapping = llm_mapping or AnalyzeExperimentLLMMapping()
         self.langchain_client = langchain_client
         check_api_key(llm_api_key_check=True)
 

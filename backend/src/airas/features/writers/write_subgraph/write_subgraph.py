@@ -68,20 +68,10 @@ class WriteSubgraph:
     def __init__(
         self,
         langchain_client: LangChainClient,
-        llm_mapping: dict[str, str] | WriteLLMMapping | None = None,
+        llm_mapping: WriteLLMMapping | None = None,
         writing_refinement_rounds: int = 2,
     ):
-        if llm_mapping is None:
-            self.llm_mapping = WriteLLMMapping()
-        elif isinstance(llm_mapping, dict):
-            self.llm_mapping = WriteLLMMapping(**llm_mapping)
-        elif isinstance(llm_mapping, WriteLLMMapping):
-            self.llm_mapping = llm_mapping
-        else:
-            raise TypeError(
-                f"llm_mapping must be None, dict[str, str], or WriteLLMMapping, "
-                f"but got {type(llm_mapping)}"
-            )
+        self.llm_mapping = llm_mapping or WriteLLMMapping()
         self.writing_refinement_rounds = writing_refinement_rounds
         self.langchain_client = langchain_client
         check_api_key(llm_api_key_check=True)
