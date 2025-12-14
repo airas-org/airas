@@ -13,7 +13,7 @@ class GenerateLatexSubgraphRequestBody(BaseModel):
     references_bib: str
     paper_content: PaperContent
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024"
-    llm_mapping: GenerateLatexLLMMapping
+    llm_mapping: GenerateLatexLLMMapping | None = None
 
 
 class GenerateLatexSubgraphResponseBody(BaseModel):
