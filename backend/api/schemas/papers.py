@@ -29,7 +29,7 @@ class WriteSubgraphRequestBody(BaseModel):
     research_study_list: list[ResearchStudy]
     references_bib: str
     writing_refinement_rounds: int = 2
-    llm_mapping: WriteLLMMapping
+    llm_mapping: WriteLLMMapping | None = None
 
 
 class WriteSubgraphResponseBody(BaseModel):
