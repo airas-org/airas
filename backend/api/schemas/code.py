@@ -15,7 +15,7 @@ class GenerateCodeSubgraphRequestBody(BaseModel):
     experimental_design: ExperimentalDesign
     wandb_config: WandbConfig
     max_code_validations: int
-    llm_mapping: GenerateCodeLLMMapping
+    llm_mapping: GenerateCodeLLMMapping | None = None
 
 
 class GenerateCodeSubgraphResponseBody(BaseModel):
