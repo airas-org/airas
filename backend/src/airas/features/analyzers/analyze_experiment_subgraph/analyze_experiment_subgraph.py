@@ -15,7 +15,6 @@ from airas.types.experimental_analysis import ExperimentalAnalysis
 from airas.types.experimental_design import ExperimentalDesign
 from airas.types.experimental_results import ExperimentalResults
 from airas.types.research_hypothesis import ResearchHypothesis
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -29,7 +28,7 @@ class AnalyzeExperimentLLMMapping(BaseModel):
     analyze_experiment: LLM_MODELS = DEFAULT_NODE_LLMS["analyze_experiment"]
 
 
-class AnalyzeExperimentSubgraphInputState(TypedDict, total=False):
+class AnalyzeExperimentSubgraphInputState(TypedDict):
     research_hypothesis: ResearchHypothesis
     experimental_design: ExperimentalDesign
     experiment_code: ExperimentCode
@@ -56,7 +55,6 @@ class AnalyzeExperimentSubgraph:
     ):
         self.llm_mapping = llm_mapping or AnalyzeExperimentLLMMapping()
         self.langchain_client = langchain_client
-        check_api_key(llm_api_key_check=True)
 
     @record_execution_time
     async def _analyze_experiment(

@@ -24,7 +24,6 @@ from airas.services.api_client.llm_client.llm_facade_client import (
 from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.paper import PaperContent
 from airas.types.research_session import ResearchSession
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -81,7 +80,6 @@ class GenerateHtmlSubgraph(BaseSubgraph):
                 f"but got {type(llm_mapping)}"
             )
         self.llm_client = llm_client
-        check_api_key(llm_api_key_check=True)
 
     @html_timed
     async def _convert_to_html(

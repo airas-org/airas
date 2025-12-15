@@ -10,7 +10,7 @@ Content-Type: application/json
 
 ### Generate paper from research data
 
-POST http://127.0.0.1:8001/airas/v1/papers/generations
+POST http://127.0.0.1:8000/airas/v1/papers/generations
 Content-Type: application/json
 
 {

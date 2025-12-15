@@ -75,7 +75,7 @@ Content-Type: application/json
 ###
 
 ### Analyze experiment
-POST http://127.0.0.1:8001/airas/v1/experiments/analyses
+POST http://127.0.0.1:8000/airas/v1/experiments/analyses
 Content-Type: application/json
 
 {

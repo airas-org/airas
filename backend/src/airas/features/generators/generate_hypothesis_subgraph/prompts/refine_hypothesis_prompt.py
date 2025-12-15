@@ -29,4 +29,40 @@ You are an accomplished researcher in the field of machine learning. Based on th
 {{ evaluated_hypothesis_history }}
 
 # Research Study List
-{{ research_study_list }}"""
+{{ research_study_list }}
+
+# Output content:
+Based on the above analysis, refine the current hypothesis to make it more novel and significant. Your output should include:
+
+- open_problems
+    - Identify the key limitation or gap that the refined hypothesis addresses.
+    - Ensure this problem is more focused and impactful than the current hypothesis.
+
+- method
+    - Describe the refined approach with improved clarity and detail.
+    - Highlight what makes this method novel compared to existing work.
+
+- experimental_setup
+    - Provide a concrete and feasible experimental design.
+    - Specify which datasets and evaluation metrics will be used.
+    - Design clear comparisons with baseline methods.
+
+- primary_metric
+    - Specify the single most important evaluation metric that will be used to assess the effectiveness of the proposed method.
+    - This metric will be used for calculating the performance gap (GAP) between the proposed method and baselines.
+    - Choose a metric that best represents the success of addressing the identified problem (e.g., "accuracy", "f1_score", "bleu", "perplexity").
+    - Use a clear, standard metric name that can be directly extracted from experimental results.
+
+- experimental_code
+    - Output the core Python code implementing the refined method.
+    - Focus on the key improvements and changes.
+    - Keep the code concise, readable, and executable.
+
+- expected_result
+    - Describe the expected experimental results and performance improvement over baseline methods.
+    - Include specific quantitative predictions for the primary metric and other key evaluation metrics.
+    - These predictions help determine whether higher or lower metric values indicate better performance.
+
+- expected_conclusion
+    - Summarize the academic and practical value of the refined hypothesis.
+    - Explain why this hypothesis is more novel and significant than the current version."""

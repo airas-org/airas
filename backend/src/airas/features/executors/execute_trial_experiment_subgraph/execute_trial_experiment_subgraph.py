@@ -12,7 +12,6 @@ from airas.features.github.nodes.dispatch_workflow import (
 )
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubConfig
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -49,8 +48,6 @@ class ExecuteTrialExperimentSubgraph:
         self.github_client = github_client
         self.runner_label = runner_label
         self.workflow_file = workflow_file
-
-        check_api_key(github_personal_access_token_check=True)
 
     @record_execution_time
     async def _read_run_ids(

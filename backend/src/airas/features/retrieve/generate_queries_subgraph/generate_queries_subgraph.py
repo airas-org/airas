@@ -20,7 +20,6 @@ from airas.services.api_client.llm_client.llm_facade_client import (
     LLMFacadeClient,
 )
 from airas.services.api_client.llm_specs import LLM_MODELS
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -78,7 +77,6 @@ class GenerateQueriesSubgraph(BaseSubgraph):
             )
         self.n_queries = n_queries
         self.llm_client = llm_client
-        check_api_key(llm_api_key_check=True)
 
     @generate_queries_timed
     async def _generate_queries(

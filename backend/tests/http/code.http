@@ -1,6 +1,6 @@
 ### Search paper by title
 
-POST http://127.0.0.1:8001/airas/v1/code/generations
+POST http://127.0.0.1:8000/airas/v1/code/generations
 Content-Type: application/json
 
 {

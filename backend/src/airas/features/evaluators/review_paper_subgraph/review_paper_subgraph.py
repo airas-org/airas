@@ -19,7 +19,6 @@ from airas.features.evaluators.review_paper_subgraph.prompts.review_paper_prompt
 from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.github import GitHubRepositoryInfo
 from airas.types.paper import PaperContent, PaperReviewScores
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -77,7 +76,6 @@ class ReviewPaperSubgraph(BaseSubgraph):
                 f"but got {type(llm_mapping)}"
             )
         self.prompt_template = prompt_template or review_paper_prompt
-        check_api_key(llm_api_key_check=True)
 
     @review_paper_timed
     def _review_paper(

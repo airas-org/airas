@@ -19,7 +19,6 @@ from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.research_hypothesis import EvaluatedHypothesis, ResearchHypothesis
 from airas.types.research_study import ResearchStudy
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -63,7 +62,6 @@ class GenerateHypothesisSubgraphV0:
         self.langchain_client = langchain_client
         self.llm_mapping = llm_mapping or GenerateHypothesisSubgraphV0LLMMapping()
         self.refinement_rounds = refinement_rounds
-        check_api_key(llm_api_key_check=True)
 
     @record_execution_time
     def _initialize(
