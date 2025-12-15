@@ -10,7 +10,6 @@ from airas.features.github.nodes.merge_history import merge_history
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubConfig
 from airas.types.research_history import ResearchHistory
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -39,9 +38,6 @@ class GithubUploadSubgraphState(
 
 class GithubUploadSubgraph:
     def __init__(self, github_client: GithubClient):
-        check_api_key(
-            github_personal_access_token_check=True,
-        )
         self.research_file_path = ".research/research_history.json"
         self.github_client = github_client
 

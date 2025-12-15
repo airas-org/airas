@@ -2,6 +2,7 @@ import asyncio
 import os
 from typing import Any, get_args
 
+from botocore.config import Config
 from langchain_anthropic import ChatAnthropic
 from langchain_aws import ChatBedrockConverse
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -115,9 +116,16 @@ class LangChainClient:
         elif provider is LLMProvider.BEDROCK:
             # https://reference.langchain.com/python/integrations/langchain_aws/?_gl=1*d30ods*_gcl_au*MjA5NzEyNjYxMC4xNzY1NDI5NTc3*_ga*MjE0MTg1OTk2LjE3NjU0Mjk1Nzc.*_ga_47WX3HKKY2*czE3NjU0NjA2ODEkbzMkZzEkdDE3NjU0NjE0NTQkajYwJGwwJGgw
             region_name = os.getenv("AWS_REGION_NAME", "us-east-1")
+
+            # Increase read_timeout to 300 seconds (5 minutes) to handle long-running LLM requests
+            bedrock_config = Config(
+                read_timeout=300,
+                connect_timeout=60,
+            )
             model = ChatBedrockConverse(
                 model_id=llm_name,
                 region_name=region_name,
+                config=bedrock_config,
             )
 
         else:

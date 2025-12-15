@@ -15,7 +15,6 @@ from airas.features.github.poll_workflow_subgraph.nodes.get_workflow_runs import
 )
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubConfig
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -55,9 +54,6 @@ class PollWorkflowSubgraph:
         poll_interval_sec: int = _POLL_INTERVAL_SEC,
         timeout_sec: int = _TIMEOUT_SEC,
     ):
-        check_api_key(
-            github_personal_access_token_check=True,
-        )
         self.github_client = github_client
         self.poll_interval_sec = poll_interval_sec
         self.timeout_sec = timeout_sec

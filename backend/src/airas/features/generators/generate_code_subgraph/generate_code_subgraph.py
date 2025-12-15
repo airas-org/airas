@@ -20,7 +20,6 @@ from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_design import ExperimentalDesign
 from airas.types.research_hypothesis import ResearchHypothesis
 from airas.types.wandb import WandbConfig
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -69,9 +68,6 @@ class GenerateCodeSubgraph:
         self.langchain_client = langchain_client
         self.llm_mapping = llm_mapping or GenerateCodeLLMMapping()
         self.max_code_validations = max_code_validations
-        check_api_key(
-            llm_api_key_check=True,
-        )
 
     @record_execution_time
     def _initialize(

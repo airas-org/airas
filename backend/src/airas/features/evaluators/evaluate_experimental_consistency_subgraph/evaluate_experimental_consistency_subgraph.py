@@ -17,7 +17,6 @@ from airas.features.evaluators.evaluate_experimental_consistency_subgraph.prompt
 )
 from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.research_hypothesis import ResearchHypothesis
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -83,7 +82,6 @@ class EvaluateExperimentalConsistencySubgraph(BaseSubgraph):
             prompt_template or evaluate_experimental_consistency_prompt
         )
         self.consistency_score_threshold = consistency_score_threshold
-        check_api_key(llm_api_key_check=True)
 
     @evaluate_experimental_consistency_timed
     def _evaluate_experimental_consistency(

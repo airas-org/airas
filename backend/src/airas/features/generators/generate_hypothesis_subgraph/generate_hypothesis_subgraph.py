@@ -43,7 +43,6 @@ from airas.services.api_client.qdrant_client import QdrantClient
 from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
 from airas.types.research_hypothesis import EvaluatedHypothesis, ResearchHypothesis
 from airas.types.research_study import ResearchStudy
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -131,7 +130,6 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
         self.refinement_rounds = refinement_rounds
         self.paper_provider = paper_provider
         self.num_retrieve_related_papers = num_retrieve_related_papers
-        check_api_key(llm_api_key_check=True)
 
     @recode_execution_time
     def _initialize(

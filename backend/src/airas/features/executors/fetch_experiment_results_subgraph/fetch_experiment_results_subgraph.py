@@ -10,7 +10,6 @@ from airas.features.executors.nodes.read_run_ids import read_run_ids_from_reposi
 from airas.services.api_client.github_client import GithubClient
 from airas.types.experimental_results import ExperimentalResults
 from airas.types.github import GitHubConfig
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -42,8 +41,6 @@ class FetchExperimentResultsSubgraph:
         github_client: GithubClient,
     ):
         self.github_client = github_client
-
-        check_api_key(github_personal_access_token_check=True)
 
     @record_execution_time
     async def _read_run_ids(

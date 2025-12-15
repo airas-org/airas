@@ -23,7 +23,6 @@ from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.hugging_face import HuggingFace
 from airas.types.research_iteration import ExternalResources
 from airas.types.research_session import ResearchSession
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -105,9 +104,6 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
                 f"but got {type(llm_mapping)}"
             )
         self.include_gated = include_gated
-        check_api_key(
-            huggingface_api_key_check=True,
-        )
 
     async def _search_hugging_face(
         self, state: RetrieveHuggingFaceState

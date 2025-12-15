@@ -12,7 +12,6 @@ from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.experimental_design import ExperimentalDesign, RunnerConfig
 from airas.types.research_hypothesis import ResearchHypothesis
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -59,7 +58,6 @@ class GenerateExperimentalDesignSubgraph:
         self.num_models_to_use = num_models_to_use
         self.num_datasets_to_use = num_datasets_to_use
         self.num_comparative_methods = num_comparative_methods
-        check_api_key(llm_api_key_check=True)
 
     @record_execution_time
     async def _generate_experiment_design(
