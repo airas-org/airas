@@ -8,13 +8,13 @@ from api.routes.v1 import (
     datasets,
     experimental_settings,
     experiments,
+    github_actions,
     hypotheses,
     latex,
     models,
     papers,
     repositories,
     research_history,
-    workflows,
 )
 from src.airas.core.container import Container
 
@@ -44,4 +44,4 @@ app.include_router(repositories.router, prefix="/airas/v1")
 app.include_router(bibfile.router, prefix="/airas/v1")
 app.include_router(latex.router, prefix="/airas/v1")
 app.include_router(research_history.router, prefix="/airas/v1")
-app.include_router(workflows.router, prefix="/airas/v1")
+app.include_router(github_actions.router, prefix="/airas/v1")

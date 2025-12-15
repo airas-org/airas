@@ -1,0 +1,13 @@
+### Poll github actions status
+POST http://127.0.0.1:8000/airas/v1/github-actions/polling
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "your-repo",
+        "branch_name": "your-branch"
+    }
+}
+
+###
