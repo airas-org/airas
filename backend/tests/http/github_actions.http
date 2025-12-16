@@ -1,5 +1,5 @@
-### Poll workflow status
-POST http://127.0.0.1:8000/airas/v1/workflows/polling
+### Poll github actions status
+POST http://127.0.0.1:8000/airas/v1/github-actions/polling
 Content-Type: application/json
 
 {

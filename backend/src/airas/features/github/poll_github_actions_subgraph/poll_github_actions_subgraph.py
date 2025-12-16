@@ -7,10 +7,10 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from typing_extensions import TypedDict
 
-from airas.features.github.poll_workflow_subgraph.nodes.get_latest_workflow_status import (
+from airas.features.github.poll_github_actions_subgraph.nodes.get_latest_workflow_status import (
     get_latest_workflow_status,
 )
-from airas.features.github.poll_workflow_subgraph.nodes.get_workflow_runs import (
+from airas.features.github.poll_github_actions_subgraph.nodes.get_workflow_runs import (
     get_workflow_runs,
 )
 from airas.services.api_client.github_client import GithubClient
@@ -21,25 +21,25 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-recode_execution_time = lambda f: time_node("poll_workflow")(f)  # noqa: E731
+record_execution_time = lambda f: time_node("poll_github_actions")(f)  # noqa: E731
 
 _POLL_INTERVAL_SEC = 60
 _TIMEOUT_SEC = 360000  # NOTE: 6000 minutes (matching YAML timeout-minutes setting)
 
 
-class PollWorkflowInputState(TypedDict):
+class PollGithubActionsInputState(TypedDict):
     github_config: GitHubConfig
 
 
-class PollWorkflowOutputState(ExecutionTimeState):
+class PollGithubActionsOutputState(ExecutionTimeState):
     workflow_run_id: int | None
     status: str | None
     conclusion: str | None
 
 
-class PollWorkflowState(
-    PollWorkflowInputState,
-    PollWorkflowOutputState,
+class PollGithubActionsState(
+    PollGithubActionsInputState,
+    PollGithubActionsOutputState,
     total=False,
 ):
     current_workflow_id: int | None
@@ -47,7 +47,7 @@ class PollWorkflowState(
     poll_count: int
 
 
-class PollWorkflowSubgraph:
+class PollGithubActionsSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
@@ -58,8 +58,8 @@ class PollWorkflowSubgraph:
         self.poll_interval_sec = poll_interval_sec
         self.timeout_sec = timeout_sec
 
-    @recode_execution_time
-    async def _initialize(self, state: PollWorkflowState) -> Command:
+    @record_execution_time
+    async def _initialize(self, state: PollGithubActionsState) -> Command:
         cfg = state["github_config"]
         logger.info(
             f"Starting workflow polling for {cfg.repository_name} on branch {cfg.branch_name}"
@@ -74,8 +74,8 @@ class PollWorkflowSubgraph:
             goto="poll_workflow_status",
         )
 
-    @recode_execution_time
-    async def _poll_workflow_status(self, state: PollWorkflowState) -> Command:
+    @record_execution_time
+    async def _poll_workflow_status(self, state: PollGithubActionsState) -> Command:
         elapsed_time = time.time() - state["start_time"]
         if elapsed_time > self.timeout_sec:
             logger.error(f"Workflow polling timed out after {elapsed_time:.2f} seconds")
@@ -110,8 +110,8 @@ class PollWorkflowSubgraph:
             goto="check_completion",
         )
 
-    @recode_execution_time
-    async def _check_completion(self, state: PollWorkflowState) -> Command:
+    @record_execution_time
+    async def _check_completion(self, state: PollGithubActionsState) -> Command:
         workflow_run_id = state.get("workflow_run_id")
         status = state.get("status")
         conclusion = state.get("conclusion")
@@ -160,15 +160,15 @@ class PollWorkflowSubgraph:
         logger.warning(f"Unknown workflow status: {status}, waiting...")
         return Command(goto="sleep_and_retry")
 
-    @recode_execution_time
+    @record_execution_time
     async def _sleep_and_retry(
-        self, _state: PollWorkflowState
+        self, _state: PollGithubActionsState
     ) -> Command[Literal["poll_workflow_status"]]:
         await asyncio.sleep(self.poll_interval_sec)
         return Command(goto="poll_workflow_status")
 
     def build_graph(self):
-        graph_builder = StateGraph(PollWorkflowState)
+        graph_builder = StateGraph(PollGithubActionsState)
 
         graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node("poll_workflow_status", self._poll_workflow_status)

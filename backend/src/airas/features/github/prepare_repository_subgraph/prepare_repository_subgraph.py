@@ -29,7 +29,7 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-recode_execution_time = lambda f: time_node("prepare_repository")(f)  # noqa: E731
+record_execution_time = lambda f: time_node("prepare_repository")(f)  # noqa: E731
 
 
 class PrepareRepositoryInputState(TypedDict):
@@ -62,7 +62,7 @@ class PrepareRepositorySubgraph:
         self.template_repo = template_repo
         self.is_private = is_private
 
-    @recode_execution_time
+    @record_execution_time
     def _check_repository_from_template(
         self, state: PrepareRepositoryState
     ) -> Command[Literal["create_repository_from_template", "check_branch_existence"]]:
@@ -84,7 +84,7 @@ class PrepareRepositorySubgraph:
             goto=goto,
         )
 
-    @recode_execution_time
+    @record_execution_time
     def _create_repository_from_template(
         self, state: PrepareRepositoryState
     ) -> dict[str, Literal[True]]:
@@ -97,7 +97,7 @@ class PrepareRepositorySubgraph:
         )
         return {"is_repository_from_template": is_repository_from_template}
 
-    @recode_execution_time
+    @record_execution_time
     def _check_branch_existence(
         self, state: PrepareRepositoryState
     ) -> Command[Literal["retrieve_main_branch_sha", "finalize_state"]]:
@@ -122,7 +122,7 @@ class PrepareRepositorySubgraph:
             goto=goto,
         )
 
-    @recode_execution_time
+    @record_execution_time
     def _retrieve_main_branch_sha(
         self, state: PrepareRepositoryState
     ) -> dict[str, str]:
@@ -132,7 +132,7 @@ class PrepareRepositorySubgraph:
         )
         return {"main_branch_sha": main_branch_sha}
 
-    @recode_execution_time
+    @record_execution_time
     async def _create_branch(self, state: PrepareRepositoryState) -> dict[str, bool]:
         is_branch_created = await create_branch(
             github_client=self.github_client,
@@ -143,7 +143,7 @@ class PrepareRepositorySubgraph:
         )
         return {"is_branch_created": is_branch_created}
 
-    @recode_execution_time
+    @record_execution_time
     def _finalize_state(self, state: PrepareRepositoryState) -> dict[str, bool]:
         is_repository_ready = state.get("is_repository_from_template", False)
         is_branch_ready = state.get("is_branch_already_exists", False) or state.get(

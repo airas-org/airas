@@ -49,7 +49,7 @@ from airas.utils.logging_utils import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-recode_execution_time = lambda f: time_node("generate_hypothesis_subgraph")(f)  # noqa: E731
+record_execution_time = lambda f: time_node("generate_hypothesis_subgraph")(f)  # noqa: E731
 
 
 class GenerateHypothesisSubgraphLLMMapping(BaseModel):
@@ -131,7 +131,7 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
         self.paper_provider = paper_provider
         self.num_retrieve_related_papers = num_retrieve_related_papers
 
-    @recode_execution_time
+    @record_execution_time
     def _initialize(
         self, state: GenerateHypothesisSubgraphState
     ) -> dict[str, list[EvaluatedHypothesis] | int]:
@@ -141,7 +141,7 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
         }
 
     # TODO: Include the scope of models and datasets within the hypotheses generated.
-    @recode_execution_time
+    @record_execution_time
     async def _generate_hypothesis(
         self, state: GenerateHypothesisSubgraphState
     ) -> dict[str, ResearchHypothesis]:
@@ -154,7 +154,7 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
         return {"research_hypothesis": research_hypothesis}
 
     # TODO: If QDrant doesn't work, consider skipping the paper search or using airas_db.
-    @recode_execution_time
+    @record_execution_time
     async def _retrieve_related_papers(
         self, state: GenerateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
@@ -175,7 +175,7 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
         ]
         return {"related_research_study_list": related_research_study_list}
 
-    @recode_execution_time
+    @record_execution_time
     async def _search_arxiv_id_from_title(
         self, state: GenerateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
@@ -187,7 +187,7 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
         )
         return {"related_research_study_list": related_research_study_list}
 
-    @recode_execution_time
+    @record_execution_time
     def _search_arxiv_by_id(
         self, state: GenerateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
@@ -197,7 +197,7 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
         )
         return {"related_research_study_list": related_research_study_list}
 
-    @recode_execution_time
+    @record_execution_time
     def _search_ss_by_id(
         self, state: GenerateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
@@ -207,7 +207,7 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
         )
         return {"related_research_study_list": related_research_study_list}
 
-    @recode_execution_time
+    @record_execution_time
     def _retrieve_text_from_url(
         self, state: GenerateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
@@ -259,7 +259,7 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
             logger.info("Refinement iterations exceeded, passing.")
             return "end"
 
-    @recode_execution_time
+    @record_execution_time
     async def _refine_hypothesis(
         self, state: GenerateHypothesisSubgraphState
     ) -> dict[str, ResearchHypothesis | int]:
