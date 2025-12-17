@@ -3,15 +3,15 @@ from typing import Annotated
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 
+from airas.core.container import Container
+from airas.features.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
+    GenerateExperimentalDesignSubgraph,
+)
+from airas.services.api_client.langchain_client import LangChainClient
 from api.schemas.experimental_settings import (
     GenerateExperimentalDesignSubgraphRequestBody,
     GenerateExperimentalDesignSubgraphResponseBody,
 )
-from src.airas.core.container import Container
-from src.airas.features.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
-    GenerateExperimentalDesignSubgraph,
-)
-from src.airas.services.api_client.langchain_client import LangChainClient
 
 router = APIRouter(prefix="/experimental_settings", tags=["experimental_settings"])
 

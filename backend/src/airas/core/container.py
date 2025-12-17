@@ -1,3 +1,4 @@
+import inspect
 import os
 from collections.abc import AsyncGenerator, Generator
 from functools import partial
@@ -7,9 +8,7 @@ import httpx
 from dependency_injector import containers, providers
 from hishel import CacheOptions, SpecificationPolicy
 from hishel.httpx import AsyncCacheClient, SyncCacheClient
-
-from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.qdrant_client import QdrantClient
+from sqlalchemy.orm import sessionmaker
 
 # Workaround for OpenAI SDK lazy initialization issue
 # Initialize AsyncOpenAI.responses at import time to prevent silent failures
@@ -20,17 +19,39 @@ try:
 except Exception:
     pass
 
+from airas.core.db import engine
+from airas.features.sessions.service import SessionService
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.hugging_face_client import HuggingFaceClient
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.anthropic_client import AnthropicClient
 from airas.services.api_client.llm_client.google_genai_client import GoogleGenAIClient
 from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
 from airas.services.api_client.llm_client.openai_client import OpenAIClient
 from airas.services.api_client.openalex_client import OpenAlexClient
+from airas.services.api_client.qdrant_client import QdrantClient
 from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
 
+LLM_ENV_KEYS = {
+    "OpenAIClient": "OPENAI_API_KEY",
+    "AnthropicClient": "ANTHROPIC_API_KEY",
+    "GoogleGenAIClient": "GEMINI_API_KEY",
+}
 T = TypeVar("T")
+
+
+class NullLLMClient:
+    """Fallback client used when an LLM API key is missing."""
+
+    def __init__(self, reason: str) -> None:
+        self.reason = reason
+
+    async def close(self) -> None:  # pragma: no cover - trivial
+        return None
+
+    def __getattr__(self, attr):  # pragma: no cover - runtime guard
+        raise RuntimeError(self.reason)
 
 
 def init_sync_session() -> Generator[httpx.Client, None, None]:
@@ -98,6 +119,15 @@ async def init_llm_client(
 ) -> AsyncGenerator[T, None]:
     enable_cache = os.getenv("ENABLE_HTTP_CACHE", "false").lower() == "true"
 
+    required_env = LLM_ENV_KEYS.get(client_class.__name__)
+    if required_env and not os.getenv(required_env):
+        warning = (
+            f"{client_class.__name__} is disabled because {required_env} is not set. "
+            "Set the environment variable to enable this LLM client."
+        )
+        yield NullLLMClient(warning)
+        return
+
     if enable_cache:
         policy = SpecificationPolicy(
             cache_options=CacheOptions(
@@ -122,7 +152,12 @@ async def init_llm_client(
         client = client_class()
 
     yield client
-    await client.close()  # type: ignore[attr-defined]
+
+    closer = getattr(client, "close", None)
+    if callable(closer):
+        maybe_close = closer()
+        if inspect.iscoroutine(maybe_close):
+            await maybe_close
 
 
 class Container(containers.DeclarativeContainer):
@@ -192,6 +227,19 @@ class Container(containers.DeclarativeContainer):
         sync_session=sync_session,
         async_session=None,
     )
+
+    # --- Database Session ---
+    engine_provider = providers.Object(engine)
+    session_factory = providers.Singleton(
+        sessionmaker,
+        bind=engine_provider,
+        expire_on_commit=False,
+    )
+    db_session = providers.Factory(
+        lambda session_factory: session_factory(),
+        session_factory=session_factory,
+    )
+    session_service = providers.Factory(SessionService, db=db_session)
 
 
 container = Container()
