@@ -124,6 +124,13 @@ async def init_llm_client(
     await client.close()  # type: ignore[attr-defined]
 
 
+async def init_github_client(
+    client_class: Type[T],
+) -> Generator[T, None, None]:
+    client = httpx.AsyncClient(follow_redirects=True)
+    yield client
+    await client.aclose()
+
 class Container(containers.DeclarativeContainer):
     # --- HTTP Session ---
     sync_session = providers.Resource(init_sync_session)
@@ -153,10 +160,8 @@ class Container(containers.DeclarativeContainer):
     )
 
     # --- Code & Experiment Platforms ---
-    github_client: providers.Singleton[GithubClient] = providers.Singleton(
-        GithubClient,
-        sync_session=github_sync_session,  # Use non-cached session
-        async_session=github_async_session,  # Use non-cached session
+    github_client: providers.Resource[GithubClient] = providers.Resource(
+        partial(init_github_client, GithubClient),
     )
     hugging_face_client: providers.Singleton[HuggingFaceClient] = providers.Singleton(
         HuggingFaceClient,
