@@ -29,10 +29,10 @@ Generate unique run_id for each configuration using the format:
 - If both models and datasets are provided: `{method_type}-{model_name}-{dataset_name}`
 - If only models are provided: `{method_type}-{model_name}`
 - If only datasets are provided: `{method_type}-{dataset_name}`
-- If neither are provided: `{method_type}`
+- If neither are provided: `{method_type}` (ensure `method_type` is unique across all methods)
 
 Where:
-- method_type: "proposed" for the proposed method, or "comparative-{index}" for comparative methods (e.g., "comparative-1", "comparative-2")
+- method_type: "proposed" for the proposed method, or "comparative-{index}" for comparative methods (e.g., "comparative-1", "comparative-2"); these values MUST be unique per method to guarantee unique run_ids when models and datasets are absent
 - model_name: Simplified model name (e.g., "bert" for "bert-base-uncased") - skip if models list is empty
 - dataset_name: Dataset name - skip if datasets list is empty
 
