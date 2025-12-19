@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from langgraph.graph import END, START, StateGraph
+from pydantic import ValidationError
 from typing_extensions import TypedDict
 
 from airas.features.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
@@ -156,17 +157,35 @@ class ExecuteE2ESubgraph:
         status: GitHubActionsStatus | None,
         conclusion: GitHubActionsConclusion | None,
     ) -> None:
-        if status is not GitHubActionsStatus.COMPLETED:
+        if status is None:
+            raise ValueError(
+                f"{workflow_name} workflow polling timed out or no status available"
+            )
+
+        if status is GitHubActionsStatus.COMPLETED:
+            if conclusion not in {
+                GitHubActionsConclusion.SUCCESS,
+                GitHubActionsConclusion.NEUTRAL,
+                GitHubActionsConclusion.SKIPPED,
+            }:
+                raise ValueError(
+                    f"{workflow_name} workflow failed with conclusion: {conclusion}"
+                )
             return
 
-        if conclusion not in {
-            GitHubActionsConclusion.SUCCESS,
-            GitHubActionsConclusion.NEUTRAL,
-            GitHubActionsConclusion.SKIPPED,
+        if status in {
+            GitHubActionsStatus.FAILURE,
+            GitHubActionsStatus.STARTUP_FAILURE,
         }:
             raise ValueError(
-                f"{workflow_name} workflow failed with conclusion: {conclusion}"
+                f"{workflow_name} workflow did not complete successfully. "
+                f"Status: {status}, conclusion: {conclusion}"
             )
+
+        raise ValueError(
+            f"{workflow_name} workflow ended in unexpected state. "
+            f"Status: {status}, conclusion: {conclusion}"
+        )
 
     @record_execution_time
     async def _prepare_repository(self, state: ExecuteE2EState) -> dict[str, bool]:
@@ -241,10 +260,13 @@ class ExecuteE2ESubgraph:
         self, state: ExecuteE2EState
     ) -> dict[str, ResearchHistory]:
         logger.info("=== Upload Research History ===")
-        # Extract only ResearchHistory fields from state
-        research_history = ResearchHistory(
-            **{k: v for k, v in state.items() if k in ResearchHistory.model_fields}
-        )
+        try:
+            research_history = ResearchHistory(
+                **{k: v for k, v in state.items() if k in ResearchHistory.model_fields}
+            )
+        except ValidationError as e:
+            logger.error(f"Failed to construct ResearchHistory: {e}")
+            raise
 
         await (
             GithubUploadSubgraph(github_client=self.github_client)
