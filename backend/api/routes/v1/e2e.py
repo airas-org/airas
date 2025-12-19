@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/e2e", tags=["e2e"])
 
 # In-memory task storage (temporary, will be replaced with Redis later)
-# because if uvicorn worker > i, it breaks.
+# because if uvicorn worker count > 1, it breaks.
 
 _tasks: dict[str, dict[str, Any]] = {}
 
