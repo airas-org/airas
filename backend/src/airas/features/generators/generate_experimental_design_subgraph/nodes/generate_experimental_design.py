@@ -95,23 +95,29 @@ async def generate_experimental_design(
     comparative_methods = output.comparative_methods
 
     if len(models_to_use) > num_models_to_use:
+        discarded_models = models_to_use[num_models_to_use:]
         logger.warning(
             f"LLM generated {len(models_to_use)} models but {num_models_to_use} were requested. "
-            f"Truncating to first {num_models_to_use}."
+            f"Truncating to first {num_models_to_use}. "
+            f"Discarded models: {discarded_models}"
         )
         models_to_use = models_to_use[:num_models_to_use]
 
     if len(datasets_to_use) > num_datasets_to_use:
+        discarded_datasets = datasets_to_use[num_datasets_to_use:]
         logger.warning(
             f"LLM generated {len(datasets_to_use)} datasets but {num_datasets_to_use} were requested. "
-            f"Truncating to first {num_datasets_to_use}."
+            f"Truncating to first {num_datasets_to_use}. "
+            f"Discarded datasets: {discarded_datasets}"
         )
         datasets_to_use = datasets_to_use[:num_datasets_to_use]
 
     if len(comparative_methods) > num_comparative_methods:
+        discarded_comparative_methods = comparative_methods[num_comparative_methods:]
         logger.warning(
             f"LLM generated {len(comparative_methods)} comparative methods but {num_comparative_methods} were requested. "
-            f"Truncating to first {num_comparative_methods}."
+            f"Truncating to first {num_comparative_methods}. "
+            f"Discarded comparative methods: {discarded_comparative_methods}"
         )
         comparative_methods = comparative_methods[:num_comparative_methods]
 
