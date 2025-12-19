@@ -2,63 +2,53 @@ from airas.services.api_client.llm_specs import LLM_MODELS
 
 LLM_CONFIG_TYPE = dict[str, LLM_MODELS]
 
-BASE_MODEL: LLM_MODELS = "gpt-5-mini-2025-08-07"
+BASE_MODEL: LLM_MODELS = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
 
 
 # fmt:off
 DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
-    # --- features/retrieve ---
+    # --- features/retrievers ---
     # GenerateQueriesSubgraph
     "generate_queries": BASE_MODEL,
-    # GetPaperTitlesFromWebSubgraph
-    "openai_websearch_titles": BASE_MODEL,
-    # ExtractReferenceTitlesSubgraph
-    "extract_reference_titles": BASE_MODEL,
-    # RetrieveCodeSubgraph
+    # RetrievePaperSubgraph
+    "search_arxiv_id_from_title": "gpt-5-mini-2025-08-07",
+    "summarize_paper": BASE_MODEL,
     "extract_github_url_from_text": BASE_MODEL,
     "extract_experimental_info": BASE_MODEL,
-    # SummarizePaperSubgraph
-    "summarize_paper": BASE_MODEL,
-    # RetrieveHuggingFaceSubgraph
-    "select_resources": BASE_MODEL,
-    "extract_code_in_readme": BASE_MODEL,
+    "extract_reference_titles": BASE_MODEL,
 
     # --- features/generators ---
-    # GenerateHypothesisSubgraph
+    # GenerateHypothesisV0Subgraph
     "generate_hypothesis": BASE_MODEL,
     "evaluate_novelty_and_significance": BASE_MODEL,
     "refine_hypothesis": BASE_MODEL,
-    "search_arxiv_id_from_title": BASE_MODEL,
-    "refine_idea_and_research_summary": BASE_MODEL,
-    # CreateMethodSubgraph
-    "improve_method": BASE_MODEL,
     # GenerateExperimentalDesignSubgraph
     "generate_experimental_design": BASE_MODEL,
-    # CreateCodeSubgraph
+    # GenerateCodeSubgraph
     "generate_run_config": BASE_MODEL,
     "generate_experiment_code": BASE_MODEL,
     "validate_experiment_code": BASE_MODEL,
 
-    # --- features/execution ---
-    # ExecuteExperimentSubgraph
-    "judge_execution": BASE_MODEL,
-
-    # --- features/analysis ---
+    # --- features/analyzers ---
     # AnalyzeExperimentSubgraph
     "analyze_experiment": BASE_MODEL,
-    "evaluate_method": BASE_MODEL,
 
     # --- features/write ---
-    # CreateBibfileSubgraph
-    "filter_references": BASE_MODEL,
     # WriterSubgraph
     "write_paper": BASE_MODEL,
     "refine_paper": BASE_MODEL,
 
     # --- features/publication ---
-    # GenerateHtmlSubgraph
-    "convert_to_html": BASE_MODEL,
     # GenerateLatexSubgraph
     "convert_to_latex": BASE_MODEL,
+
+    # --- others ---
+    # RetrieveHuggingFaceSubgraph
+    "select_resources": BASE_MODEL,
+    "extract_code_in_readme": BASE_MODEL,
+    # CreateMethodSubgraph
+    "improve_method": BASE_MODEL,
+    # GenerateHtmlSubgraph
+    "convert_to_html": BASE_MODEL,
 }
 # fmt: on

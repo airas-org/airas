@@ -61,6 +61,6 @@ async def push_code(
         .ainvoke(request)
     )
     return PushCodeSubgraphResponseBody(
-        files_pushed=result["files_pushed"],
+        code_pushed=result["code_pushed"],
         execution_time=result["execution_time"],
     )

@@ -101,8 +101,12 @@ class ExperimentalDesign(BaseModel):
 
 
 class RunnerConfig(BaseModel):
-    runner_label: str = Field(
-        ..., description="Runner label used by GitHub Actions (e.g., 'ubuntu-latest')"
+    # TODO: Split RunnerConfig into two separate concerns:
+    # 1. Machine specs (description: str) for ExperimentalDesign generation
+    # 2. GitHub Actions runner labels (list[str]) passed directly to trial/full execution
+    runner_label: list[str] = Field(
+        ...,
+        description="Runner labels used by GitHub Actions (e.g., ['ubuntu-latest'] or ['self-hosted', 'gpu-runner'])",
     )
     description: str = Field(
         ...,

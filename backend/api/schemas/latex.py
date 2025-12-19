@@ -39,6 +39,6 @@ class CompileLatexSubgraphRequestBody(BaseModel):
 
 
 class CompileLatexSubgraphResponseBody(BaseModel):
-    is_compiled: bool
+    compile_latex_dispatched: bool
     paper_url: str | None
     execution_time: dict[str, list[float]]

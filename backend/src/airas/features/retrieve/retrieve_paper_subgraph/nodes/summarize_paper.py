@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Any, cast
+from typing import Any, Self, cast
 
 from jinja2 import Environment, Template
 from pydantic import BaseModel
@@ -10,25 +10,19 @@ from airas.services.api_client.llm_specs import LLM_MODELS
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_FIELD_VALUE = "Not mentioned"
+DEFAULT_FIELD_VALUE = "[Unavailable]"
 
 
 class PaperSummary(BaseModel):
-    main_contributions: str
-    methodology: str
-    experimental_setup: str
-    limitations: str
-    future_research_directions: str
+    main_contributions: str = DEFAULT_FIELD_VALUE
+    methodology: str = DEFAULT_FIELD_VALUE
+    experimental_setup: str = DEFAULT_FIELD_VALUE
+    limitations: str = DEFAULT_FIELD_VALUE
+    future_research_directions: str = DEFAULT_FIELD_VALUE
 
-
-def _default_llm_output() -> PaperSummary:
-    return PaperSummary(
-        main_contributions=DEFAULT_FIELD_VALUE,
-        methodology=DEFAULT_FIELD_VALUE,
-        experimental_setup=DEFAULT_FIELD_VALUE,
-        limitations=DEFAULT_FIELD_VALUE,
-        future_research_directions=DEFAULT_FIELD_VALUE,
-    )
+    @classmethod
+    def empty(cls) -> Self:
+        return cls()
 
 
 async def _summarize_single_text(
@@ -39,18 +33,11 @@ async def _summarize_single_text(
     group_idx: int,
     paper_idx: int,
 ) -> tuple[int, int, PaperSummary]:
-    if not paper_text.strip():
-        logger.warning(
-            "No full text available for group %s, index %s; skipping summarization.",
-            group_idx,
-            paper_idx,
-        )
-        return group_idx, paper_idx, _default_llm_output()
-
-    data = {
-        "paper_text": paper_text,
-    }
-    messages = rendered_template.render(data)
+    messages = rendered_template.render(
+        {
+            "paper_text": paper_text,
+        }
+    )
 
     try:
         output, _ = await llm_client.structured_outputs(
@@ -64,18 +51,22 @@ async def _summarize_single_text(
                 group_idx,
                 paper_idx,
             )
-            return group_idx, paper_idx, _default_llm_output()
+            return group_idx, paper_idx, PaperSummary.empty()
         logger.info(
             "Successfully summarized paper (group=%s, index=%s)",
             group_idx,
             paper_idx,
         )
-        output_payload: dict[str, Any]
-        if isinstance(output, BaseModel):
-            output_payload = cast(BaseModel, output).model_dump()
-        else:
-            output_payload = cast(dict[str, Any], output)
-        return group_idx, paper_idx, PaperSummary(**output_payload)
+        return (
+            group_idx,
+            paper_idx,
+            (
+                output
+                if isinstance(output, PaperSummary)
+                else PaperSummary(**cast(dict[str, Any], output))
+            ),
+        )
+
     except Exception as e:
         logger.error(
             "Failed to summarize paper (group=%s, index=%s): %s",
@@ -83,7 +74,7 @@ async def _summarize_single_text(
             paper_idx,
             e,
         )
-        return group_idx, paper_idx, _default_llm_output()
+        return group_idx, paper_idx, PaperSummary.empty()
 
 
 async def summarize_paper(
@@ -96,7 +87,7 @@ async def summarize_paper(
     template = env.from_string(prompt_template)
 
     summaries: list[list[PaperSummary]] = [
-        [_default_llm_output() for _ in text_group]
+        [PaperSummary.empty() for _ in text_group]
         for text_group in arxiv_full_text_list
     ]
 
@@ -111,6 +102,7 @@ async def summarize_paper(
         )
         for group_idx, text_group in enumerate(arxiv_full_text_list)
         for paper_idx, paper_text in enumerate(text_group)
+        if paper_text.strip()
     ]
 
     if not tasks:

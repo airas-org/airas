@@ -6,6 +6,7 @@ from api.routes.v1 import (
     bibfile,
     code,
     datasets,
+    e2e,
     experimental_settings,
     experiments,
     github_actions,
@@ -45,3 +46,4 @@ app.include_router(bibfile.router, prefix="/airas/v1")
 app.include_router(latex.router, prefix="/airas/v1")
 app.include_router(research_history.router, prefix="/airas/v1")
 app.include_router(github_actions.router, prefix="/airas/v1")
+app.include_router(e2e.router, prefix="/airas/v1")

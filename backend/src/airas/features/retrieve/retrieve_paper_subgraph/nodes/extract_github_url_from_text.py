@@ -4,7 +4,7 @@ from logging import getLogger
 from urllib.parse import urlparse
 
 from jinja2 import Environment, Template
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from airas.features.retrieve.retrieve_paper_subgraph.nodes.summarize_paper import (
     PaperSummary,
@@ -18,6 +18,20 @@ logger = getLogger(__name__)
 
 class LLMOutput(BaseModel):
     index: int | None
+
+    @field_validator("index", mode="before")
+    @classmethod
+    def parse_index(cls, v):
+        if isinstance(v, str):
+            if v.lower() in ("none", "null", ""):
+                return None
+
+            try:
+                return int(v)
+            except ValueError:
+                logger.warning(f"Could not parse index value: {v}")
+                return None
+        return v
 
 
 def _extract_github_urls_from_text(
@@ -72,7 +86,7 @@ async def _select_github_url(
         logger.warning("LLM returned no data when selecting GitHub URL")
         return ""
 
-    if isinstance(output, BaseModel):
+    if isinstance(output, LLMOutput):
         idx = output.index
     else:
         idx = output.get("index") if isinstance(output, dict) else None

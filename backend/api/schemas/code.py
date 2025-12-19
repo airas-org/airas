@@ -29,5 +29,5 @@ class PushCodeSubgraphRequestBody(BaseModel):
 
 
 class PushCodeSubgraphResponseBody(BaseModel):
-    files_pushed: bool
+    code_pushed: bool
     execution_time: dict[str, list[float]]

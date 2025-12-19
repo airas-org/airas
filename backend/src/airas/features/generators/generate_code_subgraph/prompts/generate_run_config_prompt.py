@@ -15,24 +15,28 @@ Generate individual YAML configuration files for each experiment run. These conf
 # Instructions for Generating Run Configurations
 
 Based on the experimental design, generate run configurations for all combinations of:
-- Models: {{ experimental_design.models_to_use }}
-- Datasets: {{ experimental_design.datasets_to_use }}
-- Methods:
+- Models ({{ experimental_design.models_to_use|length }} total): {{ experimental_design.models_to_use }}
+- Datasets ({{ experimental_design.datasets_to_use|length }} total): {{ experimental_design.datasets_to_use }}
+- Methods ({{ 1 + experimental_design.comparative_methods|length }} total):
   - Proposed Method: {{ experimental_design.proposed_method.method_name }}
-  - Comparative Methods: {% for method in experimental_design.comparative_methods %}{{ method.method_name }}{% if not loop.last %}, {% endif %}{% endfor %}
+  - Comparative Methods ({{ experimental_design.comparative_methods|length }} total): {% for method in experimental_design.comparative_methods %}{{ method.method_name }}{% if not loop.last %}, {% endif %}{% endfor %}
+Generate EXACTLY {{ (experimental_design.models_to_use|length or 1) * (experimental_design.datasets_to_use|length or 1) * (1 + experimental_design.comparative_methods|length) }} configurations total.
 
 # Requirements
 
 ## Run ID Naming Convention
 Generate unique run_id for each configuration using the format:
-`{method_type}-{model_name}-{dataset_name}`
+- If both models and datasets are provided: `{method_type}-{model_name}-{dataset_name}`
+- If only models are provided: `{method_type}-{model_name}`
+- If only datasets are provided: `{method_type}-{dataset_name}`
+- If neither are provided: `{method_type}`
 
 Where:
 - method_type: "proposed" for the proposed method, or "comparative-{index}" for comparative methods (e.g., "comparative-1", "comparative-2")
-- model_name: Simplified model name (e.g., "bert" for "bert-base-uncased")
-- dataset_name: Dataset name
+- model_name: Simplified model name (e.g., "bert" for "bert-base-uncased") - skip if models list is empty
+- dataset_name: Dataset name - skip if datasets list is empty
 
-Example: `proposed-bert-imdb`, `comparative-1-roberta-sst2`
+Example: `proposed-bert-imdb`, `comparative-1-roberta-sst2`, `proposed-custom-dataset` (if models is empty)
 
 ## Configuration Structure
 Each run configuration should include:
