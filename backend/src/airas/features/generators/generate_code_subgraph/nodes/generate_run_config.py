@@ -67,10 +67,11 @@ async def generate_run_config(
     }
     sorted_methods = sorted(required_methods, key=len, reverse=True)
 
-    # Create regex pattern: (method1|method2|method3)(?:-(.+))?
-    # The suffix (model-dataset) part is optional for cases where models/datasets are empty
+    # Create regex pattern: (method1|method2|method3)(?:-([^-]+(?:-[^-]+)?))?
+    # The suffix (model-dataset) part is optional for cases where models/datasets are empty.
+    # It is restricted to one or two hyphen-separated components to avoid greedy matching.
     pattern = re.compile(
-        f"({'|'.join(re.escape(m) for m in sorted_methods)})(?:-(.+))?"
+        f"({'|'.join(re.escape(m) for m in sorted_methods)})(?:-([^-]+(?:-[^-]+)?))?"
     )
 
     # Group by (model-dataset) suffix
