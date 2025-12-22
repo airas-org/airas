@@ -19,8 +19,9 @@ class StepRunLinkService:
             from_step_run_id=from_step_run_id,
             to_step_run_id=to_step_run_id,
         )
-        self.db.add(obj)
-        self.db.flush()
+        with self.db.begin():
+            self.db.add(obj)
+            self.db.flush()
         return obj
 
     def list_by_from_step_run_id(
