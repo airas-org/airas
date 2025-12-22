@@ -18,7 +18,7 @@ class SessionStepService:
         content: Any,
         schema_version: int,
         created_by: UUID,
-        is_complated: bool,
+        is_completed: bool,
     ) -> SessionStepModel:
         obj = SessionStepModel(
             session_id=session_id,
@@ -26,7 +26,7 @@ class SessionStepService:
             content=content,
             schema_version=schema_version,
             created_by=created_by,
-            is_complated=is_complated,
+            is_completed=is_completed,
         )
         with self.db.begin():
             self.db.add(obj)

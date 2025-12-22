@@ -28,7 +28,7 @@ def create_session_step(
         content=request.content,
         schema_version=request.schema_version,
         created_by=request.created_by,
-        is_complated=request.is_complated,
+        is_completed=request.is_completed,
     )
     return SessionStepResponse(
         id=step.id,
@@ -38,7 +38,7 @@ def create_session_step(
         schema_version=step.schema_version,
         created_by=step.created_by,
         created_at=step.created_at,
-        is_complated=step.is_complated,
+        is_completed=step.is_completed,
     )
 
 
@@ -62,5 +62,5 @@ def get_session_step(
         schema_version=step.schema_version,
         created_by=step.created_by,
         created_at=step.created_at,
-        is_complated=step.is_complated,
+        is_completed=step.is_completed,
     )

@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import Column
+from sqlalchemy import Boolean, Column
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlmodel import Field, SQLModel
@@ -38,4 +38,8 @@ class SessionStepModel(SQLModel, table=True):
         sa_column=Column(TIMESTAMP(timezone=True), nullable=False),
         default_factory=lambda: datetime.now().astimezone(),
     )
-    is_complated: bool = Field(default=False, nullable=False)
+    # Keep legacy column name for backward compatibility.
+    is_completed: bool = Field(
+        default=False,
+        sa_column=Column("is_complated", Boolean, nullable=False),
+    )

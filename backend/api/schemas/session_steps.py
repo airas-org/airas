@@ -13,7 +13,7 @@ class SessionStepCreateRequest(BaseModel):
     content: Any
     schema_version: int = Field(ge=1)
     created_by: UUID
-    is_complated: bool = False
+    is_completed: bool = False
 
 
 class SessionStepResponse(BaseModel):
@@ -24,4 +24,4 @@ class SessionStepResponse(BaseModel):
     schema_version: int
     created_by: UUID
     created_at: datetime
-    is_complated: bool
+    is_completed: bool
