@@ -20,7 +20,7 @@ class CompileLatexSubgraphInputState(TypedDict):
 
 
 class CompileLatexSubgraphOutputState(ExecutionTimeState):
-    is_compiled: bool
+    compile_latex_dispatched: bool
     paper_url: str | None
 
 
@@ -67,10 +67,10 @@ class CompileLatexSubgraph:
                 f"{github_config.repository_name}/blob/{github_config.branch_name}/"
                 f".research/latex/{self.latex_template_name}/{self.paper_name}.pdf"
             )
-            return {"is_compiled": True, "paper_url": paper_url}
+            return {"compile_latex_dispatched": True, "paper_url": paper_url}
         else:
             logger.error(f"Failed to dispatch workflow: {self.workflow_file}")
-            return {"is_compiled": False, "paper_url": None}
+            return {"compile_latex_dispatched": False, "paper_url": None}
 
     def build_graph(self):
         graph_builder = StateGraph(

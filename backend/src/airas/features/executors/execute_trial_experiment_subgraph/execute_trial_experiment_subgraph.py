@@ -42,11 +42,11 @@ class ExecuteTrialExperimentSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
-        runner_label: str = "ubuntu-latest",
+        runner_label: list[str] | None = None,
         workflow_file: str = "dev_run_trial_experiment_with_claude_code.yml",
     ):
         self.github_client = github_client
-        self.runner_label = runner_label
+        self.runner_label = runner_label or ["ubuntu-latest"]
         self.workflow_file = workflow_file
 
     @record_execution_time
@@ -76,7 +76,7 @@ class ExecuteTrialExperimentSubgraph:
         logger.info(f"Run IDs: {', '.join(run_ids)}")
 
         inputs = {
-            "runner_label": json.dumps([self.runner_label]),
+            "runner_label": json.dumps(self.runner_label),
             "run_ids": json.dumps(run_ids),
         }
 

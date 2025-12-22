@@ -88,7 +88,7 @@ async def compile_latex(
         .ainvoke(request)
     )
     return CompileLatexSubgraphResponseBody(
-        is_compiled=result["is_compiled"],
+        compile_latex_dispatched=result["compile_latex_dispatched"],
         paper_url=result["paper_url"],
         execution_time=result["execution_time"],
     )

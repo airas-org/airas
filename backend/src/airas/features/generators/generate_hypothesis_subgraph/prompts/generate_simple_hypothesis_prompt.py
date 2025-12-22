@@ -17,7 +17,7 @@ Based on the above analysis, propose a simple new research method that advances 
     - Identify the key limitation in existing methods that can be addressed with minimal modifications.
     - Focus on problems that can be solved through simple changes to objective functions or algorithms.
 
-- methods
+- method
     - Describe the minimal modification to the existing method (e.g., adding regularization, modifying loss function).
     - Explain the theoretical motivation for this change.
     - Keep the modification simple and focused on the identified problem.
@@ -32,6 +32,7 @@ Based on the above analysis, propose a simple new research method that advances 
     - This metric will be used for calculating the performance gap (GAP) between the proposed method and baselines.
     - Choose a metric that best represents the success of addressing the identified problem (e.g., "accuracy", "f1_score", "bleu", "perplexity").
     - Use a clear, standard metric name that can be directly extracted from experimental results.
+    - Do NOT include explanations or additional descriptions here. Save those for expected_result.
 
 - experimental_code
     - Output the core Python code implementing the proposed modification.
