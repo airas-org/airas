@@ -7,7 +7,10 @@ import httpx
 from dependency_injector import containers, providers
 from hishel import CacheOptions, SpecificationPolicy
 from hishel.httpx import AsyncCacheClient, SyncCacheClient
+from sqlalchemy.orm import sessionmaker
+from sqlmodel import create_engine
 
+from airas.features.sessions.service import SessionService
 from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.qdrant_client import QdrantClient
 
@@ -126,6 +129,8 @@ async def init_llm_client(
 
 
 class Container(containers.DeclarativeContainer):
+    config = providers.Configuration()
+
     # --- HTTP Session ---
     sync_session = providers.Resource(init_sync_session)
     async_session = providers.Resource(init_async_session)
@@ -192,6 +197,28 @@ class Container(containers.DeclarativeContainer):
         sync_session=sync_session,
         async_session=None,
     )
+
+    # --- Database Session ---
+    engine = providers.Singleton(
+        create_engine,
+        config.database_url,
+        pool_pre_ping=True,
+        future=True,
+    )
+
+    session_factory = providers.Singleton(
+        sessionmaker,
+        bind=engine,
+        expire_on_commit=False,
+        autoflush=False,
+        autocommit=False,
+    )
+
+    db_session = providers.Factory(
+        lambda session_factory: session_factory(),
+        session_factory=session_factory,
+    )
+    session_service = providers.Factory(SessionService, db=db_session)
 
 
 container = Container()

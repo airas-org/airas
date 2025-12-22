@@ -1,11 +1,11 @@
 from fastapi import APIRouter
 
+from airas.features.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
+    GenerateBibfileSubgraph,
+)
 from api.schemas.bibfile import (
     GenerateBibfileSubgraphRequestBody,
     GenerateBibfileSubgraphResponseBody,
-)
-from src.airas.features.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
-    GenerateBibfileSubgraph,
 )
 
 router = APIRouter(prefix="/bibfile", tags=["bibfile"])
