@@ -29,7 +29,7 @@ class StepRunLinkService:
         statement = select(StepRunLinkModel).where(
             StepRunLinkModel.from_step_run_id == from_step_run_id
         )
-        return self.db.execute(statement).scalars().all()
+        return list(self.db.execute(statement).scalars().all())
 
     def close(self) -> None:
         self.db.close()
