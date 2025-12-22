@@ -1,0 +1,21 @@
+### Create session step
+
+POST http://127.0.0.1:8000/airas/v1/session-steps
+Content-Type: application/json
+
+{
+    "session_id": "d673d25d-2c3c-42f5-934d-f175c311da04",
+    "step_type": "retrieve",
+    "content": {
+        "query_list": ["example query"]
+    },
+    "schema_version": 1,
+    "created_by": "00000000-0000-0000-0000-000000000001",
+    "is_complated": false
+}
+
+
+### Get session step
+
+GET http://127.0.0.1:8000/airas/v1/session-steps/6e92c3ba-eae4-4ea1-8b29-129954739e86
+Content-Type: application/json

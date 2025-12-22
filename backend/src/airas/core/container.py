@@ -10,7 +10,9 @@ from hishel.httpx import AsyncCacheClient, SyncCacheClient
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import create_engine
 
+from airas.features.session_steps.service import SessionStepService
 from airas.features.sessions.service import SessionService
+from airas.features.step_run_links.service import StepRunLinkService
 from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.qdrant_client import QdrantClient
 
@@ -219,6 +221,8 @@ class Container(containers.DeclarativeContainer):
         session_factory=session_factory,
     )
     session_service = providers.Factory(SessionService, db=db_session)
+    session_step_service = providers.Factory(SessionStepService, db=db_session)
+    step_run_link_service = providers.Factory(StepRunLinkService, db=db_session)
 
 
 container = Container()
