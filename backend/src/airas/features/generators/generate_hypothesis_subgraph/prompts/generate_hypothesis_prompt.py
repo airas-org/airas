@@ -15,7 +15,7 @@ You are an accomplished researcher in machine learning. Based on the instruction
     - open_problems
         - Select one key challenge in the target research area and provide a detailed summary of it.
         - Choose a problem whose resolution would have a significant impact.
-    - methods
+    - method
         - Provide a detailed description of the approach for solving the identified problem.
         - Describe a high-level strategy, specifying what new components, features, or modifications should be added to existing systems or codebases, what data or algorithms are needed, and how this differs from prior work.
     - experimental_setup
@@ -27,6 +27,7 @@ You are an accomplished researcher in machine learning. Based on the instruction
         - This metric will be used for calculating the performance gap (GAP) between the proposed method and baselines.
         - Choose a metric that best represents the success of addressing the identified problem (e.g., "accuracy", "f1_score", "bleu", "perplexity").
         - Use a clear, standard metric name that can be directly extracted from experimental results.
+        - Do NOT include explanations or additional descriptions here. Save those for expected_result.
     - experimental_code
         - Output the core Python code of the new research idea to be used in the experiment.
         - Create it based on the experimental code of the study used as the foundation.

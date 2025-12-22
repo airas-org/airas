@@ -31,14 +31,14 @@ Runner: {{ runner_config.runner_label }}
   - Ensure metrics are appropriate for the task - avoid exact string matching for numerical/generation tasks, and avoid classification metrics for non-classification tasks
   - The primary metric specified in the hypothesis ({{ research_hypothesis.primary_metric }}) MUST be included with the EXACT same name.
 - models_to_use：
-  - Select {{ num_models_to_use }} deep learning or machine learning models to be used in the experiment and output them in a list format.
+  - Select exactly {{ num_models_to_use }} deep learning or machine learning models to be used in the experiment and output them in a list format.
   - Each model name should clearly indicate its number of parameters.
   - Refer to the provided "# MODEL LIST" for guidance, although models not included in the list are also acceptable.
-  - If the proposed method itself introduces a new model (e.g., a novel architecture), return an empty list and describe the details of the method in proposed_method.
+  - Return an empty list ONLY if the research's PRIMARY PURPOSE is proposing a completely new model architecture itself (not just a training method, optimizer, or augmentation technique). Otherwise, you MUST select existing models.
 - datasets_to_use：
-  - Select {{ num_datasets_to_use }} datasets to be used in the experiment and output them in a list format.
+  - Select exactly {{ num_datasets_to_use }} datasets to be used in the experiment and output them in a list format.
   - Refer to the provided "# DATASET LIST" for guidance, although datasets not included in the list are also acceptable.
-  - If a new dataset is proposed as part of this study, return an empty list and describe its details in proposed_method.
+  - Return an empty list ONLY if the research's PRIMARY PURPOSE is proposing a completely new dataset itself. Otherwise, you MUST select existing datasets.
 - proposed_method：
   - Output a MethodConfig object with the following fields:
     * method_name: Name of the proposed method (e.g., "Adaptive Diffusion Sampler")
@@ -56,6 +56,6 @@ Runner: {{ runner_config.runner_label }}
         + low/high: bounds for continuous/integer distributions
         + choices: list for categorical distribution
 - comparative_methods：
-  - Select {{ num_comparative_methods }} existing methods for comparison and output as a list of MethodConfig objects.
+  - Select exactly {{ num_comparative_methods }} existing methods for comparison and output as a list of MethodConfig objects.
   - Each MethodConfig should contain: method_name, description, training_config, and optuna_config (similar structure to proposed_method).
   - For example, if the proposed method is a new optimization algorithm, comparative methods might include Adam or AdamW with their respective configurations."""

@@ -14,7 +14,11 @@ from airas.features.github.poll_github_actions_subgraph.nodes.get_workflow_runs 
     get_workflow_runs,
 )
 from airas.services.api_client.github_client import GithubClient
-from airas.types.github import GitHubConfig
+from airas.types.github import (
+    GitHubActionsConclusion,
+    GitHubActionsStatus,
+    GitHubConfig,
+)
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -33,8 +37,8 @@ class PollGithubActionsInputState(TypedDict):
 
 class PollGithubActionsOutputState(ExecutionTimeState):
     workflow_run_id: int | None
-    status: str | None
-    conclusion: str | None
+    status: GitHubActionsStatus | None
+    conclusion: GitHubActionsConclusion | None
 
 
 class PollGithubActionsState(
@@ -121,14 +125,20 @@ class PollGithubActionsSubgraph:
             logger.info("No workflow found, waiting...")
             return Command(goto="sleep_and_retry")
 
-        if status in ("queued", "in_progress", "waiting", "pending"):
+        running_statuses = [
+            GitHubActionsStatus.QUEUED,
+            GitHubActionsStatus.IN_PROGRESS,
+            GitHubActionsStatus.WAITING,
+            GitHubActionsStatus.PENDING,
+        ]
+        if status in running_statuses:
             logger.info(f"Workflow {workflow_run_id} is {status}, waiting...")
             return Command(
                 update={"current_workflow_id": workflow_run_id},
                 goto="sleep_and_retry",
             )
 
-        if status == "completed":
+        if status == GitHubActionsStatus.COMPLETED:
             if (
                 current_workflow_id is not None
                 and workflow_run_id != current_workflow_id

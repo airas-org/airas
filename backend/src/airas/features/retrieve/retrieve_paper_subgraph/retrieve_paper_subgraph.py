@@ -167,7 +167,7 @@ class RetrievePaperSubgraph:
         )
         return {"arxiv_full_text_list": arxiv_full_text_list}
 
-    # @record_execution_time
+    @record_execution_time
     async def _summarize_paper(
         self, state: RetrievePaperSubgraphState
     ) -> dict[str, Any]:
@@ -297,7 +297,7 @@ class RetrievePaperSubgraph:
                     ResearchStudy(
                         title=title,
                         full_text=full_text,
-                        references={},
+                        references={},  # TODO:
                         meta_data=MetaData(
                             arxiv_id=arxiv_info.id,
                             doi=arxiv_info.doi,
