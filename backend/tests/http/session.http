@@ -4,11 +4,12 @@ POST http://127.0.0.1:8000/airas/v1/sessions
 Content-Type: application/json
 
 {
-    "title": "ddd"
+    "title": "eeeeeeeeee",
+    "created_by": "00000000-0000-0000-0000-000000000001"
 }
 
 
 ### Get session
 
-GET http://127.0.0.1:8000/airas/v1/sessions/cf2775e0-0b16-40c4-a78e-cb8eb683a995
+GET http://127.0.0.1:8000/airas/v1/sessions/d673d25d-2c3c-42f5-934d-f175c311da04
 Content-Type: application/json

@@ -4,15 +4,15 @@ from uuid import UUID
 
 from sqlmodel import Session
 
-from airas.domain.models.session import SessionModel
+from airas.types.session import SessionModel
 
 
 class SessionService:
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, *, title: str | None) -> SessionModel:
-        obj = SessionModel(title=title)
+    def create(self, *, title: str | None, created_by: UUID) -> SessionModel:
+        obj = SessionModel(title=title, created_by=created_by)
         with self.db.begin():
             self.db.add(obj)
             self.db.flush()
@@ -23,3 +23,6 @@ class SessionService:
         if obj is None:
             raise ValueError("session not found")
         return obj
+
+    def close(self) -> None:
+        self.db.close()

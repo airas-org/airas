@@ -16,3 +16,4 @@ class SessionModel(SQLModel, table=True):
         sa_column=Column(TIMESTAMP(timezone=True), nullable=False),
         default_factory=lambda: datetime.now().astimezone(),
     )
+    created_by: UUID = Field(nullable=False, index=True)

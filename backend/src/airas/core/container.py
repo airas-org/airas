@@ -19,7 +19,8 @@ try:
 except Exception:
     pass
 
-from airas.core.db import engine
+from sqlmodel import create_engine
+
 from airas.features.sessions.service import SessionService
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.github_client import GithubClient
@@ -161,6 +162,8 @@ async def init_llm_client(
 
 
 class Container(containers.DeclarativeContainer):
+    config = providers.Configuration()
+
     # --- HTTP Session ---
     sync_session = providers.Resource(init_sync_session)
     async_session = providers.Resource(init_async_session)
@@ -229,12 +232,21 @@ class Container(containers.DeclarativeContainer):
     )
 
     # --- Database Session ---
-    engine_provider = providers.Object(engine)
+    engine = providers.Singleton(
+        create_engine,
+        config.database_url,
+        pool_pre_ping=True,
+        future=True,
+    )
+
     session_factory = providers.Singleton(
         sessionmaker,
-        bind=engine_provider,
+        bind=engine,
         expire_on_commit=False,
+        autoflush=False,
+        autocommit=False,
     )
+
     db_session = providers.Factory(
         lambda session_factory: session_factory(),
         session_factory=session_factory,

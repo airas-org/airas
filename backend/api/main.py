@@ -1,10 +1,11 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from sqlmodel import SQLModel
 
 import api.routes.v1 as routes_v1
 from airas.core.container import Container
-from airas.core.db import create_db_and_tables
 from api.routes.v1 import (
     bibfile,
     code,
@@ -25,11 +26,14 @@ from api.routes.v1 import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     container = Container()
+    container.config.from_dict({"database_url": os.getenv("DATABASE_URL")})
+
     # Make container discoverable by dependency_injector's FastAPI integration (request.app.container)
     app.state.container = container
     app.container = container
 
-    create_db_and_tables()
+    engine = container.engine()
+    SQLModel.metadata.create_all(engine)
 
     # Explicitly wire route modules so dependency_injector resolves Provide[] dependencies.
     container.wire(packages=[routes_v1])
