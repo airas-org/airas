@@ -176,6 +176,8 @@ class LangChainClient:
         Returns:
             tuple[Any, float]: A tuple containing the structured data parsed into the target schema and the cost (currently always 0.0).
         """
+        # TODO: The model's max output tokens may cause truncated responses for large structured outputs,
+        # resulting in validation errors when required fields are missing such as PaperContent.
         model = self._create_chat_model(llm_name)
         model_with_structure = model.with_structured_output(
             schema=data_model, method="json_schema"

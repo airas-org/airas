@@ -19,7 +19,7 @@ class LangfuseClient:
 
         if missing := [var for var in required_vars if not os.getenv(var)]:
             logger.info(
-                f"LangFuse tracing disabled. Missing environment variables: {', '.join(missing)}"
+                f"Langfuse tracing disabled. Missing environment variables: {', '.join(missing)}"
             )
             return False
 
@@ -28,15 +28,15 @@ class LangfuseClient:
     @LANGFUSE_RETRY
     def create_handler(self) -> CallbackHandler | None:
         if not self._enabled:
-            logger.debug("LangFuse is disabled, returning None handler")
+            logger.debug("Langfuse is disabled, returning None handler")
             return None
 
         try:
-            logger.info("LangFuse tracing enabled, creating CallbackHandler")
+            logger.info("Langfuse tracing enabled, creating CallbackHandler")
             return CallbackHandler()
         except Exception:
             logger.exception(
-                "Failed to initialize LangFuse CallbackHandler; "
+                "Failed to initialize Langfuse CallbackHandler; "
                 "disabling tracing for this request."
             )
             return None
