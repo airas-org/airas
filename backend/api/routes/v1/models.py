@@ -4,15 +4,15 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from langfuse import observe
 
+from airas.core.container import Container
 from airas.features.retrieve.retrieve_models_subgraph.retrieve_models_subgraph import (
     RetrieveModelsSubgraph,
 )
+from airas.services.api_client.langfuse_client import LangfuseClient
 from api.schemas.models import (
     RetrieveModelsSubgraphRequestBody,
     RetrieveModelsSubgraphResponseBody,
 )
-from src.airas.core.container import Container
-from src.airas.services.api_client.langfuse_client import LangfuseClient
 
 router = APIRouter(prefix="/models", tags=["models"])
 

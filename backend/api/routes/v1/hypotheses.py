@@ -4,16 +4,16 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from langfuse import observe
 
+from airas.core.container import Container
+from airas.features.generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph_v0 import (
+    GenerateHypothesisSubgraphV0,
+)
+from airas.services.api_client.langchain_client import LangChainClient
+from airas.services.api_client.langfuse_client import LangfuseClient
 from api.schemas.hypotheses import (
     GenerateHypothesisSubgraphV0RequestBody,
     GenerateHypothesisSubgraphV0ResponseBody,
 )
-from src.airas.core.container import Container
-from src.airas.features.generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph_v0 import (
-    GenerateHypothesisSubgraphV0,
-)
-from src.airas.services.api_client.langchain_client import LangChainClient
-from src.airas.services.api_client.langfuse_client import LangfuseClient
 
 router = APIRouter(prefix="/hypotheses", tags=["hypotheses"])
 

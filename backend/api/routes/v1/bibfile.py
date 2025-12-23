@@ -4,15 +4,15 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from langfuse import observe
 
+from airas.core.container import Container
+from airas.features.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
+    GenerateBibfileSubgraph,
+)
+from airas.services.api_client.langfuse_client import LangfuseClient
 from api.schemas.bibfile import (
     GenerateBibfileSubgraphRequestBody,
     GenerateBibfileSubgraphResponseBody,
 )
-from src.airas.core.container import Container
-from src.airas.features.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
-    GenerateBibfileSubgraph,
-)
-from src.airas.services.api_client.langfuse_client import LangfuseClient
 
 router = APIRouter(prefix="/bibfile", tags=["bibfile"])
 

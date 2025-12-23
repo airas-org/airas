@@ -4,15 +4,15 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from langfuse import observe
 
+from airas.core.container import Container
 from airas.features.retrieve.retrieve_datasets_subgraph.retrieve_datasets_subgraph import (
     RetrieveDatasetsSubgraph,
 )
+from airas.services.api_client.langfuse_client import LangfuseClient
 from api.schemas.datasets import (
     RetrieveDatasetsSubgraphRequestBody,
     RetrieveDatasetsSubgraphResponseBody,
 )
-from src.airas.core.container import Container
-from src.airas.services.api_client.langfuse_client import LangfuseClient
 
 router = APIRouter(prefix="/datasets", tags=["datasets"])
 

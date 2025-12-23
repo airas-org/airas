@@ -9,19 +9,19 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException
 from langfuse import observe
 
+from airas.core.container import Container
+from airas.features.orchestrators.execute_e2e_subgraph.execute_e2e_subgraph import (
+    ExecuteE2ESubgraph,
+)
+from airas.services.api_client.arxiv_client import ArxivClient
+from airas.services.api_client.github_client import GithubClient
+from airas.services.api_client.langchain_client import LangChainClient
+from airas.services.api_client.langfuse_client import LangfuseClient
+from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
 from api.schemas.e2e import (
     ExecuteE2ERequestBody,
     ExecuteE2EResponseBody,
 )
-from src.airas.core.container import Container
-from src.airas.features.orchestrators.execute_e2e_subgraph.execute_e2e_subgraph import (
-    ExecuteE2ESubgraph,
-)
-from src.airas.services.api_client.arxiv_client import ArxivClient
-from src.airas.services.api_client.github_client import GithubClient
-from src.airas.services.api_client.langchain_client import LangChainClient
-from src.airas.services.api_client.langfuse_client import LangfuseClient
-from src.airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
 
 logger = logging.getLogger(__name__)
 

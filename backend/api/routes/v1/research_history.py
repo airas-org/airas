@@ -4,17 +4,17 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from langfuse import observe
 
+from airas.core.container import Container
+from airas.features.github.github_download_subgraph import GithubDownloadSubgraph
+from airas.features.github.github_upload_subgraph import GithubUploadSubgraph
+from airas.services.api_client.github_client import GithubClient
+from airas.services.api_client.langfuse_client import LangfuseClient
 from api.schemas.research_history import (
     GithubDownloadRequest,
     GithubDownloadResponse,
     GithubUploadRequest,
     GithubUploadResponse,
 )
-from src.airas.core.container import Container
-from src.airas.features.github.github_download_subgraph import GithubDownloadSubgraph
-from src.airas.features.github.github_upload_subgraph import GithubUploadSubgraph
-from src.airas.services.api_client.github_client import GithubClient
-from src.airas.services.api_client.langfuse_client import LangfuseClient
 
 router = APIRouter(prefix="/research-history", tags=["research-history"])
 

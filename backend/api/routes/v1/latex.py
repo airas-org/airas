@@ -4,6 +4,7 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from langfuse import observe
 
+from airas.core.container import Container
 from airas.features.publication.compile_latex_subgraph.compile_latex_subgraph import (
     CompileLatexSubgraph,
 )
@@ -24,7 +25,6 @@ from api.schemas.latex import (
     PushLatexSubgraphRequestBody,
     PushLatexSubgraphResponseBody,
 )
-from src.airas.core.container import Container
 
 router = APIRouter(prefix="/latex", tags=["latex"])
 

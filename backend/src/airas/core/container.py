@@ -7,7 +7,12 @@ import httpx
 from dependency_injector import containers, providers
 from hishel import CacheOptions, SpecificationPolicy
 from hishel.httpx import AsyncCacheClient, SyncCacheClient
+from sqlalchemy.orm import sessionmaker
+from sqlmodel import create_engine
 
+from airas.features.session_steps.service import SessionStepService
+from airas.features.sessions.service import SessionService
+from airas.features.step_run_links.service import StepRunLinkService
 from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.langfuse_client import LangfuseClient
 from airas.services.api_client.qdrant_client import QdrantClient
@@ -127,6 +132,8 @@ async def init_llm_client(
 
 
 class Container(containers.DeclarativeContainer):
+    config = providers.Configuration()
+
     # --- HTTP Session ---
     sync_session = providers.Resource(init_sync_session)
     async_session = providers.Resource(init_async_session)
@@ -198,6 +205,30 @@ class Container(containers.DeclarativeContainer):
         sync_session=sync_session,
         async_session=None,
     )
+
+    # --- Database Session ---
+    engine = providers.Singleton(
+        create_engine,
+        config.database_url,
+        pool_pre_ping=True,
+        future=True,
+    )
+
+    session_factory = providers.Singleton(
+        sessionmaker,
+        bind=engine,
+        expire_on_commit=False,
+        autoflush=False,
+        autocommit=False,
+    )
+
+    db_session = providers.Factory(
+        lambda session_factory: session_factory(),
+        session_factory=session_factory,
+    )
+    session_service = providers.Factory(SessionService, db=db_session)
+    session_step_service = providers.Factory(SessionStepService, db=db_session)
+    step_run_link_service = providers.Factory(StepRunLinkService, db=db_session)
 
 
 container = Container()

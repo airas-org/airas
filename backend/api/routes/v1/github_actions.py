@@ -4,16 +4,16 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from langfuse import observe
 
+from airas.core.container import Container
+from airas.features.github.poll_github_actions_subgraph.poll_github_actions_subgraph import (
+    PollGithubActionsSubgraph,
+)
+from airas.services.api_client.github_client import GithubClient
+from airas.services.api_client.langfuse_client import LangfuseClient
 from api.schemas.github_actions import (
     PollGithubActionsRequestBody,
     PollGithubActionsResponseBody,
 )
-from src.airas.core.container import Container
-from src.airas.features.github.poll_github_actions_subgraph.poll_github_actions_subgraph import (
-    PollGithubActionsSubgraph,
-)
-from src.airas.services.api_client.github_client import GithubClient
-from src.airas.services.api_client.langfuse_client import LangfuseClient
 
 router = APIRouter(prefix="/github-actions", tags=["github-actions"])
 
