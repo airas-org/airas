@@ -31,5 +31,12 @@ class LangfuseClient:
             logger.debug("LangFuse is disabled, returning None handler")
             return None
 
-        logger.info("LangFuse tracing enabled, creating CallbackHandler")
-        return CallbackHandler()
+        try:
+            logger.info("LangFuse tracing enabled, creating CallbackHandler")
+            return CallbackHandler()
+        except Exception:
+            logger.exception(
+                "Failed to initialize LangFuse CallbackHandler; "
+                "disabling tracing for this request."
+            )
+            return None
