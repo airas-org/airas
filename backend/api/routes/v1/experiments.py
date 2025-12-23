@@ -2,6 +2,7 @@ from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
+from langfuse import observe
 
 from api.schemas.experiments import (
     AnalyzeExperimentRequestBody,
@@ -38,20 +39,28 @@ from src.airas.features.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph 
 )
 from src.airas.services.api_client.github_client import GithubClient
 from src.airas.services.api_client.langchain_client import LangChainClient
+from src.airas.services.api_client.langfuse_client import LangfuseClient
 
 router = APIRouter(prefix="/experiments", tags=["experiments"])
 
 
 @router.post("/run-ids", response_model=FetchRunIdsResponseBody)
 @inject
+@observe()
 async def fetch_run_ids(
     request: FetchRunIdsRequestBody,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
 ) -> FetchRunIdsResponseBody:
+    handler = langfuse_client.create_handler()
+    config = {"callbacks": [handler]} if handler else {}
+
     result = (
         await FetchRunIdsSubgraph(github_client=github_client)
         .build_graph()
-        .ainvoke(request)
+        .ainvoke(request, config=config)
     )
     return FetchRunIdsResponseBody(
         run_ids=result["run_ids"],
@@ -61,14 +70,21 @@ async def fetch_run_ids(
 
 @router.post("/results", response_model=FetchExperimentalResultsResponseBody)
 @inject
+@observe()
 async def fetch_experimental_results(
     request: FetchExperimentalResultsRequestBody,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
 ) -> FetchExperimentalResultsResponseBody:
+    handler = langfuse_client.create_handler()
+    config = {"callbacks": [handler]} if handler else {}
+
     result = (
         await FetchExperimentResultsSubgraph(github_client=github_client)
         .build_graph()
-        .ainvoke(request)
+        .ainvoke(request, config=config)
     )
     return FetchExperimentalResultsResponseBody(
         experiment_results=result["experiment_results"],
@@ -78,14 +94,21 @@ async def fetch_experimental_results(
 
 @router.post("/test-runs", response_model=ExecuteTrialResponseBody)
 @inject
+@observe()
 async def execute_trial(
     request: ExecuteTrialRequestBody,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
 ) -> ExecuteTrialResponseBody:
+    handler = langfuse_client.create_handler()
+    config = {"callbacks": [handler]} if handler else {}
+
     result = (
         await ExecuteTrialExperimentSubgraph(github_client=github_client)
         .build_graph()
-        .ainvoke(request)
+        .ainvoke(request, config=config)
     )
     return ExecuteTrialResponseBody(
         dispatched=result["dispatched"],
@@ -96,14 +119,21 @@ async def execute_trial(
 
 @router.post("/full-runs", response_model=ExecuteFullResponseBody)
 @inject
+@observe()
 async def execute_full(
     request: ExecuteFullRequestBody,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
 ) -> ExecuteFullResponseBody:
+    handler = langfuse_client.create_handler()
+    config = {"callbacks": [handler]} if handler else {}
+
     result = (
         await ExecuteFullExperimentSubgraph(github_client=github_client)
         .build_graph()
-        .ainvoke(request)
+        .ainvoke(request, config=config)
     )
     return ExecuteFullResponseBody(
         all_dispatched=result["all_dispatched"],
@@ -114,14 +144,21 @@ async def execute_full(
 
 @router.post("/evaluations", response_model=ExecuteEvaluationResponseBody)
 @inject
+@observe()
 async def execute_evaluation(
     request: ExecuteEvaluationRequestBody,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
 ) -> ExecuteEvaluationResponseBody:
+    handler = langfuse_client.create_handler()
+    config = {"callbacks": [handler]} if handler else {}
+
     result = (
         await ExecuteEvaluationSubgraph(github_client=github_client)
         .build_graph()
-        .ainvoke(request)
+        .ainvoke(request, config=config)
     )
     return ExecuteEvaluationResponseBody(
         dispatched=result["dispatched"],
@@ -131,19 +168,26 @@ async def execute_evaluation(
 
 @router.post("/analyses", response_model=AnalyzeExperimentResponseBody)
 @inject
+@observe()
 async def analyze_experiment(
     request: AnalyzeExperimentRequestBody,
     langchain_client: Annotated[
         LangChainClient, Depends(Provide[Container.langchain_client])
     ],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
 ) -> AnalyzeExperimentResponseBody:
+    handler = langfuse_client.create_handler()
+    config = {"callbacks": [handler]} if handler else {}
+
     result = (
         await AnalyzeExperimentSubgraph(
             langchain_client=langchain_client,
             llm_mapping=request.llm_mapping,
         )
         .build_graph()
-        .ainvoke(request)
+        .ainvoke(request, config=config)
     )
     return AnalyzeExperimentResponseBody(
         experimental_analysis=result["experimental_analysis"],

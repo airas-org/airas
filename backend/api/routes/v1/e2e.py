@@ -7,6 +7,7 @@ from typing import Annotated, Any
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException
+from langfuse import observe
 
 from api.schemas.e2e import (
     ExecuteE2ERequestBody,
@@ -19,6 +20,7 @@ from src.airas.features.orchestrators.execute_e2e_subgraph.execute_e2e_subgraph 
 from src.airas.services.api_client.arxiv_client import ArxivClient
 from src.airas.services.api_client.github_client import GithubClient
 from src.airas.services.api_client.langchain_client import LangChainClient
+from src.airas.services.api_client.langfuse_client import LangfuseClient
 from src.airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
 
 logger = logging.getLogger(__name__)
@@ -48,6 +50,7 @@ async def _execute_e2e(
     arxiv_client: ArxivClient,
     langchain_client: LangChainClient,
     llm_client: LLMFacadeClient,
+    langfuse_client: LangfuseClient,
 ) -> None:
     try:
         logger.info(f"[Task {task_id}] Starting E2E execution")
@@ -63,7 +66,11 @@ async def _execute_e2e(
 
         logger.info(f"[Task {task_id}] Streaming graph execution")
 
-        async for chunk in graph.astream(request, config={"recursion_limit": 100}):
+        config = {"recursion_limit": 100}
+        if handler := langfuse_client.create_handler():
+            config["callbacks"] = [handler]
+
+        async for chunk in graph.astream(request, config=config):
             for node_name, node_output in chunk.items():
                 if not isinstance(node_output, dict):
                     continue
@@ -97,6 +104,7 @@ async def _execute_e2e(
 
 @router.post("/run", response_model=ExecuteE2EResponseBody)
 @inject
+@observe()
 async def execute_e2e(
     request: ExecuteE2ERequestBody,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
@@ -106,6 +114,9 @@ async def execute_e2e(
     ],
     llm_client: Annotated[
         LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
+    ],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
 ) -> ExecuteE2EResponseBody:
     task_id = str(uuid.uuid4())
@@ -129,6 +140,7 @@ async def execute_e2e(
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,
             llm_client=llm_client,
+            langfuse_client=langfuse_client,
         )
     )
 
@@ -139,6 +151,7 @@ async def execute_e2e(
 
 
 @router.get("/status/{task_id}", response_model=ExecuteE2EResponseBody)
+@observe()
 async def get_e2e_status(task_id: str) -> ExecuteE2EResponseBody:
     if not (task := _tasks.get(task_id)):
         raise HTTPException(status_code=404, detail=f"Task {task_id} not found")

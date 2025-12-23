@@ -9,6 +9,7 @@ from hishel import CacheOptions, SpecificationPolicy
 from hishel.httpx import AsyncCacheClient, SyncCacheClient
 
 from airas.services.api_client.langchain_client import LangChainClient
+from airas.services.api_client.langfuse_client import LangfuseClient
 from airas.services.api_client.qdrant_client import QdrantClient
 
 # Workaround for OpenAI SDK lazy initialization issue
@@ -146,48 +147,53 @@ class Container(containers.DeclarativeContainer):
     )
 
     # --- LLM Facade ---
-    llm_facade_client: providers.Singleton[LLMFacadeClient] = providers.Singleton(
+    llm_facade_client: providers.Factory[LLMFacadeClient] = providers.Factory(
         LLMFacadeClient,
         openai_client=openai_client,
         anthropic_client=anthropic_client,
         google_genai_client=google_genai_client,
     )
 
-    langchain_client: providers.Singleton = providers.Singleton(LangChainClient)
+    langchain_client: providers.Factory = providers.Factory(LangChainClient)
+
+    # --- Observability ---
+    langfuse_client: providers.Factory[LangfuseClient] = providers.Factory(
+        LangfuseClient
+    )
 
     # --- Code & Experiment Platforms ---
-    github_client: providers.Singleton[GithubClient] = providers.Singleton(
+    github_client: providers.Factory[GithubClient] = providers.Factory(
         GithubClient,
         sync_session=github_sync_session,  # Use non-cached session
         async_session=github_async_session,  # Use non-cached session
     )
-    hugging_face_client: providers.Singleton[HuggingFaceClient] = providers.Singleton(
+    hugging_face_client: providers.Factory[HuggingFaceClient] = providers.Factory(
         HuggingFaceClient,
         sync_session=sync_session,
         async_session=async_session,
     )
 
     # --- Academic Research APIs ---
-    arxiv_client: providers.Singleton[ArxivClient] = providers.Singleton(
+    arxiv_client: providers.Factory[ArxivClient] = providers.Factory(
         ArxivClient,
         sync_session=sync_session,
         async_session=async_session,
     )
-    semantic_scholar_client: providers.Singleton[SemanticScholarClient] = (
-        providers.Singleton(
+    semantic_scholar_client: providers.Factory[SemanticScholarClient] = (
+        providers.Factory(
             SemanticScholarClient,
             sync_session=sync_session,
             async_session=None,
         )
     )
-    openalex_client: providers.Singleton[OpenAlexClient] = providers.Singleton(
+    openalex_client: providers.Factory[OpenAlexClient] = providers.Factory(
         OpenAlexClient,
         sync_session=sync_session,
         async_session=None,
     )
 
     # --- Database Client ---
-    qdrant_client: providers.Singleton = providers.Singleton(
+    qdrant_client: providers.Factory = providers.Factory(
         QdrantClient,
         sync_session=sync_session,
         async_session=None,
