@@ -109,7 +109,7 @@ class WriteSubgraph:
         paper_content = await refine_paper(
             llm_name=self.llm_mapping.refine_paper,
             langchain_client=self.langchain_client,
-            paper_content=state["paper_content"],  # type: ignore[typeddict-item]
+            paper_content=state["paper_content"],
             note=state["note"],
         )
 
