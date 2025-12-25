@@ -11,7 +11,7 @@ class GenerateHypothesisSubgraphV0RequestBody(BaseModel):
     research_objective: str
     research_study_list: list[ResearchStudy]
     refinement_rounds: int
-    llm_mapping: GenerateHypothesisSubgraphV0LLMMapping
+    llm_mapping: GenerateHypothesisSubgraphV0LLMMapping | None = None
 
 
 class GenerateHypothesisSubgraphV0ResponseBody(BaseModel):

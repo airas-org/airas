@@ -5,6 +5,7 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from airas.config.llm_config import DEFAULT_NODE_LLMS
 from airas.features.retrieve.retrieve_paper_subgraph.nodes.extract_experimental_info import (
     extract_experimental_info,
 )
@@ -26,6 +27,12 @@ from airas.features.retrieve.retrieve_paper_subgraph.nodes.retrieve_repository_c
 from airas.features.retrieve.retrieve_paper_subgraph.nodes.retrieve_text_from_url import (
     retrieve_text_from_url,
 )
+from airas.features.retrieve.retrieve_paper_subgraph.nodes.search_arxiv_id_from_title import (
+    search_arxiv_id_from_title,
+)
+from airas.features.retrieve.retrieve_paper_subgraph.nodes.search_arxiv_info_by_id import (
+    search_arxiv_info_by_id,
+)
 from airas.features.retrieve.retrieve_paper_subgraph.nodes.summarize_paper import (
     PaperSummary,
     summarize_paper,
@@ -33,30 +40,23 @@ from airas.features.retrieve.retrieve_paper_subgraph.nodes.summarize_paper impor
 from airas.features.retrieve.retrieve_paper_subgraph.prompt.extract_github_url_from_text_prompt import (
     extract_github_url_from_text_prompt,
 )
+from airas.features.retrieve.retrieve_paper_subgraph.prompt.openai_websearch_arxiv_ids_prompt import (
+    openai_websearch_arxiv_ids_prompt,
+)
+from airas.features.retrieve.retrieve_paper_subgraph.prompt.summarize_paper_prompt import (
+    summarize_paper_prompt,
+)
+from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.llm_facade_client import (
     LLMFacadeClient,
 )
 from airas.services.api_client.llm_specs import LLM_MODELS
+from airas.types.arxiv import ArxivInfo
 from airas.types.research_study import LLMExtractedInfo, MetaData, ResearchStudy
+from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
-from src.airas.config.llm_config import DEFAULT_NODE_LLMS
-from src.airas.features.retrieve.retrieve_paper_subgraph.nodes.search_arxiv_id_from_title import (
-    search_arxiv_id_from_title,
-)
-from src.airas.features.retrieve.retrieve_paper_subgraph.nodes.search_arxiv_info_by_id import (
-    search_arxiv_info_by_id,
-)
-from src.airas.features.retrieve.retrieve_paper_subgraph.prompt.openai_websearch_arxiv_ids_prompt import (
-    openai_websearch_arxiv_ids_prompt,
-)
-from src.airas.features.retrieve.retrieve_paper_subgraph.prompt.summarize_paper_prompt import (
-    summarize_paper_prompt,
-)
-from src.airas.services.api_client.arxiv_client import ArxivClient
-from src.airas.types.arxiv import ArxivInfo
-from src.airas.utils.execution_timers import ExecutionTimeState, time_node
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -167,7 +167,7 @@ class RetrievePaperSubgraph:
         )
         return {"arxiv_full_text_list": arxiv_full_text_list}
 
-    # @record_execution_time
+    @record_execution_time
     async def _summarize_paper(
         self, state: RetrievePaperSubgraphState
     ) -> dict[str, Any]:
@@ -297,7 +297,7 @@ class RetrievePaperSubgraph:
                     ResearchStudy(
                         title=title,
                         full_text=full_text,
-                        references={},
+                        references={},  # TODO:
                         meta_data=MetaData(
                             arxiv_id=arxiv_info.id,
                             doi=arxiv_info.doi,

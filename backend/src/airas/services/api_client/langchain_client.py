@@ -117,10 +117,15 @@ class LangChainClient:
             # https://reference.langchain.com/python/integrations/langchain_aws/?_gl=1*d30ods*_gcl_au*MjA5NzEyNjYxMC4xNzY1NDI5NTc3*_ga*MjE0MTg1OTk2LjE3NjU0Mjk1Nzc.*_ga_47WX3HKKY2*czE3NjU0NjA2ODEkbzMkZzEkdDE3NjU0NjE0NTQkajYwJGwwJGgw
             region_name = os.getenv("AWS_REGION_NAME", "us-east-1")
 
+            # Configure retry strategy with exponential backoff for throttling errors
             # Increase read_timeout to 300 seconds (5 minutes) to handle long-running LLM requests
             bedrock_config = Config(
                 read_timeout=300,
                 connect_timeout=60,
+                retries={
+                    "max_attempts": 10,  # Increased from default 4
+                    "mode": "adaptive",  # Use adaptive retry mode for better throttling handling
+                },
             )
             model = ChatBedrockConverse(
                 model_id=llm_name,
@@ -171,6 +176,8 @@ class LangChainClient:
         Returns:
             tuple[Any, float]: A tuple containing the structured data parsed into the target schema and the cost (currently always 0.0).
         """
+        # TODO: The model's max output tokens may cause truncated responses for large structured outputs,
+        # resulting in validation errors when required fields are missing such as PaperContent.
         model = self._create_chat_model(llm_name)
         model_with_structure = model.with_structured_output(
             schema=data_model, method="json_schema"

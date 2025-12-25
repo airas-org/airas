@@ -2,7 +2,9 @@ from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
+from langfuse import observe
 
+from airas.core.container import Container
 from airas.features.publication.compile_latex_subgraph.compile_latex_subgraph import (
     CompileLatexSubgraph,
 )
@@ -14,6 +16,7 @@ from airas.features.publication.push_latex_subgraph.push_latex_subgraph import (
 )
 from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.langchain_client import LangChainClient
+from airas.services.api_client.langfuse_client import LangfuseClient
 from api.schemas.latex import (
     CompileLatexSubgraphRequestBody,
     CompileLatexSubgraphResponseBody,
@@ -22,20 +25,26 @@ from api.schemas.latex import (
     PushLatexSubgraphRequestBody,
     PushLatexSubgraphResponseBody,
 )
-from src.airas.core.container import Container
 
 router = APIRouter(prefix="/latex", tags=["latex"])
 
 
 @router.post("/generations", response_model=GenerateLatexSubgraphResponseBody)
 @inject
+@observe()
 async def generate_latex(
     request: GenerateLatexSubgraphRequestBody,
     langchain_client: Annotated[
         LangChainClient, Depends(Provide[Container.langchain_client])
     ],
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
 ) -> GenerateLatexSubgraphResponseBody:
+    handler = langfuse_client.create_handler()
+    config = {"callbacks": [handler]} if handler else {}
+
     result = (
         await GenerateLatexSubgraph(
             langchain_client=langchain_client,
@@ -44,7 +53,7 @@ async def generate_latex(
             llm_mapping=request.llm_mapping,
         )
         .build_graph()
-        .ainvoke(request)
+        .ainvoke(request, config=config)
     )
     return GenerateLatexSubgraphResponseBody(
         latex_text=result["latex_text"],
@@ -54,17 +63,24 @@ async def generate_latex(
 
 @router.post("/push", response_model=PushLatexSubgraphResponseBody)
 @inject
+@observe()
 async def push_latex(
     request: PushLatexSubgraphRequestBody,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
 ) -> PushLatexSubgraphResponseBody:
+    handler = langfuse_client.create_handler()
+    config = {"callbacks": [handler]} if handler else {}
+
     result = (
         await PushLatexSubgraph(
             github_client=github_client,
             latex_template_name=request.latex_template_name,
         )
         .build_graph()
-        .ainvoke(request)
+        .ainvoke(request, config=config)
     )
     return PushLatexSubgraphResponseBody(
         is_upload_successful=result["is_upload_successful"],
@@ -75,20 +91,27 @@ async def push_latex(
 
 @router.post("/compile", response_model=CompileLatexSubgraphResponseBody)
 @inject
+@observe()
 async def compile_latex(
     request: CompileLatexSubgraphRequestBody,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
 ) -> CompileLatexSubgraphResponseBody:
+    handler = langfuse_client.create_handler()
+    config = {"callbacks": [handler]} if handler else {}
+
     result = (
         await CompileLatexSubgraph(
             github_client=github_client,
             latex_template_name=request.latex_template_name,
         )
         .build_graph()
-        .ainvoke(request)
+        .ainvoke(request, config=config)
     )
     return CompileLatexSubgraphResponseBody(
-        is_compiled=result["is_compiled"],
+        compile_latex_dispatched=result["compile_latex_dispatched"],
         paper_url=result["paper_url"],
         execution_time=result["execution_time"],
     )

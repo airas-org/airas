@@ -15,10 +15,10 @@ Below is the full text of the research paper:
 ```
 
 ## **Instructions:**
-1. Analyze the paper based on the categories listed below.
+1. Analyze the paper thoroughly and extract information for ALL categories listed below.
 2. Your response **must be a valid JSON object** that can be directly parsed using `json.loads()`.
 3. Do not include any extra text, explanations, or formatting outside of the JSON object.
-4. **If a field has no available information, set its value to `"Not mentioned"` instead of leaving it empty.**
+4. All fields are required and must contain meaningful content.
 5. Ensure that the JSON format is correct, including the use of **double quotes (`"`) for all keys and values.**
 ## **Output Format (JSON)**:
 ```json

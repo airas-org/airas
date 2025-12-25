@@ -27,7 +27,7 @@ class PushCodeSubgraphInputState(TypedDict):
 
 
 class PushCodeSubgraphOutputState(ExecutionTimeState):
-    files_pushed: bool
+    code_pushed: bool
 
 
 class PushCodeSubgraphState(
@@ -82,7 +82,7 @@ class PushCodeSubgraph:
             logger.error("Failed to push files to branch")
             raise RuntimeError("Failed to push code to GitHub branch")
 
-        return {"files_pushed": success}
+        return {"code_pushed": success}
 
     def build_graph(self):
         graph_builder = StateGraph(

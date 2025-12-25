@@ -25,9 +25,10 @@ async def read_run_ids_from_repository(
 
         run_ids = []
         for item in contents:
-            if item.get("type") == "file" and item.get("name", "").endswith(".yaml"):
+            name = item.get("name", "")
+            if item.get("type") == "file" and name.endswith(".yaml"):
                 # Remove .yaml extension to get run_id
-                run_id = item["name"][:-5]  # Remove ".yaml"
+                run_id = name[:-5]  # Remove ".yaml"
                 run_ids.append(run_id)
                 logger.debug(f"Found run_id: {run_id}")
 
