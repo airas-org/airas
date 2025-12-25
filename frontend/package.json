@@ -7,11 +7,10 @@
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate-api": "openapi --input ../schema/openapi.yaml --output ./src/lib/api --client axios"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
@@ -49,20 +48,23 @@
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
     "next-themes": "^0.4.6",
+    "react": "^19.2.0",
     "react-day-picker": "9.8.0",
+    "react-dom": "^19.2.0",
     "react-hook-form": "^7.60.0",
+    "react-markdown": "10.1.0",
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.4",
     "sonner": "^1.7.4",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
-    "zod": "3.25.76",
-    "react-markdown": "10.1.0"
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.5",
     "@eslint/js": "^9.39.1",
+    "@tailwindcss/postcss": "^4.1.9",
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
@@ -71,11 +73,11 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
-    "typescript": "~5.9.3",
-    "vite": "^7.2.2",
-    "@tailwindcss/postcss": "^4.1.9",
+    "openapi-typescript-codegen": "^0.29.0",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
-    "tw-animate-css": "1.3.3"
+    "tw-animate-css": "1.3.3",
+    "typescript": "~5.9.3",
+    "vite": "^7.2.2"
   }
 }

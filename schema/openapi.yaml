@@ -1,0 +1,3673 @@
+openapi: 3.1.0
+info:
+  title: AIRAS API
+  version: 0.0.1
+paths:
+  /airas/v1/papers:
+    get:
+      tags:
+      - papers
+      summary: Get Paper Title
+      operationId: get_paper_title_airas_v1_papers_get
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetrievePaperSubgraphRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetrievePaperSubgraphResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/papers/generations:
+    post:
+      tags:
+      - papers
+      summary: Generate Paper
+      operationId: generate_paper_airas_v1_papers_generations_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WriteSubgraphRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WriteSubgraphResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/models:
+    get:
+      tags:
+      - models
+      summary: Retrieve Models
+      operationId: retrieve_models_airas_v1_models_get
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetrieveModelsSubgraphRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetrieveModelsSubgraphResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/datasets:
+    get:
+      tags:
+      - datasets
+      summary: Retrieve Datasets
+      operationId: retrieve_datasets_airas_v1_datasets_get
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetrieveDatasetsSubgraphRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetrieveDatasetsSubgraphResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/hypotheses/generations:
+    post:
+      tags:
+      - hypotheses
+      summary: Generate Hypotheses
+      operationId: generate_hypotheses_airas_v1_hypotheses_generations_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateHypothesisSubgraphV0RequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateHypothesisSubgraphV0ResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/experimental_settings/generations:
+    post:
+      tags:
+      - experimental_settings
+      summary: Generate Experimental Design
+      operationId: generate_experimental_design_airas_v1_experimental_settings_generations_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateExperimentalDesignSubgraphRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateExperimentalDesignSubgraphResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/experiments/run-ids:
+    post:
+      tags:
+      - experiments
+      summary: Fetch Run Ids
+      operationId: fetch_run_ids_airas_v1_experiments_run_ids_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchRunIdsRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchRunIdsResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/experiments/results:
+    post:
+      tags:
+      - experiments
+      summary: Fetch Experimental Results
+      operationId: fetch_experimental_results_airas_v1_experiments_results_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchExperimentalResultsRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchExperimentalResultsResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/experiments/test-runs:
+    post:
+      tags:
+      - experiments
+      summary: Execute Trial
+      operationId: execute_trial_airas_v1_experiments_test_runs_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteTrialRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteTrialResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/experiments/full-runs:
+    post:
+      tags:
+      - experiments
+      summary: Execute Full
+      operationId: execute_full_airas_v1_experiments_full_runs_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteFullRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteFullResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/experiments/evaluations:
+    post:
+      tags:
+      - experiments
+      summary: Execute Evaluation
+      operationId: execute_evaluation_airas_v1_experiments_evaluations_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteEvaluationRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteEvaluationResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/experiments/analyses:
+    post:
+      tags:
+      - experiments
+      summary: Analyze Experiment
+      operationId: analyze_experiment_airas_v1_experiments_analyses_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeExperimentRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyzeExperimentResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/code/generations:
+    post:
+      tags:
+      - code
+      summary: Generate Code
+      operationId: generate_code_airas_v1_code_generations_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateCodeSubgraphRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateCodeSubgraphResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/code/push:
+    post:
+      tags:
+      - code
+      summary: Push Code
+      operationId: push_code_airas_v1_code_push_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushCodeSubgraphRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushCodeSubgraphResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/repositories:
+    post:
+      tags:
+      - repositories
+      summary: Prepare Repository
+      operationId: prepare_repository_airas_v1_repositories_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrepareRepositorySubgraphRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrepareRepositorySubgraphResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/bibfile/generations:
+    post:
+      tags:
+      - bibfile
+      summary: Generate Bibfile
+      operationId: generate_bibfile_airas_v1_bibfile_generations_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateBibfileSubgraphRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateBibfileSubgraphResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/latex/generations:
+    post:
+      tags:
+      - latex
+      summary: Generate Latex
+      operationId: generate_latex_airas_v1_latex_generations_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateLatexSubgraphRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateLatexSubgraphResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/latex/push:
+    post:
+      tags:
+      - latex
+      summary: Push Latex
+      operationId: push_latex_airas_v1_latex_push_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushLatexSubgraphRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushLatexSubgraphResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/latex/compile:
+    post:
+      tags:
+      - latex
+      summary: Compile Latex
+      operationId: compile_latex_airas_v1_latex_compile_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompileLatexSubgraphRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompileLatexSubgraphResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/research-history/download:
+    post:
+      tags:
+      - research-history
+      summary: Download Research History
+      operationId: download_research_history_airas_v1_research_history_download_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GithubDownloadRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GithubDownloadResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/research-history/upload:
+    post:
+      tags:
+      - research-history
+      summary: Upload Research History
+      operationId: upload_research_history_airas_v1_research_history_upload_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GithubUploadRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GithubUploadResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/github-actions/polling:
+    post:
+      tags:
+      - github-actions
+      summary: Poll Github Actions
+      operationId: poll_github_actions_airas_v1_github_actions_polling_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PollGithubActionsRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PollGithubActionsResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/sessions:
+    post:
+      tags:
+      - sessions
+      summary: Create Session
+      operationId: create_session_airas_v1_sessions_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionCreateRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/sessions/{session_id}:
+    get:
+      tags:
+      - sessions
+      summary: Get Session
+      operationId: get_session_airas_v1_sessions__session_id__get
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Session Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/session-steps:
+    post:
+      tags:
+      - session-steps
+      summary: Create Session Step
+      operationId: create_session_step_airas_v1_session_steps_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionStepCreateRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStepResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/session-steps/{step_id}:
+    get:
+      tags:
+      - session-steps
+      summary: Get Session Step
+      operationId: get_session_step_airas_v1_session_steps__step_id__get
+      parameters:
+      - name: step_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Step Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStepResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/step-run-links:
+    post:
+      tags:
+      - step-run-links
+      summary: Create Step Run Link
+      operationId: create_step_run_link_airas_v1_step_run_links_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StepRunLinkCreateRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepRunLinkResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/step-run-links/{from_step_run_id}:
+    get:
+      tags:
+      - step-run-links
+      summary: List Step Run Links By From Step Run Id
+      operationId: list_step_run_links_by_from_step_run_id_airas_v1_step_run_links__from_step_run_id__get
+      parameters:
+      - name: from_step_run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: From Step Run Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepRunLinkListResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/e2e/run:
+    post:
+      tags:
+      - e2e
+      summary: Execute E2E
+      operationId: execute_e2e_airas_v1_e2e_run_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteE2ERequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteE2EResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/e2e/status/{task_id}:
+    get:
+      tags:
+      - e2e
+      summary: Get E2E Status
+      operationId: get_e2e_status_airas_v1_e2e_status__task_id__get
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteE2EResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    AnalyzeExperimentLLMMapping:
+      properties:
+        analyze_experiment:
+          anyOf:
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+          - type: string
+            enum:
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+          - type: string
+            enum:
+            - claude-opus-4-5
+            - claude-sonnet-4-5
+            - claude-haiku-4-5
+            - claude-opus-4-1
+            - claude-opus-4
+            - claude-sonnet-4
+            - claude-3-7-sonnet
+            - claude-3-5-haiku
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+            - anthropic/claude-opus-4.5
+            - anthropic/claude-sonnet-4.5
+            - anthropic/claude-haiku-4.5
+            - anthropic/claude-opus-4.1
+            - anthropic/claude-opus-4
+            - anthropic/claude-sonnet-4
+            - anthropic/claude-3.7-sonnet
+            - anthropic/claude-3.5-haiku
+          - type: string
+            enum:
+            - global.anthropic.claude-opus-4-5-20251101-v1:0
+            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-sonnet-4-20250514-v1:0
+            - global.anthropic.claude-haiku-4-5-20251001-v1:0
+            - openai.gpt-oss-120b-1:0
+          title: Analyze Experiment
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+      type: object
+      title: AnalyzeExperimentLLMMapping
+    AnalyzeExperimentRequestBody:
+      properties:
+        research_hypothesis:
+          $ref: '#/components/schemas/ResearchHypothesis'
+        experimental_design:
+          $ref: '#/components/schemas/ExperimentalDesign-Input'
+        experiment_code:
+          $ref: '#/components/schemas/ExperimentCode'
+        experimental_results:
+          $ref: '#/components/schemas/ExperimentalResults'
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/AnalyzeExperimentLLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - research_hypothesis
+      - experimental_design
+      - experiment_code
+      - experimental_results
+      title: AnalyzeExperimentRequestBody
+    AnalyzeExperimentResponseBody:
+      properties:
+        experimental_analysis:
+          $ref: '#/components/schemas/ExperimentalAnalysis'
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - experimental_analysis
+      - execution_time
+      title: AnalyzeExperimentResponseBody
+    CompileLatexSubgraphRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        latex_template_name:
+          type: string
+          enum:
+          - iclr2024
+          - agents4science_2025
+          title: Latex Template Name
+          default: iclr2024
+      type: object
+      required:
+      - github_config
+      title: CompileLatexSubgraphRequestBody
+    CompileLatexSubgraphResponseBody:
+      properties:
+        compile_latex_dispatched:
+          type: boolean
+          title: Compile Latex Dispatched
+        paper_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Paper Url
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - compile_latex_dispatched
+      - paper_url
+      - execution_time
+      title: CompileLatexSubgraphResponseBody
+    DatasetConfig:
+      properties:
+        description:
+          type: string
+          title: Description
+        num_training_samples:
+          anyOf:
+          - type: integer
+          - type: string
+          title: Num Training Samples
+        num_validation_samples:
+          anyOf:
+          - type: integer
+          - type: string
+          title: Num Validation Samples
+        huggingface_url:
+          type: string
+          maxLength: 2083
+          minLength: 1
+          format: uri
+          title: Huggingface Url
+        dependent_packages:
+          items:
+            type: string
+          type: array
+          title: Dependent Packages
+        code:
+          type: string
+          title: Code
+        citation:
+          type: string
+          title: Citation
+        task_type:
+          items:
+            anyOf:
+            - type: string
+              const: text-generation
+            - type: string
+              enum:
+              - object-detection
+              - semantic-segmentation
+              - instance-segmentation
+              - panoptic-segmentation
+              - video-object-segmentation
+              - image-classification
+              - image-captioning
+              - image-embeddings
+              - face-detection
+              - face-verification
+              - face-identification
+              - few-shot-classification
+              - one-shot-classification
+              - facial-expression-recognition
+              - valence-arousal-prediction
+          type: array
+          title: Task Type
+        language_distribution:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Language Distribution
+        image_size:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Image Size
+        sample_data:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Sample Data
+      type: object
+      required:
+      - description
+      - num_training_samples
+      - num_validation_samples
+      - huggingface_url
+      - dependent_packages
+      - code
+      - citation
+      - task_type
+      title: DatasetConfig
+    EvaluationMetric:
+      properties:
+        name:
+          type: string
+          title: Name
+          description: Metric name
+        description:
+          type: string
+          title: Description
+          description: Detailed description including calculation method, correctness
+            criteria, task appropriateness, and relevant visualizations
+      type: object
+      required:
+      - name
+      - description
+      title: EvaluationMetric
+    ExecuteE2ERequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        query_list:
+          items:
+            type: string
+          type: array
+          title: Query List
+        runner_config:
+          $ref: '#/components/schemas/RunnerConfig'
+        wandb_config:
+          $ref: '#/components/schemas/WandbConfig'
+        is_private:
+          type: boolean
+          title: Is Private
+          default: false
+        max_results_per_query:
+          type: integer
+          title: Max Results Per Query
+          default: 5
+        refinement_rounds:
+          type: integer
+          title: Refinement Rounds
+          default: 1
+        num_models_to_use:
+          type: integer
+          title: Num Models To Use
+          default: 1
+        num_datasets_to_use:
+          type: integer
+          title: Num Datasets To Use
+          default: 1
+        num_comparative_methods:
+          type: integer
+          title: Num Comparative Methods
+          default: 0
+        max_code_validations:
+          type: integer
+          title: Max Code Validations
+          default: 3
+        writing_refinement_rounds:
+          type: integer
+          title: Writing Refinement Rounds
+          default: 2
+        latex_template_name:
+          type: string
+          title: Latex Template Name
+          default: iclr2024
+      type: object
+      required:
+      - github_config
+      - query_list
+      - runner_config
+      - wandb_config
+      title: ExecuteE2ERequestBody
+    ExecuteE2EResponseBody:
+      properties:
+        task_id:
+          type: string
+          title: Task Id
+        status:
+          type: string
+          title: Status
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+        research_history:
+          anyOf:
+          - $ref: '#/components/schemas/ResearchHistory-Output'
+          - type: 'null'
+      type: object
+      required:
+      - task_id
+      - status
+      title: ExecuteE2EResponseBody
+    ExecuteEvaluationRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+      type: object
+      required:
+      - github_config
+      title: ExecuteEvaluationRequestBody
+    ExecuteEvaluationResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - execution_time
+      title: ExecuteEvaluationResponseBody
+    ExecuteFullRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        run_ids:
+          items:
+            type: string
+          type: array
+          title: Run Ids
+      type: object
+      required:
+      - github_config
+      - run_ids
+      title: ExecuteFullRequestBody
+    ExecuteFullResponseBody:
+      properties:
+        all_dispatched:
+          type: boolean
+          title: All Dispatched
+        branch_creation_results:
+          items:
+            prefixItems:
+            - type: string
+            - type: string
+            - type: boolean
+            type: array
+            maxItems: 3
+            minItems: 3
+          type: array
+          title: Branch Creation Results
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - all_dispatched
+      - branch_creation_results
+      - execution_time
+      title: ExecuteFullResponseBody
+    ExecuteTrialRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+      type: object
+      required:
+      - github_config
+      title: ExecuteTrialRequestBody
+    ExecuteTrialResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        run_ids:
+          items:
+            type: string
+          type: array
+          title: Run Ids
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - run_ids
+      - execution_time
+      title: ExecuteTrialResponseBody
+    ExperimentCode:
+      properties:
+        train_py:
+          type: string
+          title: Train Py
+          default: ''
+        evaluate_py:
+          type: string
+          title: Evaluate Py
+          default: ''
+        preprocess_py:
+          type: string
+          title: Preprocess Py
+          default: ''
+        model_py:
+          type: string
+          title: Model Py
+          default: ''
+        main_py:
+          type: string
+          title: Main Py
+          default: ''
+        pyproject_toml:
+          type: string
+          title: Pyproject Toml
+          default: ''
+        config_yaml:
+          type: string
+          title: Config Yaml
+          default: ''
+        run_configs:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          title: Run Configs
+          description: Run configuration YAMLs keyed by run_id
+      type: object
+      title: ExperimentCode
+    ExperimentalAnalysis:
+      properties:
+        analysis_report:
+          type: string
+          title: Analysis Report
+          description: Overall analysis report text
+      type: object
+      required:
+      - analysis_report
+      title: ExperimentalAnalysis
+    ExperimentalDesign-Input:
+      properties:
+        experiment_summary:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Experiment Summary
+          description: Overall experimental design including task definition, data
+            handling approach, and implementation details
+        runner_config:
+          anyOf:
+          - $ref: '#/components/schemas/RunnerConfig'
+          - type: 'null'
+          description: Computational environment specification
+        evaluation_metrics:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/EvaluationMetric'
+            type: array
+          - type: 'null'
+          title: Evaluation Metrics
+          description: Evaluation metrics with detailed calculation methods and visualizations
+        models_to_use:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Models To Use
+          description: List of models to be used in the experiments
+        datasets_to_use:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Datasets To Use
+          description: List of datasets to be used in the experiments
+        proposed_method:
+          $ref: '#/components/schemas/MethodConfig-Input'
+          description: Configuration for the proposed method
+        comparative_methods:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/MethodConfig-Input'
+            type: array
+          - type: 'null'
+          title: Comparative Methods
+          description: Configurations for baseline/comparative methods
+      type: object
+      required:
+      - proposed_method
+      title: ExperimentalDesign
+    ExperimentalDesign-Output:
+      properties:
+        experiment_summary:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Experiment Summary
+          description: Overall experimental design including task definition, data
+            handling approach, and implementation details
+        runner_config:
+          anyOf:
+          - $ref: '#/components/schemas/RunnerConfig'
+          - type: 'null'
+          description: Computational environment specification
+        evaluation_metrics:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/EvaluationMetric'
+            type: array
+          - type: 'null'
+          title: Evaluation Metrics
+          description: Evaluation metrics with detailed calculation methods and visualizations
+        models_to_use:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Models To Use
+          description: List of models to be used in the experiments
+        datasets_to_use:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Datasets To Use
+          description: List of datasets to be used in the experiments
+        proposed_method:
+          $ref: '#/components/schemas/MethodConfig-Output'
+          description: Configuration for the proposed method
+        comparative_methods:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/MethodConfig-Output'
+            type: array
+          - type: 'null'
+          title: Comparative Methods
+          description: Configurations for baseline/comparative methods
+      type: object
+      required:
+      - proposed_method
+      title: ExperimentalDesign
+    ExperimentalResults:
+      properties:
+        stdout:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Stdout
+          description: Standard output from the run
+        stderr:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Stderr
+          description: Standard error from the run
+        figures:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Figures
+          description: Figures specific to this run
+        metrics_data:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Metrics Data
+          description: Metrics data for runs (keyed by run_id or 'comparison')
+      type: object
+      title: ExperimentalResults
+    FetchExperimentalResultsRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+      type: object
+      required:
+      - github_config
+      title: FetchExperimentalResultsRequestBody
+    FetchExperimentalResultsResponseBody:
+      properties:
+        experiment_results:
+          $ref: '#/components/schemas/ExperimentalResults'
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - experiment_results
+      - execution_time
+      title: FetchExperimentalResultsResponseBody
+    FetchRunIdsRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+      type: object
+      required:
+      - github_config
+      title: FetchRunIdsRequestBody
+    FetchRunIdsResponseBody:
+      properties:
+        run_ids:
+          items:
+            type: string
+          type: array
+          title: Run Ids
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - run_ids
+      - execution_time
+      title: FetchRunIdsResponseBody
+    GenerateBibfileSubgraphRequestBody:
+      properties:
+        research_study_list:
+          items:
+            $ref: '#/components/schemas/ResearchStudy'
+          type: array
+          title: Research Study List
+      type: object
+      required:
+      - research_study_list
+      title: GenerateBibfileSubgraphRequestBody
+    GenerateBibfileSubgraphResponseBody:
+      properties:
+        references_bib:
+          type: string
+          title: References Bib
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - references_bib
+      - execution_time
+      title: GenerateBibfileSubgraphResponseBody
+    GenerateCodeLLMMapping:
+      properties:
+        generate_run_config:
+          type: string
+          enum:
+          - o4-mini-2025-04-16
+          - o3-2025-04-16
+          - o3-mini-2025-01-31
+          - o1-pro-2025-03-19
+          - o1-2024-12-17
+          - gpt-5.1-2025-11-13
+          - gpt-5-pro-2025-10-06
+          - gpt-5-codex
+          - gpt-5-2025-08-07
+          - gpt-5-mini-2025-08-07
+          - gpt-5-nano-2025-08-07
+          - gpt-4.1-2025-04-14
+          - gpt-4o-2024-11-20
+          - gpt-4o-mini-2024-07-18
+          title: Generate Run Config
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+        generate_experiment_code:
+          type: string
+          enum:
+          - o4-mini-2025-04-16
+          - o3-2025-04-16
+          - o3-mini-2025-01-31
+          - o1-pro-2025-03-19
+          - o1-2024-12-17
+          - gpt-5.1-2025-11-13
+          - gpt-5-pro-2025-10-06
+          - gpt-5-codex
+          - gpt-5-2025-08-07
+          - gpt-5-mini-2025-08-07
+          - gpt-5-nano-2025-08-07
+          - gpt-4.1-2025-04-14
+          - gpt-4o-2024-11-20
+          - gpt-4o-mini-2024-07-18
+          title: Generate Experiment Code
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+        validate_experiment_code:
+          type: string
+          enum:
+          - o4-mini-2025-04-16
+          - o3-2025-04-16
+          - o3-mini-2025-01-31
+          - o1-pro-2025-03-19
+          - o1-2024-12-17
+          - gpt-5.1-2025-11-13
+          - gpt-5-pro-2025-10-06
+          - gpt-5-codex
+          - gpt-5-2025-08-07
+          - gpt-5-mini-2025-08-07
+          - gpt-5-nano-2025-08-07
+          - gpt-4.1-2025-04-14
+          - gpt-4o-2024-11-20
+          - gpt-4o-mini-2024-07-18
+          title: Validate Experiment Code
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+      type: object
+      title: GenerateCodeLLMMapping
+    GenerateCodeSubgraphRequestBody:
+      properties:
+        research_hypothesis:
+          $ref: '#/components/schemas/ResearchHypothesis'
+        experimental_design:
+          $ref: '#/components/schemas/ExperimentalDesign-Input'
+        wandb_config:
+          $ref: '#/components/schemas/WandbConfig'
+        max_code_validations:
+          type: integer
+          title: Max Code Validations
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateCodeLLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - research_hypothesis
+      - experimental_design
+      - wandb_config
+      - max_code_validations
+      title: GenerateCodeSubgraphRequestBody
+    GenerateCodeSubgraphResponseBody:
+      properties:
+        experiment_code:
+          $ref: '#/components/schemas/ExperimentCode'
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - experiment_code
+      - execution_time
+      title: GenerateCodeSubgraphResponseBody
+    GenerateExperimentalDesignLLMMapping:
+      properties:
+        generate_experimental_design:
+          anyOf:
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+          - type: string
+            enum:
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+          - type: string
+            enum:
+            - claude-opus-4-5
+            - claude-sonnet-4-5
+            - claude-haiku-4-5
+            - claude-opus-4-1
+            - claude-opus-4
+            - claude-sonnet-4
+            - claude-3-7-sonnet
+            - claude-3-5-haiku
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+            - anthropic/claude-opus-4.5
+            - anthropic/claude-sonnet-4.5
+            - anthropic/claude-haiku-4.5
+            - anthropic/claude-opus-4.1
+            - anthropic/claude-opus-4
+            - anthropic/claude-sonnet-4
+            - anthropic/claude-3.7-sonnet
+            - anthropic/claude-3.5-haiku
+          - type: string
+            enum:
+            - global.anthropic.claude-opus-4-5-20251101-v1:0
+            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-sonnet-4-20250514-v1:0
+            - global.anthropic.claude-haiku-4-5-20251001-v1:0
+            - openai.gpt-oss-120b-1:0
+          title: Generate Experimental Design
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+      type: object
+      title: GenerateExperimentalDesignLLMMapping
+    GenerateExperimentalDesignSubgraphRequestBody:
+      properties:
+        research_hypothesis:
+          $ref: '#/components/schemas/ResearchHypothesis'
+        runner_config:
+          $ref: '#/components/schemas/RunnerConfig'
+        num_models_to_use:
+          type: integer
+          title: Num Models To Use
+        num_datasets_to_use:
+          type: integer
+          title: Num Datasets To Use
+        num_comparative_methods:
+          type: integer
+          title: Num Comparative Methods
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateExperimentalDesignLLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - research_hypothesis
+      - runner_config
+      - num_models_to_use
+      - num_datasets_to_use
+      - num_comparative_methods
+      title: GenerateExperimentalDesignSubgraphRequestBody
+    GenerateExperimentalDesignSubgraphResponseBody:
+      properties:
+        experimental_design:
+          $ref: '#/components/schemas/ExperimentalDesign-Output'
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - experimental_design
+      - execution_time
+      title: GenerateExperimentalDesignSubgraphResponseBody
+    GenerateHypothesisSubgraphV0LLMMapping:
+      properties:
+        generate_hypothesis:
+          anyOf:
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+          - type: string
+            enum:
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+          - type: string
+            enum:
+            - claude-opus-4-5
+            - claude-sonnet-4-5
+            - claude-haiku-4-5
+            - claude-opus-4-1
+            - claude-opus-4
+            - claude-sonnet-4
+            - claude-3-7-sonnet
+            - claude-3-5-haiku
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+            - anthropic/claude-opus-4.5
+            - anthropic/claude-sonnet-4.5
+            - anthropic/claude-haiku-4.5
+            - anthropic/claude-opus-4.1
+            - anthropic/claude-opus-4
+            - anthropic/claude-sonnet-4
+            - anthropic/claude-3.7-sonnet
+            - anthropic/claude-3.5-haiku
+          - type: string
+            enum:
+            - global.anthropic.claude-opus-4-5-20251101-v1:0
+            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-sonnet-4-20250514-v1:0
+            - global.anthropic.claude-haiku-4-5-20251001-v1:0
+            - openai.gpt-oss-120b-1:0
+          title: Generate Hypothesis
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+        evaluate_novelty_and_significance:
+          anyOf:
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+          - type: string
+            enum:
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+          - type: string
+            enum:
+            - claude-opus-4-5
+            - claude-sonnet-4-5
+            - claude-haiku-4-5
+            - claude-opus-4-1
+            - claude-opus-4
+            - claude-sonnet-4
+            - claude-3-7-sonnet
+            - claude-3-5-haiku
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+            - anthropic/claude-opus-4.5
+            - anthropic/claude-sonnet-4.5
+            - anthropic/claude-haiku-4.5
+            - anthropic/claude-opus-4.1
+            - anthropic/claude-opus-4
+            - anthropic/claude-sonnet-4
+            - anthropic/claude-3.7-sonnet
+            - anthropic/claude-3.5-haiku
+          - type: string
+            enum:
+            - global.anthropic.claude-opus-4-5-20251101-v1:0
+            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-sonnet-4-20250514-v1:0
+            - global.anthropic.claude-haiku-4-5-20251001-v1:0
+            - openai.gpt-oss-120b-1:0
+          title: Evaluate Novelty And Significance
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+        refine_hypothesis:
+          anyOf:
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+          - type: string
+            enum:
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+          - type: string
+            enum:
+            - claude-opus-4-5
+            - claude-sonnet-4-5
+            - claude-haiku-4-5
+            - claude-opus-4-1
+            - claude-opus-4
+            - claude-sonnet-4
+            - claude-3-7-sonnet
+            - claude-3-5-haiku
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+            - anthropic/claude-opus-4.5
+            - anthropic/claude-sonnet-4.5
+            - anthropic/claude-haiku-4.5
+            - anthropic/claude-opus-4.1
+            - anthropic/claude-opus-4
+            - anthropic/claude-sonnet-4
+            - anthropic/claude-3.7-sonnet
+            - anthropic/claude-3.5-haiku
+          - type: string
+            enum:
+            - global.anthropic.claude-opus-4-5-20251101-v1:0
+            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-sonnet-4-20250514-v1:0
+            - global.anthropic.claude-haiku-4-5-20251001-v1:0
+            - openai.gpt-oss-120b-1:0
+          title: Refine Hypothesis
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+      type: object
+      title: GenerateHypothesisSubgraphV0LLMMapping
+    GenerateHypothesisSubgraphV0RequestBody:
+      properties:
+        research_objective:
+          type: string
+          title: Research Objective
+        research_study_list:
+          items:
+            $ref: '#/components/schemas/ResearchStudy'
+          type: array
+          title: Research Study List
+        refinement_rounds:
+          type: integer
+          title: Refinement Rounds
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateHypothesisSubgraphV0LLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - research_objective
+      - research_study_list
+      - refinement_rounds
+      title: GenerateHypothesisSubgraphV0RequestBody
+    GenerateHypothesisSubgraphV0ResponseBody:
+      properties:
+        research_hypothesis:
+          $ref: '#/components/schemas/ResearchHypothesis'
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - research_hypothesis
+      - execution_time
+      title: GenerateHypothesisSubgraphV0ResponseBody
+    GenerateLatexLLMMapping:
+      properties:
+        convert_to_latex:
+          anyOf:
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+          - type: string
+            enum:
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+          - type: string
+            enum:
+            - claude-opus-4-5
+            - claude-sonnet-4-5
+            - claude-haiku-4-5
+            - claude-opus-4-1
+            - claude-opus-4
+            - claude-sonnet-4
+            - claude-3-7-sonnet
+            - claude-3-5-haiku
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+            - anthropic/claude-opus-4.5
+            - anthropic/claude-sonnet-4.5
+            - anthropic/claude-haiku-4.5
+            - anthropic/claude-opus-4.1
+            - anthropic/claude-opus-4
+            - anthropic/claude-sonnet-4
+            - anthropic/claude-3.7-sonnet
+            - anthropic/claude-3.5-haiku
+          - type: string
+            enum:
+            - global.anthropic.claude-opus-4-5-20251101-v1:0
+            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-sonnet-4-20250514-v1:0
+            - global.anthropic.claude-haiku-4-5-20251001-v1:0
+            - openai.gpt-oss-120b-1:0
+          title: Convert To Latex
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+      type: object
+      title: GenerateLatexLLMMapping
+    GenerateLatexSubgraphRequestBody:
+      properties:
+        references_bib:
+          type: string
+          title: References Bib
+        paper_content:
+          $ref: '#/components/schemas/PaperContent'
+        latex_template_name:
+          type: string
+          enum:
+          - iclr2024
+          - agents4science_2025
+          title: Latex Template Name
+          default: iclr2024
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateLatexLLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - references_bib
+      - paper_content
+      title: GenerateLatexSubgraphRequestBody
+    GenerateLatexSubgraphResponseBody:
+      properties:
+        latex_text:
+          type: string
+          title: Latex Text
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - latex_text
+      - execution_time
+      title: GenerateLatexSubgraphResponseBody
+    GitHubConfig:
+      properties:
+        github_owner:
+          type: string
+          title: Github Owner
+          description: GitHub owner of the repository
+        repository_name:
+          type: string
+          title: Repository Name
+          description: Name of the repository
+        branch_name:
+          type: string
+          title: Branch Name
+          description: Branch name
+      type: object
+      required:
+      - github_owner
+      - repository_name
+      - branch_name
+      title: GitHubConfig
+    GithubDownloadRequest:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+      type: object
+      required:
+      - github_config
+      title: GithubDownloadRequest
+    GithubDownloadResponse:
+      properties:
+        research_history:
+          $ref: '#/components/schemas/ResearchHistory-Output'
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - research_history
+      - execution_time
+      title: GithubDownloadResponse
+    GithubUploadRequest:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        research_history:
+          $ref: '#/components/schemas/ResearchHistory-Input'
+        commit_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Commit Message
+      type: object
+      required:
+      - github_config
+      - research_history
+      title: GithubUploadRequest
+    GithubUploadResponse:
+      properties:
+        is_github_upload:
+          type: boolean
+          title: Is Github Upload
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - is_github_upload
+      - execution_time
+      title: GithubUploadResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    LLMExtractedInfo:
+      properties:
+        main_contributions:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Main Contributions
+          description: ''
+        methodology:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Methodology
+          description: ''
+        experimental_setup:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Experimental Setup
+          description: ''
+        limitations:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Limitations
+          description: ''
+        future_research_directions:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Future Research Directions
+          description: ''
+        experimental_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Experimental Code
+          description: ''
+        experimental_info:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Experimental Info
+          description: ''
+      type: object
+      title: LLMExtractedInfo
+    MetaData:
+      properties:
+        arxiv_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Arxiv Id
+          description: ''
+        doi:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Doi
+          description: ''
+        is_generated:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Generated
+          description: ''
+        authors:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Authors
+          description: ''
+        author_affiliations:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Author Affiliations
+          description: ''
+        language:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Language
+          description: ''
+        published_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Published Date
+          description: ''
+        venue:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Venue
+          description: ''
+        volume:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Volume
+          description: ''
+        issue:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Issue
+          description: ''
+        pages:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pages
+          description: ''
+        pdf_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pdf Url
+          description: ''
+        github_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Url
+          description: ''
+        peer_review_status:
+          anyOf:
+          - type: string
+            enum:
+            - 'yes'
+            - 'no'
+            - unknown
+          - type: 'null'
+          title: Peer Review Status
+          description: ''
+        access_type:
+          anyOf:
+          - type: string
+            enum:
+            - free
+            - paid
+            - unknown
+          - type: 'null'
+          title: Access Type
+          description: ''
+        reference_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Reference Count
+          description: ''
+        citation_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Citation Count
+          description: ''
+        h_index_relevance:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: H Index Relevance
+          description: ''
+      type: object
+      title: MetaData
+    MethodConfig-Input:
+      properties:
+        method_name:
+          type: string
+          title: Method Name
+          description: Name of the method (e.g., 'Proposed-v1', 'BERT-Baseline')
+        description:
+          type: string
+          title: Description
+          description: Brief description of the method mechanism
+        training_config:
+          anyOf:
+          - $ref: '#/components/schemas/TrainingConfig'
+          - type: 'null'
+          description: Training hyperparameters for this method
+        optuna_config:
+          anyOf:
+          - $ref: '#/components/schemas/OptunaConfig'
+          - type: 'null'
+          description: Hyperparameter search configuration for this method (includes
+            search spaces and trial settings)
+      type: object
+      required:
+      - method_name
+      - description
+      title: MethodConfig
+    MethodConfig-Output:
+      properties:
+        method_name:
+          type: string
+          title: Method Name
+          description: Name of the method (e.g., 'Proposed-v1', 'BERT-Baseline')
+        description:
+          type: string
+          title: Description
+          description: Brief description of the method mechanism
+        training_config:
+          anyOf:
+          - $ref: '#/components/schemas/TrainingConfig'
+          - type: 'null'
+          description: Training hyperparameters for this method
+        optuna_config:
+          anyOf:
+          - $ref: '#/components/schemas/OptunaConfig'
+          - type: 'null'
+          description: Hyperparameter search configuration for this method (includes
+            search spaces and trial settings)
+      type: object
+      required:
+      - method_name
+      - description
+      title: MethodConfig
+    ModelConfig:
+      properties:
+        model_parameters:
+          anyOf:
+          - $ref: '#/components/schemas/ModelParameters'
+          - type: string
+          title: Model Parameters
+        model_architecture:
+          type: string
+          title: Model Architecture
+        training_data_sources:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Training Data Sources
+        huggingface_url:
+          type: string
+          maxLength: 2083
+          minLength: 1
+          format: uri
+          title: Huggingface Url
+        input_modalities:
+          items:
+            type: string
+            enum:
+            - text
+            - image
+            - audio
+            - video
+            - tabular
+            - time_series
+            - graph
+            - embeddings
+          type: array
+          title: Input Modalities
+        dependent_packages:
+          items:
+            type: string
+          type: array
+          title: Dependent Packages
+        code:
+          type: string
+          title: Code
+        citation:
+          type: string
+          title: Citation
+        task_type:
+          anyOf:
+          - type: string
+            const: text-generation
+          - type: string
+            enum:
+            - object-detection
+            - semantic-segmentation
+            - instance-segmentation
+            - panoptic-segmentation
+            - video-object-segmentation
+            - image-classification
+            - image-captioning
+            - image-embeddings
+            - face-detection
+            - face-verification
+            - face-identification
+            - few-shot-classification
+            - one-shot-classification
+            - facial-expression-recognition
+            - valence-arousal-prediction
+          title: Task Type
+        output_modalities:
+          anyOf:
+          - items:
+              type: string
+              enum:
+              - text
+              - image
+              - audio
+              - video
+              - tabular
+              - time_series
+              - graph
+              - embeddings
+            type: array
+          - type: 'null'
+          title: Output Modalities
+        language_distribution:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Language Distribution
+        image_size:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Image Size
+      type: object
+      required:
+      - model_parameters
+      - model_architecture
+      - training_data_sources
+      - huggingface_url
+      - input_modalities
+      - dependent_packages
+      - code
+      - citation
+      - task_type
+      title: ModelConfig
+    ModelParameters:
+      properties:
+        total_parameters:
+          type: string
+          title: Total Parameters
+        active_parameters:
+          type: string
+          title: Active Parameters
+      type: object
+      required:
+      - total_parameters
+      - active_parameters
+      title: ModelParameters
+    OptunaConfig:
+      properties:
+        enabled:
+          type: boolean
+          title: Enabled
+          description: Whether to enable Optuna optimization
+          default: true
+        n_trials:
+          type: integer
+          title: N Trials
+          description: Number of Optuna trials to run
+          default: 20
+        search_spaces:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/SearchSpace'
+            type: array
+          - type: 'null'
+          title: Search Spaces
+          description: Hyperparameter search space definitions
+      type: object
+      title: OptunaConfig
+    PaperContent:
+      properties:
+        title:
+          type: string
+          minLength: 1
+          title: Title
+        abstract:
+          type: string
+          minLength: 1
+          title: Abstract
+        introduction:
+          type: string
+          minLength: 1
+          title: Introduction
+        related_work:
+          type: string
+          minLength: 1
+          title: Related Work
+        background:
+          type: string
+          minLength: 1
+          title: Background
+        method:
+          type: string
+          minLength: 1
+          title: Method
+        experimental_setup:
+          type: string
+          minLength: 1
+          title: Experimental Setup
+        results:
+          type: string
+          minLength: 1
+          title: Results
+        conclusion:
+          type: string
+          minLength: 1
+          title: Conclusion
+      type: object
+      required:
+      - title
+      - abstract
+      - introduction
+      - related_work
+      - background
+      - method
+      - experimental_setup
+      - results
+      - conclusion
+      title: PaperContent
+    PaperReviewScores:
+      properties:
+        novelty_score:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Novelty Score
+          description: Paper novelty score
+        significance_score:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Significance Score
+          description: Paper significance score
+        reproducibility_score:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Reproducibility Score
+          description: Paper reproducibility score
+        experimental_quality_score:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Experimental Quality Score
+          description: Paper experimental quality score
+      type: object
+      title: PaperReviewScores
+    PollGithubActionsRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+      type: object
+      required:
+      - github_config
+      title: PollGithubActionsRequestBody
+    PollGithubActionsResponseBody:
+      properties:
+        workflow_run_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Workflow Run Id
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+        conclusion:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Conclusion
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - workflow_run_id
+      - status
+      - conclusion
+      - execution_time
+      title: PollGithubActionsResponseBody
+    PrepareRepositorySubgraphRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        is_private:
+          type: boolean
+          title: Is Private
+      type: object
+      required:
+      - github_config
+      - is_private
+      title: PrepareRepositorySubgraphRequestBody
+    PrepareRepositorySubgraphResponseBody:
+      properties:
+        is_repository_ready:
+          type: boolean
+          title: Is Repository Ready
+        is_branch_ready:
+          type: boolean
+          title: Is Branch Ready
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - is_repository_ready
+      - is_branch_ready
+      - execution_time
+      title: PrepareRepositorySubgraphResponseBody
+    PushCodeSubgraphRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        experiment_code:
+          $ref: '#/components/schemas/ExperimentCode'
+      type: object
+      required:
+      - github_config
+      - experiment_code
+      title: PushCodeSubgraphRequestBody
+    PushCodeSubgraphResponseBody:
+      properties:
+        code_pushed:
+          type: boolean
+          title: Code Pushed
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - code_pushed
+      - execution_time
+      title: PushCodeSubgraphResponseBody
+    PushLatexSubgraphRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        latex_text:
+          type: string
+          title: Latex Text
+        latex_template_name:
+          type: string
+          enum:
+          - iclr2024
+          - agents4science_2025
+          title: Latex Template Name
+          default: iclr2024
+      type: object
+      required:
+      - github_config
+      - latex_text
+      title: PushLatexSubgraphRequestBody
+    PushLatexSubgraphResponseBody:
+      properties:
+        is_upload_successful:
+          type: boolean
+          title: Is Upload Successful
+        is_images_prepared:
+          type: boolean
+          title: Is Images Prepared
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - is_upload_successful
+      - is_images_prepared
+      - execution_time
+      title: PushLatexSubgraphResponseBody
+    ResearchHistory-Input:
+      properties:
+        research_objective:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Research Objective
+          description: Main research objective or topic
+        query_list:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Query List
+          description: List of search queries used for paper retrieval
+        research_study_list:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ResearchStudy'
+            type: array
+          - type: 'null'
+          title: Research Study List
+          description: List of main research studies analyzed
+        research_hypothesis:
+          anyOf:
+          - $ref: '#/components/schemas/ResearchHypothesis'
+          - type: 'null'
+          description: Research hypothesis generated
+        experimental_design:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentalDesign-Input'
+          - type: 'null'
+          description: Experimental design and methodology
+        experiment_code:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentCode'
+          - type: 'null'
+          description: Generated experiment code and implementation
+        experiment_results:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentalResults'
+          - type: 'null'
+          description: Results from running experiments
+        experimental_analysis:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentalAnalysis'
+          - type: 'null'
+          description: Analysis and interpretation of experimental results
+        paper_content:
+          anyOf:
+          - $ref: '#/components/schemas/PaperContent'
+          - type: 'null'
+          description: Generated paper content including sections and text
+        references_bib:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: References Bib
+          description: Bibliography references in BibTeX format
+        latex_text:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Latex Text
+          description: LaTeX formatted paper text
+        paper_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Paper Url
+          description: URL to the published or hosted paper
+        full_html:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Full Html
+          description: Full HTML content of the generated paper
+        github_pages_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Pages Url
+          description: GitHub Pages URL for the published paper
+        paper_review_scores:
+          anyOf:
+          - $ref: '#/components/schemas/PaperReviewScores'
+          - type: 'null'
+          description: Review scores and feedback for the paper
+        additional_data:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Additional Data
+          description: Additional data fields for future extensions
+      type: object
+      title: ResearchHistory
+    ResearchHistory-Output:
+      properties:
+        research_objective:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Research Objective
+          description: Main research objective or topic
+        query_list:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Query List
+          description: List of search queries used for paper retrieval
+        research_study_list:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ResearchStudy'
+            type: array
+          - type: 'null'
+          title: Research Study List
+          description: List of main research studies analyzed
+        research_hypothesis:
+          anyOf:
+          - $ref: '#/components/schemas/ResearchHypothesis'
+          - type: 'null'
+          description: Research hypothesis generated
+        experimental_design:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentalDesign-Output'
+          - type: 'null'
+          description: Experimental design and methodology
+        experiment_code:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentCode'
+          - type: 'null'
+          description: Generated experiment code and implementation
+        experiment_results:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentalResults'
+          - type: 'null'
+          description: Results from running experiments
+        experimental_analysis:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentalAnalysis'
+          - type: 'null'
+          description: Analysis and interpretation of experimental results
+        paper_content:
+          anyOf:
+          - $ref: '#/components/schemas/PaperContent'
+          - type: 'null'
+          description: Generated paper content including sections and text
+        references_bib:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: References Bib
+          description: Bibliography references in BibTeX format
+        latex_text:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Latex Text
+          description: LaTeX formatted paper text
+        paper_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Paper Url
+          description: URL to the published or hosted paper
+        full_html:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Full Html
+          description: Full HTML content of the generated paper
+        github_pages_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Pages Url
+          description: GitHub Pages URL for the published paper
+        paper_review_scores:
+          anyOf:
+          - $ref: '#/components/schemas/PaperReviewScores'
+          - type: 'null'
+          description: Review scores and feedback for the paper
+        additional_data:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Additional Data
+          description: Additional data fields for future extensions
+      type: object
+      title: ResearchHistory
+    ResearchHypothesis:
+      properties:
+        open_problems:
+          type: string
+          title: Open Problems
+        method:
+          type: string
+          title: Method
+        experimental_setup:
+          type: string
+          title: Experimental Setup
+        primary_metric:
+          type: string
+          title: Primary Metric
+        experimental_code:
+          type: string
+          title: Experimental Code
+        expected_result:
+          type: string
+          title: Expected Result
+        expected_conclusion:
+          type: string
+          title: Expected Conclusion
+      type: object
+      required:
+      - open_problems
+      - method
+      - experimental_setup
+      - primary_metric
+      - experimental_code
+      - expected_result
+      - expected_conclusion
+      title: ResearchHypothesis
+    ResearchStudy:
+      properties:
+        title:
+          type: string
+          title: Title
+          description: ''
+        full_text:
+          type: string
+          title: Full Text
+          description: ''
+        references:
+          anyOf:
+          - additionalProperties:
+              additionalProperties: true
+              type: object
+            type: object
+          - type: 'null'
+          title: References
+          description: ''
+        meta_data:
+          $ref: '#/components/schemas/MetaData'
+          description: ''
+        llm_extracted_info:
+          $ref: '#/components/schemas/LLMExtractedInfo'
+      type: object
+      required:
+      - title
+      - full_text
+      - meta_data
+      - llm_extracted_info
+      title: ResearchStudy
+    RetrieveDatasetsSubgraphRequestBody:
+      properties:
+        dataset_subfield:
+          type: string
+          enum:
+          - language_model_fine_tuning_datasets
+          - image_datasets
+          title: Dataset Subfield
+      type: object
+      required:
+      - dataset_subfield
+      title: RetrieveDatasetsSubgraphRequestBody
+    RetrieveDatasetsSubgraphResponseBody:
+      properties:
+        datasets_dict:
+          additionalProperties:
+            $ref: '#/components/schemas/DatasetConfig'
+          type: object
+          title: Datasets Dict
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - datasets_dict
+      - execution_time
+      title: RetrieveDatasetsSubgraphResponseBody
+    RetrieveModelsSubgraphRequestBody:
+      properties:
+        model_subfield:
+          type: string
+          enum:
+          - transformer_decoder_based_models
+          - image_models
+          - multi_modal_models
+          title: Model Subfield
+      type: object
+      required:
+      - model_subfield
+      title: RetrieveModelsSubgraphRequestBody
+    RetrieveModelsSubgraphResponseBody:
+      properties:
+        models_dict:
+          additionalProperties:
+            $ref: '#/components/schemas/ModelConfig'
+          type: object
+          title: Models Dict
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - models_dict
+      - execution_time
+      title: RetrieveModelsSubgraphResponseBody
+    RetrievePaperSubgraphRequestBody:
+      properties:
+        query_list:
+          items:
+            type: string
+          type: array
+          title: Query List
+        max_results_per_query:
+          type: integer
+          title: Max Results Per Query
+      type: object
+      required:
+      - query_list
+      - max_results_per_query
+      title: RetrievePaperSubgraphRequestBody
+    RetrievePaperSubgraphResponseBody:
+      properties:
+        research_study_list:
+          items:
+            items:
+              $ref: '#/components/schemas/ResearchStudy'
+            type: array
+          type: array
+          title: Research Study List
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - research_study_list
+      - execution_time
+      title: RetrievePaperSubgraphResponseBody
+    RunnerConfig:
+      properties:
+        runner_label:
+          items:
+            type: string
+          type: array
+          title: Runner Label
+          description: Runner labels used by GitHub Actions (e.g., ['ubuntu-latest']
+            or ['self-hosted', 'gpu-runner'])
+        description:
+          type: string
+          title: Description
+          description: Machine specifications and environment details for LLM to design
+            appropriate experiments
+      type: object
+      required:
+      - runner_label
+      - description
+      title: RunnerConfig
+    SearchSpace:
+      properties:
+        param_name:
+          type: string
+          title: Param Name
+          description: Parameter name to optimize
+        distribution_type:
+          type: string
+          title: Distribution Type
+          description: 'Distribution type: ''loguniform'', ''uniform'', ''int'', or
+            ''categorical'''
+        low:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Low
+          description: Lower bound for continuous/integer distributions
+        high:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: High
+          description: Upper bound for continuous/integer distributions
+        choices:
+          anyOf:
+          - items:
+              anyOf:
+              - type: string
+              - type: integer
+              - type: number
+            type: array
+          - type: 'null'
+          title: Choices
+          description: Choices for categorical distribution
+      type: object
+      required:
+      - param_name
+      - distribution_type
+      title: SearchSpace
+    SessionCreateRequest:
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Title
+        created_by:
+          type: string
+          format: uuid
+          title: Created By
+      type: object
+      required:
+      - title
+      - created_by
+      title: SessionCreateRequest
+    SessionResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        title:
+          type: string
+          title: Title
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - title
+      - created_at
+      title: SessionResponse
+    SessionStepCreateRequest:
+      properties:
+        session_id:
+          type: string
+          format: uuid
+          title: Session Id
+        step_type:
+          $ref: '#/components/schemas/SessionStepType'
+        content:
+          title: Content
+        schema_version:
+          type: integer
+          minimum: 1.0
+          title: Schema Version
+        created_by:
+          type: string
+          format: uuid
+          title: Created By
+        is_completed:
+          type: boolean
+          title: Is Completed
+          default: false
+      type: object
+      required:
+      - session_id
+      - step_type
+      - content
+      - schema_version
+      - created_by
+      title: SessionStepCreateRequest
+    SessionStepResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        session_id:
+          type: string
+          format: uuid
+          title: Session Id
+        step_type:
+          $ref: '#/components/schemas/SessionStepType'
+        content:
+          title: Content
+        schema_version:
+          type: integer
+          title: Schema Version
+        created_by:
+          type: string
+          format: uuid
+          title: Created By
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        is_completed:
+          type: boolean
+          title: Is Completed
+      type: object
+      required:
+      - id
+      - session_id
+      - step_type
+      - content
+      - schema_version
+      - created_by
+      - created_at
+      - is_completed
+      title: SessionStepResponse
+    SessionStepType:
+      type: string
+      enum:
+      - retrieve
+      - hypothesis
+      - design
+      - code
+      - experiment
+      - analysis
+      - write
+      - publish
+      - other
+      title: SessionStepType
+    StepRunLinkCreateRequest:
+      properties:
+        from_step_run_id:
+          type: string
+          format: uuid
+          title: From Step Run Id
+        to_step_run_id:
+          type: string
+          format: uuid
+          title: To Step Run Id
+      type: object
+      required:
+      - from_step_run_id
+      - to_step_run_id
+      title: StepRunLinkCreateRequest
+    StepRunLinkListResponse:
+      properties:
+        links:
+          items:
+            $ref: '#/components/schemas/StepRunLinkResponse'
+          type: array
+          title: Links
+      type: object
+      required:
+      - links
+      title: StepRunLinkListResponse
+    StepRunLinkResponse:
+      properties:
+        from_step_run_id:
+          type: string
+          format: uuid
+          title: From Step Run Id
+        to_step_run_id:
+          type: string
+          format: uuid
+          title: To Step Run Id
+      type: object
+      required:
+      - from_step_run_id
+      - to_step_run_id
+      title: StepRunLinkResponse
+    TrainingConfig:
+      properties:
+        learning_rate:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Learning Rate
+          description: Learning rate for training
+        batch_size:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Batch Size
+          description: Batch size for training
+        epochs:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Epochs
+          description: Number of training epochs
+        optimizer:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Optimizer
+          description: Optimizer (e.g., 'adam', 'adamw', 'sgd')
+        warmup_steps:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Warmup Steps
+          description: Number of warmup steps for learning rate scheduler
+        weight_decay:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Weight Decay
+          description: Weight decay for regularization
+        gradient_clip:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Gradient Clip
+          description: Gradient clipping value to prevent exploding gradients
+        scheduler:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Scheduler
+          description: Learning rate scheduler (e.g., 'linear', 'cosine')
+        seed:
+          type: integer
+          title: Seed
+          description: Random seed for reproducibility
+          default: 42
+        additional_params:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Additional Params
+          description: Additional experiment-specific parameters
+      type: object
+      title: TrainingConfig
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    WandbConfig:
+      properties:
+        entity:
+          type: string
+          title: Entity
+          description: Wandb entity (username or team name)
+        project:
+          type: string
+          title: Project
+          description: Wandb project name
+        run_ids:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Run Ids
+          description: List of Wandb run IDs (optional, can be retrieved from metadata)
+      type: object
+      required:
+      - entity
+      - project
+      title: WandbConfig
+    WriteLLMMapping:
+      properties:
+        write_paper:
+          anyOf:
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+          - type: string
+            enum:
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+          - type: string
+            enum:
+            - claude-opus-4-5
+            - claude-sonnet-4-5
+            - claude-haiku-4-5
+            - claude-opus-4-1
+            - claude-opus-4
+            - claude-sonnet-4
+            - claude-3-7-sonnet
+            - claude-3-5-haiku
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+            - anthropic/claude-opus-4.5
+            - anthropic/claude-sonnet-4.5
+            - anthropic/claude-haiku-4.5
+            - anthropic/claude-opus-4.1
+            - anthropic/claude-opus-4
+            - anthropic/claude-sonnet-4
+            - anthropic/claude-3.7-sonnet
+            - anthropic/claude-3.5-haiku
+          - type: string
+            enum:
+            - global.anthropic.claude-opus-4-5-20251101-v1:0
+            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-sonnet-4-20250514-v1:0
+            - global.anthropic.claude-haiku-4-5-20251001-v1:0
+            - openai.gpt-oss-120b-1:0
+          title: Write Paper
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+        refine_paper:
+          anyOf:
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+          - type: string
+            enum:
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+          - type: string
+            enum:
+            - claude-opus-4-5
+            - claude-sonnet-4-5
+            - claude-haiku-4-5
+            - claude-opus-4-1
+            - claude-opus-4
+            - claude-sonnet-4
+            - claude-3-7-sonnet
+            - claude-3-5-haiku
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+            - anthropic/claude-opus-4.5
+            - anthropic/claude-sonnet-4.5
+            - anthropic/claude-haiku-4.5
+            - anthropic/claude-opus-4.1
+            - anthropic/claude-opus-4
+            - anthropic/claude-sonnet-4
+            - anthropic/claude-3.7-sonnet
+            - anthropic/claude-3.5-haiku
+          - type: string
+            enum:
+            - global.anthropic.claude-opus-4-5-20251101-v1:0
+            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-sonnet-4-20250514-v1:0
+            - global.anthropic.claude-haiku-4-5-20251001-v1:0
+            - openai.gpt-oss-120b-1:0
+          title: Refine Paper
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+      type: object
+      title: WriteLLMMapping
+    WriteSubgraphRequestBody:
+      properties:
+        research_hypothesis:
+          $ref: '#/components/schemas/ResearchHypothesis'
+        experimental_design:
+          $ref: '#/components/schemas/ExperimentalDesign-Input'
+        experiment_code:
+          $ref: '#/components/schemas/ExperimentCode'
+        experimental_results:
+          $ref: '#/components/schemas/ExperimentalResults'
+        experimental_analysis:
+          $ref: '#/components/schemas/ExperimentalAnalysis'
+        research_study_list:
+          items:
+            $ref: '#/components/schemas/ResearchStudy'
+          type: array
+          title: Research Study List
+        references_bib:
+          type: string
+          title: References Bib
+        writing_refinement_rounds:
+          type: integer
+          title: Writing Refinement Rounds
+          default: 2
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/WriteLLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - research_hypothesis
+      - experimental_design
+      - experiment_code
+      - experimental_results
+      - experimental_analysis
+      - research_study_list
+      - references_bib
+      title: WriteSubgraphRequestBody
+    WriteSubgraphResponseBody:
+      properties:
+        paper_content:
+          $ref: '#/components/schemas/PaperContent'
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - paper_content
+      - execution_time
+      title: WriteSubgraphResponseBody
