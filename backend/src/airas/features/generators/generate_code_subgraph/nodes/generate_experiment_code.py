@@ -41,11 +41,7 @@ async def generate_experiment_code(
 
     # TODO: Implement support for reasoning_effort="high" (OpenAI o1/o3/o4) and thinking_budget (Anthropic extended thinking)
     # to leverage deeper reasoning capabilities for complex experiment code generation across providers.
-    if getattr(llm_name, "provider_type", None) == "openai":
-        params = OpenAIParams(reasoning_effort="high")
-    else:
-        # For non-OpenAI providers, do not pass OpenAI-specific params.
-        params = None
+    params = OpenAIParams(reasoning_effort="high")
     output, _ = await llm_client.structured_outputs(
         llm_name=llm_name,
         message=messages,
