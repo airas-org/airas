@@ -553,6 +553,213 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/sessions:
+    post:
+      tags:
+      - sessions
+      summary: Create Session
+      operationId: create_session_airas_v1_sessions_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionCreateRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/sessions/{session_id}:
+    get:
+      tags:
+      - sessions
+      summary: Get Session
+      operationId: get_session_airas_v1_sessions__session_id__get
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Session Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/session-steps:
+    post:
+      tags:
+      - session-steps
+      summary: Create Session Step
+      operationId: create_session_step_airas_v1_session_steps_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionStepCreateRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStepResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/session-steps/{step_id}:
+    get:
+      tags:
+      - session-steps
+      summary: Get Session Step
+      operationId: get_session_step_airas_v1_session_steps__step_id__get
+      parameters:
+      - name: step_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Step Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStepResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/step-run-links:
+    post:
+      tags:
+      - step-run-links
+      summary: Create Step Run Link
+      operationId: create_step_run_link_airas_v1_step_run_links_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StepRunLinkCreateRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepRunLinkResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/step-run-links/{from_step_run_id}:
+    get:
+      tags:
+      - step-run-links
+      summary: List Step Run Links By From Step Run Id
+      operationId: list_step_run_links_by_from_step_run_id_airas_v1_step_run_links__from_step_run_id__get
+      parameters:
+      - name: from_step_run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: From Step Run Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepRunLinkListResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/e2e/run:
+    post:
+      tags:
+      - e2e
+      summary: Execute E2E
+      operationId: execute_e2e_airas_v1_e2e_run_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteE2ERequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteE2EResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/e2e/status/{task_id}:
+    get:
+      tags:
+      - e2e
+      summary: Get E2E Status
+      operationId: get_e2e_status_airas_v1_e2e_status__task_id__get
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteE2EResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AnalyzeExperimentLLMMapping:
@@ -637,7 +844,7 @@ components:
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Analyze Experiment
-          default: gpt-5-mini-2025-08-07
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
       type: object
       title: AnalyzeExperimentLLMMapping
     AnalyzeExperimentRequestBody:
@@ -694,9 +901,9 @@ components:
       title: CompileLatexSubgraphRequestBody
     CompileLatexSubgraphResponseBody:
       properties:
-        is_compiled:
+        compile_latex_dispatched:
           type: boolean
-          title: Is Compiled
+          title: Compile Latex Dispatched
         paper_url:
           anyOf:
           - type: string
@@ -711,7 +918,7 @@ components:
           title: Execution Time
       type: object
       required:
-      - is_compiled
+      - compile_latex_dispatched
       - paper_url
       - execution_time
       title: CompileLatexSubgraphResponseBody
@@ -814,6 +1021,84 @@ components:
       - name
       - description
       title: EvaluationMetric
+    ExecuteE2ERequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        query_list:
+          items:
+            type: string
+          type: array
+          title: Query List
+        runner_config:
+          $ref: '#/components/schemas/RunnerConfig'
+        wandb_config:
+          $ref: '#/components/schemas/WandbConfig'
+        is_private:
+          type: boolean
+          title: Is Private
+          default: false
+        max_results_per_query:
+          type: integer
+          title: Max Results Per Query
+          default: 5
+        refinement_rounds:
+          type: integer
+          title: Refinement Rounds
+          default: 1
+        num_models_to_use:
+          type: integer
+          title: Num Models To Use
+          default: 1
+        num_datasets_to_use:
+          type: integer
+          title: Num Datasets To Use
+          default: 1
+        num_comparative_methods:
+          type: integer
+          title: Num Comparative Methods
+          default: 0
+        max_code_validations:
+          type: integer
+          title: Max Code Validations
+          default: 3
+        writing_refinement_rounds:
+          type: integer
+          title: Writing Refinement Rounds
+          default: 2
+        latex_template_name:
+          type: string
+          title: Latex Template Name
+          default: iclr2024
+      type: object
+      required:
+      - github_config
+      - query_list
+      - runner_config
+      - wandb_config
+      title: ExecuteE2ERequestBody
+    ExecuteE2EResponseBody:
+      properties:
+        task_id:
+          type: string
+          title: Task Id
+        status:
+          type: string
+          title: Status
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+        research_history:
+          anyOf:
+          - $ref: '#/components/schemas/ResearchHistory-Output'
+          - type: 'null'
+      type: object
+      required:
+      - task_id
+      - status
+      title: ExecuteE2EResponseBody
     ExecuteEvaluationRequestBody:
       properties:
         github_config:
@@ -1199,7 +1484,7 @@ components:
           - gpt-4o-2024-11-20
           - gpt-4o-mini-2024-07-18
           title: Generate Run Config
-          default: gpt-5-mini-2025-08-07
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
         generate_experiment_code:
           type: string
           enum:
@@ -1218,7 +1503,7 @@ components:
           - gpt-4o-2024-11-20
           - gpt-4o-mini-2024-07-18
           title: Generate Experiment Code
-          default: gpt-5-mini-2025-08-07
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
         validate_experiment_code:
           type: string
           enum:
@@ -1237,7 +1522,7 @@ components:
           - gpt-4o-2024-11-20
           - gpt-4o-mini-2024-07-18
           title: Validate Experiment Code
-          default: gpt-5-mini-2025-08-07
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
       type: object
       title: GenerateCodeLLMMapping
     GenerateCodeSubgraphRequestBody:
@@ -1360,7 +1645,7 @@ components:
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Generate Experimental Design
-          default: gpt-5-mini-2025-08-07
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
       type: object
       title: GenerateExperimentalDesignLLMMapping
     GenerateExperimentalDesignSubgraphRequestBody:
@@ -1488,7 +1773,7 @@ components:
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Generate Hypothesis
-          default: gpt-5-mini-2025-08-07
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
         evaluate_novelty_and_significance:
           anyOf:
           - type: string
@@ -1569,7 +1854,7 @@ components:
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Evaluate Novelty And Significance
-          default: gpt-5-mini-2025-08-07
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
         refine_hypothesis:
           anyOf:
           - type: string
@@ -1650,7 +1935,7 @@ components:
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Refine Hypothesis
-          default: gpt-5-mini-2025-08-07
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
       type: object
       title: GenerateHypothesisSubgraphV0LLMMapping
     GenerateHypothesisSubgraphV0RequestBody:
@@ -1667,13 +1952,14 @@ components:
           type: integer
           title: Refinement Rounds
         llm_mapping:
-          $ref: '#/components/schemas/GenerateHypothesisSubgraphV0LLMMapping'
+          anyOf:
+          - $ref: '#/components/schemas/GenerateHypothesisSubgraphV0LLMMapping'
+          - type: 'null'
       type: object
       required:
       - research_objective
       - research_study_list
       - refinement_rounds
-      - llm_mapping
       title: GenerateHypothesisSubgraphV0RequestBody
     GenerateHypothesisSubgraphV0ResponseBody:
       properties:
@@ -1773,7 +2059,7 @@ components:
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Convert To Latex
-          default: gpt-5-mini-2025-08-07
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
       type: object
       title: GenerateLatexLLMMapping
     GenerateLatexSubgraphRequestBody:
@@ -2428,9 +2714,9 @@ components:
       title: PushCodeSubgraphRequestBody
     PushCodeSubgraphResponseBody:
       properties:
-        files_pushed:
+        code_pushed:
           type: boolean
-          title: Files Pushed
+          title: Code Pushed
         execution_time:
           additionalProperties:
             items:
@@ -2440,7 +2726,7 @@ components:
           title: Execution Time
       type: object
       required:
-      - files_pushed
+      - code_pushed
       - execution_time
       title: PushCodeSubgraphResponseBody
     PushLatexSubgraphRequestBody:
@@ -2845,9 +3131,12 @@ components:
     RunnerConfig:
       properties:
         runner_label:
-          type: string
+          items:
+            type: string
+          type: array
           title: Runner Label
-          description: Runner label used by GitHub Actions (e.g., 'ubuntu-latest')
+          description: Runner labels used by GitHub Actions (e.g., ['ubuntu-latest']
+            or ['self-hosted', 'gpu-runner'])
         description:
           type: string
           title: Description
@@ -2897,6 +3186,164 @@ components:
       - param_name
       - distribution_type
       title: SearchSpace
+    SessionCreateRequest:
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Title
+        created_by:
+          type: string
+          format: uuid
+          title: Created By
+      type: object
+      required:
+      - title
+      - created_by
+      title: SessionCreateRequest
+    SessionResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        title:
+          type: string
+          title: Title
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - title
+      - created_at
+      title: SessionResponse
+    SessionStepCreateRequest:
+      properties:
+        session_id:
+          type: string
+          format: uuid
+          title: Session Id
+        step_type:
+          $ref: '#/components/schemas/SessionStepType'
+        content:
+          title: Content
+        schema_version:
+          type: integer
+          minimum: 1.0
+          title: Schema Version
+        created_by:
+          type: string
+          format: uuid
+          title: Created By
+        is_completed:
+          type: boolean
+          title: Is Completed
+          default: false
+      type: object
+      required:
+      - session_id
+      - step_type
+      - content
+      - schema_version
+      - created_by
+      title: SessionStepCreateRequest
+    SessionStepResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        session_id:
+          type: string
+          format: uuid
+          title: Session Id
+        step_type:
+          $ref: '#/components/schemas/SessionStepType'
+        content:
+          title: Content
+        schema_version:
+          type: integer
+          title: Schema Version
+        created_by:
+          type: string
+          format: uuid
+          title: Created By
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        is_completed:
+          type: boolean
+          title: Is Completed
+      type: object
+      required:
+      - id
+      - session_id
+      - step_type
+      - content
+      - schema_version
+      - created_by
+      - created_at
+      - is_completed
+      title: SessionStepResponse
+    SessionStepType:
+      type: string
+      enum:
+      - retrieve
+      - hypothesis
+      - design
+      - code
+      - experiment
+      - analysis
+      - write
+      - publish
+      - other
+      title: SessionStepType
+    StepRunLinkCreateRequest:
+      properties:
+        from_step_run_id:
+          type: string
+          format: uuid
+          title: From Step Run Id
+        to_step_run_id:
+          type: string
+          format: uuid
+          title: To Step Run Id
+      type: object
+      required:
+      - from_step_run_id
+      - to_step_run_id
+      title: StepRunLinkCreateRequest
+    StepRunLinkListResponse:
+      properties:
+        links:
+          items:
+            $ref: '#/components/schemas/StepRunLinkResponse'
+          type: array
+          title: Links
+      type: object
+      required:
+      - links
+      title: StepRunLinkListResponse
+    StepRunLinkResponse:
+      properties:
+        from_step_run_id:
+          type: string
+          format: uuid
+          title: From Step Run Id
+        to_step_run_id:
+          type: string
+          format: uuid
+          title: To Step Run Id
+      type: object
+      required:
+      - from_step_run_id
+      - to_step_run_id
+      title: StepRunLinkResponse
     TrainingConfig:
       properties:
         learning_rate:
@@ -3086,7 +3533,7 @@ components:
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Write Paper
-          default: gpt-5-mini-2025-08-07
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
         refine_paper:
           anyOf:
           - type: string
@@ -3167,7 +3614,7 @@ components:
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Refine Paper
-          default: gpt-5-mini-2025-08-07
+          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
       type: object
       title: WriteLLMMapping
     WriteSubgraphRequestBody:
