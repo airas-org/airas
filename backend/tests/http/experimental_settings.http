@@ -13,7 +13,7 @@ Content-Type: application/json
         "expected_conclusion": "Incorporating semantic novelty (MinHash-based), bootstrapped uncertainty, and adaptive regularization into the black-box LLM-in-the-loop prompt search objective materially improves generalization, search efficiency, and robustness compared to raw-accuracy ranking and to simple static regularization. The proposed approach preserves the core advantages of the original conversational hill-climb pipeline (no access to model internals, interpretable natural-language prompts, easy deployment) while addressing its main practical failure modes: overfitting, verbosity-driven token costs, and stagnation on trivial variants. Importantly, the adaptive component reduces manual tuning and makes the method broadly applicable across datasets and few-shot regimes. Because the design is lightweight and fully implementable in Python with local CLIP inference and budgeted validation, the hypothesis is empirically testable and practically relevant for researchers and practitioners seeking lower-cost, more reliable black-box prompt optimization."
     },
     "runner_config": {
-        "runner_label": "H200 144GM×1",
+        "runner_label": ["H200 144GM×1"],
         "description": "NVIDIA H200×1\n VRAM: 144GB×1\n RAM： 2048 GB or more"
     },
     "num_models_to_use": 2,
