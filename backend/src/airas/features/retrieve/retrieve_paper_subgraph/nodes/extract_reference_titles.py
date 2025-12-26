@@ -1,6 +1,5 @@
 import asyncio
 import string
-from collections.abc import Awaitable
 from logging import getLogger
 
 from jinja2 import Environment
@@ -62,11 +61,7 @@ async def _extract_references_from_text(
         )
         return []
     reference_titles = output.get("reference_titles", [])
-    logger.info(
-        "Found %s reference titles for %s.",
-        len(reference_titles),
-        context_label,
-    )
+    logger.info(f"Found {len(reference_titles)} reference titles for {context_label}.")
 
     return reference_titles
 
@@ -86,50 +81,33 @@ def _deduplicate_titles(reference_titles: list[str]) -> list[str]:
 async def extract_reference_titles(
     llm_name: LLM_MODELS,
     llm_client: LangChainClient,
-    arxiv_full_text_list: list[list[str]],
-) -> list[list[list[str]]]:
-    reference_groups: list[list[list[str]]] = [
-        [[] for _ in text_group] for text_group in arxiv_full_text_list
-    ]
-
-    tasks: list[Awaitable[list[str]]] = []
-    task_indices: list[tuple[int, int]] = []
-
-    for group_idx, text_group in enumerate(arxiv_full_text_list):
-        for paper_idx, full_text in enumerate(text_group):
-            if not full_text:
-                logger.warning(
-                    "Empty full_text encountered for group %s paper %s; skipping",
-                    group_idx,
-                    paper_idx,
-                )
-                continue
-            task_indices.append((group_idx, paper_idx))
-            tasks.append(
-                _extract_references_from_text(
-                    full_text=full_text,
-                    template=extract_reference_titles_prompt,
-                    llm_client=llm_client,
-                    llm_name=llm_name,
-                    context_label=f"group-{group_idx}-paper-{paper_idx}",
-                )
+    arxiv_full_text_list: list[str],
+) -> list[list[str]]:
+    async def _extract_for_paper(paper_idx: int, full_text: str) -> list[str]:
+        if not full_text:
+            logger.warning(
+                f"Empty full_text encountered for paper {paper_idx}; skipping"
             )
+            return []
+        refs = await _extract_references_from_text(
+            full_text=full_text,
+            template=extract_reference_titles_prompt,
+            llm_client=llm_client,
+            llm_name=llm_name,
+            context_label=f"paper-{paper_idx}",
+        )
+        return _deduplicate_titles(refs)
 
-    if not tasks:
-        logger.warning("No valid full_text values provided for reference extraction")
-        return reference_groups
-
-    results = await asyncio.gather(*tasks)
-    for (group_idx, paper_idx), reference_titles in zip(
-        task_indices, results, strict=True
-    ):
-        reference_groups[group_idx][paper_idx] = _deduplicate_titles(reference_titles)
-
-    total_references = sum(
-        len(reference_titles)
-        for group in reference_groups
-        for reference_titles in group
+    reference_list: list[list[str]] = list(
+        await asyncio.gather(
+            *(
+                _extract_for_paper(idx, text)
+                for idx, text in enumerate(arxiv_full_text_list)
+            )
+        )
     )
-    logger.info("Extracted %s reference titles across all papers", total_references)
 
-    return reference_groups
+    total_references = sum(len(refs) for refs in reference_list)
+    logger.info(f"Extracted {total_references} reference titles across all papers")
+
+    return reference_list

@@ -2,7 +2,7 @@ from airas.services.api_client.llm_specs import LLM_MODELS
 
 LLM_CONFIG_TYPE = dict[str, LLM_MODELS]
 
-BASE_MODEL: LLM_MODELS = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+BASE_MODEL: LLM_MODELS = "gpt-5-nano-2025-08-07"
 
 
 # fmt:off

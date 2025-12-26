@@ -1,11 +1,20 @@
-### Search paper by title
+### Search paper by queries
 
-GET http://127.0.0.1:8000/airas/v1/papers
+POST http://127.0.0.1:8000/airas/v1/papers/search
 Content-Type: application/json
 
 {
-    "query_list": ["LLM", "Optimizer"],
-    "max_results_per_query": 1
+    "queries": ["Diffusion model", "Optimizer"],
+    "max_results_per_query": 3
+}
+
+### Retrieve papers by titles
+
+POST http://127.0.0.1:8000/airas/v1/papers/retrieval
+Content-Type: application/json
+
+{
+    "paper_titles": ["Autoregressive Diffusion Models", "Blurring Diffusion Models", "Matryoshka Diffusion Models"]
 }
 
 ### Generate paper from research data

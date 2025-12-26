@@ -58,65 +58,39 @@ async def _extract_experimental_info_from_study(
 async def extract_experimental_info(
     llm_name: LLM_MODELS,
     llm_client: LangChainClient,
-    paper_summary_list: list[list[PaperSummary]],
-    github_code_list: list[list[str]],
+    paper_summary_list: list[PaperSummary],
+    github_code_list: list[str],
     prompt_template: str = extract_experimental_info_prompt,
     max_workers: int = 3,
-) -> tuple[list[list[str]], list[list[str]]]:
+) -> tuple[list[str], list[str]]:
     if len(paper_summary_list) != len(github_code_list):
         raise ValueError(
-            "paper_summary_list and github_code_list must contain the same number of query groups before extracting experimental info."
+            "paper_summary_list and github_code_list must have the same length."
         )
-    for idx, (study_group, code_group) in enumerate(
-        zip(paper_summary_list, github_code_list, strict=True)
-    ):
-        if len(study_group) != len(code_group):
-            raise ValueError(
-                f"paper_summary_list[{idx}] and github_code_list[{idx}] must contain the same number of items before extracting experimental info."
-            )
 
-    experimental_info_list: list[list[str]] = [
-        ["" for _ in group] for group in paper_summary_list
-    ]
-    experimental_code_list: list[list[str]] = [
-        ["" for _ in group] for group in paper_summary_list
-    ]
     semaphore = asyncio.Semaphore(max(1, max_workers))
 
     async def _run_task(
-        group_idx: int,
-        study_idx: int,
         paper_summary: PaperSummary,
         code_str: str,
-    ) -> None:
+    ) -> tuple[str, str]:
         async with semaphore:
-            (
-                experimental_info,
-                experimental_code,
-            ) = await _extract_experimental_info_from_study(
+            return await _extract_experimental_info_from_study(
                 paper_summary,
                 code_str,
                 prompt_template,
                 llm_client,
                 llm_name,
             )
-            experimental_info_list[group_idx][study_idx] = experimental_info
-            experimental_code_list[group_idx][study_idx] = experimental_code
 
-    tasks: list[asyncio.Task[None]] = []
-    for group_idx, (study_group, code_group) in enumerate(
-        zip(paper_summary_list, github_code_list, strict=True)
-    ):
-        for study_idx, (arxiv_summary, code_str) in enumerate(
-            zip(study_group, code_group, strict=True)
-        ):
-            tasks.append(
-                asyncio.create_task(
-                    _run_task(group_idx, study_idx, arxiv_summary, code_str)
-                )
-            )
+    results = await asyncio.gather(
+        *(
+            _run_task(summary, code)
+            for summary, code in zip(paper_summary_list, github_code_list, strict=True)
+        )
+    )
 
-    if tasks:
-        await asyncio.gather(*tasks)
+    experimental_info_list = [info for info, _ in results]
+    experimental_code_list = [code for _, code in results]
 
     return experimental_info_list, experimental_code_list
