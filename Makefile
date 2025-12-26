@@ -1,3 +1,4 @@
 .PHONY: generate-openapi
-generate-openapi:
-	cd backend && uv run python scripts/generate_openapi.py
+update-api:
+	cd backend && uv run python scripts/generate_openapi.py &&\
+	cd ../frontend && npm run generate-api
