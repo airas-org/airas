@@ -15,7 +15,7 @@ from airas.features.generators.generate_code_subgraph.nodes.validate_experiment_
     validate_experiment_code,
 )
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.openai_client import OPENAI_MODEL
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_design import ExperimentalDesign
 from airas.types.research_hypothesis import ResearchHypothesis
@@ -30,13 +30,12 @@ record_execution_time = lambda f: time_node("generate_code_subgraph")(f)  # noqa
 
 
 class GenerateCodeLLMMapping(BaseModel):
-    generate_run_config: OPENAI_MODEL = DEFAULT_NODE_LLMS["generate_run_config"]
-    generate_experiment_code: OPENAI_MODEL = DEFAULT_NODE_LLMS[
-        "generate_experiment_code"
-    ]
-    validate_experiment_code: OPENAI_MODEL = DEFAULT_NODE_LLMS[
-        "validate_experiment_code"
-    ]
+    # TODO: Support reasoning_effort="high" for OpenAI reasoning models (o1, o3, o4)
+    # and thinking_budget for Anthropic extended thinking models to improve code generation quality.
+    # Currently, OpenAIParams are passed but not utilized in LangChainClient.structured_outputs.
+    generate_run_config: LLM_MODELS = DEFAULT_NODE_LLMS["generate_run_config"]
+    generate_experiment_code: LLM_MODELS = DEFAULT_NODE_LLMS["generate_experiment_code"]
+    validate_experiment_code: LLM_MODELS = DEFAULT_NODE_LLMS["validate_experiment_code"]
 
 
 class GenerateCodeSubgraphInputState(TypedDict):

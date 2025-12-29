@@ -26,7 +26,7 @@ Content-Type: application/json
     "experimental_design": {
         "experiment_summary": "Compare adaptive learning rate methods (Adam, AdamW) against SGD with momentum on image classification tasks",
         "runner_config": {
-            "runner_label": "ubuntu-latest",
+            "runner_label": ["ubuntu-latest"],
             "description": "Standard GitHub Actions runner with 2-core CPU and 7 GB RAM"
         },
         "evaluation_metrics": [

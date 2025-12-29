@@ -8,9 +8,9 @@ from airas.features.generators.generate_code_subgraph.prompts.validate_experimen
 )
 from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.openai_client import (
-    OPENAI_MODEL,
     OpenAIParams,
 )
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_design import ExperimentalDesign
 from airas.types.research_hypothesis import ResearchHypothesis
@@ -25,7 +25,7 @@ class ValidationOutput(BaseModel):
 
 
 async def validate_experiment_code(
-    llm_name: OPENAI_MODEL,
+    llm_name: LLM_MODELS,
     llm_client: LangChainClient,
     research_hypothesis: ResearchHypothesis,
     experimental_design: ExperimentalDesign,
@@ -45,6 +45,8 @@ async def validate_experiment_code(
         }
     )
 
+    # TODO: Implement support for reasoning_effort="high" (OpenAI o1/o3/o4) and thinking_budget (Anthropic extended thinking)
+    # to leverage deeper reasoning capabilities for thorough code validation.
     params = OpenAIParams(reasoning_effort="high")
     output, _ = await llm_client.structured_outputs(
         llm_name=llm_name,
