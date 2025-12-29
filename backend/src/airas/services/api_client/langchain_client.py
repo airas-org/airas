@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 from typing import Any, get_args
 
@@ -9,17 +10,23 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 
-from airas.services.api_client.llm_client.llm_facade_client import LLMParams
 from airas.services.api_client.llm_specs import (
     ANTHROPIC_MODELS,
+    ANTHROPIC_MODELS_FOR_OPENROUTER,
     BEDROCK_MODELS,
     GOOGLE_MODELS,
     LLM_MODELS,
     OPENAI_MODELS,
     OPENROUTER_MODELS,
     PROVIDER_REQUIRED_ENV_VARS,
+    AnthropicParams,
+    GoogleGenAIParams,
+    LLMParams,
     LLMProvider,
+    OpenAIParams,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class MissingEnvironmentVariablesError(RuntimeError):
@@ -64,23 +71,19 @@ class LangChainClient:
             LLMProvider.BEDROCK,
         ]
 
-        for provider in provider_priority:
-            if provider not in self._available_providers:
-                continue
+        provider_models: dict[LLMProvider, tuple[str, ...]] = {
+            LLMProvider.OPENROUTER: get_args(OPENROUTER_MODELS),
+            LLMProvider.OPENAI: get_args(OPENAI_MODELS),
+            LLMProvider.ANTHROPIC: get_args(ANTHROPIC_MODELS),
+            LLMProvider.GOOGLE: get_args(GOOGLE_MODELS),
+            LLMProvider.BEDROCK: get_args(BEDROCK_MODELS),
+        }
 
-            if provider == LLMProvider.OPENROUTER and llm_name in get_args(
-                OPENROUTER_MODELS
+        for provider in provider_priority:
+            if (
+                provider in self._available_providers
+                and llm_name in provider_models.get(provider, ())
             ):
-                return provider
-            if provider == LLMProvider.OPENAI and llm_name in get_args(OPENAI_MODELS):
-                return provider
-            if provider == LLMProvider.GOOGLE and llm_name in get_args(GOOGLE_MODELS):
-                return provider
-            if provider == LLMProvider.ANTHROPIC and llm_name in get_args(
-                ANTHROPIC_MODELS
-            ):
-                return provider
-            if provider == LLMProvider.BEDROCK and llm_name in get_args(BEDROCK_MODELS):
                 return provider
 
         raise ValueError(
@@ -88,33 +91,81 @@ class LangChainClient:
             f"Available providers: {[p.value for p in self._available_providers]}"
         )
 
-    def _create_chat_model(self, llm_name: LLM_MODELS):
-        if llm_name in self._model_cache:
+    def _validate_params_for_model(
+        self, llm_name: LLM_MODELS, params: LLMParams | None
+    ) -> None:
+        if params is None:
+            return
+
+        model_to_params: list[tuple[tuple[str, ...], type[LLMParams]]] = [
+            (get_args(OPENAI_MODELS), OpenAIParams),
+            (get_args(GOOGLE_MODELS), GoogleGenAIParams),
+            (get_args(ANTHROPIC_MODELS), AnthropicParams),
+            (get_args(ANTHROPIC_MODELS_FOR_OPENROUTER), AnthropicParams),
+            (get_args(BEDROCK_MODELS), AnthropicParams),
+        ]
+
+        for models, expected_type in model_to_params:
+            if llm_name in models:
+                if not isinstance(params, expected_type):
+                    raise ValueError(
+                        f"Parameter type mismatch: model '{llm_name}' expects "
+                        f"{expected_type.__name__}, got {type(params).__name__}"
+                    )
+                return
+
+    def _get_langchain_kwargs(self, params: LLMParams | None) -> dict[str, Any]:
+        if params is None:
+            return {}
+
+        return {
+            k: v
+            for k, v in params.model_dump(exclude={"provider_type"}).items()
+            if v is not None
+        }
+
+    def _create_chat_model(self, llm_name: LLM_MODELS, params: LLMParams | None = None):
+        if params is None and llm_name in self._model_cache:
             return self._model_cache[llm_name]
 
         provider = self._select_provider_for_model(llm_name)
+        self._validate_params_for_model(llm_name, params)
+        langchain_kwargs = self._get_langchain_kwargs(params)
+
+        logger.info(
+            f"Creating chat model: llm_name={llm_name}, provider={provider.value}, "
+            f"params={params}, langchain_kwargs={langchain_kwargs}"
+        )
 
         if provider is LLMProvider.OPENROUTER:
             base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
             api_key = os.getenv("OPENROUTER_API_KEY")
 
             # NOTE: When using a Google model via OpenRouter, you must add the google/ prefix.
-            if llm_name in get_args(GOOGLE_MODELS):
-                llm_name = "google/" + llm_name
+            model_name = (
+                f"google/{llm_name}"
+                if llm_name in get_args(GOOGLE_MODELS)
+                else llm_name
+            )
 
-            model = ChatOpenAI(api_key=api_key, base_url=base_url, model=llm_name)
+            model = ChatOpenAI(
+                api_key=api_key,
+                base_url=base_url,
+                model=model_name,
+                **langchain_kwargs,
+            )
 
         elif provider is LLMProvider.OPENAI:
-            model = ChatOpenAI(model=llm_name)
+            model = ChatOpenAI(model=llm_name, **langchain_kwargs)
 
         elif provider is LLMProvider.GOOGLE:
-            model = ChatGoogleGenerativeAI(model=llm_name)
+            model = ChatGoogleGenerativeAI(model=llm_name, **langchain_kwargs)
 
         elif provider is LLMProvider.ANTHROPIC:
-            model = ChatAnthropic(model=llm_name)
+            model = ChatAnthropic(model=llm_name, **langchain_kwargs)
 
         elif provider is LLMProvider.BEDROCK:
-            # https://reference.langchain.com/python/integrations/langchain_aws/?_gl=1*d30ods*_gcl_au*MjA5NzEyNjYxMC4xNzY1NDI5NTc3*_ga*MjE0MTg1OTk2LjE3NjU0Mjk1Nzc.*_ga_47WX3HKKY2*czE3NjU0NjA2ODEkbzMkZzEkdDE3NjU0NjE0NTQkajYwJGwwJGgw
+            # https://reference.langchain.com/python/integrations/langchain_aws/
             region_name = os.getenv("AWS_REGION_NAME", "us-east-1")
 
             # Configure retry strategy with exponential backoff for throttling errors
@@ -123,20 +174,23 @@ class LangChainClient:
                 read_timeout=300,
                 connect_timeout=60,
                 retries={
-                    "max_attempts": 10,  # Increased from default 4
-                    "mode": "adaptive",  # Use adaptive retry mode for better throttling handling
+                    "max_attempts": 10,
+                    "mode": "adaptive",
                 },
             )
             model = ChatBedrockConverse(
                 model_id=llm_name,
                 region_name=region_name,
                 config=bedrock_config,
+                **langchain_kwargs,
             )
 
         else:
             raise ValueError(f"Unsupported provider: {provider}")
 
-        self._model_cache[llm_name] = model
+        if params is None:
+            self._model_cache[llm_name] = model
+
         return model
 
     async def generate(
@@ -153,7 +207,7 @@ class LangChainClient:
         Returns:
             tuple[str, float]: A tuple containing the generated response as a string and a float representing the cost (currently always 0.0).
         """
-        model = self._create_chat_model(llm_name)
+        model = self._create_chat_model(llm_name, params)
         response = await model.ainvoke(message)
         return response.content, 0.0
 
@@ -178,7 +232,7 @@ class LangChainClient:
         """
         # TODO: The model's max output tokens may cause truncated responses for large structured outputs,
         # resulting in validation errors when required fields are missing such as PaperContent.
-        model = self._create_chat_model(llm_name)
+        model = self._create_chat_model(llm_name, params)
         model_with_structure = model.with_structured_output(
             schema=data_model, method="json_schema"
         )

@@ -7,10 +7,7 @@ from airas.features.generators.generate_code_subgraph.prompts.validate_experimen
     validate_experiment_code_prompt,
 )
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.openai_client import (
-    OPENAI_MODEL,
-    OpenAIParams,
-)
+from airas.services.api_client.llm_specs import LLM_MODELS, LLMParams
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_design import ExperimentalDesign
 from airas.types.research_hypothesis import ResearchHypothesis
@@ -25,13 +22,14 @@ class ValidationOutput(BaseModel):
 
 
 async def validate_experiment_code(
-    llm_name: OPENAI_MODEL,
+    llm_name: LLM_MODELS,
     llm_client: LangChainClient,
     research_hypothesis: ResearchHypothesis,
     experimental_design: ExperimentalDesign,
     experiment_code: ExperimentCode,
     wandb_config: WandbConfig,
     prompt_template: str = validate_experiment_code_prompt,
+    params: LLMParams | None = None,
 ) -> tuple[bool, str]:
     env = Environment()
     template = env.from_string(prompt_template)
@@ -45,7 +43,6 @@ async def validate_experiment_code(
         }
     )
 
-    params = OpenAIParams(reasoning_effort="high")
     output, _ = await llm_client.structured_outputs(
         llm_name=llm_name,
         message=messages,

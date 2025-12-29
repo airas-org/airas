@@ -8,10 +8,7 @@ from airas.features.generators.generate_code_subgraph.prompts.generate_run_confi
     generate_run_config_prompt,
 )
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.openai_client import (
-    OPENAI_MODEL,
-    OpenAIParams,
-)
+from airas.services.api_client.llm_specs import LLM_MODELS, LLMParams
 from airas.types.experimental_design import ExperimentalDesign
 from airas.types.research_hypothesis import ResearchHypothesis
 
@@ -34,10 +31,11 @@ class RunConfigListOutput(BaseModel):
 
 
 async def generate_run_config(
-    llm_name: OPENAI_MODEL,
+    llm_name: LLM_MODELS,
     llm_client: LangChainClient,
     research_hypothesis: ResearchHypothesis,
     experimental_design: ExperimentalDesign,
+    params: LLMParams | None = None,
 ) -> dict[str, str]:
     env = Environment()
     template = env.from_string(generate_run_config_prompt)
@@ -50,7 +48,6 @@ async def generate_run_config(
 
     logger.info("Generating run configs using LLM...")
 
-    params = OpenAIParams(reasoning_effort="high")
     output, _ = await llm_client.structured_outputs(
         llm_name=llm_name,
         message=messages,

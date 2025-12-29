@@ -4,7 +4,7 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
-from airas.config.llm_config import DEFAULT_NODE_LLMS
+from airas.config.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.features.generators.generate_code_subgraph.nodes.generate_experiment_code import (
     generate_experiment_code,
 )
@@ -15,7 +15,6 @@ from airas.features.generators.generate_code_subgraph.nodes.validate_experiment_
     validate_experiment_code,
 )
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.openai_client import OPENAI_MODEL
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_design import ExperimentalDesign
 from airas.types.research_hypothesis import ResearchHypothesis
@@ -30,11 +29,11 @@ record_execution_time = lambda f: time_node("generate_code_subgraph")(f)  # noqa
 
 
 class GenerateCodeLLMMapping(BaseModel):
-    generate_run_config: OPENAI_MODEL = DEFAULT_NODE_LLMS["generate_run_config"]
-    generate_experiment_code: OPENAI_MODEL = DEFAULT_NODE_LLMS[
+    generate_run_config: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["generate_run_config"]
+    generate_experiment_code: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
         "generate_experiment_code"
     ]
-    validate_experiment_code: OPENAI_MODEL = DEFAULT_NODE_LLMS[
+    validate_experiment_code: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
         "validate_experiment_code"
     ]
 
@@ -82,11 +81,13 @@ class GenerateCodeSubgraph:
     async def _generate_run_config(
         self, state: GenerateCodeSubgraphState
     ) -> dict[str, ExperimentCode]:
+        config = self.llm_mapping.generate_run_config
         run_configs = await generate_run_config(
-            llm_name=self.llm_mapping.generate_run_config,
+            llm_name=config.llm_name,
             llm_client=self.langchain_client,
             research_hypothesis=state["research_hypothesis"],
             experimental_design=state["experimental_design"],
+            params=config.params,
         )
         return {"experiment_code": ExperimentCode(run_configs=run_configs)}
 
@@ -95,15 +96,17 @@ class GenerateCodeSubgraph:
         self, state: GenerateCodeSubgraphState
     ) -> dict[str, ExperimentCode]:
         current_run_configs = state.get("experiment_code").run_configs
+        config = self.llm_mapping.generate_experiment_code
 
         generated_code = await generate_experiment_code(
-            llm_name=self.llm_mapping.generate_experiment_code,
+            llm_name=config.llm_name,
             llm_client=self.langchain_client,
             research_hypothesis=state["research_hypothesis"],
             experimental_design=state["experimental_design"],
             experiment_code=state.get("experiment_code"),
             wandb_config=self.wandb_config,
             code_validation=state.get("code_validation"),
+            params=config.params,
         )
         generated_code.run_configs = current_run_configs
 
@@ -113,13 +116,15 @@ class GenerateCodeSubgraph:
     async def _validate_experiment_code(
         self, state: GenerateCodeSubgraphState
     ) -> dict[str, tuple[bool, str] | int]:
+        config = self.llm_mapping.validate_experiment_code
         code_validation = await validate_experiment_code(
-            llm_name=self.llm_mapping.validate_experiment_code,
+            llm_name=config.llm_name,
             llm_client=self.langchain_client,
             research_hypothesis=state["research_hypothesis"],
             experimental_design=state["experimental_design"],
             experiment_code=state.get("experiment_code"),
             wandb_config=self.wandb_config,
+            params=config.params,
         )
         return {
             "code_validation": code_validation,
