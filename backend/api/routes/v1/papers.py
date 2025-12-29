@@ -24,7 +24,7 @@ from api.schemas.papers import (
 router = APIRouter(prefix="/papers", tags=["papers"])
 
 
-@router.get("", response_model=RetrievePaperSubgraphResponseBody)
+@router.post("", response_model=RetrievePaperSubgraphResponseBody)
 @inject
 @observe()
 async def get_paper_title(

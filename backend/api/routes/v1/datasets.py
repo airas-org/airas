@@ -17,7 +17,7 @@ from api.schemas.datasets import (
 router = APIRouter(prefix="/datasets", tags=["datasets"])
 
 
-@router.get("", response_model=RetrieveDatasetsSubgraphResponseBody)
+@router.post("", response_model=RetrieveDatasetsSubgraphResponseBody)
 @inject
 @observe()
 async def retrieve_datasets(
