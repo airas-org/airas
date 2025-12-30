@@ -1,6 +1,6 @@
-from airas.services.api_client.llm_specs import LLM_MODELS
+from airas.services.api_client.llm_specs import LLM_MODELS, OPENAI_MODELS
 
-LLM_CONFIG_TYPE = dict[str, LLM_MODELS]
+LLM_CONFIG_TYPE = dict[str, LLM_MODELS | OPENAI_MODELS]
 
 BASE_MODEL: LLM_MODELS = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
 

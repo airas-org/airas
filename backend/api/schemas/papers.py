@@ -1,5 +1,8 @@
 from pydantic import BaseModel
 
+from airas.features.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
+    RetrievePaperSubgraphLLMMapping,
+)
 from airas.features.writers.write_subgraph.write_subgraph import WriteLLMMapping
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_analysis import ExperimentalAnalysis
@@ -13,6 +16,7 @@ from airas.types.research_study import ResearchStudy
 class RetrievePaperSubgraphRequestBody(BaseModel):
     query_list: list[str]
     max_results_per_query: int
+    llm_mapping: RetrievePaperSubgraphLLMMapping | None = None
 
 
 class RetrievePaperSubgraphResponseBody(BaseModel):

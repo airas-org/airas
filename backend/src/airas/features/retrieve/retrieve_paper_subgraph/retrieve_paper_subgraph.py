@@ -49,10 +49,7 @@ from airas.features.retrieve.retrieve_paper_subgraph.prompt.summarize_paper_prom
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLMFacadeClient,
-)
-from airas.services.api_client.llm_specs import LLM_MODELS
+from airas.services.api_client.llm_specs import LLM_MODELS, OPENAI_MODELS
 from airas.types.arxiv import ArxivInfo
 from airas.types.research_study import LLMExtractedInfo, MetaData, ResearchStudy
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -65,7 +62,7 @@ record_execution_time = lambda f: time_node("retrieve_paper_subgraph")(f)  # noq
 
 
 class RetrievePaperSubgraphLLMMapping(BaseModel):
-    search_arxiv_id_from_title: LLM_MODELS = DEFAULT_NODE_LLMS[
+    search_arxiv_id_from_title: OPENAI_MODELS = DEFAULT_NODE_LLMS[
         "search_arxiv_id_from_title"
     ]
     summarize_paper: LLM_MODELS = DEFAULT_NODE_LLMS["summarize_paper"]
@@ -105,18 +102,17 @@ class RetrievePaperSubgraphState(
 class RetrievePaperSubgraph:
     def __init__(
         self,
-        llm_client: LLMFacadeClient,
         langchain_client: LangChainClient,
         arxiv_client: ArxivClient,
         github_client: GithubClient,
         max_results_per_query: int = 3,
+        llm_mapping: RetrievePaperSubgraphLLMMapping | None = None,
     ):
-        self.llm_client = llm_client
         self.langchain_client = langchain_client
         self.arxiv_client = arxiv_client
         self.github_client = github_client
         self.max_results_per_query = max_results_per_query
-        self.llm_mapping = RetrievePaperSubgraphLLMMapping()
+        self.llm_mapping = llm_mapping or RetrievePaperSubgraphLLMMapping()
 
     @record_execution_time
     def _get_paper_titles_from_airas_db(
@@ -142,7 +138,7 @@ class RetrievePaperSubgraph:
     ) -> dict[str, Any]:
         arxiv_id_list = await search_arxiv_id_from_title(
             llm_name=self.llm_mapping.search_arxiv_id_from_title,
-            llm_client=self.llm_client,
+            llm_client=self.langchain_client,
             prompt_template=openai_websearch_arxiv_ids_prompt,
             retrieve_paper_title_list=state.get("retrieve_paper_title_list", []),
         )

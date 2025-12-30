@@ -1,25 +1,26 @@
 import asyncio
+import json
 import logging
 
 from jinja2 import Environment
 
-from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
-from airas.services.api_client.llm_client.openai_client import OPENAI_MODEL
+from airas.services.api_client.langchain_client import LangChainClient
+from airas.services.api_client.llm_specs import OPENAI_MODELS
 
 logger = logging.getLogger(__name__)
 
-OPENAI_MODEL_SET = set(OPENAI_MODEL.__args__)
+OPENAI_MODELS_SET = set(OPENAI_MODELS.__args__)
 
 
 async def search_arxiv_id_from_title(
-    llm_name: OPENAI_MODEL,
-    llm_client: LLMFacadeClient,
+    llm_name: OPENAI_MODELS,
+    llm_client: LangChainClient,
     prompt_template: str,
     retrieve_paper_title_list: list[list[str]],
     conference_preference: str | None = None,
 ) -> list[list[str]]:
     # TODO:Reflect the following judgment logic in llm_config.py.
-    if llm_name not in OPENAI_MODEL_SET:
+    if llm_name not in OPENAI_MODELS_SET:
         raise ValueError(
             f"It needs to be an OpenAI model. Invalid model name: {llm_name}"
         )
@@ -35,7 +36,9 @@ async def search_arxiv_id_from_title(
             }
         )
         try:
-            output, _ = await llm_client.web_search(message=prompt, llm_name=llm_name)
+            output, _ = await llm_client.generate(
+                message=prompt, llm_name=llm_name, web_search=True
+            )
         except Exception as e:
             logger.error(
                 "Web search failed for '%s': %s. Appending empty result.",
@@ -44,13 +47,17 @@ async def search_arxiv_id_from_title(
             )
             return ""
 
-        if not output or not isinstance(output, dict):
+        output_dict: dict | None = None
+        for output_item in output:
+            if output_item.get("text"):
+                output_dict = json.loads(output_item.get("text"))
+        if not output_dict:
             logger.warning(
                 "No output received for '%s'. Appending empty result.", title
             )
             return ""
 
-        arxiv_id = output.get("arxiv_id", "").strip()
+        arxiv_id = output_dict.get("arxiv_id", "").strip()
         if not arxiv_id:
             logger.warning("No arXiv ID found for '%s'.", title)
             return ""

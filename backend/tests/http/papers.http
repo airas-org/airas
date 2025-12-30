@@ -1,11 +1,18 @@
 ### Search paper by title
 
-GET http://127.0.0.1:8000/airas/v1/papers
+POST http://127.0.0.1:8000/airas/v1/papers
 Content-Type: application/json
 
 {
     "query_list": ["LLM", "Optimizer"],
-    "max_results_per_query": 1
+    "max_results_per_query": 1,
+    "llm_mapping": {
+        "search_arxiv_id_from_title": "gpt-5-mini-2025-08-07",
+        "summarize_paper": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "extract_github_url_from_text": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "extract_experimental_info": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "extract_reference_titles": "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+    }
 }
 
 ### Generate paper from research data
