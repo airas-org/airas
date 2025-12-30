@@ -106,7 +106,7 @@ class RetrievePaperSubgraph:
         arxiv_client: ArxivClient,
         github_client: GithubClient,
         max_results_per_query: int = 3,
-        llm_mapping: RetrievePaperSubgraphLLMMapping = None,
+        llm_mapping: RetrievePaperSubgraphLLMMapping | None = None,
     ):
         self.langchain_client = langchain_client
         self.arxiv_client = arxiv_client
