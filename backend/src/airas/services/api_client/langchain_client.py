@@ -35,7 +35,7 @@ class MissingEnvironmentVariablesError(RuntimeError):
 
 class LangChainClient:
     def __init__(self) -> None:
-        self._model_cache: dict[str, object] = {}
+        self._model_cache: dict[tuple[LLM_MODELS, bool], object] = {}
         self._available_providers: set[LLMProvider] = self._detect_available_providers()
 
     def _detect_available_providers(self) -> set[LLMProvider]:
@@ -88,9 +88,11 @@ class LangChainClient:
             f"Available providers: {[p.value for p in self._available_providers]}"
         )
 
-    def _create_chat_model(self, llm_name: LLM_MODELS):
-        if llm_name in self._model_cache:
-            return self._model_cache[llm_name]
+    def _create_chat_model(self, llm_name: LLM_MODELS, web_search: bool = False) -> Any:
+        cache_key = (llm_name, web_search)
+
+        if cache_key in self._model_cache:
+            return self._model_cache[cache_key]
 
         provider = self._select_provider_for_model(llm_name)
 
@@ -106,6 +108,8 @@ class LangChainClient:
 
         elif provider is LLMProvider.OPENAI:
             model = ChatOpenAI(model=llm_name)
+            if web_search:
+                model = model.bind_tools([{"type": "web_search"}])
 
         elif provider is LLMProvider.GOOGLE:
             model = ChatGoogleGenerativeAI(model=llm_name)
@@ -136,11 +140,15 @@ class LangChainClient:
         else:
             raise ValueError(f"Unsupported provider: {provider}")
 
-        self._model_cache[llm_name] = model
+        self._model_cache[cache_key] = model
         return model
 
     async def generate(
-        self, message: str, llm_name: LLM_MODELS, params: LLMParams | None = None
+        self,
+        message: str,
+        llm_name: LLM_MODELS,
+        params: LLMParams | None = None,
+        web_search: bool = False,
     ) -> tuple[str, float]:
         """
         Generate a response from the specified language model given an input message.
@@ -149,11 +157,11 @@ class LangChainClient:
             message (str): The input message to send to the language model.
             llm_name (LLM_MODEL): The name of the language model to use.
             params (LLMParams | None, optional): Additional parameters for the language model. Defaults to None.
-
+            web_search (bool, optional): Whether to enable web search tools. Defaults to False.
         Returns:
             tuple[str, float]: A tuple containing the generated response as a string and a float representing the cost (currently always 0.0).
         """
-        model = self._create_chat_model(llm_name)
+        model = self._create_chat_model(llm_name, web_search)
         response = await model.ainvoke(message)
         return response.content, 0.0
 
