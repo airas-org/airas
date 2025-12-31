@@ -4,11 +4,11 @@ info:
   version: 0.0.1
 paths:
   /airas/v1/papers:
-    get:
+    post:
       tags:
       - papers
       summary: Get Paper Title
-      operationId: get_paper_title_airas_v1_papers_get
+      operationId: get_paper_title_airas_v1_papers_post
       requestBody:
         content:
           application/json:
@@ -54,11 +54,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/models:
-    get:
+    post:
       tags:
       - models
       summary: Retrieve Models
-      operationId: retrieve_models_airas_v1_models_get
+      operationId: retrieve_models_airas_v1_models_post
       requestBody:
         content:
           application/json:
@@ -79,11 +79,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/datasets:
-    get:
+    post:
       tags:
       - datasets
       summary: Retrieve Datasets
-      operationId: retrieve_datasets_airas_v1_datasets_get
+      operationId: retrieve_datasets_airas_v1_datasets_post
       requestBody:
         content:
           application/json:

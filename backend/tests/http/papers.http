@@ -10,7 +10,7 @@ Content-Type: application/json
 
 ### Retrieve papers by titles
 
-POST http://127.0.0.1:8000/airas/v1/papers/retrieval
+POST http://127.0.0.1:8001/airas/v1/papers/retrieval
 Content-Type: application/json
 
 {
@@ -35,7 +35,7 @@ Content-Type: application/json
     "experimental_design": {
         "experiment_summary": "Compare adaptive learning rate methods (Adam, AdamW) against SGD with momentum on image classification tasks",
         "runner_config": {
-            "runner_label": "ubuntu-latest",
+            "runner_label": ["ubuntu-latest"],
             "description": "Standard GitHub Actions runner with 2-core CPU and 7 GB RAM"
         },
         "evaluation_metrics": [

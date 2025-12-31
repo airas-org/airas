@@ -19,7 +19,6 @@ from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.langfuse_client import LangfuseClient
-from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
 from api.schemas.papers import (
     RetrievePaperSubgraphRequestBody,
     RetrievePaperSubgraphResponseBody,
@@ -81,9 +80,6 @@ async def search_paper_titles(
 @observe()
 async def get_paper_title(
     request: RetrievePaperSubgraphRequestBody,
-    llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
-    ],
     langchain_client: Annotated[
         LangChainClient, Depends(Provide[Container.langchain_client])
     ],
@@ -98,7 +94,6 @@ async def get_paper_title(
 
     result = (
         await RetrievePaperSubgraph(
-            llm_client=llm_client,
             langchain_client=langchain_client,
             arxiv_client=arxiv_client,
             github_client=github_client,

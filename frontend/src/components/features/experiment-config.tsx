@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Settings2, Cpu, Database, Sliders, Edit3, Save, Plus, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import type { Method, ExperimentConfig } from "@/types/research"
-import { generateExperimentConfig } from "@/lib/api-mock"
+import { Cpu, Database, Edit3, Plus, Save, Settings2, Sliders, Trash2 } from "lucide-react";
+import { useEffect, useId, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { generateExperimentConfig } from "@/lib/api-mock";
+import type { ExperimentConfig, Method } from "@/types/research";
 
 interface ExperimentConfigSectionProps {
-  method: Method | null
-  configs: ExperimentConfig[]
-  onConfigsGenerated: (configs: ExperimentConfig[]) => void
-  onStepExecuted?: (configs: ExperimentConfig[]) => void
-  onBranchCreated?: (configs: ExperimentConfig[]) => void
-  onSave?: () => void
+  method: Method | null;
+  configs: ExperimentConfig[];
+  onConfigsGenerated: (configs: ExperimentConfig[]) => void;
+  onStepExecuted?: (configs: ExperimentConfig[]) => void;
+  onBranchCreated?: (configs: ExperimentConfig[]) => void;
+  onSave?: () => void;
 }
 
 export function ExperimentConfigSection({
@@ -26,47 +26,51 @@ export function ExperimentConfigSection({
   onBranchCreated,
   onSave,
 }: ExperimentConfigSectionProps) {
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [isManualMode, setIsManualMode] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
-  const [editingConfigs, setEditingConfigs] = useState<ExperimentConfig[]>([])
-  const [manualMethodInput, setManualMethodInput] = useState("")
-  const [hasExecuted, setHasExecuted] = useState(false)
-  const [tempConfigs, setTempConfigs] = useState<ExperimentConfig[]>([])
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isManualMode, setIsManualMode] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingConfigs, setEditingConfigs] = useState<ExperimentConfig[]>([]);
+  const [manualMethodInput, setManualMethodInput] = useState("");
+  const [hasExecuted, setHasExecuted] = useState(false);
+  const [tempConfigs, setTempConfigs] = useState<ExperimentConfig[]>([]);
+  const manualMethodDescriptionId = useId();
 
   useEffect(() => {
     if (configs.length === 0) {
-      setHasExecuted(false)
-      setIsManualMode(false)
-      setIsEditing(false)
-      setEditingConfigs([])
-      setTempConfigs([])
+      setHasExecuted(false);
+      setIsManualMode(false);
+      setIsEditing(false);
+      setEditingConfigs([]);
+      setTempConfigs([]);
     }
-  }, [configs])
+  }, [configs]);
 
   const handleGenerate = async () => {
-    if (!method) return
-    setIsGenerating(true)
+    if (!method) return;
+    setIsGenerating(true);
     try {
-      const generatedConfigs = await generateExperimentConfig(method)
-      setTempConfigs(generatedConfigs)
+      const generatedConfigs = await generateExperimentConfig(method);
+      setTempConfigs(generatedConfigs);
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
-  }
+  };
 
   const handleConfirmGenerated = () => {
-    if (tempConfigs.length === 0) return
-    onConfigsGenerated(tempConfigs)
+    if (tempConfigs.length === 0) return;
+    onConfigsGenerated(tempConfigs);
     if (!hasExecuted && onStepExecuted) {
-      onStepExecuted(tempConfigs)
-      setHasExecuted(true)
+      onStepExecuted(tempConfigs);
+      setHasExecuted(true);
     }
-    setTempConfigs([])
-  }
+    if (onSave) {
+      onSave();
+    }
+    setTempConfigs([]);
+  };
 
   const createEmptyConfig = (): ExperimentConfig => ({
-    id: "manual-config-" + Date.now(),
+    id: `manual-config-${Date.now()}`,
     model: "",
     dataset: "",
     hyperparameters: {
@@ -76,61 +80,64 @@ export function ExperimentConfigSection({
       hidden_dim: 256,
     },
     description: "",
-  })
+  });
 
   const handleStartManualInput = () => {
-    setIsManualMode(true)
+    setIsManualMode(true);
     if (configs.length === 0) {
-      setEditingConfigs([createEmptyConfig()])
+      setEditingConfigs([createEmptyConfig()]);
     } else {
-      setEditingConfigs([...configs])
+      setEditingConfigs([...configs]);
     }
-    setIsEditing(true)
-  }
+    setIsEditing(true);
+  };
 
   const handleAddConfig = () => {
-    setEditingConfigs([...editingConfigs, createEmptyConfig()])
-  }
+    setEditingConfigs([...editingConfigs, createEmptyConfig()]);
+  };
 
   const handleRemoveConfig = (index: number) => {
-    setEditingConfigs(editingConfigs.filter((_, i) => i !== index))
-  }
+    setEditingConfigs(editingConfigs.filter((_, i) => i !== index));
+  };
 
   const handleConfigChange = (index: number, field: string, value: string | number) => {
-    const updated = [...editingConfigs]
+    const updated = [...editingConfigs];
     if (field.startsWith("hyperparameters.")) {
-      const hyperKey = field.replace("hyperparameters.", "")
+      const hyperKey = field.replace("hyperparameters.", "");
       updated[index] = {
         ...updated[index],
         hyperparameters: {
           ...updated[index].hyperparameters,
           [hyperKey]: value,
         },
-      }
+      };
     } else {
-      updated[index] = { ...updated[index], [field]: value }
+      updated[index] = { ...updated[index], [field]: value };
     }
-    setEditingConfigs(updated)
-  }
+    setEditingConfigs(updated);
+  };
 
   const handleSaveConfigs = () => {
-    const validConfigs = editingConfigs.filter((c) => c.model.trim() && c.dataset.trim())
+    const validConfigs = editingConfigs.filter((c) => c.model.trim() && c.dataset.trim());
     if (validConfigs.length > 0) {
-      onConfigsGenerated(validConfigs)
-      setIsEditing(false)
+      onConfigsGenerated(validConfigs);
+      setIsEditing(false);
       if (!hasExecuted && onStepExecuted) {
-        onStepExecuted(validConfigs)
-        setHasExecuted(true)
+        onStepExecuted(validConfigs);
+        setHasExecuted(true);
       } else if (hasExecuted && onBranchCreated) {
-        onBranchCreated(validConfigs)
+        onBranchCreated(validConfigs);
+      }
+      if (onSave) {
+        onSave();
       }
     }
-  }
+  };
 
   const handleEdit = () => {
-    setEditingConfigs([...configs])
-    setIsEditing(true)
-  }
+    setEditingConfigs([...configs]);
+    setIsEditing(true);
+  };
 
   const renderTempConfigPreview = () => (
     <div className="space-y-4">
@@ -158,12 +165,15 @@ export function ExperimentConfigSection({
           </div>
         ))}
       </div>
-      <Button onClick={handleConfirmGenerated} className="w-full bg-blue-700 hover:bg-blue-800 text-white">
+      <Button
+        onClick={handleConfirmGenerated}
+        className="w-full bg-blue-700 hover:bg-blue-800 text-white"
+      >
         <Save className="w-4 h-4 mr-2" />
         この設定を確定
       </Button>
     </div>
-  )
+  );
 
   return (
     <Card className="p-6">
@@ -183,7 +193,9 @@ export function ExperimentConfigSection({
             variant={!isManualMode ? "default" : "outline"}
             size="sm"
             onClick={() => setIsManualMode(false)}
-            className={!isManualMode ? "bg-blue-700 hover:bg-blue-800 text-white" : "bg-transparent"}
+            className={
+              !isManualMode ? "bg-blue-700 hover:bg-blue-800 text-white" : "bg-transparent"
+            }
           >
             手法から生成
           </Button>
@@ -200,14 +212,23 @@ export function ExperimentConfigSection({
 
       {isManualMode && !method && !isEditing && tempConfigs.length === 0 && (
         <div className="mb-6">
-          <label className="text-sm font-medium text-foreground mb-2 block">対象手法の説明</label>
+          <label
+            className="text-sm font-medium text-foreground mb-2 block"
+            htmlFor={manualMethodDescriptionId}
+          >
+            対象手法の説明
+          </label>
           <Textarea
+            id={manualMethodDescriptionId}
             value={manualMethodInput}
             onChange={(e) => setManualMethodInput(e.target.value)}
             placeholder="実験対象の手法について説明してください..."
             className="min-h-[100px] mb-4 bg-background"
           />
-          <Button onClick={handleStartManualInput} className="w-full bg-blue-700 hover:bg-blue-800 text-white">
+          <Button
+            onClick={handleStartManualInput}
+            className="w-full bg-blue-700 hover:bg-blue-800 text-white"
+          >
             実験設定を入力
           </Button>
         </div>
@@ -215,103 +236,169 @@ export function ExperimentConfigSection({
 
       {isEditing && (
         <div className="space-y-6">
-          {editingConfigs.map((config, index) => (
-            <div key={config.id} className="p-4 border border-border rounded-lg space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">実験設定 {index + 1}</span>
-                {editingConfigs.length > 1 && (
-                  <Button variant="ghost" size="sm" onClick={() => handleRemoveConfig(index)}>
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
-                )}
+          {editingConfigs.map((config, index) => {
+            const modelId = `${config.id}-model`;
+            const datasetId = `${config.id}-dataset`;
+            const epochsId = `${config.id}-epochs`;
+            const learningRateId = `${config.id}-learning-rate`;
+            const batchSizeId = `${config.id}-batch-size`;
+            const hiddenDimId = `${config.id}-hidden-dim`;
+            const descriptionId = `${config.id}-description`;
+
+            return (
+              <div key={config.id} className="p-4 border border-border rounded-lg space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-foreground">実験設定 {index + 1}</span>
+                  {editingConfigs.length > 1 && (
+                    <Button variant="ghost" size="sm" onClick={() => handleRemoveConfig(index)}>
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block" htmlFor={modelId}>
+                      モデル名
+                    </label>
+                    <Input
+                      id={modelId}
+                      value={config.model}
+                      onChange={(e) => handleConfigChange(index, "model", e.target.value)}
+                      placeholder="例: Transformer"
+                      className="bg-background"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block" htmlFor={datasetId}>
+                      データセット
+                    </label>
+                    <Input
+                      id={datasetId}
+                      value={config.dataset}
+                      onChange={(e) => handleConfigChange(index, "dataset", e.target.value)}
+                      placeholder="例: CIFAR-10"
+                      className="bg-background"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block" htmlFor={epochsId}>
+                      Epochs
+                    </label>
+                    <Input
+                      id={epochsId}
+                      type="number"
+                      value={config.hyperparameters.epochs}
+                      onChange={(e) =>
+                        handleConfigChange(
+                          index,
+                          "hyperparameters.epochs",
+                          Number.parseInt(e.target.value, 10),
+                        )
+                      }
+                      className="bg-background"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="text-xs text-muted-foreground mb-1 block"
+                      htmlFor={learningRateId}
+                    >
+                      Learning Rate
+                    </label>
+                    <Input
+                      id={learningRateId}
+                      type="number"
+                      step="0.0001"
+                      value={config.hyperparameters.learning_rate}
+                      onChange={(e) =>
+                        handleConfigChange(
+                          index,
+                          "hyperparameters.learning_rate",
+                          Number.parseFloat(e.target.value),
+                        )
+                      }
+                      className="bg-background"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="text-xs text-muted-foreground mb-1 block"
+                      htmlFor={batchSizeId}
+                    >
+                      Batch Size
+                    </label>
+                    <Input
+                      id={batchSizeId}
+                      type="number"
+                      value={config.hyperparameters.batch_size}
+                      onChange={(e) =>
+                        handleConfigChange(
+                          index,
+                          "hyperparameters.batch_size",
+                          Number.parseInt(e.target.value, 10),
+                        )
+                      }
+                      className="bg-background"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="text-xs text-muted-foreground mb-1 block"
+                      htmlFor={hiddenDimId}
+                    >
+                      Hidden Dim
+                    </label>
+                    <Input
+                      id={hiddenDimId}
+                      type="number"
+                      value={config.hyperparameters.hidden_dim}
+                      onChange={(e) =>
+                        handleConfigChange(
+                          index,
+                          "hyperparameters.hidden_dim",
+                          Number.parseInt(e.target.value, 10),
+                        )
+                      }
+                      className="bg-background"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label
+                    className="text-xs text-muted-foreground mb-1 block"
+                    htmlFor={descriptionId}
+                  >
+                    説明
+                  </label>
+                  <Textarea
+                    id={descriptionId}
+                    value={config.description}
+                    onChange={(e) => handleConfigChange(index, "description", e.target.value)}
+                    placeholder="実験の説明..."
+                    className="min-h-[60px] bg-background"
+                  />
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">モデル名</label>
-                  <Input
-                    value={config.model}
-                    onChange={(e) => handleConfigChange(index, "model", e.target.value)}
-                    placeholder="例: Transformer"
-                    className="bg-background"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">データセット</label>
-                  <Input
-                    value={config.dataset}
-                    onChange={(e) => handleConfigChange(index, "dataset", e.target.value)}
-                    placeholder="例: CIFAR-10"
-                    className="bg-background"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-4 gap-3">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Epochs</label>
-                  <Input
-                    type="number"
-                    value={config.hyperparameters.epochs}
-                    onChange={(e) =>
-                      handleConfigChange(index, "hyperparameters.epochs", Number.parseInt(e.target.value))
-                    }
-                    className="bg-background"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Learning Rate</label>
-                  <Input
-                    type="number"
-                    step="0.0001"
-                    value={config.hyperparameters.learning_rate}
-                    onChange={(e) =>
-                      handleConfigChange(index, "hyperparameters.learning_rate", Number.parseFloat(e.target.value))
-                    }
-                    className="bg-background"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Batch Size</label>
-                  <Input
-                    type="number"
-                    value={config.hyperparameters.batch_size}
-                    onChange={(e) =>
-                      handleConfigChange(index, "hyperparameters.batch_size", Number.parseInt(e.target.value))
-                    }
-                    className="bg-background"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Hidden Dim</label>
-                  <Input
-                    type="number"
-                    value={config.hyperparameters.hidden_dim}
-                    onChange={(e) =>
-                      handleConfigChange(index, "hyperparameters.hidden_dim", Number.parseInt(e.target.value))
-                    }
-                    className="bg-background"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">説明</label>
-                <Textarea
-                  value={config.description}
-                  onChange={(e) => handleConfigChange(index, "description", e.target.value)}
-                  placeholder="実験の説明..."
-                  className="min-h-[60px] bg-background"
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
           <Button variant="outline" onClick={handleAddConfig} className="w-full bg-transparent">
             <Plus className="w-4 h-4 mr-2" />
             実験設定を追加
           </Button>
           <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={() => setIsEditing(false)} className="bg-transparent">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditing(false)}
+              className="bg-transparent"
+            >
               キャンセル
             </Button>
-            <Button onClick={handleSaveConfigs} className="bg-blue-700 hover:bg-blue-800 text-white">
+            <Button
+              onClick={handleSaveConfigs}
+              className="bg-blue-700 hover:bg-blue-800 text-white"
+            >
               <Save className="w-4 h-4 mr-2" />
               保存
             </Button>
@@ -321,30 +408,30 @@ export function ExperimentConfigSection({
 
       {tempConfigs.length > 0 && renderTempConfigPreview()}
 
-      {!isManualMode && !isEditing && configs.length === 0 && tempConfigs.length === 0 && (
-        <>
-          {!method ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Settings2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>先に新規手法を生成するか、手動入力モードを使用してください</p>
+      {!isManualMode &&
+        !isEditing &&
+        configs.length === 0 &&
+        tempConfigs.length === 0 &&
+        (!method ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Settings2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>先に新規手法を生成するか、手動入力モードを使用してください</p>
+          </div>
+        ) : (
+          <>
+            <div className="mb-6 p-4 bg-muted rounded-lg">
+              <p className="text-sm font-medium text-muted-foreground mb-1">対象手法:</p>
+              <p className="text-foreground">{method.name}</p>
             </div>
-          ) : (
-            <>
-              <div className="mb-6 p-4 bg-muted rounded-lg">
-                <p className="text-sm font-medium text-muted-foreground mb-1">対象手法:</p>
-                <p className="text-foreground">{method.name}</p>
-              </div>
-              <Button
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="w-full bg-blue-700 hover:bg-blue-800 text-white"
-              >
-                {isGenerating ? "生成中..." : "実験設定を生成"}
-              </Button>
-            </>
-          )}
-        </>
-      )}
+            <Button
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className="w-full bg-blue-700 hover:bg-blue-800 text-white"
+            >
+              {isGenerating ? "生成中..." : "実験設定を生成"}
+            </Button>
+          </>
+        ))}
 
       {configs.length > 0 && !isEditing && (
         <div className="space-y-4">
@@ -376,7 +463,10 @@ export function ExperimentConfigSection({
               <p className="mt-3 text-sm text-muted-foreground">{config.description}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {Object.entries(config.hyperparameters).map(([key, value]) => (
-                  <span key={key} className="px-2 py-1 bg-muted rounded text-xs text-muted-foreground">
+                  <span
+                    key={key}
+                    className="px-2 py-1 bg-muted rounded text-xs text-muted-foreground"
+                  >
                     {key}: {value}
                   </span>
                 ))}
@@ -386,5 +476,5 @@ export function ExperimentConfigSection({
         </div>
       )}
     </Card>
-  )
+  );
 }

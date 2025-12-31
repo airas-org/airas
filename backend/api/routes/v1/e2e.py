@@ -17,7 +17,6 @@ from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.langfuse_client import LangfuseClient
-from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
 from api.schemas.e2e import (
     ExecuteE2ERequestBody,
     ExecuteE2EResponseBody,
@@ -49,7 +48,6 @@ async def _execute_e2e(
     github_client: GithubClient,
     arxiv_client: ArxivClient,
     langchain_client: LangChainClient,
-    llm_client: LLMFacadeClient,
     langfuse_client: LangfuseClient,
 ) -> None:
     try:
@@ -61,7 +59,6 @@ async def _execute_e2e(
             github_client=github_client,
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,
-            llm_client=llm_client,
         ).build_graph()
 
         logger.info(f"[Task {task_id}] Streaming graph execution")
@@ -112,9 +109,6 @@ async def execute_e2e(
     langchain_client: Annotated[
         LangChainClient, Depends(Provide[Container.langchain_client])
     ],
-    llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
-    ],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -139,7 +133,6 @@ async def execute_e2e(
             github_client=github_client,
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,
-            llm_client=llm_client,
             langfuse_client=langfuse_client,
         )
     )

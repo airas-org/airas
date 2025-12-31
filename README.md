@@ -53,6 +53,17 @@ If you are interested in this topic, please feel free to contact us at <a href="
 
 This OSS is developed as part of the [AutoRes](https://www.autores.one/english) project.
 
+## License
+
+This project is licensed under the MIT License.
+See the [LICENSE](./LICENSE) file for details.
+
+## Contributions
+
+By contributing to this project, you agree that your contributions are subject to the Contributor License Agreement (CLA) and may be used, modified, redistributed, and relicensed by the project owner, including for commercial, enterprise, and SaaS offerings.
+
+See [CLA.md](./CLA.md) for details.
+
 ## Citation
 
 If you use AIRAS in your research, please cite as follows:
