@@ -3,7 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export type SessionCreateRequest = {
-    title: string;
-    created_by: string;
+  title: string;
+  created_by: string;
 };
-

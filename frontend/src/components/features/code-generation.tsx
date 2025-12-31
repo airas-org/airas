@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Code2, Github, ExternalLink, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import type { ExperimentConfig } from "@/types/research"
-import { generateExperimentCode, createGitHubRepo, pushToGitHub } from "@/lib/api-mock"
+import { Check, Code2, ExternalLink, Github } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { createGitHubRepo, generateExperimentCode, pushToGitHub } from "@/lib/api-mock";
+import type { ExperimentConfig } from "@/types/research";
 
 interface CodeGenerationSectionProps {
-  configs: ExperimentConfig[]
-  githubUrl: string | null
-  onGithubUrlChange: (url: string | null) => void
-  onStepExecuted?: (url: string) => void
-  onSave?: () => void
+  configs: ExperimentConfig[];
+  githubUrl: string | null;
+  onGithubUrlChange: (url: string | null) => void;
+  onStepExecuted?: (url: string) => void;
+  onSave?: () => void;
 }
 
 export function CodeGenerationSection({
@@ -22,71 +22,71 @@ export function CodeGenerationSection({
   onStepExecuted,
   onSave,
 }: CodeGenerationSectionProps) {
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedCode, setGeneratedCode] = useState<string | null>(null)
-  const [isPushing, setIsPushing] = useState(false)
-  const [isConfirmed, setIsConfirmed] = useState(false)
-  const [prevConfigIds, setPrevConfigIds] = useState<string[]>([])
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [isPushing, setIsPushing] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [prevConfigIds, setPrevConfigIds] = useState<string[]>([]);
+  const prevIds = prevConfigIds.join(",");
 
   useEffect(() => {
     const currentConfigIds = configs
       .map((c) => c.id)
       .sort()
-      .join(",")
-    const prevIds = prevConfigIds.join(",")
+      .join(",");
 
     if (configs.length === 0) {
-      setGeneratedCode(null)
-      setIsConfirmed(false)
-      setPrevConfigIds([])
+      setGeneratedCode(null);
+      setIsConfirmed(false);
+      setPrevConfigIds([]);
     } else if (currentConfigIds !== prevIds && prevIds !== "") {
-      setGeneratedCode(null)
-      setIsConfirmed(false)
-      setPrevConfigIds(configs.map((c) => c.id))
+      setGeneratedCode(null);
+      setIsConfirmed(false);
+      setPrevConfigIds(configs.map((c) => c.id));
     } else if (prevIds === "") {
-      setPrevConfigIds(configs.map((c) => c.id))
+      setPrevConfigIds(configs.map((c) => c.id));
     }
-  }, [configs])
+  }, [configs, prevIds]);
 
   useEffect(() => {
     if (!githubUrl) {
-      setIsConfirmed(false)
+      setIsConfirmed(false);
     }
-  }, [githubUrl])
+  }, [githubUrl]);
 
   const handleGenerate = async () => {
-    if (configs.length === 0) return
-    setIsGenerating(true)
+    if (configs.length === 0) return;
+    setIsGenerating(true);
     try {
-      const code = await generateExperimentCode(configs[0])
-      setGeneratedCode(code)
+      const code = await generateExperimentCode(configs[0]);
+      setGeneratedCode(code);
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
-  }
+  };
 
   const handlePushToGitHub = async () => {
-    if (!generatedCode) return
-    setIsPushing(true)
+    if (!generatedCode) return;
+    setIsPushing(true);
     try {
-      const repo = await createGitHubRepo("ml-experiment-" + Date.now())
-      await pushToGitHub(repo.repoId, generatedCode)
-      onGithubUrlChange(repo.url)
+      const repo = await createGitHubRepo(`ml-experiment-${Date.now()}`);
+      await pushToGitHub(repo.repoId, generatedCode);
+      onGithubUrlChange(repo.url);
     } finally {
-      setIsPushing(false)
+      setIsPushing(false);
     }
-  }
+  };
 
   const handleConfirm = () => {
-    if (!githubUrl) return
-    setIsConfirmed(true)
+    if (!githubUrl) return;
+    setIsConfirmed(true);
     if (onStepExecuted) {
-      onStepExecuted(githubUrl)
+      onStepExecuted(githubUrl);
     }
     if (onSave) {
-      onSave()
+      onSave();
     }
-  }
+  };
 
   return (
     <Card className="p-6">
@@ -120,7 +120,9 @@ export function CodeGenerationSection({
           {generatedCode && (
             <div className="space-y-4">
               <div className="bg-secondary rounded-lg p-4 overflow-x-auto">
-                <pre className="text-sm text-secondary-foreground font-mono whitespace-pre-wrap">{generatedCode}</pre>
+                <pre className="text-sm text-secondary-foreground font-mono whitespace-pre-wrap">
+                  {generatedCode}
+                </pre>
               </div>
 
               {!githubUrl ? (
@@ -148,7 +150,10 @@ export function CodeGenerationSection({
                   </div>
 
                   {!isConfirmed ? (
-                    <Button onClick={handleConfirm} className="w-full bg-blue-700 hover:bg-blue-800 text-white">
+                    <Button
+                      onClick={handleConfirm}
+                      className="w-full bg-blue-700 hover:bg-blue-800 text-white"
+                    >
                       <Check className="w-4 h-4 mr-2" />
                       このコードを確定
                     </Button>
@@ -165,5 +170,5 @@ export function CodeGenerationSection({
         </>
       )}
     </Card>
-  )
+  );
 }

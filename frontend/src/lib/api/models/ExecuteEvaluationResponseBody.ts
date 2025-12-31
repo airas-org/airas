@@ -3,7 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export type ExecuteEvaluationResponseBody = {
-    dispatched: boolean;
-    execution_time: Record<string, Array<number>>;
+  dispatched: boolean;
+  execution_time: Record<string, Array<number>>;
 };
-

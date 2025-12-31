@@ -1,20 +1,20 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Play, CheckCircle2, Clock, XCircle, Loader2, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import type { ExperimentConfig, ExperimentResult } from "@/types/research"
-import { runGitHubActions, getExperimentResults } from "@/lib/api-mock"
-import { cn } from "@/lib/utils"
+import { Check, CheckCircle2, Clock, Loader2, Play, XCircle } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { getExperimentResults, runGitHubActions } from "@/lib/api-mock";
+import { cn } from "@/lib/utils";
+import type { ExperimentConfig, ExperimentResult } from "@/types/research";
 
 interface ExperimentRunSectionProps {
-  configs: ExperimentConfig[]
-  results: ExperimentResult[]
-  onResultsChange: (results: ExperimentResult[]) => void
-  onStepExecuted?: (results: ExperimentResult[]) => void
-  onSave?: () => void
+  configs: ExperimentConfig[];
+  results: ExperimentResult[];
+  onResultsChange: (results: ExperimentResult[]) => void;
+  onStepExecuted?: (results: ExperimentResult[]) => void;
+  onSave?: () => void;
 }
 
 export function ExperimentRunSection({
@@ -24,52 +24,52 @@ export function ExperimentRunSection({
   onStepExecuted,
   onSave,
 }: ExperimentRunSectionProps) {
-  const [runningExperiments, setRunningExperiments] = useState<Set<string>>(new Set())
-  const [isConfirmed, setIsConfirmed] = useState(false)
+  const [runningExperiments, setRunningExperiments] = useState<Set<string>>(new Set());
+  const [isConfirmed, setIsConfirmed] = useState(false);
 
   const runExperiment = async (configId: string) => {
-    setRunningExperiments((prev) => new Set([...prev, configId]))
+    setRunningExperiments((prev) => new Set([...prev, configId]));
     try {
-      const { runId } = await runGitHubActions("repo-1", configId)
-      const result = await getExperimentResults(runId)
-      const newResults = [...results.filter((r) => r.configId !== configId), result]
-      onResultsChange(newResults)
+      const { runId } = await runGitHubActions("repo-1", configId);
+      const result = await getExperimentResults(runId);
+      const newResults = [...results.filter((r) => r.configId !== configId), result];
+      onResultsChange(newResults);
     } finally {
       setRunningExperiments((prev) => {
-        const next = new Set(prev)
-        next.delete(configId)
-        return next
-      })
+        const next = new Set(prev);
+        next.delete(configId);
+        return next;
+      });
     }
-  }
+  };
 
   const runAllExperiments = async () => {
     for (const config of configs) {
-      await runExperiment(config.id)
+      await runExperiment(config.id);
     }
-  }
+  };
 
   const handleConfirm = () => {
-    setIsConfirmed(true)
+    setIsConfirmed(true);
     if (onStepExecuted) {
-      onStepExecuted(results)
+      onStepExecuted(results);
     }
     if (onSave) {
-      onSave()
+      onSave();
     }
-  }
+  };
 
-  const getResult = (configId: string) => results.find((r) => r.configId === configId)
+  const getResult = (configId: string) => results.find((r) => r.configId === configId);
 
-  const completedResults = results.filter((r) => r.status === "completed")
-  const allCompleted = configs.length > 0 && completedResults.length === configs.length
+  const completedResults = results.filter((r) => r.status === "completed");
+  const allCompleted = configs.length > 0 && completedResults.length === configs.length;
 
   const StatusIcon = ({ status }: { status?: string }) => {
-    if (status === "completed") return <CheckCircle2 className="w-5 h-5 text-blue-700" />
-    if (status === "failed") return <XCircle className="w-5 h-5 text-destructive" />
-    if (status === "running") return <Loader2 className="w-5 h-5 text-blue-700 animate-spin" />
-    return <Clock className="w-5 h-5 text-muted-foreground" />
-  }
+    if (status === "completed") return <CheckCircle2 className="w-5 h-5 text-blue-700" />;
+    if (status === "failed") return <XCircle className="w-5 h-5 text-destructive" />;
+    if (status === "running") return <Loader2 className="w-5 h-5 text-blue-700 animate-spin" />;
+    return <Clock className="w-5 h-5 text-muted-foreground" />;
+  };
 
   return (
     <Card className="p-6">
@@ -102,15 +102,17 @@ export function ExperimentRunSection({
 
           <div className="space-y-4">
             {configs.map((config) => {
-              const result = getResult(config.id)
-              const isRunning = runningExperiments.has(config.id)
+              const result = getResult(config.id);
+              const isRunning = runningExperiments.has(config.id);
 
               return (
                 <div
                   key={config.id}
                   className={cn(
                     "p-4 border rounded-lg transition-colors",
-                    result?.status === "completed" ? "border-blue-700/50 bg-blue-700/10" : "border-border",
+                    result?.status === "completed"
+                      ? "border-blue-700/50 bg-blue-700/10"
+                      : "border-border",
                   )}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -146,12 +148,15 @@ export function ExperimentRunSection({
                     </div>
                   )}
                 </div>
-              )
+              );
             })}
           </div>
 
           {allCompleted && !isConfirmed && (
-            <Button onClick={handleConfirm} className="w-full mt-4 bg-blue-700 hover:bg-blue-800 text-white">
+            <Button
+              onClick={handleConfirm}
+              className="w-full mt-4 bg-blue-700 hover:bg-blue-800 text-white"
+            >
               <Check className="w-4 h-4 mr-2" />
               この結果を確定
             </Button>
@@ -166,5 +171,5 @@ export function ExperimentRunSection({
         </>
       )}
     </Card>
-  )
+  );
 }

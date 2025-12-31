@@ -3,7 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export type ModelParameters = {
-    total_parameters: string;
-    active_parameters: string;
+  total_parameters: string;
+  active_parameters: string;
 };
-

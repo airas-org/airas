@@ -3,7 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export type GenerateLatexSubgraphResponseBody = {
-    latex_text: string;
-    execution_time: Record<string, Array<number>>;
+  latex_text: string;
+  execution_time: Record<string, Array<number>>;
 };
-

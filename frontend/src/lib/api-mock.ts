@@ -1,11 +1,17 @@
-import type { Paper, Method, ExperimentConfig, ExperimentResult, GeneratedPaper } from "@/types/research"
+import type {
+  ExperimentConfig,
+  ExperimentResult,
+  GeneratedPaper,
+  Method,
+  Paper,
+} from "@/types/research";
 
 // Mock delay for realistic API behavior
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Research paper retrieval
-export async function searchPapers(query: string): Promise<Paper[]> {
-  await delay(1000)
+export async function searchPapers(_query: string): Promise<Paper[]> {
+  await delay(1000);
   return [
     {
       id: "1",
@@ -44,12 +50,12 @@ export async function searchPapers(query: string): Promise<Paper[]> {
       citations: 120000,
       relevanceScore: 0.75,
     },
-  ]
+  ];
 }
 
 // Generate new method
 export async function generateMethod(paperIds: string[]): Promise<Method> {
-  await delay(2000)
+  await delay(2000);
   return {
     id: Date.now().toString(),
     name: "Hybrid Attention-Residual Architecture (HARA)",
@@ -66,12 +72,12 @@ Key innovations:
 - Cross-scale feature aggregation
 - Efficient memory management through sparse attention patterns`,
     basedOn: paperIds,
-  }
+  };
 }
 
 // Generate experiment settings
-export async function generateExperimentConfig(method: Method): Promise<ExperimentConfig[]> {
-  await delay(1500)
+export async function generateExperimentConfig(_method: Method): Promise<ExperimentConfig[]> {
+  await delay(1500);
   return [
     {
       id: "exp1",
@@ -113,15 +119,15 @@ export async function generateExperimentConfig(method: Method): Promise<Experime
       },
       description: "Efficient variant with token pruning enabled",
     },
-  ]
+  ];
 }
 
 export async function generateExperimentCode(config: ExperimentConfig): Promise<string> {
-  await delay(2000)
-  const hiddenDim = config.hyperparameters.hidden_dim
-  const numLayers = config.hyperparameters.num_layers
-  const learningRate = config.hyperparameters.learning_rate
-  const epochs = config.hyperparameters.epochs
+  await delay(2000);
+  const hiddenDim = config.hyperparameters.hidden_dim;
+  const numLayers = config.hyperparameters.num_layers;
+  const learningRate = config.hyperparameters.learning_rate;
+  const epochs = config.hyperparameters.epochs;
 
   return `# Generated experiment code for ${config.model}
 # Dataset: ${config.dataset}
@@ -139,37 +145,40 @@ config = HARAConfig(
 model = HARAModel(config)
 trainer = Trainer(model, dataset="${config.dataset}")
 trainer.train(epochs=${epochs})
-`
+`;
 }
 
 // Create GitHub repository
 export async function createGitHubRepo(name: string): Promise<{ url: string; repoId: string }> {
-  await delay(1500)
+  await delay(1500);
   return {
-    url: "https://github.com/ml-research/" + name.toLowerCase().replace(/\s+/g, "-"),
-    repoId: "repo-" + Date.now(),
-  }
+    url: `https://github.com/ml-research/${name.toLowerCase().replace(/\s+/g, "-")}`,
+    repoId: `repo-${Date.now()}`,
+  };
 }
 
 // Push code to GitHub
-export async function pushToGitHub(repoId: string, code: string): Promise<{ commitUrl: string }> {
-  await delay(1000)
+export async function pushToGitHub(_repoId: string, _code: string): Promise<{ commitUrl: string }> {
+  await delay(1000);
   return {
-    commitUrl: "https://github.com/ml-research/experiment/commit/" + Date.now().toString(16),
-  }
+    commitUrl: `https://github.com/ml-research/experiment/commit/${Date.now().toString(16)}`,
+  };
 }
 
 // Run GitHub Actions
-export async function runGitHubActions(repoId: string, configId: string): Promise<{ runId: string }> {
-  await delay(500)
+export async function runGitHubActions(
+  _repoId: string,
+  configId: string,
+): Promise<{ runId: string }> {
+  await delay(500);
   return {
-    runId: "run-" + configId + "-" + Date.now(),
-  }
+    runId: `run-${configId}-${Date.now()}`,
+  };
 }
 
 // Get experiment results from GitHub
 export async function getExperimentResults(runId: string): Promise<ExperimentResult> {
-  await delay(2000)
+  await delay(2000);
   return {
     id: runId,
     configId: runId.split("-")[1],
@@ -182,13 +191,13 @@ export async function getExperimentResults(runId: string): Promise<ExperimentRes
     },
     status: "completed",
     logs: "Training completed successfully. Model saved to checkpoint.",
-  }
+  };
 }
 
 // Analyze experiment results
 export async function analyzeResults(results: ExperimentResult[]): Promise<string> {
-  await delay(2000)
-  const firstAccuracy = results[0]?.metrics.accuracy ?? 0.9
+  await delay(2000);
+  const firstAccuracy = results[0]?.metrics.accuracy ?? 0.9;
   return `## Experimental Analysis
 
 ### Overview
@@ -210,19 +219,19 @@ A total of ${results.length} experiments were conducted to evaluate the proposed
    - Memory usage reduced by approximately 25% compared to standard transformers
 
 ### Conclusions
-The experimental results validate our hypothesis that combining multi-scale attention with residual connections leads to improved performance on language understanding tasks.`
+The experimental results validate our hypothesis that combining multi-scale attention with residual connections leads to improved performance on language understanding tasks.`;
 }
 
 // Generate paper text
 export async function generatePaperText(
   method: Method,
   configs: ExperimentConfig[],
-  results: ExperimentResult[],
+  _results: ExperimentResult[],
   analysis: string,
 ): Promise<GeneratedPaper> {
-  await delay(3000)
+  await delay(3000);
 
-  const configDescriptions = configs.map((c) => "- **" + c.model + "**: " + c.description).join("\n")
+  const configDescriptions = configs.map((c) => `- **${c.model}**: ${c.description}`).join("\n");
 
   return {
     title: "HARA: Hybrid Attention-Residual Architecture for Efficient Language Understanding",
@@ -259,33 +268,29 @@ export async function generatePaperText(
           "We have presented HARA, a novel architecture that achieves state-of-the-art results on language understanding benchmarks while maintaining computational efficiency. Future work will explore applications to other domains and further optimization of the attention mechanisms.",
       },
     ],
-  }
+  };
 }
 
 // Generate BibTeX
 export async function generateBibTeX(papers: Paper[]): Promise<string> {
-  await delay(500)
+  await delay(500);
   return papers
     .map(
       (p) =>
-        "@article{" +
-        p.id +
-        ",\n  title={" +
-        p.title +
-        "},\n  author={" +
-        p.authors.join(" and ") +
-        "},\n  year={" +
-        p.year +
-        "}\n}",
+        `@article{${p.id},\n  title={${p.title}},\n  author={${p.authors.join(
+          " and ",
+        )}},\n  year={${p.year}}\n}`,
     )
-    .join("\n\n")
+    .join("\n\n");
 }
 
 // Generate LaTeX
 export async function generateLaTeX(paper: GeneratedPaper): Promise<string> {
-  await delay(1000)
+  await delay(1000);
 
-  const sectionsLatex = paper.sections.map((s) => "\\section{" + s.name + "}\n" + s.content).join("\n\n")
+  const sectionsLatex = paper.sections
+    .map((s) => `\\section{${s.name}}\n${s.content}`)
+    .join("\n\n");
 
   return `\\documentclass{article}
 \\usepackage{arxiv}
@@ -302,13 +307,13 @@ ${paper.abstract}
 
 ${sectionsLatex}
 
-\\end{document}`
+\\end{document}`;
 }
 
 // Compile LaTeX
-export async function compileLatex(latex: string): Promise<{ pdfUrl: string }> {
-  await delay(2000)
+export async function compileLatex(_latex: string): Promise<{ pdfUrl: string }> {
+  await delay(2000);
   return {
-    pdfUrl: "/api/pdf/" + Date.now() + ".pdf",
-  }
+    pdfUrl: `/api/pdf/${Date.now()}.pdf`,
+  };
 }
