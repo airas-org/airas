@@ -1,7 +1,6 @@
 import os
 from collections.abc import AsyncGenerator, Generator
-from functools import partial
-from typing import Type, TypeVar
+from typing import TypeVar
 
 import httpx
 from dependency_injector import containers, providers
@@ -10,30 +9,19 @@ from hishel.httpx import AsyncCacheClient, SyncCacheClient
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import create_engine
 
+from airas.features.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
+    AirasDbPaperSearchIndex,
+)
 from airas.features.session_steps.service import SessionStepService
 from airas.features.sessions.service import SessionService
 from airas.features.step_run_links.service import StepRunLinkService
-from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.langfuse_client import LangfuseClient
-from airas.services.api_client.qdrant_client import QdrantClient
-
-# Workaround for OpenAI SDK lazy initialization issue
-# Initialize AsyncOpenAI.responses at import time to prevent silent failures
-try:
-    from openai import AsyncOpenAI
-
-    _ = AsyncOpenAI().responses
-except Exception:
-    pass
-
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.hugging_face_client import HuggingFaceClient
-from airas.services.api_client.llm_client.anthropic_client import AnthropicClient
-from airas.services.api_client.llm_client.google_genai_client import GoogleGenAIClient
-from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
-from airas.services.api_client.llm_client.openai_client import OpenAIClient
+from airas.services.api_client.langchain_client import LangChainClient
+from airas.services.api_client.langfuse_client import LangfuseClient
 from airas.services.api_client.openalex_client import OpenAlexClient
+from airas.services.api_client.qdrant_client import QdrantClient
 from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
 
 T = TypeVar("T")
@@ -98,39 +86,6 @@ async def init_github_async_session() -> AsyncGenerator[httpx.AsyncClient, None]
     await client.aclose()
 
 
-# NOTE: LLM clients are handled as separate resources because they use their own SDKs.
-async def init_llm_client(
-    client_class: Type[T],
-) -> AsyncGenerator[T, None]:
-    enable_cache = os.getenv("ENABLE_HTTP_CACHE", "false").lower() == "true"
-
-    if enable_cache:
-        policy = SpecificationPolicy(
-            cache_options=CacheOptions(
-                shared=False,
-                supported_methods=["GET"],
-                allow_stale=False,
-            )
-        )
-        http_client = AsyncCacheClient(
-            follow_redirects=True,
-            policy=policy,
-        )
-    else:
-        http_client = None
-
-    try:
-        client = (
-            client_class(http_client=http_client) if http_client else client_class()  # type: ignore[call-arg]
-        )
-    except TypeError:
-        # Fallback if SDK doesn't support custom http_client
-        client = client_class()
-
-    yield client
-    await client.close()  # type: ignore[attr-defined]
-
-
 class Container(containers.DeclarativeContainer):
     config = providers.Configuration()
 
@@ -142,25 +97,7 @@ class Container(containers.DeclarativeContainer):
     github_sync_session = providers.Resource(init_github_sync_session)
     github_async_session = providers.Resource(init_github_async_session)
 
-    # --- LLM Clients (Resource for default instances with lifecycle management) ---
-    openai_client: providers.Resource[OpenAIClient] = providers.Resource(
-        partial(init_llm_client, OpenAIClient)
-    )
-    anthropic_client: providers.Resource[AnthropicClient] = providers.Resource(
-        partial(init_llm_client, AnthropicClient)
-    )
-    google_genai_client: providers.Resource[GoogleGenAIClient] = providers.Resource(
-        partial(init_llm_client, GoogleGenAIClient)
-    )
-
-    # --- LLM Facade ---
-    llm_facade_client: providers.Factory[LLMFacadeClient] = providers.Factory(
-        LLMFacadeClient,
-        openai_client=openai_client,
-        anthropic_client=anthropic_client,
-        google_genai_client=google_genai_client,
-    )
-
+    # --- LangChain Client ---
     langchain_client: providers.Factory = providers.Factory(LangChainClient)
 
     # --- Observability ---
@@ -204,6 +141,11 @@ class Container(containers.DeclarativeContainer):
         QdrantClient,
         sync_session=sync_session,
         async_session=None,
+    )
+
+    # --- Search Index ---
+    airas_db_search_index: providers.Singleton[AirasDbPaperSearchIndex] = (
+        providers.Singleton(AirasDbPaperSearchIndex)
     )
 
     # --- Database Session ---

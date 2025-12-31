@@ -101,55 +101,45 @@ async def _select_github_url(
 async def extract_github_url_from_text(
     llm_name: LLM_MODELS,
     prompt_template: str,
-    arxiv_full_text_list: list[list[str]],
-    paper_summary_list: list[list[PaperSummary]],
+    arxiv_full_text_list: list[str],
+    paper_summary_list: list[PaperSummary],
     llm_client: LangChainClient,
     github_client: GithubClient,
-) -> list[list[str]]:
+) -> list[str]:
     template = Environment().from_string(prompt_template)
-    github_url_list: list[list[str]] = [
-        ["" for _ in text_group] for text_group in arxiv_full_text_list
-    ]
 
-    async def _select_for_position(
-        group_idx: int,
+    async def _extract_for_paper(
         paper_idx: int,
+        paper_text: str,
         summary: PaperSummary | None,
-        candidates: list[str],
-    ) -> tuple[int, int, str]:
-        selected = await _select_github_url(
+    ) -> str:
+        if not (
+            candidates := _extract_github_urls_from_text(paper_text, github_client)
+        ):
+            logger.info(f"No GitHub URLs found (index={paper_idx})")
+            return ""
+
+        return await _select_github_url(
             paper_summary=summary,
             candidates=candidates,
             prompt_template=template,
             llm_client=llm_client,
             llm_name=llm_name,
         )
-        return group_idx, paper_idx, selected
 
-    selection_tasks = []
-
-    for group_idx, text_group in enumerate(arxiv_full_text_list):
-        summary_group = (
-            paper_summary_list[group_idx] if group_idx < len(paper_summary_list) else []
-        )
-        for paper_idx, paper_text in enumerate(text_group):
-            candidates = _extract_github_urls_from_text(paper_text, github_client)
-            if not candidates:
-                logger.info(
-                    "No GitHub URLs found (group=%s, index=%s)", group_idx, paper_idx
+    github_url_list: list[str] = list(
+        await asyncio.gather(
+            *(
+                _extract_for_paper(
+                    paper_idx=idx,
+                    paper_text=text,
+                    summary=paper_summary_list[idx]
+                    if idx < len(paper_summary_list)
+                    else None,
                 )
-                continue
-
-            paper_summary = (
-                summary_group[paper_idx] if paper_idx < len(summary_group) else None
+                for idx, text in enumerate(arxiv_full_text_list)
             )
-            selection_tasks.append(
-                _select_for_position(group_idx, paper_idx, paper_summary, candidates)
-            )
-
-    if selection_tasks:
-        results = await asyncio.gather(*selection_tasks)
-        for group_idx, paper_idx, selected_url in results:
-            github_url_list[group_idx][paper_idx] = selected_url
+        )
+    )
 
     return github_url_list

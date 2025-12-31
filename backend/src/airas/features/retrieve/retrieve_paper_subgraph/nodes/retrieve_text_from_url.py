@@ -1,7 +1,6 @@
 import asyncio
 from io import BytesIO
 from logging import getLogger
-from typing import Awaitable
 
 import httpx
 from pypdf import PdfReader
@@ -15,48 +14,31 @@ REQUEST_TIMEOUT_SECONDS = 30.0
 
 
 async def retrieve_text_from_url(
-    arxiv_info_groups: list[list[ArxivInfo]],
-) -> list[list[str]]:
-    """Fetch each arXiv PDF and return groups of extracted text asynchronously."""
-
-    text_groups: list[list[str]] = [
-        ["" for _ in arxiv_infos] for arxiv_infos in arxiv_info_groups
-    ]
+    arxiv_info_list: list[ArxivInfo],
+) -> list[str]:
+    """Fetch each arXiv PDF and return extracted text asynchronously."""
 
     semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
-    pending: list[tuple[int, int, Awaitable[str]]] = []
+
+    async def _fetch_for_info(arxiv_info: ArxivInfo) -> str:
+        arxiv_id = (arxiv_info.id or "").strip()
+        if not arxiv_id:
+            logger.warning("Missing arXiv ID; skipping PDF fetch.")
+            return ""
+        pdf_url = f"https://arxiv.org/pdf/{arxiv_id}"
+        return await _fetch_pdf_text(
+            client=client,
+            semaphore=semaphore,
+            pdf_url=pdf_url,
+            arxiv_id=arxiv_id,
+        )
 
     async with httpx.AsyncClient(follow_redirects=True) as client:
-        for group_idx, arxiv_infos in enumerate(arxiv_info_groups):
-            for item_idx, arxiv_info in enumerate(arxiv_infos):
-                arxiv_id = (arxiv_info.id or "").strip()
-                if not arxiv_id:
-                    logger.warning("Missing arXiv ID; skipping PDF fetch.")
-                    continue
+        text_list: list[str] = list(
+            await asyncio.gather(*(_fetch_for_info(info) for info in arxiv_info_list))
+        )
 
-                pdf_url = f"https://arxiv.org/pdf/{arxiv_id}"
-                pending.append(
-                    (
-                        group_idx,
-                        item_idx,
-                        _fetch_pdf_text(
-                            client=client,
-                            semaphore=semaphore,
-                            pdf_url=pdf_url,
-                            arxiv_id=arxiv_id,
-                        ),
-                    )
-                )
-
-        if not pending:
-            return text_groups
-
-        results = await asyncio.gather(*(task for _, _, task in pending))
-        for (group_idx, item_idx, _), text in zip(pending, results, strict=False):
-            if text:
-                text_groups[group_idx][item_idx] = text
-
-    return text_groups
+    return text_list
 
 
 async def _fetch_pdf_text(
@@ -93,8 +75,8 @@ if __name__ == "__main__":
     )
 
     async def _main() -> None:
-        results = await retrieve_text_from_url([[sample_info]])
-        extracted_text = results[0][0]
+        results = await retrieve_text_from_url([sample_info])
+        extracted_text = results[0]
         print(
             f"Extracted {len(extracted_text)} characters"
             if extracted_text

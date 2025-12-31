@@ -1,10 +1,15 @@
 from pydantic import BaseModel
 
-from airas.services.api_client.llm_specs import LLM_MODELS, LLMParams, OpenAIParams
+from airas.services.api_client.llm_specs import (
+    LLM_MODELS,
+    OPENAI_MODELS,
+    LLMParams,
+    OpenAIParams,
+)
 
-LLM_CONFIG_TYPE = dict[str, LLM_MODELS]
+LLM_CONFIG_TYPE = dict[str, LLM_MODELS | OPENAI_MODELS]
 
-BASE_MODEL: LLM_MODELS = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+BASE_MODEL: LLM_MODELS = "gpt-5-nano-2025-08-07"
 
 
 class NodeLLMConfig(BaseModel):
@@ -35,11 +40,11 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     # GenerateQueriesSubgraph
     "generate_queries": BASE_MODEL,
     # RetrievePaperSubgraph
-    "search_arxiv_id_from_title": "gpt-5-mini-2025-08-07",
-    "summarize_paper": BASE_MODEL,
-    "extract_github_url_from_text": BASE_MODEL,
-    "extract_experimental_info": BASE_MODEL,
-    "extract_reference_titles": BASE_MODEL,
+    "search_arxiv_id_from_title": BASE_MODEL,
+    "summarize_paper":BASE_MODEL,
+    "extract_github_url_from_text":BASE_MODEL,
+    "extract_experimental_info":BASE_MODEL,
+    "extract_reference_titles":BASE_MODEL,
 
     # --- features/generators ---
     # GenerateHypothesisV0Subgraph

@@ -17,7 +17,7 @@ from api.schemas.models import (
 router = APIRouter(prefix="/models", tags=["models"])
 
 
-@router.get("", response_model=RetrieveModelsSubgraphResponseBody)
+@router.post("", response_model=RetrieveModelsSubgraphResponseBody)
 @inject
 @observe()
 async def retrieve_models(

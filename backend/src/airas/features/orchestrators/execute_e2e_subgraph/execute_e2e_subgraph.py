@@ -58,7 +58,6 @@ from airas.features.writers.write_subgraph.write_subgraph import WriteSubgraph
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.github_client import GithubClient
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_analysis import ExperimentalAnalysis
 from airas.types.experimental_design import ExperimentalDesign, RunnerConfig
@@ -144,12 +143,10 @@ class ExecuteE2ESubgraph:
         github_client: GithubClient,
         arxiv_client: ArxivClient,
         langchain_client: LangChainClient,
-        llm_client: LLMFacadeClient,
     ):
         self.github_client = github_client
         self.arxiv_client = arxiv_client
         self.langchain_client = langchain_client
-        self.llm_client = llm_client
 
     def _validate_github_actions_completion(
         self,
@@ -212,7 +209,6 @@ class ExecuteE2ESubgraph:
         result = (
             await RetrievePaperSubgraph(
                 langchain_client=self.langchain_client,
-                llm_client=self.llm_client,
                 arxiv_client=self.arxiv_client,
                 github_client=self.github_client,
                 max_results_per_query=state.get("max_results_per_query", 5),
