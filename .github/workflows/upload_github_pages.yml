@@ -2,7 +2,7 @@ name: Deploy Docs to GitHub Pages
 
 on:
   pull_request:
-    branches: [develop]
+    branches: [main]
     paths:
       - 'docs/**'
       - '.github/workflows/upload_github_pages.yml'
