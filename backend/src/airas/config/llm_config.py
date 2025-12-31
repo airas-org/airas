@@ -1,8 +1,37 @@
-from airas.services.api_client.llm_specs import LLM_MODELS, OPENAI_MODELS
+from pydantic import BaseModel
+
+from airas.services.api_client.llm_specs import (
+    LLM_MODELS,
+    OPENAI_MODELS,
+    LLMParams,
+    OpenAIParams,
+)
 
 LLM_CONFIG_TYPE = dict[str, LLM_MODELS | OPENAI_MODELS]
 
 BASE_MODEL: LLM_MODELS = "gpt-5-nano-2025-08-07"
+
+
+class NodeLLMConfig(BaseModel):
+    llm_name: LLM_MODELS
+    params: LLMParams | None = None
+
+
+DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
+    # GenerateCodeSubgraph
+    "generate_run_config": NodeLLMConfig(
+        llm_name="o3-2025-04-16",
+        params=OpenAIParams(reasoning_effort="high"),
+    ),
+    "generate_experiment_code": NodeLLMConfig(
+        llm_name="o3-2025-04-16",
+        params=OpenAIParams(reasoning_effort="high"),
+    ),
+    "validate_experiment_code": NodeLLMConfig(
+        llm_name="o3-2025-04-16",
+        params=OpenAIParams(reasoning_effort="high"),
+    ),
+}
 
 
 # fmt:off
@@ -24,10 +53,6 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "refine_hypothesis": BASE_MODEL,
     # GenerateExperimentalDesignSubgraph
     "generate_experimental_design": BASE_MODEL,
-    # GenerateCodeSubgraph
-    "generate_run_config": BASE_MODEL,
-    "generate_experiment_code": BASE_MODEL,
-    "validate_experiment_code": BASE_MODEL,
 
     # --- features/analyzers ---
     # AnalyzeExperimentSubgraph

@@ -6,10 +6,7 @@ from airas.features.generators.generate_code_subgraph.prompts.generate_experimen
     generate_experiment_code_prompt,
 )
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.openai_client import (
-    OpenAIParams,
-)
-from airas.services.api_client.llm_specs import LLM_MODELS
+from airas.services.api_client.llm_specs import LLM_MODELS, LLMParams
 from airas.types.experiment_code import ExperimentCode
 from airas.types.experimental_design import ExperimentalDesign
 from airas.types.research_hypothesis import ResearchHypothesis
@@ -26,6 +23,7 @@ async def generate_experiment_code(
     experiment_code: ExperimentCode,
     wandb_config: WandbConfig,
     code_validation: tuple[bool, str] | None = None,
+    params: LLMParams | None = None,
 ) -> ExperimentCode:
     env = Environment()
     template = env.from_string(generate_experiment_code_prompt)
@@ -39,9 +37,6 @@ async def generate_experiment_code(
     }
     messages = template.render(data)
 
-    # TODO: Implement support for reasoning_effort="high" (OpenAI o1/o3/o4) and thinking_budget (Anthropic extended thinking)
-    # to leverage deeper reasoning capabilities for complex experiment code generation across providers.
-    params = OpenAIParams(reasoning_effort="high")
     output, _ = await llm_client.structured_outputs(
         llm_name=llm_name,
         message=messages,
