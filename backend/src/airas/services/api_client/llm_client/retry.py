@@ -17,8 +17,8 @@ from tenacity import (
 
 logger = getLogger(__name__)
 
-DEFAULT_MAX_RETRIES = 10
-WAIT_POLICY = wait_exponential(multiplier=1.0, max=180.0)
+DEFAULT_MAX_RETRIES = 50
+WAIT_POLICY = wait_exponential(multiplier=1.0, max=600.0)
 
 RETRY_EXC = (
     httpx.ConnectError,
@@ -51,7 +51,7 @@ def _is_transient(e: BaseException) -> bool:
     )
 
 
-_fallback_wait = wait_exponential(multiplier=1.0, max=180.0)
+_fallback_wait = wait_exponential(multiplier=1.0, max=600.0)
 
 
 def wait_server_hint_or_exponential(retry_state) -> float:
