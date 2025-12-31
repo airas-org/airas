@@ -9,6 +9,9 @@ from hishel.httpx import AsyncCacheClient, SyncCacheClient
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import create_engine
 
+from airas.features.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
+    AirasDbPaperSearchIndex,
+)
 from airas.features.session_steps.service import SessionStepService
 from airas.features.sessions.service import SessionService
 from airas.features.step_run_links.service import StepRunLinkService
@@ -138,6 +141,11 @@ class Container(containers.DeclarativeContainer):
         QdrantClient,
         sync_session=sync_session,
         async_session=None,
+    )
+
+    # --- Search Index ---
+    airas_db_search_index: providers.Singleton[AirasDbPaperSearchIndex] = (
+        providers.Singleton(AirasDbPaperSearchIndex)
     )
 
     # --- Database Session ---

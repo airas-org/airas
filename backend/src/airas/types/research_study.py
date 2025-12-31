@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Literal, Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -49,7 +49,9 @@ class MetaData(BaseModel):
 class ResearchStudy(BaseModel):
     title: str = Field(..., description="")
     full_text: str = Field(..., description="")
-    references: Optional[dict[str, dict[str, Any]]] = Field(None, description="")
+    references: list[str] = Field(
+        ..., description=""
+    )  # TODO: Consider how much information to obtain from the cited papers.
     meta_data: MetaData = Field(..., description="")
     llm_extracted_info: LLMExtractedInfo
 

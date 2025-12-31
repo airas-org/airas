@@ -2,9 +2,9 @@ from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClie
 from airas.services.api_client.qdrant_client import QdrantClient
 
 
-async def get_paper_titles_from_qdrant(
+async def search_paper_titles_from_qdrant(
     queries: list[str],
-    num_retrieve_paper: int,
+    max_results_per_query: int,
     qdrant_client: QdrantClient,
     llm_client: LLMFacadeClient,
 ) -> list[str]:
@@ -20,7 +20,7 @@ async def get_paper_titles_from_qdrant(
         result = qdrant_client.query_points(
             collection_name=COLLECTION_NAME,
             query_vector=query_vector,
-            limit=num_retrieve_paper,
+            limit=max_results_per_query,
         )
 
         for point in result["result"]["points"]:

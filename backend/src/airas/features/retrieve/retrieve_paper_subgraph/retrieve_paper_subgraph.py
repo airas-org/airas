@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel
@@ -15,14 +14,8 @@ from airas.features.retrieve.retrieve_paper_subgraph.nodes.extract_github_url_fr
 from airas.features.retrieve.retrieve_paper_subgraph.nodes.extract_reference_titles import (
     extract_reference_titles,
 )
-from airas.features.retrieve.retrieve_paper_subgraph.nodes.filter_titles_by_queries import (
-    filter_titles_by_queries,
-)
-from airas.features.retrieve.retrieve_paper_subgraph.nodes.get_paper_titles_from_airas_db import (
-    get_paper_titles_from_airas_db,
-)
 from airas.features.retrieve.retrieve_paper_subgraph.nodes.retrieve_repository_contents import (
-    retrieve_repository_contents_from_url_groups,
+    retrieve_repository_contents_from_urls,
 )
 from airas.features.retrieve.retrieve_paper_subgraph.nodes.retrieve_text_from_url import (
     retrieve_text_from_url,
@@ -76,27 +69,25 @@ class RetrievePaperSubgraphLLMMapping(BaseModel):
 
 
 class RetrievePaperSubgraphInputState(TypedDict):
-    query_list: list[str]
+    paper_titles: list[str]
 
 
 class RetrievePaperSubgraphOutputState(ExecutionTimeState):
-    research_study_list: list[list[ResearchStudy]]
+    research_study_list: list[ResearchStudy]
 
 
 class RetrievePaperSubgraphState(
     RetrievePaperSubgraphInputState, RetrievePaperSubgraphOutputState
 ):
-    all_papers: list[dict[str, Any]]
-    retrieve_paper_title_list: list[list[str]]
-    arxiv_id_list: list[list[str]]
-    arxiv_info_list: list[list[ArxivInfo]]
-    arxiv_full_text_list: list[list[str]]
-    paper_summary_list: list[list[PaperSummary]]
-    reference_title_list: list[list[list[str]]]
-    github_url_list: list[list[str]]
-    github_code_list: list[list[str]]
-    experimental_info_list: list[list[str]]
-    experimental_code_list: list[list[str]]
+    arxiv_id_list: list[str]
+    arxiv_info_list: list[ArxivInfo]
+    arxiv_full_text_list: list[str]
+    paper_summary_list: list[PaperSummary]
+    reference_title_list: list[list[str]]
+    github_url_list: list[str]
+    github_code_list: list[str]
+    experimental_info_list: list[str]
+    experimental_code_list: list[str]
 
 
 class RetrievePaperSubgraph:
@@ -115,39 +106,21 @@ class RetrievePaperSubgraph:
         self.llm_mapping = llm_mapping or RetrievePaperSubgraphLLMMapping()
 
     @record_execution_time
-    def _get_paper_titles_from_airas_db(
-        self, state: RetrievePaperSubgraphState
-    ) -> dict[str, Any]:
-        all_papers = get_paper_titles_from_airas_db()
-        return {"all_papers": all_papers or []}
-
-    @record_execution_time
-    def _filter_titles_by_queries(
-        self, state: RetrievePaperSubgraphState
-    ) -> dict[str, Any]:
-        retrieve_paper_title_list = filter_titles_by_queries(
-            papers=state.get("all_papers", []),
-            queries=state.get("query_list", []),
-            max_results_per_query=self.max_results_per_query,
-        )
-        return {"retrieve_paper_title_list": retrieve_paper_title_list}
-
-    @record_execution_time
     async def _search_arxiv_id_from_title(
         self, state: RetrievePaperSubgraphState
-    ) -> dict[str, Any]:
+    ) -> dict[str, list[str]]:
         arxiv_id_list = await search_arxiv_id_from_title(
             llm_name=self.llm_mapping.search_arxiv_id_from_title,
             llm_client=self.langchain_client,
             prompt_template=openai_websearch_arxiv_ids_prompt,
-            retrieve_paper_title_list=state.get("retrieve_paper_title_list", []),
+            paper_titles=state["paper_titles"],
         )
         return {"arxiv_id_list": arxiv_id_list}
 
     @record_execution_time
     async def _search_arxiv_info_by_id(
         self, state: RetrievePaperSubgraphState
-    ) -> dict[str, Any]:
+    ) -> dict[str, list[ArxivInfo]]:
         arxiv_info_list = await search_arxiv_info_by_id(
             arxiv_id_list=state.get("arxiv_id_list", []),
             arxiv_client=self.arxiv_client,
@@ -157,16 +130,16 @@ class RetrievePaperSubgraph:
     @record_execution_time
     async def _retrieve_text_from_url(
         self, state: RetrievePaperSubgraphState
-    ) -> dict[str, Any]:
+    ) -> dict[str, list[str]]:
         arxiv_full_text_list = await retrieve_text_from_url(
-            arxiv_info_groups=state.get("arxiv_info_list", []),
+            arxiv_info_list=state.get("arxiv_info_list", []),
         )
         return {"arxiv_full_text_list": arxiv_full_text_list}
 
     @record_execution_time
     async def _summarize_paper(
         self, state: RetrievePaperSubgraphState
-    ) -> dict[str, Any]:
+    ) -> dict[str, list[PaperSummary]]:
         paper_summary_list = await summarize_paper(
             llm_name=self.llm_mapping.summarize_paper,
             llm_client=self.langchain_client,
@@ -178,7 +151,7 @@ class RetrievePaperSubgraph:
     @record_execution_time
     async def _extract_github_url_from_text(
         self, state: RetrievePaperSubgraphState
-    ) -> dict[str, Any]:
+    ) -> dict[str, list[str]]:
         github_url_list = await extract_github_url_from_text(
             llm_name=self.llm_mapping.extract_github_url_from_text,
             prompt_template=extract_github_url_from_text_prompt,
@@ -192,13 +165,13 @@ class RetrievePaperSubgraph:
     @record_execution_time
     def _retrieve_repository_contents(
         self, state: RetrievePaperSubgraphState
-    ) -> dict[str, Any]:
+    ) -> dict[str, list[str]]:
         github_url_list = state.get("github_url_list")
         if github_url_list is None:
             raise ValueError(
                 "github_url_list must exist in the state before retrieving repository contents."
             )
-        github_code_list = retrieve_repository_contents_from_url_groups(
+        github_code_list = retrieve_repository_contents_from_urls(
             github_url_list=github_url_list,
             github_client=self.github_client,
         )
@@ -207,7 +180,7 @@ class RetrievePaperSubgraph:
     @record_execution_time
     async def _extract_experimental_info(
         self, state: RetrievePaperSubgraphState
-    ) -> dict[str, Any]:
+    ) -> dict[str, list[str]]:
         paper_summary_list = state.get("paper_summary_list")
         github_code_list = state.get("github_code_list")
         if paper_summary_list is None or github_code_list is None:
@@ -229,10 +202,9 @@ class RetrievePaperSubgraph:
             "experimental_code_list": experimental_code_list,
         }
 
-    # @record_execution_time
     async def _extract_reference_titles(
         self, state: RetrievePaperSubgraphState
-    ) -> dict[str, Any]:
+    ) -> dict[str, list[list[str]]]:
         reference_title_list = await extract_reference_titles(
             llm_name=self.llm_mapping.extract_reference_titles,
             llm_client=self.langchain_client,
@@ -243,76 +215,60 @@ class RetrievePaperSubgraph:
     @record_execution_time
     async def _formatted_output(
         self, state: RetrievePaperSubgraphState
-    ) -> dict[str, Any]:
-        retrieve_paper_title_list = state.get("retrieve_paper_title_list", [])
-        arxiv_info_list = state.get("arxiv_info_list", [])
+    ) -> dict[str, list[ResearchStudy]]:
+        paper_titles = state.get("paper_titles", [])
         arxiv_full_text_list = state.get("arxiv_full_text_list", [])
+        arxiv_info_list = state.get("arxiv_info_list", [])
         paper_summary_list = state.get("paper_summary_list", [])
         github_url_list = state.get("github_url_list", [])
         experimental_info_list = state.get("experimental_info_list", [])
         experimental_code_list = state.get("experimental_code_list", [])
-        research_study_list: list[list[ResearchStudy]] = []
+        reference_title_list = state.get("reference_title_list", [])
+
+        research_study_list: list[ResearchStudy] = []
         for (
-            title_group,
-            full_text_group,
-            arxiv_info_group,
-            paper_summary_group,
-            github_url_group,
-            experimental_info_group,
-            experimental_code_group,
+            title,
+            full_text,
+            arxiv_info,
+            paper_summary,
+            github_url,
+            experimental_info,
+            experimental_code,
+            reference_titles,
         ) in zip(
-            retrieve_paper_title_list,
+            paper_titles,
             arxiv_full_text_list,
             arxiv_info_list,
             paper_summary_list,
             github_url_list,
             experimental_info_list,
             experimental_code_list,
+            reference_title_list,
             strict=True,
         ):
-            research_study_group: list[ResearchStudy] = []
-            for (
-                title,
-                full_text,
-                arxiv_info,
-                paper_summary,
-                github_url,
-                experimental_info,
-                experimental_code,
-            ) in zip(
-                title_group,
-                full_text_group,
-                arxiv_info_group,
-                paper_summary_group,
-                github_url_group,
-                experimental_info_group,
-                experimental_code_group,
-                strict=True,
-            ):
-                research_study_group.append(
-                    ResearchStudy(
-                        title=title,
-                        full_text=full_text,
-                        references={},  # TODO:
-                        meta_data=MetaData(
-                            arxiv_id=arxiv_info.id,
-                            doi=arxiv_info.doi,
-                            authors=arxiv_info.authors,
-                            published_date=arxiv_info.published_date,
-                            github_url=github_url,
-                        ),
-                        llm_extracted_info=LLMExtractedInfo(
-                            main_contributions=paper_summary.main_contributions,
-                            methodology=paper_summary.methodology,
-                            experimental_setup=paper_summary.experimental_setup,
-                            limitations=paper_summary.limitations,
-                            future_research_directions=paper_summary.future_research_directions,
-                            experimental_info=experimental_info,
-                            experimental_code=experimental_code,
-                        ),
-                    )
+            research_study_list.append(
+                ResearchStudy(
+                    title=title,
+                    full_text=full_text,
+                    references=reference_titles,
+                    meta_data=MetaData(
+                        arxiv_id=arxiv_info.id,
+                        doi=arxiv_info.doi,
+                        authors=arxiv_info.authors,
+                        published_date=arxiv_info.published_date,
+                        github_url=github_url,
+                    ),
+                    llm_extracted_info=LLMExtractedInfo(
+                        main_contributions=paper_summary.main_contributions,
+                        methodology=paper_summary.methodology,
+                        experimental_setup=paper_summary.experimental_setup,
+                        limitations=paper_summary.limitations,
+                        future_research_directions=paper_summary.future_research_directions,
+                        experimental_info=experimental_info,
+                        experimental_code=experimental_code,
+                    ),
                 )
-            research_study_list.append(research_study_group)
+            )
         return {"research_study_list": research_study_list}
 
     def build_graph(self):
@@ -320,12 +276,6 @@ class RetrievePaperSubgraph:
             RetrievePaperSubgraphState,
             input_schema=RetrievePaperSubgraphInputState,
             output_schema=RetrievePaperSubgraphOutputState,
-        )
-        graph_builder.add_node(
-            "get_paper_titles_from_airas_db", self._get_paper_titles_from_airas_db
-        )
-        graph_builder.add_node(
-            "filter_titles_by_queries", self._filter_titles_by_queries
         )
         graph_builder.add_node(
             "search_arxiv_id_from_title", self._search_arxiv_id_from_title
@@ -346,11 +296,7 @@ class RetrievePaperSubgraph:
             "extract_experimental_info", self._extract_experimental_info
         )
         graph_builder.add_node("formatted_output", self._formatted_output)
-        graph_builder.add_edge(START, "get_paper_titles_from_airas_db")
-        graph_builder.add_edge(
-            "get_paper_titles_from_airas_db", "filter_titles_by_queries"
-        )
-        graph_builder.add_edge("filter_titles_by_queries", "search_arxiv_id_from_title")
+        graph_builder.add_edge(START, "search_arxiv_id_from_title")
         graph_builder.add_edge("search_arxiv_id_from_title", "search_arxiv_info_by_id")
         graph_builder.add_edge("search_arxiv_info_by_id", "retrieve_text_from_url")
         graph_builder.add_edge("retrieve_text_from_url", "summarize_paper")

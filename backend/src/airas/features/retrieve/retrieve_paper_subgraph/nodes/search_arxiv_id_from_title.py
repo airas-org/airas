@@ -16,17 +16,15 @@ async def search_arxiv_id_from_title(
     llm_name: OPENAI_MODELS,
     llm_client: LangChainClient,
     prompt_template: str,
-    retrieve_paper_title_list: list[list[str]],
+    paper_titles: list[str],
     conference_preference: str | None = None,
-) -> list[list[str]]:
+) -> list[str]:
     # TODO:Reflect the following judgment logic in llm_config.py.
     if llm_name not in OPENAI_MODELS_SET:
         raise ValueError(
             f"It needs to be an OpenAI model. Invalid model name: {llm_name}"
         )
     template = Environment().from_string(prompt_template)
-
-    arxiv_id_list: list[list[str]] = []
 
     async def _retrieve_arxiv_id(title: str) -> str:
         prompt = template.render(
@@ -40,11 +38,7 @@ async def search_arxiv_id_from_title(
                 message=prompt, llm_name=llm_name, web_search=True
             )
         except Exception as e:
-            logger.error(
-                "Web search failed for '%s': %s. Appending empty result.",
-                title,
-                e,
-            )
+            logger.error(f"Web search failed for '{title}': {e}")
             return ""
 
         output_dict: dict | None = None
@@ -62,18 +56,12 @@ async def search_arxiv_id_from_title(
             logger.warning("No arXiv ID found for '%s'.", title)
             return ""
 
-        logger.info("Found arXiv ID for '%s': %s", title, arxiv_id)
+        logger.info(f"Found arXiv ID for '{title}': {arxiv_id}")
         return arxiv_id
 
-    for idx, title_group in enumerate(retrieve_paper_title_list):
-        logger.info(
-            "Processing title group %d/%d", idx + 1, len(retrieve_paper_title_list)
-        )
-        # issue LLM web searches concurrently to hide API latency per group
-        group_results: list[str] = list(
-            await asyncio.gather(*(_retrieve_arxiv_id(title) for title in title_group))
-        )
-
-        arxiv_id_list.append(group_results)
+    logger.info(f"Processing {len(paper_titles)} paper titles")
+    arxiv_id_list: list[str] = list(
+        await asyncio.gather(*(_retrieve_arxiv_id(title) for title in paper_titles))
+    )
 
     return arxiv_id_list
