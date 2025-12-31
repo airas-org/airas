@@ -1,20 +1,20 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Search, Check, Users, Calendar, Quote, Save } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import type { Paper } from "@/types/research"
-import { searchPapers } from "@/lib/api-mock"
-import { cn } from "@/lib/utils"
+import { Calendar, Check, Quote, Save, Search, Users } from "lucide-react";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { searchPapers } from "@/lib/api/paper-search";
+import { cn } from "@/lib/utils";
+import type { Paper } from "@/types/research";
 
 interface PaperSearchSectionProps {
-  selectedPapers: Paper[]
-  onPapersChange: (papers: Paper[]) => void
-  onStepExecuted?: (papers: Paper[]) => void
-  onSave?: () => void
+  selectedPapers: Paper[];
+  onPapersChange: (papers: Paper[]) => void;
+  onStepExecuted?: (papers: Paper[]) => void;
+  onSave?: () => void;
 }
 
 export function PaperSearchSection({
@@ -23,42 +23,49 @@ export function PaperSearchSection({
   onStepExecuted,
   onSave,
 }: PaperSearchSectionProps) {
-  const [query, setQuery] = useState("")
-  const [papers, setPapers] = useState<Paper[]>([])
-  const [isSearching, setIsSearching] = useState(false)
-  const [hasExecuted, setHasExecuted] = useState(false)
-  const [tempSelectedPapers, setTempSelectedPapers] = useState<Paper[]>([])
+  const [query, setQuery] = useState("");
+  const [papers, setPapers] = useState<Paper[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasExecuted, setHasExecuted] = useState(false);
+  const [tempSelectedPapers, setTempSelectedPapers] = useState<Paper[]>([]);
 
   const handleSearch = async () => {
-    if (!query.trim()) return
-    setIsSearching(true)
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return;
+    setIsSearching(true);
+    setError(null);
     try {
-      const results = await searchPapers(query)
-      setPapers(results)
-      setTempSelectedPapers(selectedPapers)
+      const results = await searchPapers(trimmedQuery);
+      setPapers(results);
+      setTempSelectedPapers(selectedPapers);
+    } catch (err) {
+      console.error(err);
+      setPapers([]);
+      setError("論文の検索に失敗しました。時間をおいて再度お試しください。");
     } finally {
-      setIsSearching(false)
+      setIsSearching(false);
     }
-  }
+  };
 
   const togglePaper = (paper: Paper) => {
-    const isSelected = tempSelectedPapers.some((p) => p.id === paper.id)
+    const isSelected = tempSelectedPapers.some((p) => p.id === paper.id);
     if (isSelected) {
-      setTempSelectedPapers(tempSelectedPapers.filter((p) => p.id !== paper.id))
+      setTempSelectedPapers(tempSelectedPapers.filter((p) => p.id !== paper.id));
     } else {
-      setTempSelectedPapers([...tempSelectedPapers, paper])
+      setTempSelectedPapers([...tempSelectedPapers, paper]);
     }
-  }
+  };
 
   const handleConfirmSelection = () => {
-    onPapersChange(tempSelectedPapers)
+    onPapersChange(tempSelectedPapers);
     if (!hasExecuted && onStepExecuted) {
-      onStepExecuted(tempSelectedPapers)
-      setHasExecuted(true)
+      onStepExecuted(tempSelectedPapers);
+      setHasExecuted(true);
     } else if (hasExecuted && onSave) {
-      onSave()
+      onSave();
     }
-  }
+  };
 
   return (
     <Card className="p-6">
@@ -85,17 +92,22 @@ export function PaperSearchSection({
         </Button>
       </div>
 
+      {error && <p className="text-sm text-destructive mb-4">{error}</p>}
+
       {papers.length > 0 && (
         <div className="grid gap-4">
           {papers.map((paper) => {
-            const isSelected = tempSelectedPapers.some((p) => p.id === paper.id)
+            const isSelected = tempSelectedPapers.some((p) => p.id === paper.id);
             return (
               <button
                 key={paper.id}
+                type="button"
                 onClick={() => togglePaper(paper)}
                 className={cn(
                   "w-full text-left p-4 rounded-lg border-2 transition-all",
-                  isSelected ? "border-primary bg-muted" : "border-border hover:border-muted-foreground",
+                  isSelected
+                    ? "border-primary bg-muted"
+                    : "border-border hover:border-muted-foreground",
                 )}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -108,7 +120,9 @@ export function PaperSearchSection({
                         </div>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{paper.abstract}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                      {paper.abstract}
+                    </p>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Users className="w-3 h-3" />
@@ -130,14 +144,16 @@ export function PaperSearchSection({
                   </Badge>
                 </div>
               </button>
-            )
+            );
           })}
         </div>
       )}
 
       {papers.length > 0 && (
         <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">{tempSelectedPapers.length} 件の論文を選択中</p>
+          <p className="text-sm text-muted-foreground">
+            {tempSelectedPapers.length} 件の論文を選択中
+          </p>
           <Button
             onClick={handleConfirmSelection}
             disabled={tempSelectedPapers.length === 0}
@@ -151,10 +167,15 @@ export function PaperSearchSection({
 
       {selectedPapers.length > 0 && papers.length === 0 && (
         <div className="mt-6 pt-6 border-t border-border">
-          <p className="text-sm text-muted-foreground mb-2">確定済み: {selectedPapers.length} 件の論文</p>
+          <p className="text-sm text-muted-foreground mb-2">
+            確定済み: {selectedPapers.length} 件の論文
+          </p>
           <div className="flex flex-wrap gap-2">
             {selectedPapers.map((paper) => (
-              <span key={paper.id} className="px-3 py-1 bg-muted rounded-full text-sm text-foreground">
+              <span
+                key={paper.id}
+                className="px-3 py-1 bg-muted rounded-full text-sm text-foreground"
+              >
                 {paper.title.substring(0, 30)}...
               </span>
             ))}
@@ -162,5 +183,5 @@ export function PaperSearchSection({
         </div>
       )}
     </Card>
-  )
+  );
 }

@@ -3,7 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export type RetrievePaperSubgraphRequestBody = {
-    query_list: Array<string>;
-    max_results_per_query: number;
+  query_list: Array<string>;
+  max_results_per_query: number;
 };
-

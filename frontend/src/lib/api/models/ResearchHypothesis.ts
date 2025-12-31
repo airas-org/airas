@@ -3,12 +3,11 @@
 /* tslint:disable */
 /* eslint-disable */
 export type ResearchHypothesis = {
-    open_problems: string;
-    method: string;
-    experimental_setup: string;
-    primary_metric: string;
-    experimental_code: string;
-    expected_result: string;
-    expected_conclusion: string;
+  open_problems: string;
+  method: string;
+  experimental_setup: string;
+  primary_metric: string;
+  experimental_code: string;
+  expected_result: string;
+  expected_conclusion: string;
 };
-

@@ -3,7 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export type FetchRunIdsResponseBody = {
-    run_ids: Array<string>;
-    execution_time: Record<string, Array<number>>;
+  run_ids: Array<string>;
+  execution_time: Record<string, Array<number>>;
 };
-

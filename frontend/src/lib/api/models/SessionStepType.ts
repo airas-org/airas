@@ -3,13 +3,13 @@
 /* tslint:disable */
 /* eslint-disable */
 export enum SessionStepType {
-    RETRIEVE = 'retrieve',
-    HYPOTHESIS = 'hypothesis',
-    DESIGN = 'design',
-    CODE = 'code',
-    EXPERIMENT = 'experiment',
-    ANALYSIS = 'analysis',
-    WRITE = 'write',
-    PUBLISH = 'publish',
-    OTHER = 'other',
+  RETRIEVE = "retrieve",
+  HYPOTHESIS = "hypothesis",
+  DESIGN = "design",
+  CODE = "code",
+  EXPERIMENT = "experiment",
+  ANALYSIS = "analysis",
+  WRITE = "write",
+  PUBLISH = "publish",
+  OTHER = "other",
 }

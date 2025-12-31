@@ -3,8 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export type ExecuteTrialResponseBody = {
-    dispatched: boolean;
-    run_ids: Array<string>;
-    execution_time: Record<string, Array<number>>;
+  dispatched: boolean;
+  run_ids: Array<string>;
+  execution_time: Record<string, Array<number>>;
 };
-

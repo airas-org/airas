@@ -3,8 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export type SessionResponse = {
-    id: string;
-    title: string;
-    created_at: string;
+  id: string;
+  title: string;
+  created_at: string;
 };
-

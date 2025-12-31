@@ -12,10 +12,10 @@ DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
     "generate_queries": BASE_MODEL,
     # RetrievePaperSubgraph
     "search_arxiv_id_from_title": "gpt-5-mini-2025-08-07",
-    "summarize_paper": BASE_MODEL,
-    "extract_github_url_from_text": BASE_MODEL,
-    "extract_experimental_info": BASE_MODEL,
-    "extract_reference_titles": BASE_MODEL,
+    "summarize_paper": "gemini-2.5-flash-lite",
+    "extract_github_url_from_text": "gemini-2.5-flash-lite",
+    "extract_experimental_info": "gemini-2.5-flash-lite",
+    "extract_reference_titles": "gemini-2.5-flash-lite",
 
     # --- features/generators ---
     # GenerateHypothesisV0Subgraph

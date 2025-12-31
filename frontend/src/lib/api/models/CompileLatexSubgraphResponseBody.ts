@@ -3,8 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export type CompileLatexSubgraphResponseBody = {
-    compile_latex_dispatched: boolean;
-    paper_url: (string | null);
-    execution_time: Record<string, Array<number>>;
+  compile_latex_dispatched: boolean;
+  paper_url: string | null;
+  execution_time: Record<string, Array<number>>;
 };
-

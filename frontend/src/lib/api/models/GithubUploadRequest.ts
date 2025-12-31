@@ -2,11 +2,10 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { GitHubConfig } from './GitHubConfig';
-import type { ResearchHistory_Input } from './ResearchHistory_Input';
+import type { GitHubConfig } from "./GitHubConfig";
+import type { ResearchHistory_Input } from "./ResearchHistory_Input";
 export type GithubUploadRequest = {
-    github_config: GitHubConfig;
-    research_history: ResearchHistory_Input;
-    commit_message?: (string | null);
+  github_config: GitHubConfig;
+  research_history: ResearchHistory_Input;
+  commit_message?: string | null;
 };
-

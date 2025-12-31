@@ -3,14 +3,13 @@
 /* tslint:disable */
 /* eslint-disable */
 export type PaperContent = {
-    title: string;
-    abstract: string;
-    introduction: string;
-    related_work: string;
-    background: string;
-    method: string;
-    experimental_setup: string;
-    results: string;
-    conclusion: string;
+  title: string;
+  abstract: string;
+  introduction: string;
+  related_work: string;
+  background: string;
+  method: string;
+  experimental_setup: string;
+  results: string;
+  conclusion: string;
 };
-

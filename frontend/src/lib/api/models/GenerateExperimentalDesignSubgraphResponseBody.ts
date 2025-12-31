@@ -2,9 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ExperimentalDesign_Output } from './ExperimentalDesign_Output';
+import type { ExperimentalDesign_Output } from "./ExperimentalDesign_Output";
 export type GenerateExperimentalDesignSubgraphResponseBody = {
-    experimental_design: ExperimentalDesign_Output;
-    execution_time: Record<string, Array<number>>;
+  experimental_design: ExperimentalDesign_Output;
+  execution_time: Record<string, Array<number>>;
 };
-
