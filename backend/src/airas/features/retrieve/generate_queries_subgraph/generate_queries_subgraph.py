@@ -2,7 +2,6 @@ import logging
 from typing import Annotated
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
@@ -18,10 +17,9 @@ from airas.features.retrieve.generate_queries_subgraph.prompt.generate_queries_p
     generate_queries_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
     LLMFacadeClient,
 )
-from airas.utils.check_api_key import check_api_key
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -33,7 +31,7 @@ generate_queries_timed = lambda f: time_node(generate_queries_str)(f)  # noqa: E
 
 
 class GenerateQueriesLLMMapping(BaseModel):
-    generate_queries: LLM_MODEL = DEFAULT_NODE_LLMS["generate_queries"]
+    generate_queries: LLM_MODELS = DEFAULT_NODE_LLMS["generate_queries"]
 
 
 class GenerateQueriesInputState(TypedDict):
@@ -79,7 +77,6 @@ class GenerateQueriesSubgraph(BaseSubgraph):
             )
         self.n_queries = n_queries
         self.llm_client = llm_client
-        check_api_key(llm_api_key_check=True)
 
     @generate_queries_timed
     async def _generate_queries(
@@ -94,7 +91,7 @@ class GenerateQueriesSubgraph(BaseSubgraph):
         )
         return {"queries": generated_queries}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(GenerateQueriesState)
         graph_builder.add_node("generate_queries", self._generate_queries)
         graph_builder.add_edge(START, "generate_queries")

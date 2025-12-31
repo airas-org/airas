@@ -2,9 +2,9 @@ from jinja2 import Environment
 from pydantic import BaseModel, create_model
 
 from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.services.api_client.llm_specs import LLM_MODELS
 
 
 def _build_generated_query_model(n_queries: int) -> type[BaseModel]:
@@ -13,7 +13,7 @@ def _build_generated_query_model(n_queries: int) -> type[BaseModel]:
 
 
 async def generate_queries(
-    llm_name: LLM_MODEL,
+    llm_name: LLM_MODELS,
     llm_client: LLMFacadeClient,
     prompt_template: str,
     research_topic: str,

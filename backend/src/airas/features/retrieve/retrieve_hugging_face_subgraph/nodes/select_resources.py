@@ -7,9 +7,9 @@ from airas.features.retrieve.retrieve_hugging_face_subgraph.prompt.select_resour
     select_resources_prompt,
 )
 from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.hugging_face import HuggingFace
 from airas.types.research_session import ResearchSession
 
@@ -22,7 +22,7 @@ class LLMOutput(BaseModel):
 
 
 async def select_resources(
-    llm_name: LLM_MODEL,
+    llm_name: LLM_MODELS,
     research_session: ResearchSession,
     huggingface_search_results: HuggingFace,
     llm_client: LLMFacadeClient,

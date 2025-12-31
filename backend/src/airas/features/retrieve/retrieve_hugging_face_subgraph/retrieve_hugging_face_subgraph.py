@@ -1,7 +1,6 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -18,13 +17,12 @@ from airas.features.retrieve.retrieve_hugging_face_subgraph.nodes.select_resourc
 )
 from airas.services.api_client.hugging_face_client import HuggingFaceClient
 from airas.services.api_client.llm_client.llm_facade_client import (
-    LLM_MODEL,
     LLMFacadeClient,
 )
+from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.hugging_face import HuggingFace
 from airas.types.research_iteration import ExternalResources
 from airas.types.research_session import ResearchSession
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -39,10 +37,10 @@ def retrieve_hugging_face_timed(f):
 
 
 class RetrieveHuggingFaceLLMMapping(BaseModel):
-    select_resources: LLM_MODEL = DEFAULT_NODE_LLMS.get(
+    select_resources: LLM_MODELS = DEFAULT_NODE_LLMS.get(
         "select_resources", "o3-2025-04-16"
     )
-    extract_code_in_readme: LLM_MODEL = DEFAULT_NODE_LLMS.get(
+    extract_code_in_readme: LLM_MODELS = DEFAULT_NODE_LLMS.get(
         "extract_code_in_readme", "o3-2025-04-16"
     )
 
@@ -106,9 +104,6 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
                 f"but got {type(llm_mapping)}"
             )
         self.include_gated = include_gated
-        check_api_key(
-            huggingface_api_key_check=True,
-        )
 
     async def _search_hugging_face(
         self, state: RetrieveHuggingFaceState
@@ -148,7 +143,7 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
         )
         return {"research_session": research_session}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         graph_builder = StateGraph(RetrieveHuggingFaceState)
         graph_builder.add_node("search_hugging_face", self._search_hugging_face)
         graph_builder.add_node("select_resources", self._select_resources)

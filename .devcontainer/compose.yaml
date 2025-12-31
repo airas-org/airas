@@ -1,4 +1,21 @@
 services:
+  db:
+    image: postgres:16
+    container_name: airas-db
+    environment:
+      POSTGRES_USER: airas
+      POSTGRES_PASSWORD: airas
+      POSTGRES_DB: airas
+    ports:
+      - "5432:5432"
+    volumes:
+      - airas_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airas -d airas"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
   airas:
     build:
       context: ../
@@ -8,4 +25,8 @@ services:
     volumes:
       - ..:/workspaces/airas:cached
     environment:
-      - PYTHONPATH=/workspaces/airas/src
+      - PYTHONPATH=/workspaces/airas/backend/src
+      - DATABASE_URL=postgresql+psycopg://airas:airas@db:5432/airas
+
+volumes:
+  airas_pgdata:

@@ -3,15 +3,13 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, TypedDict
 
-from langgraph.graph.graph import CompiledGraph
-
 
 class BaseSubgraph(ABC):
     InputState: type[TypedDict]
     OutputState: type[TypedDict]
 
     @abstractmethod
-    def build_graph(self) -> CompiledGraph: ...
+    def build_graph(self): ...
 
     def run(self, state: dict[str, Any], config: dict | None = None) -> dict[str, Any]:
         return asyncio.run(self.arun(state, config=config))
@@ -19,9 +17,9 @@ class BaseSubgraph(ABC):
     async def arun(
         self, state: dict[str, Any], config: dict | None = None
     ) -> dict[str, Any]:
+        # TODO: Using LangGraph's input_schema and output_schema should make this unnecessary.
         input_state_keys = self.InputState.__annotations__.keys()
         output_state_keys = self.OutputState.__annotations__.keys()
-        # NOTE: This is a temporary workaround to automatically include updated InputState values in the subgraph's output.
         unique_keys = set(input_state_keys) | set(output_state_keys)
         merged_keys = dict.fromkeys(unique_keys).keys()
 

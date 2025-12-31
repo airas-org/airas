@@ -1,16 +1,39 @@
 import asyncio
 import time
+from copy import deepcopy
 from functools import wraps
 from logging import getLogger
 from typing import Callable
 
-from typing_extensions import TypedDict
+from langgraph.types import Command
+from typing_extensions import Annotated, TypedDict
 
 logger = getLogger(__name__)
 
 
+ExecutionTime = dict[str, list[float]]
+
+
+def merge_execution_time(
+    left: ExecutionTime | None, right: ExecutionTime | None
+) -> ExecutionTime:
+    merged = deepcopy(left) if left else {}
+    if not right:
+        return merged
+    for node, durations in right.items():
+        existing = merged.setdefault(node, [])
+        existing_len = len(existing)
+        new_len = len(durations)
+        if new_len >= existing_len:
+            existing.extend(durations[existing_len:])
+        else:
+            existing.clear()
+            existing.extend(durations)
+    return merged
+
+
 class ExecutionTimeState(TypedDict):
-    execution_time: dict[str, dict[str, list[float]]]
+    execution_time: Annotated[ExecutionTime, merge_execution_time]
 
 
 def time_node(
@@ -32,13 +55,20 @@ def time_node(
                 duration = round(end - start, 4)
 
                 execution_time = state.get("execution_time", {})
-                subgraph_log = execution_time.get(subgraph_name, {})
-                durations = subgraph_log.get(actual_node, [])
-                durations.append(duration)
+                existing = execution_time.get(actual_node, [])
+                execution_time[actual_node] = [*existing, duration]
 
-                subgraph_log[actual_node] = durations
-                execution_time[subgraph_name] = subgraph_log
-                state["execution_time"] = execution_time
+                # Handle Command objects
+                if isinstance(result, Command):
+                    result = Command(
+                        update={
+                            **(result.update or {}),
+                            "execution_time": execution_time,
+                        },
+                        goto=result.goto,
+                    )
+                else:
+                    result["execution_time"] = execution_time
 
                 logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
                 return result
@@ -58,13 +88,20 @@ def time_node(
                 duration = round(end - start, 4)
 
                 execution_time = state.get("execution_time", {})
-                subgraph_log = execution_time.get(subgraph_name, {})
-                durations = subgraph_log.get(actual_node, [])
-                durations.append(duration)
+                existing = execution_time.get(actual_node, [])
+                execution_time[actual_node] = [*existing, duration]
 
-                subgraph_log[actual_node] = durations
-                execution_time[subgraph_name] = subgraph_log
-                state["execution_time"] = execution_time
+                # Handle Command objects
+                if isinstance(result, Command):
+                    result = Command(
+                        update={
+                            **(result.update or {}),
+                            "execution_time": execution_time,
+                        },
+                        goto=result.goto,
+                    )
+                else:
+                    result["execution_time"] = execution_time
 
                 logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
                 return result
@@ -90,11 +127,9 @@ def time_subgraph(subgraph_name: str):
                 duration = round(end - start, 4)
 
                 timings = state.get("execution_time", {})
-                subgraph_log = timings.get(subgraph_name, {})
-                durations = subgraph_log.get("__subgraph_total__", [])
-                durations.append(duration)
-                subgraph_log["__subgraph_total__"] = durations
-                timings[subgraph_name] = subgraph_log
+                key = f"__{subgraph_name}_total__"
+                existing = timings.get(key, [])
+                timings[key] = [*existing, duration]
                 state["execution_time"] = timings
 
                 logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
@@ -114,11 +149,9 @@ def time_subgraph(subgraph_name: str):
                 duration = round(end - start, 4)
 
                 timings = state.get("execution_time", {})
-                subgraph_log = timings.get(subgraph_name, {})
-                durations = subgraph_log.get("__subgraph_total__", [])
-                durations.append(duration)
-                subgraph_log["__subgraph_total__"] = durations
-                timings[subgraph_name] = subgraph_log
+                key = f"__{subgraph_name}_total__"
+                existing = timings.get(key, [])
+                timings[key] = [*existing, duration]
                 state["execution_time"] = timings
 
                 logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")

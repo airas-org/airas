@@ -2,7 +2,6 @@ import argparse
 from logging import getLogger
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.graph import CompiledGraph
 from typing_extensions import TypedDict
 
 from airas.core.base import BaseSubgraph
@@ -10,7 +9,6 @@ from airas.features.github.nodes.create_branch import create_branch
 from airas.features.github.nodes.find_commit_sha import find_commit_sha
 from airas.services.api_client.github_client import GithubClient
 from airas.types.github import GitHubRepositoryInfo
-from airas.utils.check_api_key import check_api_key
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
 
@@ -51,7 +49,6 @@ class CreateBranchSubgraph(BaseSubgraph):
         new_branch_name: str,
         start_subgraph_name: str,
     ):
-        check_api_key(github_personal_access_token_check=True)
         self.github_client = github_client
         self.new_branch_name = new_branch_name
         self.start_subgraph_name = start_subgraph_name
@@ -81,7 +78,7 @@ class CreateBranchSubgraph(BaseSubgraph):
             raise RuntimeError("Failed to create branch")
         return {"github_repository_info": new_branch_info}
 
-    def build_graph(self) -> CompiledGraph:
+    def build_graph(self):
         sg = StateGraph(CreateBranchSubgraphState)
         sg.add_node("find_commit_sha", self._find_commit_sha)
         sg.add_node("create_branch", self._create_branch)

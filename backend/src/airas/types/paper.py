@@ -36,12 +36,12 @@ class PaperReviewScores(BaseModel):
 
 
 class PaperContent(BaseModel):
-    title: str
-    abstract: str
-    introduction: str
-    related_work: str
-    background: str
-    method: str
-    experimental_setup: str
-    results: str
-    conclusion: str
+    title: str = Field(min_length=1)
+    abstract: str = Field(min_length=1)
+    introduction: str = Field(min_length=1)
+    related_work: str = Field(min_length=1)
+    background: str = Field(min_length=1)
+    method: str = Field(min_length=1)
+    experimental_setup: str = Field(min_length=1)
+    results: str = Field(min_length=1)
+    conclusion: str = Field(min_length=1)

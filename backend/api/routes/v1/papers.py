@@ -1,107 +1,139 @@
 from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from langfuse import observe
 
-from airas.features.retrieve.retrieve_code_subgraph.retrieve_code_subgraph import (
-    RetrieveCodeSubgraph,
+from airas.core.container import Container
+from airas.features.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
+    RetrievePaperSubgraph,
 )
-from airas.features.retrieve.retrieve_paper_content_subgraph.retrieve_paper_content_subgraph import (
-    RetrievePaperContentSubgraph,
+from airas.features.retrieve.search_paper_titles_subgraph.search_paper_titles_from_airas_db_subgraph import (
+    SearchPaperTitlesFromAirasDbSubgraph,
 )
-from airas.features.retrieve.summarize_paper_subgraph.summarize_paper_subgraph import (
-    SummarizePaperSubgraph,
+from airas.features.retrieve.search_paper_titles_subgraph.search_paper_titles_from_qdrant_subgraph import (
+    SearchPaperTitlesFromQdrantSubgraph,
 )
+from airas.features.writers.write_subgraph.write_subgraph import WriteSubgraph
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.github_client import GithubClient
-from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
-from airas.services.api_client.qdrant_client import QdrantClient
-from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
+from airas.services.api_client.langchain_client import LangChainClient
+from airas.services.api_client.langfuse_client import LangfuseClient
 from api.schemas.papers import (
-    GetPaperTitleRequestBody,
-    GetPaperTitleResponseBody,
-    RetrieveCodeRequestBody,
-    RetrieveCodeResponseBody,
-    RetrievePaperContentRequestBody,
-    RetrievePaperContentResponseBody,
-    SummarizePaperRequestBody,
-    SummarizePaperResponseBody,
-)
-from src.airas.core.container import Container
-from src.airas.features.retrieve.get_paper_titles_subgraph.get_paper_titles_from_db_subgraph import (
-    GetPaperTitlesFromDBSubgraph,
+    RetrievePaperSubgraphRequestBody,
+    RetrievePaperSubgraphResponseBody,
+    SearchMethod,
+    SearchPaperTitlesRequestBody,
+    SearchPaperTitlesResponseBody,
+    WriteSubgraphRequestBody,
+    WriteSubgraphResponseBody,
 )
 
 router = APIRouter(prefix="/papers", tags=["papers"])
 
 
-@router.get("/search/title", response_model=GetPaperTitleResponseBody)
-@inject
-async def get_paper_title(
-    request: GetPaperTitleRequestBody,
-    qdrant_client: Annotated[QdrantClient, Depends(Provide[Container.qdrant_client])],
-    llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
-    ],
-) -> GetPaperTitleResponseBody:
-    result = await GetPaperTitlesFromDBSubgraph(
-        qdrant_client=qdrant_client,
-        llm_client=llm_client,
-        max_results_per_query=10,
-        semantic_search=True,
-    ).arun(request)
-    return GetPaperTitleResponseBody(research_study_list=result["research_study_list"])
+@router.post("/search", response_model=SearchPaperTitlesResponseBody)
+@observe()
+async def search_paper_titles(
+    request: SearchPaperTitlesRequestBody,
+    fastapi_request: Request,
+) -> SearchPaperTitlesResponseBody:
+    container: Container = fastapi_request.app.state.container
 
+    subgraph: SearchPaperTitlesFromAirasDbSubgraph | SearchPaperTitlesFromQdrantSubgraph
+    match request.search_method:
+        case SearchMethod.AIRAS_DB:
+            search_index = container.airas_db_search_index()
+            subgraph = SearchPaperTitlesFromAirasDbSubgraph(
+                search_index=search_index,
+                max_results_per_query=request.max_results_per_query,
+            )
 
-@router.get("/content", response_model=RetrievePaperContentResponseBody)
-@inject
-async def retrieve_paper_content(
-    request: RetrievePaperContentRequestBody,
-    arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
-    ss_client: Annotated[
-        SemanticScholarClient, Depends(Provide[Container.semantic_scholar_client])
-    ],
-    llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
-    ],
-) -> RetrievePaperContentResponseBody:
-    result = await RetrievePaperContentSubgraph(
-        target_study_list_source="research_study_list",
-        llm_client=llm_client,
-        arxiv_client=arxiv_client,
-        ss_client=ss_client,
-        paper_provider="arxiv",
-    ).arun(request)
-    return RetrievePaperContentResponseBody(
-        research_study_list=result["research_study_list"]
+        case SearchMethod.QDRANT:
+            llm_client = container.llm_facade_client()
+            qdrant_client = container.qdrant_client()
+
+            subgraph = SearchPaperTitlesFromQdrantSubgraph(
+                llm_client=llm_client,
+                qdrant_client=qdrant_client,
+                max_results_per_query=request.max_results_per_query,
+            )
+
+        case _:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported search method: {request.search_method}",
+            )
+
+    result = await subgraph.build_graph().ainvoke(
+        {"queries": request.queries},
+    )
+
+    return SearchPaperTitlesResponseBody(
+        paper_titles=result["paper_titles"],
+        execution_time=result["execution_time"],
     )
 
 
-@router.get("/summarize", response_model=SummarizePaperResponseBody)
+@router.post("/retrieval", response_model=RetrievePaperSubgraphResponseBody)
 @inject
-async def summarize_paper_content(
-    request: SummarizePaperRequestBody,
-    llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
+@observe()
+async def get_paper_title(
+    request: RetrievePaperSubgraphRequestBody,
+    langchain_client: Annotated[
+        LangChainClient, Depends(Provide[Container.langchain_client])
     ],
-) -> SummarizePaperResponseBody:
-    result = await SummarizePaperSubgraph(
-        llm_client=llm_client,
-    ).arun(request)
-    return SummarizePaperResponseBody(research_study_list=result["research_study_list"])
-
-
-@router.get("/code", response_model=RetrieveCodeResponseBody)
-@inject
-async def retrieve_code(
-    request: RetrieveCodeRequestBody,
-    llm_client: Annotated[
-        LLMFacadeClient, Depends(Provide[Container.llm_facade_client])
-    ],
+    arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
-) -> RetrieveCodeResponseBody:
-    result = await RetrieveCodeSubgraph(
-        llm_client=llm_client,
-        github_client=github_client,
-    ).arun(request)
-    return RetrieveCodeResponseBody(research_study_list=result["research_study_list"])
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
+) -> RetrievePaperSubgraphResponseBody:
+    handler = langfuse_client.create_handler()
+    config = {"callbacks": [handler]} if handler else {}
+
+    result = (
+        await RetrievePaperSubgraph(
+            langchain_client=langchain_client,
+            arxiv_client=arxiv_client,
+            github_client=github_client,
+        )
+        .build_graph()
+        .ainvoke(request.model_dump(), config=config)
+    )
+    return RetrievePaperSubgraphResponseBody(
+        research_study_list=[
+            study.model_dump() for study in result["research_study_list"]
+        ],
+        execution_time=result["execution_time"],
+    )
+
+
+@router.post("/generations", response_model=WriteSubgraphResponseBody)
+@inject
+@observe()
+async def generate_paper(
+    request: WriteSubgraphRequestBody,
+    langchain_client: Annotated[
+        LangChainClient, Depends(Provide[Container.langchain_client])
+    ],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
+) -> WriteSubgraphResponseBody:
+    handler = langfuse_client.create_handler()
+    config = {"callbacks": [handler]} if handler else {}
+
+    result = (
+        await WriteSubgraph(
+            langchain_client=langchain_client,
+            writing_refinement_rounds=request.writing_refinement_rounds,
+            llm_mapping=request.llm_mapping,
+        )
+        .build_graph()
+        .ainvoke(request, config=config)
+    )
+    return WriteSubgraphResponseBody(
+        paper_content=result["paper_content"],
+        execution_time=result["execution_time"],
+    )

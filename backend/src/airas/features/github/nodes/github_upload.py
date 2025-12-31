@@ -3,14 +3,14 @@ import logging
 import time
 
 from airas.services.api_client.github_client import GithubClient
-from airas.types.github import GitHubRepositoryInfo
+from airas.types.github import GitHubConfig
 from airas.types.research_history import ResearchHistory
 
 logger = logging.getLogger(__name__)
 
 
 def github_upload(
-    github_repository_info: GitHubRepositoryInfo,
+    github_config: GitHubConfig,
     github_client: GithubClient,
     research_history: ResearchHistory,
     file_path: str = ".research/research_history.json",
@@ -18,15 +18,15 @@ def github_upload(
     wait_seconds: float = 3.0,
 ) -> bool:
     logger.info(
-        f"[GitHub I/O] Upload: {github_repository_info.github_owner}/{github_repository_info.repository_name}@{github_repository_info.branch_name}:{file_path}"
+        f"[GitHub I/O] Upload: {github_config.github_owner}/{github_config.repository_name}@{github_config.branch_name}:{file_path}"
     )
     # Convert ResearchHistory to dict for JSON serialization with datetime handling
     research_history_dict = research_history.model_dump(exclude_none=True, mode="json")
 
     ok_json = github_client.commit_file_bytes(
-        github_owner=github_repository_info.github_owner,
-        repository_name=github_repository_info.repository_name,
-        branch_name=github_repository_info.branch_name,
+        github_owner=github_config.github_owner,
+        repository_name=github_config.repository_name,
+        branch_name=github_config.branch_name,
         file_path=file_path,
         file_content=json.dumps(
             research_history_dict, ensure_ascii=False, indent=2
@@ -35,7 +35,7 @@ def github_upload(
     )
     if ok_json:
         print(
-            f"Check here：https://github.com/{github_repository_info.github_owner}/{github_repository_info.repository_name}/blob/{github_repository_info.branch_name}/{file_path}"
+            f"Check here：https://github.com/{github_config.github_owner}/{github_config.repository_name}/blob/{github_config.branch_name}/{file_path}"
         )
 
     if wait_seconds > 0:
