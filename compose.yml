@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airas
+      POSTGRES_PASSWORD: airas
+      POSTGRES_DB: airas
+    volumes:
+      - airas_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airas -d airas"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      target: prod
+    env_file:
+      - .env
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+  migrate:
+    build:
+      context: ./backend
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["bash", "-lc", "uv run alembic upgrade head"]
+
+volumes:
+  airas_pgdata:

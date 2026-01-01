@@ -128,13 +128,6 @@ export function WorkflowTree({ workflowTree, activeNodeId, onNavigate }: Workflo
     return -1;
   };
 
-  const _isCompletedNode = (nodeId: string): boolean => {
-    if (activeNodeId === nodeId) return false;
-    const node = workflowTree.nodes[nodeId];
-    if (!node) return false;
-    // Node is completed if it has snapshot data
-    return node.snapshot !== undefined;
-  };
   const rowKeyCounts = new Map<string, number>();
   const emptyCellCounts = new Map<string, number>();
 

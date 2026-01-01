@@ -22,19 +22,30 @@
 </p>
 
 
-AIRAS is an open-source software framework for automated research, being developed to support the entire research workflow. It aims to integrate all of the necessary functions for automating research—from literature search and method generation to experimentation and paper writing—and is designed with the aim of enabling as many individuals and organizations as possible to contribute to open innovation in research automation.
+AIRAS is an open-source software for automated research, being developed to support the entire research workflow. It aims to integrate all of the necessary functions for automating research—from literature search and method generation to experimentation and paper writing—and is designed with the aim of enabling as many individuals and organizations as possible to contribute to open innovation in research automation.
+
+Features of AIRAS include:
+- Implemented as individual research processes
+- Allows users to add their own original research processes
+- Enables saving implemented code and executing it on large-scale computational resources through advanced integration with GitHub
+- Supports not only fully automated research, but also interactive research in which users can collaborate with the system
 
 Currently, it focuses on the automation of machine learning research.
 
-Unlike other automated research agents such as [AI Scientist](https://github.com/SakanaAI/AI-Scientist), AIRAS has the following key features:
-
-Features
-- Implemented by individual research processes
-- Enables users to implement flexible and customized research workflows
-- Allows users to add their own original research processes
-
 ## Quick Start
-Preparing. Please wait a moment.
+
+Copy `.env.example` to `.env` and update the configuration as needed.
+Then, start the application by running:
+
+```bash
+make up
+```
+
+Once the application is running, open your browser and navigate to:
+
+`http://localhost:5173/`
+
+You should now see the web application up and running.
 
 ## Roadmap
 
@@ -45,7 +56,7 @@ Preparing. Please wait a moment.
 
 ## Contact
 
-We are exploring best practices for human-AI collaboration in automated AI research. Together, we're investigating how new research workflows—powered by both human insight and AI agents—can accelerate discovery, improve reproducibility, and give organizations a competitive edge in the age of autonomous research.
+We aim to build an operating system for automated research that enables humanity to discover scientific breakthroughs it has not yet reached.
 
 If you are interested in this topic, please feel free to contact us at <a href="mailto:ulti4929@gmail.com">ulti4929@gmail.com</a>.
 
