@@ -216,7 +216,7 @@ class LangChainClient:
             params (LLMParams | None, optional): Additional parameters for the language model. Defaults to None.
             web_search (bool, optional): Whether to enable web search tools. Defaults to False.
         Returns:
-            tuple[str, float]: A tuple containing the generated response as a string and a float representing the cost (currently always 0.0).
+            str: The generated response as a string.
         """
         model = self._create_chat_model(llm_name, web_search, params)
         response = await model.ainvoke(message)
@@ -239,7 +239,7 @@ class LangChainClient:
             params (LLMParams | None, optional): Additional parameters for the language model. Defaults to None.
 
         Returns:
-            tuple[Any, float]: A tuple containing the structured data parsed into the target schema and the cost (currently always 0.0).
+            Any: The structured data parsed into the target schema.
         """
         # TODO: The model's max output tokens may cause truncated responses for large structured outputs,
         # resulting in validation errors when required fields are missing such as PaperContent.
