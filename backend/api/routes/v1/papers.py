@@ -11,9 +11,6 @@ from airas.features.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph imp
 from airas.features.retrieve.search_paper_titles_subgraph.search_paper_titles_from_airas_db_subgraph import (
     SearchPaperTitlesFromAirasDbSubgraph,
 )
-from airas.features.retrieve.search_paper_titles_subgraph.search_paper_titles_from_qdrant_subgraph import (
-    SearchPaperTitlesFromQdrantSubgraph,
-)
 from airas.features.writers.write_subgraph.write_subgraph import WriteSubgraph
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.github_client import GithubClient
@@ -40,22 +37,12 @@ async def search_paper_titles(
 ) -> SearchPaperTitlesResponseBody:
     container: Container = fastapi_request.app.state.container
 
-    subgraph: SearchPaperTitlesFromAirasDbSubgraph | SearchPaperTitlesFromQdrantSubgraph
+    subgraph: SearchPaperTitlesFromAirasDbSubgraph
     match request.search_method:
         case SearchMethod.AIRAS_DB:
             search_index = container.airas_db_search_index()
             subgraph = SearchPaperTitlesFromAirasDbSubgraph(
                 search_index=search_index,
-                max_results_per_query=request.max_results_per_query,
-            )
-
-        case SearchMethod.QDRANT:
-            llm_client = container.llm_facade_client()
-            qdrant_client = container.qdrant_client()
-
-            subgraph = SearchPaperTitlesFromQdrantSubgraph(
-                llm_client=llm_client,
-                qdrant_client=qdrant_client,
                 max_results_per_query=request.max_results_per_query,
             )
 

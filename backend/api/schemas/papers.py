@@ -17,7 +17,6 @@ from airas.types.research_study import ResearchStudy
 
 class SearchMethod(str, Enum):
     AIRAS_DB = "airas_db"
-    QDRANT = "qdrant"
 
 
 class SearchPaperTitlesRequestBody(BaseModel):

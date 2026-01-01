@@ -21,7 +21,6 @@ from airas.services.api_client.hugging_face_client import HuggingFaceClient
 from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.langfuse_client import LangfuseClient
 from airas.services.api_client.openalex_client import OpenAlexClient
-from airas.services.api_client.qdrant_client import QdrantClient
 from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
 
 T = TypeVar("T")
@@ -132,13 +131,6 @@ class Container(containers.DeclarativeContainer):
     )
     openalex_client: providers.Factory[OpenAlexClient] = providers.Factory(
         OpenAlexClient,
-        sync_session=sync_session,
-        async_session=None,
-    )
-
-    # --- Database Client ---
-    qdrant_client: providers.Factory = providers.Factory(
-        QdrantClient,
         sync_session=sync_session,
         async_session=None,
     )
