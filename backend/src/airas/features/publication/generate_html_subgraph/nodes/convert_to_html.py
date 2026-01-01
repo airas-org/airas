@@ -1,9 +1,7 @@
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLMFacadeClient,
-)
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.paper import PaperContent
 from airas.types.research_session import ResearchSession
@@ -18,7 +16,7 @@ async def convert_to_html(
     paper_content: PaperContent,
     research_session: ResearchSession,
     prompt_template: str,
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
 ) -> str:
     image_file_name_list: list[str] = []
 
@@ -49,7 +47,7 @@ async def convert_to_html(
     messages = template.render(data)
 
     output = await llm_client.structured_outputs(
-        message=messages, data_model=LLMOutput, llm_name=llm_name
+        llm_name=llm_name, message=messages, data_model=LLMOutput
     )
     if output is None:
         raise ValueError("No response from the model in convert_to_html.")

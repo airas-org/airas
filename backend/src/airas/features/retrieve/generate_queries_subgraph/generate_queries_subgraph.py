@@ -16,9 +16,7 @@ from airas.features.retrieve.generate_queries_subgraph.nodes.generate_queries im
 from airas.features.retrieve.generate_queries_subgraph.prompt.generate_queries_prompt import (
     generate_queries_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLMFacadeClient,
-)
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.utils.execution_timers import ExecutionTimeState, time_node
 from airas.utils.logging_utils import setup_logging
@@ -59,7 +57,7 @@ class GenerateQueriesSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_client: LLMFacadeClient,
+        llm_client: LangChainClient,
         llm_mapping: dict[str, str] | GenerateQueriesLLMMapping | None = None,
         n_queries: Annotated[int, Field(gt=0)] = 5,
     ):

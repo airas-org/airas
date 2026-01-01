@@ -18,9 +18,7 @@ from airas.features.publication.generate_html_subgraph.nodes.replace_citation_ke
 from airas.features.publication.generate_html_subgraph.prompts.convert_to_html_prompt import (
     convert_to_html_prompt,
 )
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLMFacadeClient,
-)
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.paper import PaperContent
 from airas.types.research_session import ResearchSession
@@ -65,7 +63,7 @@ class GenerateHtmlSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        llm_client: LLMFacadeClient,
+        llm_client: LangChainClient,
         llm_mapping: dict[str, str] | GenerateHtmlLLMMapping | None = None,
     ):
         if llm_mapping is None:

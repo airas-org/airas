@@ -16,9 +16,7 @@ from airas.features.retrieve.retrieve_hugging_face_subgraph.nodes.select_resourc
     select_resources,
 )
 from airas.services.api_client.hugging_face_client import HuggingFaceClient
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLMFacadeClient,
-)
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.hugging_face import HuggingFace
 from airas.types.research_iteration import ExternalResources
@@ -73,7 +71,7 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
     def __init__(
         self,
         hf_client: HuggingFaceClient,
-        llm_client: LLMFacadeClient,
+        llm_client: LangChainClient,
         llm_mapping: dict[str, str] | RetrieveHuggingFaceLLMMapping | None = None,
         include_gated: bool = False,
         max_results_per_search: int = 10,

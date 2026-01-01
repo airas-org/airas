@@ -16,9 +16,6 @@ from airas.features.generators.generate_hypothesis_subgraph.nodes.generate_hypot
 from airas.features.generators.generate_hypothesis_subgraph.nodes.refine_hypothesis import (
     refine_hypothesis,
 )
-from airas.features.retrieve.retrieve_paper_subgraph.nodes.get_paper_title_from_qdrant import (
-    get_paper_titles_from_qdrant,
-)
 from airas.features.retrieve.retrieve_paper_subgraph.nodes.retrieve_text_from_url import (
     retrieve_text_from_url,
 )
@@ -35,12 +32,10 @@ from airas.features.retrieve.retrieve_paper_subgraph.prompt.openai_websearch_arx
     openai_websearch_arxiv_ids_prompt,
 )
 from airas.services.api_client.arxiv_client import ArxivClient
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLMFacadeClient,
-)
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_specs import LLM_MODELS
-from airas.services.api_client.qdrant_client import QdrantClient
 from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
+from airas.types.arxiv import ArxivInfo
 from airas.types.research_hypothesis import EvaluatedHypothesis, ResearchHypothesis
 from airas.types.research_study import ResearchStudy
 from airas.utils.execution_timers import ExecutionTimeState, time_node
@@ -94,10 +89,9 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
 
     def __init__(
         self,
-        qdrant_client: QdrantClient,
         arxiv_client: ArxivClient,
         ss_client: SemanticScholarClient,
-        llm_client: LLMFacadeClient,
+        llm_client: LangChainClient,
         llm_mapping: dict[str, str]
         | GenerateHypothesisSubgraphLLMMapping
         | None = None,
@@ -105,7 +99,6 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
         paper_provider: str = "arxiv",
         num_retrieve_related_papers: int = 10,
     ):
-        self.qdrant_client = qdrant_client
         self.arxiv_client = arxiv_client
         self.ss_client = ss_client
         self.llm_client = llm_client
@@ -153,48 +146,81 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
         )
         return {"research_hypothesis": research_hypothesis}
 
-    # TODO: If QDrant doesn't work, consider skipping the paper search or using airas_db.
+    # TODO: Change to use airas_db.
+    # @record_execution_time
+    # async def _retrieve_related_papers(
+    #     self, state: GenerateHypothesisSubgraphState
+    # ) -> dict[str, list[ResearchStudy]]:
+    #     related_research_study_list = []  # Reset the list of related studies for re-execution.
+    #     retrieved_titles = await get_paper_titles_from_qdrant(
+    #         queries=[state["research_hypothesis"].method],
+    #         num_retrieve_paper=self.num_retrieve_related_papers,
+    #         qdrant_client=self.qdrant_client,
+    #         llm_client=self.llm_client,
+    #     )
+    #     retrieved_studies = [
+    #         ResearchStudy(title=title) for title in (retrieved_titles or [])
+    #     ]
+
+    #     existing_titles = {study.title for study in state["research_study_list"]}
+    #     related_research_study_list = [
+    #         study for study in retrieved_studies if study.title not in existing_titles
+    #     ]
+    #     return {"related_research_study_list": related_research_study_list}
     @record_execution_time
     async def _retrieve_related_papers(
         self, state: GenerateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
-        related_research_study_list = []  # Reset the list of related studies for re-execution.
-        retrieved_titles = await get_paper_titles_from_qdrant(
-            queries=[state["research_hypothesis"].method],
-            num_retrieve_paper=self.num_retrieve_related_papers,
-            qdrant_client=self.qdrant_client,
-            llm_client=self.llm_client,
-        )
-        retrieved_studies = [
-            ResearchStudy(title=title) for title in (retrieved_titles or [])
-        ]
-
-        existing_titles = {study.title for study in state["research_study_list"]}
-        related_research_study_list = [
-            study for study in retrieved_studies if study.title not in existing_titles
-        ]
-        return {"related_research_study_list": related_research_study_list}
+        _ = state
+        return {"related_research_study_list": []}
 
     @record_execution_time
     async def _search_arxiv_id_from_title(
         self, state: GenerateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
-        related_research_study_list = await search_arxiv_id_from_title(
+        related_research_study_list = cast(
+            list[ResearchStudy], state.get("related_research_study_list", [])
+        )
+        if not related_research_study_list:
+            return {"related_research_study_list": related_research_study_list}
+
+        arxiv_id_list = await search_arxiv_id_from_title(
             llm_name=self.llm_mapping.search_arxiv_id_from_title,
             llm_client=self.llm_client,
             prompt_template=openai_websearch_arxiv_ids_prompt,
-            research_study_list=state["related_research_study_list"],
+            paper_titles=[study.title for study in related_research_study_list],
         )
+        for study, arxiv_id in zip(
+            related_research_study_list, arxiv_id_list, strict=False
+        ):
+            study.meta_data.arxiv_id = arxiv_id
         return {"related_research_study_list": related_research_study_list}
 
     @record_execution_time
-    def _search_arxiv_by_id(
+    async def _search_arxiv_by_id(
         self, state: GenerateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
-        related_research_study_list = search_arxiv_info_by_id(
-            arxiv_client=self.arxiv_client,
-            research_study_list=state["related_research_study_list"],
+        related_research_study_list = cast(
+            list[ResearchStudy], state.get("related_research_study_list", [])
         )
+        arxiv_id_list = [
+            study.meta_data.arxiv_id or "" for study in related_research_study_list
+        ]
+        if not arxiv_id_list:
+            return {"related_research_study_list": related_research_study_list}
+
+        arxiv_info_list = await search_arxiv_info_by_id(
+            arxiv_client=self.arxiv_client,
+            arxiv_id_list=arxiv_id_list,
+        )
+        for study, arxiv_info in zip(
+            related_research_study_list, arxiv_info_list, strict=False
+        ):
+            study.meta_data.arxiv_id = arxiv_info.id
+            study.meta_data.authors = arxiv_info.authors
+            study.meta_data.published_date = arxiv_info.published_date
+            study.meta_data.doi = arxiv_info.doi
+            study.title = arxiv_info.title or study.title
         return {"related_research_study_list": related_research_study_list}
 
     @record_execution_time
@@ -208,12 +234,33 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
         return {"related_research_study_list": related_research_study_list}
 
     @record_execution_time
-    def _retrieve_text_from_url(
+    async def _retrieve_text_from_url(
         self, state: GenerateHypothesisSubgraphState
     ) -> dict[str, list[ResearchStudy]]:
-        related_research_study_list = retrieve_text_from_url(
-            research_study_list=state["related_research_study_list"],
+        related_research_study_list = cast(
+            list[ResearchStudy], state.get("related_research_study_list", [])
         )
+        arxiv_info_list: list[ArxivInfo] = [
+            ArxivInfo(
+                id=study.meta_data.arxiv_id or "",
+                title=study.title,
+                authors=study.meta_data.authors or [],
+                published_date=study.meta_data.published_date or "",
+                summary="",
+                journal=None,
+                doi=study.meta_data.doi,
+                affiliation=None,
+            )
+            for study in related_research_study_list
+        ]
+        arxiv_full_text_list = await retrieve_text_from_url(
+            arxiv_info_list=arxiv_info_list,
+        )
+        for study, full_text in zip(
+            related_research_study_list, arxiv_full_text_list, strict=False
+        ):
+            if full_text:
+                study.full_text = full_text
         return {"related_research_study_list": related_research_study_list}
 
     def select_provider(self, state: GenerateHypothesisSubgraphState) -> str:
@@ -335,40 +382,3 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
         graph_builder.add_edge("refine_hypothesis", "retrieve_related_papers")
         graph_builder.add_edge("finalize_hypothesis", END)
         return graph_builder.compile()
-
-
-async def main():
-    from airas.core.container import container
-    from airas.features.generators.generate_hypothesis_subgraph.input_data import (
-        generate_hypothesis_subgraph_input_data,
-    )
-
-    container.wire(modules=[__name__])
-
-    try:
-        qdrant_client = container.qdrant_client()
-        arxiv_client = container.arxiv_client()
-        ss_client = container.semantic_scholar_client()
-        llm_client = await container.llm_facade_client()
-
-        result = await GenerateHypothesisSubgraph(
-            qdrant_client=qdrant_client,
-            arxiv_client=arxiv_client,
-            ss_client=ss_client,
-            llm_client=llm_client,
-            refinement_rounds=1,
-            num_retrieve_related_papers=1,
-        ).arun(generate_hypothesis_subgraph_input_data)
-        print(f"result: {result}")
-    finally:
-        await container.shutdown_resources()
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    try:
-        asyncio.run(main())
-    except Exception as e:
-        logger.error(f"Error running GenerateHypothesisSubgraph: {e}")
-        raise
