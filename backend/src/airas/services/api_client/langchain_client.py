@@ -206,7 +206,7 @@ class LangChainClient:
         llm_name: LLM_MODELS,
         params: LLMParams | None = None,
         web_search: bool = False,
-    ) -> tuple[str, float]:
+    ) -> str:
         """
         Generate a response from the specified language model given an input message.
 
@@ -228,7 +228,7 @@ class LangChainClient:
         message: str,
         data_model,
         params: LLMParams | None = None,
-    ) -> tuple[Any, float]:
+    ) -> Any:
         """
         Generate structured data from the specified language model by enforcing the provided schema.
 

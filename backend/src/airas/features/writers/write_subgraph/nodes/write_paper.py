@@ -21,7 +21,7 @@ async def write_paper(
         tips_dict=section_tips_prompt,
     )
 
-    output, cost = await langchain_client.structured_outputs(
+    output = await langchain_client.structured_outputs(
         message=messages, data_model=PaperContent, llm_name=llm_name
     )
     if output is None:

@@ -48,7 +48,7 @@ async def convert_to_html(
     template = env.from_string(prompt_template)
     messages = template.render(data)
 
-    output, _ = await llm_client.structured_outputs(
+    output = await llm_client.structured_outputs(
         message=messages, data_model=LLMOutput, llm_name=llm_name
     )
     if output is None:

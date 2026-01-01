@@ -32,7 +32,7 @@ async def evaluate_novelty_and_significance(
         "new_hypothesis": research_hypothesis.to_formatted_json(),
     }
     messages = template.render(data)
-    output, cost = await llm_client.structured_outputs(
+    output = await llm_client.structured_outputs(
         message=messages,
         data_model=HypothesisEvaluation,
         llm_name=llm_name,

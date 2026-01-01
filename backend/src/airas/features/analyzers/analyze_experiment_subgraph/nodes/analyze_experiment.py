@@ -39,7 +39,7 @@ async def analyze_experiment(
             "experimental_results": experimental_results,
         }
     )
-    output, cost = await langchain_client.structured_outputs(
+    output = await langchain_client.structured_outputs(
         message=messages, data_model=LLMOutput, llm_name=llm_name
     )
     if output is None:

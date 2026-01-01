@@ -66,7 +66,7 @@ async def generate_experimental_design(
     }
     messages = template.render(data)
     params = OpenAIParams(reasoning_effort="high")
-    output, _ = await llm_client.structured_outputs(
+    output = await llm_client.structured_outputs(
         message=messages,
         data_model=LLMOutput,
         llm_name=llm_name,

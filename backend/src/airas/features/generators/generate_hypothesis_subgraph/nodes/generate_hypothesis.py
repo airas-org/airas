@@ -35,7 +35,7 @@ async def generate_hypothesis(
         ],
     }
     messages = template.render(data)
-    output, cost = await llm_client.structured_outputs(
+    output = await llm_client.structured_outputs(
         message=messages,
         data_model=ResearchHypothesis,
         llm_name=llm_name,

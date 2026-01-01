@@ -48,7 +48,7 @@ async def generate_run_config(
 
     logger.info("Generating run configs using LLM...")
 
-    output, _ = await llm_client.structured_outputs(
+    output = await llm_client.structured_outputs(
         llm_name=llm_name,
         message=messages,
         data_model=RunConfigListOutput,

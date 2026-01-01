@@ -35,9 +35,7 @@ def review_paper(
     data = {"paper_content": paper_data}
 
     messages = template.render(data)
-    output, _cost = client.structured_outputs(
-        message=messages, data_model=PaperReviewOutput
-    )
+    output = client.structured_outputs(message=messages, data_model=PaperReviewOutput)
 
     if output is None:
         raise ValueError("No response from LLM in paper_review_node.")
