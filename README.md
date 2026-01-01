@@ -22,88 +22,58 @@
 </p>
 
 
-AIRAS is an open-source software framework for automated research, being developed to support the entire research workflow. It aims to integrate all of the necessary functions for automating research—from literature search and method generation to experimentation and paper writing—and is designed with the aim of enabling as many individuals and organizations as possible to contribute to open innovation in research automation. 
+AIRAS is an open-source software for automated research, being developed to support the entire research workflow. It aims to integrate all of the necessary functions for automating research—from literature search and method generation to experimentation and paper writing—and is designed with the aim of enabling as many individuals and organizations as possible to contribute to open innovation in research automation.
+
+Features of AIRAS include:
+- Implemented as individual research processes
+- Allows users to add their own original research processes
+- Enables saving implemented code and executing it on large-scale computational resources through advanced integration with GitHub
+- Supports not only fully automated research, but also interactive research in which users can collaborate with the system
 
 Currently, it focuses on the automation of machine learning research.
 
-Unlike other automated research agents such as [AI Scientist](https://github.com/SakanaAI/AI-Scientist), AIRAS has the following key features:
-
-Features
-- Implemented by individual research processes
-- Enables users to implement flexible and customized research workflows
-- Allows users to add their own original research processes
-
 ## Quick Start
 
-It can be easily used by simply installing it via pip as shown below.
-
-**Note: The package is currently under preparation and will be available on PyPI soon.**
+Copy `.env.example` to `.env` and update the configuration as needed.
+Then, start the application by running:
 
 ```bash
-pip install airas
+make up
 ```
 
-It is implemented by individual research processes, allowing users to design their own automated research workflows freely.
+Once the application is running, open your browser and navigate to:
 
-```python
-from airas.preparation import PrepareRepository
-from airas.retrieve import (
-  RetrieveCodeSubgraph, 
-  RetrievePaperFromQuerySubgraph, 
-  RetrieveRelatedPaperSubgraph
-)
-from airas.create import (
-  CreateExperimentalDesignSubgraph, 
-  CreateMethodSubgraph
-)
-from airas.execution import (
-  ExecutorSubgraph, 
-  FixCodeSubgraph, 
-  PushCodeSubgraph
-)
+`http://localhost:5173/`
 
-
-retriever = RetrievePaperFromQuerySubgraph(llm_name=llm_name, save_dir=save_dir, scrape_urls=scrape_urls)
-retriever2 = RetrieveRelatedPaperSubgraph(llm_name=llm_name, save_dir=save_dir, scrape_urls=scrape_urls)
-retriever3 = RetrieveCodeSubgraph(llm_name=llm_name)
-creator = CreateMethodSubgraph(llm_name=llm_name)
-creator2 = CreateExperimentalDesignSubgraph(llm_name=llm_name)
-coder = PushCodeSubgraph()
-executor = ExecutorSubgraph()
-fixer = FixCodeSubgraph(llm_name=llm_name)
-
-
-state = {
-    "base_queries": "diffusion model",
-    "gpu_enabled": True,
-    "experiment_iteration": 1
-}
-
-state = retriever.run(state)
-state = retriever2.run(state)
-state = retriever3.run(state)
-state = creator.run(state)
-state = creator2.run(state)
-state = coder.run(state)
-state = executor.run(state)
-state = fixer.run(state)
-```
+You should now see the web application up and running.
 
 ## Roadmap
 
-- [ ] Complete automation of machine learning research with code-based experimentation
-- [ ] Autonomous research in robotics
-- [ ] Autonomous research in various fields
+- [x] Complete automation of machine learning research with code-based experimentation
+- [ ] Autonomous research in Research in simulated robotic environments
+- [ ] Autonomous research in Real-world robotics research.
+- [ ] Laboratory Automation and autonomous research in various fields
 
 ## Contact
 
-We are exploring best practices for human-AI collaboration in automated AI research. Together, we're investigating how new research workflows—powered by both human insight and AI agents—can accelerate discovery, improve reproducibility, and give organizations a competitive edge in the age of autonomous research.
+We aim to build an operating system for automated research that enables humanity to discover scientific breakthroughs it has not yet reached.
 
 If you are interested in this topic, please feel free to contact us at <a href="mailto:ulti4929@gmail.com">ulti4929@gmail.com</a>.
 
 ## About AutoRes
 
 This OSS is developed as part of the [AutoRes](https://www.autores.one/english) project.
+
+## License
+
+This project is licensed under the MIT License.
+See the [LICENSE](./LICENSE) file for details.
+
+## Contributions
+
+By contributing to this project, you agree that your contributions are subject to the Contributor License Agreement (CLA) and may be used, modified, redistributed, and relicensed by the project owner, including for commercial, enterprise, and SaaS offerings.
+
+See [CLA.md](./CLA.md) for details.
 
 ## Citation
 

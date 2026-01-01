@@ -1,0 +1,41 @@
+### Generate BibTeX from research studies
+
+POST http://127.0.0.1:8000/airas/v1/bibfile/generations
+Content-Type: application/json
+
+{
+    "research_study_list": [
+        {
+            "title": "Attention Is All You Need",
+            "full_text": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks...",
+            "meta_data": {
+                "arxiv_id": "1706.03762",
+                "authors": ["Ashish Vaswani", "Noam Shazeer", "Niki Parmar"],
+                "published_date": "2017-06-12",
+                "venue": "NeurIPS",
+                "pdf_url": "https://arxiv.org/pdf/1706.03762.pdf"
+            },
+            "llm_extracted_info": {
+                "main_contributions": "Introduced the Transformer architecture",
+                "methodology": "Self-attention mechanism",
+                "experimental_setup": "Machine translation tasks"
+            }
+        },
+        {
+            "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+            "full_text": "We introduce a new language representation model called BERT...",
+            "meta_data": {
+                "arxiv_id": "1810.04805",
+                "authors": ["Jacob Devlin", "Ming-Wei Chang", "Kenton Lee"],
+                "published_date": "2018-10-11",
+                "venue": "NAACL",
+                "pdf_url": "https://arxiv.org/pdf/1810.04805.pdf"
+            },
+            "llm_extracted_info": {
+                "main_contributions": "Bidirectional pre-training for language models",
+                "methodology": "Masked language modeling",
+                "experimental_setup": "GLUE benchmark"
+            }
+        }
+    ]
+}

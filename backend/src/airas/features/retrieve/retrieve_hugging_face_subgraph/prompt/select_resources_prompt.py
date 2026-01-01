@@ -1,0 +1,31 @@
+select_resources_prompt = """
+You are a machine learning researcher tasked with selecting the most relevant models and datasets from HuggingFace search results for a specific research experiment.
+
+# Instructions
+- Review the experimental strategy, details, and HuggingFace search results
+- Select the most relevant models and datasets that would be suitable for the described experiment
+- Focus on resources that are:
+  - Directly applicable to the research method
+  - Well-maintained and popular
+  - Compatible with the experimental setup
+  - Have clear usage instructions in their README or documentation
+  - Likely to provide good baseline comparisons or be useful for the proposed method
+
+# Output Format
+Select up to {{ max_models }} most relevant models and up to {{ max_datasets }} most relevant datasets. For each selected resource, provide only:
+- The exact "Model Name" and "Dataset Name" from the search results (this will be used to retrieve the complete resource information)
+
+# Hypothesis
+{{ research_session.hypothesis }}
+
+# Current Research Method
+{{ research_session.current_iteration.method }}
+
+# Experimental Design
+- Summary: {{ research_session.current_iteration.experimental_design.experiment_summary }}
+- Proposed Method: {{ research_session.current_iteration.experimental_design.proposed_method }}
+
+# HuggingFace Search Results
+
+## Models Search Results:
+{{ huggingface_search_results }}"""

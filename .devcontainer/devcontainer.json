@@ -3,51 +3,79 @@
 	"dockerComposeFile": "compose.yaml",
 	"service": "airas",
 	"workspaceFolder": "/workspaces/airas",
-  "overrideCommand": true,
+    "overrideCommand": true,
+    "mounts": [
+        "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind"
+    ],
 	"customizations": {
 		"vscode": {
 			"extensions": [
-        "ms-python.python", // Python
-        "ms-python.vscode-pylance", // Pylance
-        "ms-python.debugpy", // Debugpy
-        "ms-python.mypy-type-checker", // Mypy
-				"charliermarsh.ruff", // Ruff
-        "tomoki1207.pdf" // PDF viewer
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-python.debugpy",
+                "ms-python.mypy-type-checker",
+                "charliermarsh.ruff",
+                "humao.rest-client",
+                "biomejs.biome"
 			]
 		},
-    "settings" : {
-      "python.defaultInterpreterPath": ".venv/bin/python3",
-      "python.testing.pytestArgs": [
-        "tests"
-      ],
-      "python.testing.unittestEnabled": false,
-      "python.testing.pytestEnabled": true,
-      "[python]": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "charliermarsh.ruff",
-        "editor.codeActionsOnSave": {
-          "source.fixAll": true,
-          "source.organizeImports": true
-        },
-        "ruff.linting.enabled": true,
-        "python.linting.enabled": true,
-        "python.linting.mypyEnabled": true,
-        "python.analysis.typeCheckingMode": "off", // Pylance type check
-        "launch": {
-          "version": "0.2.0",
-          "configurations": [
-            {
-                "name": "Python: Current File",
-                "type": "debugpy",
-                "request": "launch",
-                "program": "${file}",
-                "console": "integratedTerminal",
-                "justMyCode": true
+        "settings" : {
+            "python.defaultInterpreterPath": "backend/.venv/bin/python3",
+            "python.testing.cwd": "backend",
+            "python.testing.pytestArgs": [
+                "tests"
+            ],
+            "python.testing.unittestEnabled": false,
+            "python.testing.pytestEnabled": true,
+            "[python]": {
+                "editor.formatOnSave": true,
+                "editor.defaultFormatter": "charliermarsh.ruff",
+                "editor.codeActionsOnSave": {
+                    "source.fixAll.ruff": "explicit",
+                    "source.organizeImports.ruff": "explicit"
+                }
+            },
+            "ruff.linting.enabled": true,
+            "python.linting.enabled": true,
+            "python.linting.mypyEnabled": true,
+            "python.analysis.typeCheckingMode": "off",
+            // Biome settings
+            "editor.formatOnSave": true,
+            "editor.defaultFormatter": "biomejs.biome",
+            "launch": {
+                "version": "0.2.0",
+                "configurations": [
+                    {
+                        "name": "Python: Current File",
+                        "type": "debugpy",
+                        "request": "launch",
+                        "program": "${file}",
+                        "console": "integratedTerminal",
+                        "env": {
+                            "PYTHONASYNCIODEBUG": "1"
+                        }
+                    },
+                    {
+                        "name": "Python: FastAPI Server",
+                        "type": "debugpy",
+                        "request": "launch",
+                        "python": "${workspaceFolder}/backend/.venv/bin/python",
+                        "module": "uvicorn",
+                        "args": [
+                            "api.main:app",
+                            "--port=8001",
+                            "--log-level=debug",
+                            "--reload"
+                        ],
+                        "cwd": "${workspaceFolder}/backend",
+                        "console": "integratedTerminal",
+                        "env": {
+                            "PYTHONASYNCIODEBUG": "1"
+                        }
+                    }
+                ]
             }
-          ]
         }
-      }
-    }
-  },
-  "postCreateCommand": "uv python install 3.10 3.11 3.12 3.13 3.14 && uv python pin 3.11 && uv venv --python 3.11 && uv sync && uv run pre-commit install"
+    },
+    "postCreateCommand": "bash .devcontainer/setup.sh"
 }
