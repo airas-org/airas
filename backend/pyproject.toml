@@ -34,6 +34,7 @@ dependencies = [
     "wandb>=0.22.2",
     "dependency-injector>=4.48.2",
     "fastapi>=0.120.4",
+    "alembic>=1.13.1",
     "uvicorn>=0.34.2",
     "pytest-asyncio>=1.2.0",
     "hishel[async]>=1.1.5",

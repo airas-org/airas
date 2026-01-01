@@ -26,11 +26,13 @@ from api.routes.v1 import (
     step_run_links,
 )
 
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     container = Container()
-    container.config.from_dict({"database_url": os.getenv("DATABASE_URL")})
+    container.config.from_dict({"database_url": DATABASE_URL})
 
     # Make container discoverable by dependency_injector's FastAPI integration (request.app.container)
     app.state.container = container

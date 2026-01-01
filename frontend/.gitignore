@@ -1,3 +1,4 @@
+# NOTE: Biomeがルート直下の.gitignoreファイルを参照することができないため、frontend配下にも最小構成で.gitignoreを配置しています。
 # Logs
 logs
 *.log
