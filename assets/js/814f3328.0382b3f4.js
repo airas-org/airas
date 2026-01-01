@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkdocs=self.webpackChunkdocs||[]).push([[7472],{5513:e=>{e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"sample","permalink":"/airas/blog/sample","unlisted":false,"date":"2026-01-01T07:59:32.000Z"}]}')}}]);
