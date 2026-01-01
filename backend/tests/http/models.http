@@ -1,6 +1,6 @@
 ### Retrieve Models
 
-GET http://127.0.0.1:8000/airas/v1/models
+POST http://127.0.0.1:8000/airas/v1/models
 Content-Type: application/json
 
 {
