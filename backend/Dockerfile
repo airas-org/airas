@@ -13,7 +13,7 @@ RUN curl -LsSf https://astral.sh/uv/0.7.2/install.sh | sh
 WORKDIR /app
 
 COPY pyproject.toml uv.lock* README.md /app/
-RUN uv sync --frozen || uv sync
+RUN uv sync --frozen
 
 COPY . /app
 
