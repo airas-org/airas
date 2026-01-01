@@ -37,7 +37,7 @@ async def generate_experiment_code(
     }
     messages = template.render(data)
 
-    output, _ = await llm_client.structured_outputs(
+    output = await llm_client.structured_outputs(
         llm_name=llm_name,
         message=messages,
         data_model=ExperimentCode,

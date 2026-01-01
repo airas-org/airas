@@ -42,7 +42,9 @@ class MissingEnvironmentVariablesError(RuntimeError):
 
 class LangChainClient:
     def __init__(self) -> None:
-        self._model_cache: dict[tuple[LLM_MODELS, bool, LLMParams | None], object] = {}
+        self._model_cache: dict[
+            tuple[LLM_MODELS, bool, tuple[tuple[str, Any], ...] | None], object
+        ] = {}
         self._available_providers: set[LLMProvider] = self._detect_available_providers()
 
     def _detect_available_providers(self) -> set[LLMProvider]:
@@ -130,7 +132,11 @@ class LangChainClient:
         web_search: bool = False,
         params: LLMParams | None = None,
     ) -> Any:
-        cache_key = (llm_name, web_search, params)
+        cache_key = (
+            llm_name,
+            web_search,
+            tuple(sorted(params.model_dump().items())) if params else None,
+        )
 
         if cache_key in self._model_cache:
             return self._model_cache[cache_key]
@@ -206,7 +212,7 @@ class LangChainClient:
         llm_name: LLM_MODELS,
         params: LLMParams | None = None,
         web_search: bool = False,
-    ) -> tuple[str, float]:
+    ) -> str:
         """
         Generate a response from the specified language model given an input message.
 
@@ -216,11 +222,11 @@ class LangChainClient:
             params (LLMParams | None, optional): Additional parameters for the language model. Defaults to None.
             web_search (bool, optional): Whether to enable web search tools. Defaults to False.
         Returns:
-            tuple[str, float]: A tuple containing the generated response as a string and a float representing the cost (currently always 0.0).
+            str: The generated response as a string.
         """
         model = self._create_chat_model(llm_name, web_search, params)
         response = await model.ainvoke(message)
-        return response.content, 0.0
+        return response.content
 
     async def structured_outputs(
         self,
@@ -228,7 +234,7 @@ class LangChainClient:
         message: str,
         data_model,
         params: LLMParams | None = None,
-    ) -> tuple[Any, float]:
+    ) -> Any:
         """
         Generate structured data from the specified language model by enforcing the provided schema.
 
@@ -239,16 +245,16 @@ class LangChainClient:
             params (LLMParams | None, optional): Additional parameters for the language model. Defaults to None.
 
         Returns:
-            tuple[Any, float]: A tuple containing the structured data parsed into the target schema and the cost (currently always 0.0).
+            Any: The structured data parsed into the target schema.
         """
         # TODO: The model's max output tokens may cause truncated responses for large structured outputs,
         # resulting in validation errors when required fields are missing such as PaperContent.
-        model = self._create_chat_model(llm_name, params)
+        model = self._create_chat_model(llm_name, params=params)
         model_with_structure = model.with_structured_output(
             schema=data_model, method="json_schema"
         )
         response = await model_with_structure.ainvoke(message)
-        return response, 0.0
+        return response
 
 
 if __name__ == "__main__":
@@ -261,7 +267,7 @@ if __name__ == "__main__":
     async def main() -> None:
         client = LangChainClient()
 
-        response, _ = await client.generate(
+        response = await client.generate(
             message="Hello, how are you?",
             # llm_name="gemini-2.5-flash-lite",
             # llm_name="gpt-5-mini-2025-08-07",
@@ -278,7 +284,7 @@ if __name__ == "__main__":
 「田中太郎さん（35歳）は、東京在住のソフトウェアエンジニアです。現在、新しいAI技術の研究に取り組んでおり、業界内でも注目を集めています。お問い合わせは、taro.tanaka@example.com までお願いします。」
 """
 
-        structured, _ = await client.structured_outputs(
+        structured = await client.structured_outputs(
             message=message,
             data_model=UserModel,
             # llm_name="gemini-2.5-flash-lite",

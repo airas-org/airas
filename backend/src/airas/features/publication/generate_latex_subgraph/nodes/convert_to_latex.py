@@ -37,7 +37,7 @@ async def convert_to_latex(
     template = env.from_string(convert_to_latex_prompt)
     messages = template.render(data)
 
-    output, cost = await langchain_client.structured_outputs(
+    output = await langchain_client.structured_outputs(
         message=messages, data_model=PaperContent, llm_name=llm_name
     )
     if output is None:

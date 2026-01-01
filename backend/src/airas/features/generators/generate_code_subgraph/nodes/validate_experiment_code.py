@@ -43,7 +43,7 @@ async def validate_experiment_code(
         }
     )
 
-    output, _ = await llm_client.structured_outputs(
+    output = await llm_client.structured_outputs(
         llm_name=llm_name,
         message=messages,
         data_model=ValidationOutput,

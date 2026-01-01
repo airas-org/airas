@@ -41,7 +41,7 @@ async def _extract_experimental_info_from_study(
     )
 
     try:
-        output, _ = await llm_client.structured_outputs(
+        output = await llm_client.structured_outputs(
             message=messages,
             data_model=LLMOutput,
             llm_name=llm_name,

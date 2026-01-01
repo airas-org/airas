@@ -34,7 +34,7 @@ async def search_arxiv_id_from_title(
             }
         )
         try:
-            output, _ = await llm_client.generate(
+            output = await llm_client.generate(
                 message=prompt, llm_name=llm_name, web_search=True
             )
         except Exception as e:

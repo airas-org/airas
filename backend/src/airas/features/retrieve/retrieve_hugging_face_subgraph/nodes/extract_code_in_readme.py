@@ -42,7 +42,7 @@ async def extract_code_in_readme(
                 "huggingface_readme": huggingface_data.readme,
             }
         )
-        output, _cost = await llm_client.structured_outputs(
+        output = await llm_client.structured_outputs(
             message=messages,
             data_model=LLMOutput,
             llm_name=llm_name,

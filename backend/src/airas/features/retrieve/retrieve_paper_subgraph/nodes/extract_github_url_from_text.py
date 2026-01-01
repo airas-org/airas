@@ -76,7 +76,7 @@ async def _select_github_url(
             "extract_github_url_list": candidates,
         }
     )
-    output, _ = await llm_client.structured_outputs(
+    output = await llm_client.structured_outputs(
         message=messages,
         data_model=LLMOutput,
         llm_name=llm_name,

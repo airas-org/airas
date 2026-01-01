@@ -29,7 +29,7 @@ async def generate_queries(
     messages = template.render(data)
 
     DynamicLLMOutput = _build_generated_query_model(n_queries)
-    output, cost = await llm_client.structured_outputs(
+    output = await llm_client.structured_outputs(
         message=messages, data_model=DynamicLLMOutput, llm_name=llm_name
     )
     if output is None:

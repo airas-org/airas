@@ -43,7 +43,7 @@ async def select_resources(
         }
     )
 
-    output, _cost = await llm_client.structured_outputs(
+    output = await llm_client.structured_outputs(
         message=messages,
         data_model=LLMOutput,
         llm_name=llm_name,

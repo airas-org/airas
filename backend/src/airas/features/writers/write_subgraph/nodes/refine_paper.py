@@ -28,7 +28,7 @@ async def refine_paper(
 
     messages = rendered_system_prompt + refine_message
 
-    output, cost = await langchain_client.structured_outputs(
+    output = await langchain_client.structured_outputs(
         message=messages, data_model=PaperContent, llm_name=llm_name
     )
     if output is None:

@@ -42,9 +42,7 @@ async def openai_websearch_titles(
         prompt = template.render(data)
 
         try:
-            output, cost = await llm_client.web_search(
-                message=prompt, llm_name=llm_name
-            )
+            output = await llm_client.web_search(message=prompt, llm_name=llm_name)
         except Exception as exc:
             logger.warning(f"OpenAI web search failed for '{query}': {exc}")
             continue

@@ -39,7 +39,7 @@ async def _summarize_single_text(
     )
 
     try:
-        output, _ = await llm_client.structured_outputs(
+        output = await llm_client.structured_outputs(
             message=messages,
             data_model=PaperSummary,
             llm_name=llm_name,
