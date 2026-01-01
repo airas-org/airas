@@ -27,6 +27,7 @@ services:
   frontend:
     build:
       context: ./frontend
+      target: prod
     env_file:
       - .env
     ports:
