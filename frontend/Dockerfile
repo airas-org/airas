@@ -4,8 +4,8 @@ WORKDIR /app
 COPY package*.json /app/
 RUN npm ci || npm install
 COPY . /app
-EXPOSE 3000
-CMD ["bash", "-lc", "npm run dev -- --host 0.0.0.0 --port 3000"]
+EXPOSE 5173
+CMD ["bash", "-lc", "npm run dev -- --host 0.0.0.0 --port 5173"]
 
 # --- build stage ---
 FROM node:20-bookworm AS build

@@ -43,7 +43,7 @@ make dev
 
 Once the application is running, open your browser and navigate to:
 
-`http://localhost:3000/`
+`http://localhost:5173/`
 
 You should now see the web application up and running.
 
