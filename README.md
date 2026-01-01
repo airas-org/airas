@@ -38,7 +38,7 @@ Copy `.env.example` to `.env` and update the configuration as needed.
 Then, start the application by running:
 
 ```bash
-make dev
+make up
 ```
 
 Once the application is running, open your browser and navigate to:

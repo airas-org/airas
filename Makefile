@@ -1,5 +1,5 @@
 # Local development commands:
-#   make dev       - Build and start all services
+#   make up       - Build and start all services
 #   make down      - Stop all services
 #   make logs      - Show service logs
 #   make ps        - Show service status
@@ -19,9 +19,9 @@ MIGRATE_SERVICE ?= migrate
 
 COMPOSE_CMD := $(COMPOSE) -f $(COMPOSE_FILE) -p $(PROJECT)
 
-.PHONY: dev down logs ps migrate db-reset update-api generate-openapi
+.PHONY: up down logs ps migrate db-reset update-api generate-openapi
 
-dev:
+up:
 	$(COMPOSE_CMD) up --build
 
 down:
