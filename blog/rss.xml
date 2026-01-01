@@ -4,7 +4,7 @@
         <title>AIRAS Blog</title>
         <link>https://www.autores.one/airas/blog</link>
         <description>AIRAS Blog</description>
-        <lastBuildDate>Thu, 21 Aug 2025 17:07:33 GMT</lastBuildDate>
+        <lastBuildDate>Thu, 01 Jan 2026 07:59:32 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en</language>
@@ -12,7 +12,7 @@
             <title><![CDATA[sample]]></title>
             <link>https://www.autores.one/airas/blog/sample</link>
             <guid>https://www.autores.one/airas/blog/sample</guid>
-            <pubDate>Thu, 21 Aug 2025 17:07:33 GMT</pubDate>
+            <pubDate>Thu, 01 Jan 2026 07:59:32 GMT</pubDate>
         </item>
     </channel>
 </rss>
