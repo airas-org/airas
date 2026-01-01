@@ -220,7 +220,7 @@ class LangChainClient:
         """
         model = self._create_chat_model(llm_name, web_search, params)
         response = await model.ainvoke(message)
-        return response.content, 0.0
+        return response.content
 
     async def structured_outputs(
         self,
@@ -248,7 +248,7 @@ class LangChainClient:
             schema=data_model, method="json_schema"
         )
         response = await model_with_structure.ainvoke(message)
-        return response, 0.0
+        return response
 
 
 if __name__ == "__main__":
@@ -261,7 +261,7 @@ if __name__ == "__main__":
     async def main() -> None:
         client = LangChainClient()
 
-        response, _ = await client.generate(
+        response = await client.generate(
             message="Hello, how are you?",
             # llm_name="gemini-2.5-flash-lite",
             # llm_name="gpt-5-mini-2025-08-07",
@@ -278,7 +278,7 @@ if __name__ == "__main__":
 「田中太郎さん（35歳）は、東京在住のソフトウェアエンジニアです。現在、新しいAI技術の研究に取り組んでおり、業界内でも注目を集めています。お問い合わせは、taro.tanaka@example.com までお願いします。」
 """
 
-        structured, _ = await client.structured_outputs(
+        structured = await client.structured_outputs(
             message=message,
             data_model=UserModel,
             # llm_name="gemini-2.5-flash-lite",
