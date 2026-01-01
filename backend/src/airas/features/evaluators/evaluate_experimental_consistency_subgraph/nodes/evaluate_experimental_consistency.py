@@ -3,9 +3,7 @@ from logging import getLogger
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLMFacadeClient,
-)
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.types.research_hypothesis import ExperimentEvaluation, ResearchHypothesis
 
@@ -22,9 +20,8 @@ def evaluate_experimental_consistency(
     prompt_template: str,
     new_method: ResearchHypothesis,
     consistency_score_threshold: int = 7,
-    client: LLMFacadeClient | None = None,
+    client: LangChainClient | None = None,
 ) -> ResearchHypothesis:
-    client = client or LLMFacadeClient(llm_name=llm_name)
     env = Environment()
     template = env.from_string(prompt_template)
 
@@ -49,7 +46,9 @@ def evaluate_experimental_consistency(
             }
         )
 
-        output, _ = client.structured_outputs(message=messages, data_model=LLMOutput)
+        output, _ = client.structured_outputs(
+            llm_name=llm_name, message=messages, data_model=LLMOutput
+        )
 
         if output is None:
             logger.error(

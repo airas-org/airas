@@ -32,9 +32,7 @@ from airas.features.retrieve.retrieve_paper_subgraph.prompt.openai_websearch_arx
     openai_websearch_arxiv_ids_prompt,
 )
 from airas.services.api_client.arxiv_client import ArxivClient
-from airas.services.api_client.llm_client.llm_facade_client import (
-    LLMFacadeClient,
-)
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_specs import LLM_MODELS
 from airas.services.api_client.semantic_scholar_client import SemanticScholarClient
 from airas.types.arxiv import ArxivInfo
@@ -93,7 +91,7 @@ class GenerateHypothesisSubgraph(BaseSubgraph):
         self,
         arxiv_client: ArxivClient,
         ss_client: SemanticScholarClient,
-        llm_client: LLMFacadeClient,
+        llm_client: LangChainClient,
         llm_mapping: dict[str, str]
         | GenerateHypothesisSubgraphLLMMapping
         | None = None,

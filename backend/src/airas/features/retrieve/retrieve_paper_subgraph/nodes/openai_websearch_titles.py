@@ -4,7 +4,7 @@ from typing import Annotated
 from jinja2 import Environment
 from pydantic import Field
 
-from airas.services.api_client.llm_client.llm_facade_client import LLMFacadeClient
+from airas.services.api_client.langchain_client import LangChainClient
 from airas.services.api_client.llm_client.openai_client import OPENAI_MODEL
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ def _is_excluded_title(title: str) -> bool:
 
 async def openai_websearch_titles(
     llm_name: OPENAI_MODEL,
-    llm_client: LLMFacadeClient,
+    llm_client: LangChainClient,
     prompt_template: str,
     queries: list[str],
     max_results: Annotated[int, Field(gt=0)] = 5,

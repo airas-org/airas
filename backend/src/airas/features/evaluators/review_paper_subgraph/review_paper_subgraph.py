@@ -78,10 +78,10 @@ class ReviewPaperSubgraph(BaseSubgraph):
         self.prompt_template = prompt_template or review_paper_prompt
 
     @review_paper_timed
-    def _review_paper(
+    async def _review_paper(
         self, state: ReviewPaperSubgraphState
     ) -> dict[str, PaperReviewScores]:
-        review_result = review_paper(
+        review_result = await review_paper(
             llm_name=self.llm_mapping.review_paper,
             prompt_template=self.prompt_template,
             paper_content=state["paper_content"],
