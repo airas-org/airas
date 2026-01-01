@@ -42,7 +42,9 @@ class MissingEnvironmentVariablesError(RuntimeError):
 
 class LangChainClient:
     def __init__(self) -> None:
-        self._model_cache: dict[tuple[LLM_MODELS, bool, LLMParams | None], object] = {}
+        self._model_cache: dict[
+            tuple[LLM_MODELS, bool, tuple[tuple[str, Any], ...] | None], object
+        ] = {}
         self._available_providers: set[LLMProvider] = self._detect_available_providers()
 
     def _detect_available_providers(self) -> set[LLMProvider]:
@@ -130,7 +132,11 @@ class LangChainClient:
         web_search: bool = False,
         params: LLMParams | None = None,
     ) -> Any:
-        cache_key = (llm_name, web_search, params)
+        cache_key = (
+            llm_name,
+            web_search,
+            tuple(sorted(params.model_dump().items())) if params else None,
+        )
 
         if cache_key in self._model_cache:
             return self._model_cache[cache_key]
@@ -243,7 +249,7 @@ class LangChainClient:
         """
         # TODO: The model's max output tokens may cause truncated responses for large structured outputs,
         # resulting in validation errors when required fields are missing such as PaperContent.
-        model = self._create_chat_model(llm_name, params)
+        model = self._create_chat_model(llm_name, params=params)
         model_with_structure = model.with_structured_output(
             schema=data_model, method="json_schema"
         )

@@ -14,8 +14,7 @@ from airas.features.generators.generate_experimental_design_subgraph.prompts.gen
     generate_experimental_design_prompt,
 )
 from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.llm_client.openai_client import OpenAIParams
-from airas.services.api_client.llm_specs import LLM_MODELS
+from airas.services.api_client.llm_specs import LLM_MODELS, OpenAIParams
 from airas.types.experimental_design import (
     EvaluationMetric,
     ExperimentalDesign,

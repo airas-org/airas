@@ -128,6 +128,7 @@ OPENROUTER_MODELS: TypeAlias = Literal[
 
 # https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-support.html
 BEDROCK_MODELS: TypeAlias = Literal[
+    "jp.anthropic.claude-sonnet-4-5-20250929-v1:0",
     "global.anthropic.claude-opus-4-5-20251101-v1:0",
     "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
     "global.anthropic.claude-sonnet-4-20250514-v1:0",
