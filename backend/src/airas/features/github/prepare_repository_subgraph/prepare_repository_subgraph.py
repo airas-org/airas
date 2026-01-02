@@ -55,12 +55,12 @@ class PrepareRepositorySubgraph:
         github_client: GithubClient,
         template_owner: str = "airas-org",
         template_repo: str = "airas-template",
-        is_private: bool = False,
+        is_github_repo_private: bool = False,
     ):
         self.github_client = github_client
         self.template_owner = template_owner
         self.template_repo = template_repo
-        self.is_private = is_private
+        self.is_github_repo_private = is_github_repo_private
 
     @record_execution_time
     def _check_repository_from_template(
@@ -93,7 +93,7 @@ class PrepareRepositorySubgraph:
             github_client=self.github_client,
             template_owner=self.template_owner,
             template_repo=self.template_repo,
-            is_private=self.is_private,
+            is_github_repo_private=self.is_github_repo_private,
         )
         return {"is_repository_from_template": is_repository_from_template}
 

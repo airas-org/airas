@@ -3,7 +3,7 @@ POST http://127.0.0.1:8000/airas/v1/hypotheses/generations
 Content-Type: application/json
 
 {
-    "research_objective": "New Optimizer for Large Language Models",
+    "research_topic": "New Optimizer for Large Language Models",
     "research_study_list": [
         {
             "title": "Language Models as Black-Box Optimizers for Vision-Language Models",

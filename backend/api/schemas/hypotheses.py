@@ -8,7 +8,7 @@ from airas.types.research_study import ResearchStudy
 
 
 class GenerateHypothesisSubgraphV0RequestBody(BaseModel):
-    research_objective: str
+    research_topic: str
     research_study_list: list[ResearchStudy]
     refinement_rounds: int
     llm_mapping: GenerateHypothesisSubgraphV0LLMMapping | None = None

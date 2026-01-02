@@ -3,7 +3,7 @@ You are an accomplished researcher in machine learning. You are considering a ne
 Based on the following instructions, output the reasons for the novelty and significance of the newly proposed hypothesis, and quantitatively evaluate them.
 
 # Research Objective
-{{ research_objective }}
+{{ research_topic }}
 
 # New Hypothesis
 {{ new_hypothesis }}

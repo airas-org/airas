@@ -23,7 +23,7 @@ Content-Type: application/json
         "branch_name": "main"
     },
     "research_history": {
-        "research_objective": "Test research objective",
+        "research_topic": "Test research objective",
         "query_list": ["test query 1", "test query 2"]
     },
     "commit_message": "Test upload from API"

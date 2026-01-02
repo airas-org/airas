@@ -8,17 +8,18 @@ from airas.types.wandb import WandbConfig
 
 class ExecuteE2ERequestBody(BaseModel):
     github_config: GitHubConfig
-    queries: list[str]
+    research_topic: str
     runner_config: RunnerConfig
     wandb_config: WandbConfig
-    is_private: bool = False
-    max_results_per_query: int = 5
-    refinement_rounds: int = 1
-    num_models_to_use: int = 1
-    num_datasets_to_use: int = 1
-    num_comparative_methods: int = 0
-    max_code_validations: int = 3
-    writing_refinement_rounds: int = 2
+    is_github_repo_private: bool = False
+    num_paper_search_queries: int = 1
+    papers_per_query: int = 2
+    hypothesis_refinement_iterations: int = 1
+    num_experiment_models: int = 1
+    num_experiment_datasets: int = 1
+    num_comparison_methods: int = 1
+    experiment_code_validation_iterations: int = 3
+    paper_content_refinement_iterations: int = 2
     latex_template_name: str = "iclr2024"
 
 

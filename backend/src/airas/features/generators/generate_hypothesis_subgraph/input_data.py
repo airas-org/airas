@@ -1,7 +1,7 @@
 from airas.types.research_study import ResearchStudy
 
 generate_hypothesis_subgraph_input_data = {
-    "research_objective": "Deep Learning for Natural Language Processing",
+    "research_topic": "Deep Learning for Natural Language Processing",
     "research_study_list": [
         ResearchStudy(
             title="Attention is All You Need",

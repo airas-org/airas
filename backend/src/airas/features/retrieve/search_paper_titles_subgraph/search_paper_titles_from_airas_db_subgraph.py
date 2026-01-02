@@ -37,10 +37,10 @@ class SearchPaperTitlesFromAirasDbSubgraph:
     def __init__(
         self,
         search_index: AirasDbPaperSearchIndex,
-        max_results_per_query: Annotated[int, Field(gt=0)] = 3,
+        papers_per_query: Annotated[int, Field(gt=0)] = 3,
     ):
         self.search_index = search_index
-        self.max_results_per_query = max_results_per_query
+        self.papers_per_query = papers_per_query
 
     @record_execution_time
     async def _search_paper_titles(
@@ -48,7 +48,7 @@ class SearchPaperTitlesFromAirasDbSubgraph:
     ) -> dict[str, list[str]]:
         results = await search_paper_titles_from_airas_db(
             queries=state["queries"],
-            max_results_per_query=self.max_results_per_query,
+            max_results_per_query=self.papers_per_query,
             search_index=self.search_index,
         )
 

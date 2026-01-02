@@ -29,6 +29,9 @@ from airas.features.generators.generate_experimental_design_subgraph.generate_ex
 from airas.features.generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph_v0 import (
     GenerateHypothesisSubgraphV0,
 )
+from airas.features.generators.generate_queries_subgraph.generate_queries_subgraph import (
+    GenerateQueriesSubgraph,
+)
 from airas.features.github.github_upload_subgraph import GithubUploadSubgraph
 from airas.features.github.poll_github_actions_subgraph.poll_github_actions_subgraph import (
     PollGithubActionsSubgraph,
@@ -89,18 +92,7 @@ record_execution_time = lambda f: time_node("execute_e2e")(f)  # noqa: E731
 
 class ExecuteE2EInputState(TypedDict):
     github_config: GitHubConfig
-    queries: list[str]
-    runner_config: RunnerConfig
-    wandb_config: WandbConfig
-    is_private: bool
-    max_results_per_query: int
-    refinement_rounds: int
-    num_models_to_use: int
-    num_datasets_to_use: int
-    num_comparative_methods: int
-    max_code_validations: int
-    writing_refinement_rounds: int
-    latex_template_name: str
+    research_topic: str
 
 
 class ExecuteE2EOutputState(ExecutionTimeState):
@@ -113,6 +105,7 @@ class ExecuteE2EState(
     ExecuteE2EOutputState,
     total=False,
 ):
+    queries: list[str]
     paper_titles: list[str]
     research_study_list: list[ResearchStudy]
     research_hypothesis: ResearchHypothesis
@@ -151,11 +144,68 @@ class ExecuteE2ESubgraph:
         github_client: GithubClient,
         arxiv_client: ArxivClient,
         langchain_client: LangChainClient,
+        runner_config: RunnerConfig,
+        wandb_config: WandbConfig,
+        is_github_repo_private: bool = False,
+        num_paper_search_queries: int = 2,
+        papers_per_query: int = 5,
+        hypothesis_refinement_iterations: int = 1,
+        num_experiment_models: int = 1,
+        num_experiment_datasets: int = 1,
+        num_comparison_methods: int = 0,
+        experiment_code_validation_iterations: int = 3,
+        paper_content_refinement_iterations: int = 2,
+        latex_template_name: str = "iclr2024",
     ):
         self.search_index = search_index
         self.github_client = github_client
         self.arxiv_client = arxiv_client
         self.langchain_client = langchain_client
+        self.runner_config = runner_config
+        self.wandb_config = wandb_config
+        self.is_github_repo_private = is_github_repo_private
+        self.num_paper_search_queries = num_paper_search_queries
+        self.papers_per_query = papers_per_query
+        self.hypothesis_refinement_iterations = hypothesis_refinement_iterations
+        self.num_experiment_models = num_experiment_models
+        self.num_experiment_datasets = num_experiment_datasets
+        self.num_comparison_methods = num_comparison_methods
+        self.experiment_code_validation_iterations = (
+            experiment_code_validation_iterations
+        )
+        self.paper_content_refinement_iterations = paper_content_refinement_iterations
+        self.latex_template_name = latex_template_name
+
+    @record_execution_time
+    async def _upload_research_history(
+        self, state: ExecuteE2EState
+    ) -> dict[str, ResearchHistory]:
+        logger.info("=== Upload Research History ===")
+        try:
+            research_history = ResearchHistory(
+                **{
+                    k: v
+                    for k, v in state.items()
+                    if k in ResearchHistory.model_fields.keys()
+                }
+            )
+        except ValidationError as e:
+            logger.error(f"Failed to construct ResearchHistory: {e}")
+            raise
+
+        await (
+            GithubUploadSubgraph(github_client=self.github_client)
+            .build_graph()
+            .ainvoke(
+                {
+                    "github_config": state["github_config"],
+                    "research_history": research_history,
+                    "commit_message": "Update research history",
+                }
+            )
+        )
+
+        return {"research_history": research_history}
 
     def _validate_github_actions_completion(
         self,
@@ -199,7 +249,7 @@ class ExecuteE2ESubgraph:
         result = (
             await PrepareRepositorySubgraph(
                 github_client=self.github_client,
-                is_private=state.get("is_private", True),
+                is_github_repo_private=self.is_github_repo_private,
             )
             .build_graph()
             .ainvoke({"github_config": state["github_config"]})
@@ -211,12 +261,25 @@ class ExecuteE2ESubgraph:
         }
 
     @record_execution_time
+    async def _generate_queries(self, state: ExecuteE2EState) -> dict[str, list[str]]:
+        logger.info("=== Query Generation ===")
+        result = (
+            await GenerateQueriesSubgraph(
+                llm_client=self.langchain_client,
+                num_paper_search_queries=self.num_paper_search_queries,
+            )
+            .build_graph()
+            .ainvoke({"research_topic": state["research_topic"]})
+        )
+        return {"queries": result["queries"]}
+
+    @record_execution_time
     async def _search_paper_titles(self, state: ExecuteE2EState) -> dict:
         logger.info("=== Search Paper Titles ===")
         result = (
             await SearchPaperTitlesFromAirasDbSubgraph(
                 search_index=self.search_index,
-                max_results_per_query=state.get("max_results_per_query", 5),
+                papers_per_query=self.papers_per_query,
             )
             .build_graph()
             .ainvoke({"queries": state["queries"]})
@@ -233,7 +296,6 @@ class ExecuteE2ESubgraph:
                 langchain_client=self.langchain_client,
                 arxiv_client=self.arxiv_client,
                 github_client=self.github_client,
-                max_results_per_query=state.get("max_results_per_query", 5),
             )
             .build_graph()
             .ainvoke({"paper_titles": state["paper_titles"]})
@@ -247,57 +309,21 @@ class ExecuteE2ESubgraph:
         self, state: ExecuteE2EState
     ) -> dict[str, ResearchHypothesis]:
         logger.info("=== Hypothesis Generation ===")
-        # TODO: objectiveを入力し、クエリを生成するように変更する
-        research_objective = (
-            state["queries"][0] if state.get("queries") else "Research objective"
-        )
-
         result = (
             await GenerateHypothesisSubgraphV0(
                 langchain_client=self.langchain_client,
-                refinement_rounds=state.get("refinement_rounds", 1),
+                refinement_rounds=self.hypothesis_refinement_iterations,
             )
             .build_graph()
             .ainvoke(
                 {
-                    "research_objective": research_objective,
+                    "research_topic": state["research_topic"],
                     "research_study_list": state["research_study_list"],
                 }
             )
         )
 
         return {"research_hypothesis": result["research_hypothesis"]}
-
-    @record_execution_time
-    async def _upload_research_history(
-        self, state: ExecuteE2EState
-    ) -> dict[str, ResearchHistory]:
-        logger.info("=== Upload Research History ===")
-        try:
-            research_history = ResearchHistory(
-                **{
-                    k: v
-                    for k, v in state.items()
-                    if k in ResearchHistory.model_fields.keys()
-                }
-            )
-        except ValidationError as e:
-            logger.error(f"Failed to construct ResearchHistory: {e}")
-            raise
-
-        await (
-            GithubUploadSubgraph(github_client=self.github_client)
-            .build_graph()
-            .ainvoke(
-                {
-                    "github_config": state["github_config"],
-                    "research_history": research_history,
-                    "commit_message": "Update research history",
-                }
-            )
-        )
-
-        return {"research_history": research_history}
 
     @record_execution_time
     async def _generate_experimental_design(
@@ -307,10 +333,10 @@ class ExecuteE2ESubgraph:
         result = (
             await GenerateExperimentalDesignSubgraph(
                 langchain_client=self.langchain_client,
-                runner_config=state["runner_config"],
-                num_models_to_use=state.get("num_models_to_use", 1),
-                num_datasets_to_use=state.get("num_datasets_to_use", 1),
-                num_comparative_methods=state.get("num_comparative_methods", 1),
+                runner_config=self.runner_config,
+                num_models_to_use=self.num_experiment_models,
+                num_datasets_to_use=self.num_experiment_datasets,
+                num_comparative_methods=self.num_comparison_methods,
             )
             .build_graph()
             .ainvoke({"research_hypothesis": state["research_hypothesis"]})
@@ -324,8 +350,8 @@ class ExecuteE2ESubgraph:
         result = (
             await GenerateCodeSubgraph(
                 langchain_client=self.langchain_client,
-                wandb_config=state["wandb_config"],
-                max_code_validations=state.get("max_code_validations", 3),
+                wandb_config=self.wandb_config,
+                max_code_validations=self.experiment_code_validation_iterations,
             )
             .build_graph()
             .ainvoke(
@@ -365,7 +391,7 @@ class ExecuteE2ESubgraph:
         result = (
             await ExecuteTrialExperimentSubgraph(
                 github_client=self.github_client,
-                runner_label=state["runner_config"].runner_label,
+                runner_label=self.runner_config.runner_label,
             )
             .build_graph()
             .ainvoke({"github_config": state["github_config"]})
@@ -406,7 +432,7 @@ class ExecuteE2ESubgraph:
         result = (
             await ExecuteFullExperimentSubgraph(
                 github_client=self.github_client,
-                runner_label=state["runner_config"].runner_label,
+                runner_label=self.runner_config.runner_label,
             )
             .build_graph()
             .ainvoke(
@@ -502,7 +528,7 @@ class ExecuteE2ESubgraph:
             .ainvoke(
                 {
                     "github_config": state["github_config"],
-                    "wandb_config": state["wandb_config"],
+                    "wandb_config": self.wandb_config,
                 }
             )
         )
@@ -585,7 +611,7 @@ class ExecuteE2ESubgraph:
         result = (
             await WriteSubgraph(
                 langchain_client=self.langchain_client,
-                writing_refinement_rounds=state.get("writing_refinement_rounds", 2),
+                paper_content_refinement_iterations=self.paper_content_refinement_iterations,
             )
             .build_graph()
             .ainvoke(
@@ -610,7 +636,7 @@ class ExecuteE2ESubgraph:
             await GenerateLatexSubgraph(
                 langchain_client=self.langchain_client,
                 github_client=self.github_client,
-                latex_template_name=state.get("latex_template_name", "iclr2024"),
+                latex_template_name=self.latex_template_name,
             )
             .build_graph()
             .ainvoke(
@@ -629,7 +655,7 @@ class ExecuteE2ESubgraph:
         result = (
             await PushLatexSubgraph(
                 github_client=self.github_client,
-                latex_template_name=state.get("latex_template_name", "iclr2024"),
+                latex_template_name=self.latex_template_name,
             )
             .build_graph()
             .ainvoke(
@@ -703,6 +729,7 @@ class ExecuteE2ESubgraph:
     def build_graph(self):
         PIPELINE = [
             ("prepare_repository", self._prepare_repository),
+            ("generate_queries", self._generate_queries),
             ("search_paper_titles", self._search_paper_titles),
             ("retrieve_papers", self._retrieve_papers),
             ("generate_hypothesis", self._generate_hypothesis),
@@ -727,6 +754,7 @@ class ExecuteE2ESubgraph:
         ]
 
         UPLOAD_AFTER = {
+            "generate_queries",
             "search_paper_titles",
             "retrieve_papers",
             "generate_hypothesis",
@@ -768,14 +796,31 @@ class ExecuteE2ESubgraph:
 
 
 if __name__ == "__main__":
-    from dependency_injector.wiring import Provide
+    import asyncio
 
     from airas.core.container import Container
+    from airas.types.experimental_design import RunnerConfig
+    from airas.types.wandb import WandbConfig
 
-    graph = ExecuteE2ESubgraph(
-        search_index=Provide[Container.airas_db_paper_search_index],
-        github_client=Provide[Container.github_client],
-        arxiv_client=Provide[Container.arxiv_client],
-        langchain_client=Provide[Container.langchain_client],
-    ).build_graph()
-    print(graph.get_graph().draw_mermaid())
+    async def main() -> None:
+        container = Container()
+        await container.init_resources()
+
+        try:
+            graph = ExecuteE2ESubgraph(
+                search_index=container.airas_db_search_index(),
+                github_client=container.github_client(),
+                arxiv_client=container.arxiv_client(),
+                langchain_client=container.langchain_client(),
+                runner_config=RunnerConfig(
+                    runner_label=["ubuntu-latest"],
+                    description="Sample runner config for graph preview",
+                ),
+                wandb_config=WandbConfig(entity="demo", project="demo"),
+            ).build_graph()
+
+            print(graph.get_graph().draw_mermaid())
+        finally:
+            await container.shutdown_resources()
+
+    asyncio.run(main())

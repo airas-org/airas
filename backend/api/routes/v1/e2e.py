@@ -64,6 +64,18 @@ async def _execute_e2e(
             github_client=github_client,
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,
+            runner_config=request.runner_config,
+            wandb_config=request.wandb_config,
+            is_github_repo_private=request.is_github_repo_private,
+            num_paper_search_queries=request.num_paper_search_queries,
+            papers_per_query=request.papers_per_query,
+            hypothesis_refinement_iterations=request.hypothesis_refinement_iterations,
+            num_experiment_models=request.num_experiment_models,
+            num_experiment_datasets=request.num_experiment_datasets,
+            num_comparison_methods=request.num_comparison_methods,
+            experiment_code_validation_iterations=request.experiment_code_validation_iterations,
+            paper_content_refinement_iterations=request.paper_content_refinement_iterations,
+            latex_template_name=request.latex_template_name,
         ).build_graph()
 
         logger.info(f"[Task {task_id}] Streaming graph execution")
