@@ -13,7 +13,7 @@ def create_repository_from_template(
     template_owner: str,
     template_repo: str,
     include_all_branches: bool = True,
-    is_private: bool = False,
+    is_github_repo_private: bool = False,
 ) -> Literal[True]:
     try:
         result = github_client.create_repository_from_template(
@@ -22,7 +22,7 @@ def create_repository_from_template(
             template_owner=template_owner,
             template_repo=template_repo,
             include_all_branches=include_all_branches,
-            private=is_private,
+            private=is_github_repo_private,
         )
         if not result:
             error = (

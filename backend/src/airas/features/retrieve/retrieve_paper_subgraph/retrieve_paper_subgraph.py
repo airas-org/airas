@@ -96,13 +96,11 @@ class RetrievePaperSubgraph:
         langchain_client: LangChainClient,
         arxiv_client: ArxivClient,
         github_client: GithubClient,
-        max_results_per_query: int = 3,
         llm_mapping: RetrievePaperSubgraphLLMMapping | None = None,
     ):
         self.langchain_client = langchain_client
         self.arxiv_client = arxiv_client
         self.github_client = github_client
-        self.max_results_per_query = max_results_per_query
         self.llm_mapping = llm_mapping or RetrievePaperSubgraphLLMMapping()
 
     @record_execution_time

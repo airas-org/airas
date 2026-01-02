@@ -37,7 +37,7 @@ class GenerateHypothesisSubgraphV0LLMMapping(BaseModel):
 
 
 class GenerateHypothesisSubgraphV0InputState(TypedDict):
-    research_objective: str
+    research_topic: str
     research_study_list: list[ResearchStudy]
 
 
@@ -79,7 +79,7 @@ class GenerateHypothesisSubgraphV0:
         research_hypothesis = await generate_hypothesis(
             llm_name=self.llm_mapping.generate_hypothesis,
             llm_client=self.langchain_client,
-            research_objective=state["research_objective"],
+            research_topic=state["research_topic"],
             research_study_list=state["research_study_list"],
         )
         return {"research_hypothesis": research_hypothesis}
@@ -89,7 +89,7 @@ class GenerateHypothesisSubgraphV0:
         self, state: GenerateHypothesisSubgraphV0State
     ) -> dict[str, list[EvaluatedHypothesis]]:
         evaluated_hypothesis = await evaluate_novelty_and_significance(
-            research_objective=state["research_objective"],
+            research_topic=state["research_topic"],
             research_study_list=state["research_study_list"],
             research_hypothesis=state.get("research_hypothesis"),
             llm_name=self.llm_mapping.evaluate_novelty_and_significance,
@@ -120,7 +120,7 @@ class GenerateHypothesisSubgraphV0:
         refined_hypothesis = await refine_hypothesis(
             llm_name=self.llm_mapping.refine_hypothesis,
             llm_client=self.langchain_client,
-            research_objective=state["research_objective"],
+            research_topic=state["research_topic"],
             evaluated_hypothesis_history=state["evaluated_hypothesis_history"],
             research_study_list=state["research_study_list"],
         )

@@ -14,7 +14,7 @@ from airas.types.research_study import ResearchStudy
 
 
 async def evaluate_novelty_and_significance(
-    research_objective: str,
+    research_topic: str,
     research_study_list: list[ResearchStudy],
     research_hypothesis: ResearchHypothesis,
     llm_name: LLM_MODELS,
@@ -24,7 +24,7 @@ async def evaluate_novelty_and_significance(
 
     template = env.from_string(evaluate_novelty_and_significance_prompt)
     data = {
-        "research_objective": research_objective,
+        "research_topic": research_topic,
         "research_study_list": [
             ResearchStudy.to_formatted_json(research_study)
             for research_study in research_study_list

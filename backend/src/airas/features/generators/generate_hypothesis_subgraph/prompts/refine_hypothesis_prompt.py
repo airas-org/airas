@@ -14,7 +14,7 @@ You are an accomplished researcher in the field of machine learning. Based on th
 - Please also consider ways to enhance the feasibility of validation and improve accordingly.
 
 # Research Objective
-{{ research_objective }}
+{{ research_topic }}
 
 # Current Hypothesis
 {{ current_hypothesis }}

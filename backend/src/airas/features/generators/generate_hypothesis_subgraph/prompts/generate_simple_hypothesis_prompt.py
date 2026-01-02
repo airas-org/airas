@@ -3,7 +3,7 @@ You are a researcher in machine learning. Based on the instructions below, pleas
 
 # Instructions:
 - Read the research objective described below:
-    {{ research_objective }}
+    {{ research_topic }}
 - A list of related prior studies is provided. Each entry contains a summary of its title, main contributions, methodologies, results, and limitations:
     {{ research_study_list }}
 - Identify the most promising existing method that can be improved with minimal modifications to its objective function or core algorithm.

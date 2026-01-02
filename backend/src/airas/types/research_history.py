@@ -13,12 +13,10 @@ from airas.types.research_study import ResearchStudy
 
 class ResearchHistory(BaseModel):
     # --- Project Management ---
-    research_objective: Optional[str] = Field(
-        None, description="Main research objective or topic"
-    )
+    research_topic: Optional[str] = Field(None, description="Main research topic")
 
     # --- Search & Investigation ---
-    query_list: Optional[list[str]] = Field(
+    queries: Optional[list[str]] = Field(
         None, description="List of search queries used for paper retrieval"
     )
     research_study_list: Optional[list[ResearchStudy]] = Field(

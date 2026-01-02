@@ -43,7 +43,7 @@ async def search_paper_titles(
             search_index = container.airas_db_search_index()
             subgraph = SearchPaperTitlesFromAirasDbSubgraph(
                 search_index=search_index,
-                max_results_per_query=request.max_results_per_query,
+                papers_per_query=request.max_results_per_query,
             )
 
         case _:
@@ -114,7 +114,7 @@ async def generate_paper(
     result = (
         await WriteSubgraph(
             langchain_client=langchain_client,
-            writing_refinement_rounds=request.writing_refinement_rounds,
+            paper_content_refinement_iterations=request.writing_refinement_rounds,
             llm_mapping=request.llm_mapping,
         )
         .build_graph()

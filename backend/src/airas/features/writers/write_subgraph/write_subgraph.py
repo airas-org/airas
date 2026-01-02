@@ -68,10 +68,10 @@ class WriteSubgraph:
         self,
         langchain_client: LangChainClient,
         llm_mapping: WriteLLMMapping | None = None,
-        writing_refinement_rounds: int = 2,
+        paper_content_refinement_iterations: int = 2,
     ):
         self.llm_mapping = llm_mapping or WriteLLMMapping()
-        self.writing_refinement_rounds = writing_refinement_rounds
+        self.paper_content_refinement_iterations = paper_content_refinement_iterations
         self.langchain_client = langchain_client
 
     @record_execution_time
@@ -115,7 +115,7 @@ class WriteSubgraph:
 
         new_refinement_count = state["refinement_count"] + 1
         goto: Literal["refine_paper", "__end__"]
-        if new_refinement_count < self.writing_refinement_rounds:
+        if new_refinement_count < self.paper_content_refinement_iterations:
             goto = "refine_paper"
         else:
             goto = "__end__"

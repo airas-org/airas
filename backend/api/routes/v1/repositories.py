@@ -33,7 +33,7 @@ async def prepare_repository(
 
     result = (
         await PrepareRepositorySubgraph(
-            github_client=github_client, is_private=request.is_private
+            github_client=github_client, is_github_repo_private=request.is_private
         )
         .build_graph()
         .ainvoke(request, config=config)

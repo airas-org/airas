@@ -19,7 +19,7 @@ logger = getLogger(__name__)
 async def generate_hypothesis(
     llm_name: LLM_MODELS,
     llm_client: LangChainClient,
-    research_objective: str,
+    research_topic: str,
     research_study_list: list[ResearchStudy],
 ) -> ResearchHypothesis:
     env = Environment()
@@ -28,7 +28,7 @@ async def generate_hypothesis(
     # template = env.from_string(generate_hypothesis_prompt)
     template = env.from_string(generate_simple_hypothesis_prompt)
     data = {
-        "research_objective": research_objective,
+        "research_topic": research_topic,
         "research_study_list": [
             ResearchStudy.to_formatted_json(research_study)
             for research_study in research_study_list

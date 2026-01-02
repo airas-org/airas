@@ -15,7 +15,7 @@ from airas.types.research_study import ResearchStudy
 async def refine_hypothesis(
     llm_name: LLM_MODELS,
     llm_client: LangChainClient,
-    research_objective: str,
+    research_topic: str,
     evaluated_hypothesis_history: list[EvaluatedHypothesis],
     research_study_list: list[ResearchStudy],
 ) -> ResearchHypothesis:
@@ -30,7 +30,7 @@ async def refine_hypothesis(
 
     template = env.from_string(refine_hypothesis_prompt)
     data = {
-        "research_objective": research_objective,
+        "research_topic": research_topic,
         "current_hypothesis": latest.hypothesis.to_formatted_json(),
         "novelty_reason": latest.evaluation.novelty_reason,
         "significance_reason": latest.evaluation.significance_reason,
