@@ -6,12 +6,15 @@ from datetime import datetime, timezone
 from typing import Annotated, Any
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from langfuse import observe
 
 from airas.core.container import Container
 from airas.features.orchestrators.execute_e2e_subgraph.execute_e2e_subgraph import (
     ExecuteE2ESubgraph,
+)
+from airas.features.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
+    AirasDbPaperSearchIndex,
 )
 from airas.services.api_client.arxiv_client import ArxivClient
 from airas.services.api_client.github_client import GithubClient
@@ -45,6 +48,7 @@ _tasks: dict[str, dict[str, Any]] = {}
 async def _execute_e2e(
     task_id: str,
     request: ExecuteE2ERequestBody,
+    search_index: AirasDbPaperSearchIndex,
     github_client: GithubClient,
     arxiv_client: ArxivClient,
     langchain_client: LangChainClient,
@@ -56,6 +60,7 @@ async def _execute_e2e(
         _tasks[task_id]["updated_at"] = datetime.now(timezone.utc)
 
         graph = ExecuteE2ESubgraph(
+            search_index=search_index,
             github_client=github_client,
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,
@@ -112,7 +117,9 @@ async def execute_e2e(
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
+    fastapi_request: Request,
 ) -> ExecuteE2EResponseBody:
+    container: Container = fastapi_request.app.state.container
     task_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc)
 
@@ -130,6 +137,7 @@ async def execute_e2e(
         _execute_e2e(
             task_id=task_id,
             request=request,
+            search_index=container.airas_db_search_index(),
             github_client=github_client,
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,

@@ -8,7 +8,7 @@ from airas.types.wandb import WandbConfig
 
 class ExecuteE2ERequestBody(BaseModel):
     github_config: GitHubConfig
-    query_list: list[str]
+    queries: list[str]
     runner_config: RunnerConfig
     wandb_config: WandbConfig
     is_private: bool = False

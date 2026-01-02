@@ -51,6 +51,12 @@ from airas.features.publication.push_latex_subgraph.push_latex_subgraph import (
 from airas.features.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
 )
+from airas.features.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
+    AirasDbPaperSearchIndex,
+)
+from airas.features.retrieve.search_paper_titles_subgraph.search_paper_titles_from_airas_db_subgraph import (
+    SearchPaperTitlesFromAirasDbSubgraph,
+)
 from airas.features.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
     GenerateBibfileSubgraph,
 )
@@ -83,7 +89,7 @@ record_execution_time = lambda f: time_node("execute_e2e")(f)  # noqa: E731
 
 class ExecuteE2EInputState(TypedDict):
     github_config: GitHubConfig
-    query_list: list[str]
+    queries: list[str]
     runner_config: RunnerConfig
     wandb_config: WandbConfig
     is_private: bool
@@ -107,6 +113,7 @@ class ExecuteE2EState(
     ExecuteE2EOutputState,
     total=False,
 ):
+    paper_titles: list[str]
     research_study_list: list[ResearchStudy]
     research_hypothesis: ResearchHypothesis
     experimental_design: ExperimentalDesign
@@ -140,10 +147,12 @@ class ExecuteE2EState(
 class ExecuteE2ESubgraph:
     def __init__(
         self,
+        search_index: AirasDbPaperSearchIndex,
         github_client: GithubClient,
         arxiv_client: ArxivClient,
         langchain_client: LangChainClient,
     ):
+        self.search_index = search_index
         self.github_client = github_client
         self.arxiv_client = arxiv_client
         self.langchain_client = langchain_client
@@ -202,6 +211,19 @@ class ExecuteE2ESubgraph:
         }
 
     @record_execution_time
+    async def _search_paper_titles(self, state: ExecuteE2EState) -> dict:
+        logger.info("=== Search Paper Titles ===")
+        result = (
+            await SearchPaperTitlesFromAirasDbSubgraph(
+                search_index=self.search_index,
+                max_results_per_query=state.get("max_results_per_query", 5),
+            )
+            .build_graph()
+            .ainvoke({"queries": state["queries"]})
+        )
+        return {"paper_titles": result["paper_titles"]}
+
+    @record_execution_time
     async def _retrieve_papers(
         self, state: ExecuteE2EState
     ) -> dict[str, list[ResearchStudy]]:
@@ -214,14 +236,9 @@ class ExecuteE2ESubgraph:
                 max_results_per_query=state.get("max_results_per_query", 5),
             )
             .build_graph()
-            .ainvoke({"query_list": state["query_list"]})
+            .ainvoke({"paper_titles": state["paper_titles"]})
         )
-
-        # Flatten the research_study_list
-        research_study_list = []
-        for chunk in result["research_study_list"]:
-            research_study_list.extend(chunk)
-
+        research_study_list = result["research_study_list"]
         logger.info(f"Retrieved {len(research_study_list)} papers")
         return {"research_study_list": research_study_list}
 
@@ -230,9 +247,9 @@ class ExecuteE2ESubgraph:
         self, state: ExecuteE2EState
     ) -> dict[str, ResearchHypothesis]:
         logger.info("=== Hypothesis Generation ===")
-        # Use the first query as research_objective
+        # TODO: objectiveを入力し、クエリを生成するように変更する
         research_objective = (
-            state["query_list"][0] if state.get("query_list") else "Research objective"
+            state["queries"][0] if state.get("queries") else "Research objective"
         )
 
         result = (
@@ -258,7 +275,11 @@ class ExecuteE2ESubgraph:
         logger.info("=== Upload Research History ===")
         try:
             research_history = ResearchHistory(
-                **{k: v for k, v in state.items() if k in ResearchHistory.model_fields}
+                **{
+                    k: v
+                    for k, v in state.items()
+                    if k in ResearchHistory.model_fields.keys()
+                }
             )
         except ValidationError as e:
             logger.error(f"Failed to construct ResearchHistory: {e}")
@@ -682,6 +703,7 @@ class ExecuteE2ESubgraph:
     def build_graph(self):
         PIPELINE = [
             ("prepare_repository", self._prepare_repository),
+            ("search_paper_titles", self._search_paper_titles),
             ("retrieve_papers", self._retrieve_papers),
             ("generate_hypothesis", self._generate_hypothesis),
             ("generate_experimental_design", self._generate_experimental_design),
@@ -705,6 +727,7 @@ class ExecuteE2ESubgraph:
         ]
 
         UPLOAD_AFTER = {
+            "search_paper_titles",
             "retrieve_papers",
             "generate_hypothesis",
             "generate_experimental_design",
@@ -742,3 +765,17 @@ class ExecuteE2ESubgraph:
         graph_builder.add_edge(PIPELINE[-1][0], END)
 
         return graph_builder.compile()
+
+
+if __name__ == "__main__":
+    from dependency_injector.wiring import Provide
+
+    from airas.core.container import Container
+
+    graph = ExecuteE2ESubgraph(
+        search_index=Provide[Container.airas_db_paper_search_index],
+        github_client=Provide[Container.github_client],
+        arxiv_client=Provide[Container.arxiv_client],
+        langchain_client=Provide[Container.langchain_client],
+    ).build_graph()
+    print(graph.get_graph().draw_mermaid())

@@ -18,7 +18,7 @@ class ResearchHistory(BaseModel):
     )
 
     # --- Search & Investigation ---
-    query_list: Optional[list[str]] = Field(
+    queries: Optional[list[str]] = Field(
         None, description="List of search queries used for paper retrieval"
     )
     research_study_list: Optional[list[ResearchStudy]] = Field(
