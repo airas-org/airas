@@ -4,8 +4,8 @@ from uuid import UUID
 from dependency_injector.wiring import Closing, Provide, inject
 from fastapi import APIRouter, Depends
 
-from airas.core.container import Container
-from airas.features.step_run_links.service import StepRunLinkService
+from airas.container import Container
+from airas.usecases.step_run_links.service import StepRunLinkService
 from api.schemas.step_run_links import (
     StepRunLinkCreateRequest,
     StepRunLinkListResponse,

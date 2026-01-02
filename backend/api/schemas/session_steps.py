@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from airas.types.session_step import SessionStepType
+from airas.core.types.session_step import SessionStepType
 
 
 class SessionStepCreateRequest(BaseModel):

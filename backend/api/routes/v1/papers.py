@@ -4,18 +4,18 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from langfuse import observe
 
-from airas.core.container import Container
-from airas.features.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
+from airas.container import Container
+from airas.infra.arxiv_client import ArxivClient
+from airas.infra.github_client import GithubClient
+from airas.infra.langchain_client import LangChainClient
+from airas.infra.langfuse_client import LangfuseClient
+from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
 )
-from airas.features.retrieve.search_paper_titles_subgraph.search_paper_titles_from_airas_db_subgraph import (
+from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_airas_db_subgraph import (
     SearchPaperTitlesFromAirasDbSubgraph,
 )
-from airas.features.writers.write_subgraph.write_subgraph import WriteSubgraph
-from airas.services.api_client.arxiv_client import ArxivClient
-from airas.services.api_client.github_client import GithubClient
-from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.langfuse_client import LangfuseClient
+from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
 from api.schemas.papers import (
     RetrievePaperSubgraphRequestBody,
     RetrievePaperSubgraphResponseBody,

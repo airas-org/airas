@@ -1,9 +1,9 @@
 from pydantic import BaseModel
 
-from airas.types.experimental_design import RunnerConfig
-from airas.types.github import GitHubConfig
-from airas.types.research_history import ResearchHistory
-from airas.types.wandb import WandbConfig
+from airas.core.types.experimental_design import RunnerConfig
+from airas.core.types.github import GitHubConfig
+from airas.core.types.research_history import ResearchHistory
+from airas.core.types.wandb import WandbConfig
 
 
 class ExecuteE2ERequestBody(BaseModel):

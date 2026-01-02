@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from airas.types.github import GitHubConfig
-from airas.types.research_history import ResearchHistory
+from airas.core.types.github import GitHubConfig
+from airas.core.types.research_history import ResearchHistory
 
 
 class GithubDownloadRequest(BaseModel):

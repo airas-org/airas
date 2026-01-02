@@ -1,13 +1,13 @@
 from pydantic import BaseModel
 
-from airas.features.generators.generate_code_subgraph.generate_code_subgraph import (
+from airas.core.types.experiment_code import ExperimentCode
+from airas.core.types.experimental_design import ExperimentalDesign
+from airas.core.types.github import GitHubConfig
+from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.core.types.wandb import WandbConfig
+from airas.usecases.generators.generate_code_subgraph.generate_code_subgraph import (
     GenerateCodeLLMMapping,
 )
-from airas.types.experiment_code import ExperimentCode
-from airas.types.experimental_design import ExperimentalDesign
-from airas.types.github import GitHubConfig
-from airas.types.research_hypothesis import ResearchHypothesis
-from airas.types.wandb import WandbConfig
 
 
 class GenerateCodeSubgraphRequestBody(BaseModel):

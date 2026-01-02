@@ -9,17 +9,17 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Request
 from langfuse import observe
 
-from airas.core.container import Container
-from airas.features.orchestrators.execute_e2e_subgraph.execute_e2e_subgraph import (
+from airas.container import Container
+from airas.infra.arxiv_client import ArxivClient
+from airas.infra.github_client import GithubClient
+from airas.infra.langchain_client import LangChainClient
+from airas.infra.langfuse_client import LangfuseClient
+from airas.usecases.orchestrators.execute_e2e_subgraph.execute_e2e_subgraph import (
     ExecuteE2ESubgraph,
 )
-from airas.features.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
+from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
-from airas.services.api_client.arxiv_client import ArxivClient
-from airas.services.api_client.github_client import GithubClient
-from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.langfuse_client import LangfuseClient
 from api.schemas.e2e import (
     ExecuteE2ERequestBody,
     ExecuteE2EResponseBody,

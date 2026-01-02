@@ -4,8 +4,8 @@ from uuid import UUID
 from dependency_injector.wiring import Closing, Provide, inject
 from fastapi import APIRouter, Depends
 
-from airas.core.container import Container
-from airas.features.sessions.service import SessionService
+from airas.container import Container
+from airas.usecases.sessions.service import SessionService
 from api.schemas.sessions import (
     SessionCreateRequest,
     SessionResponse,

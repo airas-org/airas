@@ -1,11 +1,11 @@
 from pydantic import BaseModel
 
-from airas.features.publication.generate_latex_subgraph.generate_latex_subgraph import (
+from airas.core.types.github import GitHubConfig
+from airas.core.types.latex import LATEX_TEMPLATE_NAME
+from airas.core.types.paper import PaperContent
+from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
     GenerateLatexLLMMapping,
 )
-from airas.types.github import GitHubConfig
-from airas.types.latex import LATEX_TEMPLATE_NAME
-from airas.types.paper import PaperContent
 
 
 # TODO: Latex関連の各APIのrequest bodyにlatex_template_nameがあるのを取り除き、GenerateLatexSubgraphRequestBodyだけがもつ様に変更する

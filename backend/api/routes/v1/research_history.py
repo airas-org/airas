@@ -4,11 +4,11 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from langfuse import observe
 
-from airas.core.container import Container
-from airas.features.github.github_download_subgraph import GithubDownloadSubgraph
-from airas.features.github.github_upload_subgraph import GithubUploadSubgraph
-from airas.services.api_client.github_client import GithubClient
-from airas.services.api_client.langfuse_client import LangfuseClient
+from airas.container import Container
+from airas.infra.github_client import GithubClient
+from airas.infra.langfuse_client import LangfuseClient
+from airas.usecases.github.github_download_subgraph import GithubDownloadSubgraph
+from airas.usecases.github.github_upload_subgraph import GithubUploadSubgraph
 from api.schemas.research_history import (
     GithubDownloadRequest,
     GithubDownloadResponse,
