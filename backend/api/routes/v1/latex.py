@@ -4,19 +4,19 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from langfuse import observe
 
-from airas.core.container import Container
-from airas.features.publication.compile_latex_subgraph.compile_latex_subgraph import (
+from airas.container import Container
+from airas.infra.github_client import GithubClient
+from airas.infra.langchain_client import LangChainClient
+from airas.infra.langfuse_client import LangfuseClient
+from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
     CompileLatexSubgraph,
 )
-from airas.features.publication.generate_latex_subgraph.generate_latex_subgraph import (
+from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
     GenerateLatexSubgraph,
 )
-from airas.features.publication.push_latex_subgraph.push_latex_subgraph import (
+from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
     PushLatexSubgraph,
 )
-from airas.services.api_client.github_client import GithubClient
-from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.langfuse_client import LangfuseClient
 from api.schemas.latex import (
     CompileLatexSubgraphRequestBody,
     CompileLatexSubgraphResponseBody,

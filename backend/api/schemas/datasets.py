@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from airas.types.experimental_design import DatasetConfig, DatasetSubfield
+from airas.core.types.experimental_design import DatasetConfig, DatasetSubfield
 
 
 class RetrieveDatasetsSubgraphRequestBody(BaseModel):

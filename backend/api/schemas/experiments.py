@@ -1,14 +1,14 @@
 from pydantic import BaseModel
 
-from airas.features.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
+from airas.core.types.experiment_code import ExperimentCode
+from airas.core.types.experimental_analysis import ExperimentalAnalysis
+from airas.core.types.experimental_design import ExperimentalDesign
+from airas.core.types.experimental_results import ExperimentalResults
+from airas.core.types.github import GitHubConfig
+from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentLLMMapping,
 )
-from airas.types.experiment_code import ExperimentCode
-from airas.types.experimental_analysis import ExperimentalAnalysis
-from airas.types.experimental_design import ExperimentalDesign
-from airas.types.experimental_results import ExperimentalResults
-from airas.types.github import GitHubConfig
-from airas.types.research_hypothesis import ResearchHypothesis
 
 
 class FetchRunIdsRequestBody(BaseModel):

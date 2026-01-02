@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 
 import api.routes.v1 as routes_v1
-from airas.core.container import Container
+from airas.container import Container
 from api.routes.v1 import (
     bibfile,
     code,

@@ -1,10 +1,10 @@
 from pydantic import BaseModel
 
-from airas.features.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
+from airas.core.types.experimental_design import ExperimentalDesign, RunnerConfig
+from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignLLMMapping,
 )
-from airas.types.experimental_design import ExperimentalDesign, RunnerConfig
-from airas.types.research_hypothesis import ResearchHypothesis
 
 
 class GenerateExperimentalDesignSubgraphRequestBody(BaseModel):

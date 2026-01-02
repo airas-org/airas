@@ -2,17 +2,17 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
-from airas.features.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
+from airas.core.types.experiment_code import ExperimentCode
+from airas.core.types.experimental_analysis import ExperimentalAnalysis
+from airas.core.types.experimental_design import ExperimentalDesign
+from airas.core.types.experimental_results import ExperimentalResults
+from airas.core.types.paper import PaperContent
+from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.core.types.research_study import ResearchStudy
+from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraphLLMMapping,
 )
-from airas.features.writers.write_subgraph.write_subgraph import WriteLLMMapping
-from airas.types.experiment_code import ExperimentCode
-from airas.types.experimental_analysis import ExperimentalAnalysis
-from airas.types.experimental_design import ExperimentalDesign
-from airas.types.experimental_results import ExperimentalResults
-from airas.types.paper import PaperContent
-from airas.types.research_hypothesis import ResearchHypothesis
-from airas.types.research_study import ResearchStudy
+from airas.usecases.writers.write_subgraph.write_subgraph import WriteLLMMapping
 
 
 class SearchMethod(str, Enum):

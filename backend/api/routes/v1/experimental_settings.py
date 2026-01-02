@@ -4,12 +4,12 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from langfuse import observe
 
-from airas.core.container import Container
-from airas.features.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
+from airas.container import Container
+from airas.infra.langchain_client import LangChainClient
+from airas.infra.langfuse_client import LangfuseClient
+from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignSubgraph,
 )
-from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.langfuse_client import LangfuseClient
 from api.schemas.experimental_settings import (
     GenerateExperimentalDesignSubgraphRequestBody,
     GenerateExperimentalDesignSubgraphResponseBody,
