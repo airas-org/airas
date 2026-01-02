@@ -10,7 +10,7 @@ Content-Type: application/json
 
 ### Retrieve papers by titles
 
-POST http://127.0.0.1:8001/airas/v1/papers/retrieval
+POST http://127.0.0.1:8000/airas/v1/papers/retrieval
 Content-Type: application/json
 
 {
