@@ -23,8 +23,11 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { WorkflowTree } from "@/components/workflow-tree";
-import type { ExecuteE2ERequestBody, ExecuteE2EResponseBody } from "@/lib/api";
-import { E2EService } from "@/lib/api";
+import type {
+  TopicOpenEndedResearchRequestBody,
+  TopicOpenEndedResearchResponseBody,
+} from "@/lib/api";
+import { TopicOpenEndedResearchService } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type {
   ExperimentConfig,
@@ -56,8 +59,8 @@ export type NavKey = "papers" | "research" | "auto-research";
 type AutoResearchSave = {
   id: string;
   savedAt: Date;
-  payload: ExecuteE2ERequestBody;
-  response: ExecuteE2EResponseBody | null;
+  payload: TopicOpenEndedResearchRequestBody;
+  response: TopicOpenEndedResearchResponseBody | null;
 };
 
 interface MainContentProps {
@@ -422,7 +425,7 @@ export function MainContent({
     }
   };
 
-  const buildAutoResearchPayload = (): ExecuteE2ERequestBody => {
+  const buildAutoResearchPayload = (): TopicOpenEndedResearchRequestBody => {
     const queryList = autoQueries
       .split("\n")
       .map((q) => q.trim())
@@ -490,7 +493,7 @@ export function MainContent({
         throw new Error("WandBのEntity/Projectを入力してください");
       }
 
-      const response = await E2EService.executeE2EAirasV1E2ERunPost(payload);
+      const response = await TopicOpenEndedResearchService.executeE2EAirasV1E2ERunPost(payload);
       setAutoResponse(response);
     } catch (error) {
       const message = error instanceof Error ? error.message : "自動研究の実行に失敗しました";
@@ -505,7 +508,9 @@ export function MainContent({
     setIsAutoRunning(true);
     setAutoError(null);
     try {
-      const response = await E2EService.getE2EStatusAirasV1E2EStatusTaskIdGet(autoResponse.task_id);
+      const response = await TopicOpenEndedResearchService.getE2EStatusAirasV1E2EStatusTaskIdGet(
+        autoResponse.task_id,
+      );
       setAutoResponse(response);
     } catch (error) {
       const message = error instanceof Error ? error.message : "ステータスの取得に失敗しました";
