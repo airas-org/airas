@@ -55,6 +55,7 @@ class TopicOpenEndedResearchService:
             updates["status"] = status
         if current_step is not None:
             updates["current_step"] = current_step
+        # TODO: error_message を取得するように変更する
         if error_message is not None:
             updates["error_message"] = error_message
         if result is not None:
