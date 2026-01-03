@@ -2,8 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { GitHubConfig } from "./GitHubConfig";
+import type { GitHubConfig } from './GitHubConfig';
 export type ExecuteFullRequestBody = {
-  github_config: GitHubConfig;
-  run_ids: Array<string>;
+    github_config: GitHubConfig;
+    run_ids: Array<string>;
 };
+

@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export type GenerateBibfileSubgraphResponseBody = {
-  references_bib: string;
-  execution_time: Record<string, Array<number>>;
+    references_bib: string;
+    execution_time: Record<string, Array<number>>;
 };
+

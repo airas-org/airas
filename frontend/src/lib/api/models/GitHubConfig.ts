@@ -3,16 +3,17 @@
 /* tslint:disable */
 /* eslint-disable */
 export type GitHubConfig = {
-  /**
-   * GitHub owner of the repository
-   */
-  github_owner: string;
-  /**
-   * Name of the repository
-   */
-  repository_name: string;
-  /**
-   * Branch name
-   */
-  branch_name: string;
+    /**
+     * GitHub owner of the repository
+     */
+    github_owner: string;
+    /**
+     * Name of the repository
+     */
+    repository_name: string;
+    /**
+     * Branch name
+     */
+    branch_name: string;
 };
+

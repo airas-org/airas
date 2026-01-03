@@ -1,0 +1,166 @@
+import asyncio
+import logging
+import traceback
+import uuid
+from typing import Annotated
+
+from dependency_injector.wiring import Closing, Provide, inject
+from fastapi import APIRouter, Depends, HTTPException, Request
+from langfuse import observe
+
+from airas.container import Container
+from airas.infra.arxiv_client import ArxivClient
+from airas.infra.github_client import GithubClient
+from airas.infra.langchain_client import LangChainClient
+from airas.infra.langfuse_client import LangfuseClient
+from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service import (
+    TopicOpenEndedResearchService,
+)
+from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_subgraph import (
+    TopicOpenEndedResearchSubgraph,
+)
+from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
+    AirasDbPaperSearchIndex,
+)
+from api.schemas.topic_open_ended_research import (
+    TopicOpenEndedResearchRequestBody,
+    TopicOpenEndedResearchResponseBody,
+    TopicOpenEndedResearchStatusResponseBody,
+)
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(
+    prefix="/topic_open_ended_research", tags=["topic_open_ended_research"]
+)
+DEFAULT_CREATED_BY = uuid.UUID("00000000-0000-0000-0000-000000000001")
+
+# TODO: [Polling/Redis] Implement asynchronous polling mechanism.
+# Redis is required to persist task state (status, logs) across processes,
+# allowing the client to poll progress via a separate GET /status endpoint.
+
+# TODO: [Architecture/Celery] Introduce Celery for production hosting.
+# Currently, this runs in the web server process. For long-running tasks,
+# execution should be offloaded to a separate Worker process to prevent
+# HTTP timeouts and ensure resilience against server restarts.
+
+
+async def _execute_topic_open_ended_research(
+    task_id: uuid.UUID,
+    request: TopicOpenEndedResearchRequestBody,
+    search_index: AirasDbPaperSearchIndex,
+    github_client: GithubClient,
+    arxiv_client: ArxivClient,
+    langchain_client: LangChainClient,
+    langfuse_client: LangfuseClient,
+    e2e_service: TopicOpenEndedResearchService,
+) -> None:
+    try:
+        logger.info(f"[Task {task_id}] Starting E2E execution")
+
+        graph = TopicOpenEndedResearchSubgraph(
+            search_index=search_index,
+            github_client=github_client,
+            arxiv_client=arxiv_client,
+            langchain_client=langchain_client,
+            e2e_service=e2e_service,
+            runner_config=request.runner_config,
+            wandb_config=request.wandb_config,
+            task_id=task_id,
+            is_github_repo_private=request.is_github_repo_private,
+            num_paper_search_queries=request.num_paper_search_queries,
+            papers_per_query=request.papers_per_query,
+            hypothesis_refinement_iterations=request.hypothesis_refinement_iterations,
+            num_experiment_models=request.num_experiment_models,
+            num_experiment_datasets=request.num_experiment_datasets,
+            num_comparison_methods=request.num_comparison_methods,
+            experiment_code_validation_iterations=request.experiment_code_validation_iterations,
+            paper_content_refinement_iterations=request.paper_content_refinement_iterations,
+            latex_template_name=request.latex_template_name,
+        ).build_graph()
+
+        logger.info(f"[Task {task_id}] Streaming graph execution")
+
+        config = {"recursion_limit": 100}
+        if handler := langfuse_client.create_handler():
+            config["callbacks"] = [handler]
+
+        # NOTE:将来的にストリーミング UI に対応するためastreamで実装
+        async for chunk in graph.astream(request, config=config):
+            for node_name, node_output in chunk.items():
+                if not isinstance(node_output, dict):
+                    continue
+
+                if "research_history" in node_output:
+                    logger.info(
+                        f"[Task {task_id}] Research history updated from node: {node_name}"
+                    )
+
+    except Exception as e:
+        error_msg = f"{type(e).__name__}: {str(e)}"
+        logger.error(f"[Task {task_id}] Execution failed: {error_msg}")
+        logger.error(f"[Task {task_id}] Traceback:\n{traceback.format_exc()}")
+    finally:
+        e2e_service.close()
+
+
+@router.post("/run", response_model=TopicOpenEndedResearchResponseBody)
+@inject
+@observe()
+async def execute_topic_open_ended_research(
+    request: TopicOpenEndedResearchRequestBody,
+    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
+    langchain_client: Annotated[
+        LangChainClient, Depends(Provide[Container.langchain_client])
+    ],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
+    e2e_service: Annotated[
+        TopicOpenEndedResearchService,
+        Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
+    ],
+    fastapi_request: Request,
+) -> TopicOpenEndedResearchResponseBody:
+    container: Container = fastapi_request.app.state.container
+    task_id = uuid.uuid4()
+
+    asyncio.create_task(
+        _execute_topic_open_ended_research(
+            task_id=task_id,
+            request=request,
+            search_index=container.airas_db_search_index(),
+            github_client=github_client,
+            arxiv_client=arxiv_client,
+            langchain_client=langchain_client,
+            langfuse_client=langfuse_client,
+            e2e_service=e2e_service,
+        )
+    )
+
+    return TopicOpenEndedResearchResponseBody(task_id=task_id)
+
+
+@router.get(
+    "/status/{task_id}", response_model=TopicOpenEndedResearchStatusResponseBody
+)
+@inject
+@observe()
+async def get_topic_open_ended_research_status(
+    task_id: uuid.UUID,
+    e2e_service: Annotated[
+        TopicOpenEndedResearchService,
+        Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
+    ],
+) -> TopicOpenEndedResearchStatusResponseBody:
+    try:
+        result = e2e_service.get(task_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Task {task_id} not found"
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    return TopicOpenEndedResearchStatusResponseBody.model_validate(result)

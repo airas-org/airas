@@ -3,8 +3,9 @@
 /* tslint:disable */
 /* eslint-disable */
 export type ExperimentalAnalysis = {
-  /**
-   * Overall analysis report text
-   */
-  analysis_report: string;
+    /**
+     * Overall analysis report text
+     */
+    analysis_report: string;
 };
+

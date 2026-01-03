@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export type GithubUploadResponse = {
-  is_github_upload: boolean;
-  execution_time: Record<string, Array<number>>;
+    is_github_upload: boolean;
+    execution_time: Record<string, Array<number>>;
 };
+

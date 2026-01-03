@@ -8,10 +8,10 @@ from sqlmodel import SQLModel
 import api.routes.v1 as routes_v1
 from airas.container import Container
 from api.routes.v1 import (
+    assisted_research,
     bibfile,
     code,
     datasets,
-    e2e,
     experimental_settings,
     experiments,
     github_actions,
@@ -21,9 +21,7 @@ from api.routes.v1 import (
     papers,
     repositories,
     research_history,
-    session_steps,
-    sessions,
-    step_run_links,
+    topic_open_ended_research,
 )
 
 
@@ -77,7 +75,5 @@ app.include_router(bibfile.router, prefix="/airas/v1")
 app.include_router(latex.router, prefix="/airas/v1")
 app.include_router(research_history.router, prefix="/airas/v1")
 app.include_router(github_actions.router, prefix="/airas/v1")
-app.include_router(sessions.router, prefix="/airas/v1")
-app.include_router(session_steps.router, prefix="/airas/v1")
-app.include_router(step_run_links.router, prefix="/airas/v1")
-app.include_router(e2e.router, prefix="/airas/v1")
+app.include_router(assisted_research.router, prefix="/airas/v1")
+app.include_router(topic_open_ended_research.router, prefix="/airas/v1")

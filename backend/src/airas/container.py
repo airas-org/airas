@@ -7,7 +7,7 @@ from dependency_injector import containers, providers
 from hishel import CacheOptions, SpecificationPolicy
 from hishel.httpx import AsyncCacheClient, SyncCacheClient
 from sqlalchemy.orm import sessionmaker
-from sqlmodel import create_engine
+from sqlmodel import Session, create_engine
 
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
@@ -16,12 +16,33 @@ from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
+from airas.repository.assisted_research_link_repository import (
+    AssistedResearchLinkRepository,
+)
+from airas.repository.assisted_research_session_repository import (
+    AssistedResearchSessionRepository,
+)
+from airas.repository.assisted_research_step_repository import (
+    AssistedResearchStepRepository,
+)
+from airas.repository.topic_open_ended_research_service_repository import (
+    TopicOpenEndedResearchRepository,
+)
+from airas.usecases.assisted_research.assisted_research_link_service import (
+    AssistedResearchLinkService,
+)
+from airas.usecases.assisted_research.assisted_research_session_service import (
+    AssistedResearchSessionService,
+)
+from airas.usecases.assisted_research.assisted_research_step_service import (
+    AssistedResearchStepService,
+)
+from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service import (
+    TopicOpenEndedResearchService,
+)
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
-from airas.usecases.session_steps.service import SessionStepService
-from airas.usecases.sessions.service import SessionService
-from airas.usecases.step_run_links.service import StepRunLinkService
 
 T = TypeVar("T")
 
@@ -151,6 +172,7 @@ class Container(containers.DeclarativeContainer):
     session_factory = providers.Singleton(
         sessionmaker,
         bind=engine,
+        class_=Session,
         expire_on_commit=False,
         autoflush=False,
         autocommit=False,
@@ -160,9 +182,36 @@ class Container(containers.DeclarativeContainer):
         lambda session_factory: session_factory(),
         session_factory=session_factory,
     )
-    session_service = providers.Factory(SessionService, db=db_session)
-    session_step_service = providers.Factory(SessionStepService, db=db_session)
-    step_run_link_service = providers.Factory(StepRunLinkService, db=db_session)
+
+    ## ---  Assisted Research Service ---
+    assisted_research_session_repository = providers.Factory(
+        AssistedResearchSessionRepository, db=db_session
+    )
+    assisted_research_session_service = providers.Factory(
+        AssistedResearchSessionService, repo=assisted_research_session_repository
+    )
+
+    assisted_research_step_repository = providers.Factory(
+        AssistedResearchStepRepository, db=db_session
+    )
+    assisted_research_step_service = providers.Factory(
+        AssistedResearchStepService, repo=assisted_research_step_repository
+    )
+
+    assisted_research_link_repository = providers.Factory(
+        AssistedResearchLinkRepository, db=db_session
+    )
+    assisted_research_link_service = providers.Factory(
+        AssistedResearchLinkService, repo=assisted_research_link_repository
+    )
+
+    ## ---  Autonomous Research Service ---
+    topic_open_ended_research_repository = providers.Factory(
+        TopicOpenEndedResearchRepository, db=db_session
+    )
+    topic_open_ended_research_service = providers.Factory(
+        TopicOpenEndedResearchService, repo=topic_open_ended_research_repository
+    )
 
 
 container = Container()

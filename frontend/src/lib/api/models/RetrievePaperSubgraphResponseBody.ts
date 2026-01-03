@@ -2,8 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ResearchStudy } from "./ResearchStudy";
+import type { ResearchStudy } from './ResearchStudy';
 export type RetrievePaperSubgraphResponseBody = {
-  research_study_list: Array<Array<ResearchStudy>>;
-  execution_time: Record<string, Array<number>>;
+    research_study_list: Array<ResearchStudy>;
+    execution_time: Record<string, Array<number>>;
 };
+

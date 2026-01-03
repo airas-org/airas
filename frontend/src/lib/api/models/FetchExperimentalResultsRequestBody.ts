@@ -2,7 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { GitHubConfig } from "./GitHubConfig";
+import type { GitHubConfig } from './GitHubConfig';
 export type FetchExperimentalResultsRequestBody = {
-  github_config: GitHubConfig;
+    github_config: GitHubConfig;
 };
+
