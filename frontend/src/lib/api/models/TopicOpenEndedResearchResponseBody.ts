@@ -2,7 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type StepRunLinkCreateRequest = {
-  from_step_run_id: string;
-  to_step_run_id: string;
+export type TopicOpenEndedResearchResponseBody = {
+    task_id: string;
 };
+

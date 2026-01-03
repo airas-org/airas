@@ -3,11 +3,12 @@
 /* tslint:disable */
 /* eslint-disable */
 export type RetrieveDatasetsSubgraphRequestBody = {
-  dataset_subfield: RetrieveDatasetsSubgraphRequestBody.dataset_subfield;
+    dataset_subfield: RetrieveDatasetsSubgraphRequestBody.dataset_subfield;
 };
 export namespace RetrieveDatasetsSubgraphRequestBody {
-  export enum dataset_subfield {
-    LANGUAGE_MODEL_FINE_TUNING_DATASETS = "language_model_fine_tuning_datasets",
-    IMAGE_DATASETS = "image_datasets",
-  }
+    export enum dataset_subfield {
+        LANGUAGE_MODEL_FINE_TUNING_DATASETS = 'language_model_fine_tuning_datasets',
+        IMAGE_DATASETS = 'image_datasets',
+    }
 }
+

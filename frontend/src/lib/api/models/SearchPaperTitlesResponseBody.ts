@@ -2,7 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type SessionCreateRequest = {
-  title: string;
-  created_by: string;
+export type SearchPaperTitlesResponseBody = {
+    paper_titles: Array<string>;
+    execution_time: Record<string, Array<number>>;
 };
+

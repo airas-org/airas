@@ -2,8 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type SessionResponse = {
-  id: string;
-  title: string;
-  created_at: string;
+export type AnthropicParams = {
+    provider_type?: string;
 };
+

@@ -2,7 +2,6 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type StepRunLinkResponse = {
-  from_step_run_id: string;
-  to_step_run_id: string;
-};
+export enum SearchMethod {
+    AIRAS_DB = 'airas_db',
+}

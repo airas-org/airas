@@ -2,8 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ModelConfig } from "./ModelConfig";
+import type { ModelConfig } from './ModelConfig';
 export type RetrieveModelsSubgraphResponseBody = {
-  models_dict: Record<string, ModelConfig>;
-  execution_time: Record<string, Array<number>>;
+    models_dict: Record<string, ModelConfig>;
+    execution_time: Record<string, Array<number>>;
 };
+

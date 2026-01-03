@@ -3,12 +3,37 @@ info:
   title: AIRAS API
   version: 0.0.1
 paths:
-  /airas/v1/papers:
+  /airas/v1/papers/search:
+    post:
+      tags:
+      - papers
+      summary: Search Paper Titles
+      operationId: search_paper_titles_airas_v1_papers_search_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchPaperTitlesRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchPaperTitlesResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/papers/retrieval:
     post:
       tags:
       - papers
       summary: Get Paper Title
-      operationId: get_paper_title_airas_v1_papers_post
+      operationId: get_paper_title_airas_v1_papers_retrieval_post
       requestBody:
         content:
           application/json:
@@ -553,17 +578,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/sessions:
+  /airas/v1/assisted_research/session:
     post:
       tags:
-      - sessions
+      - assisted_research
       summary: Create Session
-      operationId: create_session_airas_v1_sessions_post
+      operationId: create_session_airas_v1_assisted_research_session_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SessionCreateRequest'
+              $ref: '#/components/schemas/AssistedResearchSessionCreateRequest'
         required: true
       responses:
         '200':
@@ -571,19 +596,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SessionResponse'
+                $ref: '#/components/schemas/AssistedResearchSessionResponse'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/sessions/{session_id}:
+  /airas/v1/assisted_research/session/{session_id}:
     get:
       tags:
-      - sessions
+      - assisted_research
       summary: Get Session
-      operationId: get_session_airas_v1_sessions__session_id__get
+      operationId: get_session_airas_v1_assisted_research_session__session_id__get
       parameters:
       - name: session_id
         in: path
@@ -598,24 +623,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SessionResponse'
+                $ref: '#/components/schemas/AssistedResearchSessionResponse'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/session-steps:
+  /airas/v1/assisted_research/step:
     post:
       tags:
-      - session-steps
-      summary: Create Session Step
-      operationId: create_session_step_airas_v1_session_steps_post
+      - assisted_research
+      summary: Create Step
+      operationId: create_step_airas_v1_assisted_research_step_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SessionStepCreateRequest'
+              $ref: '#/components/schemas/AssistedResearchStepCreateRequest'
         required: true
       responses:
         '200':
@@ -623,19 +648,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SessionStepResponse'
+                $ref: '#/components/schemas/AssistedResearchStepResponse'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/session-steps/{step_id}:
+  /airas/v1/assisted_research/step/{step_id}:
     get:
       tags:
-      - session-steps
-      summary: Get Session Step
-      operationId: get_session_step_airas_v1_session_steps__step_id__get
+      - assisted_research
+      summary: Get Step
+      operationId: get_step_airas_v1_assisted_research_step__step_id__get
       parameters:
       - name: step_id
         in: path
@@ -650,24 +675,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SessionStepResponse'
+                $ref: '#/components/schemas/AssistedResearchStepResponse'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/step-run-links:
-    post:
+  /airas/v1/assisted_research/link:
+    get:
       tags:
-      - step-run-links
-      summary: Create Step Run Link
-      operationId: create_step_run_link_airas_v1_step_run_links_post
+      - assisted_research
+      summary: Create Link
+      operationId: create_link_airas_v1_assisted_research_link_get
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/StepRunLinkCreateRequest'
+              $ref: '#/components/schemas/AssistedResearchLinkCreateRequest'
         required: true
       responses:
         '200':
@@ -675,51 +700,51 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StepRunLinkResponse'
+                $ref: '#/components/schemas/AssistedResearchLinkResponse'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/step-run-links/{from_step_run_id}:
+  /airas/v1/assisted_research/link/{from_step_id}:
     get:
       tags:
-      - step-run-links
-      summary: List Step Run Links By From Step Run Id
-      operationId: list_step_run_links_by_from_step_run_id_airas_v1_step_run_links__from_step_run_id__get
+      - assisted_research
+      summary: Get Link
+      operationId: get_link_airas_v1_assisted_research_link__from_step_id__get
       parameters:
-      - name: from_step_run_id
+      - name: from_step_id
         in: path
         required: true
         schema:
           type: string
           format: uuid
-          title: From Step Run Id
+          title: From Step Id
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StepRunLinkListResponse'
+                $ref: '#/components/schemas/AssistedResearchLinkListResponse'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/e2e/run:
+  /airas/v1/topic_open_ended_research/run:
     post:
       tags:
-      - e2e
-      summary: Execute E2E
-      operationId: execute_e2e_airas_v1_e2e_run_post
+      - topic_open_ended_research
+      summary: Execute Topic Open Ended Research
+      operationId: execute_topic_open_ended_research_airas_v1_topic_open_ended_research_run_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ExecuteE2ERequestBody'
+              $ref: '#/components/schemas/TopicOpenEndedResearchRequestBody'
         required: true
       responses:
         '200':
@@ -727,25 +752,26 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExecuteE2EResponseBody'
+                $ref: '#/components/schemas/TopicOpenEndedResearchResponseBody'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/e2e/status/{task_id}:
+  /airas/v1/topic_open_ended_research/status/{task_id}:
     get:
       tags:
-      - e2e
-      summary: Get E2E Status
-      operationId: get_e2e_status_airas_v1_e2e_status__task_id__get
+      - topic_open_ended_research
+      summary: Get Topic Open Ended Research Status
+      operationId: get_topic_open_ended_research_status_airas_v1_topic_open_ended_research_status__task_id__get
       parameters:
       - name: task_id
         in: path
         required: true
         schema:
           type: string
+          format: uuid
           title: Task Id
       responses:
         '200':
@@ -753,7 +779,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExecuteE2EResponseBody'
+                $ref: '#/components/schemas/TopicOpenEndedResearchStatusResponseBody'
         '422':
           description: Validation Error
           content:
@@ -838,13 +864,14 @@ components:
             - anthropic/claude-3.5-haiku
           - type: string
             enum:
+            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-opus-4-5-20251101-v1:0
             - global.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-sonnet-4-20250514-v1:0
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Analyze Experiment
-          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+          default: gpt-5-nano-2025-08-07
       type: object
       title: AnalyzeExperimentLLMMapping
     AnalyzeExperimentRequestBody:
@@ -884,6 +911,182 @@ components:
       - experimental_analysis
       - execution_time
       title: AnalyzeExperimentResponseBody
+    AnthropicParams:
+      properties:
+        provider_type:
+          type: string
+          const: anthropic
+          title: Provider Type
+          default: anthropic
+      type: object
+      title: AnthropicParams
+    AssistedResearchLinkCreateRequest:
+      properties:
+        from_step_id:
+          type: string
+          format: uuid
+          title: From Step Id
+        to_step_id:
+          type: string
+          format: uuid
+          title: To Step Id
+      type: object
+      required:
+      - from_step_id
+      - to_step_id
+      title: AssistedResearchLinkCreateRequest
+    AssistedResearchLinkListResponse:
+      properties:
+        links:
+          items:
+            $ref: '#/components/schemas/AssistedResearchLinkResponse'
+          type: array
+          title: Links
+      type: object
+      required:
+      - links
+      title: AssistedResearchLinkListResponse
+    AssistedResearchLinkResponse:
+      properties:
+        from_step_id:
+          type: string
+          format: uuid
+          title: From Step Id
+        to_step_id:
+          type: string
+          format: uuid
+          title: To Step Id
+      type: object
+      required:
+      - from_step_id
+      - to_step_id
+      title: AssistedResearchLinkResponse
+    AssistedResearchSessionCreateRequest:
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Title
+        created_by:
+          type: string
+          format: uuid
+          title: Created By
+      type: object
+      required:
+      - title
+      - created_by
+      title: AssistedResearchSessionCreateRequest
+    AssistedResearchSessionResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        title:
+          type: string
+          title: Title
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        created_by:
+          type: string
+          format: uuid
+          title: Created By
+        active_head_step_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Active Head Step Id
+      type: object
+      required:
+      - id
+      - title
+      - created_at
+      - created_by
+      - active_head_step_id
+      title: AssistedResearchSessionResponse
+    AssistedResearchStepCreateRequest:
+      properties:
+        session_id:
+          type: string
+          format: uuid
+          title: Session Id
+        created_by:
+          type: string
+          format: uuid
+          title: Created By
+        status:
+          $ref: '#/components/schemas/Status'
+        step_type:
+          $ref: '#/components/schemas/StepType'
+        error_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Message
+        result:
+          title: Result
+        schema_version:
+          type: integer
+          minimum: 1.0
+          title: Schema Version
+      type: object
+      required:
+      - session_id
+      - created_by
+      - status
+      - step_type
+      - error_message
+      - result
+      - schema_version
+      title: AssistedResearchStepCreateRequest
+    AssistedResearchStepResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        session_id:
+          type: string
+          format: uuid
+          title: Session Id
+        created_by:
+          type: string
+          format: uuid
+          title: Created By
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        status:
+          $ref: '#/components/schemas/Status'
+        step_type:
+          $ref: '#/components/schemas/StepType'
+        error_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Message
+        result:
+          title: Result
+        schema_version:
+          type: integer
+          title: Schema Version
+      type: object
+      required:
+      - id
+      - session_id
+      - created_by
+      - created_at
+      - status
+      - step_type
+      - error_message
+      - result
+      - schema_version
+      title: AssistedResearchStepResponse
     CompileLatexSubgraphRequestBody:
       properties:
         github_config:
@@ -1021,84 +1224,6 @@ components:
       - name
       - description
       title: EvaluationMetric
-    ExecuteE2ERequestBody:
-      properties:
-        github_config:
-          $ref: '#/components/schemas/GitHubConfig'
-        query_list:
-          items:
-            type: string
-          type: array
-          title: Query List
-        runner_config:
-          $ref: '#/components/schemas/RunnerConfig'
-        wandb_config:
-          $ref: '#/components/schemas/WandbConfig'
-        is_private:
-          type: boolean
-          title: Is Private
-          default: false
-        max_results_per_query:
-          type: integer
-          title: Max Results Per Query
-          default: 5
-        refinement_rounds:
-          type: integer
-          title: Refinement Rounds
-          default: 1
-        num_models_to_use:
-          type: integer
-          title: Num Models To Use
-          default: 1
-        num_datasets_to_use:
-          type: integer
-          title: Num Datasets To Use
-          default: 1
-        num_comparative_methods:
-          type: integer
-          title: Num Comparative Methods
-          default: 0
-        max_code_validations:
-          type: integer
-          title: Max Code Validations
-          default: 3
-        writing_refinement_rounds:
-          type: integer
-          title: Writing Refinement Rounds
-          default: 2
-        latex_template_name:
-          type: string
-          title: Latex Template Name
-          default: iclr2024
-      type: object
-      required:
-      - github_config
-      - query_list
-      - runner_config
-      - wandb_config
-      title: ExecuteE2ERequestBody
-    ExecuteE2EResponseBody:
-      properties:
-        task_id:
-          type: string
-          title: Task Id
-        status:
-          type: string
-          title: Status
-        error:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Error
-        research_history:
-          anyOf:
-          - $ref: '#/components/schemas/ResearchHistory-Output'
-          - type: 'null'
-      type: object
-      required:
-      - task_id
-      - status
-      title: ExecuteE2EResponseBody
     ExecuteEvaluationRequestBody:
       properties:
         github_config:
@@ -1467,62 +1592,26 @@ components:
     GenerateCodeLLMMapping:
       properties:
         generate_run_config:
-          type: string
-          enum:
-          - o4-mini-2025-04-16
-          - o3-2025-04-16
-          - o3-mini-2025-01-31
-          - o1-pro-2025-03-19
-          - o1-2024-12-17
-          - gpt-5.1-2025-11-13
-          - gpt-5-pro-2025-10-06
-          - gpt-5-codex
-          - gpt-5-2025-08-07
-          - gpt-5-mini-2025-08-07
-          - gpt-5-nano-2025-08-07
-          - gpt-4.1-2025-04-14
-          - gpt-4o-2024-11-20
-          - gpt-4o-mini-2024-07-18
-          title: Generate Run Config
-          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: o3-2025-04-16
+            params:
+              provider_type: openai
+              reasoning_effort: high
         generate_experiment_code:
-          type: string
-          enum:
-          - o4-mini-2025-04-16
-          - o3-2025-04-16
-          - o3-mini-2025-01-31
-          - o1-pro-2025-03-19
-          - o1-2024-12-17
-          - gpt-5.1-2025-11-13
-          - gpt-5-pro-2025-10-06
-          - gpt-5-codex
-          - gpt-5-2025-08-07
-          - gpt-5-mini-2025-08-07
-          - gpt-5-nano-2025-08-07
-          - gpt-4.1-2025-04-14
-          - gpt-4o-2024-11-20
-          - gpt-4o-mini-2024-07-18
-          title: Generate Experiment Code
-          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: o3-2025-04-16
+            params:
+              provider_type: openai
+              reasoning_effort: high
         validate_experiment_code:
-          type: string
-          enum:
-          - o4-mini-2025-04-16
-          - o3-2025-04-16
-          - o3-mini-2025-01-31
-          - o1-pro-2025-03-19
-          - o1-2024-12-17
-          - gpt-5.1-2025-11-13
-          - gpt-5-pro-2025-10-06
-          - gpt-5-codex
-          - gpt-5-2025-08-07
-          - gpt-5-mini-2025-08-07
-          - gpt-5-nano-2025-08-07
-          - gpt-4.1-2025-04-14
-          - gpt-4o-2024-11-20
-          - gpt-4o-mini-2024-07-18
-          title: Validate Experiment Code
-          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: o3-2025-04-16
+            params:
+              provider_type: openai
+              reasoning_effort: high
       type: object
       title: GenerateCodeLLMMapping
     GenerateCodeSubgraphRequestBody:
@@ -1639,13 +1728,14 @@ components:
             - anthropic/claude-3.5-haiku
           - type: string
             enum:
+            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-opus-4-5-20251101-v1:0
             - global.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-sonnet-4-20250514-v1:0
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Generate Experimental Design
-          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+          default: gpt-5-nano-2025-08-07
       type: object
       title: GenerateExperimentalDesignLLMMapping
     GenerateExperimentalDesignSubgraphRequestBody:
@@ -1767,13 +1857,14 @@ components:
             - anthropic/claude-3.5-haiku
           - type: string
             enum:
+            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-opus-4-5-20251101-v1:0
             - global.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-sonnet-4-20250514-v1:0
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Generate Hypothesis
-          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+          default: gpt-5-nano-2025-08-07
         evaluate_novelty_and_significance:
           anyOf:
           - type: string
@@ -1848,13 +1939,14 @@ components:
             - anthropic/claude-3.5-haiku
           - type: string
             enum:
+            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-opus-4-5-20251101-v1:0
             - global.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-sonnet-4-20250514-v1:0
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Evaluate Novelty And Significance
-          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+          default: gpt-5-nano-2025-08-07
         refine_hypothesis:
           anyOf:
           - type: string
@@ -1929,20 +2021,21 @@ components:
             - anthropic/claude-3.5-haiku
           - type: string
             enum:
+            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-opus-4-5-20251101-v1:0
             - global.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-sonnet-4-20250514-v1:0
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Refine Hypothesis
-          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+          default: gpt-5-nano-2025-08-07
       type: object
       title: GenerateHypothesisSubgraphV0LLMMapping
     GenerateHypothesisSubgraphV0RequestBody:
       properties:
-        research_objective:
+        research_topic:
           type: string
-          title: Research Objective
+          title: Research Topic
         research_study_list:
           items:
             $ref: '#/components/schemas/ResearchStudy'
@@ -1957,7 +2050,7 @@ components:
           - type: 'null'
       type: object
       required:
-      - research_objective
+      - research_topic
       - research_study_list
       - refinement_rounds
       title: GenerateHypothesisSubgraphV0RequestBody
@@ -2053,13 +2146,14 @@ components:
             - anthropic/claude-3.5-haiku
           - type: string
             enum:
+            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-opus-4-5-20251101-v1:0
             - global.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-sonnet-4-20250514-v1:0
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Convert To Latex
-          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+          default: gpt-5-nano-2025-08-07
       type: object
       title: GenerateLatexLLMMapping
     GenerateLatexSubgraphRequestBody:
@@ -2179,6 +2273,21 @@ components:
       - is_github_upload
       - execution_time
       title: GithubUploadResponse
+    GoogleGenAIParams:
+      properties:
+        provider_type:
+          type: string
+          const: google_genai
+          title: Provider Type
+          default: google_genai
+        thinking_budget:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Thinking Budget
+          description: Thinking budget for reasoning (0=off, 1024-32768=fixed, -1=dynamic)
+      type: object
+      title: GoogleGenAIParams
     HTTPValidationError:
       properties:
         detail:
@@ -2529,6 +2638,127 @@ components:
       - total_parameters
       - active_parameters
       title: ModelParameters
+    NodeLLMConfig:
+      properties:
+        llm_name:
+          anyOf:
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+          - type: string
+            enum:
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+          - type: string
+            enum:
+            - claude-opus-4-5
+            - claude-sonnet-4-5
+            - claude-haiku-4-5
+            - claude-opus-4-1
+            - claude-opus-4
+            - claude-sonnet-4
+            - claude-3-7-sonnet
+            - claude-3-5-haiku
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+            - anthropic/claude-opus-4.5
+            - anthropic/claude-sonnet-4.5
+            - anthropic/claude-haiku-4.5
+            - anthropic/claude-opus-4.1
+            - anthropic/claude-opus-4
+            - anthropic/claude-sonnet-4
+            - anthropic/claude-3.7-sonnet
+            - anthropic/claude-3.5-haiku
+          - type: string
+            enum:
+            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-opus-4-5-20251101-v1:0
+            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-sonnet-4-20250514-v1:0
+            - global.anthropic.claude-haiku-4-5-20251001-v1:0
+            - openai.gpt-oss-120b-1:0
+          title: Llm Name
+        params:
+          anyOf:
+          - oneOf:
+            - $ref: '#/components/schemas/OpenAIParams'
+            - $ref: '#/components/schemas/GoogleGenAIParams'
+            - $ref: '#/components/schemas/AnthropicParams'
+            discriminator:
+              propertyName: provider_type
+              mapping:
+                anthropic: '#/components/schemas/AnthropicParams'
+                google_genai: '#/components/schemas/GoogleGenAIParams'
+                openai: '#/components/schemas/OpenAIParams'
+          - type: 'null'
+          title: Params
+      type: object
+      required:
+      - llm_name
+      title: NodeLLMConfig
+    OpenAIParams:
+      properties:
+        provider_type:
+          type: string
+          const: openai
+          title: Provider Type
+          default: openai
+        reasoning_effort:
+          anyOf:
+          - type: string
+            enum:
+            - none
+            - low
+            - medium
+            - high
+          - type: 'null'
+          title: Reasoning Effort
+          description: Reasoning effort level for reasoning models
+      type: object
+      title: OpenAIParams
     OptunaConfig:
       properties:
         enabled:
@@ -2771,19 +3001,19 @@ components:
       title: PushLatexSubgraphResponseBody
     ResearchHistory-Input:
       properties:
-        research_objective:
+        research_topic:
           anyOf:
           - type: string
           - type: 'null'
-          title: Research Objective
-          description: Main research objective or topic
-        query_list:
+          title: Research Topic
+          description: Main research topic
+        queries:
           anyOf:
           - items:
               type: string
             type: array
           - type: 'null'
-          title: Query List
+          title: Queries
           description: List of search queries used for paper retrieval
         research_study_list:
           anyOf:
@@ -2869,19 +3099,19 @@ components:
       title: ResearchHistory
     ResearchHistory-Output:
       properties:
-        research_objective:
+        research_topic:
           anyOf:
           - type: string
           - type: 'null'
-          title: Research Objective
-          description: Main research objective or topic
-        query_list:
+          title: Research Topic
+          description: Main research topic
+        queries:
           anyOf:
           - items:
               type: string
             type: array
           - type: 'null'
-          title: Query List
+          title: Queries
           description: List of search queries used for paper retrieval
         research_study_list:
           anyOf:
@@ -3009,12 +3239,9 @@ components:
           title: Full Text
           description: ''
         references:
-          anyOf:
-          - additionalProperties:
-              additionalProperties: true
-              type: object
-            type: object
-          - type: 'null'
+          items:
+            type: string
+          type: array
           title: References
           description: ''
         meta_data:
@@ -3026,6 +3253,7 @@ components:
       required:
       - title
       - full_text
+      - references
       - meta_data
       - llm_extracted_info
       title: ResearchStudy
@@ -3092,28 +3320,379 @@ components:
       - models_dict
       - execution_time
       title: RetrieveModelsSubgraphResponseBody
+    RetrievePaperSubgraphLLMMapping:
+      properties:
+        search_arxiv_id_from_title:
+          type: string
+          enum:
+          - gpt-5.2-pro-2025-12-11
+          - gpt-5.2-2025-12-11
+          - gpt-5.1-2025-11-13
+          - gpt-5-pro-2025-10-06
+          - gpt-5-codex
+          - gpt-5-2025-08-07
+          - gpt-5-mini-2025-08-07
+          - gpt-5-nano-2025-08-07
+          - gpt-4.1-2025-04-14
+          - gpt-4o-2024-11-20
+          - gpt-4o-mini-2024-07-18
+          - o4-mini-2025-04-16
+          - o3-2025-04-16
+          - o3-mini-2025-01-31
+          - o1-pro-2025-03-19
+          - o1-2024-12-17
+          title: Search Arxiv Id From Title
+          default: gpt-5-nano-2025-08-07
+        summarize_paper:
+          anyOf:
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+          - type: string
+            enum:
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+          - type: string
+            enum:
+            - claude-opus-4-5
+            - claude-sonnet-4-5
+            - claude-haiku-4-5
+            - claude-opus-4-1
+            - claude-opus-4
+            - claude-sonnet-4
+            - claude-3-7-sonnet
+            - claude-3-5-haiku
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+            - anthropic/claude-opus-4.5
+            - anthropic/claude-sonnet-4.5
+            - anthropic/claude-haiku-4.5
+            - anthropic/claude-opus-4.1
+            - anthropic/claude-opus-4
+            - anthropic/claude-sonnet-4
+            - anthropic/claude-3.7-sonnet
+            - anthropic/claude-3.5-haiku
+          - type: string
+            enum:
+            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-opus-4-5-20251101-v1:0
+            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-sonnet-4-20250514-v1:0
+            - global.anthropic.claude-haiku-4-5-20251001-v1:0
+            - openai.gpt-oss-120b-1:0
+          title: Summarize Paper
+          default: gpt-5-nano-2025-08-07
+        extract_github_url_from_text:
+          anyOf:
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+          - type: string
+            enum:
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+          - type: string
+            enum:
+            - claude-opus-4-5
+            - claude-sonnet-4-5
+            - claude-haiku-4-5
+            - claude-opus-4-1
+            - claude-opus-4
+            - claude-sonnet-4
+            - claude-3-7-sonnet
+            - claude-3-5-haiku
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+            - anthropic/claude-opus-4.5
+            - anthropic/claude-sonnet-4.5
+            - anthropic/claude-haiku-4.5
+            - anthropic/claude-opus-4.1
+            - anthropic/claude-opus-4
+            - anthropic/claude-sonnet-4
+            - anthropic/claude-3.7-sonnet
+            - anthropic/claude-3.5-haiku
+          - type: string
+            enum:
+            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-opus-4-5-20251101-v1:0
+            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-sonnet-4-20250514-v1:0
+            - global.anthropic.claude-haiku-4-5-20251001-v1:0
+            - openai.gpt-oss-120b-1:0
+          title: Extract Github Url From Text
+          default: gpt-5-nano-2025-08-07
+        extract_experimental_info:
+          anyOf:
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+          - type: string
+            enum:
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+          - type: string
+            enum:
+            - claude-opus-4-5
+            - claude-sonnet-4-5
+            - claude-haiku-4-5
+            - claude-opus-4-1
+            - claude-opus-4
+            - claude-sonnet-4
+            - claude-3-7-sonnet
+            - claude-3-5-haiku
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+            - anthropic/claude-opus-4.5
+            - anthropic/claude-sonnet-4.5
+            - anthropic/claude-haiku-4.5
+            - anthropic/claude-opus-4.1
+            - anthropic/claude-opus-4
+            - anthropic/claude-sonnet-4
+            - anthropic/claude-3.7-sonnet
+            - anthropic/claude-3.5-haiku
+          - type: string
+            enum:
+            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-opus-4-5-20251101-v1:0
+            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-sonnet-4-20250514-v1:0
+            - global.anthropic.claude-haiku-4-5-20251001-v1:0
+            - openai.gpt-oss-120b-1:0
+          title: Extract Experimental Info
+          default: gpt-5-nano-2025-08-07
+        extract_reference_titles:
+          anyOf:
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+          - type: string
+            enum:
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+          - type: string
+            enum:
+            - claude-opus-4-5
+            - claude-sonnet-4-5
+            - claude-haiku-4-5
+            - claude-opus-4-1
+            - claude-opus-4
+            - claude-sonnet-4
+            - claude-3-7-sonnet
+            - claude-3-5-haiku
+          - type: string
+            enum:
+            - gemini-3-pro-preview
+            - gemini-2.5-pro
+            - gemini-2.5-flash
+            - gemini-2.5-flash-lite
+            - gemini-2.0-flash
+            - gemini-2.0-flash-lite
+            - gemini-embedding-001
+            - gpt-5.2-pro-2025-12-11
+            - gpt-5.2-2025-12-11
+            - gpt-5.1-2025-11-13
+            - gpt-5-pro-2025-10-06
+            - gpt-5-codex
+            - gpt-5-2025-08-07
+            - gpt-5-mini-2025-08-07
+            - gpt-5-nano-2025-08-07
+            - gpt-4.1-2025-04-14
+            - gpt-4o-2024-11-20
+            - gpt-4o-mini-2024-07-18
+            - o4-mini-2025-04-16
+            - o3-2025-04-16
+            - o3-mini-2025-01-31
+            - o1-pro-2025-03-19
+            - o1-2024-12-17
+            - anthropic/claude-opus-4.5
+            - anthropic/claude-sonnet-4.5
+            - anthropic/claude-haiku-4.5
+            - anthropic/claude-opus-4.1
+            - anthropic/claude-opus-4
+            - anthropic/claude-sonnet-4
+            - anthropic/claude-3.7-sonnet
+            - anthropic/claude-3.5-haiku
+          - type: string
+            enum:
+            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-opus-4-5-20251101-v1:0
+            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
+            - global.anthropic.claude-sonnet-4-20250514-v1:0
+            - global.anthropic.claude-haiku-4-5-20251001-v1:0
+            - openai.gpt-oss-120b-1:0
+          title: Extract Reference Titles
+          default: gpt-5-nano-2025-08-07
+      type: object
+      title: RetrievePaperSubgraphLLMMapping
     RetrievePaperSubgraphRequestBody:
       properties:
-        query_list:
+        paper_titles:
           items:
             type: string
           type: array
-          title: Query List
-        max_results_per_query:
-          type: integer
-          title: Max Results Per Query
+          title: Paper Titles
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/RetrievePaperSubgraphLLMMapping'
+          - type: 'null'
       type: object
       required:
-      - query_list
-      - max_results_per_query
+      - paper_titles
       title: RetrievePaperSubgraphRequestBody
     RetrievePaperSubgraphResponseBody:
       properties:
         research_study_list:
           items:
-            items:
-              $ref: '#/components/schemas/ResearchStudy'
-            type: array
+            $ref: '#/components/schemas/ResearchStudy'
           type: array
           title: Research Study List
         execution_time:
@@ -3147,6 +3726,49 @@ components:
       - runner_label
       - description
       title: RunnerConfig
+    SearchMethod:
+      type: string
+      enum:
+      - airas_db
+      title: SearchMethod
+    SearchPaperTitlesRequestBody:
+      properties:
+        queries:
+          items:
+            type: string
+          type: array
+          title: Queries
+        max_results_per_query:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Max Results Per Query
+          default: 3
+        search_method:
+          $ref: '#/components/schemas/SearchMethod'
+          default: airas_db
+      type: object
+      required:
+      - queries
+      title: SearchPaperTitlesRequestBody
+    SearchPaperTitlesResponseBody:
+      properties:
+        paper_titles:
+          items:
+            type: string
+          type: array
+          title: Paper Titles
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - paper_titles
+      - execution_time
+      title: SearchPaperTitlesResponseBody
     SearchSpace:
       properties:
         param_name:
@@ -3186,164 +3808,173 @@ components:
       - param_name
       - distribution_type
       title: SearchSpace
-    SessionCreateRequest:
-      properties:
-        title:
-          type: string
-          maxLength: 200
-          minLength: 1
-          title: Title
-        created_by:
-          type: string
-          format: uuid
-          title: Created By
-      type: object
-      required:
-      - title
-      - created_by
-      title: SessionCreateRequest
-    SessionResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        title:
-          type: string
-          title: Title
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-      type: object
-      required:
-      - id
-      - title
-      - created_at
-      title: SessionResponse
-    SessionStepCreateRequest:
-      properties:
-        session_id:
-          type: string
-          format: uuid
-          title: Session Id
-        step_type:
-          $ref: '#/components/schemas/SessionStepType'
-        content:
-          title: Content
-        schema_version:
-          type: integer
-          minimum: 1.0
-          title: Schema Version
-        created_by:
-          type: string
-          format: uuid
-          title: Created By
-        is_completed:
-          type: boolean
-          title: Is Completed
-          default: false
-      type: object
-      required:
-      - session_id
-      - step_type
-      - content
-      - schema_version
-      - created_by
-      title: SessionStepCreateRequest
-    SessionStepResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        session_id:
-          type: string
-          format: uuid
-          title: Session Id
-        step_type:
-          $ref: '#/components/schemas/SessionStepType'
-        content:
-          title: Content
-        schema_version:
-          type: integer
-          title: Schema Version
-        created_by:
-          type: string
-          format: uuid
-          title: Created By
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-        is_completed:
-          type: boolean
-          title: Is Completed
-      type: object
-      required:
-      - id
-      - session_id
-      - step_type
-      - content
-      - schema_version
-      - created_by
-      - created_at
-      - is_completed
-      title: SessionStepResponse
-    SessionStepType:
+    Status:
       type: string
       enum:
-      - retrieve
-      - hypothesis
-      - design
-      - code
-      - experiment
-      - analysis
-      - write
-      - publish
-      - other
-      title: SessionStepType
-    StepRunLinkCreateRequest:
+      - pending
+      - running
+      - completed
+      title: Status
+    StepType:
+      type: string
+      enum:
+      - prepare_repository
+      - generate_queries
+      - search_paper_titles
+      - retrieve_papers
+      - generate_hypothesis
+      - generate_experimental_design
+      - generate_code
+      - push_code
+      - execute_trial_experiment
+      - execute_full_experiment
+      - execute_evaluation_workflow
+      - fetch_experiment_results
+      - analyze_experiment_results
+      - generate_bibfile
+      - generate_paper
+      - generate_latex
+      - compile_latex
+      - done
+      title: StepType
+    TopicOpenEndedResearchRequestBody:
       properties:
-        from_step_run_id:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        research_topic:
           type: string
-          format: uuid
-          title: From Step Run Id
-        to_step_run_id:
+          title: Research Topic
+        runner_config:
+          $ref: '#/components/schemas/RunnerConfig'
+        wandb_config:
+          $ref: '#/components/schemas/WandbConfig'
+        is_github_repo_private:
+          type: boolean
+          title: Is Github Repo Private
+          default: false
+        num_paper_search_queries:
+          type: integer
+          title: Num Paper Search Queries
+          default: 1
+        papers_per_query:
+          type: integer
+          title: Papers Per Query
+          default: 2
+        hypothesis_refinement_iterations:
+          type: integer
+          title: Hypothesis Refinement Iterations
+          default: 1
+        num_experiment_models:
+          type: integer
+          title: Num Experiment Models
+          default: 1
+        num_experiment_datasets:
+          type: integer
+          title: Num Experiment Datasets
+          default: 1
+        num_comparison_methods:
+          type: integer
+          title: Num Comparison Methods
+          default: 1
+        experiment_code_validation_iterations:
+          type: integer
+          title: Experiment Code Validation Iterations
+          default: 3
+        paper_content_refinement_iterations:
+          type: integer
+          title: Paper Content Refinement Iterations
+          default: 2
+        latex_template_name:
           type: string
-          format: uuid
-          title: To Step Run Id
+          title: Latex Template Name
+          default: iclr2024
       type: object
       required:
-      - from_step_run_id
-      - to_step_run_id
-      title: StepRunLinkCreateRequest
-    StepRunLinkListResponse:
+      - github_config
+      - research_topic
+      - runner_config
+      - wandb_config
+      title: TopicOpenEndedResearchRequestBody
+    TopicOpenEndedResearchResponseBody:
       properties:
-        links:
-          items:
-            $ref: '#/components/schemas/StepRunLinkResponse'
-          type: array
-          title: Links
-      type: object
-      required:
-      - links
-      title: StepRunLinkListResponse
-    StepRunLinkResponse:
-      properties:
-        from_step_run_id:
+        task_id:
           type: string
           format: uuid
-          title: From Step Run Id
-        to_step_run_id:
-          type: string
-          format: uuid
-          title: To Step Run Id
+          title: Task Id
       type: object
       required:
-      - from_step_run_id
-      - to_step_run_id
-      title: StepRunLinkResponse
+      - task_id
+      title: TopicOpenEndedResearchResponseBody
+    TopicOpenEndedResearchStatusResponseBody:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        title:
+          type: string
+          title: Title
+        created_by:
+          type: string
+          format: uuid
+          title: Created By
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        status:
+          $ref: '#/components/schemas/Status'
+        current_step:
+          anyOf:
+          - $ref: '#/components/schemas/StepType'
+          - type: 'null'
+        error_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Message
+        last_updated_at:
+          type: string
+          format: date-time
+          title: Last Updated At
+        result:
+          additionalProperties: true
+          type: object
+          title: Result
+        github_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Url
+        task_id:
+          type: string
+          format: uuid
+          title: Task Id
+          readOnly: true
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+          readOnly: true
+        research_history:
+          anyOf:
+          - $ref: '#/components/schemas/ResearchHistory-Output'
+          - type: 'null'
+          readOnly: true
+      type: object
+      required:
+      - id
+      - title
+      - created_by
+      - created_at
+      - status
+      - last_updated_at
+      - result
+      - task_id
+      - error
+      - research_history
+      title: TopicOpenEndedResearchStatusResponseBody
     TrainingConfig:
       properties:
         learning_rate:
@@ -3527,13 +4158,14 @@ components:
             - anthropic/claude-3.5-haiku
           - type: string
             enum:
+            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-opus-4-5-20251101-v1:0
             - global.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-sonnet-4-20250514-v1:0
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Write Paper
-          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+          default: gpt-5-nano-2025-08-07
         refine_paper:
           anyOf:
           - type: string
@@ -3608,13 +4240,14 @@ components:
             - anthropic/claude-3.5-haiku
           - type: string
             enum:
+            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-opus-4-5-20251101-v1:0
             - global.anthropic.claude-sonnet-4-5-20250929-v1:0
             - global.anthropic.claude-sonnet-4-20250514-v1:0
             - global.anthropic.claude-haiku-4-5-20251001-v1:0
             - openai.gpt-oss-120b-1:0
           title: Refine Paper
-          default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+          default: gpt-5-nano-2025-08-07
       type: object
       title: WriteLLMMapping
     WriteSubgraphRequestBody:
