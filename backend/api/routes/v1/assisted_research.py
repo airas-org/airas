@@ -126,7 +126,7 @@ def get_step(
 
 
 # link endpoints
-@router.get("/link", response_model=AssistedResearchLinkResponse)
+@router.post("/link", response_model=AssistedResearchLinkResponse)
 @inject
 def create_link(
     request: AssistedResearchLinkCreateRequest,
