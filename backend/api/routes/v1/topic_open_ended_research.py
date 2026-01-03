@@ -2,10 +2,9 @@ import asyncio
 import logging
 import traceback
 import uuid
-from datetime import datetime, timezone
-from typing import Annotated, Any
+from typing import Annotated
 
-from dependency_injector.wiring import Provide, inject
+from dependency_injector.wiring import Closing, Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Request
 from langfuse import observe
 
@@ -14,26 +13,27 @@ from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
-from airas.usecases.orchestrators.execute_e2e_subgraph.execute_e2e_subgraph import (
-    ExecuteE2ESubgraph,
+from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service import (
+    TopicOpenEndedResearchService,
+)
+from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_subgraph import (
+    TopicOpenEndedResearchSubgraph,
 )
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
-from api.schemas.e2e import (
-    ExecuteE2ERequestBody,
-    ExecuteE2EResponseBody,
+from api.schemas.topic_open_ended_research import (
+    TopicOpenEndedResearchRequestBody,
+    TopicOpenEndedResearchResponseBody,
+    TopicOpenEndedResearchStatusResponseBody,
 )
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/e2e", tags=["e2e"])
-
-# In-memory task storage (temporary, will be replaced with Redis later)
-# because if uvicorn worker count > 1, it breaks.
-
-_tasks: dict[str, dict[str, Any]] = {}
-
+router = APIRouter(
+    prefix="/topic_open_ended_research", tags=["topic_open_ended_research"]
+)
+DEFAULT_CREATED_BY = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
 # TODO: [Polling/Redis] Implement asynchronous polling mechanism.
 # Redis is required to persist task state (status, logs) across processes,
@@ -45,27 +45,28 @@ _tasks: dict[str, dict[str, Any]] = {}
 # HTTP timeouts and ensure resilience against server restarts.
 
 
-async def _execute_e2e(
-    task_id: str,
-    request: ExecuteE2ERequestBody,
+async def _execute_topic_open_ended_research(
+    task_id: uuid.UUID,
+    request: TopicOpenEndedResearchRequestBody,
     search_index: AirasDbPaperSearchIndex,
     github_client: GithubClient,
     arxiv_client: ArxivClient,
     langchain_client: LangChainClient,
     langfuse_client: LangfuseClient,
+    e2e_service: TopicOpenEndedResearchService,
 ) -> None:
     try:
         logger.info(f"[Task {task_id}] Starting E2E execution")
-        _tasks[task_id]["status"] = "running"
-        _tasks[task_id]["updated_at"] = datetime.now(timezone.utc)
 
-        graph = ExecuteE2ESubgraph(
+        graph = TopicOpenEndedResearchSubgraph(
             search_index=search_index,
             github_client=github_client,
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,
+            e2e_service=e2e_service,
             runner_config=request.runner_config,
             wandb_config=request.wandb_config,
+            task_id=task_id,
             is_github_repo_private=request.is_github_repo_private,
             num_paper_search_queries=request.num_paper_search_queries,
             papers_per_query=request.papers_per_query,
@@ -84,43 +85,30 @@ async def _execute_e2e(
         if handler := langfuse_client.create_handler():
             config["callbacks"] = [handler]
 
+        # NOTE:将来的にストリーミング UI に対応するためastreamで実装
         async for chunk in graph.astream(request, config=config):
             for node_name, node_output in chunk.items():
                 if not isinstance(node_output, dict):
                     continue
 
                 if "research_history" in node_output:
-                    _tasks[task_id]["research_history"] = node_output[
-                        "research_history"
-                    ]
-                    _tasks[task_id]["updated_at"] = datetime.now(timezone.utc)
                     logger.info(
                         f"[Task {task_id}] Research history updated from node: {node_name}"
                     )
-
-                if "status" in node_output:
-                    _tasks[task_id]["status"] = node_output["status"]
-                    _tasks[task_id]["updated_at"] = datetime.now(timezone.utc)
-
-        logger.info(f"[Task {task_id}] Execution completed successfully")
-        _tasks[task_id]["status"] = "completed"
-        _tasks[task_id]["updated_at"] = datetime.now(timezone.utc)
 
     except Exception as e:
         error_msg = f"{type(e).__name__}: {str(e)}"
         logger.error(f"[Task {task_id}] Execution failed: {error_msg}")
         logger.error(f"[Task {task_id}] Traceback:\n{traceback.format_exc()}")
-
-        _tasks[task_id]["status"] = "failed"
-        _tasks[task_id]["error"] = error_msg
-        _tasks[task_id]["updated_at"] = datetime.now(timezone.utc)
+    finally:
+        e2e_service.close()
 
 
-@router.post("/run", response_model=ExecuteE2EResponseBody)
+@router.post("/run", response_model=TopicOpenEndedResearchResponseBody)
 @inject
 @observe()
-async def execute_e2e(
-    request: ExecuteE2ERequestBody,
+async def execute_topic_open_ended_research(
+    request: TopicOpenEndedResearchRequestBody,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
     arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
     langchain_client: Annotated[
@@ -129,24 +117,17 @@ async def execute_e2e(
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
+    e2e_service: Annotated[
+        TopicOpenEndedResearchService,
+        Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
+    ],
     fastapi_request: Request,
-) -> ExecuteE2EResponseBody:
+) -> TopicOpenEndedResearchResponseBody:
     container: Container = fastapi_request.app.state.container
-    task_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc)
-
-    _tasks[task_id] = {
-        "task_id": task_id,
-        "status": "pending",
-        "created_at": now,
-        "updated_at": now,
-        "result": None,
-        "error": None,
-        "research_history": None,
-    }
+    task_id = uuid.uuid4()
 
     asyncio.create_task(
-        _execute_e2e(
+        _execute_topic_open_ended_research(
             task_id=task_id,
             request=request,
             search_index=container.airas_db_search_index(),
@@ -154,24 +135,32 @@ async def execute_e2e(
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,
             langfuse_client=langfuse_client,
+            e2e_service=e2e_service,
         )
     )
 
-    return ExecuteE2EResponseBody(
-        task_id=task_id,
-        status="pending",
-    )
+    return TopicOpenEndedResearchResponseBody(task_id=task_id)
 
 
-@router.get("/status/{task_id}", response_model=ExecuteE2EResponseBody)
+@router.get(
+    "/status/{task_id}", response_model=TopicOpenEndedResearchStatusResponseBody
+)
+@inject
 @observe()
-async def get_e2e_status(task_id: str) -> ExecuteE2EResponseBody:
-    if not (task := _tasks.get(task_id)):
-        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+async def get_topic_open_ended_research_status(
+    task_id: uuid.UUID,
+    e2e_service: Annotated[
+        TopicOpenEndedResearchService,
+        Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
+    ],
+) -> TopicOpenEndedResearchStatusResponseBody:
+    try:
+        result = e2e_service.get(task_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Task {task_id} not found"
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
-    return ExecuteE2EResponseBody(
-        task_id=task["task_id"],
-        status=task["status"],
-        error=task.get("error"),
-        research_history=task.get("research_history"),
-    )
+    return TopicOpenEndedResearchStatusResponseBody.model_validate(result)

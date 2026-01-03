@@ -1,5 +1,7 @@
 import asyncio
 import logging
+from typing import Any
+from uuid import UUID
 
 from langgraph.graph import END, START, StateGraph
 from pydantic import ValidationError
@@ -21,11 +23,16 @@ from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
 from airas.core.types.wandb import WandbConfig
+from airas.core.utils import to_dict_deep
 from airas.infra.arxiv_client import ArxivClient
+from airas.infra.db.models.e2e import Status, StepType
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
+)
+from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service import (
+    TopicOpenEndedResearchService,
 )
 from airas.usecases.executors.execute_evaluation_subgraph.execute_evaluation_subgraph import (
     ExecuteEvaluationSubgraph,
@@ -90,21 +97,23 @@ logger = logging.getLogger(__name__)
 record_execution_time = lambda f: time_node("execute_e2e")(f)  # noqa: E731
 
 
-class ExecuteE2EInputState(TypedDict):
+class TopicOpenEndedResearchInputState(TypedDict):
+    task_id: str | UUID
     github_config: GitHubConfig
     research_topic: str
 
 
-class ExecuteE2EOutputState(ExecutionTimeState):
+class TopicOpenEndedResearchOutputState(ExecutionTimeState):
     status: str
     research_history: ResearchHistory | None
 
 
-class ExecuteE2EState(
-    ExecuteE2EInputState,
-    ExecuteE2EOutputState,
+class TopicOpenEndedResearchState(
+    TopicOpenEndedResearchInputState,
+    TopicOpenEndedResearchOutputState,
     total=False,
 ):
+    current_step: StepType  # NOTE: the database status is updated to reflect progress
     queries: list[str]
     paper_titles: list[str]
     research_study_list: list[ResearchStudy]
@@ -137,15 +146,17 @@ class ExecuteE2EState(
     compile_latex_workflow_conclusion: GitHubActionsConclusion | None
 
 
-class ExecuteE2ESubgraph:
+class TopicOpenEndedResearchSubgraph:
     def __init__(
         self,
         search_index: AirasDbPaperSearchIndex,
         github_client: GithubClient,
         arxiv_client: ArxivClient,
         langchain_client: LangChainClient,
+        e2e_service: TopicOpenEndedResearchService,
         runner_config: RunnerConfig,
         wandb_config: WandbConfig,
+        task_id: UUID,
         is_github_repo_private: bool = False,
         num_paper_search_queries: int = 2,
         papers_per_query: int = 5,
@@ -161,8 +172,10 @@ class ExecuteE2ESubgraph:
         self.github_client = github_client
         self.arxiv_client = arxiv_client
         self.langchain_client = langchain_client
+        self.e2e_service = e2e_service
         self.runner_config = runner_config
         self.wandb_config = wandb_config
+        self.task_id = task_id
         self.is_github_repo_private = is_github_repo_private
         self.num_paper_search_queries = num_paper_search_queries
         self.papers_per_query = papers_per_query
@@ -177,8 +190,34 @@ class ExecuteE2ESubgraph:
         self.latex_template_name = latex_template_name
 
     @record_execution_time
+    def _create_record(self, state: TopicOpenEndedResearchState) -> dict[str, Any]:
+        github_config = state["github_config"]
+        github_url = (
+            f"https://github.com/{github_config.github_owner}/"
+            f"{github_config.repository_name}/tree/{github_config.branch_name}"
+        )
+        self.e2e_service.create(
+            id=self.task_id,
+            title="Untitled E2E Research Task",
+            created_by=UUID("00000000-0000-0000-0000-000000000001"),
+            status=Status.RUNNING,
+            current_step=StepType.GENERATE_QUERIES,
+            github_url=github_url,
+        )
+        return {}
+
+    @record_execution_time
+    def _update_record(self, state: TopicOpenEndedResearchState) -> dict[str, Any]:
+        self.e2e_service.update(
+            step_id=self.task_id,
+            current_step=state.get("current_step"),
+            result=to_dict_deep(state),
+        )
+        return {}
+
+    @record_execution_time
     async def _upload_research_history(
-        self, state: ExecuteE2EState
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, ResearchHistory]:
         logger.info("=== Upload Research History ===")
         try:
@@ -244,7 +283,9 @@ class ExecuteE2ESubgraph:
         )
 
     @record_execution_time
-    async def _prepare_repository(self, state: ExecuteE2EState) -> dict[str, bool]:
+    async def _prepare_repository(
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Repository Preparation ===")
         result = (
             await PrepareRepositorySubgraph(
@@ -261,7 +302,9 @@ class ExecuteE2ESubgraph:
         }
 
     @record_execution_time
-    async def _generate_queries(self, state: ExecuteE2EState) -> dict[str, list[str]]:
+    async def _generate_queries(
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Query Generation ===")
         result = (
             await GenerateQueriesSubgraph(
@@ -271,10 +314,15 @@ class ExecuteE2ESubgraph:
             .build_graph()
             .ainvoke({"research_topic": state["research_topic"]})
         )
-        return {"queries": result["queries"]}
+        return {
+            "queries": result["queries"],
+            "current_step": StepType.SEARCH_PAPER_TITLES,
+        }
 
     @record_execution_time
-    async def _search_paper_titles(self, state: ExecuteE2EState) -> dict:
+    async def _search_paper_titles(
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Search Paper Titles ===")
         result = (
             await SearchPaperTitlesFromAirasDbSubgraph(
@@ -284,12 +332,15 @@ class ExecuteE2ESubgraph:
             .build_graph()
             .ainvoke({"queries": state["queries"]})
         )
-        return {"paper_titles": result["paper_titles"]}
+        return {
+            "paper_titles": result["paper_titles"],
+            "current_step": StepType.RETRIEVE_PAPERS,
+        }
 
     @record_execution_time
     async def _retrieve_papers(
-        self, state: ExecuteE2EState
-    ) -> dict[str, list[ResearchStudy]]:
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Paper Retrieval ===")
         result = (
             await RetrievePaperSubgraph(
@@ -302,12 +353,15 @@ class ExecuteE2ESubgraph:
         )
         research_study_list = result["research_study_list"]
         logger.info(f"Retrieved {len(research_study_list)} papers")
-        return {"research_study_list": research_study_list}
+        return {
+            "research_study_list": research_study_list,
+            "current_step": StepType.GENERATE_HYPOTHESIS,
+        }
 
     @record_execution_time
     async def _generate_hypothesis(
-        self, state: ExecuteE2EState
-    ) -> dict[str, ResearchHypothesis]:
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Hypothesis Generation ===")
         result = (
             await GenerateHypothesisSubgraphV0(
@@ -323,12 +377,15 @@ class ExecuteE2ESubgraph:
             )
         )
 
-        return {"research_hypothesis": result["research_hypothesis"]}
+        return {
+            "research_hypothesis": result["research_hypothesis"],
+            "current_step": StepType.GENERATE_EXPERIMENTAL_DESIGN,
+        }
 
     @record_execution_time
     async def _generate_experimental_design(
-        self, state: ExecuteE2EState
-    ) -> dict[str, ExperimentalDesign]:
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Experimental Design ===")
         result = (
             await GenerateExperimentalDesignSubgraph(
@@ -342,10 +399,15 @@ class ExecuteE2ESubgraph:
             .ainvoke({"research_hypothesis": state["research_hypothesis"]})
         )
 
-        return {"experimental_design": result["experimental_design"]}
+        return {
+            "experimental_design": result["experimental_design"],
+            "current_step": StepType.GENERATE_CODE,
+        }
 
     @record_execution_time
-    async def _generate_code(self, state: ExecuteE2EState) -> dict[str, ExperimentCode]:
+    async def _generate_code(
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Code Generation ===")
         result = (
             await GenerateCodeSubgraph(
@@ -362,10 +424,13 @@ class ExecuteE2ESubgraph:
             )
         )
 
-        return {"experiment_code": result["experiment_code"]}
+        return {
+            "experiment_code": result["experiment_code"],
+            "current_step": StepType.PUSH_CODE,
+        }
 
     @record_execution_time
-    async def _push_code(self, state: ExecuteE2EState) -> dict[str, bool]:
+    async def _push_code(self, state: TopicOpenEndedResearchState) -> dict[str, Any]:
         logger.info("=== Push Code to GitHub ===")
         result = (
             await PushCodeSubgraph(
@@ -381,12 +446,15 @@ class ExecuteE2ESubgraph:
             )
         )
 
-        return {"code_pushed": result["code_pushed"]}
+        return {
+            "code_pushed": result["code_pushed"],
+            "current_step": StepType.EXECUTE_TRIAL_EXPERIMENT,
+        }
 
     @record_execution_time
     async def _execute_trial_experiment(
-        self, state: ExecuteE2EState
-    ) -> dict[str, bool | list[str]]:
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Execute Trial Experiment ===")
         result = (
             await ExecuteTrialExperimentSubgraph(
@@ -400,11 +468,12 @@ class ExecuteE2ESubgraph:
         return {
             "trial_dispatched": result["dispatched"],
             "trial_run_ids": result.get("run_ids", []),
+            "current_step": StepType.EXECUTE_FULL_EXPERIMENT,
         }
 
     @record_execution_time
     async def _poll_trial_workflow(
-        self, state: ExecuteE2EState
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, GitHubActionsStatus | GitHubActionsConclusion | None]:
         logger.info("=== Poll Trial Workflow ===")
         result = (
@@ -426,8 +495,8 @@ class ExecuteE2ESubgraph:
 
     @record_execution_time
     async def _execute_full_experiment(
-        self, state: ExecuteE2EState
-    ) -> dict[str, bool | list[str]]:
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Execute Full Experiment ===")
         result = (
             await ExecuteFullExperimentSubgraph(
@@ -452,11 +521,12 @@ class ExecuteE2ESubgraph:
         return {
             "full_dispatched": result["all_dispatched"],
             "full_experiment_branches": branches,
+            "current_step": StepType.EXECUTE_EVALUATION_WORKFLOW,
         }
 
     @record_execution_time
     async def _poll_full_workflow(
-        self, state: ExecuteE2EState
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, GitHubActionsStatus | GitHubActionsConclusion | None]:
         logger.info("=== Poll Full Workflow ===")
 
@@ -519,8 +589,8 @@ class ExecuteE2ESubgraph:
 
     @record_execution_time
     async def _execute_evaluation_workflow(
-        self, state: ExecuteE2EState
-    ) -> dict[str, bool]:
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Execute Evaluation ===")
         result = (
             await ExecuteEvaluationSubgraph(github_client=self.github_client)
@@ -535,11 +605,12 @@ class ExecuteE2ESubgraph:
 
         return {
             "evaluation_dispatched": result.get("dispatched", False),
+            "current_step": StepType.FETCH_EXPERIMENT_RESULTS,
         }
 
     @record_execution_time
     async def _poll_evaluation(
-        self, state: ExecuteE2EState
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, GitHubActionsStatus | GitHubActionsConclusion | None]:
         logger.info("=== Poll Evaluation Workflow ===")
         result = (
@@ -561,8 +632,8 @@ class ExecuteE2ESubgraph:
 
     @record_execution_time
     async def _fetch_experiment_results(
-        self, state: ExecuteE2EState
-    ) -> dict[str, ExperimentalResults]:
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Fetch Experiment Results ===")
         result = (
             await FetchExperimentResultsSubgraph(github_client=self.github_client)
@@ -570,12 +641,15 @@ class ExecuteE2ESubgraph:
             .ainvoke({"github_config": state["github_config"]})
         )
 
-        return {"experimental_results": result["experiment_results"]}
+        return {
+            "experimental_results": result["experiment_results"],
+            "current_step": StepType.ANALYZE_EXPERIMENT_RESULTS,
+        }
 
     @record_execution_time
     async def _analyze_experiment(
-        self, state: ExecuteE2EState
-    ) -> dict[str, ExperimentalAnalysis]:
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Experiment Analysis ===")
         result = (
             await AnalyzeExperimentSubgraph(
@@ -592,10 +666,15 @@ class ExecuteE2ESubgraph:
             )
         )
 
-        return {"experimental_analysis": result["experimental_analysis"]}
+        return {
+            "experimental_analysis": result["experimental_analysis"],
+            "current_step": StepType.GENERATE_BIBFILE,
+        }
 
     @record_execution_time
-    async def _generate_bibfile(self, state: ExecuteE2EState) -> dict[str, str]:
+    async def _generate_bibfile(
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Reference Generation ===")
         result = (
             await GenerateBibfileSubgraph()
@@ -603,10 +682,15 @@ class ExecuteE2ESubgraph:
             .ainvoke({"research_study_list": state["research_study_list"]})
         )
 
-        return {"references_bib": result["references_bib"]}
+        return {
+            "references_bib": result["references_bib"],
+            "current_step": StepType.GENERATE_PAPER,
+        }
 
     @record_execution_time
-    async def _generate_paper(self, state: ExecuteE2EState) -> dict[str, PaperContent]:
+    async def _generate_paper(
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Paper Writing ===")
         result = (
             await WriteSubgraph(
@@ -627,10 +711,15 @@ class ExecuteE2ESubgraph:
             )
         )
 
-        return {"paper_content": result["paper_content"]}
+        return {
+            "paper_content": result["paper_content"],
+            "current_step": StepType.GENERATE_LATEX,
+        }
 
     @record_execution_time
-    async def _generate_latex(self, state: ExecuteE2EState) -> dict[str, str]:
+    async def _generate_latex(
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== LaTeX Generation ===")
         result = (
             await GenerateLatexSubgraph(
@@ -647,10 +736,13 @@ class ExecuteE2ESubgraph:
             )
         )
 
-        return {"latex_text": result["latex_text"]}
+        return {
+            "latex_text": result["latex_text"],
+            "current_step": StepType.COMPILE_LATEX,
+        }
 
     @record_execution_time
-    async def _push_latex(self, state: ExecuteE2EState) -> dict[str, bool]:
+    async def _push_latex(self, state: TopicOpenEndedResearchState) -> dict[str, bool]:
         logger.info("=== Push LaTeX to GitHub ===")
         result = (
             await PushLatexSubgraph(
@@ -670,8 +762,8 @@ class ExecuteE2ESubgraph:
 
     @record_execution_time
     async def _compile_latex(
-        self, state: ExecuteE2EState
-    ) -> dict[str, bool | str | None]:
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
         logger.info("=== Compile LaTeX ===")
         result = (
             await CompileLatexSubgraph(
@@ -685,11 +777,12 @@ class ExecuteE2ESubgraph:
         return {
             "compile_latex_dispatched": result["compile_latex_dispatched"],
             "paper_url": result.get("paper_url"),
+            "current_step": StepType.DONE,
         }
 
     @record_execution_time
     async def _poll_compile_latex_workflow(
-        self, state: ExecuteE2EState
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, GitHubActionsStatus | GitHubActionsConclusion | None]:
         logger.info("=== Poll Compile LaTeX Workflow ===")
         result = (
@@ -711,7 +804,7 @@ class ExecuteE2ESubgraph:
 
     @record_execution_time
     async def _finalize(
-        self, state: ExecuteE2EState
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, str | ResearchHistory | None]:
         logger.info("=== Workflow Completed ===")
         logger.info(
@@ -721,6 +814,12 @@ class ExecuteE2ESubgraph:
         if paper_url := state.get("paper_url"):
             logger.info(f"Paper URL: {paper_url}")
 
+        self.e2e_service.update(
+            step_id=self.task_id,
+            status=Status.COMPLETED,
+            current_step=StepType.DONE,
+            result=to_dict_deep(state),
+        )
         return {
             "status": "completed",
             "research_history": state.get("research_history"),
@@ -728,6 +827,7 @@ class ExecuteE2ESubgraph:
 
     def build_graph(self):
         PIPELINE = [
+            ("create_record", self._create_record),
             ("prepare_repository", self._prepare_repository),
             ("generate_queries", self._generate_queries),
             ("search_paper_titles", self._search_paper_titles),
@@ -760,33 +860,41 @@ class ExecuteE2ESubgraph:
             "generate_hypothesis",
             "generate_experimental_design",
             "generate_code",
+            "poll_trial_workflow",
+            "poll_full_workflow",
+            "poll_evaluation",
             "fetch_experiment_results",
             "analyze_experiment",
             "generate_bibfile",
             "generate_paper",
             "generate_latex",
+            "poll_compile_latex_workflow",
         }
 
         graph_builder = StateGraph(
-            ExecuteE2EState,
-            input_schema=ExecuteE2EInputState,
-            output_schema=ExecuteE2EOutputState,
+            TopicOpenEndedResearchState,
+            input_schema=TopicOpenEndedResearchInputState,
+            output_schema=TopicOpenEndedResearchOutputState,
         )
 
         for node_name, method in PIPELINE:
             graph_builder.add_node(node_name, method)
 
         for node in UPLOAD_AFTER:
-            upload_node = f"upload_after_{node}"
-            graph_builder.add_node(upload_node, self._upload_research_history)
+            github_upload_node = f"github_upload_after_{node}"
+            graph_builder.add_node(github_upload_node, self._upload_research_history)
+            db_update_node = f"db_update_after_{node}"
+            graph_builder.add_node(db_update_node, self._update_record)
 
         graph_builder.add_edge(START, PIPELINE[0][0])
 
         for (prev, _), (nxt, _) in zip(PIPELINE, PIPELINE[1:], strict=False):
             if prev in UPLOAD_AFTER:
-                upload_node = f"upload_after_{prev}"
-                graph_builder.add_edge(prev, upload_node)
-                graph_builder.add_edge(upload_node, nxt)
+                github_upload_node = f"github_upload_after_{prev}"
+                graph_builder.add_edge(prev, github_upload_node)
+                db_update_node = f"db_update_after_{prev}"
+                graph_builder.add_edge(prev, db_update_node)
+                graph_builder.add_edge([github_upload_node, db_update_node], nxt)
             else:
                 graph_builder.add_edge(prev, nxt)
 
@@ -807,16 +915,18 @@ if __name__ == "__main__":
         await container.init_resources()
 
         try:
-            graph = ExecuteE2ESubgraph(
+            graph = TopicOpenEndedResearchSubgraph(
                 search_index=container.airas_db_search_index(),
                 github_client=container.github_client(),
                 arxiv_client=container.arxiv_client(),
                 langchain_client=container.langchain_client(),
+                e2e_service=container.e2e_service,
                 runner_config=RunnerConfig(
                     runner_label=["ubuntu-latest"],
                     description="Sample runner config for graph preview",
                 ),
                 wandb_config=WandbConfig(entity="demo", project="demo"),
+                task_id=UUID("00000000-0000-0000-0000-000000000001"),
             ).build_graph()
 
             print(graph.get_graph().draw_mermaid())

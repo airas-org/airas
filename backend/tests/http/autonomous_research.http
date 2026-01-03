@@ -1,22 +1,22 @@
-### E2E - Dispatch Task
+### Autonomous Research - Dispatch Task
 
-POST http://localhost:8001/airas/v1/e2e/run
+POST http://localhost:8001/airas/v1/topic_open_ended_research/run
 Content-Type: application/json
 
 {
     "github_config": {
         "github_owner": "auto-res2",
-        "repository_name": "test-tanaka-20260102",
-        "branch_name": "main-14"
+        "repository_name": "test-tanaka-20260103",
+        "branch_name": "main-3"
     },
-    "research_topic": "efficient LLM optimization",
+    "research_topic": "Optimizers for efficient training of LLMs",
     "runner_config": {
         "runner_label": ["self-hosted", "gpu-runner"],
         "description": "NVIDIA A100 or H200, VRAM: 80 GB or more, RAM: 2048 GB or more"
     },
     "wandb_config": {
         "entity": "toma_tanaka",
-        "project": "2026-01-02"
+        "project": "2026-01-03"
     },
     "is_github_repo_private": false,
     "num_paper_search_queries": 1,
@@ -30,8 +30,6 @@ Content-Type: application/json
     "latex_template_name": "iclr2024"
 }
 
-###
+### Autonomous Research - Poll Task Status
 
-### E2E - Poll Task Status
-
-GET http://localhost:8000/airas/v1/e2e/status/8344c5d5-3094-4ec2-8154-3ea423b671ae
+GET http://localhost:8000/airas/v1/topic_open_ended_research/status/f92899e5-90eb-4b50-9bdf-3a834e71f43c
