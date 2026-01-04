@@ -33,3 +33,16 @@ Content-Type: application/json
 ### Autonomous Research - Poll Task Status
 
 GET http://localhost:8000/airas/v1/topic_open_ended_research/status/f92899e5-90eb-4b50-9bdf-3a834e71f43c
+
+### Autonomous Research - List Sessions
+
+GET http://localhost:8000/airas/v1/topic_open_ended_research?offset=0&limit=20
+
+### Autonomous Research - Update Title
+
+PATCH http://localhost:8000/airas/v1/topic_open_ended_research/f92899e5-90eb-4b50-9bdf-3a834e71f43c
+Content-Type: application/json
+
+{
+    "title": "Updated Research Title"
+}

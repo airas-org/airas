@@ -23,9 +23,12 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_tit
     AirasDbPaperSearchIndex,
 )
 from api.schemas.topic_open_ended_research import (
+    TopicOpenEndedResearchListItemResponse,
+    TopicOpenEndedResearchListResponseBody,
     TopicOpenEndedResearchRequestBody,
     TopicOpenEndedResearchResponseBody,
     TopicOpenEndedResearchStatusResponseBody,
+    TopicOpenEndedResearchUpdateRequestBody,
 )
 
 logger = logging.getLogger(__name__)
@@ -109,6 +112,7 @@ async def _execute_topic_open_ended_research(
 @observe()
 async def execute_topic_open_ended_research(
     request: TopicOpenEndedResearchRequestBody,
+    fastapi_request: Request,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
     arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
     langchain_client: Annotated[
@@ -121,7 +125,6 @@ async def execute_topic_open_ended_research(
         TopicOpenEndedResearchService,
         Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
     ],
-    fastapi_request: Request,
 ) -> TopicOpenEndedResearchResponseBody:
     container: Container = fastapi_request.app.state.container
     task_id = uuid.uuid4()
@@ -164,3 +167,54 @@ async def get_topic_open_ended_research_status(
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return TopicOpenEndedResearchStatusResponseBody.model_validate(result)
+
+
+@router.get("", response_model=TopicOpenEndedResearchListResponseBody)
+@inject
+@observe()
+async def list_topic_open_ended_research(
+    e2e_service: Annotated[
+        TopicOpenEndedResearchService,
+        Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
+    ],
+    offset: int = 0,
+    limit: int | None = None,
+) -> TopicOpenEndedResearchListResponseBody:
+    records = e2e_service.list(offset=offset, limit=limit)
+    sorted_records = sorted(records, key=lambda record: record.created_at, reverse=True)
+
+    return TopicOpenEndedResearchListResponseBody(
+        items=[
+            TopicOpenEndedResearchListItemResponse.model_validate(record)
+            for record in sorted_records
+        ]
+    )
+
+
+@router.patch(
+    "/{task_id}",
+    response_model=TopicOpenEndedResearchStatusResponseBody,
+    status_code=200,
+)
+@inject
+@observe()
+async def update_topic_open_ended_research(
+    task_id: uuid.UUID,
+    request: TopicOpenEndedResearchUpdateRequestBody,
+    e2e_service: Annotated[
+        TopicOpenEndedResearchService,
+        Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
+    ],
+) -> TopicOpenEndedResearchStatusResponseBody:
+    updates = request.model_dump(exclude_none=True)
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields provided for update")
+
+    try:
+        updated = e2e_service.update(id=task_id, **updates)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover - defensive
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    return TopicOpenEndedResearchStatusResponseBody.model_validate(updated)
