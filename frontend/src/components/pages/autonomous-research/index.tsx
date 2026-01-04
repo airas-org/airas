@@ -22,6 +22,11 @@ import {
   type TopicOpenEndedResearchStatusResponseBody,
 } from "@/lib/api";
 import type { ResearchSection } from "@/types/research";
+import {
+  AutoResearchResultDisplay,
+  type AutoResearchResultSnapshot,
+  mergeAutoResearchResultSnapshot,
+} from "./autonomous-research-result";
 
 const DEFAULT_RESEARCH_TITLE = "Untitled Research";
 const AUTO_STATUS_POLL_INTERVAL_MS = 5000;
@@ -78,6 +83,7 @@ export function AutonomousResearchPage({
   const [autoError, setAutoError] = useState<string | null>(null);
   const [isEditingAutoTitle, setIsEditingAutoTitle] = useState(false);
   const [autoTitleDraft, setAutoTitleDraft] = useState(section?.title ?? DEFAULT_RESEARCH_TITLE);
+  const [autoResultSnapshot, setAutoResultSnapshot] = useState<AutoResearchResultSnapshot>({});
 
   const isAutoFormValid = [
     autoResearchTopic,
@@ -156,6 +162,13 @@ export function AutonomousResearchPage({
     return null;
   };
 
+  useEffect(() => {
+    if (!autoStatus) return;
+    setAutoResultSnapshot((prev) =>
+      mergeAutoResearchResultSnapshot(prev, autoStatus.result, autoStatus.github_url),
+    );
+  }, [autoStatus]);
+
   const clearAutoPollingTimer = () => {
     if (!autoStatusPollingRef.current) return;
     clearInterval(autoStatusPollingRef.current);
@@ -204,6 +217,7 @@ export function AutonomousResearchPage({
     }
 
     setAutoStatus(null);
+    setAutoResultSnapshot({});
     setIsAutoRunning(true);
     try {
       const response = await TopicOpenEndedResearchService.run(payload);
@@ -253,7 +267,7 @@ export function AutonomousResearchPage({
         </div>
         <Button onClick={onCreateSection} className="bg-black text-white hover:bg-black/90">
           <Plus className="h-4 w-4 mr-2" />
-          New Section
+          New Session
         </Button>
       </div>
       <div className="p-6">
@@ -548,10 +562,8 @@ export function AutonomousResearchPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>ステータス確認</CardTitle>
-              <CardDescription>
-                タスクIDをもとに最新のステータスと研究履歴を取得します。
-              </CardDescription>
+              <CardTitle>自動研究の結果</CardTitle>
+              <CardDescription>最新のステータスを表示します。</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-3 items-center">
@@ -599,6 +611,7 @@ export function AutonomousResearchPage({
                       )}
                     </div>
                   )}
+                  <AutoResearchResultDisplay snapshot={autoResultSnapshot} />
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">まだ実行結果がありません</p>
