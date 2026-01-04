@@ -95,9 +95,12 @@ export type { SearchPaperTitlesResponseBody } from './models/SearchPaperTitlesRe
 export type { SearchSpace } from './models/SearchSpace';
 export { Status } from './models/Status';
 export { StepType } from './models/StepType';
+export type { TopicOpenEndedResearchListItemResponse } from './models/TopicOpenEndedResearchListItemResponse';
+export type { TopicOpenEndedResearchListResponseBody } from './models/TopicOpenEndedResearchListResponseBody';
 export type { TopicOpenEndedResearchRequestBody } from './models/TopicOpenEndedResearchRequestBody';
 export type { TopicOpenEndedResearchResponseBody } from './models/TopicOpenEndedResearchResponseBody';
 export type { TopicOpenEndedResearchStatusResponseBody } from './models/TopicOpenEndedResearchStatusResponseBody';
+export type { TopicOpenEndedResearchUpdateRequestBody } from './models/TopicOpenEndedResearchUpdateRequestBody';
 export type { TrainingConfig } from './models/TrainingConfig';
 export type { ValidationError } from './models/ValidationError';
 export type { WandbConfig } from './models/WandbConfig';

@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -39,6 +39,7 @@ interface AutonomousResearchPageProps {
   onToggleSessions: () => void;
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
+  onRefreshAutoSessions: (preferredId?: string) => Promise<void>;
 }
 
 export function AutonomousResearchPage({
@@ -47,6 +48,7 @@ export function AutonomousResearchPage({
   onToggleSessions,
   onCreateSection,
   onUpdateSectionTitle,
+  onRefreshAutoSessions,
 }: AutonomousResearchPageProps) {
   // topic_open_ended_research/run request params
   const [autoResearchTopic, setAutoResearchTopic] = useState("");
@@ -82,6 +84,7 @@ export function AutonomousResearchPage({
   const [isAutoRunning, setIsAutoRunning] = useState(false);
   const [autoError, setAutoError] = useState<string | null>(null);
   const [isEditingAutoTitle, setIsEditingAutoTitle] = useState(false);
+  const [isUpdatingAutoTitle, setIsUpdatingAutoTitle] = useState(false);
   const [autoTitleDraft, setAutoTitleDraft] = useState(section?.title ?? DEFAULT_RESEARCH_TITLE);
   const [autoResultSnapshot, setAutoResultSnapshot] = useState<AutoResearchResultSnapshot>({});
 
@@ -100,6 +103,11 @@ export function AutonomousResearchPage({
     const nextTitle = section?.title ?? DEFAULT_RESEARCH_TITLE;
     setAutoTitleDraft(nextTitle);
   }, [section?.title]);
+
+  useEffect(() => {
+    if (!sessionsExpanded) return;
+    void onRefreshAutoSessions(section?.id);
+  }, [onRefreshAutoSessions, section?.id, sessionsExpanded]);
 
   useEffect(
     () => () => {
@@ -147,21 +155,6 @@ export function AutonomousResearchPage({
     return payload;
   };
 
-  const validateAutoPayload = (payload: TopicOpenEndedResearchRequestBody) => {
-    if (!payload.research_topic?.trim()) return "研究トピックを入力してください";
-    if (
-      !payload.github_config.github_owner?.trim() ||
-      !payload.github_config.repository_name?.trim()
-    ) {
-      return "GitHubのオーナーとリポジトリ名を入力してください";
-    }
-    if (!payload.runner_config.description?.trim()) return "Runnerの説明を入力してください";
-    if (!payload.wandb_config.entity?.trim() || !payload.wandb_config.project?.trim()) {
-      return "WandBのEntity/Projectを入力してください";
-    }
-    return null;
-  };
-
   useEffect(() => {
     if (!autoStatus) return;
     setAutoResultSnapshot((prev) =>
@@ -169,22 +162,42 @@ export function AutonomousResearchPage({
     );
   }, [autoStatus]);
 
-  const clearAutoPollingTimer = () => {
+  const clearAutoPollingTimer = useCallback(() => {
     if (!autoStatusPollingRef.current) return;
     clearInterval(autoStatusPollingRef.current);
     autoStatusPollingRef.current = null;
-  };
+  }, []);
 
-  const stopAutoPolling = () => {
+  const stopAutoPolling = useCallback(() => {
     clearAutoPollingTimer();
     setIsAutoPolling(false);
     setIsAutoRunning(false);
-  };
+  }, [clearAutoPollingTimer]);
+
+  useEffect(() => {
+    if (!section?.id) {
+      stopAutoPolling();
+      setAutoTaskId(null);
+      setAutoStatus(null);
+      setAutoResultSnapshot({});
+      setAutoError(null);
+      return;
+    }
+
+    stopAutoPolling();
+    setAutoTaskId(section.id);
+    setAutoStatus(null);
+    setAutoResultSnapshot({});
+    setAutoError(null);
+  }, [section?.id, stopAutoPolling]);
 
   const fetchAutoStatus = async (taskId: string, { resetError = false } = {}) => {
     if (resetError) setAutoError(null);
     try {
-      const response = await TopicOpenEndedResearchService.getStatus(taskId);
+      const response =
+        await TopicOpenEndedResearchService.getTopicOpenEndedResearchStatusAirasV1TopicOpenEndedResearchStatusTaskIdGet(
+          taskId,
+        );
       setAutoStatus(response);
       if (response.error) setAutoError(response.error);
       const finished = response.status === Status.COMPLETED || Boolean(response.error);
@@ -207,20 +220,18 @@ export function AutonomousResearchPage({
   };
 
   const handleRunAutoResearch = async () => {
+    if (!isAutoFormValid) return;
     const payload = buildAutoResearchPayload();
     setAutoError(null);
-
-    const validationError = validateAutoPayload(payload);
-    if (validationError) {
-      setAutoError(validationError);
-      return;
-    }
 
     setAutoStatus(null);
     setAutoResultSnapshot({});
     setIsAutoRunning(true);
     try {
-      const response = await TopicOpenEndedResearchService.run(payload);
+      const response =
+        await TopicOpenEndedResearchService.executeTopicOpenEndedResearchAirasV1TopicOpenEndedResearchRunPost(
+          payload,
+        );
       setAutoTaskId(response.task_id);
       startAutoPolling(response.task_id);
     } catch (error) {
@@ -242,9 +253,33 @@ export function AutonomousResearchPage({
     await fetchAutoStatus(id, { resetError: true });
   };
 
-  const handleSaveAutoTitle = () => {
-    onUpdateSectionTitle(autoTitleDraft);
-    setIsEditingAutoTitle(false);
+  const handleSaveAutoTitle = async () => {
+    const targetId = section?.id ?? autoTaskId;
+    if (!targetId) {
+      setAutoError("セッションを選択してください");
+      return;
+    }
+
+    setIsUpdatingAutoTitle(true);
+    setAutoError(null);
+    try {
+      const updated =
+        await TopicOpenEndedResearchService.updateTopicOpenEndedResearchAirasV1TopicOpenEndedResearchTaskIdPatch(
+          targetId,
+          {
+            title: autoTitleDraft,
+          },
+        );
+      setAutoTitleDraft(updated.title);
+      onUpdateSectionTitle(updated.title);
+      setIsEditingAutoTitle(false);
+      await onRefreshAutoSessions(updated.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "タイトルの更新に失敗しました";
+      setAutoError(message);
+    } finally {
+      setIsUpdatingAutoTitle(false);
+    }
   };
 
   return (
@@ -285,17 +320,18 @@ export function AutonomousResearchPage({
                   />
                 ) : (
                   <p className="text-xl font-semibold leading-tight text-foreground">
-                    {section?.title ?? DEFAULT_RESEARCH_TITLE}
+                    {section?.title ?? autoTitleDraft ?? DEFAULT_RESEARCH_TITLE}
                   </p>
                 )}
                 <Button
                   variant="outline"
                   size="sm"
+                  disabled={isUpdatingAutoTitle}
                   onClick={
                     isEditingAutoTitle ? handleSaveAutoTitle : () => setIsEditingAutoTitle(true)
                   }
                 >
-                  {isEditingAutoTitle ? "save" : "edit"}
+                  {isEditingAutoTitle ? (isUpdatingAutoTitle ? "saving..." : "save") : "edit"}
                 </Button>
               </div>
             </CardHeader>
@@ -588,7 +624,7 @@ export function AutonomousResearchPage({
                   <div className="grid gap-2 md:grid-cols-2">
                     <div>
                       <p className="text-sm text-muted-foreground">タスクID</p>
-                      <p className="text-sm font-medium break-all">{autoStatus.task_id}</p>
+                      <p className="text-sm font-medium break-all">{autoStatus.id}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">ステータス</p>

@@ -40,6 +40,7 @@ interface MainContentProps {
   onToggleSessions: () => void;
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
+  onRefreshAutoSessions: (preferredId?: string) => Promise<void>;
 }
 
 const NoSectionSelected = () => (
@@ -63,6 +64,7 @@ export function MainContent({
   onToggleSessions,
   onCreateSection,
   onUpdateSectionTitle,
+  onRefreshAutoSessions,
 }: MainContentProps) {
   const [selectedPapers, setSelectedPapers] = useState<Paper[]>([]);
 
@@ -118,17 +120,14 @@ export function MainContent({
       </div>
 
       <div className={activeNav === "autonomous-research" ? "flex-1 flex" : "hidden"}>
-        {autonomousSection ? (
-          <AutonomousResearchPage
-            section={autonomousSection}
-            sessionsExpanded={sessionsExpanded}
-            onToggleSessions={onToggleSessions}
-            onCreateSection={onCreateSection}
-            onUpdateSectionTitle={onUpdateSectionTitle}
-          />
-        ) : (
-          <NoSectionSelected />
-        )}
+        <AutonomousResearchPage
+          section={autonomousSection}
+          sessionsExpanded={sessionsExpanded}
+          onToggleSessions={onToggleSessions}
+          onCreateSection={onCreateSection}
+          onUpdateSectionTitle={onUpdateSectionTitle}
+          onRefreshAutoSessions={onRefreshAutoSessions}
+        />
       </div>
 
       <div className={activeNav === "assisted-research" ? "flex-1 flex" : "hidden"}>

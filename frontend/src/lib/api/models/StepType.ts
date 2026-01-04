@@ -3,7 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export enum StepType {
-    PREPARE_REPOSITORY = 'prepare_repository',
     GENERATE_QUERIES = 'generate_queries',
     SEARCH_PAPER_TITLES = 'search_paper_titles',
     RETRIEVE_PAPERS = 'retrieve_papers',

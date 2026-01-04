@@ -3,6 +3,7 @@
 import { FileText, Github, UserCircle, X as XIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { MainContent, type NavKey } from "@/components/main-content";
+import { useAutonomousResearchSessions } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
 import { SectionsSidebar } from "@/components/sections-sidebar";
 import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
@@ -27,14 +28,6 @@ const mockResearchSections: ResearchSection[] = [
     status: "completed",
   },
 ];
-const mockAutoSections: ResearchSection[] = [
-  {
-    id: "a1",
-    title: "Untitled Research",
-    createdAt: new Date("2024-01-12"),
-    status: "in-progress",
-  },
-];
 
 const initialWorkflowTree: WorkflowTree = {
   nodes: {},
@@ -44,19 +37,22 @@ const initialWorkflowTree: WorkflowTree = {
 
 export default function App() {
   const [researchSections, setResearchSections] = useState<ResearchSection[]>(mockResearchSections);
-  const [autoSections, setAutoSections] = useState<ResearchSection[]>(mockAutoSections);
+  const [autoSections, setAutoSections] = useState<ResearchSection[]>([]);
   const [activeResearchSection, setActiveResearchSection] = useState<ResearchSection | null>(
     mockResearchSections[0],
   );
-  const [activeAutoSection, setActiveAutoSection] = useState<ResearchSection | null>(
-    mockAutoSections[0],
-  );
+  const [activeAutoSection, setActiveAutoSection] = useState<ResearchSection | null>(null);
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const [workflowTree, setWorkflowTree] = useState<WorkflowTree>(initialWorkflowTree);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   // 現在、何が選ばれているか
   const [activeNav, setActiveNav] = useState<NavKey>("autonomous-research");
   const [sessionsExpanded, setSessionsExpanded] = useState(false);
+
+  const { fetchAutoSections } = useAutonomousResearchSessions({
+    setAutoSections,
+    setActiveAutoSection,
+  });
 
   const handleCreateSection = () => {
     const newSection: ResearchSection = {
@@ -66,8 +62,7 @@ export default function App() {
       status: "in-progress",
     };
     if (activeNav === "autonomous-research") {
-      setAutoSections([newSection, ...autoSections]);
-      setActiveAutoSection(newSection);
+      setActiveAutoSection(null);
     } else {
       setResearchSections([newSection, ...researchSections]);
       setActiveResearchSection(newSection);
@@ -76,6 +71,10 @@ export default function App() {
     setActiveNodeId(null);
     setActiveFeature(null);
   };
+
+  const handleToggleSessions = useCallback(() => {
+    setSessionsExpanded((prev) => !prev);
+  }, []);
 
   const handleNavigate = useCallback(
     (nodeId: string) => {
@@ -322,9 +321,10 @@ export default function App() {
             onNavigate: handleNavigate,
           }}
           sessionsExpanded={sessionsExpanded}
-          onToggleSessions={() => setSessionsExpanded((prev) => !prev)}
+          onToggleSessions={handleToggleSessions}
           onCreateSection={handleCreateSection}
           onUpdateSectionTitle={handleUpdateSectionTitle}
+          onRefreshAutoSessions={fetchAutoSections}
         />
       </div>
     </div>
