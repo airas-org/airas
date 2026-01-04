@@ -252,312 +252,323 @@ export function AutonomousResearchPage({
           New Section
         </Button>
       </div>
-      <div className="p-6 space-y-6">
-        <Card>
-          <CardHeader className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              {isEditingAutoTitle ? (
-                <Input
-                  id="auto-section-title"
-                  value={autoTitleDraft}
-                  onChange={(e) => setAutoTitleDraft(e.target.value)}
-                  className="bg-muted/40 border-border/70 text-lg"
-                  placeholder=""
-                />
-              ) : (
-                <p className="text-xl font-semibold leading-tight text-foreground">
-                  {section?.title ?? DEFAULT_RESEARCH_TITLE}
-                </p>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={
-                  isEditingAutoTitle ? handleSaveAutoTitle : () => setIsEditingAutoTitle(true)
-                }
-              >
-                {isEditingAutoTitle ? "save" : "edit"}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="auto-queries">クエリ (改行区切り)</Label>
-              <Textarea
-                id="auto-queries"
-                value={autoResearchTopic}
-                onChange={(e) => setAutoResearchTopic(e.target.value)}
-                placeholder="ex) vision-language models for video QA"
-              />
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="auto-github-owner">GitHub Owner</Label>
-                <Input
-                  id="auto-github-owner"
-                  value={autoGithubOwner}
-                  onChange={(e) => setAutoGithubOwner(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="auto-repo-name">Repository</Label>
-                <Input
-                  id="auto-repo-name"
-                  value={autoRepoName}
-                  onChange={(e) => setAutoRepoName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="auto-branch">Branch</Label>
-                <Input
-                  id="auto-branch"
-                  value={autoBranch}
-                  onChange={(e) => setAutoBranch(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="auto-runner-labels">Runner Labels (カンマ区切り)</Label>
-                <Input
-                  id="auto-runner-labels"
-                  value={autoRunnerLabels}
-                  onChange={(e) => setAutoRunnerLabels(e.target.value)}
-                  placeholder="ubuntu-latest,gpu-runner"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="auto-runner-desc">Runner 説明</Label>
-                <Textarea
-                  id="auto-runner-desc"
-                  value={autoRunnerDescription}
-                  onChange={(e) => setAutoRunnerDescription(e.target.value)}
-                  placeholder="A100 x1, 40GB / 8 vCPU / 32GB RAM"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="auto-wandb-entity">WandB Entity</Label>
-                <Input
-                  id="auto-wandb-entity"
-                  value={autoWandbEntity}
-                  onChange={(e) => setAutoWandbEntity(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="auto-wandb-project">WandB Project</Label>
-                <Input
-                  id="auto-wandb-project"
-                  value={autoWandbProject}
-                  onChange={(e) => setAutoWandbProject(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="rounded-md border border-border">
-              <button
-                type="button"
-                className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground"
-                onClick={() => setShowAdvancedSettings((prev) => !prev)}
-              >
-                <span>詳細設定</span>
-                {showAdvancedSettings ? (
-                  <ChevronUp className="h-4 w-4" />
+      <div className="p-6">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-[1fr_2fr] items-start">
+          <Card>
+            <CardHeader className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                {isEditingAutoTitle ? (
+                  <Input
+                    id="auto-section-title"
+                    value={autoTitleDraft}
+                    onChange={(e) => setAutoTitleDraft(e.target.value)}
+                    className="bg-muted/40 border-border/70 text-lg"
+                    placeholder=""
+                  />
                 ) : (
-                  <ChevronDown className="h-4 w-4" />
+                  <p className="text-xl font-semibold leading-tight text-foreground">
+                    {section?.title ?? DEFAULT_RESEARCH_TITLE}
+                  </p>
                 )}
-              </button>
-              {showAdvancedSettings && (
-                <div className="p-4 space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="auto-num-paper-search-queries">
-                        論文取得にための検索クエリの数
-                      </Label>
-                      <Input
-                        id="auto-num-paper-search-queries"
-                        type="number"
-                        inputMode="numeric"
-                        value={autoNumPaperSearchQueries}
-                        onChange={(e) => setAutoNumPaperSearchQueries(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="auto-max-results">1クエリあたりの取得論文数</Label>
-                      <Input
-                        id="auto-max-results"
-                        type="number"
-                        inputMode="numeric"
-                        value={autoPapersPerQuery}
-                        onChange={(e) => setAutoPapersPerQuery(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="auto-refinement-rounds">
-                        生成する仮説のリファインメント回数
-                      </Label>
-                      <Input
-                        id="auto-refinement-rounds"
-                        type="number"
-                        inputMode="numeric"
-                        value={autoHypothesisRefinementIterations}
-                        onChange={(e) => setAutoHypothesisRefinementIterations(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="auto-num-models">実験に用いるモデルの数</Label>
-                      <Input
-                        id="auto-num-models"
-                        type="number"
-                        inputMode="numeric"
-                        value={autoNumExperimentModels}
-                        onChange={(e) => setAutoNumExperimentModels(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="auto-num-datasets">実験に用いるデータセットの数</Label>
-                      <Input
-                        id="auto-num-datasets"
-                        type="number"
-                        inputMode="numeric"
-                        value={autoNumExperimentDatasets}
-                        onChange={(e) => setAutoNumExperimentDatasets(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="auto-num-comparative-methods">
-                        比較手法の数(ベースラインの数)
-                      </Label>
-                      <Input
-                        id="auto-num-comparative-methods"
-                        type="number"
-                        inputMode="numeric"
-                        value={autoNumComparativeMethods}
-                        onChange={(e) => setAutoNumComparativeMethods(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="auto-max-code-validations">
-                        実装したコードのバリデーション回数
-                      </Label>
-                      <Input
-                        id="auto-max-code-validations"
-                        type="number"
-                        inputMode="numeric"
-                        value={autoExperimentCodeValidationIterations}
-                        onChange={(e) => setAutoExperimentCodeValidationIterations(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="auto-writing-refinement-rounds">
-                        執筆した論文のリファインメント回数
-                      </Label>
-                      <Input
-                        id="auto-writing-refinement-rounds"
-                        type="number"
-                        inputMode="numeric"
-                        value={autoPaperContentRefinementIterations}
-                        onChange={(e) => setAutoPaperContentRefinementIteration(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="auto-latex-template-name">利用するLatexのテンプレート</Label>
-                      <Select
-                        value={autoLatexTemplateName}
-                        onValueChange={setAutoLatexTemplateName}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="iclr2024" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="iclr2024">iclr2024</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={
+                    isEditingAutoTitle ? handleSaveAutoTitle : () => setIsEditingAutoTitle(true)
+                  }
+                >
+                  {isEditingAutoTitle ? "save" : "edit"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="auto-queries">研究内容</Label>
+                <Textarea
+                  id="auto-queries"
+                  value={autoResearchTopic}
+                  onChange={(e) => setAutoResearchTopic(e.target.value)}
+                  placeholder="ex) vision-language models for video QA"
+                />
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="auto-github-owner">GitHub Owner</Label>
+                  <Input
+                    id="auto-github-owner"
+                    value={autoGithubOwner}
+                    onChange={(e) => setAutoGithubOwner(e.target.value)}
+                  />
                 </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Checkbox
-                id="auto-private"
-                checked={autoIsPrivate}
-                onCheckedChange={(val) => setAutoIsPrivate(Boolean(val))}
-              />
-              <Label htmlFor="auto-private" className="text-sm text-muted-foreground">
-                リポジトリをプライベート扱いにする
-              </Label>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={handleRunAutoResearch} disabled={isAutoRunning || !isAutoFormValid}>
-                {isAutoRunning ? "実行中..." : "自動研究を実行"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>ステータス確認</CardTitle>
-            <CardDescription>
-              タスクIDをもとに最新のステータスと研究履歴を取得します。
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-3 items-center">
-              <Button
-                variant="outline"
-                onClick={() => handleGetAutoResearchStatus()}
-                disabled={isAutoPolling || !autoTaskId}
-              >
-                最新を取得
-              </Button>
-              {isAutoPolling && <p className="text-sm text-muted-foreground">自動更新中...</p>}
-
-              {!autoTaskId && (
-                <p className="text-sm text-muted-foreground">
-                  先に自動研究を実行してタスクIDを取得してください。
-                </p>
-              )}
-            </div>
-            {autoError && <p className="text-sm text-destructive">{autoError}</p>}
-            {autoStatus ? (
-              <>
-                <div className="grid gap-2 md:grid-cols-2">
-                  <div>
-                    <p className="text-sm text-muted-foreground">タスクID</p>
-                    <p className="text-sm font-medium break-all">{autoStatus.task_id}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">ステータス</p>
-                    <p className="text-sm font-medium">{autoStatus.status}</p>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="auto-repo-name">Repository</Label>
+                  <Input
+                    id="auto-repo-name"
+                    value={autoRepoName}
+                    onChange={(e) => setAutoRepoName(e.target.value)}
+                  />
                 </div>
-                {autoStatus.error && <p className="text-sm text-destructive">{autoStatus.error}</p>}
-                {autoStatus.research_history && (
-                  <div className="rounded-md border border-border bg-card/60 p-3">
-                    <p className="text-sm font-semibold">研究履歴</p>
-                    <p className="text-sm text-muted-foreground">
-                      目的: {autoStatus.research_history.research_topic ?? "N/A"}
-                    </p>
-                    {autoStatus.research_history.paper_url && (
+                <div className="space-y-2">
+                  <Label htmlFor="auto-branch">Branch</Label>
+                  <Input
+                    id="auto-branch"
+                    value={autoBranch}
+                    onChange={(e) => setAutoBranch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="auto-runner-labels">Runner Labels (カンマ区切り)</Label>
+                  <Input
+                    id="auto-runner-labels"
+                    value={autoRunnerLabels}
+                    onChange={(e) => setAutoRunnerLabels(e.target.value)}
+                    placeholder="ubuntu-latest,gpu-runner"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="auto-runner-desc">Runner 説明</Label>
+                  <Textarea
+                    id="auto-runner-desc"
+                    value={autoRunnerDescription}
+                    onChange={(e) => setAutoRunnerDescription(e.target.value)}
+                    placeholder="A100 x1, 40GB / 8 vCPU / 32GB RAM"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="auto-wandb-entity">WandB Entity</Label>
+                  <Input
+                    id="auto-wandb-entity"
+                    value={autoWandbEntity}
+                    onChange={(e) => setAutoWandbEntity(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="auto-wandb-project">WandB Project</Label>
+                  <Input
+                    id="auto-wandb-project"
+                    value={autoWandbProject}
+                    onChange={(e) => setAutoWandbProject(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-md border border-border">
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground"
+                  onClick={() => setShowAdvancedSettings((prev) => !prev)}
+                >
+                  <span>詳細設定</span>
+                  {showAdvancedSettings ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </button>
+                {showAdvancedSettings && (
+                  <div className="p-4 space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="auto-num-paper-search-queries">
+                          論文取得にための検索クエリの数
+                        </Label>
+                        <Input
+                          id="auto-num-paper-search-queries"
+                          type="number"
+                          inputMode="numeric"
+                          value={autoNumPaperSearchQueries}
+                          onChange={(e) => setAutoNumPaperSearchQueries(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="auto-max-results">1クエリあたりの取得論文数</Label>
+                        <Input
+                          id="auto-max-results"
+                          type="number"
+                          inputMode="numeric"
+                          value={autoPapersPerQuery}
+                          onChange={(e) => setAutoPapersPerQuery(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="auto-refinement-rounds">
+                          生成する仮説のリファインメント回数
+                        </Label>
+                        <Input
+                          id="auto-refinement-rounds"
+                          type="number"
+                          inputMode="numeric"
+                          value={autoHypothesisRefinementIterations}
+                          onChange={(e) => setAutoHypothesisRefinementIterations(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="auto-num-models">実験に用いるモデルの数</Label>
+                        <Input
+                          id="auto-num-models"
+                          type="number"
+                          inputMode="numeric"
+                          value={autoNumExperimentModels}
+                          onChange={(e) => setAutoNumExperimentModels(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="auto-num-datasets">実験に用いるデータセットの数</Label>
+                        <Input
+                          id="auto-num-datasets"
+                          type="number"
+                          inputMode="numeric"
+                          value={autoNumExperimentDatasets}
+                          onChange={(e) => setAutoNumExperimentDatasets(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="auto-num-comparative-methods">
+                          比較手法の数(ベースラインの数)
+                        </Label>
+                        <Input
+                          id="auto-num-comparative-methods"
+                          type="number"
+                          inputMode="numeric"
+                          value={autoNumComparativeMethods}
+                          onChange={(e) => setAutoNumComparativeMethods(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="auto-max-code-validations">
+                          実装したコードのバリデーション回数
+                        </Label>
+                        <Input
+                          id="auto-max-code-validations"
+                          type="number"
+                          inputMode="numeric"
+                          value={autoExperimentCodeValidationIterations}
+                          onChange={(e) =>
+                            setAutoExperimentCodeValidationIterations(e.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="auto-writing-refinement-rounds">
+                          執筆した論文のリファインメント回数
+                        </Label>
+                        <Input
+                          id="auto-writing-refinement-rounds"
+                          type="number"
+                          inputMode="numeric"
+                          value={autoPaperContentRefinementIterations}
+                          onChange={(e) => setAutoPaperContentRefinementIteration(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="auto-latex-template-name">
+                          利用するLatexのテンプレート
+                        </Label>
+                        <Select
+                          value={autoLatexTemplateName}
+                          onValueChange={setAutoLatexTemplateName}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="iclr2024" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="iclr2024">iclr2024</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="auto-private"
+                  checked={autoIsPrivate}
+                  onCheckedChange={(val) => setAutoIsPrivate(Boolean(val))}
+                />
+                <Label htmlFor="auto-private" className="text-sm text-muted-foreground">
+                  リポジトリをプライベート扱いにする
+                </Label>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={handleRunAutoResearch}
+                  disabled={isAutoRunning || !isAutoFormValid}
+                >
+                  {isAutoRunning ? "実行中..." : "自動研究を実行"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>ステータス確認</CardTitle>
+              <CardDescription>
+                タスクIDをもとに最新のステータスと研究履歴を取得します。
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-3 items-center">
+                <Button
+                  variant="outline"
+                  onClick={() => handleGetAutoResearchStatus()}
+                  disabled={isAutoPolling || !autoTaskId}
+                >
+                  最新を取得
+                </Button>
+                {isAutoPolling && <p className="text-sm text-muted-foreground">自動更新中...</p>}
+
+                {!autoTaskId && (
+                  <p className="text-sm text-muted-foreground">
+                    先に自動研究を実行してタスクIDを取得してください。
+                  </p>
+                )}
+              </div>
+              {autoError && <p className="text-sm text-destructive">{autoError}</p>}
+              {autoStatus ? (
+                <>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <div>
+                      <p className="text-sm text-muted-foreground">タスクID</p>
+                      <p className="text-sm font-medium break-all">{autoStatus.task_id}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">ステータス</p>
+                      <p className="text-sm font-medium">{autoStatus.status}</p>
+                    </div>
+                  </div>
+                  {autoStatus.error && (
+                    <p className="text-sm text-destructive">{autoStatus.error}</p>
+                  )}
+                  {autoStatus.research_history && (
+                    <div className="rounded-md border border-border bg-card/60 p-3">
+                      <p className="text-sm font-semibold">研究履歴</p>
                       <p className="text-sm text-muted-foreground">
-                        論文URL: {autoStatus.research_history.paper_url}
+                        目的: {autoStatus.research_history.research_topic ?? "N/A"}
                       </p>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">まだ実行結果がありません</p>
-            )}
-          </CardContent>
-        </Card>
+                      {autoStatus.research_history.paper_url && (
+                        <p className="text-sm text-muted-foreground">
+                          論文URL: {autoStatus.research_history.paper_url}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">まだ実行結果がありません</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
