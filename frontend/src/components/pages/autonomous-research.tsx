@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Status,
   type TopicOpenEndedResearchRequestBody,
   TopicOpenEndedResearchService,
   type TopicOpenEndedResearchStatusResponseBody,
@@ -23,14 +24,7 @@ import {
 import type { ResearchSection } from "@/types/research";
 
 const DEFAULT_RESEARCH_TITLE = "Untitled Research";
-
-type AutoResearchSave = {
-  id: string;
-  savedAt: Date;
-  payload: TopicOpenEndedResearchRequestBody;
-  queryList: string[];
-  response: TopicOpenEndedResearchStatusResponseBody | null;
-};
+const AUTO_STATUS_POLL_INTERVAL_MS = 5000;
 
 interface AutonomousResearchPageProps {
   section: ResearchSection | null;
@@ -47,8 +41,8 @@ export function AutonomousResearchPage({
   onCreateSection,
   onUpdateSectionTitle,
 }: AutonomousResearchPageProps) {
-  const [autoResearchSaves, setAutoResearchSaves] = useState<AutoResearchSave[]>([]);
-  const [autoQueries, setAutoQueries] = useState("");
+  // topic_open_ended_research/run request params
+  const [autoResearchTopic, setAutoResearchTopic] = useState("");
   const [autoGithubOwner, setAutoGithubOwner] = useState("");
   const [autoRepoName, setAutoRepoName] = useState("");
   const [autoBranch, setAutoBranch] = useState("main");
@@ -57,40 +51,54 @@ export function AutonomousResearchPage({
   const [autoWandbEntity, setAutoWandbEntity] = useState("");
   const [autoWandbProject, setAutoWandbProject] = useState("");
   const [autoIsPrivate, setAutoIsPrivate] = useState(false);
+
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
-  const [autoMaxResultsPerQuery, setAutoMaxResultsPerQuery] = useState("5");
-  const [autoRefinementRounds, setAutoRefinementRounds] = useState("1");
-  const [autoNumModelsToUse, setAutoNumModelsToUse] = useState("1");
-  const [autoNumDatasetsToUse, setAutoNumDatasetsToUse] = useState("1");
+
+  const [autoNumPaperSearchQueries, setAutoNumPaperSearchQueries] = useState("2");
+  const [autoPapersPerQuery, setAutoPapersPerQuery] = useState("2");
+  const [autoHypothesisRefinementIterations, setAutoHypothesisRefinementIterations] = useState("1");
+  const [autoNumExperimentModels, setAutoNumExperimentModels] = useState("1");
+  const [autoNumExperimentDatasets, setAutoNumExperimentDatasets] = useState("1");
   const [autoNumComparativeMethods, setAutoNumComparativeMethods] = useState("1");
-  const [autoMaxCodeValidations, setAutoMaxCodeValidations] = useState("10");
-  const [autoWritingRefinementRounds, setAutoWritingRefinementRounds] = useState("2");
+  const [autoExperimentCodeValidationIterations, setAutoExperimentCodeValidationIterations] =
+    useState("4");
+  const [autoPaperContentRefinementIterations, setAutoPaperContentRefinementIteration] =
+    useState("2");
   const [autoLatexTemplateName, setAutoLatexTemplateName] = useState("iclr2024");
+  // TODO: LLMに関する設定も追加する
   const [autoStatus, setAutoStatus] = useState<TopicOpenEndedResearchStatusResponseBody | null>(
     null,
   );
   const [autoTaskId, setAutoTaskId] = useState<string | null>(null);
+  const autoStatusPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [isAutoPolling, setIsAutoPolling] = useState(false);
   const [isAutoRunning, setIsAutoRunning] = useState(false);
   const [autoError, setAutoError] = useState<string | null>(null);
   const [isEditingAutoTitle, setIsEditingAutoTitle] = useState(false);
   const [autoTitleDraft, setAutoTitleDraft] = useState(section?.title ?? DEFAULT_RESEARCH_TITLE);
+
+  const isAutoFormValid = [
+    autoResearchTopic,
+    autoGithubOwner,
+    autoRepoName,
+    autoRunnerDescription,
+    autoWandbEntity,
+    autoWandbProject,
+  ].every((value) => value.trim().length > 0);
 
   useEffect(() => {
     const nextTitle = section?.title ?? DEFAULT_RESEARCH_TITLE;
     setAutoTitleDraft(nextTitle);
   }, [section?.title]);
 
-  const buildAutoResearchPayload = (): {
-    payload: TopicOpenEndedResearchRequestBody;
-    queryList: string[];
-  } => {
-    const queryList = autoQueries
-      .split("\n")
-      .map((q) => q.trim())
-      .filter((q) => q.length > 0);
+  useEffect(
+    () => () => {
+      if (autoStatusPollingRef.current) clearInterval(autoStatusPollingRef.current);
+    },
+    [],
+  );
 
-    const researchTopic = queryList[0] ?? "";
-
+  const buildAutoResearchPayload = (): TopicOpenEndedResearchRequestBody => {
     const toNumber = (value: string): number | undefined => {
       const parsed = Number(value);
       return Number.isFinite(parsed) ? parsed : undefined;
@@ -102,7 +110,7 @@ export function AutonomousResearchPage({
         repository_name: autoRepoName,
         branch_name: autoBranch,
       },
-      research_topic: researchTopic,
+      research_topic: autoResearchTopic,
       runner_config: {
         runner_label: autoRunnerLabels
           .split(",")
@@ -115,105 +123,110 @@ export function AutonomousResearchPage({
         project: autoWandbProject,
       },
       is_github_repo_private: autoIsPrivate,
-      num_paper_search_queries: queryList.length || undefined,
-      papers_per_query: toNumber(autoMaxResultsPerQuery),
-      hypothesis_refinement_iterations: toNumber(autoRefinementRounds),
-      num_experiment_models: toNumber(autoNumModelsToUse),
-      num_experiment_datasets: toNumber(autoNumDatasetsToUse),
+      num_paper_search_queries: toNumber(autoNumPaperSearchQueries),
+      papers_per_query: toNumber(autoPapersPerQuery),
+      hypothesis_refinement_iterations: toNumber(autoHypothesisRefinementIterations),
+      num_experiment_models: toNumber(autoNumExperimentModels),
+      num_experiment_datasets: toNumber(autoNumExperimentDatasets),
       num_comparison_methods: toNumber(autoNumComparativeMethods),
-      experiment_code_validation_iterations: toNumber(autoMaxCodeValidations),
-      paper_content_refinement_iterations: toNumber(autoWritingRefinementRounds),
+      experiment_code_validation_iterations: toNumber(autoExperimentCodeValidationIterations),
+      paper_content_refinement_iterations: toNumber(autoPaperContentRefinementIterations),
       latex_template_name: autoLatexTemplateName.trim() || undefined,
     };
 
-    return { payload, queryList };
+    return payload;
   };
 
-  const handleSaveAutoResearch = () => {
-    const { payload, queryList } = buildAutoResearchPayload();
-    const id = `auto-research-save-${Date.now()}`;
-    setAutoResearchSaves((prev) => [
-      { id, savedAt: new Date(), payload, queryList, response: autoStatus },
-      ...prev,
-    ]);
-  };
-
-  const handleRunAutoResearch = async () => {
-    setIsAutoRunning(true);
-    setAutoError(null);
-    try {
-      const { payload, queryList } = buildAutoResearchPayload();
-      if (queryList.length === 0) {
-        throw new Error("研究トピック/クエリを1つ以上入力してください");
-      }
-      if (!payload.github_config.github_owner || !payload.github_config.repository_name) {
-        throw new Error("GitHubのオーナーとリポジトリ名を入力してください");
-      }
-      if (!payload.runner_config.description) {
-        throw new Error("Runnerの説明を入力してください");
-      }
-      if (!payload.wandb_config.entity || !payload.wandb_config.project) {
-        throw new Error("WandBのEntity/Projectを入力してください");
-      }
-
-      const response =
-        await TopicOpenEndedResearchService.executeTopicOpenEndedResearchAirasV1TopicOpenEndedResearchRunPost(
-          payload,
-        );
-      setAutoTaskId(response.task_id);
-      await handleRefreshAutoStatus(response.task_id);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "自動研究の実行に失敗しました";
-      setAutoError(message);
-    } finally {
-      setIsAutoRunning(false);
+  const validateAutoPayload = (payload: TopicOpenEndedResearchRequestBody) => {
+    if (!payload.research_topic?.trim()) return "研究トピックを入力してください";
+    if (
+      !payload.github_config.github_owner?.trim() ||
+      !payload.github_config.repository_name?.trim()
+    ) {
+      return "GitHubのオーナーとリポジトリ名を入力してください";
     }
+    if (!payload.runner_config.description?.trim()) return "Runnerの説明を入力してください";
+    if (!payload.wandb_config.entity?.trim() || !payload.wandb_config.project?.trim()) {
+      return "WandBのEntity/Projectを入力してください";
+    }
+    return null;
   };
 
-  const handleRefreshAutoStatus = async (taskId?: string) => {
-    const id = taskId ?? autoTaskId;
-    if (!id) return;
-    setIsAutoRunning(true);
-    setAutoError(null);
+  const clearAutoPollingTimer = () => {
+    if (!autoStatusPollingRef.current) return;
+    clearInterval(autoStatusPollingRef.current);
+    autoStatusPollingRef.current = null;
+  };
+
+  const stopAutoPolling = () => {
+    clearAutoPollingTimer();
+    setIsAutoPolling(false);
+    setIsAutoRunning(false);
+  };
+
+  const fetchAutoStatus = async (taskId: string, { resetError = false } = {}) => {
+    if (resetError) setAutoError(null);
     try {
-      const response =
-        await TopicOpenEndedResearchService.getTopicOpenEndedResearchStatusAirasV1TopicOpenEndedResearchStatusTaskIdGet(
-          id,
-        );
+      const response = await TopicOpenEndedResearchService.getStatus(taskId);
       setAutoStatus(response);
+      if (response.error) setAutoError(response.error);
+      const finished = response.status === Status.COMPLETED || Boolean(response.error);
+      if (finished) stopAutoPolling();
     } catch (error) {
       const message = error instanceof Error ? error.message : "ステータスの取得に失敗しました";
       setAutoError(message);
-    } finally {
-      setIsAutoRunning(false);
+      stopAutoPolling();
     }
+  };
+
+  const startAutoPolling = (taskId: string) => {
+    clearAutoPollingTimer();
+    setIsAutoPolling(true);
+    setIsAutoRunning(true);
+    void fetchAutoStatus(taskId, { resetError: true });
+    autoStatusPollingRef.current = setInterval(() => {
+      void fetchAutoStatus(taskId);
+    }, AUTO_STATUS_POLL_INTERVAL_MS);
+  };
+
+  const handleRunAutoResearch = async () => {
+    const payload = buildAutoResearchPayload();
+    setAutoError(null);
+
+    const validationError = validateAutoPayload(payload);
+    if (validationError) {
+      setAutoError(validationError);
+      return;
+    }
+
+    setAutoStatus(null);
+    setIsAutoRunning(true);
+    try {
+      const response = await TopicOpenEndedResearchService.run(payload);
+      setAutoTaskId(response.task_id);
+      startAutoPolling(response.task_id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "自動研究の実行に失敗しました";
+      setAutoError(message);
+      stopAutoPolling();
+    }
+  };
+
+  // 実行状態を確認するエンドポイントをたたく
+  // 実行進捗の表示
+  // 実行時間の表示
+  // 実行結果の表示
+  const handleGetAutoResearchStatus = async (taskId?: string) => {
+    const id = taskId ?? autoTaskId;
+    if (!id) return;
+    clearAutoPollingTimer();
+    setIsAutoPolling(false);
+    await fetchAutoStatus(id, { resetError: true });
   };
 
   const handleSaveAutoTitle = () => {
     onUpdateSectionTitle(autoTitleDraft);
     setIsEditingAutoTitle(false);
-  };
-
-  const renderAutoHistory = () => {
-    if (autoResearchSaves.length === 0) {
-      return <p className="text-sm text-muted-foreground">まだ保存がありません</p>;
-    }
-    return (
-      <div className="space-y-2 max-h-48 overflow-auto">
-        {autoResearchSaves.map((save) => (
-          <div key={save.id} className="rounded-md border border-border bg-card/50 px-3 py-2">
-            <p className="text-sm font-medium">保存 {save.savedAt.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">
-              クエリ {save.queryList.length} 件 / リポジトリ{" "}
-              {save.payload.github_config.github_owner}/{save.payload.github_config.repository_name}
-            </p>
-            {save.response?.task_id && (
-              <p className="text-xs text-muted-foreground">タスクID: {save.response.task_id}</p>
-            )}
-          </div>
-        ))}
-      </div>
-    );
   };
 
   return (
@@ -272,8 +285,8 @@ export function AutonomousResearchPage({
               <Label htmlFor="auto-queries">クエリ (改行区切り)</Label>
               <Textarea
                 id="auto-queries"
-                value={autoQueries}
-                onChange={(e) => setAutoQueries(e.target.value)}
+                value={autoResearchTopic}
+                onChange={(e) => setAutoResearchTopic(e.target.value)}
                 placeholder="ex) vision-language models for video QA"
               />
             </div>
@@ -361,47 +374,63 @@ export function AutonomousResearchPage({
                 <div className="p-4 space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="auto-max-results">max_results_per_query</Label>
+                      <Label htmlFor="auto-num-paper-search-queries">
+                        論文取得にための検索クエリの数
+                      </Label>
+                      <Input
+                        id="auto-num-paper-search-queries"
+                        type="number"
+                        inputMode="numeric"
+                        value={autoNumPaperSearchQueries}
+                        onChange={(e) => setAutoNumPaperSearchQueries(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="auto-max-results">1クエリあたりの取得論文数</Label>
                       <Input
                         id="auto-max-results"
                         type="number"
                         inputMode="numeric"
-                        value={autoMaxResultsPerQuery}
-                        onChange={(e) => setAutoMaxResultsPerQuery(e.target.value)}
+                        value={autoPapersPerQuery}
+                        onChange={(e) => setAutoPapersPerQuery(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="auto-refinement-rounds">refinement_rounds</Label>
+                      <Label htmlFor="auto-refinement-rounds">
+                        生成する仮説のリファインメント回数
+                      </Label>
                       <Input
                         id="auto-refinement-rounds"
                         type="number"
                         inputMode="numeric"
-                        value={autoRefinementRounds}
-                        onChange={(e) => setAutoRefinementRounds(e.target.value)}
+                        value={autoHypothesisRefinementIterations}
+                        onChange={(e) => setAutoHypothesisRefinementIterations(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="auto-num-models">num_models_to_use</Label>
+                      <Label htmlFor="auto-num-models">実験に用いるモデルの数</Label>
                       <Input
                         id="auto-num-models"
                         type="number"
                         inputMode="numeric"
-                        value={autoNumModelsToUse}
-                        onChange={(e) => setAutoNumModelsToUse(e.target.value)}
+                        value={autoNumExperimentModels}
+                        onChange={(e) => setAutoNumExperimentModels(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="auto-num-datasets">num_datasets_to_use</Label>
+                      <Label htmlFor="auto-num-datasets">実験に用いるデータセットの数</Label>
                       <Input
                         id="auto-num-datasets"
                         type="number"
                         inputMode="numeric"
-                        value={autoNumDatasetsToUse}
-                        onChange={(e) => setAutoNumDatasetsToUse(e.target.value)}
+                        value={autoNumExperimentDatasets}
+                        onChange={(e) => setAutoNumExperimentDatasets(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="auto-num-comparative-methods">num_comparative_methods</Label>
+                      <Label htmlFor="auto-num-comparative-methods">
+                        比較手法の数(ベースラインの数)
+                      </Label>
                       <Input
                         id="auto-num-comparative-methods"
                         type="number"
@@ -411,29 +440,31 @@ export function AutonomousResearchPage({
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="auto-max-code-validations">max_code_validations</Label>
+                      <Label htmlFor="auto-max-code-validations">
+                        実装したコードのバリデーション回数
+                      </Label>
                       <Input
                         id="auto-max-code-validations"
                         type="number"
                         inputMode="numeric"
-                        value={autoMaxCodeValidations}
-                        onChange={(e) => setAutoMaxCodeValidations(e.target.value)}
+                        value={autoExperimentCodeValidationIterations}
+                        onChange={(e) => setAutoExperimentCodeValidationIterations(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="auto-writing-refinement-rounds">
-                        writing_refinement_rounds
+                        執筆した論文のリファインメント回数
                       </Label>
                       <Input
                         id="auto-writing-refinement-rounds"
                         type="number"
                         inputMode="numeric"
-                        value={autoWritingRefinementRounds}
-                        onChange={(e) => setAutoWritingRefinementRounds(e.target.value)}
+                        value={autoPaperContentRefinementIterations}
+                        onChange={(e) => setAutoPaperContentRefinementIteration(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="auto-latex-template-name">latex_template_name</Label>
+                      <Label htmlFor="auto-latex-template-name">利用するLatexのテンプレート</Label>
                       <Select
                         value={autoLatexTemplateName}
                         onValueChange={setAutoLatexTemplateName}
@@ -463,11 +494,8 @@ export function AutonomousResearchPage({
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button onClick={handleRunAutoResearch} disabled={isAutoRunning}>
+              <Button onClick={handleRunAutoResearch} disabled={isAutoRunning || !isAutoFormValid}>
                 {isAutoRunning ? "実行中..." : "自動研究を実行"}
-              </Button>
-              <Button variant="secondary" onClick={handleSaveAutoResearch}>
-                この設定で保存
               </Button>
             </div>
           </CardContent>
@@ -484,11 +512,13 @@ export function AutonomousResearchPage({
             <div className="flex flex-wrap gap-3 items-center">
               <Button
                 variant="outline"
-                onClick={() => handleRefreshAutoStatus()}
-                disabled={isAutoRunning || !autoTaskId}
+                onClick={() => handleGetAutoResearchStatus()}
+                disabled={isAutoPolling || !autoTaskId}
               >
-                ステータス確認
+                最新を取得
               </Button>
+              {isAutoPolling && <p className="text-sm text-muted-foreground">自動更新中...</p>}
+
               {!autoTaskId && (
                 <p className="text-sm text-muted-foreground">
                   先に自動研究を実行してタスクIDを取得してください。
@@ -527,14 +557,6 @@ export function AutonomousResearchPage({
               <p className="text-sm text-muted-foreground">まだ実行結果がありません</p>
             )}
           </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>自動研究の保存履歴</CardTitle>
-            <CardDescription>設定・結果を手動で保存できます。</CardDescription>
-          </CardHeader>
-          <CardContent>{renderAutoHistory()}</CardContent>
         </Card>
       </div>
     </div>

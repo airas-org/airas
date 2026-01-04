@@ -15,7 +15,7 @@ export class TopicOpenEndedResearchService {
      * @returns TopicOpenEndedResearchResponseBody Successful Response
      * @throws ApiError
      */
-    public static executeTopicOpenEndedResearchAirasV1TopicOpenEndedResearchRunPost(
+    public static run(
         requestBody: TopicOpenEndedResearchRequestBody,
     ): CancelablePromise<TopicOpenEndedResearchResponseBody> {
         return __request(OpenAPI, {
@@ -34,7 +34,7 @@ export class TopicOpenEndedResearchService {
      * @returns TopicOpenEndedResearchStatusResponseBody Successful Response
      * @throws ApiError
      */
-    public static getTopicOpenEndedResearchStatusAirasV1TopicOpenEndedResearchStatusTaskIdGet(
+    public static getStatus(
         taskId: string,
     ): CancelablePromise<TopicOpenEndedResearchStatusResponseBody> {
         return __request(OpenAPI, {
