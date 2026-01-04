@@ -26,6 +26,8 @@ import type { ResearchSection } from "@/types/research";
 const DEFAULT_RESEARCH_TITLE = "Untitled Research";
 const AUTO_STATUS_POLL_INTERVAL_MS = 5000;
 
+const RequiredMark = () => <span className="text-destructive ml-0.5">*</span>;
+
 interface AutonomousResearchPageProps {
   section: ResearchSection | null;
   sessionsExpanded: boolean;
@@ -81,6 +83,8 @@ export function AutonomousResearchPage({
     autoResearchTopic,
     autoGithubOwner,
     autoRepoName,
+    autoBranch,
+    autoRunnerLabels,
     autoRunnerDescription,
     autoWandbEntity,
     autoWandbProject,
@@ -283,7 +287,10 @@ export function AutonomousResearchPage({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="auto-queries">研究内容</Label>
+                <Label htmlFor="auto-queries">
+                  研究内容
+                  <RequiredMark />
+                </Label>
                 <Textarea
                   id="auto-queries"
                   value={autoResearchTopic}
@@ -291,70 +298,111 @@ export function AutonomousResearchPage({
                   placeholder="ex) vision-language models for video QA"
                 />
               </div>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="auto-github-owner">GitHub Owner</Label>
-                  <Input
-                    id="auto-github-owner"
-                    value={autoGithubOwner}
-                    onChange={(e) => setAutoGithubOwner(e.target.value)}
-                  />
+
+              <div className="space-y-3 rounded-md border border-border bg-card/60 p-4">
+                <p className="text-sm font-semibold text-foreground">GitHub</p>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="auto-github-owner">
+                      owner
+                      <RequiredMark />
+                    </Label>
+                    <Input
+                      id="auto-github-owner"
+                      value={autoGithubOwner}
+                      onChange={(e) => setAutoGithubOwner(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="auto-repo-name">
+                      repository
+                      <RequiredMark />
+                    </Label>
+                    <Input
+                      id="auto-repo-name"
+                      value={autoRepoName}
+                      onChange={(e) => setAutoRepoName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="auto-branch">
+                      branch
+                      <RequiredMark />
+                    </Label>
+                    <Input
+                      id="auto-branch"
+                      value={autoBranch}
+                      onChange={(e) => setAutoBranch(e.target.value)}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="auto-repo-name">Repository</Label>
-                  <Input
-                    id="auto-repo-name"
-                    value={autoRepoName}
-                    onChange={(e) => setAutoRepoName(e.target.value)}
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="auto-private"
+                    checked={autoIsPrivate}
+                    onCheckedChange={(val) => setAutoIsPrivate(Boolean(val))}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="auto-branch">Branch</Label>
-                  <Input
-                    id="auto-branch"
-                    value={autoBranch}
-                    onChange={(e) => setAutoBranch(e.target.value)}
-                  />
+                  <Label htmlFor="auto-private" className="text-sm text-muted-foreground">
+                    リポジトリをprivateにする
+                  </Label>
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="auto-runner-labels">Runner Labels (カンマ区切り)</Label>
-                  <Input
-                    id="auto-runner-labels"
-                    value={autoRunnerLabels}
-                    onChange={(e) => setAutoRunnerLabels(e.target.value)}
-                    placeholder="ubuntu-latest,gpu-runner"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="auto-runner-desc">Runner 説明</Label>
-                  <Textarea
-                    id="auto-runner-desc"
-                    value={autoRunnerDescription}
-                    onChange={(e) => setAutoRunnerDescription(e.target.value)}
-                    placeholder="A100 x1, 40GB / 8 vCPU / 32GB RAM"
-                  />
+              <div className="space-y-3 rounded-md border border-border bg-card/60 p-4">
+                <p className="text-sm font-semibold text-foreground">GitHub Actions Runners</p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="auto-runner-labels">
+                      ラベル
+                      <RequiredMark />
+                    </Label>
+                    <Input
+                      id="auto-runner-labels"
+                      value={autoRunnerLabels}
+                      onChange={(e) => setAutoRunnerLabels(e.target.value)}
+                      placeholder="ubuntu-latest,gpu-runner"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="auto-runner-desc">
+                      説明
+                      <RequiredMark />
+                    </Label>
+                    <Textarea
+                      id="auto-runner-desc"
+                      value={autoRunnerDescription}
+                      onChange={(e) => setAutoRunnerDescription(e.target.value)}
+                      placeholder="A100 x1, 40GB / 8 vCPU / 32GB RAM"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="auto-wandb-entity">WandB Entity</Label>
-                  <Input
-                    id="auto-wandb-entity"
-                    value={autoWandbEntity}
-                    onChange={(e) => setAutoWandbEntity(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="auto-wandb-project">WandB Project</Label>
-                  <Input
-                    id="auto-wandb-project"
-                    value={autoWandbProject}
-                    onChange={(e) => setAutoWandbProject(e.target.value)}
-                  />
+              <div className="space-y-3 rounded-md border border-border bg-card/60 p-4">
+                <p className="text-sm font-semibold text-foreground">Weights &amp; Biases</p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="auto-wandb-entity">
+                      entity
+                      <RequiredMark />
+                    </Label>
+                    <Input
+                      id="auto-wandb-entity"
+                      value={autoWandbEntity}
+                      onChange={(e) => setAutoWandbEntity(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="auto-wandb-project">
+                      project
+                      <RequiredMark />
+                    </Label>
+                    <Input
+                      id="auto-wandb-project"
+                      value={autoWandbProject}
+                      onChange={(e) => setAutoWandbProject(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -485,17 +533,6 @@ export function AutonomousResearchPage({
                     </div>
                   </div>
                 )}
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Checkbox
-                  id="auto-private"
-                  checked={autoIsPrivate}
-                  onCheckedChange={(val) => setAutoIsPrivate(Boolean(val))}
-                />
-                <Label htmlFor="auto-private" className="text-sm text-muted-foreground">
-                  リポジトリをプライベート扱いにする
-                </Label>
               </div>
 
               <div className="flex flex-wrap gap-3">
