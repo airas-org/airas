@@ -8,10 +8,10 @@ import { ExperimentConfigSection } from "@/components/features/experiment-config
 import { ExperimentRunSection } from "@/components/features/experiment-run";
 import { MethodGenerationSection } from "@/components/features/method-generation";
 import { PaperWritingSection } from "@/components/features/paper-writing";
+import { WorkflowTree } from "@/components/pages/assisted-research/workflow-tree";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { WorkflowTree } from "@/components/workflow-tree";
 import { cn } from "@/lib/utils";
 import type {
   ExperimentConfig,
@@ -55,12 +55,12 @@ interface AssistedResearchPageProps {
     snapshot?: WorkflowNode["snapshot"],
   ) => string;
   updateNodeSnapshot: (nodeId: string, snapshot: WorkflowNode["snapshot"]) => void;
-  resetDownstreamSections: (fromType: FeatureType) => void;
+  resetDownstreamSessions: (fromType: FeatureType) => void;
   onNavigate: (nodeId: string) => void;
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
-  sectionsExpanded: boolean;
-  onToggleSections: () => void;
+  sessionsExpanded: boolean;
+  onToggleSessions: () => void;
 }
 
 export function AssistedResearchPage({
@@ -73,12 +73,12 @@ export function AssistedResearchPage({
   setActiveNodeId,
   addWorkflowNode,
   updateNodeSnapshot,
-  resetDownstreamSections,
+  resetDownstreamSessions,
   onNavigate,
   onCreateSection,
   onUpdateSectionTitle,
-  sectionsExpanded,
-  onToggleSections,
+  sessionsExpanded,
+  onToggleSessions,
 }: AssistedResearchPageProps) {
   const [generatedMethod, setGeneratedMethod] = useState<Method | null>(null);
   const [experimentConfigs, setExperimentConfigs] = useState<ExperimentConfig[]>([]);
@@ -253,7 +253,7 @@ export function AssistedResearchPage({
     skipNextRestoreRef.current = true;
 
     resetDownstreamState(sourceType);
-    resetDownstreamSections(sourceType);
+    resetDownstreamSessions(sourceType);
 
     let sourceNodeId: string | null = null;
 
@@ -367,10 +367,10 @@ export function AssistedResearchPage({
           <button
             type="button"
             className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full border border-border bg-card text-muted-foreground hover:text-foreground shadow-sm"
-            onClick={onToggleSections}
-            aria-label="Toggle sections"
+            onClick={onToggleSessions}
+            aria-label="Toggle sessions"
           >
-            {sectionsExpanded ? (
+            {sessionsExpanded ? (
               <ChevronLeft className="h-4 w-4" />
             ) : (
               <ChevronRight className="h-4 w-4" />
