@@ -193,9 +193,9 @@ export default function App() {
     [activeAutoSection, activeNav, activeResearchSection],
   );
 
-  const navItems: { key: NavKey; label: string }[] = [
-    { key: "papers", label: "Paper" },
-    { key: "assisted-research", label: "Assisted Research" },
+  const navItems: { key: NavKey; label: string; disabled?: boolean }[] = [
+    { key: "papers", label: "Paper", disabled: true },
+    { key: "assisted-research", label: "Assisted Research", disabled: true },
     { key: "autonomous-research", label: "Autonomous Research" },
   ];
 
@@ -257,16 +257,20 @@ export default function App() {
           <div className="flex flex-col gap-2 p-3">
             {navItems.map((item) => {
               const isActive = activeNav === item.key;
+              const isDisabled = item.disabled;
               return (
                 <button
                   key={item.key}
                   type="button"
+                  disabled={isDisabled}
                   onClick={() => handleNavChange(item.key)}
                   className={cn(
                     "w-full px-3 py-1.5 text-left text-sm transition-colors",
-                    isActive
-                      ? "text-foreground font-semibold"
-                      : "text-muted-foreground hover:text-foreground",
+                    isDisabled
+                      ? "text-muted-foreground cursor-not-allowed"
+                      : isActive
+                        ? "text-foreground font-semibold"
+                        : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   <span className="block">{item.label}</span>
