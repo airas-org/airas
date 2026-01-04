@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { AssistedResearchPage } from "@/components/pages/assisted-research";
+import { AssistedResearchPage } from "@/components/pages/assisted-research/index";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { PapersPage } from "@/components/pages/papers";
 import type {
@@ -26,7 +26,7 @@ interface AssistedResearchProps {
     snapshot?: WorkflowNode["snapshot"],
   ) => string;
   updateNodeSnapshot: (nodeId: string, snapshot: WorkflowNode["snapshot"]) => void;
-  resetDownstreamSections: (fromType: FeatureType) => void;
+  resetDownstreamSessions: (fromType: FeatureType) => void;
   onNavigate: (nodeId: string) => void;
 }
 
@@ -36,8 +36,8 @@ interface MainContentProps {
   activeFeature: string | null;
   activeNav: NavKey;
   assistedResearchProps: AssistedResearchProps;
-  sectionsExpanded: boolean;
-  onToggleSections: () => void;
+  sessionsExpanded: boolean;
+  onToggleSessions: () => void;
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
 }
@@ -59,8 +59,8 @@ export function MainContent({
   activeFeature,
   activeNav,
   assistedResearchProps,
-  sectionsExpanded,
-  onToggleSections,
+  sessionsExpanded,
+  onToggleSessions,
   onCreateSection,
   onUpdateSectionTitle,
 }: MainContentProps) {
@@ -121,8 +121,8 @@ export function MainContent({
         {autonomousSection ? (
           <AutonomousResearchPage
             section={autonomousSection}
-            sectionsExpanded={sectionsExpanded}
-            onToggleSections={onToggleSections}
+            sessionsExpanded={sessionsExpanded}
+            onToggleSessions={onToggleSessions}
             onCreateSection={onCreateSection}
             onUpdateSectionTitle={onUpdateSectionTitle}
           />
@@ -138,8 +138,8 @@ export function MainContent({
             activeFeature={activeFeature}
             selectedPapers={selectedPapers}
             onSelectedPapersChange={setSelectedPapers}
-            sectionsExpanded={sectionsExpanded}
-            onToggleSections={onToggleSections}
+            sessionsExpanded={sessionsExpanded}
+            onToggleSessions={onToggleSessions}
             onCreateSection={onCreateSection}
             onUpdateSectionTitle={onUpdateSectionTitle}
             workflowTree={assistedResearchProps.workflowTree}
@@ -147,7 +147,7 @@ export function MainContent({
             setActiveNodeId={assistedResearchProps.setActiveNodeId}
             addWorkflowNode={assistedResearchProps.addWorkflowNode}
             updateNodeSnapshot={assistedResearchProps.updateNodeSnapshot}
-            resetDownstreamSections={assistedResearchProps.resetDownstreamSections}
+            resetDownstreamSessions={assistedResearchProps.resetDownstreamSessions}
             onNavigate={assistedResearchProps.onNavigate}
           />
         ) : (

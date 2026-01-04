@@ -34,16 +34,16 @@ type AutoResearchSave = {
 
 interface AutonomousResearchPageProps {
   section: ResearchSection | null;
-  sectionsExpanded: boolean;
-  onToggleSections: () => void;
+  sessionsExpanded: boolean;
+  onToggleSessions: () => void;
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
 }
 
 export function AutonomousResearchPage({
   section,
-  sectionsExpanded,
-  onToggleSections,
+  sessionsExpanded,
+  onToggleSessions,
   onCreateSection,
   onUpdateSectionTitle,
 }: AutonomousResearchPageProps) {
@@ -222,10 +222,10 @@ export function AutonomousResearchPage({
         <button
           type="button"
           className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full border border-border bg-card text-muted-foreground hover:text-foreground shadow-sm"
-          onClick={onToggleSections}
-          aria-label="Toggle sections"
+          onClick={onToggleSessions}
+          aria-label="Toggle sessions"
         >
-          {sectionsExpanded ? (
+          {sessionsExpanded ? (
             <ChevronLeft className="h-4 w-4" />
           ) : (
             <ChevronRight className="h-4 w-4" />

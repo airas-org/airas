@@ -56,7 +56,7 @@ export default function App() {
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   // 現在、何が選ばれているか
   const [activeNav, setActiveNav] = useState<NavKey>("autonomous-research");
-  const [sectionsExpanded, setSectionsExpanded] = useState(false);
+  const [sessionsExpanded, setSessionsExpanded] = useState(false);
 
   const handleCreateSection = () => {
     const newSection: ResearchSection = {
@@ -170,7 +170,7 @@ export default function App() {
     }));
   }, []);
 
-  const resetDownstreamSections = useCallback((_fromType: FeatureType) => {
+  const resetDownstreamSessions = useCallback((_fromType: FeatureType) => {
     // ここはそのまま
   }, []);
 
@@ -280,13 +280,13 @@ export default function App() {
           <div
             className={cn(
               "relative flex-shrink-0 h-full transition-[width] duration-200 ease-in-out",
-              sectionsExpanded ? "w-56" : "w-0",
+              sessionsExpanded ? "w-56" : "w-0",
             )}
           >
             <div
               className={cn(
                 "overflow-hidden transition-[width,opacity] duration-200 ease-in-out h-full",
-                sectionsExpanded ? "w-56 opacity-100" : "w-0 opacity-0",
+                sessionsExpanded ? "w-56 opacity-100" : "w-0 opacity-0",
               )}
             >
               <SectionsSidebar
@@ -314,11 +314,11 @@ export default function App() {
             setActiveNodeId,
             addWorkflowNode,
             updateNodeSnapshot,
-            resetDownstreamSections,
+            resetDownstreamSessions,
             onNavigate: handleNavigate,
           }}
-          sectionsExpanded={sectionsExpanded}
-          onToggleSections={() => setSectionsExpanded((prev) => !prev)}
+          sessionsExpanded={sessionsExpanded}
+          onToggleSessions={() => setSessionsExpanded((prev) => !prev)}
           onCreateSection={handleCreateSection}
           onUpdateSectionTitle={handleUpdateSectionTitle}
         />
