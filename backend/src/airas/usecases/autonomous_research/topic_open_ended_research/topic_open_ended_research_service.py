@@ -38,7 +38,7 @@ class TopicOpenEndedResearchService:
 
     def update(
         self,
-        step_id: UUID,
+        id: UUID,
         *,
         title: str | None = None,
         status: Status | None = None,
@@ -66,13 +66,13 @@ class TopicOpenEndedResearchService:
         if updates:
             updates["last_updated_at"] = datetime.now().astimezone()
 
-        updated = self.repo.update(step_id, **updates)
+        updated = self.repo.update(id, **updates)
         if updated is None:
             raise ValueError("e2e result not found")
         return updated
 
-    def get(self, step_id: UUID) -> E2EModel:
-        step = self.repo.get(step_id)
+    def get(self, id: UUID) -> E2EModel:
+        step = self.repo.get(id)
         if step is None:
             raise ValueError("e2e result not found")
         return step
@@ -80,8 +80,8 @@ class TopicOpenEndedResearchService:
     def list(self, *, offset: int = 0, limit: int | None = None) -> list[E2EModel]:
         return self.repo.list(offset=offset, limit=limit)
 
-    def delete(self, step_id: UUID) -> None:
-        deleted = self.repo.delete(step_id)
+    def delete(self, id: UUID) -> None:
+        deleted = self.repo.delete(id)
         if not deleted:
             raise ValueError("e2e result not found")
 
