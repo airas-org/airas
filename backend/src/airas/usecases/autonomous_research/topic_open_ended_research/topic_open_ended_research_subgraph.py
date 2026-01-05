@@ -209,7 +209,7 @@ class TopicOpenEndedResearchSubgraph:
     @record_execution_time
     def _update_record(self, state: TopicOpenEndedResearchState) -> dict[str, Any]:
         self.e2e_service.update(
-            step_id=self.task_id,
+            id=self.task_id,
             current_step=state.get("current_step"),
             result=to_dict_deep(state),
         )
@@ -815,7 +815,7 @@ class TopicOpenEndedResearchSubgraph:
             logger.info(f"Paper URL: {paper_url}")
 
         self.e2e_service.update(
-            step_id=self.task_id,
+            id=self.task_id,
             status=Status.COMPLETED,
             current_step=StepType.DONE,
             result=to_dict_deep(state),

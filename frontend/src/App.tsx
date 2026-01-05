@@ -3,6 +3,7 @@
 import { FileText, Github, UserCircle, X as XIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { MainContent, type NavKey } from "@/components/main-content";
+import { useAutonomousResearchSessions } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
 import { SectionsSidebar } from "@/components/sections-sidebar";
 import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
@@ -27,14 +28,6 @@ const mockResearchSections: ResearchSection[] = [
     status: "completed",
   },
 ];
-const mockAutoSections: ResearchSection[] = [
-  {
-    id: "a1",
-    title: "Untitled Research",
-    createdAt: new Date("2024-01-12"),
-    status: "in-progress",
-  },
-];
 
 const initialWorkflowTree: WorkflowTree = {
   nodes: {},
@@ -44,18 +37,22 @@ const initialWorkflowTree: WorkflowTree = {
 
 export default function App() {
   const [researchSections, setResearchSections] = useState<ResearchSection[]>(mockResearchSections);
-  const [autoSections, setAutoSections] = useState<ResearchSection[]>(mockAutoSections);
+  const [autoSections, setAutoSections] = useState<ResearchSection[]>([]);
   const [activeResearchSection, setActiveResearchSection] = useState<ResearchSection | null>(
     mockResearchSections[0],
   );
-  const [activeAutoSection, setActiveAutoSection] = useState<ResearchSection | null>(
-    mockAutoSections[0],
-  );
+  const [activeAutoSection, setActiveAutoSection] = useState<ResearchSection | null>(null);
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const [workflowTree, setWorkflowTree] = useState<WorkflowTree>(initialWorkflowTree);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
-  const [activeNav, setActiveNav] = useState<NavKey>("research");
-  const [sectionsExpanded, setSectionsExpanded] = useState(false);
+  // 現在、何が選ばれているか
+  const [activeNav, setActiveNav] = useState<NavKey>("autonomous-research");
+  const [sessionsExpanded, setSessionsExpanded] = useState(false);
+
+  const { fetchAutoSections } = useAutonomousResearchSessions({
+    setAutoSections,
+    setActiveAutoSection,
+  });
 
   const handleCreateSection = () => {
     const newSection: ResearchSection = {
@@ -64,9 +61,8 @@ export default function App() {
       createdAt: new Date(),
       status: "in-progress",
     };
-    if (activeNav === "auto-research") {
-      setAutoSections([newSection, ...autoSections]);
-      setActiveAutoSection(newSection);
+    if (activeNav === "autonomous-research") {
+      setActiveAutoSection(null);
     } else {
       setResearchSections([newSection, ...researchSections]);
       setActiveResearchSection(newSection);
@@ -76,11 +72,16 @@ export default function App() {
     setActiveFeature(null);
   };
 
+  const handleToggleSessions = useCallback(() => {
+    setSessionsExpanded((prev) => !prev);
+  }, []);
+
   const handleNavigate = useCallback(
     (nodeId: string) => {
       const node = workflowTree.nodes[nodeId];
       if (node) {
         setActiveNodeId(nodeId);
+        setActiveFeature(node.type);
       }
     },
     [workflowTree],
@@ -155,33 +156,6 @@ export default function App() {
     [],
   );
 
-  const createBranchFromNode = useCallback(
-    (sourceNodeId: string, newType: FeatureType): string => {
-      const sourceNode = workflowTree.nodes[sourceNodeId];
-      if (!sourceNode || !sourceNode.parentId) {
-        return addWorkflowNode(newType, sourceNodeId, false);
-      }
-      return addWorkflowNode(newType, sourceNode.parentId, true);
-    },
-    [workflowTree, addWorkflowNode],
-  );
-
-  const updateNodeData = useCallback((nodeId: string, data: Partial<WorkflowNode["data"]>) => {
-    setWorkflowTree((prev) => ({
-      ...prev,
-      nodes: {
-        ...prev.nodes,
-        [nodeId]: {
-          ...prev.nodes[nodeId],
-          data: {
-            ...prev.nodes[nodeId]?.data,
-            ...data,
-          },
-        },
-      },
-    }));
-  }, []);
-
   const updateNodeSnapshot = useCallback((nodeId: string, snapshot: WorkflowNode["snapshot"]) => {
     setWorkflowTree((prev) => ({
       ...prev,
@@ -195,13 +169,13 @@ export default function App() {
     }));
   }, []);
 
-  const resetDownstreamSections = useCallback((_fromType: FeatureType) => {
+  const resetDownstreamSessions = useCallback((_fromType: FeatureType) => {
     // ここはそのまま
   }, []);
 
   const handleUpdateSectionTitle = useCallback(
     (title: string) => {
-      if (activeNav === "auto-research") {
+      if (activeNav === "autonomous-research") {
         if (!activeAutoSection) return;
         setAutoSections((prev) =>
           prev.map((s) => (s.id === activeAutoSection.id ? { ...s, title } : s)),
@@ -218,24 +192,15 @@ export default function App() {
     [activeAutoSection, activeNav, activeResearchSection],
   );
 
-  const navItems: { key: NavKey; label: string }[] = [
-    { key: "papers", label: "Paper" },
-    { key: "research", label: "Assisted Research" },
-    { key: "auto-research", label: "Autonomous Research" },
+  const navItems: { key: NavKey; label: string; disabled?: boolean }[] = [
+    { key: "papers", label: "Paper", disabled: true },
+    { key: "assisted-research", label: "Assisted Research", disabled: true },
+    { key: "autonomous-research", label: "Autonomous Research" },
   ];
 
   const handleNavChange = useCallback((key: NavKey) => {
     setActiveNav(key);
-    if (key === "papers") {
-      setActiveFeature("papers");
-    } else {
-      setActiveFeature(null);
-    }
-    if (key === "research") {
-      setWorkflowTree(initialWorkflowTree);
-      setActiveNodeId(null);
-    }
-    if (key === "auto-research") {
+    if (key === "assisted-research") {
       setWorkflowTree(initialWorkflowTree);
       setActiveNodeId(null);
     }
@@ -291,16 +256,20 @@ export default function App() {
           <div className="flex flex-col gap-2 p-3">
             {navItems.map((item) => {
               const isActive = activeNav === item.key;
+              const isDisabled = item.disabled;
               return (
                 <button
                   key={item.key}
                   type="button"
+                  disabled={isDisabled}
                   onClick={() => handleNavChange(item.key)}
                   className={cn(
                     "w-full px-3 py-1.5 text-left text-sm transition-colors",
-                    isActive
-                      ? "text-foreground font-semibold"
-                      : "text-muted-foreground hover:text-foreground",
+                    isDisabled
+                      ? "text-muted-foreground cursor-not-allowed"
+                      : isActive
+                        ? "text-foreground font-semibold"
+                        : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   <span className="block">{item.label}</span>
@@ -310,48 +279,52 @@ export default function App() {
           </div>
         </aside>
 
-        {(activeNav === "research" || activeNav === "auto-research") && (
+        {(activeNav === "assisted-research" || activeNav === "autonomous-research") && (
           <div
             className={cn(
               "relative flex-shrink-0 h-full transition-[width] duration-200 ease-in-out",
-              sectionsExpanded ? "w-56" : "w-0",
+              sessionsExpanded ? "w-56" : "w-0",
             )}
           >
             <div
               className={cn(
                 "overflow-hidden transition-[width,opacity] duration-200 ease-in-out h-full",
-                sectionsExpanded ? "w-56 opacity-100" : "w-0 opacity-0",
+                sessionsExpanded ? "w-56 opacity-100" : "w-0 opacity-0",
               )}
             >
               <SectionsSidebar
-                sections={activeNav === "auto-research" ? autoSections : researchSections}
+                sections={activeNav === "autonomous-research" ? autoSections : researchSections}
                 activeSection={
-                  activeNav === "auto-research" ? activeAutoSection : activeResearchSection
+                  activeNav === "autonomous-research" ? activeAutoSection : activeResearchSection
                 }
                 onSelectSection={
-                  activeNav === "auto-research" ? setActiveAutoSection : setActiveResearchSection
+                  activeNav === "autonomous-research"
+                    ? setActiveAutoSection
+                    : setActiveResearchSection
                 }
               />
             </div>
           </div>
         )}
         <MainContent
-          section={activeNav === "auto-research" ? activeAutoSection : activeResearchSection}
+          assistedSection={activeResearchSection}
+          autonomousSection={activeAutoSection}
           activeFeature={activeFeature}
           activeNav={activeNav}
-          workflowTree={workflowTree}
-          activeNodeId={activeNodeId}
-          setActiveNodeId={setActiveNodeId}
-          addWorkflowNode={addWorkflowNode}
-          createBranchFromNode={createBranchFromNode}
-          updateNodeData={updateNodeData}
-          updateNodeSnapshot={updateNodeSnapshot}
-          resetDownstreamSections={resetDownstreamSections}
-          onNavigate={handleNavigate}
+          assistedResearchProps={{
+            workflowTree,
+            activeNodeId,
+            setActiveNodeId,
+            addWorkflowNode,
+            updateNodeSnapshot,
+            resetDownstreamSessions,
+            onNavigate: handleNavigate,
+          }}
+          sessionsExpanded={sessionsExpanded}
+          onToggleSessions={handleToggleSessions}
           onCreateSection={handleCreateSection}
           onUpdateSectionTitle={handleUpdateSectionTitle}
-          sectionsExpanded={sectionsExpanded}
-          onToggleSections={() => setSectionsExpanded((prev) => !prev)}
+          onRefreshAutoSessions={fetchAutoSections}
         />
       </div>
     </div>

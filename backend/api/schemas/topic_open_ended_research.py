@@ -61,3 +61,30 @@ class TopicOpenEndedResearchStatusResponseBody(BaseModel):
         if not self.result:
             return None
         return self.result.get("research_history")
+
+
+class TopicOpenEndedResearchListItemResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    title: str
+    created_by: UUID
+    created_at: datetime
+    status: Status
+    current_step: StepType | None = None
+    error_message: str | None = None
+    last_updated_at: datetime
+    github_url: str | None = None
+
+
+class TopicOpenEndedResearchListResponseBody(BaseModel):
+    items: list[TopicOpenEndedResearchListItemResponse]
+
+
+class TopicOpenEndedResearchUpdateRequestBody(BaseModel):
+    title: str | None = None
+    status: Status | None = None
+    current_step: StepType | None = None
+    error_message: str | None = None
+    result: dict[str, Any] | None = None
+    github_url: str | None = None

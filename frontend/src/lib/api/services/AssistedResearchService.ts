@@ -97,11 +97,11 @@ export class AssistedResearchService {
      * @returns AssistedResearchLinkResponse Successful Response
      * @throws ApiError
      */
-    public static createLinkAirasV1AssistedResearchLinkGet(
+    public static createLinkAirasV1AssistedResearchLinkPost(
         requestBody: AssistedResearchLinkCreateRequest,
     ): CancelablePromise<AssistedResearchLinkResponse> {
         return __request(OpenAPI, {
-            method: 'GET',
+            method: 'POST',
             url: '/airas/v1/assisted_research/link',
             body: requestBody,
             mediaType: 'application/json',
