@@ -5,8 +5,8 @@ from typing import TypeVar, cast
 from jinja2 import Environment
 from pydantic import BaseModel
 
+from airas.core.llm_config import NodeLLMConfig
 from airas.infra.langchain_client import LangChainClient
-from airas.infra.llm_specs import LLM_MODELS
 from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.summarize_paper import (
     PaperSummary,
 )
@@ -29,7 +29,7 @@ async def _extract_experimental_info_from_study(
     code_str: str,
     template: str,
     llm_client: LangChainClient,
-    llm_name: LLM_MODELS,
+    llm_config: NodeLLMConfig,
 ) -> tuple[str, str]:
     env = Environment()
     jinja_template = env.from_string(template)
@@ -44,7 +44,8 @@ async def _extract_experimental_info_from_study(
         output = await llm_client.structured_outputs(
             message=messages,
             data_model=LLMOutput,
-            llm_name=llm_name,
+            llm_name=llm_config.llm_name,
+            params=llm_config.params,
         )
     except Exception as e:
         logger.error(f"Error extracting experimental info for study: {e}")
@@ -56,7 +57,7 @@ async def _extract_experimental_info_from_study(
 
 
 async def extract_experimental_info(
-    llm_name: LLM_MODELS,
+    llm_config: NodeLLMConfig,
     llm_client: LangChainClient,
     paper_summary_list: list[PaperSummary],
     github_code_list: list[str],
@@ -80,7 +81,7 @@ async def extract_experimental_info(
                 code_str,
                 prompt_template,
                 llm_client,
-                llm_name,
+                llm_config,
             )
 
     results = await asyncio.gather(

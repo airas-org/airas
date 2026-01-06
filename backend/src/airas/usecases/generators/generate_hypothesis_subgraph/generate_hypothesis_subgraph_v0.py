@@ -6,12 +6,11 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLMS
+from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
 from airas.core.types.research_hypothesis import EvaluatedHypothesis, ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
 from airas.infra.langchain_client import LangChainClient
-from airas.infra.llm_specs import LLM_MODELS
 from airas.usecases.generators.generate_hypothesis_subgraph.nodes.evaluate_novelty_and_significance import (
     evaluate_novelty_and_significance,
 )
@@ -29,11 +28,11 @@ record_execution_time = lambda f: time_node("generate_hypothesis_subgraph")(f)  
 
 
 class GenerateHypothesisSubgraphV0LLMMapping(BaseModel):
-    generate_hypothesis: LLM_MODELS = DEFAULT_NODE_LLMS["generate_hypothesis"]
-    evaluate_novelty_and_significance: LLM_MODELS = DEFAULT_NODE_LLMS[
+    generate_hypothesis: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["generate_hypothesis"]
+    evaluate_novelty_and_significance: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
         "evaluate_novelty_and_significance"
     ]
-    refine_hypothesis: LLM_MODELS = DEFAULT_NODE_LLMS["refine_hypothesis"]
+    refine_hypothesis: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["refine_hypothesis"]
 
 
 class GenerateHypothesisSubgraphV0InputState(TypedDict):
@@ -77,7 +76,7 @@ class GenerateHypothesisSubgraphV0:
         self, state: GenerateHypothesisSubgraphV0State
     ) -> dict[str, ResearchHypothesis]:
         research_hypothesis = await generate_hypothesis(
-            llm_name=self.llm_mapping.generate_hypothesis,
+            llm_config=self.llm_mapping.generate_hypothesis,
             llm_client=self.langchain_client,
             research_topic=state["research_topic"],
             research_study_list=state["research_study_list"],
@@ -92,7 +91,7 @@ class GenerateHypothesisSubgraphV0:
             research_topic=state["research_topic"],
             research_study_list=state["research_study_list"],
             research_hypothesis=state.get("research_hypothesis"),
-            llm_name=self.llm_mapping.evaluate_novelty_and_significance,
+            llm_config=self.llm_mapping.evaluate_novelty_and_significance,
             llm_client=self.langchain_client,
         )
         return {
@@ -118,7 +117,7 @@ class GenerateHypothesisSubgraphV0:
         self, state: GenerateHypothesisSubgraphV0State
     ) -> dict[str, ResearchHypothesis | int]:
         refined_hypothesis = await refine_hypothesis(
-            llm_name=self.llm_mapping.refine_hypothesis,
+            llm_config=self.llm_mapping.refine_hypothesis,
             llm_client=self.langchain_client,
             research_topic=state["research_topic"],
             evaluated_hypothesis_history=state["evaluated_hypothesis_history"],

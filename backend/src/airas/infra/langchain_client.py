@@ -167,6 +167,8 @@ class LangChainClient:
                 model=model_name,
                 **langchain_kwargs,
             )
+            if web_search:
+                model = model.bind_tools([{"type": "web_search"}])
 
         elif provider is LLMProvider.OPENAI:
             model = ChatOpenAI(model=llm_name, **langchain_kwargs)
@@ -226,7 +228,20 @@ class LangChainClient:
         """
         model = self._create_chat_model(llm_name, web_search, params)
         response = await model.ainvoke(message)
-        return response.content
+        content = response.content
+
+        # When web_search is enabled, content may be a list of content blocks
+        # Extract text from the content blocks
+        if isinstance(content, list):
+            for item in content:
+                if isinstance(item, dict) and item.get("type") == "text":
+                    return item.get("text", "")
+            logger.warning(
+                f"No text content found in web search response for model {llm_name}"
+            )
+            return ""
+
+        return content
 
     async def structured_outputs(
         self,

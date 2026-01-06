@@ -4,7 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from langgraph.graph import END, START, StateGraph
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
@@ -29,6 +29,7 @@ from airas.infra.db.models.e2e import Status, StepType
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
+    AnalyzeExperimentLLMMapping,
     AnalyzeExperimentSubgraph,
 )
 from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service import (
@@ -47,15 +48,19 @@ from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment
     FetchExperimentResultsSubgraph,
 )
 from airas.usecases.generators.generate_code_subgraph.generate_code_subgraph import (
+    GenerateCodeLLMMapping,
     GenerateCodeSubgraph,
 )
 from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
+    GenerateExperimentalDesignLLMMapping,
     GenerateExperimentalDesignSubgraph,
 )
 from airas.usecases.generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph_v0 import (
     GenerateHypothesisSubgraphV0,
+    GenerateHypothesisSubgraphV0LLMMapping,
 )
 from airas.usecases.generators.generate_queries_subgraph.generate_queries_subgraph import (
+    GenerateQueriesLLMMapping,
     GenerateQueriesSubgraph,
 )
 from airas.usecases.github.github_upload_subgraph import GithubUploadSubgraph
@@ -72,6 +77,7 @@ from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph im
     CompileLatexSubgraph,
 )
 from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
+    GenerateLatexLLMMapping,
     GenerateLatexSubgraph,
 )
 from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
@@ -79,6 +85,7 @@ from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
 )
 from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
+    RetrievePaperSubgraphLLMMapping,
 )
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
@@ -89,12 +96,26 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_fr
 from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
     GenerateBibfileSubgraph,
 )
-from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
+from airas.usecases.writers.write_subgraph.write_subgraph import (
+    WriteLLMMapping,
+    WriteSubgraph,
+)
 
 setup_logging()
 logger = logging.getLogger(__name__)
 
 record_execution_time = lambda f: time_node("execute_e2e")(f)  # noqa: E731
+
+
+class TopicOpenEndedResearchSubgraphLLMMapping(BaseModel):
+    generate_queries: GenerateQueriesLLMMapping | None = None
+    retrieve_paper: RetrievePaperSubgraphLLMMapping | None = None
+    generate_hypothesis: GenerateHypothesisSubgraphV0LLMMapping | None = None
+    generate_experimental_design: GenerateExperimentalDesignLLMMapping | None = None
+    generate_code: GenerateCodeLLMMapping | None = None
+    analyze_experiment: AnalyzeExperimentLLMMapping | None = None
+    write: WriteLLMMapping | None = None
+    generate_latex: GenerateLatexLLMMapping | None = None
 
 
 class TopicOpenEndedResearchInputState(TypedDict):
@@ -167,6 +188,7 @@ class TopicOpenEndedResearchSubgraph:
         experiment_code_validation_iterations: int = 3,
         paper_content_refinement_iterations: int = 2,
         latex_template_name: str = "iclr2024",
+        llm_mapping: TopicOpenEndedResearchSubgraphLLMMapping | None = None,
     ):
         self.search_index = search_index
         self.github_client = github_client
@@ -188,6 +210,7 @@ class TopicOpenEndedResearchSubgraph:
         )
         self.paper_content_refinement_iterations = paper_content_refinement_iterations
         self.latex_template_name = latex_template_name
+        self.llm_mapping = llm_mapping or TopicOpenEndedResearchSubgraphLLMMapping()
 
     @record_execution_time
     def _create_record(self, state: TopicOpenEndedResearchState) -> dict[str, Any]:
@@ -310,6 +333,7 @@ class TopicOpenEndedResearchSubgraph:
             await GenerateQueriesSubgraph(
                 llm_client=self.langchain_client,
                 num_paper_search_queries=self.num_paper_search_queries,
+                llm_mapping=self.llm_mapping.generate_queries,
             )
             .build_graph()
             .ainvoke({"research_topic": state["research_topic"]})
@@ -347,6 +371,7 @@ class TopicOpenEndedResearchSubgraph:
                 langchain_client=self.langchain_client,
                 arxiv_client=self.arxiv_client,
                 github_client=self.github_client,
+                llm_mapping=self.llm_mapping.retrieve_paper,
             )
             .build_graph()
             .ainvoke({"paper_titles": state["paper_titles"]})
@@ -367,6 +392,7 @@ class TopicOpenEndedResearchSubgraph:
             await GenerateHypothesisSubgraphV0(
                 langchain_client=self.langchain_client,
                 refinement_rounds=self.hypothesis_refinement_iterations,
+                llm_mapping=self.llm_mapping.generate_hypothesis,
             )
             .build_graph()
             .ainvoke(
@@ -392,6 +418,7 @@ class TopicOpenEndedResearchSubgraph:
                 langchain_client=self.langchain_client,
                 runner_config=self.runner_config,
                 num_models_to_use=self.num_experiment_models,
+                llm_mapping=self.llm_mapping.generate_experimental_design,
                 num_datasets_to_use=self.num_experiment_datasets,
                 num_comparative_methods=self.num_comparison_methods,
             )
@@ -414,6 +441,7 @@ class TopicOpenEndedResearchSubgraph:
                 langchain_client=self.langchain_client,
                 wandb_config=self.wandb_config,
                 max_code_validations=self.experiment_code_validation_iterations,
+                llm_mapping=self.llm_mapping.generate_code,
             )
             .build_graph()
             .ainvoke(
@@ -654,6 +682,7 @@ class TopicOpenEndedResearchSubgraph:
         result = (
             await AnalyzeExperimentSubgraph(
                 langchain_client=self.langchain_client,
+                llm_mapping=self.llm_mapping.analyze_experiment,
             )
             .build_graph()
             .ainvoke(
@@ -696,6 +725,7 @@ class TopicOpenEndedResearchSubgraph:
             await WriteSubgraph(
                 langchain_client=self.langchain_client,
                 paper_content_refinement_iterations=self.paper_content_refinement_iterations,
+                llm_mapping=self.llm_mapping.write,
             )
             .build_graph()
             .ainvoke(
@@ -726,6 +756,7 @@ class TopicOpenEndedResearchSubgraph:
                 langchain_client=self.langchain_client,
                 github_client=self.github_client,
                 latex_template_name=self.latex_template_name,
+                llm_mapping=self.llm_mapping.generate_latex,
             )
             .build_graph()
             .ainvoke(

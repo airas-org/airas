@@ -6,10 +6,9 @@ from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLMS
+from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
 from airas.infra.langchain_client import LangChainClient
-from airas.infra.llm_specs import LLM_MODELS
 from airas.usecases.generators.generate_queries_subgraph.nodes.generate_queries import (
     generate_queries,
 )
@@ -24,7 +23,7 @@ record_execution_time = lambda f: time_node("generate_queries_subgraph")(f)  # n
 
 
 class GenerateQueriesLLMMapping(BaseModel):
-    generate_queries: LLM_MODELS = DEFAULT_NODE_LLMS["generate_queries"]
+    generate_queries: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["generate_queries"]
 
 
 class GenerateQueriesInputState(TypedDict):
@@ -58,7 +57,7 @@ class GenerateQueriesSubgraph:
         self, state: GenerateQueriesState
     ) -> dict[str, list[str]]:
         generated_queries = await generate_queries(
-            llm_name=self.llm_mapping.generate_queries,
+            llm_config=self.llm_mapping.generate_queries,
             llm_client=self.llm_client,
             prompt_template=generate_queries_prompt,
             research_topic=state["research_topic"],

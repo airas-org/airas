@@ -80,6 +80,7 @@ async def _execute_topic_open_ended_research(
             experiment_code_validation_iterations=request.experiment_code_validation_iterations,
             paper_content_refinement_iterations=request.paper_content_refinement_iterations,
             latex_template_name=request.latex_template_name,
+            llm_mapping=request.llm_mapping,
         ).build_graph()
 
         logger.info(f"[Task {task_id}] Streaming graph execution")

@@ -4,6 +4,7 @@ import logging
 from jinja2 import Environment
 from pydantic import BaseModel
 
+from airas.core.llm_config import NodeLLMConfig
 from airas.core.types.experimental_design import (
     EvaluationMetric,
     ExperimentalDesign,
@@ -12,7 +13,6 @@ from airas.core.types.experimental_design import (
 )
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.infra.langchain_client import LangChainClient
-from airas.infra.llm_specs import LLM_MODELS, OpenAIParams
 from airas.resources.datasets.language_model_fine_tuning_dataset import (
     LANGUAGE_MODEL_FINE_TUNING_DATASETS,
 )
@@ -36,7 +36,7 @@ class LLMOutput(BaseModel):
 
 
 async def generate_experimental_design(
-    llm_name: LLM_MODELS,
+    llm_config: NodeLLMConfig,
     llm_client: LangChainClient,
     research_hypothesis: ResearchHypothesis,
     runner_config: RunnerConfig,
@@ -64,12 +64,11 @@ async def generate_experimental_design(
         "num_comparative_methods": num_comparative_methods,
     }
     messages = template.render(data)
-    params = OpenAIParams(reasoning_effort="high")
     output = await llm_client.structured_outputs(
         message=messages,
         data_model=LLMOutput,
-        llm_name=llm_name,
-        params=params,
+        llm_name=llm_config.llm_name,
+        params=llm_config.params,
     )
     if output is None:
         raise ValueError("No response from LLM in generate_experiment_design.")

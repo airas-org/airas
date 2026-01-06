@@ -84,6 +84,7 @@ async def get_paper_title(
             langchain_client=langchain_client,
             arxiv_client=arxiv_client,
             github_client=github_client,
+            llm_mapping=request.llm_mapping,
         )
         .build_graph()
         .ainvoke(request.model_dump(), config=config)

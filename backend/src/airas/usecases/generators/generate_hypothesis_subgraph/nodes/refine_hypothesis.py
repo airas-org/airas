@@ -1,19 +1,19 @@
 from jinja2 import Environment
 
+from airas.core.llm_config import NodeLLMConfig
 from airas.core.types.research_hypothesis import (
     EvaluatedHypothesis,
     ResearchHypothesis,
 )
 from airas.core.types.research_study import ResearchStudy
 from airas.infra.langchain_client import LangChainClient
-from airas.infra.llm_specs import LLM_MODELS
 from airas.usecases.generators.generate_hypothesis_subgraph.prompts.refine_hypothesis_prompt import (
     refine_hypothesis_prompt,
 )
 
 
 async def refine_hypothesis(
-    llm_name: LLM_MODELS,
+    llm_config: NodeLLMConfig,
     llm_client: LangChainClient,
     research_topic: str,
     evaluated_hypothesis_history: list[EvaluatedHypothesis],
@@ -46,7 +46,8 @@ async def refine_hypothesis(
     output = await llm_client.structured_outputs(
         message=messages,
         data_model=ResearchHypothesis,
-        llm_name=llm_name,
+        llm_name=llm_config.llm_name,
+        params=llm_config.params,
     )
     if output is None:
         raise ValueError("No response from LLM in refine_hypothesis")
