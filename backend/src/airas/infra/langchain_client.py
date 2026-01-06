@@ -161,14 +161,18 @@ class LangChainClient:
                 else llm_name
             )
 
+            # NOTE: OpenRouter supports web search via :online suffix for all models
+            # Native search for: OpenAI, Anthropic, Perplexity, xAI
+            # Exa-powered search for: Google Gemini and other models
+            if web_search:
+                model_name = f"{model_name}:online"
+
             model = ChatOpenAI(
                 api_key=api_key,
                 base_url=base_url,
                 model=model_name,
                 **langchain_kwargs,
             )
-            if web_search:
-                model = model.bind_tools([{"type": "web_search"}])
 
         elif provider is LLMProvider.OPENAI:
             model = ChatOpenAI(model=llm_name, **langchain_kwargs)
@@ -249,6 +253,7 @@ class LangChainClient:
         message: str,
         data_model,
         params: LLMParams | None = None,
+        web_search: bool = False,
     ) -> Any:
         """
         Generate structured data from the specified language model by enforcing the provided schema.
@@ -258,13 +263,14 @@ class LangChainClient:
             message (str): The input message containing the information to extract.
             data_model: The pydantic model used as the target schema for structured output.
             params (LLMParams | None, optional): Additional parameters for the language model. Defaults to None.
+            web_search (bool, optional): Whether to enable web search tools. Defaults to False.
 
         Returns:
             Any: The structured data parsed into the target schema.
         """
         # TODO: The model's max output tokens may cause truncated responses for large structured outputs,
         # resulting in validation errors when required fields are missing such as PaperContent.
-        model = self._create_chat_model(llm_name, params=params)
+        model = self._create_chat_model(llm_name, web_search=web_search, params=params)
         model_with_structure = model.with_structured_output(
             schema=data_model, method="json_schema"
         )
