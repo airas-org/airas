@@ -44,7 +44,7 @@ export const mergeAutoResearchResultSnapshot = (
     if (next[key] !== undefined) return;
     if (Array.isArray(value)) {
       const strings = value.filter(
-        (item): item is string => typeof item === "string" && item.trim(),
+        (item): item is string => typeof item === "string" && item.trim().length > 0,
       );
       if (strings.length) {
         next[key] = strings as never;
