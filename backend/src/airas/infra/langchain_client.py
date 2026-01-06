@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 from typing import Any, get_args
@@ -8,13 +7,13 @@ from langchain_anthropic import ChatAnthropic
 from langchain_aws import ChatBedrockConverse
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
-from pydantic import BaseModel
 
 from airas.infra.llm_specs import (
     ANTHROPIC_MODELS,
     ANTHROPIC_MODELS_FOR_OPENROUTER,
     BEDROCK_MODELS,
     GOOGLE_MODELS,
+    GOOGLE_MODELS_FOR_OPENROUTER,
     LLM_MODELS,
     OPENAI_MODELS,
     OPENROUTER_MODELS,
@@ -102,6 +101,7 @@ class LangChainClient:
         model_to_params: list[tuple[tuple[str, ...], type[LLMParams]]] = [
             (get_args(OPENAI_MODELS), OpenAIParams),
             (get_args(GOOGLE_MODELS), GoogleGenAIParams),
+            (get_args(GOOGLE_MODELS_FOR_OPENROUTER), GoogleGenAIParams),
             (get_args(ANTHROPIC_MODELS), AnthropicParams),
             (get_args(ANTHROPIC_MODELS_FOR_OPENROUTER), AnthropicParams),
             (get_args(BEDROCK_MODELS), AnthropicParams),
@@ -154,18 +154,7 @@ class LangChainClient:
             base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
             api_key = os.getenv("OPENROUTER_API_KEY")
 
-            # NOTE: When using a Google model via OpenRouter, you must add the google/ prefix.
-            model_name = (
-                f"google/{llm_name}"
-                if llm_name in get_args(GOOGLE_MODELS)
-                else llm_name
-            )
-
-            # NOTE: OpenRouter supports web search via :online suffix for all models
-            # Native search for: OpenAI, Anthropic, Perplexity, xAI
-            # Exa-powered search for: Google Gemini and other models
-            if web_search:
-                model_name = f"{model_name}:online"
+            model_name = f"{llm_name}:online" if web_search else llm_name
 
             model = ChatOpenAI(
                 api_key=api_key,
@@ -272,49 +261,7 @@ class LangChainClient:
         # resulting in validation errors when required fields are missing such as PaperContent.
         model = self._create_chat_model(llm_name, web_search=web_search, params=params)
         model_with_structure = model.with_structured_output(
-            schema=data_model, method="json_schema"
+            schema=data_model, method="function_calling"
         )
         response = await model_with_structure.ainvoke(message)
         return response
-
-
-if __name__ == "__main__":
-
-    class UserModel(BaseModel):
-        name: str
-        age: int
-        email: str
-
-    async def main() -> None:
-        client = LangChainClient()
-
-        response = await client.generate(
-            message="Hello, how are you?",
-            # llm_name="gemini-2.5-flash-lite",
-            # llm_name="gpt-5-mini-2025-08-07",
-            # llm_name="claude-sonnet-4-5",
-            # llm_name="anthropic/claude-sonnet-4.5",
-            llm_name="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
-            # llm_name="openai.gpt-oss-120b-1:0",
-            params=None,
-        )
-        print(response)
-
-        message = """
-以下の文章から，名前，年齢，メールアドレスを抽出してください。
-「田中太郎さん（35歳）は、東京在住のソフトウェアエンジニアです。現在、新しいAI技術の研究に取り組んでおり、業界内でも注目を集めています。お問い合わせは、taro.tanaka@example.com までお願いします。」
-"""
-
-        structured = await client.structured_outputs(
-            message=message,
-            data_model=UserModel,
-            # llm_name="gemini-2.5-flash-lite",
-            # llm_name="gpt-5-mini-2025-08-07",
-            # llm_name="claude-sonnet-4-5",
-            # llm_name="anthropic/claude-sonnet-4.5",
-            llm_name="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
-            params=None,
-        )
-        print(structured)
-
-    asyncio.run(main())
