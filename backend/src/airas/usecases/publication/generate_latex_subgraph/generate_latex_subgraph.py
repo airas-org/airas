@@ -5,13 +5,12 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLMS
+from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
 from airas.core.types.latex import LATEX_TEMPLATE_NAME, LATEX_TEMPLATE_REPOSITORY_INFO
 from airas.core.types.paper import PaperContent
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
-from airas.infra.llm_specs import LLM_MODELS
 from airas.usecases.github.nodes.retrieve_github_repository_file import (
     retrieve_github_repository_file,
 )
@@ -31,7 +30,7 @@ record_execution_time = lambda f: time_node("generate_latex_subgraph")(f)  # noq
 
 
 class GenerateLatexLLMMapping(BaseModel):
-    convert_to_latex: LLM_MODELS = DEFAULT_NODE_LLMS["convert_to_latex"]
+    convert_to_latex: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["convert_to_latex"]
 
 
 class GenerateLatexSubgraphInputState(TypedDict):
@@ -91,7 +90,7 @@ class GenerateLatexSubgraph:
         self, state: GenerateLatexSubgraphState
     ) -> dict[str, PaperContent]:
         latex_paper_content = await convert_to_latex(
-            llm_name=self.llm_mapping.convert_to_latex,
+            llm_config=self.llm_mapping.convert_to_latex,
             langchain_client=self.langchain_client,
             paper_content=state["paper_content"],
             references_bib=state["references_bib"],

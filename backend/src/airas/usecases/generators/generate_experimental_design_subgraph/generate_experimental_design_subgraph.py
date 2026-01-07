@@ -5,12 +5,11 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLMS
+from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experimental_design import ExperimentalDesign, RunnerConfig
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.infra.langchain_client import LangChainClient
-from airas.infra.llm_specs import LLM_MODELS
 from airas.usecases.generators.generate_experimental_design_subgraph.nodes.generate_experimental_design import (
     generate_experimental_design,
 )
@@ -22,7 +21,7 @@ record_execution_time = lambda f: time_node("generate_experimental_design_subgra
 
 
 class GenerateExperimentalDesignLLMMapping(BaseModel):
-    generate_experimental_design: LLM_MODELS = DEFAULT_NODE_LLMS[
+    generate_experimental_design: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
         "generate_experimental_design"
     ]
 
@@ -64,7 +63,7 @@ class GenerateExperimentalDesignSubgraph:
         self, state: GenerateExperimentalDesignState
     ) -> dict[str, ExperimentalDesign]:
         experimental_design = await generate_experimental_design(
-            llm_name=self.llm_mapping.generate_experimental_design,
+            llm_config=self.llm_mapping.generate_experimental_design,
             llm_client=self.langchain_client,
             research_hypothesis=state["research_hypothesis"],
             runner_config=self.runner_config,

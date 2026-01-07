@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLMS
+from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
@@ -13,7 +13,6 @@ from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.infra.langchain_client import LangChainClient
-from airas.infra.llm_specs import LLM_MODELS
 from airas.usecases.analyzers.analyze_experiment_subgraph.nodes.analyze_experiment import (
     analyze_experiment,
 )
@@ -25,7 +24,7 @@ record_execution_time = lambda f: time_node("analyze_experiment_subgraph")(f)  #
 
 
 class AnalyzeExperimentLLMMapping(BaseModel):
-    analyze_experiment: LLM_MODELS = DEFAULT_NODE_LLMS["analyze_experiment"]
+    analyze_experiment: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["analyze_experiment"]
 
 
 class AnalyzeExperimentSubgraphInputState(TypedDict):
@@ -61,12 +60,12 @@ class AnalyzeExperimentSubgraph:
         self, state: AnalyzeExperimentSubgraphState
     ) -> dict[str, ExperimentalAnalysis]:
         analysis_report = await analyze_experiment(
-            llm_name=self.llm_mapping.analyze_experiment,
+            llm_config=self.llm_mapping.analyze_experiment,
+            langchain_client=self.langchain_client,
             research_hypothesis=state["research_hypothesis"],
             experimental_design=state["experimental_design"],
             experiment_code=state["experiment_code"],
             experimental_results=state["experimental_results"],
-            langchain_client=self.langchain_client,
         )
         experimental_analysis = ExperimentalAnalysis(analysis_report=analysis_report)
         return {"experimental_analysis": experimental_analysis}

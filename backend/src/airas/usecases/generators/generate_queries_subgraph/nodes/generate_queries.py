@@ -1,8 +1,8 @@
 from jinja2 import Environment
 from pydantic import BaseModel
 
+from airas.core.llm_config import NodeLLMConfig
 from airas.infra.langchain_client import LangChainClient
-from airas.infra.llm_specs import LLM_MODELS
 
 # def _build_generated_query_model(n_queries: int) -> type[BaseModel]:
 #     fields = {f"generated_query_{i + 1}": (str, ...) for i in range(n_queries)}
@@ -14,7 +14,7 @@ class LLMOutput(BaseModel):
 
 
 async def generate_queries(
-    llm_name: LLM_MODELS,
+    llm_config: NodeLLMConfig,
     llm_client: LangChainClient,
     prompt_template: str,
     research_topic: str,
@@ -31,7 +31,10 @@ async def generate_queries(
 
     # DynamicLLMOutput = _build_generated_query_model(num_paper_search_queries)
     output = await llm_client.structured_outputs(
-        llm_name=llm_name, message=messages, data_model=LLMOutput
+        message=messages,
+        data_model=LLMOutput,
+        llm_name=llm_config.llm_name,
+        params=llm_config.params,
     )
     if output is None:
         raise ValueError("Error: No response from LLM in generate_queries_node.")

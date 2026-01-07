@@ -1,29 +1,26 @@
 import asyncio
-import json
 import logging
 
 from jinja2 import Environment
+from pydantic import BaseModel
 
+from airas.core.llm_config import NodeLLMConfig
 from airas.infra.langchain_client import LangChainClient
-from airas.infra.llm_specs import OPENAI_MODELS
 
 logger = logging.getLogger(__name__)
 
-OPENAI_MODELS_SET = set(OPENAI_MODELS.__args__)
+
+class ArxivIdOutput(BaseModel):
+    arxiv_id: str
 
 
 async def search_arxiv_id_from_title(
-    llm_name: OPENAI_MODELS,
+    llm_config: NodeLLMConfig,
     llm_client: LangChainClient,
     prompt_template: str,
     paper_titles: list[str],
     conference_preference: str | None = None,
 ) -> list[str]:
-    # TODO:Reflect the following judgment logic in llm_config.py.
-    if llm_name not in OPENAI_MODELS_SET:
-        raise ValueError(
-            f"It needs to be an OpenAI model. Invalid model name: {llm_name}"
-        )
     template = Environment().from_string(prompt_template)
 
     async def _retrieve_arxiv_id(title: str) -> str:
@@ -34,30 +31,37 @@ async def search_arxiv_id_from_title(
             }
         )
         try:
-            output = await llm_client.generate(
-                message=prompt, llm_name=llm_name, web_search=True
+            output = await llm_client.structured_outputs(
+                llm_name=llm_config.llm_name,
+                message=prompt,
+                data_model=ArxivIdOutput,
+                params=llm_config.params,
+                web_search=True,
             )
+
+            if output is None:
+                logger.warning(f"No output received for '{title}'")
+                return ""
+
+            if isinstance(output, ArxivIdOutput):
+                arxiv_id = output.arxiv_id
+            elif isinstance(output, dict):
+                arxiv_id = output.get("arxiv_id", "")
+            else:
+                logger.warning(f"Unexpected output type for '{title}': {type(output)}")
+                return ""
+
+            arxiv_id = arxiv_id.strip()
+            if not arxiv_id:
+                logger.warning(f"No arXiv ID found for '{title}'.")
+                return ""
+
+            logger.info(f"Found arXiv ID for '{title}': {arxiv_id}")
+            return arxiv_id
+
         except Exception as e:
             logger.error(f"Web search failed for '{title}': {e}")
             return ""
-
-        output_dict: dict | None = None
-        for output_item in output:
-            if output_item.get("text"):
-                output_dict = json.loads(output_item.get("text"))
-        if not output_dict:
-            logger.warning(
-                "No output received for '%s'. Appending empty result.", title
-            )
-            return ""
-
-        arxiv_id = output_dict.get("arxiv_id", "").strip()
-        if not arxiv_id:
-            logger.warning("No arXiv ID found for '%s'.", title)
-            return ""
-
-        logger.info(f"Found arXiv ID for '{title}': {arxiv_id}")
-        return arxiv_id
 
     logger.info(f"Processing {len(paper_titles)} paper titles")
     arxiv_id_list: list[str] = list(

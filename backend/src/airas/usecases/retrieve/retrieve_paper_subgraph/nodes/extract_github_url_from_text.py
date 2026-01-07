@@ -6,9 +6,9 @@ from urllib.parse import urlparse
 from jinja2 import Environment, Template
 from pydantic import BaseModel, field_validator
 
+from airas.core.llm_config import NodeLLMConfig
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
-from airas.infra.llm_specs import LLM_MODELS
 from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.summarize_paper import (
     PaperSummary,
 )
@@ -68,7 +68,7 @@ async def _select_github_url(
     candidates: list[str],
     prompt_template: Template,
     llm_client: LangChainClient,
-    llm_name: LLM_MODELS,
+    llm_config: NodeLLMConfig,
 ) -> str:
     messages = prompt_template.render(
         {
@@ -79,7 +79,8 @@ async def _select_github_url(
     output = await llm_client.structured_outputs(
         message=messages,
         data_model=LLMOutput,
-        llm_name=llm_name,
+        llm_name=llm_config.llm_name,
+        params=llm_config.params,
     )
 
     if output is None:
@@ -99,7 +100,7 @@ async def _select_github_url(
 
 
 async def extract_github_url_from_text(
-    llm_name: LLM_MODELS,
+    llm_config: NodeLLMConfig,
     prompt_template: str,
     arxiv_full_text_list: list[str],
     paper_summary_list: list[PaperSummary],
@@ -124,7 +125,7 @@ async def extract_github_url_from_text(
             candidates=candidates,
             prompt_template=template,
             llm_client=llm_client,
-            llm_name=llm_name,
+            llm_config=llm_config,
         )
 
     github_url_list: list[str] = list(

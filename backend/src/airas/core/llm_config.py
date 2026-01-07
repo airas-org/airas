@@ -2,14 +2,9 @@ from pydantic import BaseModel
 
 from airas.infra.llm_specs import (
     LLM_MODELS,
-    OPENAI_MODELS,
     LLMParams,
     OpenAIParams,
 )
-
-LLM_CONFIG_TYPE = dict[str, LLM_MODELS | OPENAI_MODELS]
-
-BASE_MODEL: LLM_MODELS = "gpt-5-nano-2025-08-07"
 
 
 class NodeLLMConfig(BaseModel):
@@ -17,63 +12,45 @@ class NodeLLMConfig(BaseModel):
     params: LLMParams | None = None
 
 
+BASE_CONFIG = NodeLLMConfig(llm_name="gpt-5-nano-2025-08-07")
+SEARCH_CONFIG = NodeLLMConfig(
+    llm_name="gpt-5-nano-2025-08-07"
+)  # NOTE: Currently, web search only supports OpenAI models.
+CODING_CONFIG = NodeLLMConfig(
+    llm_name="o3-2025-04-16", params=OpenAIParams(reasoning_effort="high")
+)
+
 DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
-    # GenerateCodeSubgraph
-    "generate_run_config": NodeLLMConfig(
-        llm_name="o3-2025-04-16",
-        params=OpenAIParams(reasoning_effort="high"),
-    ),
-    "generate_experiment_code": NodeLLMConfig(
-        llm_name="o3-2025-04-16",
-        params=OpenAIParams(reasoning_effort="high"),
-    ),
-    "validate_experiment_code": NodeLLMConfig(
-        llm_name="o3-2025-04-16",
-        params=OpenAIParams(reasoning_effort="high"),
-    ),
-}
-
-
-# fmt:off
-DEFAULT_NODE_LLMS: LLM_CONFIG_TYPE = {
-    # --- features/retrievers ---
+    # retrieve/
     # GenerateQueriesSubgraph
-    "generate_queries": BASE_MODEL,
+    "generate_queries": BASE_CONFIG,
     # RetrievePaperSubgraph
-    "search_arxiv_id_from_title": BASE_MODEL,
-    "summarize_paper":BASE_MODEL,
-    "extract_github_url_from_text":BASE_MODEL,
-    "extract_experimental_info":BASE_MODEL,
-    "extract_reference_titles":BASE_MODEL,
-
-    # --- features/generators ---
+    "search_arxiv_id_from_title": SEARCH_CONFIG,
+    "summarize_paper": BASE_CONFIG,
+    "extract_github_url_from_text": BASE_CONFIG,
+    "extract_experimental_info": BASE_CONFIG,
+    "extract_reference_titles": BASE_CONFIG,
+    # generators/
     # GenerateHypothesisV0Subgraph
-    "generate_hypothesis": BASE_MODEL,
-    "evaluate_novelty_and_significance": BASE_MODEL,
-    "refine_hypothesis": BASE_MODEL,
+    "generate_hypothesis": BASE_CONFIG,
+    "evaluate_novelty_and_significance": BASE_CONFIG,
+    "refine_hypothesis": BASE_CONFIG,
     # GenerateExperimentalDesignSubgraph
-    "generate_experimental_design": BASE_MODEL,
-
-    # --- features/analyzers ---
+    "generate_experimental_design": BASE_CONFIG,
+    # GenerateCodeSubgraph
+    "generate_run_config": CODING_CONFIG,
+    "generate_experiment_code": CODING_CONFIG,
+    "validate_experiment_code": CODING_CONFIG,
+    # analyzers/
     # AnalyzeExperimentSubgraph
-    "analyze_experiment": BASE_MODEL,
-
-    # --- features/write ---
+    "analyze_experiment": BASE_CONFIG,
+    # writes/
     # WriterSubgraph
-    "write_paper": BASE_MODEL,
-    "refine_paper": BASE_MODEL,
-
-    # --- features/publication ---
+    "write_paper": BASE_CONFIG,
+    "refine_paper": BASE_CONFIG,
+    # publication/
     # GenerateLatexSubgraph
-    "convert_to_latex": BASE_MODEL,
-
-    # --- others ---
-    # RetrieveHuggingFaceSubgraph
-    "select_resources": BASE_MODEL,
-    "extract_code_in_readme": BASE_MODEL,
-    # CreateMethodSubgraph
-    "improve_method": BASE_MODEL,
+    "convert_to_latex": BASE_CONFIG,
     # GenerateHtmlSubgraph
-    "convert_to_html": BASE_MODEL,
+    "convert_to_html": BASE_CONFIG,
 }
-# fmt: on

@@ -109,6 +109,16 @@ class AnthropicParams(BaseModel):
     provider_type: Literal["anthropic"] = "anthropic"
 
 
+GOOGLE_MODELS_FOR_OPENROUTER: TypeAlias = Literal[
+    "google/gemini-3-pro-preview",
+    "google/gemini-2.5-pro",
+    "google/gemini-2.5-flash",
+    "google/gemini-2.5-flash-lite",
+    "google/gemini-2.0-flash",
+    "google/gemini-2.0-flash-lite",
+    "google/gemini-embedding-001",
+]
+
 ANTHROPIC_MODELS_FOR_OPENROUTER: TypeAlias = Literal[
     "anthropic/claude-opus-4.5",
     "anthropic/claude-sonnet-4.5",
@@ -121,7 +131,7 @@ ANTHROPIC_MODELS_FOR_OPENROUTER: TypeAlias = Literal[
 ]
 
 OPENROUTER_MODELS: TypeAlias = Literal[
-    *get_args(GOOGLE_MODELS),
+    *get_args(GOOGLE_MODELS_FOR_OPENROUTER),
     *get_args(OPENAI_MODELS),
     *get_args(ANTHROPIC_MODELS_FOR_OPENROUTER),
 ]

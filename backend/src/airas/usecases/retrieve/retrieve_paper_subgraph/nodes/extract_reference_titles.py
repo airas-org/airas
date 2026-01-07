@@ -5,8 +5,8 @@ from logging import getLogger
 from jinja2 import Environment
 from pydantic import BaseModel
 
+from airas.core.llm_config import NodeLLMConfig
 from airas.infra.langchain_client import LangChainClient
-from airas.infra.llm_specs import LLM_MODELS
 from airas.usecases.retrieve.retrieve_paper_subgraph.prompt.extract_reference_titles_prompt import (
     extract_reference_titles_prompt,
 )
@@ -32,7 +32,7 @@ async def _extract_references_from_text(
     full_text: str,
     template: str,
     llm_client: LangChainClient,
-    llm_name: LLM_MODELS,
+    llm_config: NodeLLMConfig,
     context_label: str,
 ) -> list[str]:
     if not full_text.strip():
@@ -48,7 +48,8 @@ async def _extract_references_from_text(
         output = await llm_client.structured_outputs(
             message=messages,
             data_model=LLMOutput,
-            llm_name=llm_name,
+            llm_name=llm_config.llm_name,
+            params=llm_config.params,
         )
     except Exception as e:
         logger.error(f"Error extracting references for {context_label}: {e}")
@@ -79,7 +80,7 @@ def _deduplicate_titles(reference_titles: list[str]) -> list[str]:
 
 
 async def extract_reference_titles(
-    llm_name: LLM_MODELS,
+    llm_config: NodeLLMConfig,
     llm_client: LangChainClient,
     arxiv_full_text_list: list[str],
 ) -> list[list[str]]:
@@ -93,7 +94,7 @@ async def extract_reference_titles(
             full_text=full_text,
             template=extract_reference_titles_prompt,
             llm_client=llm_client,
-            llm_name=llm_name,
+            llm_config=llm_config,
             context_label=f"paper-{paper_idx}",
         )
         return _deduplicate_titles(refs)

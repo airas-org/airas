@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLMS
+from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
@@ -17,7 +17,6 @@ from airas.core.types.paper import PaperContent
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
 from airas.infra.langchain_client import LangChainClient
-from airas.infra.llm_specs import LLM_MODELS
 from airas.usecases.writers.write_subgraph.nodes.generate_note import generate_note
 from airas.usecases.writers.write_subgraph.nodes.refine_paper import refine_paper
 from airas.usecases.writers.write_subgraph.nodes.write_paper import write_paper
@@ -28,8 +27,8 @@ record_execution_time = lambda f: time_node("write_subgraph")(f)  # noqa: E731
 
 
 class WriteLLMMapping(BaseModel):
-    write_paper: LLM_MODELS = DEFAULT_NODE_LLMS["write_paper"]
-    refine_paper: LLM_MODELS = DEFAULT_NODE_LLMS["refine_paper"]
+    write_paper: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["write_paper"]
+    refine_paper: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["refine_paper"]
 
 
 class WriteSubgraphInputState(TypedDict):
@@ -96,7 +95,7 @@ class WriteSubgraph:
     @record_execution_time
     async def _write_paper(self, state: WriteSubgraphState) -> dict[str, PaperContent]:
         paper_content = await write_paper(
-            llm_name=self.llm_mapping.write_paper,
+            llm_config=self.llm_mapping.write_paper,
             langchain_client=self.langchain_client,
             note=state["note"],
         )
@@ -107,7 +106,7 @@ class WriteSubgraph:
         self, state: WriteSubgraphState
     ) -> Command[Literal["refine_paper", "__end__"]]:
         paper_content = await refine_paper(
-            llm_name=self.llm_mapping.refine_paper,
+            llm_config=self.llm_mapping.refine_paper,
             langchain_client=self.langchain_client,
             paper_content=state["paper_content"],
             note=state["note"],

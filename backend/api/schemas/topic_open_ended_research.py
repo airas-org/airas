@@ -9,6 +9,9 @@ from airas.core.types.github import GitHubConfig
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.wandb import WandbConfig
 from airas.infra.db.models.e2e import Status, StepType
+from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_subgraph import (
+    TopicOpenEndedResearchSubgraphLLMMapping,
+)
 
 
 class TopicOpenEndedResearchRequestBody(BaseModel):
@@ -26,6 +29,7 @@ class TopicOpenEndedResearchRequestBody(BaseModel):
     experiment_code_validation_iterations: int = 3
     paper_content_refinement_iterations: int = 2
     latex_template_name: str = "iclr2024"
+    llm_mapping: TopicOpenEndedResearchSubgraphLLMMapping | None = None
 
 
 class TopicOpenEndedResearchResponseBody(BaseModel):

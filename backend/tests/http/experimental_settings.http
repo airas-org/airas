@@ -18,8 +18,5 @@ Content-Type: application/json
     },
     "num_models_to_use": 2,
     "num_datasets_to_use": 2,
-    "num_comparative_methods": 2,
-    "llm_mapping": {
-        "generate_experimental_design": "gpt-5.2-2025-12-11"
-    }
+    "num_comparative_methods": 2
 }
