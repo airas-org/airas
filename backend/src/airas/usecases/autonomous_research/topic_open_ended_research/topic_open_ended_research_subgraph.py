@@ -508,7 +508,7 @@ class TopicOpenEndedResearchSubgraph:
             await PollGithubActionsSubgraph(github_client=self.github_client)
             .build_graph()
             .ainvoke(
-                {"github_config": state["github_config"]}, {"recursion_limit": 300}
+                {"github_config": state["github_config"]}, {"recursion_limit": 1000}
             )
         )
 
@@ -579,7 +579,7 @@ class TopicOpenEndedResearchSubgraph:
             result = (
                 await PollGithubActionsSubgraph(github_client=self.github_client)
                 .build_graph()
-                .ainvoke({"github_config": branch_config}, {"recursion_limit": 300})
+                .ainvoke({"github_config": branch_config}, {"recursion_limit": 1000})
             )
 
             status: GitHubActionsStatus | None = result.get("status")
@@ -645,7 +645,7 @@ class TopicOpenEndedResearchSubgraph:
             await PollGithubActionsSubgraph(github_client=self.github_client)
             .build_graph()
             .ainvoke(
-                {"github_config": state["github_config"]}, {"recursion_limit": 300}
+                {"github_config": state["github_config"]}, {"recursion_limit": 1000}
             )
         )
 
@@ -820,7 +820,7 @@ class TopicOpenEndedResearchSubgraph:
             await PollGithubActionsSubgraph(github_client=self.github_client)
             .build_graph()
             .ainvoke(
-                {"github_config": state["github_config"]}, {"recursion_limit": 300}
+                {"github_config": state["github_config"]}, {"recursion_limit": 1000}
             )
         )
 
