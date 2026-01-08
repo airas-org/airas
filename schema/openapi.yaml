@@ -859,87 +859,9 @@ components:
     AnalyzeExperimentLLMMapping:
       properties:
         analyze_experiment:
-          anyOf:
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-          - type: string
-            enum:
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-          - type: string
-            enum:
-            - claude-opus-4-5
-            - claude-sonnet-4-5
-            - claude-haiku-4-5
-            - claude-opus-4-1
-            - claude-opus-4
-            - claude-sonnet-4
-            - claude-3-7-sonnet
-            - claude-3-5-haiku
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-            - anthropic/claude-opus-4.5
-            - anthropic/claude-sonnet-4.5
-            - anthropic/claude-haiku-4.5
-            - anthropic/claude-opus-4.1
-            - anthropic/claude-opus-4
-            - anthropic/claude-sonnet-4
-            - anthropic/claude-3.7-sonnet
-            - anthropic/claude-3.5-haiku
-          - type: string
-            enum:
-            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-opus-4-5-20251101-v1:0
-            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-sonnet-4-20250514-v1:0
-            - global.anthropic.claude-haiku-4-5-20251001-v1:0
-            - openai.gpt-oss-120b-1:0
-          title: Analyze Experiment
-          default: gpt-5-nano-2025-08-07
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5-nano-2025-08-07
       type: object
       title: AnalyzeExperimentLLMMapping
     AnalyzeExperimentRequestBody:
@@ -1723,87 +1645,9 @@ components:
     GenerateExperimentalDesignLLMMapping:
       properties:
         generate_experimental_design:
-          anyOf:
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-          - type: string
-            enum:
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-          - type: string
-            enum:
-            - claude-opus-4-5
-            - claude-sonnet-4-5
-            - claude-haiku-4-5
-            - claude-opus-4-1
-            - claude-opus-4
-            - claude-sonnet-4
-            - claude-3-7-sonnet
-            - claude-3-5-haiku
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-            - anthropic/claude-opus-4.5
-            - anthropic/claude-sonnet-4.5
-            - anthropic/claude-haiku-4.5
-            - anthropic/claude-opus-4.1
-            - anthropic/claude-opus-4
-            - anthropic/claude-sonnet-4
-            - anthropic/claude-3.7-sonnet
-            - anthropic/claude-3.5-haiku
-          - type: string
-            enum:
-            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-opus-4-5-20251101-v1:0
-            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-sonnet-4-20250514-v1:0
-            - global.anthropic.claude-haiku-4-5-20251001-v1:0
-            - openai.gpt-oss-120b-1:0
-          title: Generate Experimental Design
-          default: gpt-5-nano-2025-08-07
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5-nano-2025-08-07
       type: object
       title: GenerateExperimentalDesignLLMMapping
     GenerateExperimentalDesignSubgraphRequestBody:
@@ -1852,251 +1696,17 @@ components:
     GenerateHypothesisSubgraphV0LLMMapping:
       properties:
         generate_hypothesis:
-          anyOf:
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-          - type: string
-            enum:
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-          - type: string
-            enum:
-            - claude-opus-4-5
-            - claude-sonnet-4-5
-            - claude-haiku-4-5
-            - claude-opus-4-1
-            - claude-opus-4
-            - claude-sonnet-4
-            - claude-3-7-sonnet
-            - claude-3-5-haiku
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-            - anthropic/claude-opus-4.5
-            - anthropic/claude-sonnet-4.5
-            - anthropic/claude-haiku-4.5
-            - anthropic/claude-opus-4.1
-            - anthropic/claude-opus-4
-            - anthropic/claude-sonnet-4
-            - anthropic/claude-3.7-sonnet
-            - anthropic/claude-3.5-haiku
-          - type: string
-            enum:
-            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-opus-4-5-20251101-v1:0
-            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-sonnet-4-20250514-v1:0
-            - global.anthropic.claude-haiku-4-5-20251001-v1:0
-            - openai.gpt-oss-120b-1:0
-          title: Generate Hypothesis
-          default: gpt-5-nano-2025-08-07
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5-nano-2025-08-07
         evaluate_novelty_and_significance:
-          anyOf:
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-          - type: string
-            enum:
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-          - type: string
-            enum:
-            - claude-opus-4-5
-            - claude-sonnet-4-5
-            - claude-haiku-4-5
-            - claude-opus-4-1
-            - claude-opus-4
-            - claude-sonnet-4
-            - claude-3-7-sonnet
-            - claude-3-5-haiku
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-            - anthropic/claude-opus-4.5
-            - anthropic/claude-sonnet-4.5
-            - anthropic/claude-haiku-4.5
-            - anthropic/claude-opus-4.1
-            - anthropic/claude-opus-4
-            - anthropic/claude-sonnet-4
-            - anthropic/claude-3.7-sonnet
-            - anthropic/claude-3.5-haiku
-          - type: string
-            enum:
-            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-opus-4-5-20251101-v1:0
-            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-sonnet-4-20250514-v1:0
-            - global.anthropic.claude-haiku-4-5-20251001-v1:0
-            - openai.gpt-oss-120b-1:0
-          title: Evaluate Novelty And Significance
-          default: gpt-5-nano-2025-08-07
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5-nano-2025-08-07
         refine_hypothesis:
-          anyOf:
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-          - type: string
-            enum:
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-          - type: string
-            enum:
-            - claude-opus-4-5
-            - claude-sonnet-4-5
-            - claude-haiku-4-5
-            - claude-opus-4-1
-            - claude-opus-4
-            - claude-sonnet-4
-            - claude-3-7-sonnet
-            - claude-3-5-haiku
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-            - anthropic/claude-opus-4.5
-            - anthropic/claude-sonnet-4.5
-            - anthropic/claude-haiku-4.5
-            - anthropic/claude-opus-4.1
-            - anthropic/claude-opus-4
-            - anthropic/claude-sonnet-4
-            - anthropic/claude-3.7-sonnet
-            - anthropic/claude-3.5-haiku
-          - type: string
-            enum:
-            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-opus-4-5-20251101-v1:0
-            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-sonnet-4-20250514-v1:0
-            - global.anthropic.claude-haiku-4-5-20251001-v1:0
-            - openai.gpt-oss-120b-1:0
-          title: Refine Hypothesis
-          default: gpt-5-nano-2025-08-07
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5-nano-2025-08-07
       type: object
       title: GenerateHypothesisSubgraphV0LLMMapping
     GenerateHypothesisSubgraphV0RequestBody:
@@ -2141,87 +1751,9 @@ components:
     GenerateLatexLLMMapping:
       properties:
         convert_to_latex:
-          anyOf:
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-          - type: string
-            enum:
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-          - type: string
-            enum:
-            - claude-opus-4-5
-            - claude-sonnet-4-5
-            - claude-haiku-4-5
-            - claude-opus-4-1
-            - claude-opus-4
-            - claude-sonnet-4
-            - claude-3-7-sonnet
-            - claude-3-5-haiku
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-            - anthropic/claude-opus-4.5
-            - anthropic/claude-sonnet-4.5
-            - anthropic/claude-haiku-4.5
-            - anthropic/claude-opus-4.1
-            - anthropic/claude-opus-4
-            - anthropic/claude-sonnet-4
-            - anthropic/claude-3.7-sonnet
-            - anthropic/claude-3.5-haiku
-          - type: string
-            enum:
-            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-opus-4-5-20251101-v1:0
-            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-sonnet-4-20250514-v1:0
-            - global.anthropic.claude-haiku-4-5-20251001-v1:0
-            - openai.gpt-oss-120b-1:0
-          title: Convert To Latex
-          default: gpt-5-nano-2025-08-07
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5-nano-2025-08-07
       type: object
       title: GenerateLatexLLMMapping
     GenerateLatexSubgraphRequestBody:
@@ -2264,6 +1796,14 @@ components:
       - latex_text
       - execution_time
       title: GenerateLatexSubgraphResponseBody
+    GenerateQueriesLLMMapping:
+      properties:
+        generate_queries:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5-nano-2025-08-07
+      type: object
+      title: GenerateQueriesLLMMapping
     GitHubConfig:
       properties:
         github_owner:
@@ -2749,13 +2289,13 @@ components:
             - claude-3-5-haiku
           - type: string
             enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
+            - google/gemini-3-pro-preview
+            - google/gemini-2.5-pro
+            - google/gemini-2.5-flash
+            - google/gemini-2.5-flash-lite
+            - google/gemini-2.0-flash
+            - google/gemini-2.0-flash-lite
+            - google/gemini-embedding-001
             - gpt-5.2-pro-2025-12-11
             - gpt-5.2-2025-12-11
             - gpt-5.1-2025-11-13
@@ -3391,354 +2931,25 @@ components:
     RetrievePaperSubgraphLLMMapping:
       properties:
         search_arxiv_id_from_title:
-          type: string
-          enum:
-          - gpt-5.2-pro-2025-12-11
-          - gpt-5.2-2025-12-11
-          - gpt-5.1-2025-11-13
-          - gpt-5-pro-2025-10-06
-          - gpt-5-codex
-          - gpt-5-2025-08-07
-          - gpt-5-mini-2025-08-07
-          - gpt-5-nano-2025-08-07
-          - gpt-4.1-2025-04-14
-          - gpt-4o-2024-11-20
-          - gpt-4o-mini-2024-07-18
-          - o4-mini-2025-04-16
-          - o3-2025-04-16
-          - o3-mini-2025-01-31
-          - o1-pro-2025-03-19
-          - o1-2024-12-17
-          title: Search Arxiv Id From Title
-          default: gpt-5-nano-2025-08-07
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5-nano-2025-08-07
         summarize_paper:
-          anyOf:
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-          - type: string
-            enum:
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-          - type: string
-            enum:
-            - claude-opus-4-5
-            - claude-sonnet-4-5
-            - claude-haiku-4-5
-            - claude-opus-4-1
-            - claude-opus-4
-            - claude-sonnet-4
-            - claude-3-7-sonnet
-            - claude-3-5-haiku
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-            - anthropic/claude-opus-4.5
-            - anthropic/claude-sonnet-4.5
-            - anthropic/claude-haiku-4.5
-            - anthropic/claude-opus-4.1
-            - anthropic/claude-opus-4
-            - anthropic/claude-sonnet-4
-            - anthropic/claude-3.7-sonnet
-            - anthropic/claude-3.5-haiku
-          - type: string
-            enum:
-            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-opus-4-5-20251101-v1:0
-            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-sonnet-4-20250514-v1:0
-            - global.anthropic.claude-haiku-4-5-20251001-v1:0
-            - openai.gpt-oss-120b-1:0
-          title: Summarize Paper
-          default: gpt-5-nano-2025-08-07
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5-nano-2025-08-07
         extract_github_url_from_text:
-          anyOf:
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-          - type: string
-            enum:
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-          - type: string
-            enum:
-            - claude-opus-4-5
-            - claude-sonnet-4-5
-            - claude-haiku-4-5
-            - claude-opus-4-1
-            - claude-opus-4
-            - claude-sonnet-4
-            - claude-3-7-sonnet
-            - claude-3-5-haiku
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-            - anthropic/claude-opus-4.5
-            - anthropic/claude-sonnet-4.5
-            - anthropic/claude-haiku-4.5
-            - anthropic/claude-opus-4.1
-            - anthropic/claude-opus-4
-            - anthropic/claude-sonnet-4
-            - anthropic/claude-3.7-sonnet
-            - anthropic/claude-3.5-haiku
-          - type: string
-            enum:
-            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-opus-4-5-20251101-v1:0
-            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-sonnet-4-20250514-v1:0
-            - global.anthropic.claude-haiku-4-5-20251001-v1:0
-            - openai.gpt-oss-120b-1:0
-          title: Extract Github Url From Text
-          default: gpt-5-nano-2025-08-07
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5-nano-2025-08-07
         extract_experimental_info:
-          anyOf:
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-          - type: string
-            enum:
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-          - type: string
-            enum:
-            - claude-opus-4-5
-            - claude-sonnet-4-5
-            - claude-haiku-4-5
-            - claude-opus-4-1
-            - claude-opus-4
-            - claude-sonnet-4
-            - claude-3-7-sonnet
-            - claude-3-5-haiku
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-            - anthropic/claude-opus-4.5
-            - anthropic/claude-sonnet-4.5
-            - anthropic/claude-haiku-4.5
-            - anthropic/claude-opus-4.1
-            - anthropic/claude-opus-4
-            - anthropic/claude-sonnet-4
-            - anthropic/claude-3.7-sonnet
-            - anthropic/claude-3.5-haiku
-          - type: string
-            enum:
-            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-opus-4-5-20251101-v1:0
-            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-sonnet-4-20250514-v1:0
-            - global.anthropic.claude-haiku-4-5-20251001-v1:0
-            - openai.gpt-oss-120b-1:0
-          title: Extract Experimental Info
-          default: gpt-5-nano-2025-08-07
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5-nano-2025-08-07
         extract_reference_titles:
-          anyOf:
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-          - type: string
-            enum:
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-          - type: string
-            enum:
-            - claude-opus-4-5
-            - claude-sonnet-4-5
-            - claude-haiku-4-5
-            - claude-opus-4-1
-            - claude-opus-4
-            - claude-sonnet-4
-            - claude-3-7-sonnet
-            - claude-3-5-haiku
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-            - anthropic/claude-opus-4.5
-            - anthropic/claude-sonnet-4.5
-            - anthropic/claude-haiku-4.5
-            - anthropic/claude-opus-4.1
-            - anthropic/claude-opus-4
-            - anthropic/claude-sonnet-4
-            - anthropic/claude-3.7-sonnet
-            - anthropic/claude-3.5-haiku
-          - type: string
-            enum:
-            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-opus-4-5-20251101-v1:0
-            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-sonnet-4-20250514-v1:0
-            - global.anthropic.claude-haiku-4-5-20251001-v1:0
-            - openai.gpt-oss-120b-1:0
-          title: Extract Reference Titles
-          default: gpt-5-nano-2025-08-07
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5-nano-2025-08-07
       type: object
       title: RetrievePaperSubgraphLLMMapping
     RetrievePaperSubgraphRequestBody:
@@ -4012,6 +3223,10 @@ components:
           type: string
           title: Latex Template Name
           default: iclr2024
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/TopicOpenEndedResearchSubgraphLLMMapping'
+          - type: 'null'
       type: object
       required:
       - github_config
@@ -4099,6 +3314,42 @@ components:
       - error
       - research_history
       title: TopicOpenEndedResearchStatusResponseBody
+    TopicOpenEndedResearchSubgraphLLMMapping:
+      properties:
+        generate_queries:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateQueriesLLMMapping'
+          - type: 'null'
+        retrieve_paper:
+          anyOf:
+          - $ref: '#/components/schemas/RetrievePaperSubgraphLLMMapping'
+          - type: 'null'
+        generate_hypothesis:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateHypothesisSubgraphV0LLMMapping'
+          - type: 'null'
+        generate_experimental_design:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateExperimentalDesignLLMMapping'
+          - type: 'null'
+        generate_code:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateCodeLLMMapping'
+          - type: 'null'
+        analyze_experiment:
+          anyOf:
+          - $ref: '#/components/schemas/AnalyzeExperimentLLMMapping'
+          - type: 'null'
+        write:
+          anyOf:
+          - $ref: '#/components/schemas/WriteLLMMapping'
+          - type: 'null'
+        generate_latex:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateLatexLLMMapping'
+          - type: 'null'
+      type: object
+      title: TopicOpenEndedResearchSubgraphLLMMapping
     TopicOpenEndedResearchUpdateRequestBody:
       properties:
         title:
@@ -4242,169 +3493,13 @@ components:
     WriteLLMMapping:
       properties:
         write_paper:
-          anyOf:
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-          - type: string
-            enum:
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-          - type: string
-            enum:
-            - claude-opus-4-5
-            - claude-sonnet-4-5
-            - claude-haiku-4-5
-            - claude-opus-4-1
-            - claude-opus-4
-            - claude-sonnet-4
-            - claude-3-7-sonnet
-            - claude-3-5-haiku
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-            - anthropic/claude-opus-4.5
-            - anthropic/claude-sonnet-4.5
-            - anthropic/claude-haiku-4.5
-            - anthropic/claude-opus-4.1
-            - anthropic/claude-opus-4
-            - anthropic/claude-sonnet-4
-            - anthropic/claude-3.7-sonnet
-            - anthropic/claude-3.5-haiku
-          - type: string
-            enum:
-            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-opus-4-5-20251101-v1:0
-            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-sonnet-4-20250514-v1:0
-            - global.anthropic.claude-haiku-4-5-20251001-v1:0
-            - openai.gpt-oss-120b-1:0
-          title: Write Paper
-          default: gpt-5-nano-2025-08-07
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5-nano-2025-08-07
         refine_paper:
-          anyOf:
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-          - type: string
-            enum:
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-          - type: string
-            enum:
-            - claude-opus-4-5
-            - claude-sonnet-4-5
-            - claude-haiku-4-5
-            - claude-opus-4-1
-            - claude-opus-4
-            - claude-sonnet-4
-            - claude-3-7-sonnet
-            - claude-3-5-haiku
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-            - anthropic/claude-opus-4.5
-            - anthropic/claude-sonnet-4.5
-            - anthropic/claude-haiku-4.5
-            - anthropic/claude-opus-4.1
-            - anthropic/claude-opus-4
-            - anthropic/claude-sonnet-4
-            - anthropic/claude-3.7-sonnet
-            - anthropic/claude-3.5-haiku
-          - type: string
-            enum:
-            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-opus-4-5-20251101-v1:0
-            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-sonnet-4-20250514-v1:0
-            - global.anthropic.claude-haiku-4-5-20251001-v1:0
-            - openai.gpt-oss-120b-1:0
-          title: Refine Paper
-          default: gpt-5-nano-2025-08-07
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5-nano-2025-08-07
       type: object
       title: WriteLLMMapping
     WriteSubgraphRequestBody:

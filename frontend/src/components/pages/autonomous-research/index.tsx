@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AllLLMConfig } from "@/components/features/llm-config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,6 +21,7 @@ import {
   type TopicOpenEndedResearchRequestBody,
   TopicOpenEndedResearchService,
   type TopicOpenEndedResearchStatusResponseBody,
+  type TopicOpenEndedResearchSubgraphLLMMapping,
 } from "@/lib/api";
 import type { ResearchSection } from "@/types/research";
 import {
@@ -74,7 +76,10 @@ export function AutonomousResearchPage({
   const [autoPaperContentRefinementIterations, setAutoPaperContentRefinementIteration] =
     useState("2");
   const [autoLatexTemplateName, setAutoLatexTemplateName] = useState("iclr2024");
-  // TODO: LLMに関する設定も追加する
+  // LLM設定
+  const [llmMapping, setLlmMapping] = useState<TopicOpenEndedResearchSubgraphLLMMapping | null>(
+    null,
+  );
   const [autoStatus, setAutoStatus] = useState<TopicOpenEndedResearchStatusResponseBody | null>(
     null,
   );
@@ -150,6 +155,7 @@ export function AutonomousResearchPage({
       experiment_code_validation_iterations: toNumber(autoExperimentCodeValidationIterations),
       paper_content_refinement_iterations: toNumber(autoPaperContentRefinementIterations),
       latex_template_name: autoLatexTemplateName.trim() || undefined,
+      llm_mapping: llmMapping,
     };
 
     return payload;
@@ -584,6 +590,8 @@ export function AutonomousResearchPage({
                   </div>
                 )}
               </div>
+
+              <AllLLMConfig llmMapping={llmMapping} onChange={setLlmMapping} />
 
               <div className="flex flex-wrap gap-3">
                 <Button

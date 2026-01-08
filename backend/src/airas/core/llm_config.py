@@ -13,9 +13,7 @@ class NodeLLMConfig(BaseModel):
 
 
 BASE_CONFIG = NodeLLMConfig(llm_name="gpt-5-nano-2025-08-07")
-SEARCH_CONFIG = NodeLLMConfig(
-    llm_name="gpt-5-nano-2025-08-07"
-)  # NOTE: Currently, web search only supports OpenAI models.
+SEARCH_CONFIG = NodeLLMConfig(llm_name="gpt-5-nano-2025-08-07")
 CODING_CONFIG = NodeLLMConfig(
     llm_name="o3-2025-04-16", params=OpenAIParams(reasoning_effort="high")
 )

@@ -4,6 +4,7 @@
 /* eslint-disable */
 import type { GitHubConfig } from './GitHubConfig';
 import type { RunnerConfig } from './RunnerConfig';
+import type { TopicOpenEndedResearchSubgraphLLMMapping } from './TopicOpenEndedResearchSubgraphLLMMapping';
 import type { WandbConfig } from './WandbConfig';
 export type TopicOpenEndedResearchRequestBody = {
     github_config: GitHubConfig;
@@ -20,5 +21,6 @@ export type TopicOpenEndedResearchRequestBody = {
     experiment_code_validation_iterations?: number;
     paper_content_refinement_iterations?: number;
     latex_template_name?: string;
+    llm_mapping?: (TopicOpenEndedResearchSubgraphLLMMapping | null);
 };
 
