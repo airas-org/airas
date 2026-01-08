@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
-import type { TopicOpenEndedResearchSubgraphLLMMapping } from "@/lib/api";
+import type { NodeLLMConfig, TopicOpenEndedResearchSubgraphLLMMapping } from "@/lib/api";
 import { SUBGRAPH_DISPLAY_CONFIG, SUBGRAPH_NODE_CONFIGS } from "./constants";
 import { SubgraphLLMConfig } from "./subgraph-llm-config";
 
@@ -14,12 +14,12 @@ export function AllLLMConfig({ llmMapping, onChange }: AllLLMConfigProps) {
 
   const handleSubgraphChange = (
     subgraphKey: keyof TopicOpenEndedResearchSubgraphLLMMapping,
-    config: any | null,
+    config: Record<string, NodeLLMConfig | null> | null,
   ) => {
     if (!config) {
       if (!llmMapping) return;
       const { [subgraphKey]: _, ...rest } = llmMapping;
-      onChange(Object.keys(rest).length === 0 ? null : (rest as any));
+      onChange(Object.keys(rest).length === 0 ? null : rest);
     } else {
       onChange({
         ...llmMapping,

@@ -27,9 +27,9 @@ interface NodeLLMSelectorProps {
 
 // Determine provider type from model name
 function getProviderType(modelName: string): "openai" | "google" | "anthropic" | null {
-  if (OPENAI_MODELS.includes(modelName as any)) return "openai";
-  if (GOOGLE_MODELS.includes(modelName as any)) return "google";
-  if (ANTHROPIC_MODELS.includes(modelName as any)) return "anthropic";
+  if ((OPENAI_MODELS as readonly string[]).includes(modelName)) return "openai";
+  if ((GOOGLE_MODELS as readonly string[]).includes(modelName)) return "google";
+  if ((ANTHROPIC_MODELS as readonly string[]).includes(modelName)) return "anthropic";
   // Check for OpenRouter prefixed models
   if (modelName.startsWith("google/")) return "google";
   if (modelName.startsWith("anthropic/")) return "anthropic";
@@ -124,7 +124,7 @@ export function NodeLLMSelector({ nodeKey, label, value, onChange }: NodeLLMSele
         </SelectContent>
       </Select>
 
-      {/* We'll refactor when the number of parameters increases. */}
+      {/* TODO: We'll refactor when the number of parameters increases. */}
 
       {/* OpenAI params: reasoning_effort */}
       {providerType === "openai" && (

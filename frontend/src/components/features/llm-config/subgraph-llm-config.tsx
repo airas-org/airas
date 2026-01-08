@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
+import type { NodeLLMConfig } from "@/lib/api";
 import { NodeLLMSelector } from "./node-llm-selector";
 
 interface NodeConfig {
@@ -7,17 +8,19 @@ interface NodeConfig {
   label: string;
 }
 
+type SubgraphNodeLLMMapping = Record<string, NodeLLMConfig | null>;
+
 interface SubgraphLLMConfigProps {
   title: string;
   nodes: readonly NodeConfig[];
-  config: any | null | undefined;
-  onChange: (config: any | null) => void;
+  config: SubgraphNodeLLMMapping | null | undefined;
+  onChange: (config: SubgraphNodeLLMMapping | null) => void;
 }
 
 export function SubgraphLLMConfig({ title, nodes, config, onChange }: SubgraphLLMConfigProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleNodeChange = (nodeKey: string, nodeConfig: any) => {
+  const handleNodeChange = (nodeKey: string, nodeConfig: NodeLLMConfig | null) => {
     onChange({
       ...config,
       [nodeKey]: nodeConfig,
