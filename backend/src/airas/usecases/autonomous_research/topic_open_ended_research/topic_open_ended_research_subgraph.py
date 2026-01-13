@@ -280,7 +280,7 @@ class TopicOpenEndedResearchSubgraph:
                 f"{workflow_name} workflow polling timed out or no status available"
             )
 
-        if status is GitHubActionsStatus.COMPLETED:
+        if status == GitHubActionsStatus.COMPLETED:
             if conclusion not in {
                 GitHubActionsConclusion.SUCCESS,
                 GitHubActionsConclusion.NEUTRAL,

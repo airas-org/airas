@@ -1,31 +1,31 @@
 ### Autonomous Research - Dispatch Task
 
-POST http://localhost:8001/airas/v1/topic_open_ended_research/run
+POST http://localhost:8000/airas/v1/topic_open_ended_research/run
 Content-Type: application/json
 
 {
     "github_config": {
         "github_owner": "auto-res2",
-        "repository_name": "test-tanaka-20260103",
-        "branch_name": "main-3"
+        "repository_name": "matsuzawa-20260113-4",
+        "branch_name": "main"
     },
-    "research_topic": "Optimizers for efficient training of LLMs",
+    "research_topic": "Data-efficient image classification methods using novel regularization and augmentation techniques",
     "runner_config": {
         "runner_label": ["self-hosted", "gpu-runner"],
         "description": "NVIDIA A100 or H200, VRAM: 80 GB or more, RAM: 2048 GB or more"
     },
     "wandb_config": {
-        "entity": "toma_tanaka",
-        "project": "2026-01-03"
+        "entity": "gengaru617-personal",
+        "project": "2026-01-13"
     },
     "is_github_repo_private": false,
-    "num_paper_search_queries": 1,
-    "papers_per_query": 2,
-    "hypothesis_refinement_iterations": 1,
+    "num_paper_search_queries": 10,
+    "papers_per_query": 3,
+    "hypothesis_refinemen_iterations": 2,
     "num_experiment_models": 1,
     "num_experiment_datasets": 1,
     "num_comparison_methods": 1,
-    "experiment_code_validation_iterations": 2,
+    "experiment_code_validation_iterations": 10,
     "paper_content_refinement_iterations": 1,
     "latex_template_name": "iclr2024"
 }

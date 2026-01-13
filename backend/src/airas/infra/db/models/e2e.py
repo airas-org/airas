@@ -53,7 +53,7 @@ class E2EModel(SQLModel, table=True):
     )
     current_step: Optional[StepType] = Field(
         default=None,
-        sa_column=Column(SqlEnum(StepType, name="session_step_type"), nullable=True),
+        sa_column=Column(SqlEnum(StepType, name="step_type"), nullable=True),
     )
     error_message: Optional[str] = Field(
         default=None, sa_column=Column(String, nullable=True)

@@ -15,7 +15,7 @@ class NodeLLMConfig(BaseModel):
 BASE_CONFIG = NodeLLMConfig(llm_name="gpt-5-nano-2025-08-07")
 SEARCH_CONFIG = NodeLLMConfig(llm_name="gpt-5-nano-2025-08-07")
 CODING_CONFIG = NodeLLMConfig(
-    llm_name="o3-2025-04-16", params=OpenAIParams(reasoning_effort="high")
+    llm_name="gpt-5-nano-2025-08-07", params=OpenAIParams(reasoning_effort="high")
 )
 
 DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {

@@ -31,6 +31,12 @@ async def _extract_experimental_info_from_study(
     llm_client: LangChainClient,
     llm_config: NodeLLMConfig,
 ) -> tuple[str, str]:
+    if not code_str:
+        logger.info(
+            "No repository content available, skipping experimental info extraction"
+        )
+        return "", ""
+
     env = Environment()
     jinja_template = env.from_string(template)
     messages = jinja_template.render(
@@ -49,6 +55,10 @@ async def _extract_experimental_info_from_study(
         )
     except Exception as e:
         logger.error(f"Error extracting experimental info for study: {e}")
+        return "", ""
+
+    if output is None:
+        logger.warning("LLM returned None for extracting experimental info")
         return "", ""
 
     llm_output = cast(LLMOutput, output)
