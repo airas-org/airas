@@ -29,5 +29,5 @@ You are a researcher with expertise in machine learning engineering.
 # Repository Code Structure
 {{ repository_code_structure }}
 
-Select the most important files (typically 5-15 files depending on repository size).
+Select the most important files (typically 5-8 files depending on repository size).
 """

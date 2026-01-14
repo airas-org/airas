@@ -1,3 +1,4 @@
+import ast
 import io
 import logging
 import re
@@ -43,6 +44,15 @@ def _parse_github_url(github_url: str) -> tuple[str, str] | None:
     return match.group(1), match.group(2)
 
 
+def _remove_python_comments(content: str) -> str:
+    try:
+        tree = ast.parse(content)
+        return ast.unparse(tree)
+
+    except Exception:
+        return content.strip()
+
+
 def _extract_files_from_zip(
     zip_data: bytes, title: str, github_url: str
 ) -> RepositoryContents:
@@ -66,6 +76,9 @@ def _extract_files_from_zip(
                 try:
                     file_data = zip_file.read(file_info)
                     content_str = file_data.decode("utf-8")
+
+                    if extension == ".py":
+                        content_str = _remove_python_comments(content_str)
                 except UnicodeDecodeError:
                     logger.warning(
                         f"Skipping binary file: {file_info.filename} in '{title}'"
