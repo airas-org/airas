@@ -21,7 +21,7 @@ Content-Type: application/json
     "is_github_repo_private": false,
     "num_paper_search_queries": 10,
     "papers_per_query": 3,
-    "hypothesis_refinemen_iterations": 2,
+    "hypothesis_refinement_iterations": 2,
     "num_experiment_models": 1,
     "num_experiment_datasets": 1,
     "num_comparison_methods": 1,
