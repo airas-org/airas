@@ -51,6 +51,7 @@ export type { GenerateHypothesisSubgraphV0ResponseBody } from './models/Generate
 export type { GenerateLatexLLMMapping } from './models/GenerateLatexLLMMapping';
 export { GenerateLatexSubgraphRequestBody } from './models/GenerateLatexSubgraphRequestBody';
 export type { GenerateLatexSubgraphResponseBody } from './models/GenerateLatexSubgraphResponseBody';
+export type { GenerateQueriesLLMMapping } from './models/GenerateQueriesLLMMapping';
 export type { GitHubConfig } from './models/GitHubConfig';
 export type { GithubDownloadRequest } from './models/GithubDownloadRequest';
 export type { GithubDownloadResponse } from './models/GithubDownloadResponse';
@@ -85,7 +86,7 @@ export { RetrieveDatasetsSubgraphRequestBody } from './models/RetrieveDatasetsSu
 export type { RetrieveDatasetsSubgraphResponseBody } from './models/RetrieveDatasetsSubgraphResponseBody';
 export { RetrieveModelsSubgraphRequestBody } from './models/RetrieveModelsSubgraphRequestBody';
 export type { RetrieveModelsSubgraphResponseBody } from './models/RetrieveModelsSubgraphResponseBody';
-export { RetrievePaperSubgraphLLMMapping } from './models/RetrievePaperSubgraphLLMMapping';
+export type { RetrievePaperSubgraphLLMMapping } from './models/RetrievePaperSubgraphLLMMapping';
 export type { RetrievePaperSubgraphRequestBody } from './models/RetrievePaperSubgraphRequestBody';
 export type { RetrievePaperSubgraphResponseBody } from './models/RetrievePaperSubgraphResponseBody';
 export type { RunnerConfig } from './models/RunnerConfig';
@@ -100,6 +101,7 @@ export type { TopicOpenEndedResearchListResponseBody } from './models/TopicOpenE
 export type { TopicOpenEndedResearchRequestBody } from './models/TopicOpenEndedResearchRequestBody';
 export type { TopicOpenEndedResearchResponseBody } from './models/TopicOpenEndedResearchResponseBody';
 export type { TopicOpenEndedResearchStatusResponseBody } from './models/TopicOpenEndedResearchStatusResponseBody';
+export type { TopicOpenEndedResearchSubgraphLLMMapping } from './models/TopicOpenEndedResearchSubgraphLLMMapping';
 export type { TopicOpenEndedResearchUpdateRequestBody } from './models/TopicOpenEndedResearchUpdateRequestBody';
 export type { TrainingConfig } from './models/TrainingConfig';
 export type { ValidationError } from './models/ValidationError';
