@@ -1,9 +1,7 @@
 const DEFAULT_MODEL = "gpt-5-nano-2025-08-07";
 const REASONING_MODEL = "o3-2025-04-16";
 
-{
-  /* TODO: Using an API to retrieve the list of LLMs seems easier to maintain. */
-}
+// TODO: Using an API to retrieve the list of LLMs seems easier to maintain.
 
 export const OPENAI_MODELS = [
   "gpt-5-nano-2025-08-07",
