@@ -26,7 +26,7 @@ class HTTPClientFatalError(HTTPClientError): ...
 
 
 _LOGGER = getLogger(__name__)
-_DEFAULT_MAX_RETRIES = 10
+_DEFAULT_MAX_RETRIES = 5
 _DEFAULT_WAIT = wait_exponential(multiplier=1.0, max=180.0)
 _DEFAULT_EXC: tuple[type[BaseException], ...] = (
     HTTPClientRetryableError,

@@ -42,15 +42,21 @@ export function NodeLLMSelector({ nodeKey, label, value, onChange }: NodeLLMSele
   // If default is selected, determine provider from the default model name
   const actualModelName = currentModelName === "__default__" ? defaultModelName : currentModelName;
   const providerType = getProviderType(actualModelName);
+  if (providerType === null) {
+    console.warn(`Unknown provider for model: ${actualModelName}`);
+  }
 
   const handleModelChange = (llm_name: string) => {
     if (!llm_name || llm_name === "__default__") {
       onChange(null);
     } else {
       const provider = getProviderType(llm_name);
-      let params: NodeLLMConfig["params"] = null;
+      if (provider === null) {
+        console.warn(`Unknown provider for model: ${llm_name}`);
+        return;
+      }
 
-      // Initialize appropriate params based on provider
+      let params: NodeLLMConfig["params"] = null;
       if (provider === "openai") {
         params = { provider_type: "openai", reasoning_effort: null };
       } else if (provider === "google") {
