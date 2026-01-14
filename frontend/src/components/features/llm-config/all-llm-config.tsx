@@ -34,6 +34,7 @@ export function AllLLMConfig({ llmMapping, onChange }: AllLLMConfigProps) {
         type="button"
         className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground"
         onClick={() => setShowLLMConfig((prev) => !prev)}
+        aria-expanded={showLLMConfig}
       >
         <span>LLM設定</span>
         {showLLMConfig ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
