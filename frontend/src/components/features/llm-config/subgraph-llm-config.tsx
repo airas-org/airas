@@ -33,6 +33,7 @@ export function SubgraphLLMConfig({ title, nodes, config, onChange }: SubgraphLL
         type="button"
         className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/50"
         onClick={() => setIsExpanded((prev) => !prev)}
+        aria-expanded={isExpanded}
       >
         <span>{title}</span>
         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
