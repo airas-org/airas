@@ -11,12 +11,21 @@ JSONScalar = str | int | float | bool | None
 JSONValue = JSONScalar | dict[str, "JSONValue"] | list["JSONValue"]
 
 
+def _sanitize_string(s: str) -> str:
+    """Remove null characters that PostgreSQL JSONB cannot handle."""
+    return s.replace("\x00", "")
+
+
 def to_dict_deep(obj: Any) -> Any:
     """
     - TypedDict/dict/list/tuple を再帰的に処理
     - Pydantic BaseModel は model_dump()（v2）で dict 化
     - Enum / datetime / UUID 等は JSON 互換に寄せる（必要に応じて）
+    - 文字列から PostgreSQL JSONB で扱えないヌル文字を除去
     """
+    if isinstance(obj, str):
+        return _sanitize_string(obj)
+
     # Pydantic BaseModel（v2）
     if isinstance(obj, BaseModel):
         # mode="python" にすると datetime/UUID が生で残る（DB/JSONB向き）

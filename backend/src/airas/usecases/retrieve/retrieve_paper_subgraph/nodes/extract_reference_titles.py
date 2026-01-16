@@ -55,13 +55,13 @@ async def _extract_references_from_text(
         logger.error(f"Error extracting references for {context_label}: {e}")
         return []
 
-    if output is None or not isinstance(output, dict):
+    if output is None or not isinstance(output, LLMOutput):
         logger.warning(
             "Warning: No valid response from LLM for reference extraction for "
             f"{context_label}."
         )
         return []
-    reference_titles = output.get("reference_titles", [])
+    reference_titles = output.reference_titles
     logger.info(f"Found {len(reference_titles)} reference titles for {context_label}.")
 
     return reference_titles

@@ -7,6 +7,7 @@ from tenacity import (
     before_sleep_log,
     retry,
     retry_if_exception_type,
+    retry_if_result,
     stop_after_attempt,
     wait_exponential,
 )
@@ -25,7 +26,7 @@ class HTTPClientFatalError(HTTPClientError): ...
 
 
 _LOGGER = getLogger(__name__)
-_DEFAULT_MAX_RETRIES = 10
+_DEFAULT_MAX_RETRIES = 5
 _DEFAULT_WAIT = wait_exponential(multiplier=1.0, max=180.0)
 _DEFAULT_EXC: tuple[type[BaseException], ...] = (
     HTTPClientRetryableError,
@@ -46,6 +47,24 @@ def make_retry_policy(
         stop=stop_after_attempt(max_retries),
         wait=wait,
         retry=retry_if_exception_type(retryable_exc),
+        before=before_log(_LOGGER, logging.INFO),
+        before_sleep=before_sleep_log(_LOGGER, logging.WARNING),
+        reraise=True,
+    )
+
+
+def make_llm_retry_policy(
+    max_retries: int = _DEFAULT_MAX_RETRIES,
+    wait: WaitBase = _DEFAULT_WAIT,
+    retryable_exc: tuple[type[BaseException], ...] = _DEFAULT_EXC,
+):
+    return retry(
+        stop=stop_after_attempt(max_retries),
+        wait=wait,
+        retry=(
+            retry_if_result(lambda x: x is None)
+            | retry_if_exception_type(retryable_exc)
+        ),
         before=before_log(_LOGGER, logging.INFO),
         before_sleep=before_sleep_log(_LOGGER, logging.WARNING),
         reraise=True,

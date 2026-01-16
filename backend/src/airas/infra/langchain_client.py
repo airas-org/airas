@@ -24,8 +24,11 @@ from airas.infra.llm_specs import (
     LLMProvider,
     OpenAIParams,
 )
+from airas.infra.retry_policy import make_llm_retry_policy
 
 logger = logging.getLogger(__name__)
+
+_LLM_RETRY = make_llm_retry_policy()
 
 
 class MissingEnvironmentVariablesError(RuntimeError):
@@ -147,7 +150,7 @@ class LangChainClient:
 
         logger.info(
             f"Creating chat model: llm_name={llm_name}, provider={provider.value}, "
-            f"params={params}, langchain_kwargs={langchain_kwargs}"
+            f"web_search={web_search}, params={params}, langchain_kwargs={langchain_kwargs}"
         )
 
         if provider is LLMProvider.OPENROUTER:
@@ -201,6 +204,7 @@ class LangChainClient:
         self._model_cache[cache_key] = model
         return model
 
+    @_LLM_RETRY
     async def generate(
         self,
         message: str,
@@ -236,6 +240,8 @@ class LangChainClient:
 
         return content
 
+    # NOTE: web_search with structured_outputs may return before search completes due to function_calling conflict.
+    @_LLM_RETRY
     async def structured_outputs(
         self,
         llm_name: LLM_MODELS,
