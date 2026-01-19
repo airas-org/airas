@@ -188,8 +188,8 @@ def _extract_python_structure(content: str) -> PythonFileStructure | None:
     ):
         structure.module_docstring = tree.body[0].value.value.strip()
 
-    # Extract imports
-    for node in ast.walk(tree):
+    # Extract module-level imports only
+    for node in tree.body:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 structure.imports.append(alias.name.split(".")[0])
@@ -205,10 +205,7 @@ def _extract_python_structure(content: str) -> PythonFileStructure | None:
             class_structure = PythonClassStructure(
                 name=node.name,
                 docstring=ast.get_docstring(node),
-                base_classes=[
-                    base.id if isinstance(base, ast.Name) else str(base)
-                    for base in node.bases
-                ],
+                base_classes=[ast.unparse(base) for base in node.bases],
             )
 
             for item in node.body:
@@ -252,13 +249,19 @@ def _extract_config_structure(
                 structure.top_level_keys = list(data.keys())[:30]
 
         elif extension == ".toml":
+            seen_section = False
             for line in content.split("\n"):
                 match = re.match(r"^\[([^\]]+)\]", line)
                 if match:
                     structure.top_level_keys.append(match.group(1))
-                elif not line.startswith((" ", "\t", "#")) and "=" in line:
+                    seen_section = True
+                elif (
+                    not seen_section
+                    and not line.startswith((" ", "\t", "#"))
+                    and "=" in line
+                ):
                     key = line.split("=")[0].strip()
-                    if key and not structure.top_level_keys:
+                    if key:
                         structure.top_level_keys.append(key)
 
     except Exception as e:

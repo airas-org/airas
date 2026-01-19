@@ -72,6 +72,8 @@ def _build_selected_content(
 
         if file.extension == ".py":
             code_parts.append(file_content)
+        elif file.extension == ".sh":
+            code_parts.append(file_content)
         elif file.extension in (".yaml", ".yml", ".json", ".toml", ".md", ".txt"):
             info_parts.append(file_content)
         else:

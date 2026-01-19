@@ -49,7 +49,8 @@ def _remove_python_comments(content: str) -> str:
         tree = ast.parse(content)
         return ast.unparse(tree)
 
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Failed to parse Python file for comment removal: {e}")
         return content.strip()
 
 
