@@ -163,6 +163,7 @@ LLM_MODELS: TypeAlias = (
 )
 
 
+# https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json
 @lru_cache(maxsize=128)
 def get_model_context_info(model_name: str) -> dict[str, int]:
     info = litellm.get_model_info(model_name)
