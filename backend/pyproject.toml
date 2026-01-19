@@ -48,6 +48,7 @@ dependencies = [
     "psycopg[binary]>=3.3.2",
     "rank-bm25>=0.2.2",
     "nltk>=3.9.2",
+    "litellm>=1.80.16",
 ]
 
 [project.urls]
