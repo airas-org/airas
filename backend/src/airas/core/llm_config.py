@@ -26,7 +26,7 @@ DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
     "search_arxiv_id_from_title": SEARCH_CONFIG,
     "summarize_paper": BASE_CONFIG,
     "extract_github_url_from_text": BASE_CONFIG,
-    "extract_experimental_info": BASE_CONFIG,
+    "select_experimental_files": BASE_CONFIG,
     "extract_reference_titles": BASE_CONFIG,
     # generators/
     # GenerateHypothesisV0Subgraph

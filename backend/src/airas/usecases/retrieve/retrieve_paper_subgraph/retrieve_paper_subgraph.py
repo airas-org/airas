@@ -12,8 +12,9 @@ from airas.core.types.research_study import LLMExtractedInfo, MetaData, Research
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
-from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.extract_experimental_info import (
-    extract_experimental_info,
+from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.extract_code_structure import (
+    RepositoryCodeStructure,
+    extract_repository_code_structure,
 )
 from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.extract_github_url_from_text import (
     extract_github_url_from_text,
@@ -22,6 +23,7 @@ from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.extract_reference_tit
     extract_reference_titles,
 )
 from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.retrieve_repository_contents import (
+    RepositoryContents,
     retrieve_repository_contents_from_urls,
 )
 from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.retrieve_text_from_url import (
@@ -33,6 +35,9 @@ from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.search_arxiv_id_from_
 from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.search_arxiv_info_by_id import (
     search_arxiv_info_by_id,
 )
+from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.select_experimental_contents import (
+    select_experimental_contents,
+)
 from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.summarize_paper import (
     PaperSummary,
     summarize_paper,
@@ -42,6 +47,9 @@ from airas.usecases.retrieve.retrieve_paper_subgraph.prompt.extract_github_url_f
 )
 from airas.usecases.retrieve.retrieve_paper_subgraph.prompt.openai_websearch_arxiv_ids_prompt import (
     openai_websearch_arxiv_ids_prompt,
+)
+from airas.usecases.retrieve.retrieve_paper_subgraph.prompt.select_experimental_files_prompt import (
+    select_experimental_files_prompt,
 )
 from airas.usecases.retrieve.retrieve_paper_subgraph.prompt.summarize_paper_prompt import (
     summarize_paper_prompt,
@@ -61,8 +69,8 @@ class RetrievePaperSubgraphLLMMapping(BaseModel):
     extract_github_url_from_text: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
         "extract_github_url_from_text"
     ]
-    extract_experimental_info: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "extract_experimental_info"
+    select_experimental_files: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
+        "select_experimental_files"
     ]
     extract_reference_titles: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
         "extract_reference_titles"
@@ -86,7 +94,8 @@ class RetrievePaperSubgraphState(
     paper_summary_list: list[PaperSummary]
     reference_title_list: list[list[str]]
     github_url_list: list[str]
-    github_code_list: list[str]
+    repository_contents_list: list[RepositoryContents]
+    repository_code_structure_list: list[RepositoryCodeStructure]
     experimental_info_list: list[str]
     experimental_code_list: list[str]
 
@@ -164,37 +173,59 @@ class RetrievePaperSubgraph:
     @record_execution_time
     def _retrieve_repository_contents(
         self, state: RetrievePaperSubgraphState
-    ) -> dict[str, list[str]]:
+    ) -> dict[str, list[RepositoryContents]]:
         github_url_list = state.get("github_url_list")
         if github_url_list is None:
             raise ValueError(
                 "github_url_list must exist in the state before retrieving repository contents."
             )
-        github_code_list = retrieve_repository_contents_from_urls(
+        repository_contents_list = retrieve_repository_contents_from_urls(
             github_url_list=github_url_list,
             github_client=self.github_client,
         )
-        return {"github_code_list": github_code_list}
+        return {"repository_contents_list": repository_contents_list}
 
     @record_execution_time
-    async def _extract_experimental_info(
+    def _extract_code_structure(
+        self, state: RetrievePaperSubgraphState
+    ) -> dict[str, list[RepositoryCodeStructure]]:
+        repository_contents_list = state.get("repository_contents_list")
+        if repository_contents_list is None:
+            raise ValueError(
+                "repository_contents_list must exist in the state before extracting code structure."
+            )
+        repository_code_structure_list = [
+            extract_repository_code_structure(contents)
+            for contents in repository_contents_list
+        ]
+        return {"repository_code_structure_list": repository_code_structure_list}
+
+    @record_execution_time
+    async def _select_experimental_contents(
         self, state: RetrievePaperSubgraphState
     ) -> dict[str, list[str]]:
         paper_summary_list = state.get("paper_summary_list")
-        github_code_list = state.get("github_code_list")
-        if paper_summary_list is None or github_code_list is None:
+        repository_contents_list = state.get("repository_contents_list")
+        repository_code_structure_list = state.get("repository_code_structure_list")
+        if (
+            paper_summary_list is None
+            or repository_contents_list is None
+            or repository_code_structure_list is None
+        ):
             raise ValueError(
-                "Both paper_summary_list and github_code_list must exist in the state before extracting experimental info."
+                "paper_summary_list, repository_contents_list, and repository_code_structure_list must exist in the state before selecting experimental files."
             )
 
         (
             experimental_info_list,
             experimental_code_list,
-        ) = await extract_experimental_info(
-            llm_config=self.llm_mapping.extract_experimental_info,
+        ) = await select_experimental_contents(
+            llm_config=self.llm_mapping.select_experimental_files,
             llm_client=self.langchain_client,
+            prompt_template=select_experimental_files_prompt,
             paper_summary_list=paper_summary_list,
-            github_code_list=github_code_list,
+            repository_contents_list=repository_contents_list,
+            repository_code_structure_list=repository_code_structure_list,
         )
         return {
             "experimental_info_list": experimental_info_list,
@@ -291,8 +322,9 @@ class RetrievePaperSubgraph:
         graph_builder.add_node(
             "retrieve_repository_contents", self._retrieve_repository_contents
         )
+        graph_builder.add_node("extract_code_structure", self._extract_code_structure)
         graph_builder.add_node(
-            "extract_experimental_info", self._extract_experimental_info
+            "select_experimental_contents", self._select_experimental_contents
         )
         graph_builder.add_node("formatted_output", self._formatted_output)
         graph_builder.add_edge(START, "search_arxiv_id_from_title")
@@ -304,14 +336,15 @@ class RetrievePaperSubgraph:
         graph_builder.add_edge(
             "extract_github_url_from_text", "retrieve_repository_contents"
         )
+        graph_builder.add_edge("retrieve_repository_contents", "extract_code_structure")
         graph_builder.add_edge(
             [
                 "summarize_paper",
                 "extract_reference_titles",
-                "retrieve_repository_contents",
+                "extract_code_structure",
             ],
-            "extract_experimental_info",
+            "select_experimental_contents",
         )
-        graph_builder.add_edge("extract_experimental_info", "formatted_output")
+        graph_builder.add_edge("select_experimental_contents", "formatted_output")
         graph_builder.add_edge("formatted_output", END)
         return graph_builder.compile()
