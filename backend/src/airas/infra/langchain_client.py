@@ -5,6 +5,8 @@ from typing import Any, get_args
 from botocore.config import Config
 from langchain_anthropic import ChatAnthropic
 from langchain_aws import ChatBedrockConverse
+from langchain_core.messages import HumanMessage
+from langchain_core.messages.utils import trim_messages
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 
@@ -23,6 +25,7 @@ from airas.infra.llm_specs import (
     LLMParams,
     LLMProvider,
     OpenAIParams,
+    get_model_context_info,
 )
 from airas.infra.retry_policy import make_llm_retry_policy
 
@@ -212,19 +215,37 @@ class LangChainClient:
         params: LLMParams | None = None,
         web_search: bool = False,
     ) -> str:
-        """
-        Generate a response from the specified language model given an input message.
-
-        Args:
-            message (str): The input message to send to the language model.
-            llm_name (LLM_MODEL): The name of the language model to use.
-            params (LLMParams | None, optional): Additional parameters for the language model. Defaults to None.
-            web_search (bool, optional): Whether to enable web search tools. Defaults to False.
-        Returns:
-            str: The generated response as a string.
-        """
         model = self._create_chat_model(llm_name, web_search, params)
-        response = await model.ainvoke(message)
+
+        try:
+            context_info = get_model_context_info(llm_name)
+            max_input_tokens = context_info["max_input_tokens"]
+            max_output_tokens = context_info["max_output_tokens"]
+
+            safe_max_input_tokens = max_input_tokens - 1000
+            messages = [HumanMessage(content=message)]
+
+            trimmed_messages = trim_messages(
+                messages,
+                max_tokens=safe_max_input_tokens,
+                token_counter=model,
+                strategy="last",
+                allow_partial=False,
+            )
+
+            logger.info(
+                f"Token management for {llm_name}: max_input={max_input_tokens}, "
+                f"max_output={max_output_tokens}, safe_input={safe_max_input_tokens}"
+            )
+
+        except Exception as e:
+            logger.warning(
+                f"Failed to get context info or trim messages for {llm_name}: {e}. "
+                "Proceeding without trimming."
+            )
+            trimmed_messages = message
+
+        response = await model.ainvoke(trimmed_messages)
         content = response.content
 
         # When web_search is enabled, content may be a list of content blocks
@@ -250,24 +271,37 @@ class LangChainClient:
         params: LLMParams | None = None,
         web_search: bool = False,
     ) -> Any:
-        """
-        Generate structured data from the specified language model by enforcing the provided schema.
-
-        Args:
-            llm_name (LLM_MODEL): The name of the language model to use.
-            message (str): The input message containing the information to extract.
-            data_model: The pydantic model used as the target schema for structured output.
-            params (LLMParams | None, optional): Additional parameters for the language model. Defaults to None.
-            web_search (bool, optional): Whether to enable web search tools. Defaults to False.
-
-        Returns:
-            Any: The structured data parsed into the target schema.
-        """
-        # TODO: The model's max output tokens may cause truncated responses for large structured outputs,
-        # resulting in validation errors when required fields are missing such as PaperContent.
         model = self._create_chat_model(llm_name, web_search=web_search, params=params)
+        try:
+            context_info = get_model_context_info(llm_name)
+            max_input_tokens = context_info["max_input_tokens"]
+            max_output_tokens = context_info["max_output_tokens"]
+
+            safe_max_input_tokens = max_input_tokens - 1000
+            messages = [HumanMessage(content=message)]
+
+            trimmed_messages = trim_messages(
+                messages,
+                max_tokens=safe_max_input_tokens,
+                token_counter=model,
+                strategy="last",
+                allow_partial=False,
+            )
+
+            logger.info(
+                f"Token management for {llm_name}: max_input={max_input_tokens}, "
+                f"max_output={max_output_tokens}, safe_input={safe_max_input_tokens}"
+            )
+
+        except Exception as e:
+            logger.warning(
+                f"Failed to get context info or trim messages for {llm_name}: {e}. "
+                "Proceeding without trimming."
+            )
+            trimmed_messages = message
+
         model_with_structure = model.with_structured_output(
             schema=data_model, method="function_calling"
         )
-        response = await model_with_structure.ainvoke(message)
+        response = await model_with_structure.ainvoke(trimmed_messages)
         return response

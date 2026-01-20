@@ -1,6 +1,8 @@
 from enum import Enum
+from functools import lru_cache
 from typing import Annotated, TypeAlias, get_args
 
+import litellm
 from pydantic import BaseModel, Field
 from typing_extensions import Literal
 
@@ -159,3 +161,13 @@ LLM_MODELS: TypeAlias = (
     | OPENROUTER_MODELS
     | BEDROCK_MODELS
 )
+
+
+# https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json
+@lru_cache(maxsize=128)
+def get_model_context_info(model_name: str) -> dict[str, int]:
+    info = litellm.get_model_info(model_name)
+    return {
+        "max_input_tokens": info.get("max_input_tokens", 4096),
+        "max_output_tokens": info.get("max_output_tokens", 4096),
+    }
