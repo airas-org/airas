@@ -861,7 +861,7 @@ components:
         analyze_experiment:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
+            llm_name: o3-mini-2025-01-31
       type: object
       title: AnalyzeExperimentLLMMapping
     AnalyzeExperimentRequestBody:
@@ -1077,6 +1077,14 @@ components:
       - result
       - schema_version
       title: AssistedResearchStepResponse
+    CompileLatexLLMMapping:
+      properties:
+        compile_latex:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: anthropic/claude-sonnet-4-5
+      type: object
+      title: CompileLatexLLMMapping
     CompileLatexSubgraphRequestBody:
       properties:
         github_config:
@@ -1088,6 +1096,10 @@ components:
           - agents4science_2025
           title: Latex Template Name
           default: iclr2024
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/CompileLatexLLMMapping'
+          - type: 'null'
       type: object
       required:
       - github_config
@@ -1214,10 +1226,22 @@ components:
       - name
       - description
       title: EvaluationMetric
+    ExecuteEvaluationLLMMapping:
+      properties:
+        dispatch_evaluation:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: anthropic/claude-sonnet-4-5
+      type: object
+      title: ExecuteEvaluationLLMMapping
     ExecuteEvaluationRequestBody:
       properties:
         github_config:
           $ref: '#/components/schemas/GitHubConfig'
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/ExecuteEvaluationLLMMapping'
+          - type: 'null'
       type: object
       required:
       - github_config
@@ -1239,6 +1263,14 @@ components:
       - dispatched
       - execution_time
       title: ExecuteEvaluationResponseBody
+    ExecuteFullExperimentLLMMapping:
+      properties:
+        dispatch_full_experiments:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: anthropic/claude-sonnet-4-5
+      type: object
+      title: ExecuteFullExperimentLLMMapping
     ExecuteFullRequestBody:
       properties:
         github_config:
@@ -1248,6 +1280,10 @@ components:
             type: string
           type: array
           title: Run Ids
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/ExecuteFullExperimentLLMMapping'
+          - type: 'null'
       type: object
       required:
       - github_config
@@ -1282,10 +1318,22 @@ components:
       - branch_creation_results
       - execution_time
       title: ExecuteFullResponseBody
+    ExecuteTrialExperimentLLMMapping:
+      properties:
+        dispatch_trial_experiment:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: anthropic/claude-sonnet-4-5
+      type: object
+      title: ExecuteTrialExperimentLLMMapping
     ExecuteTrialRequestBody:
       properties:
         github_config:
           $ref: '#/components/schemas/GitHubConfig'
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/ExecuteTrialExperimentLLMMapping'
+          - type: 'null'
       type: object
       required:
       - github_config
@@ -1647,7 +1695,7 @@ components:
         generate_experimental_design:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
+            llm_name: o3-mini-2025-01-31
       type: object
       title: GenerateExperimentalDesignLLMMapping
     GenerateExperimentalDesignSubgraphRequestBody:
@@ -1698,15 +1746,15 @@ components:
         generate_hypothesis:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
+            llm_name: o3-mini-2025-01-31
         evaluate_novelty_and_significance:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
+            llm_name: o3-mini-2025-01-31
         refine_hypothesis:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
+            llm_name: o3-mini-2025-01-31
       type: object
       title: GenerateHypothesisSubgraphV0LLMMapping
     GenerateHypothesisSubgraphV0RequestBody:
@@ -1753,7 +1801,7 @@ components:
         convert_to_latex:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
+            llm_name: o3-mini-2025-01-31
       type: object
       title: GenerateLatexLLMMapping
     GenerateLatexSubgraphRequestBody:
@@ -1801,7 +1849,7 @@ components:
         generate_queries:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
+            llm_name: o3-mini-2025-01-31
       type: object
       title: GenerateQueriesLLMMapping
     GitHubConfig:
@@ -2249,85 +2297,7 @@ components:
     NodeLLMConfig:
       properties:
         llm_name:
-          anyOf:
-          - type: string
-            enum:
-            - gemini-3-pro-preview
-            - gemini-2.5-pro
-            - gemini-2.5-flash
-            - gemini-2.5-flash-lite
-            - gemini-2.0-flash
-            - gemini-2.0-flash-lite
-            - gemini-embedding-001
-          - type: string
-            enum:
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-          - type: string
-            enum:
-            - claude-opus-4-5
-            - claude-sonnet-4-5
-            - claude-haiku-4-5
-            - claude-opus-4-1
-            - claude-opus-4
-            - claude-sonnet-4
-            - claude-3-7-sonnet
-            - claude-3-5-haiku
-          - type: string
-            enum:
-            - google/gemini-3-pro-preview
-            - google/gemini-2.5-pro
-            - google/gemini-2.5-flash
-            - google/gemini-2.5-flash-lite
-            - google/gemini-2.0-flash
-            - google/gemini-2.0-flash-lite
-            - google/gemini-embedding-001
-            - gpt-5.2-pro-2025-12-11
-            - gpt-5.2-2025-12-11
-            - gpt-5.1-2025-11-13
-            - gpt-5-pro-2025-10-06
-            - gpt-5-codex
-            - gpt-5-2025-08-07
-            - gpt-5-mini-2025-08-07
-            - gpt-5-nano-2025-08-07
-            - gpt-4.1-2025-04-14
-            - gpt-4o-2024-11-20
-            - gpt-4o-mini-2024-07-18
-            - o4-mini-2025-04-16
-            - o3-2025-04-16
-            - o3-mini-2025-01-31
-            - o1-pro-2025-03-19
-            - o1-2024-12-17
-            - anthropic/claude-opus-4.5
-            - anthropic/claude-sonnet-4.5
-            - anthropic/claude-haiku-4.5
-            - anthropic/claude-opus-4.1
-            - anthropic/claude-opus-4
-            - anthropic/claude-sonnet-4
-            - anthropic/claude-3.7-sonnet
-            - anthropic/claude-3.5-haiku
-          - type: string
-            enum:
-            - jp.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-opus-4-5-20251101-v1:0
-            - global.anthropic.claude-sonnet-4-5-20250929-v1:0
-            - global.anthropic.claude-sonnet-4-20250514-v1:0
-            - global.anthropic.claude-haiku-4-5-20251001-v1:0
-            - openai.gpt-oss-120b-1:0
+          type: string
           title: Llm Name
         params:
           anyOf:
@@ -2937,19 +2907,19 @@ components:
         summarize_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
+            llm_name: o3-mini-2025-01-31
         extract_github_url_from_text:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
-        extract_experimental_info:
+            llm_name: o3-mini-2025-01-31
+        select_experimental_files:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
+            llm_name: o3-mini-2025-01-31
         extract_reference_titles:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
+            llm_name: o3-mini-2025-01-31
       type: object
       title: RetrievePaperSubgraphLLMMapping
     RetrievePaperSubgraphRequestBody:
@@ -3336,6 +3306,18 @@ components:
           anyOf:
           - $ref: '#/components/schemas/GenerateCodeLLMMapping'
           - type: 'null'
+        execute_trial_experiment:
+          anyOf:
+          - $ref: '#/components/schemas/ExecuteTrialExperimentLLMMapping'
+          - type: 'null'
+        execute_full_experiment:
+          anyOf:
+          - $ref: '#/components/schemas/ExecuteFullExperimentLLMMapping'
+          - type: 'null'
+        execute_evaluation:
+          anyOf:
+          - $ref: '#/components/schemas/ExecuteEvaluationLLMMapping'
+          - type: 'null'
         analyze_experiment:
           anyOf:
           - $ref: '#/components/schemas/AnalyzeExperimentLLMMapping'
@@ -3347,6 +3329,10 @@ components:
         generate_latex:
           anyOf:
           - $ref: '#/components/schemas/GenerateLatexLLMMapping'
+          - type: 'null'
+        compile_latex:
+          anyOf:
+          - $ref: '#/components/schemas/CompileLatexLLMMapping'
           - type: 'null'
       type: object
       title: TopicOpenEndedResearchSubgraphLLMMapping
@@ -3495,11 +3481,11 @@ components:
         write_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
+            llm_name: o3-mini-2025-01-31
         refine_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
+            llm_name: o3-mini-2025-01-31
       type: object
       title: WriteLLMMapping
     WriteSubgraphRequestBody:

@@ -1,5 +1,6 @@
 const DEFAULT_MODEL = "gpt-5-nano-2025-08-07";
 const REASONING_MODEL = "o3-2025-04-16";
+const GITHUB_ACTIONS_MODEL = "anthropic/claude-sonnet-4-5";
 
 // TODO: Using an API to retrieve the list of LLMs seems easier to maintain.
 
@@ -70,6 +71,11 @@ export const DEFAULT_NODE_LLM_CONFIG = {
   generate_run_config: REASONING_MODEL,
   generate_experiment_code: REASONING_MODEL,
   validate_experiment_code: REASONING_MODEL,
+
+  compile_latex: GITHUB_ACTIONS_MODEL,
+  dispatch_trial_experiment: GITHUB_ACTIONS_MODEL,
+  dispatch_full_experiments: GITHUB_ACTIONS_MODEL,
+  dispatch_evaluation: GITHUB_ACTIONS_MODEL,
 } as const;
 
 export const SUBGRAPH_NODE_CONFIGS = {
@@ -100,6 +106,10 @@ export const SUBGRAPH_NODE_CONFIGS = {
     { key: "refine_paper", label: "論文精緻化" },
   ],
   generate_latex: [{ key: "convert_to_latex", label: "LaTeX変換" }],
+  compile_latex: [{ key: "compile_latex", label: "LaTeXコンパイル" }],
+  execute_trial_experiment: [{ key: "dispatch_trial_experiment", label: "試行実験実行" }],
+  execute_full_experiment: [{ key: "dispatch_full_experiments", label: "本実験実行" }],
+  execute_evaluation: [{ key: "dispatch_evaluation", label: "評価実行" }],
 } as const;
 
 export const SUBGRAPH_DISPLAY_CONFIG = [
@@ -108,7 +118,11 @@ export const SUBGRAPH_DISPLAY_CONFIG = [
   { key: "generate_hypothesis", title: "3. 仮説生成" },
   { key: "generate_experimental_design", title: "4. 実験デザイン生成" },
   { key: "generate_code", title: "5. コード生成" },
-  { key: "analyze_experiment", title: "6. 実験分析" },
-  { key: "write", title: "7. 論文執筆" },
-  { key: "generate_latex", title: "8. LaTeX生成" },
+  { key: "execute_trial_experiment", title: "6. 試行実験実行" },
+  { key: "execute_full_experiment", title: "7. 本実験実行" },
+  { key: "execute_evaluation", title: "8. 評価実行" },
+  { key: "analyze_experiment", title: "9. 実験分析" },
+  { key: "write", title: "10. 論文執筆" },
+  { key: "generate_latex", title: "11. LaTeX生成" },
+  { key: "compile_latex", title: "12. LaTeXコンパイル" },
 ] as const;

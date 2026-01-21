@@ -36,12 +36,15 @@ from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_end
     TopicOpenEndedResearchService,
 )
 from airas.usecases.executors.execute_evaluation_subgraph.execute_evaluation_subgraph import (
+    ExecuteEvaluationLLMMapping,
     ExecuteEvaluationSubgraph,
 )
 from airas.usecases.executors.execute_full_experiment_subgraph.execute_full_experiment_subgraph import (
+    ExecuteFullExperimentLLMMapping,
     ExecuteFullExperimentSubgraph,
 )
 from airas.usecases.executors.execute_trial_experiment_subgraph.execute_trial_experiment_subgraph import (
+    ExecuteTrialExperimentLLMMapping,
     ExecuteTrialExperimentSubgraph,
 )
 from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment_results_subgraph import (
@@ -74,6 +77,7 @@ from airas.usecases.github.push_code_subgraph.push_code_subgraph import (
     PushCodeSubgraph,
 )
 from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
+    CompileLatexLLMMapping,
     CompileLatexSubgraph,
 )
 from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
@@ -113,9 +117,13 @@ class TopicOpenEndedResearchSubgraphLLMMapping(BaseModel):
     generate_hypothesis: GenerateHypothesisSubgraphV0LLMMapping | None = None
     generate_experimental_design: GenerateExperimentalDesignLLMMapping | None = None
     generate_code: GenerateCodeLLMMapping | None = None
+    execute_trial_experiment: ExecuteTrialExperimentLLMMapping | None = None
+    execute_full_experiment: ExecuteFullExperimentLLMMapping | None = None
+    execute_evaluation: ExecuteEvaluationLLMMapping | None = None
     analyze_experiment: AnalyzeExperimentLLMMapping | None = None
     write: WriteLLMMapping | None = None
     generate_latex: GenerateLatexLLMMapping | None = None
+    compile_latex: CompileLatexLLMMapping | None = None
 
 
 class TopicOpenEndedResearchInputState(TypedDict):
@@ -488,6 +496,7 @@ class TopicOpenEndedResearchSubgraph:
             await ExecuteTrialExperimentSubgraph(
                 github_client=self.github_client,
                 runner_label=self.runner_config.runner_label,
+                llm_mapping=self.llm_mapping.execute_trial_experiment,
             )
             .build_graph()
             .ainvoke({"github_config": state["github_config"]})
@@ -530,6 +539,7 @@ class TopicOpenEndedResearchSubgraph:
             await ExecuteFullExperimentSubgraph(
                 github_client=self.github_client,
                 runner_label=self.runner_config.runner_label,
+                llm_mapping=self.llm_mapping.execute_full_experiment,
             )
             .build_graph()
             .ainvoke(
@@ -621,7 +631,10 @@ class TopicOpenEndedResearchSubgraph:
     ) -> dict[str, Any]:
         logger.info("=== Execute Evaluation ===")
         result = (
-            await ExecuteEvaluationSubgraph(github_client=self.github_client)
+            await ExecuteEvaluationSubgraph(
+                github_client=self.github_client,
+                llm_mapping=self.llm_mapping.execute_evaluation,
+            )
             .build_graph()
             .ainvoke(
                 {
@@ -800,6 +813,7 @@ class TopicOpenEndedResearchSubgraph:
             await CompileLatexSubgraph(
                 github_client=self.github_client,
                 latex_template_name=state.get("latex_template_name", "iclr2024"),
+                llm_mapping=self.llm_mapping.compile_latex,
             )
             .build_graph()
             .ainvoke({"github_config": state["github_config"]})

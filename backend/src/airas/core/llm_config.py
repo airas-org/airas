@@ -1,21 +1,22 @@
 from pydantic import BaseModel
 
 from airas.infra.llm_specs import (
-    LLM_MODELS,
     LLMParams,
     OpenAIParams,
 )
 
 
 class NodeLLMConfig(BaseModel):
-    llm_name: LLM_MODELS
+    # Use str instead of LLM_MODELS to allow model names compatible with
+    # litellm and opencode rather than our custom defined literals.
+    llm_name: str
     params: LLMParams | None = None
 
 
-BASE_CONFIG = NodeLLMConfig(llm_name="gpt-5-nano-2025-08-07")
+BASE_CONFIG = NodeLLMConfig(llm_name="o3-mini-2025-01-31")
 SEARCH_CONFIG = NodeLLMConfig(llm_name="gpt-5-nano-2025-08-07")
 CODING_CONFIG = NodeLLMConfig(
-    llm_name="gpt-5-nano-2025-08-07", params=OpenAIParams(reasoning_effort="high")
+    llm_name="o3-2025-04-16", params=OpenAIParams(reasoning_effort="high")
 )
 
 DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
@@ -39,6 +40,15 @@ DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
     "generate_run_config": CODING_CONFIG,
     "generate_experiment_code": CODING_CONFIG,
     "validate_experiment_code": CODING_CONFIG,
+    # executors/
+    # ExecuteTrialExperimentSubgraph
+    # NOTE: GitHub Actions nodes use "provider/model" format for LiteLLM compatibility.
+    # All nodes will migrate to this format when fully transitioning to LiteLLM.
+    "dispatch_trial_experiment": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
+    # ExecuteFullExperimentSubgraph
+    "dispatch_full_experiments": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
+    # ExecuteEvaluationSubgraph
+    "dispatch_evaluation": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
     # analyzers/
     # AnalyzeExperimentSubgraph
     "analyze_experiment": BASE_CONFIG,
@@ -49,6 +59,8 @@ DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
     # publication/
     # GenerateLatexSubgraph
     "convert_to_latex": BASE_CONFIG,
+    # CompileLatexSubgraph
+    "compile_latex": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
     # GenerateHtmlSubgraph
     "convert_to_html": BASE_CONFIG,
 }

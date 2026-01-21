@@ -18,14 +18,18 @@ export type { AssistedResearchSessionCreateRequest } from './models/AssistedRese
 export type { AssistedResearchSessionResponse } from './models/AssistedResearchSessionResponse';
 export type { AssistedResearchStepCreateRequest } from './models/AssistedResearchStepCreateRequest';
 export type { AssistedResearchStepResponse } from './models/AssistedResearchStepResponse';
+export type { CompileLatexLLMMapping } from './models/CompileLatexLLMMapping';
 export { CompileLatexSubgraphRequestBody } from './models/CompileLatexSubgraphRequestBody';
 export type { CompileLatexSubgraphResponseBody } from './models/CompileLatexSubgraphResponseBody';
 export type { DatasetConfig } from './models/DatasetConfig';
 export type { EvaluationMetric } from './models/EvaluationMetric';
+export type { ExecuteEvaluationLLMMapping } from './models/ExecuteEvaluationLLMMapping';
 export type { ExecuteEvaluationRequestBody } from './models/ExecuteEvaluationRequestBody';
 export type { ExecuteEvaluationResponseBody } from './models/ExecuteEvaluationResponseBody';
+export type { ExecuteFullExperimentLLMMapping } from './models/ExecuteFullExperimentLLMMapping';
 export type { ExecuteFullRequestBody } from './models/ExecuteFullRequestBody';
 export type { ExecuteFullResponseBody } from './models/ExecuteFullResponseBody';
+export type { ExecuteTrialExperimentLLMMapping } from './models/ExecuteTrialExperimentLLMMapping';
 export type { ExecuteTrialRequestBody } from './models/ExecuteTrialRequestBody';
 export type { ExecuteTrialResponseBody } from './models/ExecuteTrialResponseBody';
 export type { ExperimentalAnalysis } from './models/ExperimentalAnalysis';

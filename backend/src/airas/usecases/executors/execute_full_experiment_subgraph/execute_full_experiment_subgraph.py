@@ -3,9 +3,11 @@ import json
 import logging
 
 from langgraph.graph import END, START, StateGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
+from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubConfig
 from airas.infra.github_client import GithubClient
@@ -16,6 +18,12 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 record_execution_time = lambda f: time_node("execute_full_experiment_subgraph")(f)  # noqa: E731
+
+
+class ExecuteFullExperimentLLMMapping(BaseModel):
+    dispatch_full_experiments: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
+        "dispatch_full_experiments"
+    ]
 
 
 class ExecuteFullExperimentSubgraphInputState(TypedDict):
@@ -41,11 +49,13 @@ class ExecuteFullExperimentSubgraph:
         self,
         github_client: GithubClient,
         runner_label: list[str] | None = None,
-        workflow_file: str = "dev_run_full_experiment_with_claude_code.yml",
+        workflow_file: str = "dev_run_full_experiment_with_open_code.yml",
+        llm_mapping: ExecuteFullExperimentLLMMapping | None = None,
     ):
         self.github_client = github_client
         self.runner_label = runner_label or ["ubuntu-latest"]
         self.workflow_file = workflow_file
+        self.llm_mapping = llm_mapping or ExecuteFullExperimentLLMMapping()
 
     @record_execution_time
     async def _create_branches(
@@ -104,7 +114,11 @@ class ExecuteFullExperimentSubgraph:
                 github_config.repository_name,
                 branch_name,
                 self.workflow_file,
-                {"runner_label": runner_label_json, "run_id": run_id},
+                {
+                    "runner_label": runner_label_json,
+                    "run_id": run_id,
+                    "model_name": self.llm_mapping.dispatch_full_experiments.llm_name,
+                },
             )
             for run_id, branch_name in successful_pairs
         ]
