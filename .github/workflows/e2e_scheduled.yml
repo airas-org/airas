@@ -1,0 +1,357 @@
+name: E2E Scheduled Test
+
+on:
+  schedule:
+    # Run every Monday at 00:00 UTC (09:00 JST)
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+    inputs:
+      research_topic:
+        description: 'Research topic for the E2E test'
+        required: false
+        default: 'Data-efficient image classification methods using novel regularization and augmentation techniques'
+      github_owner:
+        description: 'GitHub owner for the generated repository'
+        required: false
+        default: 'auto-res2'
+      repository_name:
+        description: 'Repository name (leave empty for auto-generated: e2e-test-YYYYMMDD-HHMMSS)'
+        required: false
+        default: ''
+      branch_name:
+        description: 'Branch name for the generated repository'
+        required: false
+        default: 'main'
+      runner_label:
+        description: 'Runner labels (comma-separated, e.g., "self-hosted,gpu-runner")'
+        required: false
+        default: 'self-hosted,gpu-runner'
+      runner_description:
+        description: 'Runner description'
+        required: false
+        default: 'NVIDIA A100 or H200, VRAM: 80 GB or more, RAM: 2048 GB or more'
+      wandb_entity:
+        description: 'W&B entity name'
+        required: false
+        default: 'gengaru617-personal'
+      is_github_repo_private:
+        description: 'Make repository private'
+        required: false
+        type: boolean
+        default: false
+      num_paper_search_queries:
+        description: 'Number of paper search queries'
+        required: false
+        default: '10'
+      papers_per_query:
+        description: 'Papers per query'
+        required: false
+        default: '3'
+      hypothesis_refinement_iterations:
+        description: 'Hypothesis refinement iterations'
+        required: false
+        default: '2'
+      num_experiment_models:
+        description: 'Number of experiment models'
+        required: false
+        default: '1'
+      num_experiment_datasets:
+        description: 'Number of experiment datasets'
+        required: false
+        default: '1'
+      num_comparison_methods:
+        description: 'Number of comparison methods'
+        required: false
+        default: '1'
+      experiment_code_validation_iterations:
+        description: 'Experiment code validation iterations'
+        required: false
+        default: '10'
+      paper_content_refinement_iterations:
+        description: 'Paper content refinement iterations'
+        required: false
+        default: '1'
+      latex_template_name:
+        description: 'LaTeX template name'
+        required: false
+        default: 'iclr2024'
+      primary_llm:
+        description: 'Primary LLM to use for most tasks'
+        required: false
+        type: choice
+        options:
+          - 'o3-2025-04-16'
+          - 'o3-mini-2025-01-31'
+          - 'gpt-5-mini-2025-08-07'
+          - 'google/gemini-2.5-pro'
+          - 'claude-sonnet-4-5'
+          - 'claude-opus-4'
+        default: 'o3-mini-2025-01-31'
+      coding_llm:
+        description: 'LLM for code generation tasks'
+        required: false
+        type: choice
+        options:
+          - 'o3-2025-04-16'
+          - 'o3-mini-2025-01-31'
+          - 'gpt-5-mini-2025-08-07'
+          - 'google/gemini-2.5-pro'
+          - 'claude-sonnet-4-5'
+          - 'claude-opus-4'
+        default: 'o3-2025-04-16'
+
+jobs:
+  check-org-membership:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    outputs:
+      is_member: ${{ steps.check.outputs.is_member }}
+    steps:
+      - name: Check organization membership
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.AIRAS_ORG_TOKEN }}
+        run: |
+          # For scheduled runs, always allow
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "is_member=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # For workflow_dispatch, check membership
+          ACTOR="${{ github.actor }}"
+          ORG="airas-org"
+
+          echo "Checking if ${ACTOR} is a member of ${ORG}..."
+
+          # Check membership using GitHub API
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/orgs/${ORG}/members/${ACTOR}")
+
+          if [ "$HTTP_CODE" = "204" ]; then
+            echo "✅ ${ACTOR} is a member of ${ORG}"
+            echo "is_member=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ ${ACTOR} is not a member of ${ORG} (HTTP: ${HTTP_CODE})"
+            echo "is_member=false" >> $GITHUB_OUTPUT
+          fi
+
+  e2e-test:
+    needs: check-org-membership
+    if: needs.check-org-membership.outputs.is_member == 'true'
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_USER: airas
+          POSTGRES_PASSWORD: airas
+          POSTGRES_DB: airas
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U airas -d airas"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql+psycopg://airas:airas@localhost:5432/airas
+      GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+      QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+      WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+      LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.7.2"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --frozen
+
+      - name: Run database migrations
+        working-directory: backend
+        run: uv run alembic upgrade head
+
+      - name: Start backend server
+        working-directory: backend
+        run: |
+          uv run uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+          echo "Waiting for server to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8000/health > /dev/null 2>&1 || curl -s http://localhost:8000/ > /dev/null 2>&1; then
+              echo "Server is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+
+      - name: Generate dynamic parameters
+        id: params
+        run: |
+          TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
+          DATE_ONLY=$(date -u +"%Y-%m-%d")
+
+          # Use input repository_name if provided, otherwise generate
+          INPUT_REPO_NAME="${{ github.event.inputs.repository_name }}"
+          if [ -n "$INPUT_REPO_NAME" ]; then
+            REPO_NAME="$INPUT_REPO_NAME"
+          else
+            REPO_NAME="e2e-test-${TIMESTAMP}"
+          fi
+
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "date_only=${DATE_ONLY}" >> $GITHUB_OUTPUT
+          echo "repo_name=${REPO_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Parse runner labels
+        id: runner
+        run: |
+          LABELS="${{ github.event.inputs.runner_label || 'self-hosted,gpu-runner' }}"
+          # Convert comma-separated to JSON array
+          JSON_ARRAY=$(echo "$LABELS" | tr ',' '\n' | jq -R . | jq -s .)
+          echo "labels_json=${JSON_ARRAY}" >> $GITHUB_OUTPUT
+
+      - name: Build LLM mapping JSON
+        id: llm
+        run: |
+          PRIMARY_LLM="${{ github.event.inputs.primary_llm || 'o3-mini-2025-01-31' }}"
+          CODING_LLM="${{ github.event.inputs.coding_llm || 'o3-2025-04-16' }}"
+
+          # Build the llm_mapping JSON
+          LLM_MAPPING=$(cat <<EOFLLM
+          {
+            "generate_queries": {"generate_queries": {"llm_name": "${PRIMARY_LLM}"}},
+            "retrieve_paper": {
+              "search_arxiv_id_from_title": {"llm_name": "${PRIMARY_LLM}"},
+              "summarize_paper": {"llm_name": "${PRIMARY_LLM}"},
+              "extract_github_url_from_text": {"llm_name": "${PRIMARY_LLM}"},
+              "select_experimental_files": {"llm_name": "${PRIMARY_LLM}"},
+              "extract_reference_titles": {"llm_name": "${PRIMARY_LLM}"}
+            },
+            "generate_hypothesis": {
+              "generate_hypothesis": {"llm_name": "${PRIMARY_LLM}"},
+              "evaluate_novelty_and_significance": {"llm_name": "${PRIMARY_LLM}"},
+              "refine_hypothesis": {"llm_name": "${PRIMARY_LLM}"}
+            },
+            "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY_LLM}"}},
+            "generate_code": {
+              "generate_run_config": {"llm_name": "${CODING_LLM}"},
+              "generate_experiment_code": {"llm_name": "${CODING_LLM}"},
+              "validate_experiment_code": {"llm_name": "${CODING_LLM}"}
+            },
+            "analyze_experiment": {"analyze_experiment": {"llm_name": "${PRIMARY_LLM}"}},
+            "write": {
+              "write_paper": {"llm_name": "${PRIMARY_LLM}"},
+              "refine_paper": {"llm_name": "${PRIMARY_LLM}"}
+            },
+            "generate_latex": {"convert_to_latex": {"llm_name": "${PRIMARY_LLM}"}}
+          }
+          EOFLLM
+          )
+
+          # Escape for shell
+          echo "llm_mapping<<EOF" >> $GITHUB_OUTPUT
+          echo "$LLM_MAPPING" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Send E2E test request
+        run: |
+          GITHUB_OWNER="${{ github.event.inputs.github_owner || 'auto-res2' }}"
+          RESEARCH_TOPIC="${{ github.event.inputs.research_topic || 'Data-efficient image classification methods using novel regularization and augmentation techniques' }}"
+          BRANCH_NAME="${{ github.event.inputs.branch_name || 'main' }}"
+          REPO_NAME="${{ steps.params.outputs.repo_name }}"
+          WANDB_ENTITY="${{ github.event.inputs.wandb_entity || 'gengaru617-personal' }}"
+          WANDB_PROJECT="${{ steps.params.outputs.date_only }}"
+          RUNNER_LABELS='${{ steps.runner.outputs.labels_json }}'
+          RUNNER_DESC="${{ github.event.inputs.runner_description || 'NVIDIA A100 or H200, VRAM: 80 GB or more, RAM: 2048 GB or more' }}"
+          IS_PRIVATE="${{ github.event.inputs.is_github_repo_private || 'false' }}"
+          NUM_QUERIES="${{ github.event.inputs.num_paper_search_queries || '10' }}"
+          PAPERS_PER_QUERY="${{ github.event.inputs.papers_per_query || '3' }}"
+          HYPOTHESIS_ITERS="${{ github.event.inputs.hypothesis_refinement_iterations || '2' }}"
+          NUM_MODELS="${{ github.event.inputs.num_experiment_models || '1' }}"
+          NUM_DATASETS="${{ github.event.inputs.num_experiment_datasets || '1' }}"
+          NUM_COMPARISONS="${{ github.event.inputs.num_comparison_methods || '1' }}"
+          CODE_VALIDATION_ITERS="${{ github.event.inputs.experiment_code_validation_iterations || '10' }}"
+          PAPER_REFINE_ITERS="${{ github.event.inputs.paper_content_refinement_iterations || '1' }}"
+          LATEX_TEMPLATE="${{ github.event.inputs.latex_template_name || 'iclr2024' }}"
+          LLM_MAPPING='${{ steps.llm.outputs.llm_mapping }}'
+
+          echo "Starting E2E test with:"
+          echo "  Repository: ${GITHUB_OWNER}/${REPO_NAME}"
+          echo "  Branch: ${BRANCH_NAME}"
+          echo "  W&B: ${WANDB_ENTITY}/${WANDB_PROJECT}"
+          echo "  Topic: ${RESEARCH_TOPIC}"
+          echo "  Primary LLM: ${{ github.event.inputs.primary_llm || 'o3-mini-2025-01-31' }}"
+          echo "  Coding LLM: ${{ github.event.inputs.coding_llm || 'o3-2025-04-16' }}"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8000/airas/v1/topic_open_ended_research/run \
+            -H "Content-Type: application/json" \
+            -d @- <<EOF
+          {
+            "github_config": {
+              "github_owner": "${GITHUB_OWNER}",
+              "repository_name": "${REPO_NAME}",
+              "branch_name": "${BRANCH_NAME}"
+            },
+            "research_topic": "${RESEARCH_TOPIC}",
+            "runner_config": {
+              "runner_label": ${RUNNER_LABELS},
+              "description": "${RUNNER_DESC}"
+            },
+            "wandb_config": {
+              "entity": "${WANDB_ENTITY}",
+              "project": "${WANDB_PROJECT}"
+            },
+            "is_github_repo_private": ${IS_PRIVATE},
+            "num_paper_search_queries": ${NUM_QUERIES},
+            "papers_per_query": ${PAPERS_PER_QUERY},
+            "hypothesis_refinement_iterations": ${HYPOTHESIS_ITERS},
+            "num_experiment_models": ${NUM_MODELS},
+            "num_experiment_datasets": ${NUM_DATASETS},
+            "num_comparison_methods": ${NUM_COMPARISONS},
+            "experiment_code_validation_iterations": ${CODE_VALIDATION_ITERS},
+            "paper_content_refinement_iterations": ${PAPER_REFINE_ITERS},
+            "latex_template_name": "${LATEX_TEMPLATE}",
+            "llm_mapping": ${LLM_MAPPING}
+          }
+          EOF
+          )
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response (HTTP ${HTTP_CODE}):"
+          echo "$BODY" | jq . || echo "$BODY"
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "✅ E2E test request sent successfully"
+          else
+            echo "❌ E2E test request failed with HTTP ${HTTP_CODE}"
+            exit 1
+          fi
