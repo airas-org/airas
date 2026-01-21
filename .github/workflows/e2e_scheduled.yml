@@ -2,8 +2,8 @@ name: E2E Scheduled Test
 
 on:
   schedule:
-    # Run every Monday at 00:00 UTC (09:00 JST)
-    - cron: '0 0 * * 1'
+    # Run every Wednesday at 06:20 UTC (15:20 JST)
+    - cron: '20 6 * * 3'
   workflow_dispatch:
     inputs:
       research_topic:
