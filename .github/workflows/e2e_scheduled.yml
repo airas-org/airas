@@ -1,12 +1,9 @@
 name: E2E Scheduled Test
 
 on:
-  push:
-    branches:
-      - 'feature/#614-add-feature-implement-scheduled-e2e-testing-workflow-using-github-actions'  # TODO: Remove after testing
   schedule:
-    # Run every Wednesday at 06:20 UTC (15:20 JST)
-    - cron: '20 6 * * 3'
+    # Run every Monday at 03:00 UTC (12:00 JST)
+    - cron: '0 3 * * 1'
   workflow_dispatch:
     inputs:
       research_topic:
