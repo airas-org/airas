@@ -589,7 +589,7 @@ class TopicOpenEndedResearchSubgraph:
             result = (
                 await PollGithubActionsSubgraph(github_client=self.github_client)
                 .build_graph()
-                .ainvoke({"github_config": branch_config}, {"recursion_limit": 300})
+                .ainvoke({"github_config": branch_config}, {"recursion_limit": 3600})
             )
 
             status: GitHubActionsStatus | None = result.get("status")
