@@ -42,11 +42,11 @@ on:
       num_paper_search_queries:
         description: 'Number of paper search queries'
         required: false
-        default: '10'
+        default: '3'
       papers_per_query:
         description: 'Papers per query'
         required: false
-        default: '3'
+        default: '5'
       hypothesis_refinement_iterations:
         description: 'Hypothesis refinement iterations'
         required: false
