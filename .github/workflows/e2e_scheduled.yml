@@ -197,10 +197,6 @@ jobs:
         working-directory: backend
         run: uv sync --frozen
 
-      - name: Run database migrations
-        working-directory: backend
-        run: uv run alembic upgrade head
-
       - name: Start backend server
         working-directory: backend
         run: |
