@@ -273,6 +273,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Send E2E test request
+        id: request
         run: |
           GITHUB_OWNER="${{ github.event.inputs.github_owner || 'auto-res2' }}"
           RESEARCH_TOPIC="${{ github.event.inputs.research_topic || 'Data-efficient image classification methods using novel regularization and augmentation techniques' }}"
@@ -346,7 +347,53 @@ jobs:
 
           if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
             echo "✅ E2E test request sent successfully"
+            TASK_ID=$(echo "$BODY" | jq -r '.task_id')
+            echo "task_id=${TASK_ID}" >> $GITHUB_OUTPUT
           else
             echo "❌ E2E test request failed with HTTP ${HTTP_CODE}"
             exit 1
           fi
+
+      - name: Poll for task completion
+        run: |
+          TASK_ID="${{ steps.request.outputs.task_id }}"
+          echo "Polling for task ${TASK_ID} completion..."
+
+          POLL_INTERVAL=60
+          POLL_COUNT=0
+
+          while true; do
+            POLL_COUNT=$((POLL_COUNT + 1))
+
+            STATUS_RESPONSE=$(curl -s -w "\n%{http_code}" \
+              "http://localhost:8000/airas/v1/topic_open_ended_research/status/${TASK_ID}")
+
+            STATUS_HTTP=$(echo "$STATUS_RESPONSE" | tail -n1)
+            STATUS_BODY=$(echo "$STATUS_RESPONSE" | sed '$d')
+
+            if [ "$STATUS_HTTP" -ne 200 ]; then
+              echo "⚠️ [Poll ${POLL_COUNT}] Status check failed (HTTP ${STATUS_HTTP}), retrying..."
+              sleep $POLL_INTERVAL
+              continue
+            fi
+
+            TASK_STATUS=$(echo "$STATUS_BODY" | jq -r '.status')
+            CURRENT_STEP=$(echo "$STATUS_BODY" | jq -r '.current_step // "N/A"')
+            ERROR_MSG=$(echo "$STATUS_BODY" | jq -r '.error_message // empty')
+
+            echo "[Poll ${POLL_COUNT}] Status: ${TASK_STATUS}, Step: ${CURRENT_STEP}"
+
+            if [ "$TASK_STATUS" = "completed" ]; then
+              echo "✅ E2E test completed successfully!"
+              echo "$STATUS_BODY" | jq .
+              exit 0
+            fi
+
+            if [ -n "$ERROR_MSG" ]; then
+              echo "❌ E2E test failed: ${ERROR_MSG}"
+              echo "$STATUS_BODY" | jq .
+              exit 1
+            fi
+
+            sleep $POLL_INTERVAL
+          done
