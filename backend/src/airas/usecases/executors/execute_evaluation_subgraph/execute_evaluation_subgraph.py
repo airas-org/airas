@@ -2,9 +2,11 @@ import json
 import logging
 
 from langgraph.graph import END, START, StateGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
+from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubConfig
 from airas.infra.github_client import GithubClient
@@ -19,6 +21,10 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 record_execution_time = lambda f: time_node("execute_evaluation_subgraph")(f)  # noqa: E731
+
+
+class ExecuteEvaluationLLMMapping(BaseModel):
+    dispatch_evaluation: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["dispatch_evaluation"]
 
 
 class ExecuteEvaluationSubgraphInputState(TypedDict):
@@ -41,10 +47,12 @@ class ExecuteEvaluationSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
-        workflow_file: str = "dev_run_evaluation_with_claude_code.yml",
+        workflow_file: str = "dev_run_evaluation_with_open_code.yml",
+        llm_mapping: ExecuteEvaluationLLMMapping | None = None,
     ):
         self.github_client = github_client
         self.workflow_file = workflow_file
+        self.llm_mapping = llm_mapping or ExecuteEvaluationLLMMapping()
 
     @record_execution_time
     async def _read_run_ids(
@@ -74,6 +82,7 @@ class ExecuteEvaluationSubgraph:
 
         inputs = {
             "run_ids": json.dumps(run_ids),
+            "model_name": self.llm_mapping.dispatch_evaluation.llm_name,
         }
 
         success = await dispatch_workflow(

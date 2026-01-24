@@ -6,7 +6,7 @@ Content-Type: application/json
 {
     "github_config": {
         "github_owner": "auto-res2",
-        "repository_name": "matsuzawa-20260113-4",
+        "repository_name": "matsuzawa-20260120-2",
         "branch_name": "main"
     },
     "research_topic": "Data-efficient image classification methods using novel regularization and augmentation techniques",
@@ -16,7 +16,7 @@ Content-Type: application/json
     },
     "wandb_config": {
         "entity": "gengaru617-personal",
-        "project": "2026-01-13"
+        "project": "2026-01-20"
     },
     "is_github_repo_private": false,
     "num_paper_search_queries": 10,

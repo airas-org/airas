@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import math
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, Mapping, Sequence
 from uuid import UUID
 
+import numpy as np
 from pydantic import BaseModel
 
 JSONScalar = str | int | float | bool | None
@@ -50,5 +52,17 @@ def to_dict_deep(obj: Any) -> Any:
         return obj.isoformat()
     if isinstance(obj, UUID):
         return str(obj)
+
+    # float の NaN/Infinity は JSON 仕様で無効なため None に変換
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+
+    # numpy の浮動小数点型も Python float に変換
+    if isinstance(obj, np.floating):
+        if np.isnan(obj) or np.isinf(obj):
+            return None
+        return float(obj)
 
     return obj

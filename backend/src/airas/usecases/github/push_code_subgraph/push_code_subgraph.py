@@ -44,9 +44,16 @@ class PushCodeSubgraph:
         secret_names: list[str] | None = None,
     ):
         self.secret_names = secret_names or [
-            "HF_TOKEN",
-            "WANDB_API_KEY",
+            "OPENAI_API_KEY",
+            "GEMINI_API_KEY",
             "ANTHROPIC_API_KEY",
+            "OPENROUTER_API_KEY",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "WANDB_API_KEY",
+            "HF_TOKEN",
+            "LANGFUSE_SECRET_KEY",
+            "LANGFUSE_PUBLIC_KEY",
+            "LANGFUSE_BASE_URL",
         ]
         self.github_client = github_client
 

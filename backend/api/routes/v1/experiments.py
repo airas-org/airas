@@ -106,7 +106,10 @@ async def execute_trial(
     config = {"callbacks": [handler]} if handler else {}
 
     result = (
-        await ExecuteTrialExperimentSubgraph(github_client=github_client)
+        await ExecuteTrialExperimentSubgraph(
+            github_client=github_client,
+            llm_mapping=request.llm_mapping,
+        )
         .build_graph()
         .ainvoke(request, config=config)
     )
@@ -131,7 +134,10 @@ async def execute_full(
     config = {"callbacks": [handler]} if handler else {}
 
     result = (
-        await ExecuteFullExperimentSubgraph(github_client=github_client)
+        await ExecuteFullExperimentSubgraph(
+            github_client=github_client,
+            llm_mapping=request.llm_mapping,
+        )
         .build_graph()
         .ainvoke(request, config=config)
     )
@@ -156,7 +162,10 @@ async def execute_evaluation(
     config = {"callbacks": [handler]} if handler else {}
 
     result = (
-        await ExecuteEvaluationSubgraph(github_client=github_client)
+        await ExecuteEvaluationSubgraph(
+            github_client=github_client,
+            llm_mapping=request.llm_mapping,
+        )
         .build_graph()
         .ainvoke(request, config=config)
     )

@@ -2,9 +2,11 @@ import json
 import logging
 
 from langgraph.graph import END, START, StateGraph
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
+from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubConfig
 from airas.infra.github_client import GithubClient
@@ -19,6 +21,12 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 record_execution_time = lambda f: time_node("execute_trial_experiment_subgraph")(f)  # noqa: E731
+
+
+class ExecuteTrialExperimentLLMMapping(BaseModel):
+    dispatch_trial_experiment: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
+        "dispatch_trial_experiment"
+    ]
 
 
 class ExecuteTrialExperimentSubgraphInputState(TypedDict):
@@ -43,11 +51,13 @@ class ExecuteTrialExperimentSubgraph:
         self,
         github_client: GithubClient,
         runner_label: list[str] | None = None,
-        workflow_file: str = "dev_run_trial_experiment_with_claude_code.yml",
+        workflow_file: str = "dev_run_trial_experiment_with_open_code.yml",
+        llm_mapping: ExecuteTrialExperimentLLMMapping | None = None,
     ):
         self.github_client = github_client
         self.runner_label = runner_label or ["ubuntu-latest"]
         self.workflow_file = workflow_file
+        self.llm_mapping = llm_mapping or ExecuteTrialExperimentLLMMapping()
 
     @record_execution_time
     async def _read_run_ids(
@@ -78,6 +88,7 @@ class ExecuteTrialExperimentSubgraph:
         inputs = {
             "runner_label": json.dumps(self.runner_label),
             "run_ids": json.dumps(run_ids),
+            "model_name": self.llm_mapping.dispatch_trial_experiment.llm_name,
         }
 
         success = await dispatch_workflow(
