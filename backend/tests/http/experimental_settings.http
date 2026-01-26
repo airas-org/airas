@@ -18,8 +18,5 @@ Content-Type: application/json
     },
     "num_models_to_use": 2,
     "num_datasets_to_use": 2,
-    "num_comparative_methods": 2,
-    "llm_mapping": {
-        "generate_experimental_design": "global.anthropic.claude-sonnet-4-5-20250929-v1:0"
-    }
+    "num_comparative_methods": 2
 }

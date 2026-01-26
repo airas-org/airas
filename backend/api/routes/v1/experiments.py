@@ -4,28 +4,28 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from langfuse import observe
 
-from airas.core.container import Container
-from airas.features.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
+from airas.container import Container
+from airas.infra.github_client import GithubClient
+from airas.infra.langchain_client import LangChainClient
+from airas.infra.langfuse_client import LangfuseClient
+from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
-from airas.features.executors.execute_evaluation_subgraph.execute_evaluation_subgraph import (
+from airas.usecases.executors.execute_evaluation_subgraph.execute_evaluation_subgraph import (
     ExecuteEvaluationSubgraph,
 )
-from airas.features.executors.execute_full_experiment_subgraph.execute_full_experiment_subgraph import (
+from airas.usecases.executors.execute_full_experiment_subgraph.execute_full_experiment_subgraph import (
     ExecuteFullExperimentSubgraph,
 )
-from airas.features.executors.execute_trial_experiment_subgraph.execute_trial_experiment_subgraph import (
+from airas.usecases.executors.execute_trial_experiment_subgraph.execute_trial_experiment_subgraph import (
     ExecuteTrialExperimentSubgraph,
 )
-from airas.features.executors.fetch_experiment_results_subgraph.fetch_experiment_results_subgraph import (
+from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment_results_subgraph import (
     FetchExperimentResultsSubgraph,
 )
-from airas.features.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph import (
+from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph import (
     FetchRunIdsSubgraph,
 )
-from airas.services.api_client.github_client import GithubClient
-from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.langfuse_client import LangfuseClient
 from api.schemas.experiments import (
     AnalyzeExperimentRequestBody,
     AnalyzeExperimentResponseBody,
@@ -106,7 +106,10 @@ async def execute_trial(
     config = {"callbacks": [handler]} if handler else {}
 
     result = (
-        await ExecuteTrialExperimentSubgraph(github_client=github_client)
+        await ExecuteTrialExperimentSubgraph(
+            github_client=github_client,
+            llm_mapping=request.llm_mapping,
+        )
         .build_graph()
         .ainvoke(request, config=config)
     )
@@ -131,7 +134,10 @@ async def execute_full(
     config = {"callbacks": [handler]} if handler else {}
 
     result = (
-        await ExecuteFullExperimentSubgraph(github_client=github_client)
+        await ExecuteFullExperimentSubgraph(
+            github_client=github_client,
+            llm_mapping=request.llm_mapping,
+        )
         .build_graph()
         .ainvoke(request, config=config)
     )
@@ -156,7 +162,10 @@ async def execute_evaluation(
     config = {"callbacks": [handler]} if handler else {}
 
     result = (
-        await ExecuteEvaluationSubgraph(github_client=github_client)
+        await ExecuteEvaluationSubgraph(
+            github_client=github_client,
+            llm_mapping=request.llm_mapping,
+        )
         .build_graph()
         .ainvoke(request, config=config)
     )

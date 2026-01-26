@@ -2,7 +2,10 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { GitHubConfig } from "./GitHubConfig";
+import type { ExecuteTrialExperimentLLMMapping } from './ExecuteTrialExperimentLLMMapping';
+import type { GitHubConfig } from './GitHubConfig';
 export type ExecuteTrialRequestBody = {
-  github_config: GitHubConfig;
+    github_config: GitHubConfig;
+    llm_mapping?: (ExecuteTrialExperimentLLMMapping | null);
 };
+

@@ -2,8 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { DatasetConfig } from "./DatasetConfig";
+import type { DatasetConfig } from './DatasetConfig';
 export type RetrieveDatasetsSubgraphResponseBody = {
-  datasets_dict: Record<string, DatasetConfig>;
-  execution_time: Record<string, Array<number>>;
+    datasets_dict: Record<string, DatasetConfig>;
+    execution_time: Record<string, Array<number>>;
 };
+

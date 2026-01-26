@@ -4,21 +4,18 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from langfuse import observe
 
-from airas.core.container import Container
-from airas.features.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
+from airas.container import Container
+from airas.infra.arxiv_client import ArxivClient
+from airas.infra.github_client import GithubClient
+from airas.infra.langchain_client import LangChainClient
+from airas.infra.langfuse_client import LangfuseClient
+from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
 )
-from airas.features.retrieve.search_paper_titles_subgraph.search_paper_titles_from_airas_db_subgraph import (
+from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_airas_db_subgraph import (
     SearchPaperTitlesFromAirasDbSubgraph,
 )
-from airas.features.retrieve.search_paper_titles_subgraph.search_paper_titles_from_qdrant_subgraph import (
-    SearchPaperTitlesFromQdrantSubgraph,
-)
-from airas.features.writers.write_subgraph.write_subgraph import WriteSubgraph
-from airas.services.api_client.arxiv_client import ArxivClient
-from airas.services.api_client.github_client import GithubClient
-from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.langfuse_client import LangfuseClient
+from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
 from api.schemas.papers import (
     RetrievePaperSubgraphRequestBody,
     RetrievePaperSubgraphResponseBody,
@@ -40,23 +37,13 @@ async def search_paper_titles(
 ) -> SearchPaperTitlesResponseBody:
     container: Container = fastapi_request.app.state.container
 
-    subgraph: SearchPaperTitlesFromAirasDbSubgraph | SearchPaperTitlesFromQdrantSubgraph
+    subgraph: SearchPaperTitlesFromAirasDbSubgraph
     match request.search_method:
         case SearchMethod.AIRAS_DB:
             search_index = container.airas_db_search_index()
             subgraph = SearchPaperTitlesFromAirasDbSubgraph(
                 search_index=search_index,
-                max_results_per_query=request.max_results_per_query,
-            )
-
-        case SearchMethod.QDRANT:
-            llm_client = container.llm_facade_client()
-            qdrant_client = container.qdrant_client()
-
-            subgraph = SearchPaperTitlesFromQdrantSubgraph(
-                llm_client=llm_client,
-                qdrant_client=qdrant_client,
-                max_results_per_query=request.max_results_per_query,
+                papers_per_query=request.max_results_per_query,
             )
 
         case _:
@@ -97,6 +84,7 @@ async def get_paper_title(
             langchain_client=langchain_client,
             arxiv_client=arxiv_client,
             github_client=github_client,
+            llm_mapping=request.llm_mapping,
         )
         .build_graph()
         .ainvoke(request.model_dump(), config=config)
@@ -127,7 +115,7 @@ async def generate_paper(
     result = (
         await WriteSubgraph(
             langchain_client=langchain_client,
-            writing_refinement_rounds=request.writing_refinement_rounds,
+            paper_content_refinement_iterations=request.writing_refinement_rounds,
             llm_mapping=request.llm_mapping,
         )
         .build_graph()

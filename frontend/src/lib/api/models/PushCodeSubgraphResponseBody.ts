@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export type PushCodeSubgraphResponseBody = {
-  code_pushed: boolean;
-  execution_time: Record<string, Array<number>>;
+    code_pushed: boolean;
+    execution_time: Record<string, Array<number>>;
 };
+

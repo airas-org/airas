@@ -156,9 +156,6 @@ Content-Type: application/json
             }
         },
         "figures": ["confusion_matrix.png", "attention_heatmap.png"]
-    },
-    "llm_mapping": {
-        "analyze_experiment": "global.anthropic.claude-sonnet-4-5-20250929-v1:0"
     }
 }
 

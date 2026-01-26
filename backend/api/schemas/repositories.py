@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from airas.types.github import GitHubConfig
+from airas.core.types.github import GitHubConfig
 
 
 class PrepareRepositorySubgraphRequestBody(BaseModel):

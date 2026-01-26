@@ -1,0 +1,50 @@
+### Create assisted research session
+POST http://127.0.0.1:8000/airas/v1/assisted_research/session
+Content-Type: application/json
+
+{
+    "title": "Sample research session",
+    "created_by": "00000000-0000-0000-0000-000000000001"
+}
+
+
+### Get assisted research session
+GET http://127.0.0.1:8000/airas/v1/assisted_research/session/16a55985-036e-466d-9c1d-db133bbdccdc
+Content-Type: application/json
+
+
+### Create assisted research step
+POST http://127.0.0.1:8000/airas/v1/assisted_research/step
+Content-Type: application/json
+
+{
+    "session_id": "d673d25d-2c3c-42f5-934d-f175c311da04",
+    "created_by": "00000000-0000-0000-0000-000000000001",
+    "status": "pending",
+    "step_type": "prepare_repository",
+    "error_message": null,
+    "result": {
+        "note": "example result payload"
+    },
+    "schema_version": 1
+}
+
+
+### Get assisted research step
+GET http://127.0.0.1:8000/airas/v1/assisted_research/step/fc99d4dc-b245-4e2d-ab6d-6cc2ffee9d70
+Content-Type: application/json
+
+
+### Create assisted research link between steps
+GET http://127.0.0.1:8000/airas/v1/assisted_research/link
+Content-Type: application/json
+
+{
+    "from_step_id": "00000000-0000-0000-0000-000000000001",
+    "to_step_id": "00000000-0000-0000-0000-000000000004"
+}
+
+
+### List assisted research links by from_step_id
+GET http://127.0.0.1:8000/airas/v1/assisted_research/link/00000000-0000-0000-0000-000000000001
+Content-Type: application/json

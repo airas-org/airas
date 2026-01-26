@@ -2,8 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ExperimentalResults } from "./ExperimentalResults";
+import type { ExperimentalResults } from './ExperimentalResults';
 export type FetchExperimentalResultsResponseBody = {
-  experiment_results: ExperimentalResults;
-  execution_time: Record<string, Array<number>>;
+    experiment_results: ExperimentalResults;
+    execution_time: Record<string, Array<number>>;
 };
+

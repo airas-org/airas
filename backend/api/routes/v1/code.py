@@ -4,16 +4,16 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from langfuse import observe
 
-from airas.core.container import Container
-from airas.features.generators.generate_code_subgraph.generate_code_subgraph import (
+from airas.container import Container
+from airas.infra.github_client import GithubClient
+from airas.infra.langchain_client import LangChainClient
+from airas.infra.langfuse_client import LangfuseClient
+from airas.usecases.generators.generate_code_subgraph.generate_code_subgraph import (
     GenerateCodeSubgraph,
 )
-from airas.features.github.push_code_subgraph.push_code_subgraph import (
+from airas.usecases.github.push_code_subgraph.push_code_subgraph import (
     PushCodeSubgraph,
 )
-from airas.services.api_client.github_client import GithubClient
-from airas.services.api_client.langchain_client import LangChainClient
-from airas.services.api_client.langfuse_client import LangfuseClient
 from api.schemas.code import (
     GenerateCodeSubgraphRequestBody,
     GenerateCodeSubgraphResponseBody,

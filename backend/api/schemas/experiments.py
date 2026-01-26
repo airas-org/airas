@@ -1,14 +1,23 @@
 from pydantic import BaseModel
 
-from airas.features.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
+from airas.core.types.experiment_code import ExperimentCode
+from airas.core.types.experimental_analysis import ExperimentalAnalysis
+from airas.core.types.experimental_design import ExperimentalDesign
+from airas.core.types.experimental_results import ExperimentalResults
+from airas.core.types.github import GitHubConfig
+from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentLLMMapping,
 )
-from airas.types.experiment_code import ExperimentCode
-from airas.types.experimental_analysis import ExperimentalAnalysis
-from airas.types.experimental_design import ExperimentalDesign
-from airas.types.experimental_results import ExperimentalResults
-from airas.types.github import GitHubConfig
-from airas.types.research_hypothesis import ResearchHypothesis
+from airas.usecases.executors.execute_evaluation_subgraph.execute_evaluation_subgraph import (
+    ExecuteEvaluationLLMMapping,
+)
+from airas.usecases.executors.execute_full_experiment_subgraph.execute_full_experiment_subgraph import (
+    ExecuteFullExperimentLLMMapping,
+)
+from airas.usecases.executors.execute_trial_experiment_subgraph.execute_trial_experiment_subgraph import (
+    ExecuteTrialExperimentLLMMapping,
+)
 
 
 class FetchRunIdsRequestBody(BaseModel):
@@ -31,6 +40,7 @@ class FetchExperimentalResultsResponseBody(BaseModel):
 
 class ExecuteTrialRequestBody(BaseModel):
     github_config: GitHubConfig
+    llm_mapping: ExecuteTrialExperimentLLMMapping | None = None
 
 
 class ExecuteTrialResponseBody(BaseModel):
@@ -42,6 +52,7 @@ class ExecuteTrialResponseBody(BaseModel):
 class ExecuteFullRequestBody(BaseModel):
     github_config: GitHubConfig
     run_ids: list[str]
+    llm_mapping: ExecuteFullExperimentLLMMapping | None = None
 
 
 class ExecuteFullResponseBody(BaseModel):
@@ -52,6 +63,7 @@ class ExecuteFullResponseBody(BaseModel):
 
 class ExecuteEvaluationRequestBody(BaseModel):
     github_config: GitHubConfig
+    llm_mapping: ExecuteEvaluationLLMMapping | None = None
 
 
 class ExecuteEvaluationResponseBody(BaseModel):

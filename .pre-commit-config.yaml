@@ -17,6 +17,13 @@ repos:
 
 - repo: local
   hooks:
+    - id: update-openapi
+      name: Update OpenAPI schema and frontend client
+      entry: .pre-commit-hooks/update-openapi.sh
+      language: system
+      files: ^backend/api/
+      pass_filenames: false
+
     - id: biome-check
       name: biome check (write)
       entry: bash -lc 'cd frontend && npx biome check --write'

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from airas.types.research_study import ResearchStudy
+from airas.core.types.research_study import ResearchStudy
 
 
 class GenerateBibfileSubgraphRequestBody(BaseModel):
