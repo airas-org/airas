@@ -33,7 +33,7 @@ on:
       wandb_entity:
         description: 'W&B entity name'
         required: false
-        default: 'gengaru617-personal'
+        default: 'airas'
       is_github_repo_private:
         description: 'Make repository private'
         required: false
@@ -103,7 +103,7 @@ on:
 jobs:
   check-org-membership:
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     outputs:
       is_member: ${{ steps.check.outputs.is_member }}
     steps:
@@ -276,7 +276,7 @@ jobs:
           RESEARCH_TOPIC="${{ github.event.inputs.research_topic || 'Data-efficient image classification methods using novel regularization and augmentation techniques' }}"
           BRANCH_NAME="${{ github.event.inputs.branch_name || 'main' }}"
           REPO_NAME="${{ steps.params.outputs.repo_name }}"
-          WANDB_ENTITY="${{ github.event.inputs.wandb_entity || 'gengaru617-personal' }}"
+          WANDB_ENTITY="${{ github.event.inputs.wandb_entity || 'airas' }}"
           WANDB_PROJECT="${{ steps.params.outputs.date_only }}"
           RUNNER_LABELS='${{ github.event.inputs.runner_label }}'
           if [ -z "$RUNNER_LABELS" ]; then
@@ -284,8 +284,8 @@ jobs:
           fi
           RUNNER_DESC="${{ github.event.inputs.runner_description || 'NVIDIA A100 or H200, VRAM: 80 GB or more, RAM: 2048 GB or more' }}"
           IS_PRIVATE="${{ github.event.inputs.is_github_repo_private || 'false' }}"
-          NUM_QUERIES="${{ github.event.inputs.num_paper_search_queries || '10' }}"
-          PAPERS_PER_QUERY="${{ github.event.inputs.papers_per_query || '3' }}"
+          NUM_QUERIES="${{ github.event.inputs.num_paper_search_queries || '3' }}"
+          PAPERS_PER_QUERY="${{ github.event.inputs.papers_per_query || '5' }}"
           HYPOTHESIS_ITERS="${{ github.event.inputs.hypothesis_refinement_iterations || '2' }}"
           NUM_MODELS="${{ github.event.inputs.num_experiment_models || '1' }}"
           NUM_DATASETS="${{ github.event.inputs.num_experiment_datasets || '1' }}"
