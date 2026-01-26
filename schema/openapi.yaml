@@ -1584,21 +1584,21 @@ components:
         generate_run_config:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-2025-04-16
+            llm_name: gpt-5-nano-2025-08-07
             params:
               provider_type: openai
               reasoning_effort: high
         generate_experiment_code:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-2025-04-16
+            llm_name: gpt-5-nano-2025-08-07
             params:
               provider_type: openai
               reasoning_effort: high
         validate_experiment_code:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-2025-04-16
+            llm_name: gpt-5-nano-2025-08-07
             params:
               provider_type: openai
               reasoning_effort: high
@@ -2942,7 +2942,7 @@ components:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
             llm_name: gpt-5-nano-2025-08-07
-        extract_experimental_info:
+        select_experimental_files:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
             llm_name: gpt-5-nano-2025-08-07

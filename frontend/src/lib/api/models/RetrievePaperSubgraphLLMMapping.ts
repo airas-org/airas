@@ -7,7 +7,7 @@ export type RetrievePaperSubgraphLLMMapping = {
     search_arxiv_id_from_title?: NodeLLMConfig;
     summarize_paper?: NodeLLMConfig;
     extract_github_url_from_text?: NodeLLMConfig;
-    extract_experimental_info?: NodeLLMConfig;
+    select_experimental_files?: NodeLLMConfig;
     extract_reference_titles?: NodeLLMConfig;
 };
 
