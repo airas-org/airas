@@ -422,7 +422,7 @@ jobs:
 
             echo "[Poll #${POLL_COUNT} | ${ELAPSED}s] ${TASK_STATUS} - ${CURRENT_STEP}"
             echo "--- Status response ---"
-            echo "$STATUS_BODY" | jq .
+            echo "$STATUS_BODY" | jq 'del(.result, .research_history)'
             echo "--- Server log (last 20 lines) ---"
             tail -n 20 /tmp/e2e-logs/server.log 2>/dev/null || echo "(no log)"
             echo "---"
