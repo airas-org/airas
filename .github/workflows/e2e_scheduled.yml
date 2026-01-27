@@ -418,16 +418,20 @@ jobs:
             PREV_STEP="$CURRENT_STEP"
 
             echo "[Poll #${POLL_COUNT} | ${ELAPSED}s] ${TASK_STATUS} - ${CURRENT_STEP}"
+            echo "--- Status response ---"
+            echo "$STATUS_BODY" | jq .
+            echo "--- Server log (last 20 lines) ---"
+            tail -n 20 /tmp/e2e-logs/server.log 2>/dev/null || echo "(no log)"
+            echo "---"
 
             if [ "$TASK_STATUS" = "completed" ]; then
               echo "E2E test completed (${ELAPSED}s)"
-              echo "$STATUS_BODY" | jq .
               exit 0
             fi
 
             if [ "$TASK_STATUS" = "failed" ] || [ -n "$ERROR_MSG" ]; then
               echo "E2E test failed: ${ERROR_MSG}"
-              echo "$STATUS_BODY" | jq .
+              echo "--- Server log (last 100 lines) ---"
               tail -n 100 /tmp/e2e-logs/server.log 2>/dev/null || true
               exit 1
             fi
