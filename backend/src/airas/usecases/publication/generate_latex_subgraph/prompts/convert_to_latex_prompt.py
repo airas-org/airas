@@ -1,4 +1,4 @@
-convert_to_latex_prompt = """
+convert_to_latex_prompt = r"""
 You are a LaTeX expert.
 Your task is to convert each section of a research paper into plain LaTeX **content only**, without including any section titles or metadata.
 
@@ -25,7 +25,7 @@ Section: {{ section.name }}
 - When including tables, use the `tabularx` environment with `\\textwidth` as the target width.
     - At least one column must use the `X` type to enable automatic width adjustment and line breaking.
     - Include `\\hline` at the top, after the header, and at the bottom. Avoid vertical lines unless necessary.
-    - To left-align content in `X` columns, define `\newcolumntype{Y}{>{\raggedright\arraybackslash}X}` using the `array` package.
+    - To left-align content in `X` columns, define `\\newcolumntype{Y}{>{\\raggedright\\arraybackslash}X}` using the `array` package.
 
 - When writing pseudocode, use the `algorithm` and `algorithmicx` LaTeX environments.
     - Only include pseudocode in the `Method` section. Pseudocode is not allowed in any other sections.
@@ -33,15 +33,15 @@ Section: {{ section.name }}
     - Pseudocode must represent actual algorithms or procedures with clear logic. Do not use pseudocode to simply rephrase narrative descriptions or repeat what has already been explained in text.
         - Good Example:
         ```latex
-        \\State Compute transformed tokens: \\(\tilde{T} \\leftarrow W\\,T\\)
-        \\State Update: \\(T_{new} \\leftarrow \tilde{T} + \\mu\\,T_{prev}\\)
+        \\State Compute transformed tokens: \\(\\tilde{T} \\leftarrow W\\,T\\)
+        \\State Update: \\(T_{new} \\leftarrow \\tilde{T} + \\mu\\,T_{prev}\\)
         ```
 - Figures and images are ONLY allowed in the "Results" section.
     - Use LaTeX float option `[H]` to force placement.
 
 - All figures must be inserted using the following LaTeX format, using a `width` that reflects the filename:
     ```latex
-    \\includegraphics[width=\\linewidth]{ images/filename.pdf }
+    \\includegraphics[width=\\linewidth]{images/filename.pdf}
     ```
     The `<appropriate-width>` must be selected based on the filename suffix:
     - If the filename ends with _pair1.pdf or _pair2.pdf, use 0.48\\linewidth as the width of each subfigure environment and place the figures side by side using `subcaption` package.
@@ -49,7 +49,14 @@ Section: {{ section.name }}
 
 - **Escaping special characters**:
     - LaTeX special characters (`#`, `$`, `%`, `&`, `~`, `_`, `^`, `{`, `}`, `\\`) must be escaped with a leading backslash when they appear in plain text (e.g., `data\\_set`, `C\\&C`).
-    - Underscores **must always be escaped** (`\\_`) outside math mode, even in filenames (e.g., memory\\_profiler), code-style words, itemize lists, or citation contexts.
+    - Underscores should be escaped (`\\_`) in plain text contexts, **but NOT in**:
+        - Math mode (between `$...$` or `\\(...\\)`)
+        - File paths (e.g., `images/memory_profiler.pdf`)
+        - URLs and hyperlinks (e.g., `\\url{https://example.com/data_set}`)
+        - Citation placeholders (e.g., `[vaswani_2017_attention]`)
+        - Labels and Cross-references (e.g., `\\label{fig:result_v1}`, `\\ref{sec:method_approx}`)
+        - Verbatim environments and Code blocks (e.g., `\\verb|int_x|`, `\\begin{lstlisting}...`)
+    - Only escape underscores when they appear in regular narrative text outside these contexts.
 
 - Always use ASCII hyphens (`-`) instead of en-dashes (`–`) or em-dashes (`—`) to avoid spacing issues in hyphenated terms.
 - Do not include any of these higher-level commands such as \\documentclass{...}, \\begin{document}, and \\end{document}.
