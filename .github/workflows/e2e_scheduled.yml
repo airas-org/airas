@@ -260,9 +260,9 @@ jobs:
             },
             "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY_LLM}"}},
             "generate_code": {
-              "generate_run_config": {"llm_name": "${CODING_LLM}", "params": {"reasoning_effort": "high"}},
-              "generate_experiment_code": {"llm_name": "${CODING_LLM}", "params": {"reasoning_effort": "high"}},
-              "validate_experiment_code": {"llm_name": "${CODING_LLM}", "params": {"reasoning_effort": "high"}}
+              "generate_run_config": {"llm_name": "${CODING_LLM}", "params": {"provider_type": "openai", "reasoning_effort": "high"}},
+              "generate_experiment_code": {"llm_name": "${CODING_LLM}", "params": {"provider_type": "openai", "reasoning_effort": "high"}},
+              "validate_experiment_code": {"llm_name": "${CODING_LLM}", "params": {"provider_type": "openai", "reasoning_effort": "high"}}
             },
             "analyze_experiment": {"analyze_experiment": {"llm_name": "${PRIMARY_LLM}"}},
             "write": {
