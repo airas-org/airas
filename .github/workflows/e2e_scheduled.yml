@@ -84,14 +84,14 @@ on:
         type: choice
         options:
           - 'gpt-5.2-codex'
-          - 'gpt-5.2-2025-12-11'
+          - 'gpt-5.2'
           - 'o3-2025-04-16'
           - 'o3-mini-2025-01-31'
           - 'gpt-5-mini-2025-08-07'
           - 'google/gemini-2.5-pro'
           - 'claude-sonnet-4-5'
           - 'claude-opus-4'
-        default: 'gpt-5.2-2025-12-11'
+        default: 'gpt-5.2'
       coding_llm:
         # Currently limited to OpenAI models because reasoning_effort param is required for coding.
         # Once migrated to LiteLLM, provider-agnostic params will allow other models as well.
@@ -100,7 +100,7 @@ on:
         type: choice
         options:
           - 'gpt-5.2-codex'
-          - 'gpt-5.2-2025-12-11'
+          - 'gpt-5.2'
           - 'o3-2025-04-16'
           - 'o3-mini-2025-01-31'
           - 'gpt-5-mini-2025-08-07'
@@ -239,8 +239,11 @@ jobs:
       - name: Build LLM mapping JSON
         id: llm
         run: |
-          PRIMARY_LLM="${{ github.event.inputs.primary_llm || 'gpt-5.2-2025-12-11' }}"
+          PRIMARY_LLM="${{ github.event.inputs.primary_llm || 'gpt-5.2' }}"
           CODING_LLM="${{ github.event.inputs.coding_llm || 'gpt-5.2-codex' }}"
+
+          echo "primary_llm=${PRIMARY_LLM}" >> $GITHUB_OUTPUT
+          echo "coding_llm=${CODING_LLM}" >> $GITHUB_OUTPUT
 
           # Build the llm_mapping JSON
           LLM_MAPPING=$(cat <<EOFLLM
@@ -310,8 +313,8 @@ jobs:
           echo "  Branch: ${BRANCH_NAME}"
           echo "  W&B: ${WANDB_ENTITY}/${WANDB_PROJECT}"
           echo "  Topic: ${RESEARCH_TOPIC}"
-          echo "  Primary LLM: ${{ github.event.inputs.primary_llm || 'gpt-5.2-2025-12-11' }}"
-          echo "  Coding LLM: ${{ github.event.inputs.coding_llm || 'gpt-5.2-codex' }}"
+          echo "  Primary LLM: ${{ steps.llm.outputs.primary_llm }}"
+          echo "  Coding LLM: ${{ steps.llm.outputs.coding_llm }}"
 
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8000/airas/v1/topic_open_ended_research/run \
             -H "Content-Type: application/json" \
