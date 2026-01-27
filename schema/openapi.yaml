@@ -861,7 +861,7 @@ components:
         analyze_experiment:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-mini-2025-01-31
+            llm_name: gpt-5.2-2025-12-11
       type: object
       title: AnalyzeExperimentLLMMapping
     AnalyzeExperimentRequestBody:
@@ -1632,21 +1632,21 @@ components:
         generate_run_config:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-2025-04-16
+            llm_name: gpt-5.2-codex
             params:
               provider_type: openai
               reasoning_effort: high
         generate_experiment_code:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-2025-04-16
+            llm_name: gpt-5.2-codex
             params:
               provider_type: openai
               reasoning_effort: high
         validate_experiment_code:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-2025-04-16
+            llm_name: gpt-5.2-codex
             params:
               provider_type: openai
               reasoning_effort: high
@@ -1695,7 +1695,7 @@ components:
         generate_experimental_design:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-mini-2025-01-31
+            llm_name: gpt-5.2-2025-12-11
       type: object
       title: GenerateExperimentalDesignLLMMapping
     GenerateExperimentalDesignSubgraphRequestBody:
@@ -1746,15 +1746,15 @@ components:
         generate_hypothesis:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-mini-2025-01-31
+            llm_name: gpt-5.2-2025-12-11
         evaluate_novelty_and_significance:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-mini-2025-01-31
+            llm_name: gpt-5.2-2025-12-11
         refine_hypothesis:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-mini-2025-01-31
+            llm_name: gpt-5.2-2025-12-11
       type: object
       title: GenerateHypothesisSubgraphV0LLMMapping
     GenerateHypothesisSubgraphV0RequestBody:
@@ -1801,7 +1801,7 @@ components:
         convert_to_latex:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-mini-2025-01-31
+            llm_name: gpt-5.2-2025-12-11
       type: object
       title: GenerateLatexLLMMapping
     GenerateLatexSubgraphRequestBody:
@@ -1849,7 +1849,7 @@ components:
         generate_queries:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-mini-2025-01-31
+            llm_name: gpt-5.2-2025-12-11
       type: object
       title: GenerateQueriesLLMMapping
     GitHubConfig:
@@ -2907,19 +2907,19 @@ components:
         summarize_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-mini-2025-01-31
+            llm_name: gpt-5.2-2025-12-11
         extract_github_url_from_text:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-mini-2025-01-31
+            llm_name: gpt-5.2-2025-12-11
         select_experimental_files:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-mini-2025-01-31
+            llm_name: gpt-5.2-2025-12-11
         extract_reference_titles:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-mini-2025-01-31
+            llm_name: gpt-5.2-2025-12-11
       type: object
       title: RetrievePaperSubgraphLLMMapping
     RetrievePaperSubgraphRequestBody:
@@ -3481,11 +3481,11 @@ components:
         write_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-mini-2025-01-31
+            llm_name: gpt-5.2-2025-12-11
         refine_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: o3-mini-2025-01-31
+            llm_name: gpt-5.2-2025-12-11
       type: object
       title: WriteLLMMapping
     WriteSubgraphRequestBody:
