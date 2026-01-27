@@ -109,7 +109,7 @@ on:
 jobs:
   check-org-membership:
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     outputs:
       is_member: ${{ steps.check.outputs.is_member }}
     steps:
@@ -118,8 +118,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.AIRAS_ORG_TOKEN }}
         run: |
-          # For scheduled runs, always allow
-          if [ "${{ github.event_name }}" = "schedule" ]; then
+          # For scheduled runs and push events, always allow
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "push" ]; then
             echo "is_member=true" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -146,7 +146,7 @@ jobs:
 
   e2e-test:
     needs: check-org-membership
-    if: github.event_name == 'push' || needs.check-org-membership.outputs.is_member == 'true'
+    if: needs.check-org-membership.outputs.is_member == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 1440  # 24 hours
 
