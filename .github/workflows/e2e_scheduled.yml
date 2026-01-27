@@ -286,7 +286,7 @@ jobs:
         id: request
         run: |
           GITHUB_OWNER="${{ github.event.inputs.github_owner || 'auto-res2' }}"
-          RESEARCH_TOPIC="${{ github.event.inputs.research_topic || 'Data-efficient image classification methods using novel regularization and augmentation techniques' }}"
+          RESEARCH_TOPIC="${{ github.event.inputs.research_topic || 'Proposing an improved version of the Chain-of-Thought based on human thinking methods' }}"
           BRANCH_NAME="${{ github.event.inputs.branch_name || 'main' }}"
           REPO_NAME="${{ steps.params.outputs.repo_name }}"
           WANDB_ENTITY="${{ github.event.inputs.wandb_entity || 'airas' }}"
