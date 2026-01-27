@@ -2,9 +2,10 @@ name: E2E Scheduled Test
 
 on:
   schedule:
-    # Run every Monday at 03:00 UTC (12:00 JST)
-    - cron: '0 3 * * 1'
+    # Run every Monday at 00:00 JST (Sunday 15:00 UTC)
+    - cron: '0 15 * * 0'
   workflow_dispatch:
+  push:
     inputs:
       research_topic:
         description: 'Research topic for the E2E test'
@@ -80,25 +81,28 @@ on:
         required: false
         type: choice
         options:
+          - 'gpt-5.2-codex'
+          - 'gpt-5.2-2025-12-11'
           - 'o3-2025-04-16'
           - 'o3-mini-2025-01-31'
           - 'gpt-5-mini-2025-08-07'
           - 'google/gemini-2.5-pro'
           - 'claude-sonnet-4-5'
           - 'claude-opus-4'
-        default: 'o3-mini-2025-01-31'
+        default: 'gpt-5.2-2025-12-11'
       coding_llm:
+        # Currently limited to OpenAI models because reasoning_effort param is required for coding.
+        # Once migrated to LiteLLM, provider-agnostic params will allow other models as well.
         description: 'LLM for code generation tasks'
         required: false
         type: choice
         options:
+          - 'gpt-5.2-codex'
+          - 'gpt-5.2-2025-12-11'
           - 'o3-2025-04-16'
           - 'o3-mini-2025-01-31'
           - 'gpt-5-mini-2025-08-07'
-          - 'google/gemini-2.5-pro'
-          - 'claude-sonnet-4-5'
-          - 'claude-opus-4'
-        default: 'o3-2025-04-16'
+        default: 'gpt-5.2-codex'
 
 jobs:
   check-org-membership:
@@ -140,7 +144,7 @@ jobs:
 
   e2e-test:
     needs: check-org-membership
-    if: needs.check-org-membership.outputs.is_member == 'true'
+    if: github.event_name == 'push' || needs.check-org-membership.outputs.is_member == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 1440  # 24 hours
 
@@ -197,7 +201,11 @@ jobs:
       - name: Start backend server
         working-directory: backend
         run: |
-          uv run uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+          mkdir -p /tmp/e2e-logs
+          uv run uvicorn api.main:app --host 0.0.0.0 --port 8000 \
+            > /tmp/e2e-logs/server.log 2>&1 &
+          echo $! > /tmp/e2e-logs/server.pid
+          echo "Server PID: $(cat /tmp/e2e-logs/server.pid)"
           echo "Waiting for server to start..."
           for i in {1..30}; do
             if curl -s http://localhost:8000/health > /dev/null 2>&1 || curl -s http://localhost:8000/ > /dev/null 2>&1; then
@@ -229,8 +237,8 @@ jobs:
       - name: Build LLM mapping JSON
         id: llm
         run: |
-          PRIMARY_LLM="${{ github.event.inputs.primary_llm || 'o3-mini-2025-01-31' }}"
-          CODING_LLM="${{ github.event.inputs.coding_llm || 'o3-2025-04-16' }}"
+          PRIMARY_LLM="${{ github.event.inputs.primary_llm || 'gpt-5.2-2025-12-11' }}"
+          CODING_LLM="${{ github.event.inputs.coding_llm || 'gpt-5.2-codex' }}"
 
           # Build the llm_mapping JSON
           LLM_MAPPING=$(cat <<EOFLLM
@@ -250,9 +258,9 @@ jobs:
             },
             "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY_LLM}"}},
             "generate_code": {
-              "generate_run_config": {"llm_name": "${CODING_LLM}"},
-              "generate_experiment_code": {"llm_name": "${CODING_LLM}"},
-              "validate_experiment_code": {"llm_name": "${CODING_LLM}"}
+              "generate_run_config": {"llm_name": "${CODING_LLM}", "params": {"reasoning_effort": "high"}},
+              "generate_experiment_code": {"llm_name": "${CODING_LLM}", "params": {"reasoning_effort": "high"}},
+              "validate_experiment_code": {"llm_name": "${CODING_LLM}", "params": {"reasoning_effort": "high"}}
             },
             "analyze_experiment": {"analyze_experiment": {"llm_name": "${PRIMARY_LLM}"}},
             "write": {
@@ -300,8 +308,8 @@ jobs:
           echo "  Branch: ${BRANCH_NAME}"
           echo "  W&B: ${WANDB_ENTITY}/${WANDB_PROJECT}"
           echo "  Topic: ${RESEARCH_TOPIC}"
-          echo "  Primary LLM: ${{ github.event.inputs.primary_llm || 'o3-mini-2025-01-31' }}"
-          echo "  Coding LLM: ${{ github.event.inputs.coding_llm || 'o3-2025-04-16' }}"
+          echo "  Primary LLM: ${{ github.event.inputs.primary_llm || 'gpt-5.2-2025-12-11' }}"
+          echo "  Coding LLM: ${{ github.event.inputs.coding_llm || 'gpt-5.2-codex' }}"
 
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8000/airas/v1/topic_open_ended_research/run \
             -H "Content-Type: application/json" \
@@ -354,43 +362,81 @@ jobs:
       - name: Poll for task completion
         run: |
           TASK_ID="${{ steps.request.outputs.task_id }}"
-          echo "Polling for task ${TASK_ID} completion..."
+          echo "Polling task ${TASK_ID} ..."
 
-          POLL_INTERVAL=60
+          START_TIME=$(date +%s)
           POLL_COUNT=0
+          STEP_POLL_COUNT=0
+          CONSECUTIVE_ERRORS=0
+          MAX_CONSECUTIVE_ERRORS=10
+          PREV_STEP=""
+
+          # Progressive interval; resets on step transition.
+          get_poll_interval() {
+            local n=$1
+            if [ "$n" -le 10 ]; then echo 30
+            elif [ "$n" -le 30 ]; then echo 60
+            elif [ "$n" -le 60 ]; then echo 120
+            elif [ "$n" -le 120 ]; then echo 300
+            else echo 600; fi
+          }
 
           while true; do
             POLL_COUNT=$((POLL_COUNT + 1))
+            STEP_POLL_COUNT=$((STEP_POLL_COUNT + 1))
+            POLL_INTERVAL=$(get_poll_interval $STEP_POLL_COUNT)
+            ELAPSED=$(( $(date +%s) - START_TIME ))
 
             STATUS_RESPONSE=$(curl -s -w "\n%{http_code}" \
               "http://localhost:8000/airas/v1/topic_open_ended_research/status/${TASK_ID}")
-
             STATUS_HTTP=$(echo "$STATUS_RESPONSE" | tail -n1)
             STATUS_BODY=$(echo "$STATUS_RESPONSE" | sed '$d')
 
             if [ "$STATUS_HTTP" -ne 200 ]; then
-              echo "⚠️ [Poll ${POLL_COUNT}] Status check failed (HTTP ${STATUS_HTTP}), retrying..."
+              CONSECUTIVE_ERRORS=$((CONSECUTIVE_ERRORS + 1))
+              echo "[Poll #${POLL_COUNT}] HTTP ${STATUS_HTTP} (error ${CONSECUTIVE_ERRORS}/${MAX_CONSECUTIVE_ERRORS})"
+              if [ "$CONSECUTIVE_ERRORS" -ge "$MAX_CONSECUTIVE_ERRORS" ]; then
+                echo "ABORT: Too many consecutive HTTP errors"
+                tail -n 100 /tmp/e2e-logs/server.log 2>/dev/null || true
+                exit 1
+              fi
               sleep $POLL_INTERVAL
               continue
             fi
+            CONSECUTIVE_ERRORS=0
 
             TASK_STATUS=$(echo "$STATUS_BODY" | jq -r '.status')
             CURRENT_STEP=$(echo "$STATUS_BODY" | jq -r '.current_step // "N/A"')
             ERROR_MSG=$(echo "$STATUS_BODY" | jq -r '.error_message // empty')
 
-            echo "[Poll ${POLL_COUNT}] Status: ${TASK_STATUS}, Step: ${CURRENT_STEP}"
+            # Reset interval on step transition
+            if [ "$CURRENT_STEP" != "$PREV_STEP" ] && [ -n "$PREV_STEP" ]; then
+              STEP_POLL_COUNT=0
+            fi
+            PREV_STEP="$CURRENT_STEP"
+
+            echo "[Poll #${POLL_COUNT} | ${ELAPSED}s] ${TASK_STATUS} - ${CURRENT_STEP}"
 
             if [ "$TASK_STATUS" = "completed" ]; then
-              echo "✅ E2E test completed successfully!"
+              echo "E2E test completed (${ELAPSED}s)"
               echo "$STATUS_BODY" | jq .
               exit 0
             fi
 
-            if [ -n "$ERROR_MSG" ]; then
-              echo "❌ E2E test failed: ${ERROR_MSG}"
+            if [ "$TASK_STATUS" = "failed" ] || [ -n "$ERROR_MSG" ]; then
+              echo "E2E test failed: ${ERROR_MSG}"
               echo "$STATUS_BODY" | jq .
+              tail -n 100 /tmp/e2e-logs/server.log 2>/dev/null || true
               exit 1
             fi
 
             sleep $POLL_INTERVAL
           done
+
+      - name: Upload server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-server-logs-${{ steps.params.outputs.timestamp }}
+          path: /tmp/e2e-logs/
+          retention-days: 30
