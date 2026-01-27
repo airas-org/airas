@@ -144,7 +144,7 @@ jobs:
   e2e-test:
     needs: check-org-membership
     if: needs.check-org-membership.outputs.is_member == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 1440  # 24 hours
 
     services:
