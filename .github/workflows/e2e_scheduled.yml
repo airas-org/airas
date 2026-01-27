@@ -5,14 +5,11 @@ on:
     # Run every Monday at 00:00 JST (Sunday 15:00 UTC)
     - cron: '0 15 * * 0'
   workflow_dispatch:
-  push:
-    branches:
-      - feature/#622-add-feature-update-e2e-scheduled-test-change-schedule-upgrade-default-models-to-gpt-52-and-improve-error-logging
     inputs:
       research_topic:
         description: 'Research topic for the E2E test'
         required: false
-        default: 'Data-efficient image classification methods using novel regularization and augmentation techniques'
+        default: 'Proposing an improved version of the Chain-of-Thought based on human thinking methods'
       github_owner:
         description: 'GitHub owner for the generated repository'
         required: false
@@ -109,7 +106,7 @@ on:
 jobs:
   check-org-membership:
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     outputs:
       is_member: ${{ steps.check.outputs.is_member }}
     steps:
@@ -118,8 +115,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.AIRAS_ORG_TOKEN }}
         run: |
-          # For scheduled runs and push events, always allow
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "push" ]; then
+          # For scheduled runs, always allow
+          if [ "${{ github.event_name }}" = "schedule" ]; then
             echo "is_member=true" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -186,7 +183,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: feature/#622-add-feature-update-e2e-scheduled-test-change-schedule-upgrade-default-models-to-gpt-52-and-improve-error-logging
+          ref: develop
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
