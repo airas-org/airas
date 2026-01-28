@@ -64,7 +64,12 @@ class TopicOpenEndedResearchStatusResponseBody(BaseModel):
     def research_history(self) -> ResearchHistory | None:
         if not self.result:
             return None
-        return self.result.get("research_history")
+        history_data = self.result.get("research_history")
+        if history_data is None:
+            return None
+        if isinstance(history_data, ResearchHistory):
+            return history_data
+        return ResearchHistory.model_validate(history_data)
 
 
 class TopicOpenEndedResearchListItemResponse(BaseModel):
