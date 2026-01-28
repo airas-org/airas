@@ -3063,6 +3063,7 @@ components:
       - pending
       - running
       - completed
+      - failed
       title: Status
     StepType:
       type: string

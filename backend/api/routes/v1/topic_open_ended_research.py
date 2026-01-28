@@ -10,6 +10,7 @@ from langfuse import observe
 
 from airas.container import Container
 from airas.infra.arxiv_client import ArxivClient
+from airas.infra.db.models.e2e import Status
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
@@ -104,6 +105,19 @@ async def _execute_topic_open_ended_research(
         error_msg = f"{type(e).__name__}: {str(e)}"
         logger.error(f"[Task {task_id}] Execution failed: {error_msg}")
         logger.error(f"[Task {task_id}] Traceback:\n{traceback.format_exc()}")
+
+        try:
+            e2e_service.update(
+                id=task_id, status=Status.FAILED, error_message=error_msg
+            )
+        except Exception as update_error:
+            # If we fail to update status to FAILED, the task will remain in RUNNING state.
+            # Since this runs in an async task (asyncio.create_task), exceptions won't
+            # propagate to the caller, but at least we can log the error.
+            logger.error(
+                f"[Task {task_id}] CRITICAL: Failed to update status to FAILED. "
+                f"Task may remain in RUNNING state. Error: {update_error}"
+            )
     finally:
         e2e_service.close()
 
