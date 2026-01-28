@@ -13,7 +13,7 @@ class NodeLLMConfig(BaseModel):
     params: LLMParams | None = None
 
 
-BASE_CONFIG = NodeLLMConfig(llm_name="gpt-5.2-2025-12-11")
+BASE_CONFIG = NodeLLMConfig(llm_name="gpt-5.2")
 SEARCH_CONFIG = NodeLLMConfig(llm_name="gpt-5-nano-2025-08-07")
 CODING_CONFIG = NodeLLMConfig(
     llm_name="gpt-5.2-codex", params=OpenAIParams(reasoning_effort="high")
