@@ -861,7 +861,7 @@ components:
         analyze_experiment:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2-2025-12-11
+            llm_name: gpt-5.2
       type: object
       title: AnalyzeExperimentLLMMapping
     AnalyzeExperimentRequestBody:
