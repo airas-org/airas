@@ -1,5 +1,5 @@
-const DEFAULT_MODEL = "gpt-5-nano-2025-08-07";
-const REASONING_MODEL = "o3-2025-04-16";
+const DEFAULT_MODEL = "gpt-5.2";
+const REASONING_MODEL = "gpt-5.2-codex";
 const GITHUB_ACTIONS_MODEL = "anthropic/claude-sonnet-4-5";
 
 // TODO: Using an API to retrieve the list of LLMs seems easier to maintain.
@@ -10,7 +10,8 @@ export const OPENAI_MODELS = [
   "gpt-5-2025-08-07",
   "gpt-5-pro-2025-10-06",
   "gpt-5.1-2025-11-13",
-  "gpt-5.2-2025-12-11",
+  "gpt-5.2-codex",
+  "gpt-5.2",
   "gpt-5.2-pro-2025-12-11",
   "gpt-4o-2024-11-20",
   "gpt-4o-mini-2024-07-18",

@@ -386,7 +386,6 @@ jobs:
           while true; do
             POLL_COUNT=$((POLL_COUNT + 1))
             STEP_POLL_COUNT=$((STEP_POLL_COUNT + 1))
-            POLL_INTERVAL=$(get_poll_interval $STEP_POLL_COUNT)
             ELAPSED=$(( $(date +%s) - START_TIME ))
 
             STATUS_RESPONSE=$(curl -s -w "\n%{http_code}" \
@@ -402,6 +401,7 @@ jobs:
                 tail -n 100 /tmp/e2e-logs/server.log 2>/dev/null || true
                 exit 1
               fi
+              POLL_INTERVAL=$(get_poll_interval $STEP_POLL_COUNT)
               sleep $POLL_INTERVAL
               continue
             fi
@@ -414,6 +414,10 @@ jobs:
             # Reset interval on step transition
             if [ "$CURRENT_STEP" != "$PREV_STEP" ] && [ -n "$PREV_STEP" ]; then
               STEP_POLL_COUNT=0
+              # Ensure next poll after a step change uses the shortest interval
+              POLL_INTERVAL=30
+            else
+              POLL_INTERVAL=$(get_poll_interval $STEP_POLL_COUNT)
             fi
             PREV_STEP="$CURRENT_STEP"
 
