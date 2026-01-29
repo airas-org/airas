@@ -165,8 +165,18 @@ LLM_MODELS: TypeAlias = (
 
 
 # https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json
+# Override for models where litellm's values appear incorrect.
+# gpt-5.2-codex: litellm reports max_input=400000 but likely shares the same
+# 400K total context window as gpt-5.2 (max_input=272000 + max_output=128000).
+_MODEL_CONTEXT_OVERRIDES: dict[str, dict[str, int]] = {
+    "gpt-5.2-codex": {"max_input_tokens": 272000, "max_output_tokens": 128000},
+}
+
+
 @lru_cache(maxsize=128)
 def get_model_context_info(model_name: str) -> dict[str, int]:
+    if model_name in _MODEL_CONTEXT_OVERRIDES:
+        return _MODEL_CONTEXT_OVERRIDES[model_name]
     info = litellm.get_model_info(model_name)
     return {
         "max_input_tokens": info.get("max_input_tokens", 4096),
