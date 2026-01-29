@@ -22,6 +22,17 @@ Section: {{ section.name }}
     - Each item should start with a short title in \\textbf{...} format.
     - Avoid using -, *, or other Markdown bullet styles.
 
+- **Mathematical expressions**:
+    - All mathematical variables, symbols, operators, and expressions MUST be enclosed in inline math delimiters `$...$` or display math `\\[...\\]`.
+    - Group related mathematical symbols into a single `$...$` block. Do NOT wrap each symbol in its own separate `$...$`.
+        - Correct: `with probability at least $1 - \\delta$`
+        - Wrong: `with probability at least 1 - \\ensuremath{\\delta}`
+        - Wrong: `with probability at least $1$ - $\\delta$`
+    - Subscripts (`_`) and superscripts (`^`) MUST always be inside math mode.
+        - Correct: `the coefficient $\\eta_t$`
+        - Wrong: `the coefficient \\ensuremath{\\eta}_t`
+    - Use `\\hat{s}` instead of `s_{\\text{hat}}` for hat notation.
+
 - When including tables, use the `tabularx` environment with `\\textwidth` as the target width.
     - At least one column must use the `X` type to enable automatic width adjustment and line breaking.
     - Include `\\hline` at the top, after the header, and at the bottom. Avoid vertical lines unless necessary.
@@ -36,16 +47,22 @@ Section: {{ section.name }}
         \\State Compute transformed tokens: \\(\\tilde{T} \\leftarrow W\\,T\\)
         \\State Update: \\(T_{new} \\leftarrow \\tilde{T} + \\mu\\,T_{prev}\\)
         ```
-- Figures and images are ONLY allowed in the "Results" section.
+- **Figures and images**:
+    - Figures and images are ONLY allowed in the "Results" section.
+    - When the input text contains figure descriptions in the format "Figure N: caption text (filename: some_file.pdf)", you MUST convert each one into a proper LaTeX figure environment:
+        ```latex
+        \\begin{figure}[H]
+        \\centering
+        \\includegraphics[width=0.7\\linewidth]{images/some_file.pdf}
+        \\caption{Caption text.}
+        \\label{fig:some_descriptive_label}
+        \\end{figure}
+        ```
+    - Do NOT leave figure descriptions as plain text. They must always be converted to `\\begin{figure}` environments with `\\includegraphics`.
     - Use LaTeX float option `[H]` to force placement.
-
-- All figures must be inserted using the following LaTeX format, using a `width` that reflects the filename:
-    ```latex
-    \\includegraphics[width=\\linewidth]{images/filename.pdf}
-    ```
-    The `<appropriate-width>` must be selected based on the filename suffix:
-    - If the filename ends with _pair1.pdf or _pair2.pdf, use 0.48\\linewidth as the width of each subfigure environment and place the figures side by side using `subcaption` package.
-    - Otherwise (default), use 0.7\\linewidth
+    - The width must be selected based on the filename suffix:
+        - If the filename ends with _pair1.pdf or _pair2.pdf, use 0.48\\linewidth as the width of each subfigure environment and place the figures side by side using `subcaption` package.
+        - Otherwise (default), use 0.7\\linewidth
 
 - **Escaping special characters**:
     - LaTeX special characters (`#`, `$`, `%`, `&`, `~`, `_`, `^`, `{`, `}`, `\\`) must be escaped with a leading backslash when they appear in plain text (e.g., `data\\_set`, `C\\&C`).
