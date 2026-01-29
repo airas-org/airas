@@ -91,20 +91,20 @@ on:
           - 'anthropic/claude-opus-4'
           - 'anthropic/claude-sonnet-4-5'
         default: 'gpt-5.2'
-      reasoning_model:
-        description: 'Reasoning LLM (code generation, code validation)'
+      coding_model:
+        description: 'Coding LLM (code generation, code validation)'
         required: false
         type: choice
         options: *llm_options
         default: 'gpt-5.2-codex'
-      lite_model:
-        description: 'Lite LLM (paper search, summarization, reference extraction)'
+      paper_retrieval_model:
+        description: 'Paper retrieval LLM (paper search, summarization, reference extraction)'
         required: false
         type: choice
         options: *llm_options
         default: 'google/gemini-2.5-flash'
-      executor_model:
-        description: 'Executor LLM (experiment dispatch, evaluation dispatch, LaTeX compilation)'
+      github_actions_model:
+        description: 'GitHub Actions LLM (experiment dispatch, evaluation dispatch, LaTeX compilation)'
         required: false
         type: choice
         options: *llm_options
@@ -267,43 +267,43 @@ jobs:
           LATEX_TEMPLATE="${{ github.event.inputs.latex_template_name || 'iclr2024' }}"
 
           # === LLM model selections ===
-          PRIMARY="${{ github.event.inputs.primary_model || 'gpt-5.2' }}"
-          REASONING="${{ github.event.inputs.reasoning_model || 'gpt-5.2-codex' }}"
-          LITE="${{ github.event.inputs.lite_model || 'google/gemini-2.5-flash' }}"
-          EXECUTOR="${{ github.event.inputs.executor_model || 'anthropic/claude-sonnet-4-5' }}"
+          PRIMARY_MODEL="${{ github.event.inputs.primary_model || 'gpt-5.2' }}"
+          CODING_MODEL="${{ github.event.inputs.coding_model || 'gpt-5.2-codex' }}"
+          PAPER_RETRIEVAL_MODEL="${{ github.event.inputs.paper_retrieval_model || 'google/gemini-2.5-flash' }}"
+          GITHUB_ACTIONS_MODEL="${{ github.event.inputs.github_actions_model || 'anthropic/claude-sonnet-4-5' }}"
 
           # === Build LLM mapping JSON ===
           LLM_MAPPING=$(cat <<EOFLLM
           {
-            "generate_queries": {"generate_queries": {"llm_name": "${PRIMARY}"}},
+            "generate_queries": {"generate_queries": {"llm_name": "${PRIMARY_MODEL}"}},
             "retrieve_paper": {
-              "search_arxiv_id_from_title": {"llm_name": "${LITE}"},
-              "summarize_paper": {"llm_name": "${LITE}"},
-              "extract_github_url_from_text": {"llm_name": "${LITE}"},
-              "select_experimental_files": {"llm_name": "${LITE}"},
-              "extract_reference_titles": {"llm_name": "${LITE}"}
+              "search_arxiv_id_from_title": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
+              "summarize_paper": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
+              "extract_github_url_from_text": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
+              "select_experimental_files": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
+              "extract_reference_titles": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"}
             },
             "generate_hypothesis": {
-              "generate_hypothesis": {"llm_name": "${PRIMARY}"},
-              "evaluate_novelty_and_significance": {"llm_name": "${PRIMARY}"},
-              "refine_hypothesis": {"llm_name": "${PRIMARY}"}
+              "generate_hypothesis": {"llm_name": "${PRIMARY_MODEL}"},
+              "evaluate_novelty_and_significance": {"llm_name": "${PRIMARY_MODEL}"},
+              "refine_hypothesis": {"llm_name": "${PRIMARY_MODEL}"}
             },
-            "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY}"}},
+            "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY_MODEL}"}},
             "generate_code": {
-              "generate_run_config": {"llm_name": "${REASONING}", "params": {"provider_type": "openai", "reasoning_effort": "high"}},
-              "generate_experiment_code": {"llm_name": "${REASONING}", "params": {"provider_type": "openai", "reasoning_effort": "high"}},
-              "validate_experiment_code": {"llm_name": "${REASONING}", "params": {"provider_type": "openai", "reasoning_effort": "high"}}
+              "generate_run_config": {"llm_name": "${CODING_MODEL}", "params": {"provider_type": "openai", "reasoning_effort": "high"}},
+              "generate_experiment_code": {"llm_name": "${CODING_MODEL}", "params": {"provider_type": "openai", "reasoning_effort": "high"}},
+              "validate_experiment_code": {"llm_name": "${CODING_MODEL}", "params": {"provider_type": "openai", "reasoning_effort": "high"}}
             },
-            "execute_trial_experiment": {"dispatch_trial_experiment": {"llm_name": "${EXECUTOR}"}},
-            "execute_full_experiment": {"dispatch_full_experiments": {"llm_name": "${EXECUTOR}"}},
-            "execute_evaluation": {"dispatch_evaluation": {"llm_name": "${EXECUTOR}"}},
-            "analyze_experiment": {"analyze_experiment": {"llm_name": "${PRIMARY}"}},
+            "execute_trial_experiment": {"dispatch_trial_experiment": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
+            "execute_full_experiment": {"dispatch_full_experiments": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
+            "execute_evaluation": {"dispatch_evaluation": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
+            "analyze_experiment": {"analyze_experiment": {"llm_name": "${PRIMARY_MODEL}"}},
             "write": {
-              "write_paper": {"llm_name": "${PRIMARY}"},
-              "refine_paper": {"llm_name": "${PRIMARY}"}
+              "write_paper": {"llm_name": "${PRIMARY_MODEL}"},
+              "refine_paper": {"llm_name": "${PRIMARY_MODEL}"}
             },
-            "generate_latex": {"convert_to_latex": {"llm_name": "${PRIMARY}"}},
-            "compile_latex": {"compile_latex": {"llm_name": "${EXECUTOR}"}}
+            "generate_latex": {"convert_to_latex": {"llm_name": "${PRIMARY_MODEL}"}},
+            "compile_latex": {"compile_latex": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}}
           }
           EOFLLM
           )
