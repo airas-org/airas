@@ -13,6 +13,7 @@ class Status(str, Enum):
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
+    FAILED = "failed"
 
 
 class StepType(str, Enum):
