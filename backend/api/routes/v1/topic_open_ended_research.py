@@ -178,13 +178,15 @@ async def get_topic_open_ended_research_status(
         ) from exc
     except Exception as exc:  # pragma: no cover - defensive
         logger.exception(f"[Status {task_id}] Failed to get status")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal Server Error") from exc
 
     try:
         return TopicOpenEndedResearchStatusResponseBody.model_validate(result)
     except Exception as exc:  # pragma: no cover - defensive
         logger.exception(f"[Status {task_id}] Failed to validate response")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=500, detail="Failed to validate response"
+        ) from exc
 
 
 @router.get("", response_model=TopicOpenEndedResearchListResponseBody)
@@ -234,10 +236,12 @@ async def update_topic_open_ended_research(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # pragma: no cover - defensive
         logger.exception(f"[Update {task_id}] Failed to update")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal Server Error") from exc
 
     try:
         return TopicOpenEndedResearchStatusResponseBody.model_validate(updated)
     except Exception as exc:  # pragma: no cover - defensive
         logger.exception(f"[Update {task_id}] Failed to validate response")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=500, detail="Failed to validate response"
+        ) from exc

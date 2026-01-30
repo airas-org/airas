@@ -399,6 +399,11 @@ jobs:
             if [ "$STATUS_HTTP" -ne 200 ]; then
               CONSECUTIVE_ERRORS=$((CONSECUTIVE_ERRORS + 1))
               echo "[Poll #${POLL_COUNT}] HTTP ${STATUS_HTTP} (error ${CONSECUTIVE_ERRORS}/${MAX_CONSECUTIVE_ERRORS})"
+              echo "--- Error response body ---"
+              echo "$STATUS_BODY" | jq . 2>/dev/null || echo "$STATUS_BODY"
+              echo "--- Server log (last 20 lines) ---"
+              tail -n 20 /tmp/e2e-logs/server.log 2>/dev/null || echo "(no log)"
+              echo "---"
               if [ "$CONSECUTIVE_ERRORS" -ge "$MAX_CONSECUTIVE_ERRORS" ]; then
                 echo "ABORT: Too many consecutive HTTP errors"
                 tail -n 100 /tmp/e2e-logs/server.log 2>/dev/null || true
