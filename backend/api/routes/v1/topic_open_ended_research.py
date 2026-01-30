@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import traceback
 import uuid
 from typing import Annotated
 
@@ -103,20 +102,19 @@ async def _execute_topic_open_ended_research(
 
     except Exception as e:
         error_msg = f"{type(e).__name__}: {str(e)}"
-        logger.error(f"[Task {task_id}] Execution failed: {error_msg}")
-        logger.error(f"[Task {task_id}] Traceback:\n{traceback.format_exc()}")
+        logger.exception(f"[Task {task_id}] Execution failed")
 
         try:
             e2e_service.update(
                 id=task_id, status=Status.FAILED, error_message=error_msg
             )
-        except Exception as update_error:
+        except Exception:
             # If we fail to update status to FAILED, the task will remain in RUNNING state.
             # Since this runs in an async task (asyncio.create_task), exceptions won't
             # propagate to the caller, but at least we can log the error.
-            logger.error(
+            logger.exception(
                 f"[Task {task_id}] CRITICAL: Failed to update status to FAILED. "
-                f"Task may remain in RUNNING state. Error: {update_error}"
+                f"Task may remain in RUNNING state."
             )
     finally:
         e2e_service.close()
@@ -179,9 +177,14 @@ async def get_topic_open_ended_research_status(
             status_code=404, detail=f"Task {task_id} not found"
         ) from exc
     except Exception as exc:  # pragma: no cover - defensive
+        logger.exception(f"[Status {task_id}] Failed to get status")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
-    return TopicOpenEndedResearchStatusResponseBody.model_validate(result)
+    try:
+        return TopicOpenEndedResearchStatusResponseBody.model_validate(result)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.exception(f"[Status {task_id}] Failed to validate response")
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @router.get("", response_model=TopicOpenEndedResearchListResponseBody)
@@ -230,6 +233,11 @@ async def update_topic_open_ended_research(
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # pragma: no cover - defensive
+        logger.exception(f"[Update {task_id}] Failed to update")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
-    return TopicOpenEndedResearchStatusResponseBody.model_validate(updated)
+    try:
+        return TopicOpenEndedResearchStatusResponseBody.model_validate(updated)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.exception(f"[Update {task_id}] Failed to validate response")
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
