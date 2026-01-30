@@ -254,7 +254,7 @@ jobs:
           if [ -z "$RUNNER_LABELS" ]; then
             RUNNER_LABELS='["self-hosted", "gpu-runner"]'
           fi
-          RUNNER_DESC="${{ github.event.inputs.runner_description || 'NVIDIA A100 or H200, VRAM: 80 GB or more, RAM: 2048 GB or more' }}"
+          RUNNER_DESC="${{ github.event.inputs.runner_description || 'NVIDIA H200, VRAM: 140 GB, RAM: 240 GB' }}"
           IS_PRIVATE="${{ github.event.inputs.is_github_repo_private || 'false' }}"
           NUM_QUERIES="${{ github.event.inputs.num_paper_search_queries || '3' }}"
           PAPERS_PER_QUERY="${{ github.event.inputs.papers_per_query || '5' }}"
