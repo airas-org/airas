@@ -34,7 +34,7 @@ on:
       runner_description:
         description: 'Runner description'
         required: false
-        default: 'NVIDIA A100 or H200, VRAM: 80 GB or more, RAM: 2048 GB or more'
+        default: 'NVIDIA H200, VRAM: 140 GB, RAM: 240 GB'
       wandb_entity:
         description: 'W&B entity name'
         required: false
