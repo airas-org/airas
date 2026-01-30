@@ -1,3 +1,4 @@
+import json
 import logging
 from logging import getLogger
 
@@ -34,6 +35,7 @@ _DEFAULT_EXC: tuple[type[BaseException], ...] = (
     httpx.HTTPStatusError,
     httpx.TimeoutException,
     httpx.HTTPError,
+    json.JSONDecodeError,
 )
 
 

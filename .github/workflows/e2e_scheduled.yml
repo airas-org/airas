@@ -10,6 +10,11 @@ on:
         description: 'Research topic for the E2E test'
         required: false
         default: 'Proposing an improved version of the Chain-of-Thought based on human thinking methods'
+      is_github_repo_private:
+        description: 'Make repository private'
+        required: false
+        type: boolean
+        default: false
       github_owner:
         description: 'GitHub owner for the generated repository'
         required: false
@@ -34,29 +39,24 @@ on:
         description: 'W&B entity name'
         required: false
         default: 'airas'
-      is_github_repo_private:
-        description: 'Make repository private'
-        required: false
-        type: boolean
-        default: false
       num_paper_search_queries:
-        description: 'Number of paper search queries'
+        description: 'Number of search queries'
         required: false
         default: '3'
       papers_per_query:
-        description: 'Papers per query'
+        description: 'Number of papers retrieved per search query'
         required: false
         default: '5'
       hypothesis_refinement_iterations:
-        description: 'Hypothesis refinement iterations'
+        description: 'Rounds of hypothesis refinement (novelty evaluation → refine loop)'
         required: false
         default: '2'
       num_experiment_models:
-        description: 'Number of experiment models'
+        description: 'Number of models to evaluate in experiments'
         required: false
         default: '1'
       num_experiment_datasets:
-        description: 'Number of experiment datasets'
+        description: 'Number of datasets to use in experiments'
         required: false
         default: '1'
       num_comparison_methods:
@@ -64,44 +64,51 @@ on:
         required: false
         default: '1'
       experiment_code_validation_iterations:
-        description: 'Experiment code validation iterations'
+        description: 'Max retries for experiment code generation (generate → validate loop)'
         required: false
         default: '10'
       paper_content_refinement_iterations:
-        description: 'Paper content refinement iterations'
+        description: 'Rounds of paper content refinement (write → refine loop)'
         required: false
         default: '1'
       latex_template_name:
-        description: 'LaTeX template name'
+        description: 'LaTeX template name (e.g., iclr2024, agents4science_2025)'
         required: false
         default: 'iclr2024'
-      primary_llm:
-        description: 'Primary LLM to use for most tasks'
+      # --- LLM model settings ---
+      primary_model:
+        description: 'Primary LLM (query generation, hypothesis, design, analysis, writing, LaTeX)'
         required: false
         type: choice
-        options:
-          - 'gpt-5.2-codex'
+        options: &llm_options
           - 'gpt-5.2'
+          - 'gpt-5.2-codex'
           - 'o3-2025-04-16'
           - 'o3-mini-2025-01-31'
           - 'gpt-5-mini-2025-08-07'
           - 'google/gemini-2.5-pro'
-          - 'claude-sonnet-4-5'
-          - 'claude-opus-4'
+          - 'google/gemini-2.5-flash'
+          - 'anthropic/claude-opus-4'
+          - 'anthropic/claude-sonnet-4-5'
         default: 'gpt-5.2'
-      coding_llm:
-        # Currently limited to OpenAI models because reasoning_effort param is required for coding.
-        # Once migrated to LiteLLM, provider-agnostic params will allow other models as well.
-        description: 'LLM for code generation tasks'
+      coding_model:
+        description: 'Coding LLM (code generation, code validation)'
         required: false
         type: choice
-        options:
-          - 'gpt-5.2-codex'
-          - 'gpt-5.2'
-          - 'o3-2025-04-16'
-          - 'o3-mini-2025-01-31'
-          - 'gpt-5-mini-2025-08-07'
+        options: *llm_options
         default: 'gpt-5.2-codex'
+      paper_retrieval_model:
+        description: 'Paper retrieval LLM (paper search, summarization, reference extraction)'
+        required: false
+        type: choice
+        options: *llm_options
+        default: 'google/gemini-2.5-flash'
+      github_actions_model:
+        description: 'GitHub Actions LLM (experiment dispatch, evaluation dispatch, LaTeX compilation)'
+        required: false
+        type: choice
+        options: *llm_options
+        default: 'anthropic/claude-sonnet-4-5'
 
 jobs:
   check-org-membership:
@@ -145,7 +152,7 @@ jobs:
     needs: check-org-membership
     if: needs.check-org-membership.outputs.is_member == 'true'
     runs-on: ubicloud-standard-2
-    timeout-minutes: 1440  # 24 hours
+    timeout-minutes: 4320  # 72 hours
 
     services:
       db:
@@ -186,7 +193,7 @@ jobs:
           ref: develop
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           version: "0.7.2"
 
@@ -233,55 +240,10 @@ jobs:
           echo "date_only=${DATE_ONLY}" >> $GITHUB_OUTPUT
           echo "repo_name=${REPO_NAME}" >> $GITHUB_OUTPUT
 
-      - name: Build LLM mapping JSON
-        id: llm
-        run: |
-          PRIMARY_LLM="${{ github.event.inputs.primary_llm || 'gpt-5.2' }}"
-          CODING_LLM="${{ github.event.inputs.coding_llm || 'gpt-5.2-codex' }}"
-
-          echo "primary_llm=${PRIMARY_LLM}" >> $GITHUB_OUTPUT
-          echo "coding_llm=${CODING_LLM}" >> $GITHUB_OUTPUT
-
-          # Build the llm_mapping JSON
-          LLM_MAPPING=$(cat <<EOFLLM
-          {
-            "generate_queries": {"generate_queries": {"llm_name": "${PRIMARY_LLM}"}},
-            "retrieve_paper": {
-              "search_arxiv_id_from_title": {"llm_name": "${PRIMARY_LLM}"},
-              "summarize_paper": {"llm_name": "${PRIMARY_LLM}"},
-              "extract_github_url_from_text": {"llm_name": "${PRIMARY_LLM}"},
-              "select_experimental_files": {"llm_name": "${PRIMARY_LLM}"},
-              "extract_reference_titles": {"llm_name": "${PRIMARY_LLM}"}
-            },
-            "generate_hypothesis": {
-              "generate_hypothesis": {"llm_name": "${PRIMARY_LLM}"},
-              "evaluate_novelty_and_significance": {"llm_name": "${PRIMARY_LLM}"},
-              "refine_hypothesis": {"llm_name": "${PRIMARY_LLM}"}
-            },
-            "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY_LLM}"}},
-            "generate_code": {
-              "generate_run_config": {"llm_name": "${CODING_LLM}", "params": {"provider_type": "openai", "reasoning_effort": "high"}},
-              "generate_experiment_code": {"llm_name": "${CODING_LLM}", "params": {"provider_type": "openai", "reasoning_effort": "high"}},
-              "validate_experiment_code": {"llm_name": "${CODING_LLM}", "params": {"provider_type": "openai", "reasoning_effort": "high"}}
-            },
-            "analyze_experiment": {"analyze_experiment": {"llm_name": "${PRIMARY_LLM}"}},
-            "write": {
-              "write_paper": {"llm_name": "${PRIMARY_LLM}"},
-              "refine_paper": {"llm_name": "${PRIMARY_LLM}"}
-            },
-            "generate_latex": {"convert_to_latex": {"llm_name": "${PRIMARY_LLM}"}}
-          }
-          EOFLLM
-          )
-
-          # Escape for shell
-          echo "llm_mapping<<EOF" >> $GITHUB_OUTPUT
-          echo "$LLM_MAPPING" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
       - name: Send E2E test request
         id: request
         run: |
+          # === General parameters ===
           GITHUB_OWNER="${{ github.event.inputs.github_owner || 'auto-res2' }}"
           RESEARCH_TOPIC="${{ github.event.inputs.research_topic || 'Proposing an improved version of the Chain-of-Thought based on human thinking methods' }}"
           BRANCH_NAME="${{ github.event.inputs.branch_name || 'main' }}"
@@ -303,15 +265,56 @@ jobs:
           CODE_VALIDATION_ITERS="${{ github.event.inputs.experiment_code_validation_iterations || '10' }}"
           PAPER_REFINE_ITERS="${{ github.event.inputs.paper_content_refinement_iterations || '1' }}"
           LATEX_TEMPLATE="${{ github.event.inputs.latex_template_name || 'iclr2024' }}"
-          LLM_MAPPING='${{ steps.llm.outputs.llm_mapping }}'
+
+          # === LLM model selections ===
+          PRIMARY_MODEL="${{ github.event.inputs.primary_model || 'gpt-5.2' }}"
+          CODING_MODEL="${{ github.event.inputs.coding_model || 'gpt-5.2-codex' }}"
+          PAPER_RETRIEVAL_MODEL="${{ github.event.inputs.paper_retrieval_model || 'google/gemini-2.5-flash' }}"
+          GITHUB_ACTIONS_MODEL="${{ github.event.inputs.github_actions_model || 'anthropic/claude-sonnet-4-5' }}"
+
+          # === Build LLM mapping JSON ===
+          LLM_MAPPING=$(cat <<EOFLLM
+          {
+            "generate_queries": {"generate_queries": {"llm_name": "${PRIMARY_MODEL}"}},
+            "retrieve_paper": {
+              "search_arxiv_id_from_title": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
+              "summarize_paper": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
+              "extract_github_url_from_text": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
+              "select_experimental_files": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
+              "extract_reference_titles": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"}
+            },
+            "generate_hypothesis": {
+              "generate_hypothesis": {"llm_name": "${PRIMARY_MODEL}"},
+              "evaluate_novelty_and_significance": {"llm_name": "${PRIMARY_MODEL}"},
+              "refine_hypothesis": {"llm_name": "${PRIMARY_MODEL}"}
+            },
+            "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY_MODEL}"}},
+            "generate_code": {
+              "generate_run_config": {"llm_name": "${CODING_MODEL}", "params": {"provider_type": "openai", "reasoning_effort": "high"}},
+              "generate_experiment_code": {"llm_name": "${CODING_MODEL}", "params": {"provider_type": "openai", "reasoning_effort": "high"}},
+              "validate_experiment_code": {"llm_name": "${CODING_MODEL}", "params": {"provider_type": "openai", "reasoning_effort": "high"}}
+            },
+            "execute_trial_experiment": {"dispatch_trial_experiment": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
+            "execute_full_experiment": {"dispatch_full_experiments": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
+            "execute_evaluation": {"dispatch_evaluation": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
+            "analyze_experiment": {"analyze_experiment": {"llm_name": "${PRIMARY_MODEL}"}},
+            "write": {
+              "write_paper": {"llm_name": "${PRIMARY_MODEL}"},
+              "refine_paper": {"llm_name": "${PRIMARY_MODEL}"}
+            },
+            "generate_latex": {"convert_to_latex": {"llm_name": "${PRIMARY_MODEL}"}},
+            "compile_latex": {"compile_latex": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}}
+          }
+          EOFLLM
+          )
 
           echo "Starting E2E test with:"
           echo "  Repository: ${GITHUB_OWNER}/${REPO_NAME}"
           echo "  Branch: ${BRANCH_NAME}"
           echo "  W&B: ${WANDB_ENTITY}/${WANDB_PROJECT}"
           echo "  Topic: ${RESEARCH_TOPIC}"
-          echo "  Primary LLM: ${{ steps.llm.outputs.primary_llm }}"
-          echo "  Coding LLM: ${{ steps.llm.outputs.coding_llm }}"
+          echo "  LLM Mapping:"
+          echo "$LLM_MAPPING" | head -30
 
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8000/airas/v1/topic_open_ended_research/run \
             -H "Content-Type: application/json" \
@@ -396,6 +399,11 @@ jobs:
             if [ "$STATUS_HTTP" -ne 200 ]; then
               CONSECUTIVE_ERRORS=$((CONSECUTIVE_ERRORS + 1))
               echo "[Poll #${POLL_COUNT}] HTTP ${STATUS_HTTP} (error ${CONSECUTIVE_ERRORS}/${MAX_CONSECUTIVE_ERRORS})"
+              echo "--- Error response body ---"
+              echo "$STATUS_BODY" | jq . 2>/dev/null || echo "$STATUS_BODY"
+              echo "--- Server log (last 20 lines) ---"
+              tail -n 20 /tmp/e2e-logs/server.log 2>/dev/null || echo "(no log)"
+              echo "---"
               if [ "$CONSECUTIVE_ERRORS" -ge "$MAX_CONSECUTIVE_ERRORS" ]; then
                 echo "ABORT: Too many consecutive HTTP errors"
                 tail -n 100 /tmp/e2e-logs/server.log 2>/dev/null || true
@@ -445,7 +453,7 @@ jobs:
 
       - name: Upload server logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: e2e-server-logs-${{ steps.params.outputs.timestamp }}
           path: /tmp/e2e-logs/
