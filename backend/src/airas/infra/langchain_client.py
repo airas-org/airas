@@ -230,7 +230,7 @@ class LangChainClient:
                 max_tokens=safe_max_input_tokens,
                 token_counter=model,
                 strategy="last",
-                allow_partial=False,
+                allow_partial=True,
             )
 
             logger.info(
@@ -285,7 +285,7 @@ class LangChainClient:
                 max_tokens=safe_max_input_tokens,
                 token_counter=model,
                 strategy="last",
-                allow_partial=False,
+                allow_partial=True,
             )
 
             logger.info(
