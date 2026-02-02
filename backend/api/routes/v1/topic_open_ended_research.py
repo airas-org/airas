@@ -116,8 +116,6 @@ async def _execute_topic_open_ended_research(
                 f"[Task {task_id}] CRITICAL: Failed to update status to FAILED. "
                 f"Task may remain in RUNNING state."
             )
-    finally:
-        e2e_service.close()
 
 
 @router.post("/run", response_model=TopicOpenEndedResearchResponseBody)
@@ -136,7 +134,7 @@ async def execute_topic_open_ended_research(
     ],
     e2e_service: Annotated[
         TopicOpenEndedResearchService,
-        Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
+        Depends(Provide[Container.topic_open_ended_research_service]),
     ],
 ) -> TopicOpenEndedResearchResponseBody:
     container: Container = fastapi_request.app.state.container

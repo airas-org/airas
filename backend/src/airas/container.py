@@ -25,9 +25,6 @@ from airas.repository.assisted_research_session_repository import (
 from airas.repository.assisted_research_step_repository import (
     AssistedResearchStepRepository,
 )
-from airas.repository.topic_open_ended_research_service_repository import (
-    TopicOpenEndedResearchRepository,
-)
 from airas.usecases.assisted_research.assisted_research_link_service import (
     AssistedResearchLinkService,
 )
@@ -206,11 +203,8 @@ class Container(containers.DeclarativeContainer):
     )
 
     ## ---  Autonomous Research Service ---
-    topic_open_ended_research_repository = providers.Factory(
-        TopicOpenEndedResearchRepository, db=db_session
-    )
     topic_open_ended_research_service = providers.Factory(
-        TopicOpenEndedResearchService, repo=topic_open_ended_research_repository
+        TopicOpenEndedResearchService, session_factory=session_factory
     )
 
 
