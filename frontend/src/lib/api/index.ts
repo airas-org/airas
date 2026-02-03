@@ -102,7 +102,7 @@ export { Status } from './models/Status';
 export { StepType } from './models/StepType';
 export type { TopicOpenEndedResearchListItemResponse } from './models/TopicOpenEndedResearchListItemResponse';
 export type { TopicOpenEndedResearchListResponseBody } from './models/TopicOpenEndedResearchListResponseBody';
-export type { TopicOpenEndedResearchRequestBody } from './models/TopicOpenEndedResearchRequestBody';
+export { TopicOpenEndedResearchRequestBody } from './models/TopicOpenEndedResearchRequestBody';
 export type { TopicOpenEndedResearchResponseBody } from './models/TopicOpenEndedResearchResponseBody';
 export type { TopicOpenEndedResearchStatusResponseBody } from './models/TopicOpenEndedResearchStatusResponseBody';
 export type { TopicOpenEndedResearchSubgraphLLMMapping } from './models/TopicOpenEndedResearchSubgraphLLMMapping';

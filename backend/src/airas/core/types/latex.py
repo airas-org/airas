@@ -5,7 +5,7 @@ from airas.core.types.github import GitHubRepositoryInfo
 LATEX_TEMPLATE_NAME = Literal[
     "iclr2024",
     "agents4science_2025",
-    "MDPI",
+    "mdpi",
 ]
 
 # Official LaTeX template repository

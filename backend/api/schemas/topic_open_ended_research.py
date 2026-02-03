@@ -4,8 +4,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, computed_field
 
+from airas.core.types.coding_agent import GitHubActionsCodingAgent
 from airas.core.types.experimental_design import RunnerConfig
 from airas.core.types.github import GitHubConfig
+from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.wandb import WandbConfig
 from airas.infra.db.models.e2e import Status, StepType
@@ -19,6 +21,7 @@ class TopicOpenEndedResearchRequestBody(BaseModel):
     research_topic: str
     runner_config: RunnerConfig
     wandb_config: WandbConfig
+    latex_template_name: LATEX_TEMPLATE_NAME
     is_github_repo_private: bool = False
     num_paper_search_queries: int = 1
     papers_per_query: int = 2
@@ -28,7 +31,7 @@ class TopicOpenEndedResearchRequestBody(BaseModel):
     num_comparison_methods: int = 1
     experiment_code_validation_iterations: int = 3
     paper_content_refinement_iterations: int = 2
-    latex_template_name: str = "iclr2024"
+    github_actions_latex_compile_agent: GitHubActionsCodingAgent = "claude_code"
     llm_mapping: TopicOpenEndedResearchSubgraphLLMMapping | None = None
 
 

@@ -1094,7 +1094,7 @@ components:
           enum:
           - iclr2024
           - agents4science_2025
-          - MDPI
+          - mdpi
           title: Latex Template Name
           default: iclr2024
         github_actions_coding_agent:
@@ -1824,7 +1824,7 @@ components:
           enum:
           - iclr2024
           - agents4science_2025
-          - MDPI
+          - mdpi
           title: Latex Template Name
           default: iclr2024
         llm_mapping:
@@ -2558,7 +2558,7 @@ components:
           enum:
           - iclr2024
           - agents4science_2025
-          - MDPI
+          - mdpi
           title: Latex Template Name
           default: iclr2024
       type: object
@@ -3164,6 +3164,13 @@ components:
           $ref: '#/components/schemas/RunnerConfig'
         wandb_config:
           $ref: '#/components/schemas/WandbConfig'
+        latex_template_name:
+          type: string
+          enum:
+          - iclr2024
+          - agents4science_2025
+          - mdpi
+          title: Latex Template Name
         is_github_repo_private:
           type: boolean
           title: Is Github Repo Private
@@ -3200,10 +3207,13 @@ components:
           type: integer
           title: Paper Content Refinement Iterations
           default: 2
-        latex_template_name:
+        github_actions_latex_compile_agent:
           type: string
-          title: Latex Template Name
-          default: iclr2024
+          enum:
+          - open_code
+          - claude_code
+          title: Github Actions Latex Compile Agent
+          default: claude_code
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/TopicOpenEndedResearchSubgraphLLMMapping'
@@ -3214,6 +3224,7 @@ components:
       - research_topic
       - runner_config
       - wandb_config
+      - latex_template_name
       title: TopicOpenEndedResearchRequestBody
     TopicOpenEndedResearchResponseBody:
       properties:

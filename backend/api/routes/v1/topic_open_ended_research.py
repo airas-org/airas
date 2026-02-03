@@ -69,6 +69,7 @@ async def _execute_topic_open_ended_research(
             e2e_service=e2e_service,
             runner_config=request.runner_config,
             wandb_config=request.wandb_config,
+            latex_template_name=request.latex_template_name,
             task_id=task_id,
             is_github_repo_private=request.is_github_repo_private,
             num_paper_search_queries=request.num_paper_search_queries,
@@ -79,7 +80,7 @@ async def _execute_topic_open_ended_research(
             num_comparison_methods=request.num_comparison_methods,
             experiment_code_validation_iterations=request.experiment_code_validation_iterations,
             paper_content_refinement_iterations=request.paper_content_refinement_iterations,
-            latex_template_name=request.latex_template_name,
+            github_actions_latex_compile_agent=request.github_actions_latex_compile_agent,
             llm_mapping=request.llm_mapping,
         ).build_graph()
 

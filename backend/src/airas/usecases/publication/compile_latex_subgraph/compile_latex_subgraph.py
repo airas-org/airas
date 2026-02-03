@@ -45,27 +45,27 @@ class CompileLatexSubgraph:
         github_client: GithubClient,
         latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
         paper_name: str = "generated_paper",
-        github_actions_coding_agent: GitHubActionsCodingAgent = "claude_code",
+        github_actions_latex_compile_agent: GitHubActionsCodingAgent = "claude_code",
         llm_mapping: CompileLatexLLMMapping | None = None,
     ):
         self.github_client = github_client
         self.latex_template_name = latex_template_name
         self.paper_name = paper_name
-        self.github_actions_coding_agent = github_actions_coding_agent
-        if github_actions_coding_agent == "open_code":
+        self.github_actions_coding_agent = github_actions_latex_compile_agent
+        if github_actions_latex_compile_agent == "open_code":
             self.workflow_file = "dev_compile_latex_with_open_code.yml"
             # `llm_mapping` が未指定の場合は後方互換性のためデフォルトにフォールバックする
             self.llm_mapping = llm_mapping or CompileLatexLLMMapping()
-        elif github_actions_coding_agent == "claude_code":
+        elif github_actions_latex_compile_agent == "claude_code":
             self.workflow_file = "dev_compile_latex_with_claude_code.yml"
             if llm_mapping is not None:
                 raise ValueError(
-                    "llm_mapping must be None when github_actions_coding_agent is 'claude_code'"
+                    "llm_mapping must be None when github_actions_latex_compile_agent is 'claude_code'"
                 )
             self.llm_mapping = None
         else:
             raise ValueError(
-                f"Invalid github_actions_coding_agent: {github_actions_coding_agent}. "
+                f"Invalid github_actions_latex_compile_agent: {github_actions_latex_compile_agent}. "
                 "Choose either 'open_code' or 'claude_code'."
             )
 

@@ -11,6 +11,7 @@ export type TopicOpenEndedResearchRequestBody = {
     research_topic: string;
     runner_config: RunnerConfig;
     wandb_config: WandbConfig;
+    latex_template_name: TopicOpenEndedResearchRequestBody.latex_template_name;
     is_github_repo_private?: boolean;
     num_paper_search_queries?: number;
     papers_per_query?: number;
@@ -20,7 +21,18 @@ export type TopicOpenEndedResearchRequestBody = {
     num_comparison_methods?: number;
     experiment_code_validation_iterations?: number;
     paper_content_refinement_iterations?: number;
-    latex_template_name?: string;
+    github_actions_latex_compile_agent?: TopicOpenEndedResearchRequestBody.github_actions_latex_compile_agent;
     llm_mapping?: (TopicOpenEndedResearchSubgraphLLMMapping | null);
 };
+export namespace TopicOpenEndedResearchRequestBody {
+    export enum latex_template_name {
+        ICLR2024 = 'iclr2024',
+        AGENTS4SCIENCE_2025 = 'agents4science_2025',
+        MDPI = 'mdpi',
+    }
+    export enum github_actions_latex_compile_agent {
+        OPEN_CODE = 'open_code',
+        CLAUDE_CODE = 'claude_code',
+    }
+}
 

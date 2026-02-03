@@ -47,7 +47,7 @@ Content-Type: application/json
         "repository_name": "airas-api-test-2",
         "branch_name": "develop-2"
     },
-    "latex_template_name": "MDPI",
+    "latex_template_name": "mdpi",
     //claude_codeで実行する場合は、llm_mappingを指定しないでください
     "github_actions_coding_agent": "claude_code"
     //"github_actions_coding_agent": "open_code",

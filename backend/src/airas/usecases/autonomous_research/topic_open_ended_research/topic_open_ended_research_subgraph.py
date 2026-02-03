@@ -9,6 +9,7 @@ from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
+from airas.core.types.coding_agent import GitHubActionsCodingAgent
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
 from airas.core.types.experimental_design import ExperimentalDesign, RunnerConfig
@@ -18,6 +19,7 @@ from airas.core.types.github import (
     GitHubActionsStatus,
     GitHubConfig,
 )
+from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.paper import PaperContent
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
@@ -185,6 +187,7 @@ class TopicOpenEndedResearchSubgraph:
         e2e_service: TopicOpenEndedResearchService,
         runner_config: RunnerConfig,
         wandb_config: WandbConfig,
+        latex_template_name: LATEX_TEMPLATE_NAME,
         task_id: UUID,
         is_github_repo_private: bool = False,
         num_paper_search_queries: int = 2,
@@ -195,7 +198,7 @@ class TopicOpenEndedResearchSubgraph:
         num_comparison_methods: int = 0,
         experiment_code_validation_iterations: int = 3,
         paper_content_refinement_iterations: int = 2,
-        latex_template_name: str = "iclr2024",
+        github_actions_latex_compile_agent: GitHubActionsCodingAgent = "claude_code",
         llm_mapping: TopicOpenEndedResearchSubgraphLLMMapping | None = None,
     ):
         self.search_index = search_index
@@ -218,6 +221,7 @@ class TopicOpenEndedResearchSubgraph:
         )
         self.paper_content_refinement_iterations = paper_content_refinement_iterations
         self.latex_template_name = latex_template_name
+        self.github_actions_latex_compile_agent = github_actions_latex_compile_agent
         self.llm_mapping = llm_mapping or TopicOpenEndedResearchSubgraphLLMMapping()
 
     @record_execution_time
@@ -812,8 +816,10 @@ class TopicOpenEndedResearchSubgraph:
         result = (
             await CompileLatexSubgraph(
                 github_client=self.github_client,
-                latex_template_name=state.get("latex_template_name", "iclr2024"),
-                llm_mapping=self.llm_mapping.compile_latex,
+                latex_template_name=self.latex_template_name,
+                github_actions_latex_compile_agent=self.github_actions_latex_compile_agent,
+                # NOTE: Uncomment to use OpenCode
+                # llm_mapping=self.llm_mapping.compile_latex,
             )
             .build_graph()
             .ainvoke({"github_config": state["github_config"]})

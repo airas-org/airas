@@ -14,7 +14,7 @@ export namespace CompileLatexSubgraphRequestBody {
     export enum latex_template_name {
         ICLR2024 = 'iclr2024',
         AGENTS4SCIENCE_2025 = 'agents4science_2025',
-        MDPI = 'MDPI',
+        MDPI = 'mdpi',
     }
     export enum github_actions_coding_agent {
         OPEN_CODE = 'open_code',
