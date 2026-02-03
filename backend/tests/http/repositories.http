@@ -8,5 +8,5 @@ Content-Type: application/json
         "repository_name": "airas-api-test",
         "branch_name": "develop-2"
     },
-    "is_private": true
+    "is_private": false
 }

@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
+from airas.core.types.coding_agent import GitHubActionsCodingAgent
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.paper import PaperContent
@@ -39,7 +40,22 @@ class PushLatexSubgraphResponseBody(BaseModel):
 class CompileLatexSubgraphRequestBody(BaseModel):
     github_config: GitHubConfig
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024"
+    github_actions_coding_agent: GitHubActionsCodingAgent = "claude_code"
     llm_mapping: CompileLatexLLMMapping | None = None
+
+    @model_validator(mode="after")
+    def validate_llm_mapping(self) -> "CompileLatexSubgraphRequestBody":
+        if self.github_actions_coding_agent == "open_code":
+            if self.llm_mapping is None:
+                raise ValueError(
+                    "llm_mapping is required when github_actions_coding_agent is 'open_code'"
+                )
+        elif self.github_actions_coding_agent == "claude_code":
+            if self.llm_mapping is not None:
+                raise ValueError(
+                    "llm_mapping must be None when github_actions_coding_agent is 'claude_code'"
+                )
+        return self
 
 
 class CompileLatexSubgraphResponseBody(BaseModel):

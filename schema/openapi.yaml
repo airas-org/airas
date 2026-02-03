@@ -1094,8 +1094,16 @@ components:
           enum:
           - iclr2024
           - agents4science_2025
+          - MDPI
           title: Latex Template Name
           default: iclr2024
+        github_actions_coding_agent:
+          type: string
+          enum:
+          - open_code
+          - claude_code
+          title: Github Actions Coding Agent
+          default: claude_code
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/CompileLatexLLMMapping'
@@ -1816,6 +1824,7 @@ components:
           enum:
           - iclr2024
           - agents4science_2025
+          - MDPI
           title: Latex Template Name
           default: iclr2024
         llm_mapping:
@@ -2549,6 +2558,7 @@ components:
           enum:
           - iclr2024
           - agents4science_2025
+          - MDPI
           title: Latex Template Name
           default: iclr2024
       type: object
