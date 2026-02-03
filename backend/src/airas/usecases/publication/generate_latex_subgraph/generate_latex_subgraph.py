@@ -8,7 +8,7 @@ from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
 from airas.core.types.latex import LATEX_TEMPLATE_NAME, LATEX_TEMPLATE_REPOSITORY_INFO
-from airas.core.types.paper import PaperContent
+from airas.core.types.paper import ICLR2024PaperContent, PaperContent
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.usecases.github.nodes.retrieve_github_repository_file import (
@@ -63,6 +63,13 @@ class GenerateLatexSubgraph:
         self.langchain_client = langchain_client
         self.github_client = github_client
         self.latex_template_name = latex_template_name
+        if latex_template_name == "iclr2024":
+            self.paper_content_model = ICLR2024PaperContent
+        else:
+            raise ValueError(
+                "Unsupported latex template for paper content conversion: "
+                f"{latex_template_name}"
+            )
 
     @record_execution_time
     def _retrieve_latex_template(
@@ -82,6 +89,7 @@ class GenerateLatexSubgraph:
         paper_content = convert_pandoc_citations_to_latex(
             paper_content=state["paper_content"],
             references_bib=state["references_bib"],
+            paper_content_model=self.paper_content_model,
         )
         return {"paper_content": paper_content}
 
@@ -95,6 +103,7 @@ class GenerateLatexSubgraph:
             paper_content=state["paper_content"],
             references_bib=state["references_bib"],
             latex_template_text=state["latex_template_text"],
+            paper_content_model=self.paper_content_model,
         )
         return {"latex_paper_content": latex_paper_content}
 
