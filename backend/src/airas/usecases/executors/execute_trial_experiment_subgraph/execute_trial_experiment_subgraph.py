@@ -51,12 +51,14 @@ class ExecuteTrialExperimentSubgraph:
         self,
         github_client: GithubClient,
         runner_label: list[str] | None = None,
-        workflow_file: str = "dev_run_trial_experiment_with_open_code.yml",
+        workflow_file: str = "dev_run_trial_experiment.yml",
+        github_actions_agent: str = "claude_code",
         llm_mapping: ExecuteTrialExperimentLLMMapping | None = None,
     ):
         self.github_client = github_client
         self.runner_label = runner_label or ["ubuntu-latest"]
         self.workflow_file = workflow_file
+        self.github_actions_agent = github_actions_agent
         self.llm_mapping = llm_mapping or ExecuteTrialExperimentLLMMapping()
 
     @record_execution_time
@@ -88,6 +90,7 @@ class ExecuteTrialExperimentSubgraph:
         inputs = {
             "runner_label": json.dumps(self.runner_label),
             "run_ids": json.dumps(run_ids),
+            "github_actions_agent": self.github_actions_agent,
             "model_name": self.llm_mapping.dispatch_trial_experiment.llm_name,
         }
 

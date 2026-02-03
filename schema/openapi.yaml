@@ -1082,7 +1082,7 @@ components:
         compile_latex:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: anthropic/claude-sonnet-4-5
+            llm_name: claude-sonnet-4-5
       type: object
       title: CompileLatexLLMMapping
     CompileLatexSubgraphRequestBody:
@@ -1231,7 +1231,7 @@ components:
         dispatch_evaluation:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: anthropic/claude-sonnet-4-5
+            llm_name: claude-sonnet-4-5
       type: object
       title: ExecuteEvaluationLLMMapping
     ExecuteEvaluationRequestBody:
@@ -1268,7 +1268,7 @@ components:
         dispatch_full_experiments:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: anthropic/claude-sonnet-4-5
+            llm_name: claude-sonnet-4-5
       type: object
       title: ExecuteFullExperimentLLMMapping
     ExecuteFullRequestBody:
@@ -1323,7 +1323,7 @@ components:
         dispatch_trial_experiment:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: anthropic/claude-sonnet-4-5
+            llm_name: claude-sonnet-4-5
       type: object
       title: ExecuteTrialExperimentLLMMapping
     ExecuteTrialRequestBody:
@@ -2903,7 +2903,7 @@ components:
         search_arxiv_id_from_title:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
+            llm_name: gemini-2.5-flash
         summarize_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
@@ -3194,6 +3194,10 @@ components:
           type: string
           title: Latex Template Name
           default: iclr2024
+        github_actions_agent:
+          type: string
+          title: Github Actions Agent
+          default: claude_code
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/TopicOpenEndedResearchSubgraphLLMMapping'

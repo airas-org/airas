@@ -47,11 +47,13 @@ class ExecuteEvaluationSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
-        workflow_file: str = "dev_run_evaluation_with_open_code.yml",
+        workflow_file: str = "dev_run_evaluation.yml",
+        github_actions_agent: str = "claude_code",
         llm_mapping: ExecuteEvaluationLLMMapping | None = None,
     ):
         self.github_client = github_client
         self.workflow_file = workflow_file
+        self.github_actions_agent = github_actions_agent
         self.llm_mapping = llm_mapping or ExecuteEvaluationLLMMapping()
 
     @record_execution_time
@@ -82,6 +84,7 @@ class ExecuteEvaluationSubgraph:
 
         inputs = {
             "run_ids": json.dumps(run_ids),
+            "github_actions_agent": self.github_actions_agent,
             "model_name": self.llm_mapping.dispatch_evaluation.llm_name,
         }
 
