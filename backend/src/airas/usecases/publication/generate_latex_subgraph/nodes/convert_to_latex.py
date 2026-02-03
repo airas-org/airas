@@ -29,7 +29,7 @@ async def convert_to_latex(
         "references_bib": references_bib,
         "sections": [
             {"name": field, "content": getattr(paper_content, field)}
-            for field in BasePaperContent.model_fields.keys()
+            for field in paper_content_model.model_fields.keys()
             if getattr(paper_content, field)
         ],
     }

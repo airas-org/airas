@@ -90,7 +90,7 @@ class WriteSubgraph:
             self.refine_prompt = iclr2024_refine_prompt
             self.section_tips_prompt = iclr2024_section_tips_prompt
             self.paper_content_model = ICLR2024PaperContent
-            self.prompt_prefix = "iclr2024"
+            self.prompt_prefix = latex_template_name
         else:
             raise ValueError(
                 f"Unsupported latex template for writer prompts: {latex_template_name}"
