@@ -47,9 +47,13 @@ class BasePaperContent(BaseModel):
     conclusion: str = Field(min_length=1)
 
 
+class DefaultPaperContent(BasePaperContent):
+    pass
+
+
 class ICLR2024PaperContent(BasePaperContent):
     pass
 
 
-PaperContent: TypeAlias = BasePaperContent
-# TODO: Extend PaperContent alias to a Union with additional template-specific models.
+PaperContent: TypeAlias = Union[DefaultPaperContent, ICLR2024PaperContent]
+# TODO: Extend PaperContent union with additional template-specific models.
