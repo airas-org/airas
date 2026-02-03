@@ -46,7 +46,7 @@ The paper should contain the following sections with specific requirements:
 
 ## Figure Handling Requirements
 - You must include **all figures provided in the context**, regardless of perceived relevance. Do not omit any
-- Keep the experimental results (figures and tables) only in the Results section, and make sure that any captions are filled in
+- Keep the experimental results (figures and tables) only in the Results section, and make sure that all captions are provided
 - Each figure may be referred to multiple times in the text, but the **actual image (filename)** must be embedded **exactly once**, in the appropriate location with a caption that explicitly includes its filename (e.g., "Figure 1: ... (filename: figure1.pdf)")
 - If image filenames (e.g., figure1.pdf) are listed in the Figures: section of the note, refer to them by filename only and do not describe their content unless explicitly provided in the note
 - Do not invent or assume the existence of any figures or visual content. If no figure is provided, you must not fabricate or imply the existence of one

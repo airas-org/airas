@@ -55,5 +55,6 @@ class ICLR2024PaperContent(BasePaperContent):
     pass
 
 
+# PaperContent remains the exported union for backward-compatible type hints.
 PaperContent: TypeAlias = Union[DefaultPaperContent, ICLR2024PaperContent]
 # TODO: Extend PaperContent union with additional template-specific models.
