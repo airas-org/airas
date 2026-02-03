@@ -1,6 +1,6 @@
 import re
 
-from airas.core.types.paper import PaperContent, PaperContentModel
+from airas.core.types.paper import ICLR2024PaperContent, PaperContent
 from airas.usecases.publication.nodes.parse_bibtex_to_dict import parse_bibtex_to_dict
 
 
@@ -29,7 +29,7 @@ def convert_pandoc_citations_to_latex(
         for field, text in paper_content.model_dump().items()
     }
 
-    return PaperContentModel(**converted_data)
+    return ICLR2024PaperContent(**converted_data)
 
 
 def _convert_citation_format(
@@ -66,7 +66,7 @@ def _convert_citation_format(
 
 if __name__ == "__main__":
     # Test Pandoc/Quarto citation format conversion
-    paper_content = PaperContentModel(
+    paper_content = ICLR2024PaperContent(
         title="Test Paper Title",
         abstract="Abstract with single citation [@vaswani-2017-attention].",
         introduction=(

@@ -1,5 +1,5 @@
 from airas.core.types.github import GitHubRepositoryInfo
-from airas.core.types.paper import PaperContentModel
+from airas.core.types.paper import ICLR2024PaperContent
 
 readme_subgraph_input_data = {
     "github_repository_info": GitHubRepositoryInfo(
@@ -7,7 +7,7 @@ readme_subgraph_input_data = {
         repository_name="experiment_matsuzawa_colab_dev54",
         branch_name="develop",
     ),
-    "paper_content": PaperContentModel(
+    "paper_content": ICLR2024PaperContent(
         title="Advanced Machine Learning for Automated Research",
         abstract="This paper presents a novel approach to automated research using advanced machine learning techniques. Our system, AIRAS, can automatically generate research papers, conduct experiments, and validate results. We demonstrate significant improvements in research efficiency and quality compared to traditional manual approaches. The system shows particular strength in handling complex research workflows and can be applied to various scientific domains including computer vision, natural language processing, and data mining.",
         introduction="Automated research represents a frontier in artificial intelligence, where systems can independently conduct scientific investigations. Traditional research methods often require significant human effort and time, creating bottlenecks in the pace of scientific discovery. Our work addresses these challenges through the development of AIRAS (Automated Intelligent Research Assistant System), which leverages advanced machine learning techniques to automate various aspects of the research process.",

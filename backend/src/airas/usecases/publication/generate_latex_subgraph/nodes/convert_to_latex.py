@@ -3,7 +3,7 @@ from logging import getLogger
 from jinja2 import Environment
 
 from airas.core.llm_config import NodeLLMConfig
-from airas.core.types.paper import BasePaperContent, PaperContent, PaperContentModel
+from airas.core.types.paper import BasePaperContent, ICLR2024PaperContent, PaperContent
 from airas.infra.langchain_client import LangChainClient
 from airas.usecases.publication.generate_latex_subgraph.prompts.convert_to_latex_prompt import (
     convert_to_latex_prompt,
@@ -39,7 +39,7 @@ async def convert_to_latex(
 
     output = await langchain_client.structured_outputs(
         message=messages,
-        data_model=PaperContentModel,
+        data_model=ICLR2024PaperContent,
         llm_name=llm_config.llm_name,
         params=llm_config.params,
     )

@@ -14,7 +14,7 @@ from airas.core.types.experimental_analysis import ExperimentalAnalysis
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
-from airas.core.types.paper import PaperContent, PaperContentModel
+from airas.core.types.paper import ICLR2024PaperContent, PaperContent
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
 from airas.infra.langchain_client import LangChainClient
@@ -89,7 +89,7 @@ class WriteSubgraph:
             self.write_prompt = iclr2024_write_prompt
             self.refine_prompt = iclr2024_refine_prompt
             self.section_tips_prompt = iclr2024_section_tips_prompt
-            self.paper_content_model = PaperContentModel
+            self.paper_content_model = ICLR2024PaperContent
             self.prompt_prefix = "iclr2024"
         else:
             raise ValueError(

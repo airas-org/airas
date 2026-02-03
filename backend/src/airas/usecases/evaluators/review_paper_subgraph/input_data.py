@@ -1,7 +1,7 @@
-from airas.core.types.paper import PaperContentModel
+from airas.core.types.paper import ICLR2024PaperContent
 
 review_paper_subgraph_input_data = {
-    "paper_content": PaperContentModel(
+    "paper_content": ICLR2024PaperContent(
         title="Sample Research Paper: A Novel Approach to Machine Learning",
         abstract="This paper introduces a novel approach to machine learning that combines deep neural networks with reinforcement learning techniques. Our method demonstrates superior performance on benchmark datasets compared to existing approaches.",
         introduction="Machine learning has evolved rapidly in recent years, with various approaches showing promise in different domains. This work aims to bridge the gap between supervised and reinforcement learning by proposing a unified framework that leverages the strengths of both paradigms.",
