@@ -1,8 +1,8 @@
-refine_prompt = """\
+iclr2024_refine_prompt = """\
 You are refining an existing research paper to improve its quality, clarity, and academic rigor.
 
 # Current Paper Content
-{{ iclr2024_content }}
+{{ content }}
 
 # Refinement Instructions
 - Maintain all the original requirements and guidelines from the system instructions.

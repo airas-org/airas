@@ -22,7 +22,7 @@ from airas.usecases.writers.write_subgraph.nodes.generate_note import generate_n
 from airas.usecases.writers.write_subgraph.nodes.refine_paper import refine_paper
 from airas.usecases.writers.write_subgraph.nodes.write_paper import write_paper
 from airas.usecases.writers.write_subgraph.prompts.iclr2024.refine_prompt import (
-    refine_prompt as iclr2024_refine_prompt,
+    iclr2024_refine_prompt,
 )
 from airas.usecases.writers.write_subgraph.prompts.iclr2024.section_tips_prompt import (
     iclr2024_section_tips_prompt,
