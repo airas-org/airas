@@ -15,13 +15,16 @@ async def write_paper(
 ) -> PaperContent:
     env = Environment()
     template = env.from_string(prompt_template)
-    context = {
-        "note": note,
-        "tips_dict": section_tips_prompt,
-    }
     if prompt_prefix:
-        context[f"{prompt_prefix}_note"] = note
-        context[f"{prompt_prefix}_tips_dict"] = section_tips_prompt
+        context = {
+            f"{prompt_prefix}_note": note,
+            f"{prompt_prefix}_tips_dict": section_tips_prompt,
+        }
+    else:
+        context = {
+            "note": note,
+            "tips_dict": section_tips_prompt,
+        }
     messages = template.render(context)
 
     output = await langchain_client.structured_outputs(

@@ -17,19 +17,23 @@ async def refine_paper(
 ) -> PaperContent:
     env = Environment()
     write_prompt = env.from_string(write_prompt_template)
-    write_context = {
-        "note": note,
-        "tips_dict": section_tips_prompt,
-    }
     if prompt_prefix:
-        write_context[f"{prompt_prefix}_note"] = note
-        write_context[f"{prompt_prefix}_tips_dict"] = section_tips_prompt
+        write_context = {
+            f"{prompt_prefix}_note": note,
+            f"{prompt_prefix}_tips_dict": section_tips_prompt,
+        }
+    else:
+        write_context = {
+            "note": note,
+            "tips_dict": section_tips_prompt,
+        }
     rendered_system_prompt = write_prompt.render(write_context)
 
     refine_prompt = env.from_string(refine_prompt_template)
-    refine_context = {"content": paper_content}
     if prompt_prefix:
-        refine_context[f"{prompt_prefix}_content"] = paper_content
+        refine_context = {f"{prompt_prefix}_content": paper_content}
+    else:
+        refine_context = {"content": paper_content}
     refine_message = refine_prompt.render(refine_context)
 
     messages = rendered_system_prompt + refine_message

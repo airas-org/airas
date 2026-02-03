@@ -52,4 +52,5 @@ class ICLR2024PaperContent(BasePaperContent):
 
 
 PaperContent: TypeAlias = Union[ICLR2024PaperContent]
+# TODO: Extend PaperContent union with additional template-specific models.
 PaperContentModel: type[BasePaperContent] = ICLR2024PaperContent
