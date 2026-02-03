@@ -40,8 +40,8 @@ iclr2024_section_tips_prompt = {
 - Usually includes a subsection, Problem Setting, which formally introduces the problem setting and notation (Formalism) for our method
 - Highlights any specific assumptions that are made that are unusual
 - Include citations to foundational work and key concepts
-- Note: If our paper introduces a novel problem setting as part of its contributions, it's best to have a separate Section
-- Please avoid dividing the text into too many subsections, and instead present it as a coherent, well-connected narrative.""",
+    - Note: If our paper introduces a novel problem setting as part of its contributions, it's best to have a separate Section
+    - Please avoid dividing the text into too many subsections, and instead present it as a coherent, well-connected narrative""",
     "Method": """\
 - Expected length: about 4000 characters (~1–1.5 pages)
 - What we do. Why we do it. All described using the general Formalism introduced in the Problem Setting and building on top of the concepts/foundations introduced in Background
