@@ -54,11 +54,8 @@ class CompileLatexSubgraph:
         self.github_actions_coding_agent = github_actions_coding_agent
         if github_actions_coding_agent == "open_code":
             self.workflow_file = "dev_compile_latex_with_open_code.yml"
-            if llm_mapping is None:
-                raise ValueError(
-                    "llm_mapping is required when github_actions_coding_agent is 'open_code'"
-                )
-            self.llm_mapping = llm_mapping
+            # `llm_mapping` が未指定の場合は後方互換性のためデフォルトにフォールバックする
+            self.llm_mapping = llm_mapping or CompileLatexLLMMapping()
         elif github_actions_coding_agent == "claude_code":
             self.workflow_file = "dev_compile_latex_with_claude_code.yml"
             if llm_mapping is not None:
