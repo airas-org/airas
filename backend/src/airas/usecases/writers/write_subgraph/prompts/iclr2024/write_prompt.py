@@ -1,4 +1,4 @@
-write_prompt = """\
+iclr2024_write_prompt = """\
 Your goal is to write a clear, structured, and academically rigorous research paper in plain English.
 Avoid LaTeX commands or special formatting; focus solely on academic content quality.
 

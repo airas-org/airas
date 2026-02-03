@@ -28,7 +28,7 @@ from airas.usecases.writers.write_subgraph.prompts.iclr2024.section_tips_prompt 
     iclr2024_section_tips_prompt,
 )
 from airas.usecases.writers.write_subgraph.prompts.iclr2024.write_prompt import (
-    write_prompt as iclr2024_write_prompt,
+    iclr2024_write_prompt,
 )
 
 setup_logging()
