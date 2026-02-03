@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, TypeAlias, Union
 
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
@@ -35,7 +35,7 @@ class PaperReviewScores(BaseModel):
     )
 
 
-class PaperContent(BaseModel):
+class BasePaperContent(BaseModel):
     title: str = Field(min_length=1)
     abstract: str = Field(min_length=1)
     introduction: str = Field(min_length=1)
@@ -45,3 +45,11 @@ class PaperContent(BaseModel):
     experimental_setup: str = Field(min_length=1)
     results: str = Field(min_length=1)
     conclusion: str = Field(min_length=1)
+
+
+class ICLR2024PaperContent(BasePaperContent):
+    pass
+
+
+PaperContent: TypeAlias = Union[ICLR2024PaperContent]
+PaperContentModel: type[BasePaperContent] = ICLR2024PaperContent

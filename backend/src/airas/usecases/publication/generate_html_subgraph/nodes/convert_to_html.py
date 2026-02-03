@@ -1,7 +1,7 @@
 from jinja2 import Environment
 from pydantic import BaseModel
 
-from airas.core.types.paper import PaperContent
+from airas.core.types.paper import BasePaperContent, PaperContent
 from airas.core.types.research_session import ResearchSession
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.llm_specs import LLM_MODELS
@@ -36,7 +36,7 @@ async def convert_to_html(
     data = {
         "sections": [
             {"name": field, "content": getattr(paper_content, field)}
-            for field in PaperContent.model_fields.keys()
+            for field in BasePaperContent.model_fields.keys()
             if getattr(paper_content, field)
         ],
         "image_file_name_list": image_file_name_list,

@@ -2,17 +2,17 @@ write_prompt = """\
 Your goal is to write a clear, structured, and academically rigorous research paper in plain English.
 Avoid LaTeX commands or special formatting; focus solely on academic content quality.
 
-{% if tips_dict %}
+{% if iclr2024_tips_dict %}
 # Section Guidelines
 The paper should contain the following sections with specific requirements:
-{% for section, tips in tips_dict.items() %}
+{% for section, tips in iclr2024_tips_dict.items() %}
 ## {{ section }}
 {{ tips }}
 {% endfor %}
 {% endif %}
 
 # Research Context
-{{ note }}
+{{ iclr2024_note }}
 
 # Core Writing Instructions
 

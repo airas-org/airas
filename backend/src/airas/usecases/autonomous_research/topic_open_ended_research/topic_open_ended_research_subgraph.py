@@ -743,6 +743,7 @@ class TopicOpenEndedResearchSubgraph:
                 langchain_client=self.langchain_client,
                 paper_content_refinement_iterations=self.paper_content_refinement_iterations,
                 llm_mapping=self.llm_mapping.write,
+                latex_template_name=self.latex_template_name,
             )
             .build_graph()
             .ainvoke(

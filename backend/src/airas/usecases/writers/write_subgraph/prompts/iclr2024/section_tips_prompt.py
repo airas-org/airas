@@ -1,4 +1,4 @@
-section_tips_prompt = {
+iclr2024_section_tips_prompt = {
     "Title": """\
 - Write only the title of the paper in one single line, as plain text with no quotation marks
 - Example of correct output: Efficient Adaptation of Large Language Models via Low-Rank Optimization

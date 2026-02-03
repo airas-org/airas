@@ -13,13 +13,23 @@ from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults
-from airas.core.types.paper import PaperContent
+from airas.core.types.latex import LATEX_TEMPLATE_NAME
+from airas.core.types.paper import PaperContent, PaperContentModel
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
 from airas.infra.langchain_client import LangChainClient
 from airas.usecases.writers.write_subgraph.nodes.generate_note import generate_note
 from airas.usecases.writers.write_subgraph.nodes.refine_paper import refine_paper
 from airas.usecases.writers.write_subgraph.nodes.write_paper import write_paper
+from airas.usecases.writers.write_subgraph.prompts.iclr2024.refine_prompt import (
+    refine_prompt as iclr2024_refine_prompt,
+)
+from airas.usecases.writers.write_subgraph.prompts.iclr2024.section_tips_prompt import (
+    iclr2024_section_tips_prompt,
+)
+from airas.usecases.writers.write_subgraph.prompts.iclr2024.write_prompt import (
+    write_prompt as iclr2024_write_prompt,
+)
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -68,10 +78,23 @@ class WriteSubgraph:
         langchain_client: LangChainClient,
         llm_mapping: WriteLLMMapping | None = None,
         paper_content_refinement_iterations: int = 2,
+        latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
     ):
         self.llm_mapping = llm_mapping or WriteLLMMapping()
         self.paper_content_refinement_iterations = paper_content_refinement_iterations
         self.langchain_client = langchain_client
+        self.latex_template_name = latex_template_name
+
+        if latex_template_name == "iclr2024":
+            self.write_prompt = iclr2024_write_prompt
+            self.refine_prompt = iclr2024_refine_prompt
+            self.section_tips_prompt = iclr2024_section_tips_prompt
+            self.paper_content_model = PaperContentModel
+            self.prompt_prefix = "iclr2024"
+        else:
+            raise ValueError(
+                f"Unsupported latex template for writer prompts: {latex_template_name}"
+            )
 
     @record_execution_time
     def _initialize(self, state: WriteSubgraphState) -> dict[str, int]:
@@ -98,6 +121,10 @@ class WriteSubgraph:
             llm_config=self.llm_mapping.write_paper,
             langchain_client=self.langchain_client,
             note=state["note"],
+            prompt_template=self.write_prompt,
+            section_tips_prompt=self.section_tips_prompt,
+            paper_content_model=self.paper_content_model,
+            prompt_prefix=self.prompt_prefix,
         )
         return {"paper_content": paper_content}
 
@@ -110,6 +137,11 @@ class WriteSubgraph:
             langchain_client=self.langchain_client,
             paper_content=state["paper_content"],
             note=state["note"],
+            write_prompt_template=self.write_prompt,
+            refine_prompt_template=self.refine_prompt,
+            section_tips_prompt=self.section_tips_prompt,
+            paper_content_model=self.paper_content_model,
+            prompt_prefix=self.prompt_prefix,
         )
 
         new_refinement_count = state["refinement_count"] + 1
