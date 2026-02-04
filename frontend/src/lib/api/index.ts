@@ -80,6 +80,8 @@ export type { PrepareRepositorySubgraphRequestBody } from './models/PrepareRepos
 export type { PrepareRepositorySubgraphResponseBody } from './models/PrepareRepositorySubgraphResponseBody';
 export type { PushCodeSubgraphRequestBody } from './models/PushCodeSubgraphRequestBody';
 export type { PushCodeSubgraphResponseBody } from './models/PushCodeSubgraphResponseBody';
+export type { PushGitHubRequestBody } from './models/PushGitHubRequestBody';
+export type { PushGitHubResponseBody } from './models/PushGitHubResponseBody';
 export { PushLatexSubgraphRequestBody } from './models/PushLatexSubgraphRequestBody';
 export type { PushLatexSubgraphResponseBody } from './models/PushLatexSubgraphResponseBody';
 export type { ResearchHistory_Input } from './models/ResearchHistory_Input';
@@ -120,6 +122,7 @@ export { CodeService } from './services/CodeService';
 export { DatasetsService } from './services/DatasetsService';
 export { ExperimentalSettingsService } from './services/ExperimentalSettingsService';
 export { ExperimentsService } from './services/ExperimentsService';
+export { GithubService } from './services/GithubService';
 export { GithubActionsService } from './services/GithubActionsService';
 export { HypothesesService } from './services/HypothesesService';
 export { LatexService } from './services/LatexService';
