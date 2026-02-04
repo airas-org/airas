@@ -10,3 +10,4 @@ class PushGitHubRequestBody(BaseModel):
 
 class PushGitHubResponseBody(BaseModel):
     is_file_pushed: bool
+    execution_time: dict[str, list[float]]

@@ -4,5 +4,6 @@
 /* eslint-disable */
 export type PushGitHubResponseBody = {
     is_file_pushed: boolean;
+    execution_time: Record<string, Array<number>>;
 };
 

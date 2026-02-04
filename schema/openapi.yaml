@@ -603,6 +603,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/github/push:
+    post:
+      tags:
+      - github
+      summary: Push Github
+      operationId: push_github_airas_v1_github_push_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushGitHubRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushGitHubResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/assisted_research/session:
     post:
       tags:
@@ -2581,9 +2606,17 @@ components:
         is_file_pushed:
           type: boolean
           title: Is File Pushed
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
       type: object
       required:
       - is_file_pushed
+      - execution_time
       title: PushGitHubResponseBody
     PushLatexSubgraphRequestBody:
       properties:
