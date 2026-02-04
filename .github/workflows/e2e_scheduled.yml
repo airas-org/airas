@@ -90,8 +90,8 @@ on:
           - 'gpt-5-mini-2025-08-07'
           - 'gemini-2.5-pro'
           - 'gemini-2.5-flash'
-          - 'anthropic/claude-opus-4'
-          - 'anthropic/claude-sonnet-4-5'
+          - 'claude-opus-4'
+          - 'claude-sonnet-4-5'
         default: 'gpt-5.2'
       coding_model:
         description: 'Coding LLM (code generation, code validation)'
@@ -105,12 +105,20 @@ on:
         type: choice
         options: *llm_options
         default: 'gemini-2.5-flash'
+      github_actions_agent:
+        description: 'GitHub Actions agent tool (claude_code or open_code)'
+        required: false
+        type: choice
+        options:
+          - claude_code
+          - open_code
+        default: 'claude_code'
       github_actions_model:
         description: 'GitHub Actions LLM (experiment dispatch, evaluation dispatch, LaTeX compilation)'
         required: false
         type: choice
         options: *llm_options
-        default: 'anthropic/claude-sonnet-4-5'
+        default: 'claude-sonnet-4-5'
 
 jobs:
   check-org-membership:
@@ -272,7 +280,8 @@ jobs:
           PRIMARY_MODEL="${{ github.event.inputs.primary_model || 'gpt-5.2' }}"
           CODING_MODEL="${{ github.event.inputs.coding_model || 'gpt-5.2-codex' }}"
           PAPER_RETRIEVAL_MODEL="${{ github.event.inputs.paper_retrieval_model || 'gemini-2.5-flash' }}"
-          GITHUB_ACTIONS_MODEL="${{ github.event.inputs.github_actions_model || 'anthropic/claude-sonnet-4-5' }}"
+          GITHUB_ACTIONS_MODEL="${{ github.event.inputs.github_actions_model || 'claude-sonnet-4-5' }}"
+          GITHUB_ACTIONS_AGENT="${{ github.event.inputs.github_actions_agent || 'claude_code' }}"
 
           # === Build LLM mapping JSON ===
           LLM_MAPPING=$(cat <<EOFLLM
@@ -346,6 +355,7 @@ jobs:
             "experiment_code_validation_iterations": ${CODE_VALIDATION_ITERS},
             "paper_content_refinement_iterations": ${PAPER_REFINE_ITERS},
             "latex_template_name": "${LATEX_TEMPLATE}",
+            "github_actions_agent": "${GITHUB_ACTIONS_AGENT}",
             "llm_mapping": ${LLM_MAPPING}
           }
           EOF

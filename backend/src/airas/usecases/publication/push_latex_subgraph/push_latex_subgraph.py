@@ -66,8 +66,9 @@ class PushLatexSubgraph:
             github_owner=state["github_config"].github_owner,
             repository_name=state["github_config"].repository_name,
             branch_name=state["github_config"].branch_name,
-            workflow_file="dev_prepare_images_for_latex.yml",
+            workflow_file="prepare_images_for_latex.yml",
             inputs={
+                "branch_name": state["github_config"].branch_name,
                 "subdir": self.latex_template_name,
             },
         )

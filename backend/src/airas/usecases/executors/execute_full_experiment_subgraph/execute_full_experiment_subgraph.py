@@ -49,12 +49,14 @@ class ExecuteFullExperimentSubgraph:
         self,
         github_client: GithubClient,
         runner_label: list[str] | None = None,
-        workflow_file: str = "dev_run_full_experiment_with_open_code.yml",
+        workflow_file: str = "run_full_experiment.yml",
+        github_actions_agent: str = "claude_code",
         llm_mapping: ExecuteFullExperimentLLMMapping | None = None,
     ):
         self.github_client = github_client
         self.runner_label = runner_label or ["ubuntu-latest"]
         self.workflow_file = workflow_file
+        self.github_actions_agent = github_actions_agent
         self.llm_mapping = llm_mapping or ExecuteFullExperimentLLMMapping()
 
     @record_execution_time
@@ -115,8 +117,10 @@ class ExecuteFullExperimentSubgraph:
                 branch_name,
                 self.workflow_file,
                 {
+                    "branch_name": branch_name,
                     "runner_label": runner_label_json,
                     "run_id": run_id,
+                    "github_actions_agent": self.github_actions_agent,
                     "model_name": self.llm_mapping.dispatch_full_experiments.llm_name,
                 },
             )

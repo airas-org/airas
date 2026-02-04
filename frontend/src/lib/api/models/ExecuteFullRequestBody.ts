@@ -7,6 +7,7 @@ import type { GitHubConfig } from './GitHubConfig';
 export type ExecuteFullRequestBody = {
     github_config: GitHubConfig;
     run_ids: Array<string>;
+    github_actions_agent?: string;
     llm_mapping?: (ExecuteFullExperimentLLMMapping | null);
 };
 
