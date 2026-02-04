@@ -6,6 +6,7 @@ import type { ExecuteEvaluationLLMMapping } from './ExecuteEvaluationLLMMapping'
 import type { GitHubConfig } from './GitHubConfig';
 export type ExecuteEvaluationRequestBody = {
     github_config: GitHubConfig;
+    github_actions_agent?: string;
     llm_mapping?: (ExecuteEvaluationLLMMapping | null);
 };
 

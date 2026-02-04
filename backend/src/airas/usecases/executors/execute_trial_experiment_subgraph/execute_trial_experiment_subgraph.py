@@ -51,7 +51,7 @@ class ExecuteTrialExperimentSubgraph:
         self,
         github_client: GithubClient,
         runner_label: list[str] | None = None,
-        workflow_file: str = "dev_run_trial_experiment.yml",
+        workflow_file: str = "run_trial_experiment.yml",
         github_actions_agent: str = "claude_code",
         llm_mapping: ExecuteTrialExperimentLLMMapping | None = None,
     ):
@@ -88,6 +88,7 @@ class ExecuteTrialExperimentSubgraph:
         logger.info(f"Run IDs: {', '.join(run_ids)}")
 
         inputs = {
+            "branch_name": github_config.branch_name,
             "runner_label": json.dumps(self.runner_label),
             "run_ids": json.dumps(run_ids),
             "github_actions_agent": self.github_actions_agent,

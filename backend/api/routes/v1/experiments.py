@@ -108,6 +108,7 @@ async def execute_trial(
     result = (
         await ExecuteTrialExperimentSubgraph(
             github_client=github_client,
+            github_actions_agent=request.github_actions_agent,
             llm_mapping=request.llm_mapping,
         )
         .build_graph()
@@ -136,6 +137,7 @@ async def execute_full(
     result = (
         await ExecuteFullExperimentSubgraph(
             github_client=github_client,
+            github_actions_agent=request.github_actions_agent,
             llm_mapping=request.llm_mapping,
         )
         .build_graph()
@@ -164,6 +166,7 @@ async def execute_evaluation(
     result = (
         await ExecuteEvaluationSubgraph(
             github_client=github_client,
+            github_actions_agent=request.github_actions_agent,
             llm_mapping=request.llm_mapping,
         )
         .build_graph()

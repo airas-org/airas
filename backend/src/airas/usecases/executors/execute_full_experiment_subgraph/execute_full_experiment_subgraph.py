@@ -49,7 +49,7 @@ class ExecuteFullExperimentSubgraph:
         self,
         github_client: GithubClient,
         runner_label: list[str] | None = None,
-        workflow_file: str = "dev_run_full_experiment.yml",
+        workflow_file: str = "run_full_experiment.yml",
         github_actions_agent: str = "claude_code",
         llm_mapping: ExecuteFullExperimentLLMMapping | None = None,
     ):
@@ -117,6 +117,7 @@ class ExecuteFullExperimentSubgraph:
                 branch_name,
                 self.workflow_file,
                 {
+                    "branch_name": branch_name,
                     "runner_label": runner_label_json,
                     "run_id": run_id,
                     "github_actions_agent": self.github_actions_agent,

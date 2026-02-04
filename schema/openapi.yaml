@@ -1238,6 +1238,10 @@ components:
       properties:
         github_config:
           $ref: '#/components/schemas/GitHubConfig'
+        github_actions_agent:
+          type: string
+          title: Github Actions Agent
+          default: claude_code
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/ExecuteEvaluationLLMMapping'
@@ -1280,6 +1284,10 @@ components:
             type: string
           type: array
           title: Run Ids
+        github_actions_agent:
+          type: string
+          title: Github Actions Agent
+          default: claude_code
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/ExecuteFullExperimentLLMMapping'
@@ -1330,6 +1338,10 @@ components:
       properties:
         github_config:
           $ref: '#/components/schemas/GitHubConfig'
+        github_actions_agent:
+          type: string
+          title: Github Actions Agent
+          default: claude_code
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/ExecuteTrialExperimentLLMMapping'

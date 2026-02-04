@@ -47,7 +47,7 @@ class ExecuteEvaluationSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
-        workflow_file: str = "dev_run_evaluation.yml",
+        workflow_file: str = "run_evaluation.yml",
         github_actions_agent: str = "claude_code",
         llm_mapping: ExecuteEvaluationLLMMapping | None = None,
     ):
@@ -83,6 +83,7 @@ class ExecuteEvaluationSubgraph:
         logger.info(f"Run IDs: {', '.join(run_ids)}")
 
         inputs = {
+            "branch_name": github_config.branch_name,
             "run_ids": json.dumps(run_ids),
             "github_actions_agent": self.github_actions_agent,
             "model_name": self.llm_mapping.dispatch_evaluation.llm_name,
