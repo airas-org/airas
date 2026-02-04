@@ -5,8 +5,8 @@ Content-Type: application/json
 {
     "github_config": {
         "github_owner": "auto-res2",
-        "repository_name": "airas-api-test",
-        "branch_name": "develop-2"
+        "repository_name": "airas-m-test",
+        "branch_name": "main"
     },
-    "is_private": true
+    "is_private": false
 }

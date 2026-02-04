@@ -1,9 +1,179 @@
-### Generate BibTeX from research studies
-
-POST http://127.0.0.1:8000/airas/v1/bibfile/generations
-Content-Type: application/json
-
 {
+  "research_hypothesis": {
+    "open_problems": "In Japanese document-level relation extraction, low-cost LLM-based knowledge graph extraction suffers from low precision due to a large number of false positives when using one-shot extraction.",
+    "method": "Apply a Two-Stage approach (candidate generation followed by verification) using low-cost LLMs with Structured Outputs to separate recall-oriented extraction from precision-oriented validation.",
+    "experimental_setup": "Select 10 documents from the JacRED dev set and compare a Baseline (One-shot extraction) with a Proposed (Two-Stage) method using Gemini Flash family models.",
+    "primary_metric": "Precision / Recall / F1 score for document-level relation extraction",
+    "experimental_code": "A Gemini API–based pipeline using Structured Outputs, including candidate generation, candidate verification, and post-processing with type constraints",
+    "expected_result": "The Two-Stage approach will substantially reduce false positives and improve Precision and F1 compared to the Baseline.",
+    "expected_conclusion": "Even with low-cost LLMs, practical knowledge graph extraction accuracy can be achieved by combining verification steps with domain/range type constraints."
+  },
+  "experimental_design": {
+    "experiment_summary": "An empirical comparison of One-shot extraction and Two-Stage extraction for Japanese document-level knowledge graph construction using the JacRED dataset.",
+    "runner_config": {
+      "runner_label": ["local-gpu-or-cloud"],
+      "description": "Experimental environment executing Gemini API calls on local or cloud infrastructure"
+    },
+    "evaluation_metrics": [
+      {
+        "name": "Precision",
+        "description": "The proportion of extracted relations that are correct"
+      },
+      {
+        "name": "Recall",
+        "description": "The proportion of gold relations that are successfully extracted"
+      },
+      {
+        "name": "F1",
+        "description": "The harmonic mean of Precision and Recall"
+      }
+    ],
+    "models_to_use": [
+      "Gemini 2.0 Flash",
+      "Gemini 2.5 Flash",
+      "Gemini 3 Flash Preview"
+    ],
+    "datasets_to_use": ["JacRED (dev set, 10 documents)"],
+    "proposed_method": {
+      "method_name": "Two-Stage KG Extraction",
+      "description": "Stage 1 generates entity and relation candidates with a recall-oriented strategy; Stage 2 verifies each candidate in batches using the LLM, followed by domain/range type-constraint filtering"
+    },
+    "comparative_methods": [
+      {
+        "method_name": "One-shot Extraction",
+        "description": "A baseline method that extracts entities and relations simultaneously in a single LLM call"
+      }
+    ]
+  },
+  "experiment_code": {
+    "train_py": "",
+    "evaluate_py": "",
+    "preprocess_py": "",
+    "model_py": "",
+    "main_py": "",
+    "pyproject_toml": "",
+    "config_yaml": ""
+  },
+  "experimental_results": {
+    "stdout": "",
+    "stderr": "",
+    "figures": [],
+    "metrics_data": [
+      {
+        "model": "2.0-flash",
+        "thinking": "none",
+        "condition": "Baseline",
+        "precision": 0.20,
+        "recall": 0.15,
+        "f1": 0.17,
+        "tp": 22,
+        "fp": 86,
+        "fn": 126
+      },
+      {
+        "model": "2.0-flash",
+        "thinking": "none",
+        "condition": "Proposed",
+        "precision": 0.35,
+        "recall": 0.19,
+        "f1": 0.25,
+        "tp": 28,
+        "fp": 51,
+        "fn": 121
+      },
+      {
+        "model": "2.5-flash",
+        "thinking": "off",
+        "condition": "Baseline",
+        "precision": 0.17,
+        "recall": 0.16,
+        "f1": 0.17,
+        "tp": 24,
+        "fp": 115,
+        "fn": 124
+      },
+      {
+        "model": "2.5-flash",
+        "thinking": "off",
+        "condition": "Proposed",
+        "precision": 0.30,
+        "recall": 0.12,
+        "f1": 0.17,
+        "tp": 18,
+        "fp": 42,
+        "fn": 130
+      },
+      {
+        "model": "2.5-flash",
+        "thinking": "2048",
+        "condition": "Baseline",
+        "precision": 0.18,
+        "recall": 0.17,
+        "f1": 0.17,
+        "tp": 25,
+        "fp": 115,
+        "fn": 123
+      },
+      {
+        "model": "2.5-flash",
+        "thinking": "2048",
+        "condition": "Proposed",
+        "precision": 0.36,
+        "recall": 0.21,
+        "f1": 0.27,
+        "tp": 31,
+        "fp": 54,
+        "fn": 117
+      },
+      {
+        "model": "3-flash-preview",
+        "thinking": "off",
+        "condition": "Baseline",
+        "precision": 0.26,
+        "recall": 0.16,
+        "f1": 0.20,
+        "tp": 24,
+        "fp": 70,
+        "fn": 124
+      },
+      {
+        "model": "3-flash-preview",
+        "thinking": "off",
+        "condition": "Proposed",
+        "precision": 0.36,
+        "recall": 0.22,
+        "f1": 0.27,
+        "tp": 32,
+        "fp": 56,
+        "fn": 116
+      },
+      {
+        "model": "3-flash-preview",
+        "thinking": "2048",
+        "condition": "Baseline",
+        "precision": 0.31,
+        "recall": 0.22,
+        "f1": 0.26,
+        "tp": 33,
+        "fp": 74,
+        "fn": 115
+      },
+      {
+        "model": "3-flash-preview",
+        "thinking": "2048",
+        "condition": "Proposed",
+        "precision": 0.37,
+        "recall": 0.20,
+        "f1": 0.26,
+        "tp": 30,
+        "fp": 52,
+        "fn": 118
+      }
+    ]
+  },
+  "experimental_analysis": {
+    "analysis_report": "The Two-Stage approach consistently reduced false positives by 40–60% across all models, leading to significant precision gains. Gemini-3-flash-preview without thinking achieved an F1 score of 0.27 within a short runtime, offering the best cost-performance trade-off. However, recall remains low overall (0.12–0.22), indicating the need for prompt refinement and the introduction of few-shot examples in future work."
+  },
   "research_study_list": [
     {
       "title": "Building a Japanese Document-Level Relation Extraction Dataset Assisted by Cross-Lingual Transfer",
@@ -259,5 +429,7 @@ Content-Type: application/json
         "experimental_info": ""
       }
     }
-  ]
+  ],
+  "references_bib": "@article{delaunay-2023-comprehensive,\n author = {Julien Delaunay and Hanh Thi Hong Tran and Carlos-Emiliano González-Gallardo and Georgeta Bordea and Nicolas Sidere and Antoine Doucet},\n github_url = {https://github.com/sujunhao/RENET2},\n title = {A Comprehensive Survey of Document-level Relation Extraction},\n year = {2023}\n}\n\n@article{geng-2025-generating,\n author = {Saibo Geng and Hudson Cooper and Michał Moskal and Samuel Jenkins and Julian Berman and Nathan Ranchin and Robert West and Eric Horvitz and Harsha Nori},\n github_url = {https://github.com/guidance-ai/guidance},\n title = {Generating Structured Outputs from Language Models: Benchmark and Studies},\n year = {2025}\n}\n\n@article{giorgi-2019-end,\n author = {John Giorgi and Xindi Wang and Nicola Sahar and Won Young Shin and Gary D. Bader and Bo Wang},\n title = {End-to-end Named Entity Recognition and Relation Extraction using Pre-trained Language Models},\n year = {2019}\n}\n\n@article{ma-2024-building,\n author = {Youmi Ma and An Wang and Naoaki Okazaki},\n title = {Building a Japanese Document-Level Relation Extraction Dataset Assisted by Cross-Lingual Transfer},\n year = {2024}\n}\n\n@article{xu-2023-large,\n author = {Derong Xu and Wei Chen and Wenjun Peng and Chao Zhang and Tong Xu and Xiangyu Zhao and Xian Wu and Yefeng Zheng and Yang Wang and Enhong Chen},\n title = {Large Language Models for Generative Information Extraction: A Survey},\n year = {2023}\n}\n\n@article{yao-2019-docred,\n author = {Yuan Yao and Deming Ye and Peng Li and Xu Han and Yankai Lin and Zhenghao Liu and Zhiyuan Liu and Lixin Huang and Jie Zhou and Maosong Sun},\n title = {DocRED: A Large-Scale Document-Level Relation Extraction Dataset},\n year = {2019}\n}",
+  "writing_refinement_rounds": 0
 }
