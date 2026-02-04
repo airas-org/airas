@@ -1146,6 +1146,10 @@ components:
           - agents4science_2025
           title: Latex Template Name
           default: iclr2024
+        github_actions_agent:
+          type: string
+          title: Github Actions Agent
+          default: claude_code
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/CompileLatexLLMMapping'
@@ -1290,7 +1294,7 @@ components:
           $ref: '#/components/schemas/GitHubConfig'
         github_actions_agent:
           type: string
-          title: GitHub Actions Agent
+          title: Github Actions Agent
           default: claude_code
         llm_mapping:
           anyOf:
@@ -3314,7 +3318,7 @@ components:
           default: iclr2024
         github_actions_agent:
           type: string
-          title: GitHub Actions Agent
+          title: Github Actions Agent
           default: claude_code
         llm_mapping:
           anyOf:

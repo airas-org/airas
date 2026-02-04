@@ -39,6 +39,7 @@ class PushLatexSubgraphResponseBody(BaseModel):
 class CompileLatexSubgraphRequestBody(BaseModel):
     github_config: GitHubConfig
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024"
+    github_actions_agent: str = "claude_code"
     llm_mapping: CompileLatexLLMMapping | None = None
 
 

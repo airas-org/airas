@@ -7,6 +7,7 @@ import type { GitHubConfig } from './GitHubConfig';
 export type CompileLatexSubgraphRequestBody = {
     github_config: GitHubConfig;
     latex_template_name?: CompileLatexSubgraphRequestBody.latex_template_name;
+    github_actions_agent?: string;
     llm_mapping?: (CompileLatexLLMMapping | null);
 };
 export namespace CompileLatexSubgraphRequestBody {
