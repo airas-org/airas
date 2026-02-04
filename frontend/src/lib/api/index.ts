@@ -100,6 +100,8 @@ export { SearchMethod } from './models/SearchMethod';
 export type { SearchPaperTitlesRequestBody } from './models/SearchPaperTitlesRequestBody';
 export type { SearchPaperTitlesResponseBody } from './models/SearchPaperTitlesResponseBody';
 export type { SearchSpace } from './models/SearchSpace';
+export type { SetGithubActionsSecretsRequestBody } from './models/SetGithubActionsSecretsRequestBody';
+export type { SetGithubActionsSecretsResponseBody } from './models/SetGithubActionsSecretsResponseBody';
 export { Status } from './models/Status';
 export { StepType } from './models/StepType';
 export type { TopicOpenEndedResearchListItemResponse } from './models/TopicOpenEndedResearchListItemResponse';

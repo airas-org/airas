@@ -1,18 +1,3 @@
-### Push single file to GitHub branch
-POST http://127.0.0.1:8000/airas/v1/github/push
-Content-Type: application/json
-
-{
-    "github_config": {
-        "github_owner": "auto-res2",
-        "repository_name": "airas-push-code-test",
-        "branch_name": "develop"
-    },
-    "push_files": {
-        "README.md": "# Test\n\nThis file was pushed via AIRAS API."
-    }
-}
-
 ### Push multiple files to GitHub branch
 POST http://127.0.0.1:8000/airas/v1/github/push
 Content-Type: application/json
