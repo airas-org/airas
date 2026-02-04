@@ -23,7 +23,6 @@ QDRANT_RETRY = make_retry_policy()
 class QdrantClient(BaseHTTPClient):
     def __init__(
         self,
-        base_url: str = "https://06e0f5e0-2a43-41fe-913c-82fce00a7bd2.us-east4-0.gcp.cloud.qdrant.io:6333",
         default_headers: dict[str, str] | None = None,
         sync_session: httpx.Client | None = None,
         async_session: httpx.AsyncClient | None = None,
@@ -31,6 +30,10 @@ class QdrantClient(BaseHTTPClient):
         api_key = os.getenv("QDRANT_API_KEY")
         if not api_key:
             raise EnvironmentError("QDRANT_API_KEY is not set")
+
+        base_url = os.getenv("QDRANT_BASE_URL")
+        if not base_url:
+            raise EnvironmentError("QDRANT_BASE_URL is not set")
 
         auth_headers = {
             "Authorization": f"Bearer {api_key}",
