@@ -44,15 +44,13 @@ class CompileLatexSubgraph:
         github_client: GithubClient,
         latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
         paper_name: str = "generated_paper",
-        workflow_file: str = "dev_compile_latex.yml",
-        github_actions_agent: str = "claude_code",
+        workflow_file: str = "dev_compile_latex_with_open_code.yml",
         llm_mapping: CompileLatexLLMMapping | None = None,
     ):
         self.github_client = github_client
         self.latex_template_name = latex_template_name
         self.paper_name = paper_name
         self.workflow_file = workflow_file
-        self.github_actions_agent = github_actions_agent
         self.llm_mapping = llm_mapping or CompileLatexLLMMapping()
 
     @record_execution_time
@@ -67,8 +65,6 @@ class CompileLatexSubgraph:
             workflow_file=self.workflow_file,
             inputs={
                 "subdir": self.latex_template_name,
-                "paper_name": self.paper_name,
-                "github_actions_agent": self.github_actions_agent,
                 "model_name": self.llm_mapping.compile_latex.llm_name,
             },
         )
