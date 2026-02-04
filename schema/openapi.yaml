@@ -1291,7 +1291,7 @@ components:
           $ref: '#/components/schemas/GitHubConfig'
         github_actions_agent:
           type: string
-          title: Github Actions Agent
+          title: GitHub Actions Agent
           default: claude_code
         llm_mapping:
           anyOf:
@@ -1337,7 +1337,7 @@ components:
           title: Run Ids
         github_actions_agent:
           type: string
-          title: Github Actions Agent
+          title: GitHub Actions Agent
           default: claude_code
         llm_mapping:
           anyOf:
@@ -1391,7 +1391,7 @@ components:
           $ref: '#/components/schemas/GitHubConfig'
         github_actions_agent:
           type: string
-          title: Github Actions Agent
+          title: GitHub Actions Agent
           default: claude_code
         llm_mapping:
           anyOf:
@@ -3317,7 +3317,7 @@ components:
           default: mdpi
         github_actions_agent:
           type: string
-          title: Github Actions Agent
+          title: GitHub Actions Agent
           default: claude_code
         llm_mapping:
           anyOf:
