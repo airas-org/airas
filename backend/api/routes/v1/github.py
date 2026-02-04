@@ -37,5 +37,5 @@ async def push_github(
         .ainvoke(request, config=config)
     )
     return PushGitHubResponseBody(
-        is_file_pushed=result["is_file_pushed"],
+        is_file_pushed=result["is_file_pushed"], execution_time=result["execution_time"]
     )
