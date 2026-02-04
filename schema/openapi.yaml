@@ -3208,7 +3208,7 @@ components:
           default: iclr2024
         github_actions_agent:
           type: string
-          title: Github Actions Agent
+          title: GitHub Actions Agent
           default: claude_code
         llm_mapping:
           anyOf:
