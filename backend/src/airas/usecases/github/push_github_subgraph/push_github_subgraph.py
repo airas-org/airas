@@ -7,7 +7,7 @@ from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubConfig
 from airas.infra.github_client import GithubClient
-from airas.usecases.github.push_github_subgraph.nodes.push_files_to_branch import (
+from airas.usecases.github.push_github_subgraph.nodes.push_files_to_github import (
     push_files_to_github,
 )
 
