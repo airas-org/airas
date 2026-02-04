@@ -14,7 +14,7 @@ from airas.usecases.github.push_github_subgraph.nodes.push_files_to_branch impor
 setup_logging()
 logger = logging.getLogger(__name__)
 
-record_execution_time = lambda f: time_node("push_code_subgraph")(f)  # noqa: E731
+record_execution_time = lambda f: time_node("push_github_subgraph")(f)  # noqa: E731
 
 
 class PushGitHubSubgraphInputState(TypedDict):
