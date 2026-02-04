@@ -578,6 +578,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/github-actions/secrets:
+    post:
+      tags:
+      - github-actions
+      summary: Set Github Actions Secrets
+      operationId: set_github_actions_secrets_airas_v1_github_actions_secrets_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetGithubActionsSecretsRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetGithubActionsSecretsResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/assisted_research/session:
     post:
       tags:
@@ -3057,6 +3082,31 @@ components:
       - param_name
       - distribution_type
       title: SearchSpace
+    SetGithubActionsSecretsRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+      type: object
+      required:
+      - github_config
+      title: SetGithubActionsSecretsRequestBody
+    SetGithubActionsSecretsResponseBody:
+      properties:
+        secrets_set:
+          type: boolean
+          title: Secrets Set
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - secrets_set
+      - execution_time
+      title: SetGithubActionsSecretsResponseBody
     Status:
       type: string
       enum:
