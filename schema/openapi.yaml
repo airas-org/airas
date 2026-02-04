@@ -1144,8 +1144,9 @@ components:
           enum:
           - iclr2024
           - agents4science_2025
+          - mdpi
           title: Latex Template Name
-          default: iclr2024
+          default: mdpi
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/CompileLatexLLMMapping'
@@ -1290,7 +1291,7 @@ components:
           $ref: '#/components/schemas/GitHubConfig'
         github_actions_agent:
           type: string
-          title: GitHub Actions Agent
+          title: Github Actions Agent
           default: claude_code
         llm_mapping:
           anyOf:
@@ -1878,8 +1879,9 @@ components:
           enum:
           - iclr2024
           - agents4science_2025
+          - mdpi
           title: Latex Template Name
-          default: iclr2024
+          default: mdpi
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/GenerateLatexLLMMapping'
@@ -2642,8 +2644,9 @@ components:
           enum:
           - iclr2024
           - agents4science_2025
+          - mdpi
           title: Latex Template Name
-          default: iclr2024
+          default: mdpi
       type: object
       required:
       - github_config
@@ -3311,10 +3314,10 @@ components:
         latex_template_name:
           type: string
           title: Latex Template Name
-          default: iclr2024
+          default: mdpi
         github_actions_agent:
           type: string
-          title: GitHub Actions Agent
+          title: Github Actions Agent
           default: claude_code
         llm_mapping:
           anyOf:

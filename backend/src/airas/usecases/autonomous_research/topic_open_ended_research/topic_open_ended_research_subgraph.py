@@ -195,7 +195,7 @@ class TopicOpenEndedResearchSubgraph:
         num_comparison_methods: int = 0,
         experiment_code_validation_iterations: int = 3,
         paper_content_refinement_iterations: int = 2,
-        latex_template_name: str = "iclr2024",
+        latex_template_name: str = "mdpi",
         github_actions_agent: str = "claude_code",
         llm_mapping: TopicOpenEndedResearchSubgraphLLMMapping | None = None,
     ):
@@ -817,7 +817,7 @@ class TopicOpenEndedResearchSubgraph:
         result = (
             await CompileLatexSubgraph(
                 github_client=self.github_client,
-                latex_template_name=state.get("latex_template_name", "iclr2024"),
+                latex_template_name=state.get("latex_template_name", "mdpi"),
                 github_actions_agent=self.github_actions_agent,
                 llm_mapping=self.llm_mapping.compile_latex,
             )
