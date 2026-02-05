@@ -578,6 +578,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/github-actions/secrets:
+    post:
+      tags:
+      - github-actions
+      summary: Set Github Actions Secrets
+      operationId: set_github_actions_secrets_airas_v1_github_actions_secrets_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetGithubActionsSecretsRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetGithubActionsSecretsResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/github/push:
+    post:
+      tags:
+      - github
+      summary: Push Github
+      operationId: push_github_airas_v1_github_push_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushGitHubRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushGitHubResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/assisted_research/session:
     post:
       tags:
@@ -1082,7 +1132,7 @@ components:
         compile_latex:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: anthropic/claude-sonnet-4-5
+            llm_name: claude-sonnet-4-5
       type: object
       title: CompileLatexLLMMapping
     CompileLatexSubgraphRequestBody:
@@ -1231,13 +1281,17 @@ components:
         dispatch_evaluation:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: anthropic/claude-sonnet-4-5
+            llm_name: claude-sonnet-4-5
       type: object
       title: ExecuteEvaluationLLMMapping
     ExecuteEvaluationRequestBody:
       properties:
         github_config:
           $ref: '#/components/schemas/GitHubConfig'
+        github_actions_agent:
+          type: string
+          title: GitHub Actions Agent
+          default: claude_code
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/ExecuteEvaluationLLMMapping'
@@ -1268,7 +1322,7 @@ components:
         dispatch_full_experiments:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: anthropic/claude-sonnet-4-5
+            llm_name: claude-sonnet-4-5
       type: object
       title: ExecuteFullExperimentLLMMapping
     ExecuteFullRequestBody:
@@ -1280,6 +1334,10 @@ components:
             type: string
           type: array
           title: Run Ids
+        github_actions_agent:
+          type: string
+          title: Github Actions Agent
+          default: claude_code
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/ExecuteFullExperimentLLMMapping'
@@ -1323,13 +1381,17 @@ components:
         dispatch_trial_experiment:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: anthropic/claude-sonnet-4-5
+            llm_name: claude-sonnet-4-5
       type: object
       title: ExecuteTrialExperimentLLMMapping
     ExecuteTrialRequestBody:
       properties:
         github_config:
           $ref: '#/components/schemas/GitHubConfig'
+        github_actions_agent:
+          type: string
+          title: Github Actions Agent
+          default: claude_code
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/ExecuteTrialExperimentLLMMapping'
@@ -2537,6 +2599,37 @@ components:
       - code_pushed
       - execution_time
       title: PushCodeSubgraphResponseBody
+    PushGitHubRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        push_files:
+          additionalProperties:
+            type: string
+          type: object
+          title: Push Files
+      type: object
+      required:
+      - github_config
+      - push_files
+      title: PushGitHubRequestBody
+    PushGitHubResponseBody:
+      properties:
+        is_file_pushed:
+          type: boolean
+          title: Is File Pushed
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - is_file_pushed
+      - execution_time
+      title: PushGitHubResponseBody
     PushLatexSubgraphRequestBody:
       properties:
         github_config:
@@ -2903,7 +2996,7 @@ components:
         search_arxiv_id_from_title:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5-nano-2025-08-07
+            llm_name: gemini-2.5-flash
         summarize_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
@@ -3057,6 +3150,31 @@ components:
       - param_name
       - distribution_type
       title: SearchSpace
+    SetGithubActionsSecretsRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+      type: object
+      required:
+      - github_config
+      title: SetGithubActionsSecretsRequestBody
+    SetGithubActionsSecretsResponseBody:
+      properties:
+        secrets_set:
+          type: boolean
+          title: Secrets Set
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - secrets_set
+      - execution_time
+      title: SetGithubActionsSecretsResponseBody
     Status:
       type: string
       enum:
@@ -3194,6 +3312,10 @@ components:
           type: string
           title: Latex Template Name
           default: iclr2024
+        github_actions_agent:
+          type: string
+          title: GitHub Actions Agent
+          default: claude_code
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/TopicOpenEndedResearchSubgraphLLMMapping'

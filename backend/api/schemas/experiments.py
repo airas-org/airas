@@ -40,6 +40,7 @@ class FetchExperimentalResultsResponseBody(BaseModel):
 
 class ExecuteTrialRequestBody(BaseModel):
     github_config: GitHubConfig
+    github_actions_agent: str = "claude_code"
     llm_mapping: ExecuteTrialExperimentLLMMapping | None = None
 
 
@@ -52,6 +53,7 @@ class ExecuteTrialResponseBody(BaseModel):
 class ExecuteFullRequestBody(BaseModel):
     github_config: GitHubConfig
     run_ids: list[str]
+    github_actions_agent: str = "claude_code"
     llm_mapping: ExecuteFullExperimentLLMMapping | None = None
 
 
@@ -63,6 +65,7 @@ class ExecuteFullResponseBody(BaseModel):
 
 class ExecuteEvaluationRequestBody(BaseModel):
     github_config: GitHubConfig
+    github_actions_agent: str = "claude_code"
     llm_mapping: ExecuteEvaluationLLMMapping | None = None
 
 

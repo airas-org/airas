@@ -73,7 +73,7 @@ See the [LICENSE](./LICENSE) file for details.
 
 By contributing to this project, you agree that your contributions are subject to the Contributor License Agreement (CLA) and may be used, modified, redistributed, and relicensed by the project owner, including for commercial, enterprise, and SaaS offerings.
 
-See [CLA.md](./CLA.md) for details.
+See [CLA.md](https://github.com/airas-org/airas/blob/main/README.md#contributions) for details.
 
 ## Citation
 

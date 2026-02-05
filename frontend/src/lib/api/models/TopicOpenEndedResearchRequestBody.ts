@@ -21,6 +21,7 @@ export type TopicOpenEndedResearchRequestBody = {
     experiment_code_validation_iterations?: number;
     paper_content_refinement_iterations?: number;
     latex_template_name?: string;
+    github_actions_agent?: string;
     llm_mapping?: (TopicOpenEndedResearchSubgraphLLMMapping | null);
 };
 

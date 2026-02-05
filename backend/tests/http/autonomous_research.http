@@ -6,33 +6,34 @@ Content-Type: application/json
 {
     "github_config": {
         "github_owner": "auto-res2",
-        "repository_name": "matsuzawa-20260120-2",
+        "repository_name": "matsuzawa-20260202-3",
         "branch_name": "main"
     },
-    "research_topic": "Data-efficient image classification methods using novel regularization and augmentation techniques",
+    "research_topic": "Automated prompt optimization through iterative refinement and performance feedback",
     "runner_config": {
         "runner_label": ["self-hosted", "gpu-runner"],
         "description": "NVIDIA A100 or H200, VRAM: 80 GB or more, RAM: 2048 GB or more"
     },
     "wandb_config": {
-        "entity": "gengaru617-personal",
-        "project": "2026-01-20"
+        "entity": "airas",
+        "project": "2026-02-02-3"
     },
     "is_github_repo_private": false,
-    "num_paper_search_queries": 10,
-    "papers_per_query": 3,
+    "num_paper_search_queries": 3,
+    "papers_per_query": 5,
     "hypothesis_refinement_iterations": 2,
-    "num_experiment_models": 1,
-    "num_experiment_datasets": 1,
+    "num_experiment_models": 2,
+    "num_experiment_datasets": 2,
     "num_comparison_methods": 1,
-    "experiment_code_validation_iterations": 10,
+    "experiment_code_validation_iterations": 3,
     "paper_content_refinement_iterations": 1,
-    "latex_template_name": "iclr2024"
+    "latex_template_name": "iclr2024",
+    "github_actions_agent": "claude_code"
 }
 
 ### Autonomous Research - Poll Task Status
 
-GET http://localhost:8000/airas/v1/topic_open_ended_research/status/f92899e5-90eb-4b50-9bdf-3a834e71f43c
+GET http://localhost:8000/airas/v1/topic_open_ended_research/status/fecc4b94-f9b9-4195-8419-84363a243c29
 
 ### Autonomous Research - List Sessions
 
