@@ -42,7 +42,7 @@ class CompileLatexSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
-        latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
+        latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
         paper_name: str = "generated_paper",
         workflow_file: str = "dev_compile_latex_with_open_code.yml",
         llm_mapping: CompileLatexLLMMapping | None = None,
