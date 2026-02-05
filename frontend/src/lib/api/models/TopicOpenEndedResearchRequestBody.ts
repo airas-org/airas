@@ -20,8 +20,14 @@ export type TopicOpenEndedResearchRequestBody = {
     num_comparison_methods?: number;
     experiment_code_validation_iterations?: number;
     paper_content_refinement_iterations?: number;
+    github_actions_agent?: TopicOpenEndedResearchRequestBody.github_actions_agent;
     latex_template_name?: string;
-    github_actions_agent?: string;
     llm_mapping?: (TopicOpenEndedResearchSubgraphLLMMapping | null);
 };
+export namespace TopicOpenEndedResearchRequestBody {
+    export enum github_actions_agent {
+        CLAUDE_CODE = 'claude_code',
+        OPEN_CODE = 'open_code',
+    }
+}
 

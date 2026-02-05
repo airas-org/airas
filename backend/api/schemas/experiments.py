@@ -4,7 +4,7 @@ from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults
-from airas.core.types.github import GitHubConfig
+from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentLLMMapping,
@@ -40,7 +40,7 @@ class FetchExperimentalResultsResponseBody(BaseModel):
 
 class ExecuteTrialRequestBody(BaseModel):
     github_config: GitHubConfig
-    github_actions_agent: str = "claude_code"
+    github_actions_agent: GitHubActionsAgent = "claude_code"
     llm_mapping: ExecuteTrialExperimentLLMMapping | None = None
 
 
@@ -53,7 +53,7 @@ class ExecuteTrialResponseBody(BaseModel):
 class ExecuteFullRequestBody(BaseModel):
     github_config: GitHubConfig
     run_ids: list[str]
-    github_actions_agent: str = "claude_code"
+    github_actions_agent: GitHubActionsAgent = "claude_code"
     llm_mapping: ExecuteFullExperimentLLMMapping | None = None
 
 
@@ -65,7 +65,7 @@ class ExecuteFullResponseBody(BaseModel):
 
 class ExecuteEvaluationRequestBody(BaseModel):
     github_config: GitHubConfig
-    github_actions_agent: str = "claude_code"
+    github_actions_agent: GitHubActionsAgent = "claude_code"
     llm_mapping: ExecuteEvaluationLLMMapping | None = None
 
 

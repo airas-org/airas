@@ -14,6 +14,7 @@ from airas.core.types.experimental_analysis import ExperimentalAnalysis
 from airas.core.types.experimental_design import ExperimentalDesign, RunnerConfig
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import (
+    GitHubActionsAgent,
     GitHubActionsConclusion,
     GitHubActionsStatus,
     GitHubConfig,
@@ -195,8 +196,8 @@ class TopicOpenEndedResearchSubgraph:
         num_comparison_methods: int = 0,
         experiment_code_validation_iterations: int = 3,
         paper_content_refinement_iterations: int = 2,
+        github_actions_agent: GitHubActionsAgent = "claude_code",
         latex_template_name: str = "mdpi",
-        github_actions_agent: str = "claude_code",
         llm_mapping: TopicOpenEndedResearchSubgraphLLMMapping | None = None,
     ):
         self.search_index = search_index
