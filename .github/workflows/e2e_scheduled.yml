@@ -312,9 +312,9 @@ jobs:
             },
             "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY_MODEL}"}},
             "generate_code": {
-              "generate_run_config": {"llm_name": "${CODING_MODEL}", "params": {"provider_type": "openai", "reasoning_effort": "high"}},
-              "generate_experiment_code": {"llm_name": "${CODING_MODEL}", "params": {"provider_type": "openai", "reasoning_effort": "high"}},
-              "validate_experiment_code": {"llm_name": "${CODING_MODEL}", "params": {"provider_type": "openai", "reasoning_effort": "high"}}
+              "generate_run_config": {"llm_name": "${CODING_MODEL}"},
+              "generate_experiment_code": {"llm_name": "${CODING_MODEL}"},
+              "validate_experiment_code": {"llm_name": "${CODING_MODEL}"}
             },
             "execute_trial_experiment": {"dispatch_trial_experiment": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
             "execute_full_experiment": {"dispatch_full_experiments": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
