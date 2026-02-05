@@ -7,7 +7,7 @@ from typing_extensions import TypedDict
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
-from airas.core.types.github import GitHubConfig
+from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.infra.github_client import GithubClient
 from airas.usecases.github.nodes.dispatch_workflow import dispatch_workflow
@@ -44,13 +44,15 @@ class CompileLatexSubgraph:
         github_client: GithubClient,
         latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
         paper_name: str = "generated_paper",
-        workflow_file: str = "dev_compile_latex_with_open_code.yml",
+        workflow_file: str = "compile_latex.yml",
+        github_actions_agent: GitHubActionsAgent = "claude_code",
         llm_mapping: CompileLatexLLMMapping | None = None,
     ):
         self.github_client = github_client
         self.latex_template_name = latex_template_name
         self.paper_name = paper_name
         self.workflow_file = workflow_file
+        self.github_actions_agent = github_actions_agent
         self.llm_mapping = llm_mapping or CompileLatexLLMMapping()
 
     @record_execution_time
@@ -64,7 +66,10 @@ class CompileLatexSubgraph:
             branch_name=github_config.branch_name,
             workflow_file=self.workflow_file,
             inputs={
+                "branch_name": github_config.branch_name,
                 "subdir": self.latex_template_name,
+                "paper_name": self.paper_name,
+                "github_actions_agent": self.github_actions_agent,
                 "model_name": self.llm_mapping.compile_latex.llm_name,
             },
         )

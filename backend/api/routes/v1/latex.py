@@ -106,6 +106,7 @@ async def compile_latex(
         await CompileLatexSubgraph(
             github_client=github_client,
             latex_template_name=request.latex_template_name,
+            github_actions_agent=request.github_actions_agent,
             llm_mapping=request.llm_mapping,
         )
         .build_graph()

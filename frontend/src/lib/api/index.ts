@@ -24,13 +24,13 @@ export type { CompileLatexSubgraphResponseBody } from './models/CompileLatexSubg
 export type { DatasetConfig } from './models/DatasetConfig';
 export type { EvaluationMetric } from './models/EvaluationMetric';
 export type { ExecuteEvaluationLLMMapping } from './models/ExecuteEvaluationLLMMapping';
-export type { ExecuteEvaluationRequestBody } from './models/ExecuteEvaluationRequestBody';
+export { ExecuteEvaluationRequestBody } from './models/ExecuteEvaluationRequestBody';
 export type { ExecuteEvaluationResponseBody } from './models/ExecuteEvaluationResponseBody';
 export type { ExecuteFullExperimentLLMMapping } from './models/ExecuteFullExperimentLLMMapping';
-export type { ExecuteFullRequestBody } from './models/ExecuteFullRequestBody';
+export { ExecuteFullRequestBody } from './models/ExecuteFullRequestBody';
 export type { ExecuteFullResponseBody } from './models/ExecuteFullResponseBody';
 export type { ExecuteTrialExperimentLLMMapping } from './models/ExecuteTrialExperimentLLMMapping';
-export type { ExecuteTrialRequestBody } from './models/ExecuteTrialRequestBody';
+export { ExecuteTrialRequestBody } from './models/ExecuteTrialRequestBody';
 export type { ExecuteTrialResponseBody } from './models/ExecuteTrialResponseBody';
 export type { ExperimentalAnalysis } from './models/ExperimentalAnalysis';
 export type { ExperimentalDesign_Input } from './models/ExperimentalDesign_Input';

@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from airas.core.types.experimental_design import RunnerConfig
-from airas.core.types.github import GitHubConfig
+from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.wandb import WandbConfig
 from airas.infra.db.models.e2e import Status, StepType
@@ -30,8 +30,8 @@ class TopicOpenEndedResearchRequestBody(BaseModel):
     num_comparison_methods: int = 1
     experiment_code_validation_iterations: int = 3
     paper_content_refinement_iterations: int = 2
+    github_actions_agent: GitHubActionsAgent = "claude_code"
     latex_template_name: str = "mdpi"
-    github_actions_agent: str = "claude_code"
     llm_mapping: TopicOpenEndedResearchSubgraphLLMMapping | None = None
 
 

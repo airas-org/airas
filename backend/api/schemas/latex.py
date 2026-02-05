@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from airas.core.types.github import GitHubConfig
+from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.paper import PaperContent
 from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
@@ -38,6 +38,7 @@ class PushLatexSubgraphResponseBody(BaseModel):
 
 class CompileLatexSubgraphRequestBody(BaseModel):
     github_config: GitHubConfig
+    github_actions_agent: GitHubActionsAgent = "claude_code"
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi"
     llm_mapping: CompileLatexLLMMapping | None = None
 

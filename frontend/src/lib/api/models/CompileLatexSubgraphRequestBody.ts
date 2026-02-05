@@ -6,10 +6,15 @@ import type { CompileLatexLLMMapping } from './CompileLatexLLMMapping';
 import type { GitHubConfig } from './GitHubConfig';
 export type CompileLatexSubgraphRequestBody = {
     github_config: GitHubConfig;
+    github_actions_agent?: CompileLatexSubgraphRequestBody.github_actions_agent;
     latex_template_name?: CompileLatexSubgraphRequestBody.latex_template_name;
     llm_mapping?: (CompileLatexLLMMapping | null);
 };
 export namespace CompileLatexSubgraphRequestBody {
+    export enum github_actions_agent {
+        CLAUDE_CODE = 'claude_code',
+        OPEN_CODE = 'open_code',
+    }
     export enum latex_template_name {
         ICLR2024 = 'iclr2024',
         AGENTS4SCIENCE_2025 = 'agents4science_2025',
