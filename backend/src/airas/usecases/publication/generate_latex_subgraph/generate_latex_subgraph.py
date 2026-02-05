@@ -56,7 +56,7 @@ class GenerateLatexSubgraph:
         self,
         langchain_client: LangChainClient,
         github_client: GithubClient,
-        latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
+        latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
         llm_mapping: GenerateLatexLLMMapping | None = None,
     ):
         self.llm_mapping = llm_mapping or GenerateLatexLLMMapping()

@@ -1139,13 +1139,6 @@ components:
       properties:
         github_config:
           $ref: '#/components/schemas/GitHubConfig'
-        latex_template_name:
-          type: string
-          enum:
-          - iclr2024
-          - agents4science_2025
-          title: Latex Template Name
-          default: iclr2024
         github_actions_agent:
           type: string
           enum:
@@ -1153,6 +1146,14 @@ components:
           - open_code
           title: Github Actions Agent
           default: claude_code
+        latex_template_name:
+          type: string
+          enum:
+          - iclr2024
+          - agents4science_2025
+          - mdpi
+          title: Latex Template Name
+          default: mdpi
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/CompileLatexLLMMapping'
@@ -1894,8 +1895,9 @@ components:
           enum:
           - iclr2024
           - agents4science_2025
+          - mdpi
           title: Latex Template Name
-          default: iclr2024
+          default: mdpi
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/GenerateLatexLLMMapping'
@@ -2658,8 +2660,9 @@ components:
           enum:
           - iclr2024
           - agents4science_2025
+          - mdpi
           title: Latex Template Name
-          default: iclr2024
+          default: mdpi
       type: object
       required:
       - github_config
@@ -3324,10 +3327,6 @@ components:
           type: integer
           title: Paper Content Refinement Iterations
           default: 2
-        latex_template_name:
-          type: string
-          title: Latex Template Name
-          default: iclr2024
         github_actions_agent:
           type: string
           enum:
@@ -3335,6 +3334,10 @@ components:
           - open_code
           title: Github Actions Agent
           default: claude_code
+        latex_template_name:
+          type: string
+          title: Latex Template Name
+          default: mdpi
         llm_mapping:
           anyOf:
           - $ref: '#/components/schemas/TopicOpenEndedResearchSubgraphLLMMapping'
