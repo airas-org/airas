@@ -15,7 +15,7 @@ from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph 
 class GenerateLatexSubgraphRequestBody(BaseModel):
     references_bib: str
     paper_content: PaperContent
-    latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024"
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi"
     llm_mapping: GenerateLatexLLMMapping | None = None
 
 
@@ -27,7 +27,7 @@ class GenerateLatexSubgraphResponseBody(BaseModel):
 class PushLatexSubgraphRequestBody(BaseModel):
     github_config: GitHubConfig
     latex_text: str
-    latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024"
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi"
 
 
 class PushLatexSubgraphResponseBody(BaseModel):
@@ -38,7 +38,7 @@ class PushLatexSubgraphResponseBody(BaseModel):
 
 class CompileLatexSubgraphRequestBody(BaseModel):
     github_config: GitHubConfig
-    latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024"
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi"
     llm_mapping: CompileLatexLLMMapping | None = None
 
 

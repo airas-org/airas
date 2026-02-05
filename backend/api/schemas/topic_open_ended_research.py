@@ -30,7 +30,7 @@ class TopicOpenEndedResearchRequestBody(BaseModel):
     num_comparison_methods: int = 1
     experiment_code_validation_iterations: int = 3
     paper_content_refinement_iterations: int = 2
-    latex_template_name: str = "iclr2024"
+    latex_template_name: str = "mdpi"
     github_actions_agent: str = "claude_code"
     llm_mapping: TopicOpenEndedResearchSubgraphLLMMapping | None = None
 
