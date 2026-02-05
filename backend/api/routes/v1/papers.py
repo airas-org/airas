@@ -9,17 +9,21 @@ from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
+from airas.infra.litellm_client import LiteLLMClient
+from airas.infra.qdrant_client import QdrantClient
 from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
 )
 from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_airas_db_subgraph import (
     SearchPaperTitlesFromAirasDbSubgraph,
 )
+from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_qdrant_subgraph import (
+    SearchPaperTitlesFromQdrantSubgraph,
+)
 from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
 from api.schemas.papers import (
     RetrievePaperSubgraphRequestBody,
     RetrievePaperSubgraphResponseBody,
-    SearchMethod,
     SearchPaperTitlesRequestBody,
     SearchPaperTitlesResponseBody,
     WriteSubgraphRequestBody,
@@ -30,20 +34,39 @@ router = APIRouter(prefix="/papers", tags=["papers"])
 
 
 @router.post("/search", response_model=SearchPaperTitlesResponseBody)
+@inject
 @observe()
 async def search_paper_titles(
     request: SearchPaperTitlesRequestBody,
     fastapi_request: Request,
+    litellm_client: Annotated[
+        LiteLLMClient, Depends(Provide[Container.litellm_client])
+    ],
+    qdrant_client: Annotated[QdrantClient, Depends(Provide[Container.qdrant_client])],
 ) -> SearchPaperTitlesResponseBody:
     container: Container = fastapi_request.app.state.container
 
-    subgraph: SearchPaperTitlesFromAirasDbSubgraph
     match request.search_method:
-        case SearchMethod.AIRAS_DB:
-            search_index = container.airas_db_search_index()
-            subgraph = SearchPaperTitlesFromAirasDbSubgraph(
-                search_index=search_index,
-                papers_per_query=request.max_results_per_query,
+        case "airas_db":
+            result = (
+                await SearchPaperTitlesFromAirasDbSubgraph(
+                    search_index=container.airas_db_search_index(),
+                    papers_per_query=request.max_results_per_query,
+                )
+                .build_graph()
+                .ainvoke({"queries": request.queries})
+            )
+
+        case "qdrant":
+            result = (
+                await SearchPaperTitlesFromQdrantSubgraph(
+                    litellm_client=litellm_client,
+                    qdrant_client=qdrant_client,
+                    collection_name=request.collection_name,
+                    papers_per_query=request.max_results_per_query,
+                )
+                .build_graph()
+                .ainvoke({"queries": request.queries})
             )
 
         case _:
@@ -51,10 +74,6 @@ async def search_paper_titles(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Unsupported search method: {request.search_method}",
             )
-
-    result = await subgraph.build_graph().ainvoke(
-        {"queries": request.queries},
-    )
 
     return SearchPaperTitlesResponseBody(
         paper_titles=result["paper_titles"],

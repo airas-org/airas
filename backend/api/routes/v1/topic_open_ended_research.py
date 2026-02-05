@@ -13,6 +13,8 @@ from airas.infra.db.models.e2e import Status
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
+from airas.infra.litellm_client import LiteLLMClient
+from airas.infra.qdrant_client import QdrantClient
 from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service import (
     TopicOpenEndedResearchService,
 )
@@ -55,6 +57,8 @@ async def _execute_topic_open_ended_research(
     github_client: GithubClient,
     arxiv_client: ArxivClient,
     langchain_client: LangChainClient,
+    litellm_client: LiteLLMClient,
+    qdrant_client: QdrantClient,
     langfuse_client: LangfuseClient,
     e2e_service: TopicOpenEndedResearchService,
 ) -> None:
@@ -62,7 +66,6 @@ async def _execute_topic_open_ended_research(
         logger.info(f"[Task {task_id}] Starting E2E execution")
 
         graph = TopicOpenEndedResearchSubgraph(
-            search_index=search_index,
             github_client=github_client,
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,
@@ -71,6 +74,11 @@ async def _execute_topic_open_ended_research(
             wandb_config=request.wandb_config,
             task_id=task_id,
             is_github_repo_private=request.is_github_repo_private,
+            search_method=request.search_method,
+            search_index=search_index,
+            litellm_client=litellm_client,
+            qdrant_client=qdrant_client,
+            collection_name=request.collection_name,
             num_paper_search_queries=request.num_paper_search_queries,
             papers_per_query=request.papers_per_query,
             hypothesis_refinement_iterations=request.hypothesis_refinement_iterations,
@@ -130,6 +138,10 @@ async def execute_topic_open_ended_research(
     langchain_client: Annotated[
         LangChainClient, Depends(Provide[Container.langchain_client])
     ],
+    litellm_client: Annotated[
+        LiteLLMClient, Depends(Provide[Container.litellm_client])
+    ],
+    qdrant_client: Annotated[QdrantClient, Depends(Provide[Container.qdrant_client])],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -149,6 +161,8 @@ async def execute_topic_open_ended_research(
             github_client=github_client,
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,
+            litellm_client=litellm_client,
+            qdrant_client=qdrant_client,
             langfuse_client=langfuse_client,
             e2e_service=e2e_service,
         )

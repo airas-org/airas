@@ -119,6 +119,14 @@ on:
         type: choice
         options: *llm_options
         default: 'claude-sonnet-4-5'
+      search_method:
+        description: 'Paper search backend'
+        required: false
+        type: choice
+        options:
+          - airas_db
+          - qdrant
+        default: 'airas_db'
 
 jobs:
   check-org-membership:
@@ -283,6 +291,9 @@ jobs:
           GITHUB_ACTIONS_MODEL="${{ github.event.inputs.github_actions_model || 'claude-sonnet-4-5' }}"
           GITHUB_ACTIONS_AGENT="${{ github.event.inputs.github_actions_agent || 'claude_code' }}"
 
+          # === Paper search settings ===
+          SEARCH_METHOD="${{ github.event.inputs.search_method || 'airas_db' }}"
+
           # === Build LLM mapping JSON ===
           LLM_MAPPING=$(cat <<EOFLLM
           {
@@ -346,6 +357,7 @@ jobs:
               "project": "${WANDB_PROJECT}"
             },
             "is_github_repo_private": ${IS_PRIVATE},
+            "search_method": "${SEARCH_METHOD}",
             "num_paper_search_queries": ${NUM_QUERIES},
             "papers_per_query": ${PAPERS_PER_QUERY},
             "hypothesis_refinement_iterations": ${HYPOTHESIS_ITERS},

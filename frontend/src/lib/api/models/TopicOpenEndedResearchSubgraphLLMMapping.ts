@@ -13,6 +13,7 @@ import type { GenerateHypothesisSubgraphV0LLMMapping } from './GenerateHypothesi
 import type { GenerateLatexLLMMapping } from './GenerateLatexLLMMapping';
 import type { GenerateQueriesLLMMapping } from './GenerateQueriesLLMMapping';
 import type { RetrievePaperSubgraphLLMMapping } from './RetrievePaperSubgraphLLMMapping';
+import type { SearchPaperTitlesFromQdrantLLMMapping } from './SearchPaperTitlesFromQdrantLLMMapping';
 import type { WriteLLMMapping } from './WriteLLMMapping';
 export type TopicOpenEndedResearchSubgraphLLMMapping = {
     generate_queries?: (GenerateQueriesLLMMapping | null);
@@ -27,5 +28,6 @@ export type TopicOpenEndedResearchSubgraphLLMMapping = {
     write?: (WriteLLMMapping | null);
     generate_latex?: (GenerateLatexLLMMapping | null);
     compile_latex?: (CompileLatexLLMMapping | null);
+    search_paper_titles_from_qdrant?: (SearchPaperTitlesFromQdrantLLMMapping | null);
 };
 

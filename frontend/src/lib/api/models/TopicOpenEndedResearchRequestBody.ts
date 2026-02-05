@@ -12,6 +12,8 @@ export type TopicOpenEndedResearchRequestBody = {
     runner_config: RunnerConfig;
     wandb_config: WandbConfig;
     is_github_repo_private?: boolean;
+    search_method?: TopicOpenEndedResearchRequestBody.search_method;
+    collection_name?: string;
     num_paper_search_queries?: number;
     papers_per_query?: number;
     hypothesis_refinement_iterations?: number;
@@ -24,4 +26,10 @@ export type TopicOpenEndedResearchRequestBody = {
     github_actions_agent?: string;
     llm_mapping?: (TopicOpenEndedResearchSubgraphLLMMapping | null);
 };
+export namespace TopicOpenEndedResearchRequestBody {
+    export enum search_method {
+        AIRAS_DB = 'airas_db',
+        QDRANT = 'qdrant',
+    }
+}
 

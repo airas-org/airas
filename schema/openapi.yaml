@@ -1290,7 +1290,7 @@ components:
           $ref: '#/components/schemas/GitHubConfig'
         github_actions_agent:
           type: string
-          title: GitHub Actions Agent
+          title: Github Actions Agent
           default: claude_code
         llm_mapping:
           anyOf:
@@ -3068,13 +3068,23 @@ components:
       - runner_label
       - description
       title: RunnerConfig
-    SearchMethod:
-      type: string
-      enum:
-      - airas_db
-      title: SearchMethod
+    SearchPaperTitlesFromQdrantLLMMapping:
+      properties:
+        search_paper_titles_from_qdrant:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gemini/gemini-embedding-001
+      type: object
+      title: SearchPaperTitlesFromQdrantLLMMapping
     SearchPaperTitlesRequestBody:
       properties:
+        search_method:
+          type: string
+          enum:
+          - airas_db
+          - qdrant
+          title: Search Method
+          default: airas_db
         queries:
           items:
             type: string
@@ -3085,9 +3095,10 @@ components:
           exclusiveMinimum: 0.0
           title: Max Results Per Query
           default: 3
-        search_method:
-          $ref: '#/components/schemas/SearchMethod'
-          default: airas_db
+        collection_name:
+          type: string
+          title: Collection Name
+          default: airas_database
       type: object
       required:
       - queries
@@ -3276,6 +3287,17 @@ components:
           type: boolean
           title: Is Github Repo Private
           default: false
+        search_method:
+          type: string
+          enum:
+          - airas_db
+          - qdrant
+          title: Search Method
+          default: airas_db
+        collection_name:
+          type: string
+          title: Collection Name
+          default: airas_database
         num_paper_search_queries:
           type: integer
           title: Num Paper Search Queries
@@ -3314,7 +3336,7 @@ components:
           default: iclr2024
         github_actions_agent:
           type: string
-          title: GitHub Actions Agent
+          title: Github Actions Agent
           default: claude_code
         llm_mapping:
           anyOf:
@@ -3456,6 +3478,10 @@ components:
         compile_latex:
           anyOf:
           - $ref: '#/components/schemas/CompileLatexLLMMapping'
+          - type: 'null'
+        search_paper_titles_from_qdrant:
+          anyOf:
+          - $ref: '#/components/schemas/SearchPaperTitlesFromQdrantLLMMapping'
           - type: 'null'
       type: object
       title: TopicOpenEndedResearchSubgraphLLMMapping

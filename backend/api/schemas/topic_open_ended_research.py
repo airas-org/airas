@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, computed_field
@@ -20,6 +20,8 @@ class TopicOpenEndedResearchRequestBody(BaseModel):
     runner_config: RunnerConfig
     wandb_config: WandbConfig
     is_github_repo_private: bool = False
+    search_method: Literal["airas_db", "qdrant"] = "airas_db"
+    collection_name: str = "airas_database"
     num_paper_search_queries: int = 1
     papers_per_query: int = 2
     hypothesis_refinement_iterations: int = 1

@@ -87,6 +87,7 @@ class QdrantClient(BaseHTTPClient):
         timeout: float = 15.0,
     ) -> dict[str, Any]:
         # https://api.qdrant.tech/api-reference/search/query-points
+        limit = max(1, min(limit, 1000))
         payload = {
             "query": {
                 "nearest": query_vector,
@@ -149,7 +150,7 @@ class QdrantClient(BaseHTTPClient):
         self,
         collection_name: str,
         vector_size: int,
-        distance: str = "Cosine",
+        distance: str = "Cosine",  # TODO: Literal
         timeout: float = 60,
     ) -> dict[str, Any]:
         payload = {"vectors": {"size": vector_size, "distance": distance}}
@@ -181,6 +182,7 @@ class QdrantClient(BaseHTTPClient):
         limit: int = 10,
         timeout: float = 15.0,
     ) -> dict[str, Any]:
+        limit = max(1, min(limit, 1000))
         payload = {
             "query": {
                 "nearest": query_vector,

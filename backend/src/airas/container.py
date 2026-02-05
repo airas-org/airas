@@ -14,6 +14,7 @@ from airas.infra.github_client import GithubClient
 from airas.infra.hugging_face_client import HuggingFaceClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.qdrant_client import QdrantClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
@@ -117,6 +118,9 @@ class Container(containers.DeclarativeContainer):
 
     # --- LangChain Client ---
     langchain_client: providers.Factory = providers.Factory(LangChainClient)
+
+    # --- LiteLLM Client ---
+    litellm_client: providers.Factory = providers.Factory(LiteLLMClient)
 
     # --- Observability ---
     langfuse_client: providers.Factory[LangfuseClient] = providers.Factory(
