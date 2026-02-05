@@ -27,7 +27,7 @@ Content-Type: application/json
     "num_comparison_methods": 1,
     "experiment_code_validation_iterations": 3,
     "paper_content_refinement_iterations": 1,
-    "latex_template_name": "iclr2024",
+    "latex_template_name": "mdpi",
     "github_actions_agent": "claude_code"
 }
 

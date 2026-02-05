@@ -41,7 +41,7 @@ class PushLatexSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
-        latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024",
+        latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
     ):
         self.github_client = github_client
         self.latex_template_name = latex_template_name

@@ -75,7 +75,7 @@ export function AutonomousResearchPage({
     useState("4");
   const [autoPaperContentRefinementIterations, setAutoPaperContentRefinementIteration] =
     useState("2");
-  const [autoLatexTemplateName, setAutoLatexTemplateName] = useState("iclr2024");
+  const [autoLatexTemplateName, setAutoLatexTemplateName] = useState("mdpi");
   // LLM設定
   const [llmMapping, setLlmMapping] = useState<TopicOpenEndedResearchSubgraphLLMMapping | null>(
     null,
@@ -579,10 +579,12 @@ export function AutonomousResearchPage({
                           onValueChange={setAutoLatexTemplateName}
                         >
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="iclr2024" />
+                            <SelectValue placeholder="mdpi" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="mdpi">mdpi</SelectItem>
                             <SelectItem value="iclr2024">iclr2024</SelectItem>
+                            <SelectItem value="agents4science_2025">agents4science_2025</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

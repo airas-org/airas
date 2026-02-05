@@ -72,9 +72,9 @@ on:
         required: false
         default: '1'
       latex_template_name:
-        description: 'LaTeX template name (e.g., iclr2024, agents4science_2025)'
+        description: 'LaTeX template name (e.g., mdpi, iclr2024, agents4science_2025)'
         required: false
-        default: 'iclr2024'
+        default: 'mdpi'
       # --- LLM model settings ---
       primary_model:
         description: 'Primary LLM (query generation, hypothesis, design, analysis, writing, LaTeX)'
@@ -274,7 +274,7 @@ jobs:
           NUM_COMPARISONS="${{ github.event.inputs.num_comparison_methods || '1' }}"
           CODE_VALIDATION_ITERS="${{ github.event.inputs.experiment_code_validation_iterations || '10' }}"
           PAPER_REFINE_ITERS="${{ github.event.inputs.paper_content_refinement_iterations || '1' }}"
-          LATEX_TEMPLATE="${{ github.event.inputs.latex_template_name || 'iclr2024' }}"
+          LATEX_TEMPLATE="${{ github.event.inputs.latex_template_name || 'mdpi' }}"
 
           # === LLM model selections ===
           PRIMARY_MODEL="${{ github.event.inputs.primary_model || 'gpt-5.2' }}"
