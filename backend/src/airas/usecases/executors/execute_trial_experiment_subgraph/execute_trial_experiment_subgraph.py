@@ -8,7 +8,7 @@ from typing_extensions import TypedDict
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
-from airas.core.types.github import GitHubConfig
+from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.infra.github_client import GithubClient
 from airas.usecases.executors.nodes.read_run_ids import (
     read_run_ids_from_repository,
@@ -52,7 +52,7 @@ class ExecuteTrialExperimentSubgraph:
         github_client: GithubClient,
         runner_label: list[str] | None = None,
         workflow_file: str = "run_trial_experiment.yml",
-        github_actions_agent: str = "claude_code",
+        github_actions_agent: GitHubActionsAgent = "claude_code",
         llm_mapping: ExecuteTrialExperimentLLMMapping | None = None,
     ):
         self.github_client = github_client

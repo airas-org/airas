@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from airas.core.types.github import GitHubConfig
+from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.paper import PaperContent
 from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
@@ -39,7 +39,7 @@ class PushLatexSubgraphResponseBody(BaseModel):
 class CompileLatexSubgraphRequestBody(BaseModel):
     github_config: GitHubConfig
     latex_template_name: LATEX_TEMPLATE_NAME = "iclr2024"
-    github_actions_agent: str = "claude_code"
+    github_actions_agent: GitHubActionsAgent = "claude_code"
     llm_mapping: CompileLatexLLMMapping | None = None
 
 

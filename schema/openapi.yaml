@@ -1148,6 +1148,9 @@ components:
           default: iclr2024
         github_actions_agent:
           type: string
+          enum:
+          - claude_code
+          - open_code
           title: Github Actions Agent
           default: claude_code
         llm_mapping:
@@ -1294,6 +1297,9 @@ components:
           $ref: '#/components/schemas/GitHubConfig'
         github_actions_agent:
           type: string
+          enum:
+          - claude_code
+          - open_code
           title: Github Actions Agent
           default: claude_code
         llm_mapping:
@@ -1340,6 +1346,9 @@ components:
           title: Run Ids
         github_actions_agent:
           type: string
+          enum:
+          - claude_code
+          - open_code
           title: Github Actions Agent
           default: claude_code
         llm_mapping:
@@ -1394,6 +1403,9 @@ components:
           $ref: '#/components/schemas/GitHubConfig'
         github_actions_agent:
           type: string
+          enum:
+          - claude_code
+          - open_code
           title: Github Actions Agent
           default: claude_code
         llm_mapping:
@@ -3318,6 +3330,9 @@ components:
           default: iclr2024
         github_actions_agent:
           type: string
+          enum:
+          - claude_code
+          - open_code
           title: Github Actions Agent
           default: claude_code
         llm_mapping:
