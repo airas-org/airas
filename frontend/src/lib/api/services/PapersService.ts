@@ -4,7 +4,8 @@
 /* eslint-disable */
 import type { RetrievePaperSubgraphRequestBody } from '../models/RetrievePaperSubgraphRequestBody';
 import type { RetrievePaperSubgraphResponseBody } from '../models/RetrievePaperSubgraphResponseBody';
-import type { SearchPaperTitlesRequestBody } from '../models/SearchPaperTitlesRequestBody';
+import type { SearchPaperTitlesAirasDbRequestBody } from '../models/SearchPaperTitlesAirasDbRequestBody';
+import type { SearchPaperTitlesQdrantRequestBody } from '../models/SearchPaperTitlesQdrantRequestBody';
 import type { SearchPaperTitlesResponseBody } from '../models/SearchPaperTitlesResponseBody';
 import type { WriteSubgraphRequestBody } from '../models/WriteSubgraphRequestBody';
 import type { WriteSubgraphResponseBody } from '../models/WriteSubgraphResponseBody';
@@ -13,17 +14,36 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class PapersService {
     /**
-     * Search Paper Titles
+     * Search Paper Titles Airas Db
      * @param requestBody
      * @returns SearchPaperTitlesResponseBody Successful Response
      * @throws ApiError
      */
-    public static searchPaperTitlesAirasV1PapersSearchPost(
-        requestBody: SearchPaperTitlesRequestBody,
+    public static searchPaperTitlesAirasDbAirasV1PapersSearchAirasDbPost(
+        requestBody: SearchPaperTitlesAirasDbRequestBody,
     ): CancelablePromise<SearchPaperTitlesResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/airas/v1/papers/search',
+            url: '/airas/v1/papers/search/airas_db',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Search Paper Titles Qdrant
+     * @param requestBody
+     * @returns SearchPaperTitlesResponseBody Successful Response
+     * @throws ApiError
+     */
+    public static searchPaperTitlesQdrantAirasV1PapersSearchQdrantPost(
+        requestBody: SearchPaperTitlesQdrantRequestBody,
+    ): CancelablePromise<SearchPaperTitlesResponseBody> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/airas/v1/papers/search/qdrant',
             body: requestBody,
             mediaType: 'application/json',
             errors: {

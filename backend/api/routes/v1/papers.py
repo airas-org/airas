@@ -24,7 +24,8 @@ from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
 from api.schemas.papers import (
     RetrievePaperSubgraphRequestBody,
     RetrievePaperSubgraphResponseBody,
-    SearchPaperTitlesRequestBody,
+    SearchPaperTitlesAirasDbRequestBody,
+    SearchPaperTitlesQdrantRequestBody,
     SearchPaperTitlesResponseBody,
     WriteSubgraphRequestBody,
     WriteSubgraphResponseBody,
@@ -33,53 +34,56 @@ from api.schemas.papers import (
 router = APIRouter(prefix="/papers", tags=["papers"])
 
 
-@router.post("/search", response_model=SearchPaperTitlesResponseBody)
+@router.post("/search/airas_db", response_model=SearchPaperTitlesResponseBody)
+@observe()
+async def search_paper_titles_airas_db(
+    request: SearchPaperTitlesAirasDbRequestBody,
+    fastapi_request: Request,
+) -> SearchPaperTitlesResponseBody:
+    container: Container = fastapi_request.app.state.container
+
+    search_index = container.airas_db_search_index()
+    if search_index is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="search_index is not available for airas_db search method",
+        )
+
+    result = (
+        await SearchPaperTitlesFromAirasDbSubgraph(
+            search_index=search_index,
+            papers_per_query=request.max_results_per_query,
+        )
+        .build_graph()
+        .ainvoke({"queries": request.queries})
+    )
+
+    return SearchPaperTitlesResponseBody(
+        paper_titles=result["paper_titles"],
+        execution_time=result["execution_time"],
+    )
+
+
+@router.post("/search/qdrant", response_model=SearchPaperTitlesResponseBody)
 @inject
 @observe()
-async def search_paper_titles(
-    request: SearchPaperTitlesRequestBody,
-    fastapi_request: Request,
+async def search_paper_titles_qdrant(
+    request: SearchPaperTitlesQdrantRequestBody,
     litellm_client: Annotated[
         LiteLLMClient, Depends(Provide[Container.litellm_client])
     ],
     qdrant_client: Annotated[QdrantClient, Depends(Provide[Container.qdrant_client])],
 ) -> SearchPaperTitlesResponseBody:
-    container: Container = fastapi_request.app.state.container
-
-    match request.search_method:
-        case "airas_db":
-            search_index = container.airas_db_search_index()
-            if search_index is None:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="search_index is not available for airas_db search method",
-                )
-            result = (
-                await SearchPaperTitlesFromAirasDbSubgraph(
-                    search_index=search_index,
-                    papers_per_query=request.max_results_per_query,
-                )
-                .build_graph()
-                .ainvoke({"queries": request.queries})
-            )
-
-        case "qdrant":
-            result = (
-                await SearchPaperTitlesFromQdrantSubgraph(
-                    litellm_client=litellm_client,
-                    qdrant_client=qdrant_client,
-                    collection_name=request.collection_name,
-                    papers_per_query=request.max_results_per_query,
-                )
-                .build_graph()
-                .ainvoke({"queries": request.queries})
-            )
-
-        case _:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unsupported search method: {request.search_method}",
-            )
+    result = (
+        await SearchPaperTitlesFromQdrantSubgraph(
+            litellm_client=litellm_client,
+            qdrant_client=qdrant_client,
+            collection_name=request.collection_name,
+            papers_per_query=request.max_results_per_query,
+        )
+        .build_graph()
+        .ainvoke({"queries": request.queries})
+    )
 
     return SearchPaperTitlesResponseBody(
         paper_titles=result["paper_titles"],

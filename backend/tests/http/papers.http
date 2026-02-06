@@ -1,23 +1,21 @@
-### Search paper by queries
+### Search paper by queries (airas_db)
 
-POST http://127.0.0.1:8000/airas/v1/papers/search
+POST http://127.0.0.1:8000/airas/v1/papers/search/airas_db
 Content-Type: application/json
 
 {
     "queries": ["Diffusion model", "Optimizer"],
-    "max_results_per_query": 3,
-    "search_method": "airas_db"
+    "max_results_per_query": 3
 }
 
 ### Search paper by queries (Qdrant)
 
-POST http://127.0.0.1:8000/airas/v1/papers/search
+POST http://127.0.0.1:8000/airas/v1/papers/search/qdrant
 Content-Type: application/json
 
 {
     "queries": ["Diffusion model", "Optimizer"],
     "max_results_per_query": 3,
-    "search_method": "qdrant",
     "collection_name": "airas_database"
 }
 

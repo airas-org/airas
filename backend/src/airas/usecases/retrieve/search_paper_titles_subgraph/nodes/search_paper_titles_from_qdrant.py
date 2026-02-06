@@ -18,9 +18,13 @@ async def search_paper_titles_from_qdrant(
     if not non_empty_queries:
         return []
 
-    query_vectors = await litellm_client.embedding(
-        non_empty_queries, model=embedding_model
-    )
+    try:
+        query_vectors = await litellm_client.embedding(
+            non_empty_queries, model=embedding_model
+        )
+    except Exception as e:
+        logger.error(f"Failed to generate embeddings: {e}", exc_info=True)
+        return []
 
     seen: set[str] = set()
     results: list[str] = []
@@ -29,16 +33,20 @@ async def search_paper_titles_from_qdrant(
         if not query_vector:
             continue
 
-        response = await qdrant_client.aquery_points(
-            collection_name=collection_name,
-            query_vector=query_vector,
-            limit=max_results_per_query,
-        )
+        try:
+            response = await qdrant_client.aquery_points(
+                collection_name=collection_name,
+                query_vector=query_vector,
+                limit=max_results_per_query,
+            )
 
-        for point in response.get("result", {}).get("points", []):
-            title = point.get("payload", {}).get("title", "")
-            if title and title not in seen:
-                seen.add(title)
-                results.append(title)
+            for point in response.get("result", {}).get("points", []):
+                title = point.get("payload", {}).get("title", "")
+                if title and title not in seen:
+                    seen.add(title)
+                    results.append(title)
+        except Exception as e:
+            logger.warning(f"Failed to query Qdrant for a query vector: {e}")
+            continue
 
     return results
