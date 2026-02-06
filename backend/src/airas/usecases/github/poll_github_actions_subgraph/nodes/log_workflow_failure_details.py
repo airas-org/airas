@@ -1,6 +1,6 @@
 from logging import getLogger
 
-from airas.core.types.github import GitHubConfig
+from airas.core.types.github import GitHubActionsConclusion, GitHubConfig
 from airas.infra.github_client import GithubClient
 
 logger = getLogger(__name__)
@@ -28,7 +28,12 @@ async def log_workflow_failure_details(
         failed_jobs = [
             job
             for job in jobs
-            if job.get("conclusion") in ["failure", "cancelled", "timed_out"]
+            if job.get("conclusion")
+            not in [
+                GitHubActionsConclusion.SUCCESS.value,
+                GitHubActionsConclusion.NEUTRAL.value,
+                GitHubActionsConclusion.SKIPPED.value,
+            ]
         ]
 
         if failed_jobs:
@@ -46,7 +51,12 @@ async def log_workflow_failure_details(
                 failed_steps = [
                     step
                     for step in steps
-                    if step.get("conclusion") in ["failure", "cancelled", "timed_out"]
+                    if step.get("conclusion")
+                    not in [
+                        GitHubActionsConclusion.SUCCESS.value,
+                        GitHubActionsConclusion.NEUTRAL.value,
+                        GitHubActionsConclusion.SKIPPED.value,
+                    ]
                 ]
 
                 if failed_steps:
