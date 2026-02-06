@@ -20,17 +20,6 @@ class SearchPaperTitlesRequestBody(BaseModel):
     collection_name: str = "airas_database"  # NOTE: collection_name is only used for qdrant; kept unified for simplicity despite ISP.
 
 
-class SearchPaperTitlesAirasDbRequestBody(BaseModel):
-    queries: list[str]
-    max_results_per_query: int = Field(default=3, gt=0)
-
-
-class SearchPaperTitlesQdrantRequestBody(BaseModel):
-    queries: list[str]
-    max_results_per_query: int = Field(default=3, gt=0)
-    collection_name: str = "airas_database"
-
-
 class SearchPaperTitlesResponseBody(BaseModel):
     paper_titles: list[str]
     execution_time: dict[str, list[float]]

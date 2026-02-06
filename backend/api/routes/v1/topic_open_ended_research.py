@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
 from dependency_injector.wiring import Closing, Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -14,7 +14,6 @@ from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.infra.litellm_client import LiteLLMClient
-from airas.infra.qdrant_client import QdrantClient
 from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service import (
     TopicOpenEndedResearchService,
 )
@@ -53,12 +52,12 @@ DEFAULT_CREATED_BY = uuid.UUID("00000000-0000-0000-0000-000000000001")
 async def _execute_topic_open_ended_research(
     task_id: uuid.UUID,
     request: TopicOpenEndedResearchRequestBody,
-    search_index: AirasDbPaperSearchIndex,
+    search_index: AirasDbPaperSearchIndex | None,
     github_client: GithubClient,
     arxiv_client: ArxivClient,
     langchain_client: LangChainClient,
     litellm_client: LiteLLMClient,
-    qdrant_client: QdrantClient,
+    qdrant_client: Any | None,
     langfuse_client: LangfuseClient,
     e2e_service: TopicOpenEndedResearchService,
 ) -> None:
@@ -141,7 +140,6 @@ async def execute_topic_open_ended_research(
     litellm_client: Annotated[
         LiteLLMClient, Depends(Provide[Container.litellm_client])
     ],
-    qdrant_client: Annotated[QdrantClient, Depends(Provide[Container.qdrant_client])],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -153,11 +151,20 @@ async def execute_topic_open_ended_research(
     container: Container = fastapi_request.app.state.container
     task_id = uuid.uuid4()
 
+    if request.search_method == "qdrant":
+        search_index = None
+        qdrant_client = container.qdrant_client()
+        if hasattr(qdrant_client, "__await__"):
+            qdrant_client = await qdrant_client
+    else:
+        search_index = container.airas_db_search_index()
+        qdrant_client = None
+
     asyncio.create_task(
         _execute_topic_open_ended_research(
             task_id=task_id,
             request=request,
-            search_index=container.airas_db_search_index(),
+            search_index=search_index,
             github_client=github_client,
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,

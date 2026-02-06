@@ -3,42 +3,17 @@ info:
   title: AIRAS API
   version: 0.0.1
 paths:
-  /airas/v1/papers/search/airas_db:
+  /airas/v1/papers/search:
     post:
       tags:
       - papers
-      summary: Search Paper Titles Airas Db
-      operationId: search_paper_titles_airas_db_airas_v1_papers_search_airas_db_post
+      summary: Search Paper Titles
+      operationId: search_paper_titles_airas_v1_papers_search_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SearchPaperTitlesAirasDbRequestBody'
-        required: true
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SearchPaperTitlesResponseBody'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/papers/search/qdrant:
-    post:
-      tags:
-      - papers
-      summary: Search Paper Titles Qdrant
-      operationId: search_paper_titles_qdrant_airas_v1_papers_search_qdrant_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SearchPaperTitlesQdrantRequestBody'
+              $ref: '#/components/schemas/SearchPaperTitlesRequestBody'
         required: true
       responses:
         '200':
@@ -3103,22 +3078,6 @@ components:
       - runner_label
       - description
       title: RunnerConfig
-    SearchPaperTitlesAirasDbRequestBody:
-      properties:
-        queries:
-          items:
-            type: string
-          type: array
-          title: Queries
-        max_results_per_query:
-          type: integer
-          exclusiveMinimum: 0.0
-          title: Max Results Per Query
-          default: 3
-      type: object
-      required:
-      - queries
-      title: SearchPaperTitlesAirasDbRequestBody
     SearchPaperTitlesFromQdrantLLMMapping:
       properties:
         search_paper_titles_from_qdrant:
@@ -3127,8 +3086,15 @@ components:
             llm_name: gemini/gemini-embedding-001
       type: object
       title: SearchPaperTitlesFromQdrantLLMMapping
-    SearchPaperTitlesQdrantRequestBody:
+    SearchPaperTitlesRequestBody:
       properties:
+        search_method:
+          type: string
+          enum:
+          - airas_db
+          - qdrant
+          title: Search Method
+          default: airas_db
         queries:
           items:
             type: string
@@ -3146,7 +3112,7 @@ components:
       type: object
       required:
       - queries
-      title: SearchPaperTitlesQdrantRequestBody
+      title: SearchPaperTitlesRequestBody
     SearchPaperTitlesResponseBody:
       properties:
         paper_titles:

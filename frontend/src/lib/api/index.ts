@@ -96,9 +96,8 @@ export type { RetrievePaperSubgraphLLMMapping } from './models/RetrievePaperSubg
 export type { RetrievePaperSubgraphRequestBody } from './models/RetrievePaperSubgraphRequestBody';
 export type { RetrievePaperSubgraphResponseBody } from './models/RetrievePaperSubgraphResponseBody';
 export type { RunnerConfig } from './models/RunnerConfig';
-export type { SearchPaperTitlesAirasDbRequestBody } from './models/SearchPaperTitlesAirasDbRequestBody';
 export type { SearchPaperTitlesFromQdrantLLMMapping } from './models/SearchPaperTitlesFromQdrantLLMMapping';
-export type { SearchPaperTitlesQdrantRequestBody } from './models/SearchPaperTitlesQdrantRequestBody';
+export { SearchPaperTitlesRequestBody } from './models/SearchPaperTitlesRequestBody';
 export type { SearchPaperTitlesResponseBody } from './models/SearchPaperTitlesResponseBody';
 export type { SearchSpace } from './models/SearchSpace';
 export type { SetGithubActionsSecretsRequestBody } from './models/SetGithubActionsSecretsRequestBody';

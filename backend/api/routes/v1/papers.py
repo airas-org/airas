@@ -10,7 +10,6 @@ from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.infra.litellm_client import LiteLLMClient
-from airas.infra.qdrant_client import QdrantClient
 from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
 )
@@ -24,8 +23,7 @@ from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
 from api.schemas.papers import (
     RetrievePaperSubgraphRequestBody,
     RetrievePaperSubgraphResponseBody,
-    SearchPaperTitlesAirasDbRequestBody,
-    SearchPaperTitlesQdrantRequestBody,
+    SearchPaperTitlesRequestBody,
     SearchPaperTitlesResponseBody,
     WriteSubgraphRequestBody,
     WriteSubgraphResponseBody,
@@ -34,56 +32,49 @@ from api.schemas.papers import (
 router = APIRouter(prefix="/papers", tags=["papers"])
 
 
-@router.post("/search/airas_db", response_model=SearchPaperTitlesResponseBody)
-@observe()
-async def search_paper_titles_airas_db(
-    request: SearchPaperTitlesAirasDbRequestBody,
-    fastapi_request: Request,
-) -> SearchPaperTitlesResponseBody:
-    container: Container = fastapi_request.app.state.container
-
-    search_index = container.airas_db_search_index()
-    if search_index is None:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="search_index is not available for airas_db search method",
-        )
-
-    result = (
-        await SearchPaperTitlesFromAirasDbSubgraph(
-            search_index=search_index,
-            papers_per_query=request.max_results_per_query,
-        )
-        .build_graph()
-        .ainvoke({"queries": request.queries})
-    )
-
-    return SearchPaperTitlesResponseBody(
-        paper_titles=result["paper_titles"],
-        execution_time=result["execution_time"],
-    )
-
-
-@router.post("/search/qdrant", response_model=SearchPaperTitlesResponseBody)
+@router.post("/search", response_model=SearchPaperTitlesResponseBody)
 @inject
 @observe()
-async def search_paper_titles_qdrant(
-    request: SearchPaperTitlesQdrantRequestBody,
+async def search_paper_titles(
+    request: SearchPaperTitlesRequestBody,
+    fastapi_request: Request,
     litellm_client: Annotated[
         LiteLLMClient, Depends(Provide[Container.litellm_client])
     ],
-    qdrant_client: Annotated[QdrantClient, Depends(Provide[Container.qdrant_client])],
 ) -> SearchPaperTitlesResponseBody:
-    result = (
-        await SearchPaperTitlesFromQdrantSubgraph(
-            litellm_client=litellm_client,
-            qdrant_client=qdrant_client,
-            collection_name=request.collection_name,
-            papers_per_query=request.max_results_per_query,
+    container: Container = fastapi_request.app.state.container
+
+    if request.search_method == "qdrant":
+        qdrant_client = container.qdrant_client()
+        if hasattr(qdrant_client, "__await__"):
+            qdrant_client = await qdrant_client
+
+        result = (
+            await SearchPaperTitlesFromQdrantSubgraph(
+                litellm_client=litellm_client,
+                qdrant_client=qdrant_client,
+                collection_name=request.collection_name,
+                papers_per_query=request.max_results_per_query,
+            )
+            .build_graph()
+            .ainvoke({"queries": request.queries})
         )
-        .build_graph()
-        .ainvoke({"queries": request.queries})
-    )
+    else:
+        search_index = container.airas_db_search_index()
+        if search_index is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="search_index is not available for airas_db search method",
+            )
+
+        result = (
+            await SearchPaperTitlesFromAirasDbSubgraph(
+                search_index=search_index,
+                papers_per_query=request.max_results_per_query,
+            )
+            .build_graph()
+            .ainvoke({"queries": request.queries})
+        )
 
     return SearchPaperTitlesResponseBody(
         paper_titles=result["paper_titles"],
