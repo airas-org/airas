@@ -190,7 +190,7 @@ class TopicOpenEndedResearchSubgraph:
         arxiv_client: ArxivClient,
         langchain_client: LangChainClient,
         litellm_client: LiteLLMClient,
-        qdrant_client: QdrantClient,
+        qdrant_client: QdrantClient | None,
         e2e_service: TopicOpenEndedResearchService,
         runner_config: RunnerConfig,
         wandb_config: WandbConfig,
@@ -380,6 +380,10 @@ class TopicOpenEndedResearchSubgraph:
 
         match self.search_method:
             case "qdrant":
+                if self.qdrant_client is None:
+                    raise ValueError(
+                        "qdrant_client is required when search_method is 'qdrant'"
+                    )
                 subgraph = SearchPaperTitlesFromQdrantSubgraph(
                     litellm_client=self.litellm_client,
                     qdrant_client=self.qdrant_client,
