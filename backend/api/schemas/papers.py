@@ -1,12 +1,10 @@
-from enum import Enum
-
 from pydantic import BaseModel, Field
 
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults
-from airas.core.types.paper import PaperContent
+from airas.core.types.paper import PaperContent, SearchMethod
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
 from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
@@ -15,14 +13,11 @@ from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph imp
 from airas.usecases.writers.write_subgraph.write_subgraph import WriteLLMMapping
 
 
-class SearchMethod(str, Enum):
-    AIRAS_DB = "airas_db"
-
-
 class SearchPaperTitlesRequestBody(BaseModel):
+    search_method: SearchMethod = "airas_db"
     queries: list[str]
     max_results_per_query: int = Field(default=3, gt=0)
-    search_method: SearchMethod = SearchMethod.AIRAS_DB
+    collection_name: str = "airas_database"  # NOTE: collection_name is only used for qdrant; kept unified for simplicity despite ISP.
 
 
 class SearchPaperTitlesResponseBody(BaseModel):
