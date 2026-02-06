@@ -182,8 +182,31 @@ class LiteLLMClient:
         texts: list[str],
         model: str,
     ) -> list[list[float]]:
-        response = await litellm.aembedding(model=model, input=texts)
-        return [item.embedding for item in response.data]
+        # Try to get model info for logging and potential future use
+        try:
+            model_info = self.get_model_info(model)
+            logger.info(
+                f"Generating embeddings with model={model} for {len(texts)} texts. model_info={model_info}"
+            )
+        except Exception as e:
+            logger.warning(
+                f"Failed to get model info for {model}: {e}. Proceeding without model metadata."
+            )
+
+        try:
+            response = await litellm.aembedding(model=model, input=texts)
+            # Ensure we got a non-empty response
+            data = getattr(response, "data", None)
+            if not data:
+                raise ValueError(f"Empty embedding response from model {model}")
+            embeddings: list[list[float]] = [item.embedding for item in data]
+            return embeddings
+        except Exception as e:
+            logger.error(
+                f"Error generating embeddings with litellm for model {model}: {e}",
+                exc_info=True,
+            )
+            raise
 
     # https://docs.litellm.ai/docs/set_keys#get_valid_models
     @staticmethod

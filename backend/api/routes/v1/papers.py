@@ -48,9 +48,15 @@ async def search_paper_titles(
 
     match request.search_method:
         case "airas_db":
+            search_index = container.airas_db_search_index()
+            if search_index is None:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="search_index is not available for airas_db search method",
+                )
             result = (
                 await SearchPaperTitlesFromAirasDbSubgraph(
-                    search_index=container.airas_db_search_index(),
+                    search_index=search_index,
                     papers_per_query=request.max_results_per_query,
                 )
                 .build_graph()

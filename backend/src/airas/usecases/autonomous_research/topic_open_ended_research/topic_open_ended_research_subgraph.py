@@ -388,6 +388,10 @@ class TopicOpenEndedResearchSubgraph:
                     llm_mapping=self.llm_mapping.search_paper_titles_from_qdrant,
                 )
             case "airas_db":
+                if self.search_index is None:
+                    raise ValueError(
+                        "search_index is required when search_method is 'airas_db'"
+                    )
                 subgraph = SearchPaperTitlesFromAirasDbSubgraph(
                     search_index=self.search_index,
                     papers_per_query=self.papers_per_query,

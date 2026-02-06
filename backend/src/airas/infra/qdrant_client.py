@@ -1,16 +1,10 @@
-"""
-Qdrant Vector Database Client.
-
-TODO: After migrating to litellm_client, implement DB update script using text embedding model.
-      Text embedding is required to convert documents into vectors before upserting to Qdrant.
-"""
-
 import os
 from logging import getLogger
 from typing import Any
 
 import httpx
 
+from airas.core.types.qdrant import QdrantDistance
 from airas.infra.base_http_client import BaseHTTPClient
 from airas.infra.response_parser import ResponseParser
 from airas.infra.retry_policy import make_retry_policy, raise_for_status
@@ -52,7 +46,7 @@ class QdrantClient(BaseHTTPClient):
         self,
         collection_name: str,
         vector_size: int,
-        distance: str = "Cosine",
+        distance: QdrantDistance = "Cosine",
         timeout: float = 60,
     ) -> dict[str, Any]:
         # https://api.qdrant.tech/api-reference/collections/create-collection
@@ -150,7 +144,7 @@ class QdrantClient(BaseHTTPClient):
         self,
         collection_name: str,
         vector_size: int,
-        distance: str = "Cosine",  # TODO: Literal
+        distance: QdrantDistance = "Cosine",
         timeout: float = 60,
     ) -> dict[str, Any]:
         payload = {"vectors": {"size": vector_size, "distance": distance}}
