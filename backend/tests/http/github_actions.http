@@ -10,4 +10,16 @@ Content-Type: application/json
     }
 }
 
+### Set github actions secrets
+POST http://127.0.0.1:8000/airas/v1/github-actions/secrets
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "e2e-test-matsuzawa-20260128",
+        "branch_name": "main"
+    }
+}
+
 ###

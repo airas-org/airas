@@ -5,7 +5,7 @@ from typing import Any, get_args
 from botocore.config import Config
 from langchain_anthropic import ChatAnthropic
 from langchain_aws import ChatBedrockConverse
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.messages.utils import trim_messages
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
@@ -216,6 +216,7 @@ class LangChainClient:
         web_search: bool = False,
     ) -> str:
         model = self._create_chat_model(llm_name, web_search, params)
+        messages: list[BaseMessage] = [HumanMessage(content=message)]
 
         try:
             context_info = get_model_context_info(llm_name)
@@ -223,14 +224,13 @@ class LangChainClient:
             max_output_tokens = context_info["max_output_tokens"]
 
             safe_max_input_tokens = max_input_tokens - 1000
-            messages = [HumanMessage(content=message)]
 
-            trimmed_messages = trim_messages(
+            trimmed_messages: list[BaseMessage] = trim_messages(
                 messages,
                 max_tokens=safe_max_input_tokens,
                 token_counter=model,
                 strategy="last",
-                allow_partial=False,
+                allow_partial=True,
             )
 
             logger.info(
@@ -243,7 +243,14 @@ class LangChainClient:
                 f"Failed to get context info or trim messages for {llm_name}: {e}. "
                 "Proceeding without trimming."
             )
-            trimmed_messages = message
+            trimmed_messages = messages
+
+        if not trimmed_messages:
+            raise ValueError(
+                f"Message exceeds token limit for model '{llm_name}' "
+                f"(safe_max_input_tokens={safe_max_input_tokens}). "
+                "Cannot proceed with an empty message after trimming."
+            )
 
         response = await model.ainvoke(trimmed_messages)
         content = response.content
@@ -272,20 +279,21 @@ class LangChainClient:
         web_search: bool = False,
     ) -> Any:
         model = self._create_chat_model(llm_name, web_search=web_search, params=params)
+        messages: list[BaseMessage] = [HumanMessage(content=message)]
+
         try:
             context_info = get_model_context_info(llm_name)
             max_input_tokens = context_info["max_input_tokens"]
             max_output_tokens = context_info["max_output_tokens"]
 
             safe_max_input_tokens = max_input_tokens - 1000
-            messages = [HumanMessage(content=message)]
 
-            trimmed_messages = trim_messages(
+            trimmed_messages: list[BaseMessage] = trim_messages(
                 messages,
                 max_tokens=safe_max_input_tokens,
                 token_counter=model,
                 strategy="last",
-                allow_partial=False,
+                allow_partial=True,
             )
 
             logger.info(
@@ -298,7 +306,14 @@ class LangChainClient:
                 f"Failed to get context info or trim messages for {llm_name}: {e}. "
                 "Proceeding without trimming."
             )
-            trimmed_messages = message
+            trimmed_messages = messages
+
+        if not trimmed_messages:
+            raise ValueError(
+                f"Message exceeds token limit for model '{llm_name}' "
+                f"(safe_max_input_tokens={safe_max_input_tokens}). "
+                "Cannot proceed with an empty message after trimming."
+            )
 
         model_with_structure = model.with_structured_output(
             schema=data_model, method="function_calling"

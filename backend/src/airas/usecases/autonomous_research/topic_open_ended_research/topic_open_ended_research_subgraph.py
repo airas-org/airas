@@ -14,6 +14,7 @@ from airas.core.types.experimental_analysis import ExperimentalAnalysis
 from airas.core.types.experimental_design import ExperimentalDesign, RunnerConfig
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import (
+    GitHubActionsAgent,
     GitHubActionsConclusion,
     GitHubActionsStatus,
     GitHubConfig,
@@ -195,7 +196,8 @@ class TopicOpenEndedResearchSubgraph:
         num_comparison_methods: int = 0,
         experiment_code_validation_iterations: int = 3,
         paper_content_refinement_iterations: int = 2,
-        latex_template_name: str = "iclr2024",
+        github_actions_agent: GitHubActionsAgent = "claude_code",
+        latex_template_name: str = "mdpi",
         llm_mapping: TopicOpenEndedResearchSubgraphLLMMapping | None = None,
     ):
         self.search_index = search_index
@@ -218,6 +220,7 @@ class TopicOpenEndedResearchSubgraph:
         )
         self.paper_content_refinement_iterations = paper_content_refinement_iterations
         self.latex_template_name = latex_template_name
+        self.github_actions_agent = github_actions_agent
         self.llm_mapping = llm_mapping or TopicOpenEndedResearchSubgraphLLMMapping()
 
     @record_execution_time
@@ -496,6 +499,7 @@ class TopicOpenEndedResearchSubgraph:
             await ExecuteTrialExperimentSubgraph(
                 github_client=self.github_client,
                 runner_label=self.runner_config.runner_label,
+                github_actions_agent=self.github_actions_agent,
                 llm_mapping=self.llm_mapping.execute_trial_experiment,
             )
             .build_graph()
@@ -539,6 +543,7 @@ class TopicOpenEndedResearchSubgraph:
             await ExecuteFullExperimentSubgraph(
                 github_client=self.github_client,
                 runner_label=self.runner_config.runner_label,
+                github_actions_agent=self.github_actions_agent,
                 llm_mapping=self.llm_mapping.execute_full_experiment,
             )
             .build_graph()
@@ -633,6 +638,7 @@ class TopicOpenEndedResearchSubgraph:
         result = (
             await ExecuteEvaluationSubgraph(
                 github_client=self.github_client,
+                github_actions_agent=self.github_actions_agent,
                 llm_mapping=self.llm_mapping.execute_evaluation,
             )
             .build_graph()
@@ -812,7 +818,8 @@ class TopicOpenEndedResearchSubgraph:
         result = (
             await CompileLatexSubgraph(
                 github_client=self.github_client,
-                latex_template_name=state.get("latex_template_name", "iclr2024"),
+                latex_template_name=state.get("latex_template_name", "mdpi"),
+                github_actions_agent=self.github_actions_agent,
                 llm_mapping=self.llm_mapping.compile_latex,
             )
             .build_graph()

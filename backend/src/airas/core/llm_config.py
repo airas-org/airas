@@ -14,7 +14,7 @@ class NodeLLMConfig(BaseModel):
 
 
 BASE_CONFIG = NodeLLMConfig(llm_name="gpt-5.2")
-SEARCH_CONFIG = NodeLLMConfig(llm_name="gpt-5-nano-2025-08-07")
+SEARCH_CONFIG = NodeLLMConfig(llm_name="gemini-2.5-flash")
 CODING_CONFIG = NodeLLMConfig(
     llm_name="gpt-5.2-codex", params=OpenAIParams(reasoning_effort="high")
 )
@@ -44,11 +44,11 @@ DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
     # ExecuteTrialExperimentSubgraph
     # NOTE: GitHub Actions nodes use "provider/model" format for LiteLLM compatibility.
     # All nodes will migrate to this format when fully transitioning to LiteLLM.
-    "dispatch_trial_experiment": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
+    "dispatch_trial_experiment": NodeLLMConfig(llm_name="claude-sonnet-4-5"),
     # ExecuteFullExperimentSubgraph
-    "dispatch_full_experiments": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
+    "dispatch_full_experiments": NodeLLMConfig(llm_name="claude-sonnet-4-5"),
     # ExecuteEvaluationSubgraph
-    "dispatch_evaluation": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
+    "dispatch_evaluation": NodeLLMConfig(llm_name="claude-sonnet-4-5"),
     # analyzers/
     # AnalyzeExperimentSubgraph
     "analyze_experiment": BASE_CONFIG,
@@ -60,7 +60,7 @@ DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
     # GenerateLatexSubgraph
     "convert_to_latex": BASE_CONFIG,
     # CompileLatexSubgraph
-    "compile_latex": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
+    "compile_latex": NodeLLMConfig(llm_name="claude-sonnet-4-5"),
     # GenerateHtmlSubgraph
     "convert_to_html": BASE_CONFIG,
 }
