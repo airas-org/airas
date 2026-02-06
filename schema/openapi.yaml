@@ -1712,23 +1712,14 @@ components:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
             llm_name: gpt-5.2-codex
-            params:
-              provider_type: openai
-              reasoning_effort: high
         generate_experiment_code:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
             llm_name: gpt-5.2-codex
-            params:
-              provider_type: openai
-              reasoning_effort: high
         validate_experiment_code:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
             llm_name: gpt-5.2-codex
-            params:
-              provider_type: openai
-              reasoning_effort: high
       type: object
       title: GenerateCodeLLMMapping
     GenerateCodeSubgraphRequestBody:

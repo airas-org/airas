@@ -126,7 +126,7 @@ on:
         options:
           - airas_db
           - qdrant
-        default: 'airas_db'
+        default: 'qdrant'
 
 jobs:
   check-org-membership:
@@ -292,7 +292,7 @@ jobs:
           GITHUB_ACTIONS_AGENT="${{ github.event.inputs.github_actions_agent || 'claude_code' }}"
 
           # === Paper search settings ===
-          SEARCH_METHOD="${{ github.event.inputs.search_method || 'airas_db' }}"
+          SEARCH_METHOD="${{ github.event.inputs.search_method || 'qdrant' }}"
 
           # === Build LLM mapping JSON ===
           LLM_MAPPING=$(cat <<EOFLLM

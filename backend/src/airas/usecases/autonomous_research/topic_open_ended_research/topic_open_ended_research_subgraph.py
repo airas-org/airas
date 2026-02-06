@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Any, Literal
+from typing import Any
 from uuid import UUID
 
 from langgraph.graph import END, START, StateGraph
@@ -19,7 +19,7 @@ from airas.core.types.github import (
     GitHubActionsStatus,
     GitHubConfig,
 )
-from airas.core.types.paper import PaperContent
+from airas.core.types.paper import PaperContent, SearchMethod
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
@@ -196,7 +196,7 @@ class TopicOpenEndedResearchSubgraph:
         wandb_config: WandbConfig,
         task_id: UUID,
         is_github_repo_private: bool = False,
-        search_method: Literal["airas_db", "qdrant"] = "airas_db",
+        search_method: SearchMethod = "airas_db",
         search_index: AirasDbPaperSearchIndex | None = None,
         collection_name: str = "airas_database",
         num_paper_search_queries: int = 2,
