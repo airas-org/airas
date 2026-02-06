@@ -9,7 +9,6 @@ from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
-from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
 )
@@ -33,18 +32,18 @@ router = APIRouter(prefix="/papers", tags=["papers"])
 
 
 @router.post("/search", response_model=SearchPaperTitlesResponseBody)
-@inject
 @observe()
 async def search_paper_titles(
     request: SearchPaperTitlesRequestBody,
     fastapi_request: Request,
-    litellm_client: Annotated[
-        LiteLLMClient, Depends(Provide[Container.litellm_client])
-    ],
 ) -> SearchPaperTitlesResponseBody:
     container: Container = fastapi_request.app.state.container
 
     if request.search_method == "qdrant":
+        litellm_client = container.litellm_client()
+        if hasattr(litellm_client, "__await__"):
+            litellm_client = await litellm_client
+
         qdrant_client = container.qdrant_client()
         if hasattr(qdrant_client, "__await__"):
             qdrant_client = await qdrant_client
