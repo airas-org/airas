@@ -112,7 +112,7 @@ on:
         options:
           - claude_code
           - open_code
-        default: 'claude_code'
+        default: 'open_code'
       github_actions_model:
         description: 'GitHub Actions LLM (experiment dispatch, evaluation dispatch, LaTeX compilation)'
         required: false
@@ -289,7 +289,7 @@ jobs:
           CODING_MODEL="${{ github.event.inputs.coding_model || 'gpt-5.2-codex' }}"
           PAPER_RETRIEVAL_MODEL="${{ github.event.inputs.paper_retrieval_model || 'gemini-2.5-flash' }}"
           GITHUB_ACTIONS_MODEL="${{ github.event.inputs.github_actions_model || 'anthropic/claude-sonnet-4-5' }}"
-          GITHUB_ACTIONS_AGENT="${{ github.event.inputs.github_actions_agent || 'claude_code' }}"
+          GITHUB_ACTIONS_AGENT="${{ github.event.inputs.github_actions_agent || 'open_code' }}"
 
           # === Paper search settings ===
           SEARCH_METHOD="${{ github.event.inputs.search_method || 'qdrant' }}"
