@@ -45,21 +45,12 @@
       }
     ]
   },
-  "experiment_code": {
-    "train_py": "",
-    "evaluate_py": "",
-    "preprocess_py": "",
-    "model_py": "",
-    "main_py": "",
-    "pyproject_toml": "",
-    "config_yaml": ""
-  },
   "experimental_results": {
     "stdout": "",
     "stderr": "",
     "figures": [],
-    "metrics_data": [
-      {
+    "metrics_data": {
+      "gemini-2.0-flash|none|Baseline": {
         "model": "2.0-flash",
         "thinking": "none",
         "condition": "Baseline",
@@ -70,7 +61,7 @@
         "fp": 86,
         "fn": 126
       },
-      {
+      "gemini-2.0-flash|none|Proposed": {
         "model": "2.0-flash",
         "thinking": "none",
         "condition": "Proposed",
@@ -81,7 +72,7 @@
         "fp": 51,
         "fn": 121
       },
-      {
+      "gemini-2.5-flash|off|Baseline": {
         "model": "2.5-flash",
         "thinking": "off",
         "condition": "Baseline",
@@ -92,7 +83,7 @@
         "fp": 115,
         "fn": 124
       },
-      {
+      "gemini-2.5-flash|off|Proposed": {
         "model": "2.5-flash",
         "thinking": "off",
         "condition": "Proposed",
@@ -103,7 +94,7 @@
         "fp": 42,
         "fn": 130
       },
-      {
+      "gemini-2.5-flash|2048|Baseline": {
         "model": "2.5-flash",
         "thinking": "2048",
         "condition": "Baseline",
@@ -114,7 +105,7 @@
         "fp": 115,
         "fn": 123
       },
-      {
+      "gemini-2.5-flash|2048|Proposed": {
         "model": "2.5-flash",
         "thinking": "2048",
         "condition": "Proposed",
@@ -125,7 +116,7 @@
         "fp": 54,
         "fn": 117
       },
-      {
+      "gemini-3-flash-preview|off|Baseline": {
         "model": "3-flash-preview",
         "thinking": "off",
         "condition": "Baseline",
@@ -136,7 +127,7 @@
         "fp": 70,
         "fn": 124
       },
-      {
+      "gemini-3-flash-preview|off|Proposed": {
         "model": "3-flash-preview",
         "thinking": "off",
         "condition": "Proposed",
@@ -147,7 +138,7 @@
         "fp": 56,
         "fn": 116
       },
-      {
+      "gemini-3-flash-preview|2048|Baseline": {
         "model": "3-flash-preview",
         "thinking": "2048",
         "condition": "Baseline",
@@ -158,7 +149,7 @@
         "fp": 74,
         "fn": 115
       },
-      {
+      "gemini-3-flash-preview|2048|Proposed": {
         "model": "3-flash-preview",
         "thinking": "2048",
         "condition": "Proposed",
@@ -169,10 +160,19 @@
         "fp": 52,
         "fn": 118
       }
-    ]
+    }
   },
   "experimental_analysis": {
     "analysis_report": "The Two-Stage approach consistently reduced false positives by 40–60% across all models, leading to significant precision gains. Gemini-3-flash-preview without thinking achieved an F1 score of 0.27 within a short runtime, offering the best cost-performance trade-off. However, recall remains low overall (0.12–0.22), indicating the need for prompt refinement and the introduction of few-shot examples in future work."
+  },
+  "experiment_code": {
+    "train_py": "",
+    "evaluate_py": "",
+    "preprocess_py": "",
+    "model_py": "",
+    "main_py": "",
+    "pyproject_toml": "",
+    "config_yaml": ""
   },
   "research_study_list": [
     {
