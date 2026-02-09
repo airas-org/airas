@@ -1,7 +1,9 @@
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
+
+SearchMethod = Literal["airas_db", "qdrant"]
 
 
 class CandidatePaperInfo(TypedDict):

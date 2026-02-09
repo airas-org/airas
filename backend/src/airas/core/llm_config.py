@@ -2,7 +2,6 @@ from pydantic import BaseModel
 
 from airas.infra.llm_specs import (
     LLMParams,
-    OpenAIParams,
 )
 
 
@@ -15,14 +14,15 @@ class NodeLLMConfig(BaseModel):
 
 BASE_CONFIG = NodeLLMConfig(llm_name="gpt-5.2")
 SEARCH_CONFIG = NodeLLMConfig(llm_name="gemini-2.5-flash")
-CODING_CONFIG = NodeLLMConfig(
-    llm_name="gpt-5.2-codex", params=OpenAIParams(reasoning_effort="high")
-)
+CODING_CONFIG = NodeLLMConfig(llm_name="gpt-5.2-codex")
+EMBEDDING_CONFIG = NodeLLMConfig(llm_name="gemini/gemini-embedding-001")
 
 DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
     # retrieve/
     # GenerateQueriesSubgraph
     "generate_queries": BASE_CONFIG,
+    # SearchPaperTitlesFromQdrantSubgraph
+    "search_paper_titles_from_qdrant": EMBEDDING_CONFIG,
     # RetrievePaperSubgraph
     "search_arxiv_id_from_title": SEARCH_CONFIG,
     "summarize_paper": BASE_CONFIG,

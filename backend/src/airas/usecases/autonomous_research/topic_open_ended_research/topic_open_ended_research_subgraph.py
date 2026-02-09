@@ -19,7 +19,7 @@ from airas.core.types.github import (
     GitHubActionsStatus,
     GitHubConfig,
 )
-from airas.core.types.paper import PaperContent
+from airas.core.types.paper import PaperContent, SearchMethod
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
@@ -29,6 +29,8 @@ from airas.infra.arxiv_client import ArxivClient
 from airas.infra.db.models.e2e import Status, StepType
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
+from airas.infra.qdrant_client import QdrantClient
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentLLMMapping,
     AnalyzeExperimentSubgraph,
@@ -98,6 +100,10 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_tit
 from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_airas_db_subgraph import (
     SearchPaperTitlesFromAirasDbSubgraph,
 )
+from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_qdrant_subgraph import (
+    SearchPaperTitlesFromQdrantLLMMapping,
+    SearchPaperTitlesFromQdrantSubgraph,
+)
 from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
     GenerateBibfileSubgraph,
 )
@@ -125,6 +131,7 @@ class TopicOpenEndedResearchSubgraphLLMMapping(BaseModel):
     write: WriteLLMMapping | None = None
     generate_latex: GenerateLatexLLMMapping | None = None
     compile_latex: CompileLatexLLMMapping | None = None
+    search_paper_titles_from_qdrant: SearchPaperTitlesFromQdrantLLMMapping | None = None
 
 
 class TopicOpenEndedResearchInputState(TypedDict):
@@ -179,15 +186,19 @@ class TopicOpenEndedResearchState(
 class TopicOpenEndedResearchSubgraph:
     def __init__(
         self,
-        search_index: AirasDbPaperSearchIndex,
         github_client: GithubClient,
         arxiv_client: ArxivClient,
         langchain_client: LangChainClient,
+        litellm_client: LiteLLMClient,
+        qdrant_client: QdrantClient | None,
         e2e_service: TopicOpenEndedResearchService,
         runner_config: RunnerConfig,
         wandb_config: WandbConfig,
         task_id: UUID,
         is_github_repo_private: bool = False,
+        search_method: SearchMethod = "airas_db",
+        search_index: AirasDbPaperSearchIndex | None = None,
+        collection_name: str = "airas_database",
         num_paper_search_queries: int = 2,
         papers_per_query: int = 5,
         hypothesis_refinement_iterations: int = 1,
@@ -200,7 +211,11 @@ class TopicOpenEndedResearchSubgraph:
         latex_template_name: str = "mdpi",
         llm_mapping: TopicOpenEndedResearchSubgraphLLMMapping | None = None,
     ):
+        self.search_method = search_method
         self.search_index = search_index
+        self.litellm_client = litellm_client
+        self.qdrant_client = qdrant_client
+        self.collection_name = collection_name
         self.github_client = github_client
         self.arxiv_client = arxiv_client
         self.langchain_client = langchain_client
@@ -359,14 +374,35 @@ class TopicOpenEndedResearchSubgraph:
         self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== Search Paper Titles ===")
-        result = (
-            await SearchPaperTitlesFromAirasDbSubgraph(
-                search_index=self.search_index,
-                papers_per_query=self.papers_per_query,
-            )
-            .build_graph()
-            .ainvoke({"queries": state["queries"]})
+        subgraph: (
+            SearchPaperTitlesFromQdrantSubgraph | SearchPaperTitlesFromAirasDbSubgraph
         )
+
+        match self.search_method:
+            case "qdrant":
+                if self.qdrant_client is None:
+                    raise ValueError(
+                        "qdrant_client is required when search_method is 'qdrant'"
+                    )
+                subgraph = SearchPaperTitlesFromQdrantSubgraph(
+                    litellm_client=self.litellm_client,
+                    qdrant_client=self.qdrant_client,
+                    collection_name=self.collection_name,
+                    papers_per_query=self.papers_per_query,
+                    llm_mapping=self.llm_mapping.search_paper_titles_from_qdrant,
+                )
+            case "airas_db":
+                if self.search_index is None:
+                    raise ValueError(
+                        "search_index is required when search_method is 'airas_db'"
+                    )
+                subgraph = SearchPaperTitlesFromAirasDbSubgraph(
+                    search_index=self.search_index,
+                    papers_per_query=self.papers_per_query,
+                )
+            case _:
+                raise ValueError(f"Unsupported search_method: {self.search_method}")
+        result = await subgraph.build_graph().ainvoke({"queries": state["queries"]})
         return {
             "paper_titles": result["paper_titles"],
             "current_step": StepType.RETRIEVE_PAPERS,
@@ -968,11 +1004,11 @@ if __name__ == "__main__":
 
         try:
             graph = TopicOpenEndedResearchSubgraph(
-                search_index=container.airas_db_search_index(),
                 github_client=container.github_client(),
                 arxiv_client=container.arxiv_client(),
                 langchain_client=container.langchain_client(),
-                e2e_service=container.e2e_service,
+                e2e_service=container.topic_open_ended_research_service(),
+                search_index=container.airas_db_search_index(),
                 runner_config=RunnerConfig(
                     runner_label=["ubuntu-latest"],
                     description="Sample runner config for graph preview",
