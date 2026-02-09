@@ -90,8 +90,8 @@ on:
           - 'gpt-5-mini-2025-08-07'
           - 'gemini-2.5-pro'
           - 'gemini-2.5-flash'
-          - 'claude-opus-4'
-          - 'claude-sonnet-4-5'
+          - 'anthropic/claude-opus-4'
+          - 'anthropic/claude-sonnet-4-5'
         default: 'gpt-5.2'
       coding_model:
         description: 'Coding LLM (code generation, code validation)'
@@ -112,13 +112,21 @@ on:
         options:
           - claude_code
           - open_code
-        default: 'claude_code'
+        default: 'open_code'
       github_actions_model:
         description: 'GitHub Actions LLM (experiment dispatch, evaluation dispatch, LaTeX compilation)'
         required: false
         type: choice
         options: *llm_options
-        default: 'claude-sonnet-4-5'
+        default: 'anthropic/claude-sonnet-4-5'
+      search_method:
+        description: 'Paper search backend'
+        required: false
+        type: choice
+        options:
+          - airas_db
+          - qdrant
+        default: 'qdrant'
 
 jobs:
   check-org-membership:
@@ -280,8 +288,17 @@ jobs:
           PRIMARY_MODEL="${{ github.event.inputs.primary_model || 'gpt-5.2' }}"
           CODING_MODEL="${{ github.event.inputs.coding_model || 'gpt-5.2-codex' }}"
           PAPER_RETRIEVAL_MODEL="${{ github.event.inputs.paper_retrieval_model || 'gemini-2.5-flash' }}"
-          GITHUB_ACTIONS_MODEL="${{ github.event.inputs.github_actions_model || 'claude-sonnet-4-5' }}"
-          GITHUB_ACTIONS_AGENT="${{ github.event.inputs.github_actions_agent || 'claude_code' }}"
+          GITHUB_ACTIONS_MODEL="${{ github.event.inputs.github_actions_model || 'anthropic/claude-sonnet-4-5' }}"
+          GITHUB_ACTIONS_AGENT="${{ github.event.inputs.github_actions_agent || 'open_code' }}"
+
+          # === Paper search settings ===
+          SEARCH_METHOD="${{ github.event.inputs.search_method || 'qdrant' }}"
+
+          # Remove anthropic/ prefix for claude_code
+          if [ "$GITHUB_ACTIONS_AGENT" = "claude_code" ]; then
+            GITHUB_ACTIONS_MODEL="${GITHUB_ACTIONS_MODEL#anthropic/}"
+            echo "Adjusted GITHUB_ACTIONS_MODEL for claude_code: ${GITHUB_ACTIONS_MODEL}"
+          fi
 
           # === Build LLM mapping JSON ===
           LLM_MAPPING=$(cat <<EOFLLM
@@ -301,9 +318,9 @@ jobs:
             },
             "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY_MODEL}"}},
             "generate_code": {
-              "generate_run_config": {"llm_name": "${CODING_MODEL}", "params": {"provider_type": "openai", "reasoning_effort": "high"}},
-              "generate_experiment_code": {"llm_name": "${CODING_MODEL}", "params": {"provider_type": "openai", "reasoning_effort": "high"}},
-              "validate_experiment_code": {"llm_name": "${CODING_MODEL}", "params": {"provider_type": "openai", "reasoning_effort": "high"}}
+              "generate_run_config": {"llm_name": "${CODING_MODEL}"},
+              "generate_experiment_code": {"llm_name": "${CODING_MODEL}"},
+              "validate_experiment_code": {"llm_name": "${CODING_MODEL}"}
             },
             "execute_trial_experiment": {"dispatch_trial_experiment": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
             "execute_full_experiment": {"dispatch_full_experiments": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
@@ -346,6 +363,7 @@ jobs:
               "project": "${WANDB_PROJECT}"
             },
             "is_github_repo_private": ${IS_PRIVATE},
+            "search_method": "${SEARCH_METHOD}",
             "num_paper_search_queries": ${NUM_QUERIES},
             "papers_per_query": ${PAPERS_PER_QUERY},
             "hypothesis_refinement_iterations": ${HYPOTHESIS_ITERS},
