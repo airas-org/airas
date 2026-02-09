@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import logging
 import sys
 import uuid
 from logging import getLogger
@@ -65,6 +66,9 @@ async def _fetch_papers_from_url(
     except httpx.HTTPStatusError as e:
         logger.error(f"  -> HTTP error fetching {url}: {e}")
         raise
+    except httpx.RequestError as e:
+        logger.error(f"  -> Network error fetching {url}: {e}")
+        raise
     except ValueError as e:
         logger.error(f"  -> JSON parse error from {url}: {e}")
         raise
@@ -80,28 +84,34 @@ async def _fetch_all_papers() -> list[dict[str, Any]]:
             year: str,
         ) -> list[dict[str, Any]]:
             async with semaphore:
-                try:
-                    return await _fetch_papers_from_url(client, url, conference, year)
-                except Exception as exc:
-                    logger.warning(f"  -> Skipping due to error for {url}: {exc}")
-                    raise
+                return await _fetch_papers_from_url(client, url, conference, year)
 
         tasks = []
+        urls = []
         for conference, years in CONFERENCES_AND_YEARS.items():
             for year in years:
                 url = f"{AIRAS_PAPERS_REPO_BASE_URL}/{conference}/{year}.json"
                 task = _bounded_fetch(url, conference, year)
                 tasks.append(task)
+                urls.append(url)
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         all_papers: list[dict[str, Any]] = []
-        for result in results:
+        failed_count = 0
+        for url, result in zip(urls, results, strict=True):
             if isinstance(result, Exception):
-                logger.warning(f"  -> Skipping due to error: {result}")
-            else:
-                papers = cast(list[dict[str, Any]], result)
-                all_papers.extend(papers)
+                failed_count += 1
+                logger.warning(f"  -> Failed to fetch {url}: {result}")
+                continue
+            papers = cast(list[dict[str, Any]], result)
+            all_papers.extend(papers)
+
+        if failed_count > 0:
+            logger.warning(
+                f"Failed to fetch {failed_count}/{len(urls)} URLs. "
+                f"Successfully loaded {len(all_papers)} papers from {len(urls) - failed_count} URLs."
+            )
 
     logger.info(f"Total papers fetched: {len(all_papers)}")
     return all_papers
@@ -251,8 +261,6 @@ async def main(
     batch_size: int = 100,
     start_index: int = 0,
 ) -> None:
-    import logging
-
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",

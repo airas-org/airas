@@ -40,7 +40,10 @@ class AirasDbPaperSearchIndex:
             logger.info(f"  -> Successfully fetched {len(papers)} papers from {url}")
             return papers
         except httpx.HTTPStatusError as e:
-            logger.error(f"  -> An error occurred while fetching data from {url}: {e}")
+            logger.error(f"  -> HTTP error while fetching data from {url}: {e}")
+            raise
+        except httpx.RequestError as e:
+            logger.error(f"  -> Network error while fetching data from {url}: {e}")
             raise
         except ValueError as e:
             logger.error(f"  -> Failed to parse JSON from {url}: {e}")
@@ -55,20 +58,31 @@ class AirasDbPaperSearchIndex:
                     return await self._fetch_papers_from_url(client, url)
 
             tasks = []
+            urls = []
             for conference, years in CONFERENCES_AND_YEARS.items():
                 for year in years:
                     url = f"{AIRAS_PAPERS_REPO_BASE_URL}/{conference}/{year}.json"
                     task = _bounded_fetch(url)
                     tasks.append(task)
+                    urls.append(url)
 
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
             all_papers: list[dict[str, Any]] = []
-            for result in results:
+            failed_count = 0
+            for url, result in zip(urls, results, strict=True):
                 if isinstance(result, Exception):
+                    failed_count += 1
+                    logger.warning(f"  -> Failed to fetch {url}: {result}")
                     continue
                 papers = cast(list[dict[str, Any]], result)
                 all_papers.extend(papers)
+
+            if failed_count > 0:
+                logger.warning(
+                    f"Failed to fetch {failed_count}/{len(urls)} URLs. "
+                    f"Successfully loaded {len(all_papers)} papers from {len(urls) - failed_count} URLs."
+                )
 
         return all_papers
 
