@@ -1,46 +1,24 @@
+import asyncio
 import re
 from logging import getLogger
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from nltk.stem import PorterStemmer
 from rank_bm25 import BM25Okapi
 
+from airas.core.papers_db_config import (
+    AIRAS_PAPERS_REPO_BASE_URL,
+    CONFERENCES_AND_YEARS,
+)
+
 logger = getLogger(__name__)
 
-DB_BASE_URL = "https://raw.githubusercontent.com/airas-org/airas-papers-db/main/data"
-
-# TODO: It would be better to allow external configuration of CONFERENCES_AND_YEARS
-# instead of hardcoding them here, enabling dynamic updates without code changes.
-CONFERENCES_AND_YEARS = {
-    # ==================== Core Machine Learning (ML) ====================
-    "iclr": ["2020", "2021", "2022", "2023", "2024", "2025"],
-    "icml": ["2020", "2021", "2022", "2023", "2024", "2025"],
-    "neurips": ["2020", "2021", "2022", "2023", "2024", "2025"],
-    # ==================== Natural Language Processing (NLP) ====================
-    "acl": ["2020", "2021", "2022", "2023", "2024"],
-    "emnlp": ["2020", "2021", "2022", "2023", "2024"],
-    "naacl": ["2021", "2022", "2024"],
-    # ==================== Computer Vision (CV) ====================
-    # "cvpr": ["2023", "2024", "2025"],
-    # "eccv": ["2024"],
-    # ==================== ML Theory ====================
-    # "colt": ["2019", "2020", "2021", "2022", "2023", "2024", "2025"],
-    # "aabi": ["2018", "2019", "2024", "2025"],
-    # ==================== Statistical / Probabilistic ML ====================
-    # "aistats": ["2019", "2020", "2021", "2022", "2023", "2024", "2025"],
-    # "uai":     ["2019", "2020", "2021", "2022", "2023", "2024", "2025"],
-    # "pgm":     ["2016", "2020", "2022", "2024"],
-}
+# Concurrent request limit to avoid overwhelming the server
+MAX_CONCURRENT_REQUESTS = 10
 
 
 class AirasDbPaperSearchIndex:
-    """Singleton search index for AIRAS paper database with BM25 and stemming.
-
-    Managed by DI container as a singleton. Only the loaded data is cached.
-    HTTP session is managed via context manager during fetch.
-    """
-
     def __init__(self) -> None:
         self._papers: list[dict[str, Any]] | None = None
         self._titles: list[str] | None = None
@@ -51,24 +29,47 @@ class AirasDbPaperSearchIndex:
         tokens = re.findall(r"\w+", text.lower())
         return [self._stemmer.stem(token) for token in tokens]
 
+    async def _fetch_papers_from_url(
+        self, client: httpx.AsyncClient, url: str
+    ) -> list[dict[str, Any]]:
+        logger.info(f"Fetching paper data from {url}...")
+        try:
+            response = await client.get(url, timeout=60)
+            response.raise_for_status()
+            papers = response.json()
+            logger.info(f"  -> Successfully fetched {len(papers)} papers from {url}")
+            return papers
+        except httpx.HTTPStatusError as e:
+            logger.error(f"  -> An error occurred while fetching data from {url}: {e}")
+            raise
+        except ValueError as e:
+            logger.error(f"  -> Failed to parse JSON from {url}: {e}")
+            raise
+
     async def _fetch_all_papers(self) -> list[dict[str, Any]]:
-        all_papers: list[dict[str, Any]] = []
         async with httpx.AsyncClient() as client:
+            semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
+
+            async def _bounded_fetch(url: str) -> list[dict[str, Any]]:
+                async with semaphore:
+                    return await self._fetch_papers_from_url(client, url)
+
+            tasks = []
             for conference, years in CONFERENCES_AND_YEARS.items():
                 for year in years:
-                    url = f"{DB_BASE_URL}/{conference}/{year}.json"
-                    logger.info(f"Fetching paper data from {url}...")
-                    try:
-                        response = await client.get(url, timeout=60)
-                        response.raise_for_status()
-                        papers = response.json()
-                        all_papers.extend(papers)
-                    except httpx.HTTPStatusError as e:
-                        logger.error(
-                            f"  -> An error occurred while fetching data from {url}: {e}"
-                        )
-                    except ValueError as e:
-                        logger.error(f"  -> Failed to parse JSON from {url}: {e}")
+                    url = f"{AIRAS_PAPERS_REPO_BASE_URL}/{conference}/{year}.json"
+                    task = _bounded_fetch(url)
+                    tasks.append(task)
+
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            all_papers: list[dict[str, Any]] = []
+            for result in results:
+                if isinstance(result, Exception):
+                    continue
+                papers = cast(list[dict[str, Any]], result)
+                all_papers.extend(papers)
+
         return all_papers
 
     async def _ensure_loaded(self) -> None:

@@ -19,6 +19,7 @@ from airas.core.types.github import (
     GitHubActionsStatus,
     GitHubConfig,
 )
+from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.paper import PaperContent, SearchMethod
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
@@ -198,7 +199,7 @@ class TopicOpenEndedResearchSubgraph:
         is_github_repo_private: bool = False,
         search_method: SearchMethod = "airas_db",
         search_index: AirasDbPaperSearchIndex | None = None,
-        collection_name: str = "airas_database",
+        collection_name: str = "airas_papers_db",
         num_paper_search_queries: int = 2,
         papers_per_query: int = 5,
         hypothesis_refinement_iterations: int = 1,
@@ -208,7 +209,7 @@ class TopicOpenEndedResearchSubgraph:
         experiment_code_validation_iterations: int = 3,
         paper_content_refinement_iterations: int = 2,
         github_actions_agent: GitHubActionsAgent = "claude_code",
-        latex_template_name: str = "mdpi",
+        latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
         llm_mapping: TopicOpenEndedResearchSubgraphLLMMapping | None = None,
     ):
         self.search_method = search_method
@@ -989,36 +990,3 @@ class TopicOpenEndedResearchSubgraph:
         graph_builder.add_edge(PIPELINE[-1][0], END)
 
         return graph_builder.compile()
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    from airas.container import Container
-    from airas.core.types.experimental_design import RunnerConfig
-    from airas.core.types.wandb import WandbConfig
-
-    async def main() -> None:
-        container = Container()
-        await container.init_resources()
-
-        try:
-            graph = TopicOpenEndedResearchSubgraph(
-                github_client=container.github_client(),
-                arxiv_client=container.arxiv_client(),
-                langchain_client=container.langchain_client(),
-                e2e_service=container.topic_open_ended_research_service(),
-                search_index=container.airas_db_search_index(),
-                runner_config=RunnerConfig(
-                    runner_label=["ubuntu-latest"],
-                    description="Sample runner config for graph preview",
-                ),
-                wandb_config=WandbConfig(entity="demo", project="demo"),
-                task_id=UUID("00000000-0000-0000-0000-000000000001"),
-            ).build_graph()
-
-            print(graph.get_graph().draw_mermaid())
-        finally:
-            await container.shutdown_resources()
-
-    asyncio.run(main())
