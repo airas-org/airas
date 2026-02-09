@@ -3108,7 +3108,7 @@ components:
         collection_name:
           type: string
           title: Collection Name
-          default: airas_database
+          default: airas_papers_db
       type: object
       required:
       - queries
@@ -3307,7 +3307,7 @@ components:
         collection_name:
           type: string
           title: Collection Name
-          default: airas_database
+          default: airas_papers_db
         num_paper_search_queries:
           type: integer
           title: Num Paper Search Queries

@@ -23,7 +23,10 @@ class HTTPClientError(RuntimeError): ...
 class HTTPClientRetryableError(HTTPClientError): ...
 
 
-class HTTPClientFatalError(HTTPClientError): ...
+class HTTPClientFatalError(HTTPClientError):
+    def __init__(self, message: str, status_code: int | None = None):
+        super().__init__(message)
+        self.status_code = status_code
 
 
 _LOGGER = getLogger(__name__)
@@ -79,4 +82,4 @@ def raise_for_status(response: Response, *, path: str = "") -> None:
         return
     if code in (408, 429) or 500 <= code < 600:
         raise HTTPClientRetryableError(f"{code} on {path}: {response.text}")
-    raise HTTPClientFatalError(f"{code} on {path}: {response.text}")
+    raise HTTPClientFatalError(f"{code} on {path}: {response.text}", status_code=code)
