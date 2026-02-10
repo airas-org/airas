@@ -95,13 +95,15 @@ async def init_async_session() -> AsyncGenerator[httpx.AsyncClient, None]:
 
 # NOTE:  GitHub-specific sessions (no caching to avoid stale SHA conflicts)
 def init_github_sync_session() -> Generator[httpx.Client, None, None]:
-    client = httpx.Client(follow_redirects=True)
+    timeout = httpx.Timeout(connect=10.0, read=60.0, write=120.0, pool=5.0)
+    client = httpx.Client(follow_redirects=True, timeout=timeout)
     yield client
     client.close()
 
 
 async def init_github_async_session() -> AsyncGenerator[httpx.AsyncClient, None]:
-    client = httpx.AsyncClient(follow_redirects=True)
+    timeout = httpx.Timeout(connect=10.0, read=60.0, write=120.0, pool=5.0)
+    client = httpx.AsyncClient(follow_redirects=True, timeout=timeout)
     yield client
     await client.aclose()
 
