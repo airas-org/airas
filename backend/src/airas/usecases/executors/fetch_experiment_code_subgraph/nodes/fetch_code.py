@@ -27,7 +27,7 @@ async def _fetch_file(
     repository_name: str,
     path: str,
     branch_name: str,
-) -> str:
+) -> str | None:
     try:
         resp = await github_client.aget_repository_content(
             github_owner=github_owner,
@@ -38,27 +38,27 @@ async def _fetch_file(
 
         if not resp:
             logger.warning(f"Empty response for file: {path}")
-            return ""
+            return None
 
         if "content" not in resp:
             logger.warning(f"No 'content' field in response for file: {path}")
-            return ""
+            return None
 
         content = resp.get("content")
         if not isinstance(content, str):
             logger.error(
                 f"Invalid content type for {path}: expected str, got {type(content).__name__}"
             )
-            return ""
+            return None
 
         return _decode_base64_content(content)
 
     except (binascii.Error, UnicodeDecodeError) as e:
         logger.error(f"Failed to decode content from {path}: {e}")
-        return ""
+        return None
     except Exception:
         logger.exception(f"Unexpected error fetching file at {path}")
-        return ""
+        return None
 
 
 async def _fetch_directory_recursive(
@@ -123,7 +123,7 @@ async def _fetch_directory_recursive(
         if tasks:
             results = await asyncio.gather(*[task for _, task in tasks])
             for (rel_path, _), content in zip(tasks, results, strict=True):
-                if content:
+                if content is not None:
                     files[rel_path] = content
 
         # Recursively fetch subdirectories
@@ -201,7 +201,7 @@ async def fetch_experiment_code(
     all_files = {}
     all_files.update(src_files)
     all_files.update(config_files)
-    if pyproject_content:
+    if pyproject_content is not None:
         all_files["pyproject.toml"] = pyproject_content
 
     elapsed = time.time() - start_time
@@ -209,7 +209,7 @@ async def fetch_experiment_code(
 
     logger.info(
         f"Fetched {total_files} files "
-        f"(src: {len(src_files)}, config: {len(config_files)}, other: {1 if pyproject_content else 0}) "
+        f"(src: {len(src_files)}, config: {len(config_files)}, other: {1 if pyproject_content is not None else 0}) "
         f"in {elapsed:.2f}s"
     )
 
@@ -223,7 +223,7 @@ async def fetch_experiment_code(
     else:
         logger.warning("No files found in config/ directory")
 
-    if not pyproject_content:
-        logger.warning("pyproject.toml not found or empty")
+    if pyproject_content is None:
+        logger.warning("pyproject.toml not found or failed to fetch")
 
     return ExperimentCode(files=all_files)
