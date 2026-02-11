@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-RunStage = Literal["sanity", "pilot", "main"]
+RunStage = Literal["sanity", "pilot", "main", "visualization"]
 
 
 class ExperimentCode(BaseModel):

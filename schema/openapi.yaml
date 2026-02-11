@@ -632,7 +632,7 @@ paths:
     post:
       tags:
       - github-actions
-      summary: Download GitHub Actions Artifacts
+      summary: Download Github Actions Artifacts
       operationId: download_github_actions_artifacts_airas_v1_github_actions_artifacts_download_post
       requestBody:
         content:
@@ -1391,7 +1391,9 @@ components:
           type: string
           title: Research Topic
         run_id:
-          type: string
+          anyOf:
+          - type: string
+          - type: 'null'
           title: Run Id
         workflow_run_id:
           type: integer
@@ -1402,6 +1404,7 @@ components:
           - sanity
           - pilot
           - main
+          - visualization
           title: Run Stage
         research_hypothesis:
           $ref: '#/components/schemas/ResearchHypothesis'
@@ -1424,7 +1427,6 @@ components:
       required:
       - github_config
       - research_topic
-      - run_id
       - workflow_run_id
       - run_stage
       - research_hypothesis

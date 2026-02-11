@@ -232,8 +232,14 @@ class TopicOpenEndedResearchStateV2(
     main_experiment_validation_workflow_status: GitHubActionsStatus | None
     main_experiment_validation_workflow_conclusion: GitHubActionsConclusion | None
     visualization_dispatched: bool
+    visualization_workflow_run_id: int | None
     visualization_workflow_status: GitHubActionsStatus | None
     visualization_workflow_conclusion: GitHubActionsConclusion | None
+    visualization_validation_dispatched: bool
+    visualization_validation_workflow_run_id: int | None
+    visualization_validation_workflow_status: GitHubActionsStatus | None
+    visualization_validation_workflow_conclusion: GitHubActionsConclusion | None
+    visualization_retry_count: int
     is_upload_successful: bool
     compile_latex_dispatched: bool
     compile_latex_workflow_status: GitHubActionsStatus | None
@@ -242,6 +248,7 @@ class TopicOpenEndedResearchStateV2(
 
 class TopicOpenEndedResearchSubgraphV2:
     MAX_RETRY_PER_RUN_ID = 10
+    MAX_RETRY_FOR_VISUALIZATION = 10
 
     def __init__(
         self,
@@ -661,6 +668,7 @@ class TopicOpenEndedResearchSubgraphV2:
                 "run_ids": run_ids,
                 "current_run_id_index": 0,
                 "retry_counts": {},
+                "visualization_retry_count": 0,
             }
         except WorkflowValidationError:
             raise
@@ -1290,11 +1298,157 @@ class TopicOpenEndedResearchSubgraphV2:
     async def _poll_visualization(
         self, state: TopicOpenEndedResearchStateV2
     ) -> dict[str, Any]:
-        status, conclusion, _ = await self._poll_workflow(state, "Visualization")
+        status, conclusion, workflow_run_id = await self._poll_workflow(
+            state, "Visualization"
+        )
         return {
+            "visualization_workflow_run_id": workflow_run_id,
             "visualization_workflow_status": status,
             "visualization_workflow_conclusion": conclusion,
         }
+
+    @record_execution_time
+    async def _dispatch_experiment_validation_for_visualization(
+        self, state: TopicOpenEndedResearchStateV2
+    ) -> dict[str, Any]:
+        logger.info("=== Dispatch Experiment Validation for Visualization ===")
+
+        workflow_run_id = state.get("visualization_workflow_run_id")
+
+        logger.info(
+            "Dispatching experiment validation for visualization (no specific run_id)"
+        )
+
+        result = (
+            await DispatchExperimentValidationSubgraph(
+                github_client=self.github_client,
+                llm_mapping=self.llm_mapping.dispatch_experiment_validation,
+            )
+            .build_graph()
+            .ainvoke(
+                {
+                    "github_config": state["github_config"],
+                    "research_topic": state["research_topic"],
+                    "workflow_run_id": workflow_run_id,
+                    "run_stage": "visualization",
+                    "research_hypothesis": state["research_hypothesis"],
+                    "experimental_design": state["experimental_design"],
+                    "wandb_config": self.wandb_config,
+                    "github_actions_agent": self.github_actions_agent,
+                }
+            )
+        )
+
+        return {"visualization_validation_dispatched": result["dispatched"]}
+
+    @record_execution_time
+    async def _poll_experiment_validation_for_visualization(
+        self, state: TopicOpenEndedResearchStateV2
+    ) -> dict[str, Any]:
+        status, conclusion, workflow_run_id = await self._poll_workflow(
+            state, "Experiment Validation for Visualization"
+        )
+        return {
+            "visualization_validation_workflow_run_id": workflow_run_id,
+            "visualization_validation_workflow_status": status,
+            "visualization_validation_workflow_conclusion": conclusion,
+        }
+
+    @record_execution_time
+    async def _download_artifact_for_visualization(
+        self, state: TopicOpenEndedResearchStateV2
+    ) -> dict[str, dict]:
+        if (
+            workflow_run_id := state.get("visualization_validation_workflow_run_id")
+        ) is None:
+            error_msg = "visualization_validation_workflow_run_id is missing from state"
+            logger.error(error_msg)
+            raise WorkflowValidationError(error_msg)
+
+        logger.info(
+            f"=== Download Artifact for Visualization from workflow_run_id={workflow_run_id} ==="
+        )
+
+        try:
+            result = (
+                await DownloadGithubActionsArtifactsSubgraph(
+                    github_client=self.github_client
+                )
+                .build_graph()
+                .ainvoke(
+                    {
+                        "github_config": state["github_config"],
+                        "workflow_run_id": workflow_run_id,
+                    }
+                )
+            )
+
+            artifact_data = result.get("artifact_data", {})
+            logger.info(
+                f"Successfully downloaded artifact data with keys: {list(artifact_data.keys())}"
+            )
+            logger.debug(f"Artifact data details: {artifact_data}")
+
+            return {"artifact_data": artifact_data}
+        except Exception as e:
+            logger.exception(
+                f"Failed to download artifact from workflow_run_id={workflow_run_id}: {e}"
+            )
+            raise
+
+    def _route_after_visualization_artifact_download(
+        self, state: TopicOpenEndedResearchStateV2
+    ) -> str:
+        if not (artifact_data := state.get("artifact_data", {})):
+            error_msg = "No artifact data found for visualization. Cannot determine validation action."
+            logger.error(error_msg)
+            raise WorkflowValidationError(error_msg)
+
+        if (action := artifact_data.get("validation_action")) is None:
+            error_msg = (
+                f"'validation_action' field not found in visualization artifact data. "
+                f"Available fields: {list(artifact_data.keys())}"
+            )
+            logger.error(error_msg)
+            raise WorkflowValidationError(error_msg)
+
+        VALID_ACTIONS = {"retry", "proceed"}
+        if action not in VALID_ACTIONS:
+            error_msg = f"Invalid validation_action: '{action}', valid options are {VALID_ACTIONS}"
+            logger.error(error_msg)
+            raise WorkflowValidationError(error_msg)
+
+        if action == "retry":
+            retry_count = state.get("visualization_retry_count", 0)
+            if retry_count >= self.MAX_RETRY_FOR_VISUALIZATION:
+                error_msg = (
+                    f"Maximum retry count ({self.MAX_RETRY_FOR_VISUALIZATION}) exceeded "
+                    f"for visualization validation"
+                )
+                logger.error(error_msg)
+                raise WorkflowValidationError(error_msg)
+
+            logger.warning(
+                f"Visualization validation failed (retry {retry_count + 1}/{self.MAX_RETRY_FOR_VISUALIZATION}). "
+                f"Retrying visualization."
+            )
+            return "increment_visualization_retry_count"
+
+        logger.info(
+            "Visualization validation passed. Proceeding to fetch experiment results."
+        )
+        return "fetch_experiment_results"
+
+    @record_execution_time
+    def _increment_visualization_retry_count(
+        self, state: TopicOpenEndedResearchStateV2
+    ) -> dict[str, int]:
+        retry_count = state.get("visualization_retry_count", 0)
+        new_retry = retry_count + 1
+        logger.info(
+            f"Incrementing visualization retry count: {retry_count} -> {new_retry}"
+        )
+        return {"visualization_retry_count": new_retry}
 
     @record_execution_time
     async def _fetch_experiment_results(
@@ -1564,6 +1718,22 @@ class TopicOpenEndedResearchSubgraphV2:
         graph_builder.add_node("dispatch_visualization", self._dispatch_visualization)
         graph_builder.add_node("poll_visualization", self._poll_visualization)
         graph_builder.add_node(
+            "dispatch_experiment_validation_for_visualization",
+            self._dispatch_experiment_validation_for_visualization,
+        )
+        graph_builder.add_node(
+            "poll_experiment_validation_for_visualization",
+            self._poll_experiment_validation_for_visualization,
+        )
+        graph_builder.add_node(
+            "download_artifact_for_visualization",
+            self._download_artifact_for_visualization,
+        )
+        graph_builder.add_node(
+            "increment_visualization_retry_count",
+            self._increment_visualization_retry_count,
+        )
+        graph_builder.add_node(
             "fetch_experiment_results", self._fetch_experiment_results
         )
         graph_builder.add_node("analyze_experiment", self._analyze_experiment)
@@ -1686,12 +1856,36 @@ class TopicOpenEndedResearchSubgraphV2:
             "poll_experiment_validation_for_main_experiment", "dispatch_visualization"
         )
 
+        # Visualization with validation loop
         graph_builder.add_edge("dispatch_visualization", "poll_visualization")
         self._add_edge_with_upload(
             graph_builder,
             "poll_visualization",
-            "fetch_experiment_results",
+            "dispatch_experiment_validation_for_visualization",
             UPLOAD_AFTER,
+        )
+        graph_builder.add_edge(
+            "dispatch_experiment_validation_for_visualization",
+            "poll_experiment_validation_for_visualization",
+        )
+        graph_builder.add_edge(
+            "poll_experiment_validation_for_visualization",
+            "download_artifact_for_visualization",
+        )
+
+        # Conditional routing after visualization artifact download
+        graph_builder.add_conditional_edges(
+            "download_artifact_for_visualization",
+            self._route_after_visualization_artifact_download,
+            {
+                "increment_visualization_retry_count": "increment_visualization_retry_count",
+                "fetch_experiment_results": "fetch_experiment_results",
+            },
+        )
+
+        # Loop back to visualization for retry
+        graph_builder.add_edge(
+            "increment_visualization_retry_count", "dispatch_visualization"
         )
 
         self._add_edge_with_upload(

@@ -10,7 +10,7 @@ import type { WandbConfig } from './WandbConfig';
 export type DispatchExperimentValidationRequestBody = {
     github_config: GitHubConfig;
     research_topic: string;
-    run_id: string;
+    run_id?: (string | null);
     workflow_run_id: number;
     run_stage: DispatchExperimentValidationRequestBody.run_stage;
     research_hypothesis: ResearchHypothesis;
@@ -24,6 +24,7 @@ export namespace DispatchExperimentValidationRequestBody {
         SANITY = 'sanity',
         PILOT = 'pilot',
         MAIN = 'main',
+        VISUALIZATION = 'visualization',
     }
     export enum github_actions_agent {
         CLAUDE_CODE = 'claude_code',
