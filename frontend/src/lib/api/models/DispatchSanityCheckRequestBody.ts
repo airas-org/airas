@@ -2,10 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ExperimentCode } from './ExperimentCode';
 import type { GitHubConfig } from './GitHubConfig';
-export type PushCodeSubgraphRequestBody = {
+export type DispatchSanityCheckRequestBody = {
     github_config: GitHubConfig;
-    experiment_code: ExperimentCode;
+    run_id: string;
 };
 

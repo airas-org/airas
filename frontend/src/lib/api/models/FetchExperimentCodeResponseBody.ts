@@ -2,8 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type ExecuteEvaluationResponseBody = {
-    dispatched: boolean;
+import type { ExperimentCode } from './ExperimentCode';
+export type FetchExperimentCodeResponseBody = {
+    experiment_code: ExperimentCode;
     execution_time: Record<string, Array<number>>;
 };
 

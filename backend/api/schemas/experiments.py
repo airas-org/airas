@@ -1,22 +1,17 @@
 from pydantic import BaseModel
 
-from airas.core.types.experiment_code import ExperimentCode
+from airas.core.types.experiment_code import ExperimentCode, RunStage
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.core.types.wandb import WandbConfig
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentLLMMapping,
 )
-from airas.usecases.executors.execute_evaluation_subgraph.execute_evaluation_subgraph import (
-    ExecuteEvaluationLLMMapping,
-)
-from airas.usecases.executors.execute_full_experiment_subgraph.execute_full_experiment_subgraph import (
-    ExecuteFullExperimentLLMMapping,
-)
-from airas.usecases.executors.execute_trial_experiment_subgraph.execute_trial_experiment_subgraph import (
-    ExecuteTrialExperimentLLMMapping,
+from airas.usecases.executors.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
+    DispatchExperimentValidationLLMMapping,
 )
 
 
@@ -38,38 +33,50 @@ class FetchExperimentalResultsResponseBody(BaseModel):
     execution_time: dict[str, list[float]]
 
 
-class ExecuteTrialRequestBody(BaseModel):
+class DispatchSanityCheckRequestBody(BaseModel):
     github_config: GitHubConfig
-    github_actions_agent: GitHubActionsAgent = "claude_code"
-    llm_mapping: ExecuteTrialExperimentLLMMapping | None = None
+    run_id: str
 
 
-class ExecuteTrialResponseBody(BaseModel):
+class DispatchSanityCheckResponseBody(BaseModel):
     dispatched: bool
-    run_ids: list[str]
     execution_time: dict[str, list[float]]
 
 
-class ExecuteFullRequestBody(BaseModel):
+class DispatchMainExperimentRequestBody(BaseModel):
     github_config: GitHubConfig
-    run_ids: list[str]
-    github_actions_agent: GitHubActionsAgent = "claude_code"
-    llm_mapping: ExecuteFullExperimentLLMMapping | None = None
+    run_id: str
 
 
-class ExecuteFullResponseBody(BaseModel):
-    all_dispatched: bool
-    branch_creation_results: list[tuple[str, str, bool]]
+class DispatchMainExperimentResponseBody(BaseModel):
+    dispatched: bool
     execution_time: dict[str, list[float]]
 
 
-class ExecuteEvaluationRequestBody(BaseModel):
+class DispatchVisualizationRequestBody(BaseModel):
     github_config: GitHubConfig
-    github_actions_agent: GitHubActionsAgent = "claude_code"
-    llm_mapping: ExecuteEvaluationLLMMapping | None = None
+    run_ids: list[str]
 
 
-class ExecuteEvaluationResponseBody(BaseModel):
+class DispatchVisualizationResponseBody(BaseModel):
+    dispatched: bool
+    execution_time: dict[str, list[float]]
+
+
+class DispatchExperimentValidationRequestBody(BaseModel):
+    github_config: GitHubConfig
+    research_topic: str
+    run_id: str
+    workflow_run_id: int
+    run_stage: RunStage
+    research_hypothesis: ResearchHypothesis
+    experimental_design: ExperimentalDesign
+    wandb_config: WandbConfig
+    github_actions_agent: GitHubActionsAgent = "open_code"
+    llm_mapping: DispatchExperimentValidationLLMMapping | None = None
+
+
+class DispatchExperimentValidationResponseBody(BaseModel):
     dispatched: bool
     execution_time: dict[str, list[float]]
 

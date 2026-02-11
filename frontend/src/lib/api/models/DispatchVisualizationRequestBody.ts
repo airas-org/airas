@@ -2,9 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type ExecuteTrialResponseBody = {
-    dispatched: boolean;
+import type { GitHubConfig } from './GitHubConfig';
+export type DispatchVisualizationRequestBody = {
+    github_config: GitHubConfig;
     run_ids: Array<string>;
-    execution_time: Record<string, Array<number>>;
 };
 

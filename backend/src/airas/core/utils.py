@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import re
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, Mapping, Sequence
@@ -14,8 +15,18 @@ JSONValue = JSONScalar | dict[str, "JSONValue"] | list["JSONValue"]
 
 
 def _sanitize_string(s: str) -> str:
-    """Remove null characters that PostgreSQL JSONB cannot handle."""
-    return s.replace("\x00", "")
+    s = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", s)
+
+    try:
+        s.encode("utf-8")
+    except UnicodeEncodeError:
+        try:
+            s = s.encode("utf-8", errors="surrogatepass").decode(
+                "utf-8", errors="replace"
+            )
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            s = s.encode("utf-8", errors="replace").decode("utf-8", errors="replace")
+    return s
 
 
 def to_dict_deep(obj: Any) -> Any:
