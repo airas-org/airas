@@ -40,6 +40,14 @@ DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
     "generate_run_config": CODING_CONFIG,
     "generate_experiment_code": CODING_CONFIG,
     "validate_experiment_code": CODING_CONFIG,
+    # generators/
+    # DispatchCodeGenerationSubgraph
+    "dispatch_code_generation": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
+    # executors/
+    # DispatchExperimentValidationSubgraph
+    "dispatch_experiment_validation": NodeLLMConfig(
+        llm_name="anthropic/claude-sonnet-4-5"
+    ),
     # executors/
     # ExecuteTrialExperimentSubgraph
     # NOTE: GitHub Actions nodes use "provider/model" format for LiteLLM compatibility.

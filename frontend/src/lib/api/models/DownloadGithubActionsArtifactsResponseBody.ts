@@ -2,9 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ExperimentCode } from './ExperimentCode';
-export type GenerateCodeSubgraphResponseBody = {
-    experiment_code: ExperimentCode;
+export type DownloadGithubActionsArtifactsResponseBody = {
+    artifact_data: Record<string, any>;
     execution_time: Record<string, Array<number>>;
 };
 

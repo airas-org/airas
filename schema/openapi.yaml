@@ -228,17 +228,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/experiments/test-runs:
+  /airas/v1/experiments/sanity-checks/dispatch:
     post:
       tags:
       - experiments
-      summary: Execute Trial
-      operationId: execute_trial_airas_v1_experiments_test_runs_post
+      summary: Dispatch Sanity Check
+      operationId: dispatch_sanity_check_airas_v1_experiments_sanity_checks_dispatch_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ExecuteTrialRequestBody'
+              $ref: '#/components/schemas/DispatchSanityCheckRequestBody'
         required: true
       responses:
         '200':
@@ -246,24 +246,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExecuteTrialResponseBody'
+                $ref: '#/components/schemas/DispatchSanityCheckResponseBody'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/experiments/full-runs:
+  /airas/v1/experiments/validations/dispatch:
     post:
       tags:
       - experiments
-      summary: Execute Full
-      operationId: execute_full_airas_v1_experiments_full_runs_post
+      summary: Dispatch Experiment Validation
+      operationId: dispatch_experiment_validation_airas_v1_experiments_validations_dispatch_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ExecuteFullRequestBody'
+              $ref: '#/components/schemas/DispatchExperimentValidationRequestBody'
         required: true
       responses:
         '200':
@@ -271,24 +271,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExecuteFullResponseBody'
+                $ref: '#/components/schemas/DispatchExperimentValidationResponseBody'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/experiments/evaluations:
+  /airas/v1/experiments/main-runs/dispatch:
     post:
       tags:
       - experiments
-      summary: Execute Evaluation
-      operationId: execute_evaluation_airas_v1_experiments_evaluations_post
+      summary: Dispatch Main Experiment
+      operationId: dispatch_main_experiment_airas_v1_experiments_main_runs_dispatch_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ExecuteEvaluationRequestBody'
+              $ref: '#/components/schemas/DispatchMainExperimentRequestBody'
         required: true
       responses:
         '200':
@@ -296,7 +296,32 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExecuteEvaluationResponseBody'
+                $ref: '#/components/schemas/DispatchMainExperimentResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/experiments/visualizations/dispatch:
+    post:
+      tags:
+      - experiments
+      summary: Dispatch Visualization
+      operationId: dispatch_visualization_airas_v1_experiments_visualizations_dispatch_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DispatchVisualizationRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DispatchVisualizationResponseBody'
         '422':
           description: Validation Error
           content:
@@ -328,17 +353,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/code/generations:
+  /airas/v1/code/generations/dispatch:
     post:
       tags:
       - code
-      summary: Generate Code
-      operationId: generate_code_airas_v1_code_generations_post
+      summary: Dispatch Code Generation
+      operationId: dispatch_code_generation_airas_v1_code_generations_dispatch_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenerateCodeSubgraphRequestBody'
+              $ref: '#/components/schemas/DispatchCodeGenerationRequestBody'
         required: true
       responses:
         '200':
@@ -346,24 +371,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenerateCodeSubgraphResponseBody'
+                $ref: '#/components/schemas/DispatchCodeGenerationResponseBody'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/code/push:
+  /airas/v1/code/fetch:
     post:
       tags:
       - code
-      summary: Push Code
-      operationId: push_code_airas_v1_code_push_post
+      summary: Fetch Experiment Code
+      operationId: fetch_experiment_code_airas_v1_code_fetch_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PushCodeSubgraphRequestBody'
+              $ref: '#/components/schemas/FetchExperimentCodeRequestBody'
         required: true
       responses:
         '200':
@@ -371,7 +396,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PushCodeSubgraphResponseBody'
+                $ref: '#/components/schemas/FetchExperimentCodeResponseBody'
         '422':
           description: Validation Error
           content:
@@ -603,6 +628,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/github-actions/artifacts/download:
+    post:
+      tags:
+      - github-actions
+      summary: Download Github Actions Artifacts
+      operationId: download_github_actions_artifacts_airas_v1_github_actions_artifacts_download_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DownloadGithubActionsArtifactsRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadGithubActionsArtifactsResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/github/push:
     post:
       tags:
@@ -788,13 +838,13 @@ paths:
     post:
       tags:
       - topic_open_ended_research
-      summary: Execute Topic Open Ended Research
-      operationId: execute_topic_open_ended_research_airas_v1_topic_open_ended_research_run_post
+      summary: Execute Topic Open Ended Research V2
+      operationId: execute_topic_open_ended_research_v2_airas_v1_topic_open_ended_research_run_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TopicOpenEndedResearchRequestBody'
+              $ref: '#/components/schemas/TopicOpenEndedResearchV2RequestBody'
         required: true
       responses:
         '200':
@@ -802,7 +852,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TopicOpenEndedResearchResponseBody'
+                $ref: '#/components/schemas/TopicOpenEndedResearchV2ResponseBody'
         '422':
           description: Validation Error
           content:
@@ -1268,6 +1318,255 @@ components:
       - citation
       - task_type
       title: DatasetConfig
+    DispatchCodeGenerationLLMMapping:
+      properties:
+        dispatch_code_generation:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: anthropic/claude-sonnet-4-5
+      type: object
+      title: DispatchCodeGenerationLLMMapping
+    DispatchCodeGenerationRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        research_topic:
+          type: string
+          title: Research Topic
+        research_hypothesis:
+          $ref: '#/components/schemas/ResearchHypothesis'
+        experimental_design:
+          $ref: '#/components/schemas/ExperimentalDesign-Input'
+        wandb_config:
+          $ref: '#/components/schemas/WandbConfig'
+        github_actions_agent:
+          type: string
+          enum:
+          - claude_code
+          - open_code
+          title: Github Actions Agent
+          default: open_code
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/DispatchCodeGenerationLLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - github_config
+      - research_topic
+      - research_hypothesis
+      - experimental_design
+      - wandb_config
+      title: DispatchCodeGenerationRequestBody
+    DispatchCodeGenerationResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - execution_time
+      title: DispatchCodeGenerationResponseBody
+    DispatchExperimentValidationLLMMapping:
+      properties:
+        dispatch_experiment_validation:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: anthropic/claude-sonnet-4-5
+      type: object
+      title: DispatchExperimentValidationLLMMapping
+    DispatchExperimentValidationRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        research_topic:
+          type: string
+          title: Research Topic
+        run_id:
+          type: string
+          title: Run Id
+        workflow_run_id:
+          type: integer
+          title: Workflow Run Id
+        run_stage:
+          type: string
+          enum:
+          - sanity
+          - pilot
+          - main
+          title: Run Stage
+        research_hypothesis:
+          $ref: '#/components/schemas/ResearchHypothesis'
+        experimental_design:
+          $ref: '#/components/schemas/ExperimentalDesign-Input'
+        wandb_config:
+          $ref: '#/components/schemas/WandbConfig'
+        github_actions_agent:
+          type: string
+          enum:
+          - claude_code
+          - open_code
+          title: Github Actions Agent
+          default: open_code
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/DispatchExperimentValidationLLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - github_config
+      - research_topic
+      - run_id
+      - workflow_run_id
+      - run_stage
+      - research_hypothesis
+      - experimental_design
+      - wandb_config
+      title: DispatchExperimentValidationRequestBody
+    DispatchExperimentValidationResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - execution_time
+      title: DispatchExperimentValidationResponseBody
+    DispatchMainExperimentRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        run_id:
+          type: string
+          title: Run Id
+      type: object
+      required:
+      - github_config
+      - run_id
+      title: DispatchMainExperimentRequestBody
+    DispatchMainExperimentResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - execution_time
+      title: DispatchMainExperimentResponseBody
+    DispatchSanityCheckRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        run_id:
+          type: string
+          title: Run Id
+      type: object
+      required:
+      - github_config
+      - run_id
+      title: DispatchSanityCheckRequestBody
+    DispatchSanityCheckResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - execution_time
+      title: DispatchSanityCheckResponseBody
+    DispatchVisualizationRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        run_ids:
+          items:
+            type: string
+          type: array
+          title: Run Ids
+      type: object
+      required:
+      - github_config
+      - run_ids
+      title: DispatchVisualizationRequestBody
+    DispatchVisualizationResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - execution_time
+      title: DispatchVisualizationResponseBody
+    DownloadGithubActionsArtifactsRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        workflow_run_id:
+          type: integer
+          title: Workflow Run Id
+      type: object
+      required:
+      - github_config
+      - workflow_run_id
+      title: DownloadGithubActionsArtifactsRequestBody
+    DownloadGithubActionsArtifactsResponseBody:
+      properties:
+        artifact_data:
+          additionalProperties: true
+          type: object
+          title: Artifact Data
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - artifact_data
+      - execution_time
+      title: DownloadGithubActionsArtifactsResponseBody
     EvaluationMetric:
       properties:
         name:
@@ -1284,200 +1583,15 @@ components:
       - name
       - description
       title: EvaluationMetric
-    ExecuteEvaluationLLMMapping:
-      properties:
-        dispatch_evaluation:
-          $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: claude-sonnet-4-5
-      type: object
-      title: ExecuteEvaluationLLMMapping
-    ExecuteEvaluationRequestBody:
-      properties:
-        github_config:
-          $ref: '#/components/schemas/GitHubConfig'
-        github_actions_agent:
-          type: string
-          enum:
-          - claude_code
-          - open_code
-          title: Github Actions Agent
-          default: claude_code
-        llm_mapping:
-          anyOf:
-          - $ref: '#/components/schemas/ExecuteEvaluationLLMMapping'
-          - type: 'null'
-      type: object
-      required:
-      - github_config
-      title: ExecuteEvaluationRequestBody
-    ExecuteEvaluationResponseBody:
-      properties:
-        dispatched:
-          type: boolean
-          title: Dispatched
-        execution_time:
-          additionalProperties:
-            items:
-              type: number
-            type: array
-          type: object
-          title: Execution Time
-      type: object
-      required:
-      - dispatched
-      - execution_time
-      title: ExecuteEvaluationResponseBody
-    ExecuteFullExperimentLLMMapping:
-      properties:
-        dispatch_full_experiments:
-          $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: claude-sonnet-4-5
-      type: object
-      title: ExecuteFullExperimentLLMMapping
-    ExecuteFullRequestBody:
-      properties:
-        github_config:
-          $ref: '#/components/schemas/GitHubConfig'
-        run_ids:
-          items:
-            type: string
-          type: array
-          title: Run Ids
-        github_actions_agent:
-          type: string
-          enum:
-          - claude_code
-          - open_code
-          title: Github Actions Agent
-          default: claude_code
-        llm_mapping:
-          anyOf:
-          - $ref: '#/components/schemas/ExecuteFullExperimentLLMMapping'
-          - type: 'null'
-      type: object
-      required:
-      - github_config
-      - run_ids
-      title: ExecuteFullRequestBody
-    ExecuteFullResponseBody:
-      properties:
-        all_dispatched:
-          type: boolean
-          title: All Dispatched
-        branch_creation_results:
-          items:
-            prefixItems:
-            - type: string
-            - type: string
-            - type: boolean
-            type: array
-            maxItems: 3
-            minItems: 3
-          type: array
-          title: Branch Creation Results
-        execution_time:
-          additionalProperties:
-            items:
-              type: number
-            type: array
-          type: object
-          title: Execution Time
-      type: object
-      required:
-      - all_dispatched
-      - branch_creation_results
-      - execution_time
-      title: ExecuteFullResponseBody
-    ExecuteTrialExperimentLLMMapping:
-      properties:
-        dispatch_trial_experiment:
-          $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: claude-sonnet-4-5
-      type: object
-      title: ExecuteTrialExperimentLLMMapping
-    ExecuteTrialRequestBody:
-      properties:
-        github_config:
-          $ref: '#/components/schemas/GitHubConfig'
-        github_actions_agent:
-          type: string
-          enum:
-          - claude_code
-          - open_code
-          title: Github Actions Agent
-          default: claude_code
-        llm_mapping:
-          anyOf:
-          - $ref: '#/components/schemas/ExecuteTrialExperimentLLMMapping'
-          - type: 'null'
-      type: object
-      required:
-      - github_config
-      title: ExecuteTrialRequestBody
-    ExecuteTrialResponseBody:
-      properties:
-        dispatched:
-          type: boolean
-          title: Dispatched
-        run_ids:
-          items:
-            type: string
-          type: array
-          title: Run Ids
-        execution_time:
-          additionalProperties:
-            items:
-              type: number
-            type: array
-          type: object
-          title: Execution Time
-      type: object
-      required:
-      - dispatched
-      - run_ids
-      - execution_time
-      title: ExecuteTrialResponseBody
     ExperimentCode:
       properties:
-        train_py:
-          type: string
-          title: Train Py
-          default: ''
-        evaluate_py:
-          type: string
-          title: Evaluate Py
-          default: ''
-        preprocess_py:
-          type: string
-          title: Preprocess Py
-          default: ''
-        model_py:
-          type: string
-          title: Model Py
-          default: ''
-        main_py:
-          type: string
-          title: Main Py
-          default: ''
-        pyproject_toml:
-          type: string
-          title: Pyproject Toml
-          default: ''
-        config_yaml:
-          type: string
-          title: Config Yaml
-          default: ''
-        run_configs:
-          anyOf:
-          - additionalProperties:
-              type: string
-            type: object
-          - type: 'null'
-          title: Run Configs
-          description: Run configuration YAMLs keyed by run_id
+        files:
+          additionalProperties:
+            type: string
+          type: object
+          title: Files
+          description: All code files keyed by relative path (e.g., 'src/train.py',
+            'config/runs/run1.yaml')
       type: object
       title: ExperimentCode
     ExperimentalAnalysis:
@@ -1627,6 +1741,30 @@ components:
           description: Metrics data for runs (keyed by run_id or 'comparison')
       type: object
       title: ExperimentalResults
+    FetchExperimentCodeRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+      type: object
+      required:
+      - github_config
+      title: FetchExperimentCodeRequestBody
+    FetchExperimentCodeResponseBody:
+      properties:
+        experiment_code:
+          $ref: '#/components/schemas/ExperimentCode'
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - experiment_code
+      - execution_time
+      title: FetchExperimentCodeResponseBody
     FetchExperimentalResultsRequestBody:
       properties:
         github_config:
@@ -1706,60 +1844,6 @@ components:
       - references_bib
       - execution_time
       title: GenerateBibfileSubgraphResponseBody
-    GenerateCodeLLMMapping:
-      properties:
-        generate_run_config:
-          $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.2-codex
-        generate_experiment_code:
-          $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.2-codex
-        validate_experiment_code:
-          $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.2-codex
-      type: object
-      title: GenerateCodeLLMMapping
-    GenerateCodeSubgraphRequestBody:
-      properties:
-        research_hypothesis:
-          $ref: '#/components/schemas/ResearchHypothesis'
-        experimental_design:
-          $ref: '#/components/schemas/ExperimentalDesign-Input'
-        wandb_config:
-          $ref: '#/components/schemas/WandbConfig'
-        max_code_validations:
-          type: integer
-          title: Max Code Validations
-        llm_mapping:
-          anyOf:
-          - $ref: '#/components/schemas/GenerateCodeLLMMapping'
-          - type: 'null'
-      type: object
-      required:
-      - research_hypothesis
-      - experimental_design
-      - wandb_config
-      - max_code_validations
-      title: GenerateCodeSubgraphRequestBody
-    GenerateCodeSubgraphResponseBody:
-      properties:
-        experiment_code:
-          $ref: '#/components/schemas/ExperimentCode'
-        execution_time:
-          additionalProperties:
-            items:
-              type: number
-            type: array
-          type: object
-          title: Execution Time
-      type: object
-      required:
-      - experiment_code
-      - execution_time
-      title: GenerateCodeSubgraphResponseBody
     GenerateExperimentalDesignLLMMapping:
       properties:
         generate_experimental_design:
@@ -2580,34 +2664,6 @@ components:
       - is_branch_ready
       - execution_time
       title: PrepareRepositorySubgraphResponseBody
-    PushCodeSubgraphRequestBody:
-      properties:
-        github_config:
-          $ref: '#/components/schemas/GitHubConfig'
-        experiment_code:
-          $ref: '#/components/schemas/ExperimentCode'
-      type: object
-      required:
-      - github_config
-      - experiment_code
-      title: PushCodeSubgraphRequestBody
-    PushCodeSubgraphResponseBody:
-      properties:
-        code_pushed:
-          type: boolean
-          title: Code Pushed
-        execution_time:
-          additionalProperties:
-            items:
-              type: number
-            type: array
-          type: object
-          title: Execution Time
-      type: object
-      required:
-      - code_pushed
-      - execution_time
-      title: PushCodeSubgraphResponseBody
     PushGitHubRequestBody:
       properties:
         github_config:
@@ -3282,96 +3338,6 @@ components:
       required:
       - items
       title: TopicOpenEndedResearchListResponseBody
-    TopicOpenEndedResearchRequestBody:
-      properties:
-        github_config:
-          $ref: '#/components/schemas/GitHubConfig'
-        research_topic:
-          type: string
-          title: Research Topic
-        runner_config:
-          $ref: '#/components/schemas/RunnerConfig'
-        wandb_config:
-          $ref: '#/components/schemas/WandbConfig'
-        is_github_repo_private:
-          type: boolean
-          title: Is Github Repo Private
-          default: false
-        search_method:
-          type: string
-          enum:
-          - airas_db
-          - qdrant
-          title: Search Method
-          default: airas_db
-        collection_name:
-          type: string
-          title: Collection Name
-          default: airas_database
-        num_paper_search_queries:
-          type: integer
-          title: Num Paper Search Queries
-          default: 1
-        papers_per_query:
-          type: integer
-          title: Papers Per Query
-          default: 2
-        hypothesis_refinement_iterations:
-          type: integer
-          title: Hypothesis Refinement Iterations
-          default: 1
-        num_experiment_models:
-          type: integer
-          title: Num Experiment Models
-          default: 1
-        num_experiment_datasets:
-          type: integer
-          title: Num Experiment Datasets
-          default: 1
-        num_comparison_methods:
-          type: integer
-          title: Num Comparison Methods
-          default: 1
-        experiment_code_validation_iterations:
-          type: integer
-          title: Experiment Code Validation Iterations
-          default: 3
-        paper_content_refinement_iterations:
-          type: integer
-          title: Paper Content Refinement Iterations
-          default: 2
-        github_actions_agent:
-          type: string
-          enum:
-          - claude_code
-          - open_code
-          title: Github Actions Agent
-          default: claude_code
-        latex_template_name:
-          type: string
-          title: Latex Template Name
-          default: mdpi
-        llm_mapping:
-          anyOf:
-          - $ref: '#/components/schemas/TopicOpenEndedResearchSubgraphLLMMapping'
-          - type: 'null'
-      type: object
-      required:
-      - github_config
-      - research_topic
-      - runner_config
-      - wandb_config
-      title: TopicOpenEndedResearchRequestBody
-    TopicOpenEndedResearchResponseBody:
-      properties:
-        task_id:
-          type: string
-          format: uuid
-          title: Task Id
-      type: object
-      required:
-      - task_id
-      title: TopicOpenEndedResearchResponseBody
     TopicOpenEndedResearchStatusResponseBody:
       properties:
         id:
@@ -3442,7 +3408,7 @@ components:
       - error
       - research_history
       title: TopicOpenEndedResearchStatusResponseBody
-    TopicOpenEndedResearchSubgraphLLMMapping:
+    TopicOpenEndedResearchSubgraphV2LLMMapping:
       properties:
         generate_queries:
           anyOf:
@@ -3460,21 +3426,13 @@ components:
           anyOf:
           - $ref: '#/components/schemas/GenerateExperimentalDesignLLMMapping'
           - type: 'null'
-        generate_code:
+        dispatch_code_generation:
           anyOf:
-          - $ref: '#/components/schemas/GenerateCodeLLMMapping'
+          - $ref: '#/components/schemas/DispatchCodeGenerationLLMMapping'
           - type: 'null'
-        execute_trial_experiment:
+        dispatch_experiment_validation:
           anyOf:
-          - $ref: '#/components/schemas/ExecuteTrialExperimentLLMMapping'
-          - type: 'null'
-        execute_full_experiment:
-          anyOf:
-          - $ref: '#/components/schemas/ExecuteFullExperimentLLMMapping'
-          - type: 'null'
-        execute_evaluation:
-          anyOf:
-          - $ref: '#/components/schemas/ExecuteEvaluationLLMMapping'
+          - $ref: '#/components/schemas/DispatchExperimentValidationLLMMapping'
           - type: 'null'
         analyze_experiment:
           anyOf:
@@ -3497,7 +3455,7 @@ components:
           - $ref: '#/components/schemas/SearchPaperTitlesFromQdrantLLMMapping'
           - type: 'null'
       type: object
-      title: TopicOpenEndedResearchSubgraphLLMMapping
+      title: TopicOpenEndedResearchSubgraphV2LLMMapping
     TopicOpenEndedResearchUpdateRequestBody:
       properties:
         title:
@@ -3531,6 +3489,92 @@ components:
           title: Github Url
       type: object
       title: TopicOpenEndedResearchUpdateRequestBody
+    TopicOpenEndedResearchV2RequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        research_topic:
+          type: string
+          title: Research Topic
+        runner_config:
+          $ref: '#/components/schemas/RunnerConfig'
+        wandb_config:
+          $ref: '#/components/schemas/WandbConfig'
+        is_github_repo_private:
+          type: boolean
+          title: Is Github Repo Private
+          default: false
+        search_method:
+          type: string
+          enum:
+          - airas_db
+          - qdrant
+          title: Search Method
+          default: airas_db
+        collection_name:
+          type: string
+          title: Collection Name
+          default: airas_database
+        num_paper_search_queries:
+          type: integer
+          title: Num Paper Search Queries
+          default: 2
+        papers_per_query:
+          type: integer
+          title: Papers Per Query
+          default: 5
+        hypothesis_refinement_iterations:
+          type: integer
+          title: Hypothesis Refinement Iterations
+          default: 1
+        num_experiment_models:
+          type: integer
+          title: Num Experiment Models
+          default: 1
+        num_experiment_datasets:
+          type: integer
+          title: Num Experiment Datasets
+          default: 1
+        num_comparison_methods:
+          type: integer
+          title: Num Comparison Methods
+          default: 1
+        paper_content_refinement_iterations:
+          type: integer
+          title: Paper Content Refinement Iterations
+          default: 2
+        github_actions_agent:
+          type: string
+          enum:
+          - claude_code
+          - open_code
+          title: Github Actions Agent
+          default: open_code
+        latex_template_name:
+          type: string
+          title: Latex Template Name
+          default: mdpi
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/TopicOpenEndedResearchSubgraphV2LLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - github_config
+      - research_topic
+      - runner_config
+      - wandb_config
+      title: TopicOpenEndedResearchV2RequestBody
+    TopicOpenEndedResearchV2ResponseBody:
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          title: Task Id
+      type: object
+      required:
+      - task_id
+      title: TopicOpenEndedResearchV2ResponseBody
     TrainingConfig:
       properties:
         learning_rate:

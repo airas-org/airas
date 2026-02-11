@@ -23,3 +23,18 @@ Content-Type: application/json
 }
 
 ###
+
+### Download github actions artifacts
+POST http://127.0.0.1:8000/airas/v1/github-actions/artifacts/download
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "matsuzawa-2026-02-10",
+        "branch_name": "main"
+    },
+    "workflow_run_id": 21867996671
+}
+
+###
