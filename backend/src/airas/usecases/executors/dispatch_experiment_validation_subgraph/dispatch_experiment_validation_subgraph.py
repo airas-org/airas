@@ -29,10 +29,10 @@ class DispatchExperimentValidationLLMMapping(BaseModel):
     ]
 
 
-class DispatchExperimentValidationSubgraphInputState(TypedDict):
+class DispatchExperimentValidationSubgraphInputState(TypedDict, total=False):
     github_config: GitHubConfig
     research_topic: str
-    run_id: str
+    run_id: str | None
     workflow_run_id: int
     run_stage: RunStage
     research_hypothesis: ResearchHypothesis
@@ -70,7 +70,7 @@ class DispatchExperimentValidationSubgraph:
     ) -> dict[str, bool]:
         github_config = state["github_config"]
         research_topic = state["research_topic"]
-        run_id = state["run_id"]
+        run_id = state.get("run_id")
         workflow_run_id = state["workflow_run_id"]
         run_stage = state["run_stage"]
         research_hypothesis = state["research_hypothesis"]
@@ -78,14 +78,18 @@ class DispatchExperimentValidationSubgraph:
         wandb_config = state["wandb_config"]
         github_actions_agent = state["github_actions_agent"]
 
-        logger.info(
-            f"Dispatching experiment validation for run_id={run_id}, stage={run_stage} on branch '{github_config.branch_name}'"
-        )
+        if run_id:
+            logger.info(
+                f"Dispatching experiment validation for run_id={run_id}, stage={run_stage} on branch '{github_config.branch_name}'"
+            )
+        else:
+            logger.info(
+                f"Dispatching experiment validation for stage={run_stage} on branch '{github_config.branch_name}' (no specific run_id)"
+            )
 
         inputs = {
             "branch_name": github_config.branch_name,
             "research_topic": research_topic,
-            "run_id": run_id,
             "workflow_run_id": str(workflow_run_id),
             "run_stage": run_stage,
             "research_hypothesis": research_hypothesis.model_dump_json(),
@@ -94,6 +98,10 @@ class DispatchExperimentValidationSubgraph:
             "github_actions_agent": github_actions_agent,
             "model_name": self.llm_mapping.dispatch_experiment_validation.llm_name,
         }
+
+        # Only add run_id if it's provided
+        if run_id:
+            inputs["run_id"] = run_id
 
         success = await dispatch_workflow(
             self.github_client,
@@ -105,11 +113,23 @@ class DispatchExperimentValidationSubgraph:
         )
 
         if success:
-            logger.info(
-                f"Experiment validation dispatch successful for run_id={run_id}"
-            )
+            if run_id:
+                logger.info(
+                    f"Experiment validation dispatch successful for run_id={run_id}"
+                )
+            else:
+                logger.info(
+                    f"Experiment validation dispatch successful for stage={run_stage}"
+                )
         else:
-            logger.error(f"Experiment validation dispatch failed for run_id={run_id}")
+            if run_id:
+                logger.error(
+                    f"Experiment validation dispatch failed for run_id={run_id}"
+                )
+            else:
+                logger.error(
+                    f"Experiment validation dispatch failed for stage={run_stage}"
+                )
 
         return {"dispatched": success}
 

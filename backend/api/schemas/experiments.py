@@ -66,7 +66,7 @@ class DispatchVisualizationResponseBody(BaseModel):
 class DispatchExperimentValidationRequestBody(BaseModel):
     github_config: GitHubConfig
     research_topic: str
-    run_id: str
+    run_id: str | None = None
     workflow_run_id: int
     run_stage: RunStage
     research_hypothesis: ResearchHypothesis
