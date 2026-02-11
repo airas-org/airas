@@ -37,11 +37,9 @@ class DispatchVisualizationSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
-        runner_label: list[str] | None = None,
         workflow_file: str = "run_visualization.yml",
     ):
         self.github_client = github_client
-        self.runner_label = runner_label or ["ubuntu-latest"]
         self.workflow_file = workflow_file
 
     @record_execution_time
@@ -59,7 +57,6 @@ class DispatchVisualizationSubgraph:
         inputs = {
             "branch_name": github_config.branch_name,
             "run_ids": json.dumps(run_ids),
-            "runner_label": json.dumps(self.runner_label),
         }
 
         success = await dispatch_workflow(
