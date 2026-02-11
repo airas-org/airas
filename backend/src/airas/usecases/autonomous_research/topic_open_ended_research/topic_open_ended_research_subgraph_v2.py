@@ -1271,7 +1271,6 @@ class TopicOpenEndedResearchSubgraphV2:
         result = (
             await DispatchVisualizationSubgraph(
                 github_client=self.github_client,
-                runner_label=self.runner_config.runner_label,
             )
             .build_graph()
             .ainvoke(
