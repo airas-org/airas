@@ -67,11 +67,14 @@ async def _fetch_directory_recursive(
     repository_name: str,
     path: str,
     branch_name: str,
-    base_path: str = "",
+    base_path: str | None = None,
     max_depth: int = 10,
     current_depth: int = 0,
 ) -> dict[str, str]:
     files: dict[str, str] = {}
+
+    if base_path is None:
+        base_path = path
 
     if current_depth >= max_depth:
         logger.warning(f"Max recursion depth {max_depth} reached at {path}")
@@ -146,7 +149,7 @@ async def _fetch_directory_recursive(
 
 
 async def fetch_experiment_code(
-    github_github_client: GithubClient,
+    github_client: GithubClient,
     github_config: GitHubConfig,
 ) -> ExperimentCode:
     """
@@ -168,25 +171,23 @@ async def fetch_experiment_code(
 
     # Fetch src/, config/, and pyproject.toml in parallel
     src_task = _fetch_directory_recursive(
-        github_github_client,
+        github_client,
         github_owner,
         repository_name,
         "src",
         branch_name,
-        "src",
-        _MAX_RECURSION_DEPTH,
+        max_depth=_MAX_RECURSION_DEPTH,
     )
     config_task = _fetch_directory_recursive(
-        github_github_client,
+        github_client,
         github_owner,
         repository_name,
         "config",
         branch_name,
-        "config",
-        _MAX_RECURSION_DEPTH,
+        max_depth=_MAX_RECURSION_DEPTH,
     )
     pyproject_task = _fetch_file(
-        github_github_client,
+        github_client,
         github_owner,
         repository_name,
         "pyproject.toml",
