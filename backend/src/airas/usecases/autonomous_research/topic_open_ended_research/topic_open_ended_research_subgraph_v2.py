@@ -275,7 +275,6 @@ class TopicOpenEndedResearchSubgraphV2:
         github_actions_agent: GitHubActionsAgent = "open_code",
         latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
         llm_mapping: TopicOpenEndedResearchSubgraphV2LLMMapping | None = None,
-        min_success_rate_for_parallel_experiments: float = 1.0,
     ):
         self.search_method = search_method
         self.search_index = search_index
@@ -300,9 +299,6 @@ class TopicOpenEndedResearchSubgraphV2:
         self.latex_template_name = latex_template_name
         self.github_actions_agent = github_actions_agent
         self.llm_mapping = llm_mapping or TopicOpenEndedResearchSubgraphV2LLMMapping()
-        self.min_success_rate_for_parallel_experiments = (
-            min_success_rate_for_parallel_experiments
-        )
 
     async def _poll_workflow(
         self,
@@ -1061,18 +1057,9 @@ class TopicOpenEndedResearchSubgraphV2:
             f"Main experiment results: {len(successful_branches)}/{len(branches)} branches succeeded"
         )
         if failed_branches:
-            logger.error(f"Failed branches: {[b for b, _, _ in failed_branches]}")
-
-        success_rate = len(successful_branches) / len(branches) if branches else 0
-        logger.info(
-            f"Main experiment success rate: {success_rate:.1%} (minimum required: {self.min_success_rate_for_parallel_experiments:.1%})"
-        )
-
-        if success_rate < self.min_success_rate_for_parallel_experiments:
             error_msg = (
-                f"Main experiment success rate ({success_rate:.1%}) is below the minimum required "
-                f"({self.min_success_rate_for_parallel_experiments:.1%}). "
-                f"Successful: {len(successful_branches)}/{len(branches)} branches"
+                f"Main experiment failed: {len(failed_branches)}/{len(branches)} branches failed. "
+                f"All experiments must succeed. Failed branches: {[b for b, _, _ in failed_branches]}"
             )
             logger.error(error_msg)
             final_status = GitHubActionsStatus.COMPLETED
@@ -1084,7 +1071,7 @@ class TopicOpenEndedResearchSubgraphV2:
             final_status = GitHubActionsStatus.COMPLETED
             final_conclusion = GitHubActionsConclusion.SUCCESS
             logger.info(
-                f"Main experiment passed with {len(successful_branches)}/{len(branches)} branches successful"
+                f"Main experiment passed: all {len(branches)} branches successful"
             )
 
         return {
@@ -1239,18 +1226,9 @@ class TopicOpenEndedResearchSubgraphV2:
             f"Experiment validation results: {len(successful_branches)}/{len(branches)} branches succeeded"
         )
         if failed_branches:
-            logger.error(f"Failed branches: {[b for b, _, _ in failed_branches]}")
-
-        success_rate = len(successful_branches) / len(branches) if branches else 0
-        logger.info(
-            f"Main experiment validation success rate: {success_rate:.1%} (minimum required: {self.min_success_rate_for_parallel_experiments:.1%})"
-        )
-
-        if success_rate < self.min_success_rate_for_parallel_experiments:
             error_msg = (
-                f"Main experiment validation success rate ({success_rate:.1%}) is below the minimum required "
-                f"({self.min_success_rate_for_parallel_experiments:.1%}). "
-                f"Successful: {len(successful_branches)}/{len(branches)} branches"
+                f"Main experiment validation failed: {len(failed_branches)}/{len(branches)} branches failed. "
+                f"All experiments must succeed. Failed branches: {[b for b, _, _ in failed_branches]}"
             )
             logger.error(error_msg)
             final_status = GitHubActionsStatus.COMPLETED
@@ -1262,7 +1240,7 @@ class TopicOpenEndedResearchSubgraphV2:
             final_status = GitHubActionsStatus.COMPLETED
             final_conclusion = GitHubActionsConclusion.SUCCESS
             logger.info(
-                f"Main experiment validation passed with {len(successful_branches)}/{len(branches)} branches successful"
+                f"Main experiment validation passed: all {len(branches)} branches successful"
             )
 
         return {
