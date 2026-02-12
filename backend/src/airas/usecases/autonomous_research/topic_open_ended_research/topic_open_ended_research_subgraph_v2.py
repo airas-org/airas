@@ -554,9 +554,10 @@ class TopicOpenEndedResearchSubgraphV2:
             raise WorkflowValidationError(error_msg)
 
         # Step 6: Extract validation_action
-        validation_action = artifact_data.get("validation_action")
-
-        if validation_action not in {"retry", "proceed"}:
+        if (validation_action := artifact_data.get("validation_action")) not in {
+            "retry",
+            "proceed",
+        }:
             error_msg = (
                 f"Invalid validation_action: '{validation_action}' for {run_stage} workflow. "
                 f"Expected 'retry' or 'proceed'"
@@ -567,7 +568,6 @@ class TopicOpenEndedResearchSubgraphV2:
         logger.info(f"{run_stage} workflow validation result: {validation_action}")
 
         return {
-            "validation_action": validation_action,
             "artifact_data": artifact_data,
             "main_workflow_run_id": main_workflow_run_id,
             "validation_workflow_run_id": validation_workflow_run_id,
@@ -581,8 +581,7 @@ class TopicOpenEndedResearchSubgraphV2:
         retry_node_name: str,
         proceed_node_name: str,
     ) -> str:
-        action = state.get("validation_action")
-
+        action = state.get("artifact_data", {}).get("validation_action")
         if action == "retry":
             if retry_count >= self.MAX_RETRY_GITHUB_ACTIONS_VALIDATION:
                 error_msg = (
@@ -921,7 +920,6 @@ class TopicOpenEndedResearchSubgraphV2:
             f"(index {current_index + 1}/{len(run_ids)}) ==="
         )
 
-        # Use the common helper function
         result = await self._execute_workflow_with_validation(
             github_config=state["github_config"],
             run_stage="sanity",
@@ -932,7 +930,6 @@ class TopicOpenEndedResearchSubgraphV2:
         )
 
         return {
-            "validation_action": result["validation_action"],
             "artifact_data": result["artifact_data"],
         }
 
@@ -942,7 +939,9 @@ class TopicOpenEndedResearchSubgraphV2:
         current_run_id = run_ids[current_index]
         retry_count = state.get("retry_counts", {}).get(current_run_id, 0)
 
-        action = state.get("validation_action")
+        artifact_data = state.get("artifact_data", {})
+        action = artifact_data.get("validation_action")
+
         if action == "retry":
             return self._check_retry_limit_and_route(
                 state,
@@ -1081,7 +1080,6 @@ class TopicOpenEndedResearchSubgraphV2:
         )
 
         return {
-            "validation_action": result["validation_action"],
             "artifact_data": result["artifact_data"],
         }
 
@@ -1155,7 +1153,6 @@ class TopicOpenEndedResearchSubgraphV2:
         )
 
         return {
-            "validation_action": result["validation_action"],
             "artifact_data": result["artifact_data"],
         }
 
