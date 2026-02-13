@@ -1,4 +1,11 @@
-GEMINI_MODELS = {
+"""
+Models specifically curated for prompt engineering experiments.
+
+This module contains language models commonly used for prompt engineering experiments,
+including both open-source transformer models and API-based models like Google's Gemini series.
+"""
+
+PROMPT_EXPERIMENT_MODELS = {
     # Gemini 3 Series (Preview)
     "gemini-3-pro-preview": {
         "model_parameters": "Unknown",  # TODO: Confirm final specs

@@ -13,10 +13,12 @@ from airas.core.types.experimental_design import (
 )
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.infra.langchain_client import LangChainClient
-from airas.resources.datasets.language_model_fine_tuning_dataset import (
-    LANGUAGE_MODEL_FINE_TUNING_DATASETS,
+from airas.resources.datasets.prompt_experiment_datasets import (
+    PROMPT_EXPERIMENT_DATASETS,
 )
-from airas.resources.models.gemini_models import GEMINI_MODELS
+from airas.resources.models.prompt_experiment_models import (
+    PROMPT_EXPERIMENT_MODELS,
+)
 from airas.resources.models.transformer_decoder_based_models import (
     TRANSFORMER_DECODER_BASED_MODELS,
 )
@@ -25,17 +27,6 @@ from airas.usecases.generators.generate_experimental_design_subgraph.prompts.gen
 )
 
 logger = logging.getLogger(__name__)
-
-# Benchmark datasets to use for experimental design
-BENCHMARK_DATASET_KEYS = [
-    "gsm8k",
-    "MATH", 
-    "MMLU",
-    "TruthfulQA",
-    "HumanEval",
-    "MBPP",
-    "GPQA",
-]
 
 
 class LLMOutput(BaseModel):
@@ -60,15 +51,8 @@ async def generate_experimental_design(
 
     template = env.from_string(generate_experimental_design_prompt)
 
-    # Combine transformer models and Gemini models for experimental design
-    all_models = {**TRANSFORMER_DECODER_BASED_MODELS, **GEMINI_MODELS}
-    
-    # Filter datasets to include only the benchmark datasets specified in requirements
-    benchmark_datasets = {
-        key: LANGUAGE_MODEL_FINE_TUNING_DATASETS[key]
-        for key in BENCHMARK_DATASET_KEYS
-        if key in LANGUAGE_MODEL_FINE_TUNING_DATASETS
-    }
+    # Combine transformer models and prompt experiment models
+    all_models = {**TRANSFORMER_DECODER_BASED_MODELS, **PROMPT_EXPERIMENT_MODELS}
 
     # TODO: Also pass the list of objective functions
     # TODO: Handling cases where selection from a list is mandatory
@@ -79,7 +63,7 @@ async def generate_experimental_design(
             all_models, indent=4, ensure_ascii=False
         ),
         "dataset_list": json.dumps(
-            benchmark_datasets, indent=4, ensure_ascii=False
+            PROMPT_EXPERIMENT_DATASETS, indent=4, ensure_ascii=False
         ),
         "num_models_to_use": num_models_to_use,
         "num_datasets_to_use": num_datasets_to_use,
