@@ -8,20 +8,19 @@ including both open-source transformer models and API-based models like Google's
 PROMPT_EXPERIMENT_MODELS = {
     # Gemini 3 Series (Preview)
     "gemini-3-pro-preview": {
-        "model_parameters": "Unknown",  # TODO: Confirm final specs
-        "model_architecture": "Multimodal transformer architecture",
+        "model_parameters": "Large-scale (exact parameters undisclosed)",
+        "model_architecture": "Multimodal transformer architecture with advanced reasoning capabilities",
         "training_data_sources": "Google proprietary training data",
         "api_provider": "Google Cloud Vertex AI / Google AI Studio",
         "model_id": "gemini-3-pro-preview",
         "task_type": "text-generation",
-        "context_window": "Unknown",  # TODO: Confirm final specs
-        "max_output_tokens": "Unknown",  # TODO: Confirm final specs
+        "context_window": "1000000",  # 1M tokens
+        "max_output_tokens": "65500",  # Up to 65,500 tokens
         "language_distribution": "Multilingual",
         "input_modalities": ["text", "image", "video", "audio"],
         "output_modalities": ["text"],
         "dependent_packages": ["google-genai"],
         "code": """\
-# TODO: Confirm final specs - This is a preview model and specifications may change
 from google import genai
 
 client = genai.Client(api_key='YOUR_API_KEY')
@@ -32,27 +31,27 @@ response = client.models.generate_content(
 print(response.text)""",
         "citation": """\
 @misc{google2025gemini3,
-  title={Gemini 3 Model Preview},
+  title={Gemini 3: Introducing the latest Gemini AI model from Google},
   author={Google DeepMind},
   year={2025},
-  note={Preview release - specifications subject to change}
+  url={https://blog.google/products-and-platforms/products/gemini/gemini-3/},
+  note={Released November 18, 2025}
 }""",
     },
     "gemini-3-flash-preview": {
-        "model_parameters": "Unknown",  # TODO: Confirm final specs
-        "model_architecture": "Multimodal transformer architecture (optimized for speed)",
+        "model_parameters": "Large-scale (exact parameters undisclosed)",
+        "model_architecture": "Multimodal transformer architecture (optimized for speed and efficiency)",
         "training_data_sources": "Google proprietary training data",
         "api_provider": "Google Cloud Vertex AI / Google AI Studio",
         "model_id": "gemini-3-flash-preview",
         "task_type": "text-generation",
-        "context_window": "Unknown",  # TODO: Confirm final specs
-        "max_output_tokens": "Unknown",  # TODO: Confirm final specs
+        "context_window": "1000000",  # Estimated based on Gemini 3 series
+        "max_output_tokens": "65500",  # Estimated based on Gemini 3 series
         "language_distribution": "Multilingual",
         "input_modalities": ["text", "image", "video", "audio"],
         "output_modalities": ["text"],
         "dependent_packages": ["google-genai"],
         "code": """\
-# TODO: Confirm final specs - This is a preview model and specifications may change
 from google import genai
 
 client = genai.Client(api_key='YOUR_API_KEY')
@@ -66,19 +65,19 @@ print(response.text)""",
   title={Gemini 3 Flash Model Preview},
   author={Google DeepMind},
   year={2025},
-  note={Preview release - specifications subject to change}
+  note={Flash variant of Gemini 3 for faster processing}
 }""",
     },
     # Gemini 2.5 Series
     "gemini-2.5-pro": {
-        "model_parameters": "Unknown",
+        "model_parameters": "Large-scale (exact parameters undisclosed)",
         "model_architecture": "Multimodal transformer architecture",
         "training_data_sources": "Google proprietary training data",
         "api_provider": "Google Cloud Vertex AI / Google AI Studio",
         "model_id": "gemini-2.5-pro",
         "task_type": "text-generation",
-        "context_window": "2097152",  # 2M tokens based on Gemini 2.0 specifications
-        "max_output_tokens": "8192",
+        "context_window": "1000000",  # 1M tokens
+        "max_output_tokens": "65000",  # Up to 65,000 tokens
         "language_distribution": "Multilingual",
         "input_modalities": ["text", "image", "video", "audio"],
         "output_modalities": ["text"],
@@ -101,14 +100,14 @@ print(response.text)""",
 }""",
     },
     "gemini-2.5-flash": {
-        "model_parameters": "Unknown",
+        "model_parameters": "Large-scale (exact parameters undisclosed)",
         "model_architecture": "Multimodal transformer architecture (optimized for speed)",
         "training_data_sources": "Google proprietary training data",
         "api_provider": "Google Cloud Vertex AI / Google AI Studio",
         "model_id": "gemini-2.5-flash",
         "task_type": "text-generation",
-        "context_window": "1048576",  # 1M tokens based on Gemini 2.0 Flash specifications
-        "max_output_tokens": "8192",
+        "context_window": "1048576",  # 1M tokens (1,048,576)
+        "max_output_tokens": "65535",  # Up to 65,535 tokens
         "language_distribution": "Multilingual",
         "input_modalities": ["text", "image", "video", "audio"],
         "output_modalities": ["text"],
@@ -131,14 +130,14 @@ print(response.text)""",
 }""",
     },
     "gemini-2.5-flash-lite": {
-        "model_parameters": "Unknown",
+        "model_parameters": "Lightweight variant (exact parameters undisclosed)",
         "model_architecture": "Multimodal transformer architecture (lightweight variant)",
         "training_data_sources": "Google proprietary training data",
         "api_provider": "Google Cloud Vertex AI / Google AI Studio",
         "model_id": "gemini-2.5-flash-lite",
         "task_type": "text-generation",
-        "context_window": "1048576",  # Estimated based on Flash variant
-        "max_output_tokens": "8192",
+        "context_window": "128000",  # 128K tokens for cost-optimized workloads
+        "max_output_tokens": "8192",  # Lower output limit for efficiency
         "language_distribution": "Multilingual",
         "input_modalities": ["text", "image"],
         "output_modalities": ["text"],

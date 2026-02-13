@@ -19,8 +19,8 @@ PROMPT_EXPERIMENT_DATASETS = {
     },
     "MATH": {
         "description": "The MATH dataset consists of approximately 12,500 mathematics problems ranging from middle school to early university level. Each problem includes a natural language question, a detailed step-by-step solution, and a final answer.",
-        "num_training_samples": 12500,
-        "num_validation_samples": 0,
+        "num_training_samples": 7500,
+        "num_validation_samples": 5000,
         "huggingface_url": "https://huggingface.co/datasets/qwedsacf/competition_math",
         "task_type": ["text-generation"],
         "language_distribution": "English only (en)",
@@ -37,8 +37,8 @@ PROMPT_EXPERIMENT_DATASETS = {
     },
     "MMLU": {
         "description": "MMLU is a massive multitask test consisting of multiple-choice questions from various branches of knowledge. The test spans subjects in the humanities, social sciences, hard sciences, and other important areas. It covers 57 tasks including elementary mathematics, US history, computer science, law, and more.",
-        "num_training_samples": 99842,
-        "num_validation_samples": 1531,
+        "num_training_samples": 2850,
+        "num_validation_samples": 5700,
         "huggingface_url": "https://huggingface.co/datasets/cais/mmlu",
         "task_type": ["text-generation"],
         "language_distribution": "English only (en)",
@@ -102,7 +102,7 @@ PROMPT_EXPERIMENT_DATASETS = {
     "MBPP": {
         "description": "MBPP (Mostly Basic Python Problems) is a benchmark dataset consisting of around 1,000 crowd-sourced Python programming problems designed to be solvable by entry-level programmers. It covers programming fundamentals, standard library functionality, and common programming patterns.",
         "num_training_samples": 374,
-        "num_validation_samples": 500,
+        "num_validation_samples": 90,
         "huggingface_url": "https://huggingface.co/datasets/google-research-datasets/mbpp",
         "task_type": ["text-generation"],
         "language_distribution": "English only (en)",
