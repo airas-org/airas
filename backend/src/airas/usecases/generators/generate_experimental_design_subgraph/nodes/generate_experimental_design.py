@@ -16,6 +16,7 @@ from airas.infra.langchain_client import LangChainClient
 from airas.resources.datasets.language_model_fine_tuning_dataset import (
     LANGUAGE_MODEL_FINE_TUNING_DATASETS,
 )
+from airas.resources.models.gemini_models import GEMINI_MODELS
 from airas.resources.models.transformer_decoder_based_models import (
     TRANSFORMER_DECODER_BASED_MODELS,
 )
@@ -48,16 +49,26 @@ async def generate_experimental_design(
 
     template = env.from_string(generate_experimental_design_prompt)
 
+    # Combine transformer models and Gemini models for experimental design
+    all_models = {**TRANSFORMER_DECODER_BASED_MODELS, **GEMINI_MODELS}
+    
+    # Filter datasets to include only the benchmark datasets specified in requirements
+    benchmark_datasets = {
+        key: LANGUAGE_MODEL_FINE_TUNING_DATASETS[key]
+        for key in ["gsm8k", "MATH", "MMLU", "TruthfulQA", "HumanEval", "MBPP", "GPQA"]
+        if key in LANGUAGE_MODEL_FINE_TUNING_DATASETS
+    }
+
     # TODO: Also pass the list of objective functions
     # TODO: Handling cases where selection from a list is mandatory
     data = {
         "research_hypothesis": research_hypothesis,
         "runner_config": runner_config,
         "model_list": json.dumps(
-            TRANSFORMER_DECODER_BASED_MODELS, indent=4, ensure_ascii=False
+            all_models, indent=4, ensure_ascii=False
         ),
         "dataset_list": json.dumps(
-            LANGUAGE_MODEL_FINE_TUNING_DATASETS, indent=4, ensure_ascii=False
+            benchmark_datasets, indent=4, ensure_ascii=False
         ),
         "num_models_to_use": num_models_to_use,
         "num_datasets_to_use": num_datasets_to_use,

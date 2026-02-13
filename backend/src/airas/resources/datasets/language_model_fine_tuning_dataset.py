@@ -1110,4 +1110,23 @@ LANGUAGE_MODEL_FINE_TUNING_DATASETS = {
         "data_structure": "sent_more (str), sent_less (str), stereo_antistereo (str), bias_type (str), annotations (list)",
         "citation": '@inproceedings{nangia-etal-2020-crows,\n  title = "{C}row{S}-Pairs: A Challenge Dataset for Measuring Social Biases in Masked Language Models",\n  author = {Nangia and others},\n  booktitle = {EMNLP},\n  year = {2020}\n}',
     },
+    "GPQA": {
+        "description": "Google-Proof Q&A Benchmark (GPQA) is a challenging multiple-choice question-answering dataset of 448 questions written by domain experts in biology, physics, and chemistry. The questions are high-quality and extremely difficult: experts who spend more than 30 minutes searching with Google often still cannot answer them correctly. GPQA tests whether language models can answer questions that are beyond the reach of search engines.",
+        "num_training_samples": 0,
+        "num_validation_samples": 448,
+        "huggingface_url": "https://huggingface.co/datasets/Idavidrein/gpqa",
+        "task_type": ["text-generation"],
+        "language_distribution": "English only (en)",
+        "dependent_packages": ["datasets"],
+        "code": "from datasets import load_dataset\ndataset = load_dataset('Idavidrein/gpqa', 'gpqa_main')\nquestions = dataset['train']",
+        "sample_data": {
+            "Question": "Which of the following is a necessary condition for a function to be differentiable at a point?",
+            "Correct Answer": "The function must be continuous at that point",
+            "Incorrect Answer 1": "The function must be bounded at that point",
+            "Incorrect Answer 2": "The function must be monotonic at that point",
+            "Incorrect Answer 3": "The function must be periodic at that point",
+        },
+        "data_structure": "Question (str), Correct Answer (str), Incorrect Answer 1-3 (str), domain (str)",
+        "citation": "@article{rein2023gpqa,\n  title={GPQA: A Graduate-Level Google-Proof Q\\&A Benchmark},\n  author={Rein, David and Hou, Betty Li and Stickland, Asa Cooper and Petty, Jackson and Pang, Richard Yuanzhe and Dirani, Julien and Michael, Julian and Bowman, Samuel R},\n  journal={arXiv preprint arXiv:2311.12022},\n  year={2023}\n}",
+    },
 }
