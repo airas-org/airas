@@ -632,7 +632,7 @@ paths:
     post:
       tags:
       - github-actions
-      summary: Download Github Actions Artifacts
+      summary: Download GitHub Actions Artifacts
       operationId: download_github_actions_artifacts_airas_v1_github_actions_artifacts_download_post
       requestBody:
         content:

@@ -296,7 +296,7 @@ jobs:
             echo "Adjusted GITHUB_ACTIONS_MODEL for claude_code: ${GITHUB_ACTIONS_MODEL}"
           fi
 
-          # === Build LLM mapping JSON (V2) ===
+          # === Build LLM mapping JSON ===
           LLM_MAPPING=$(cat <<EOFLLM
           {
             "generate_queries": {"generate_queries": {"llm_name": "${PRIMARY_MODEL}"}},
@@ -314,7 +314,7 @@ jobs:
             },
             "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY_MODEL}"}},
             "dispatch_code_generation": {"dispatch_code_generation": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
-            "dispatch_code_review": {"dispatch_code_review": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
+            "dispatch_experiment_validation": {"dispatch_experiment_validation": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
             "analyze_experiment": {"analyze_experiment": {"llm_name": "${PRIMARY_MODEL}"}},
             "write": {
               "write_paper": {"llm_name": "${PRIMARY_MODEL}"},
