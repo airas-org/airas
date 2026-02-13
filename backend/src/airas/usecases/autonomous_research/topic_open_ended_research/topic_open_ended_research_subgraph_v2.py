@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 from langgraph.graph import END, START, StateGraph
@@ -223,16 +223,21 @@ class TopicOpenEndedResearchStateV2(
     experiment_validation_workflow_run_id: int | None
     experiment_validation_workflow_status: GitHubActionsStatus | None
     experiment_validation_workflow_conclusion: GitHubActionsConclusion | None
-    artifact_data: dict
+    # Use Annotated to handle multiple parallel updates - keep the last value
+    artifact_data: Annotated[dict, lambda x, y: y]
     main_experiment_branches: list[str]
-    main_experiment_branch_results: dict[str, dict]  # branch_name -> result
+    # Use Annotated to merge results from multiple parallel branches
+    main_experiment_branch_results: Annotated[
+        dict[str, dict], lambda x, y: {**x, **y}
+    ]  # branch_name -> result
     main_experiment_retry_counts: dict[str, int]  # branch_name -> retry_count
-    main_experiment_branch_name: (
-        str  # Current branch being processed (used by Send for parallel execution)
-    )
-    main_experiment_retry_count: (
-        int  # Current retry count for main experiment (used by Send)
-    )
+    # Use Annotated to handle multiple parallel updates - just keep the last value
+    main_experiment_branch_name: Annotated[
+        str, lambda x, y: y
+    ]  # Current branch being processed (used by Send for parallel execution)
+    main_experiment_retry_count: Annotated[
+        int, lambda x, y: y
+    ]  # Current retry count for main experiment (used by Send)
     main_experiment_dispatched: bool
     main_experiment_workflow_status: GitHubActionsStatus | None
     main_experiment_workflow_conclusion: GitHubActionsConclusion | None
@@ -1297,13 +1302,12 @@ class TopicOpenEndedResearchSubgraphV2:
             .ainvoke(
                 {
                     "github_config": state["github_config"],
-                    "files": {bibfile_path: state["references_bib"]},
-                    "commit_message": "Add references.bib",
+                    "push_files": {bibfile_path: state["references_bib"]},
                 }
             )
         )
 
-        return {"is_upload_successful": result["is_upload_successful"]}
+        return {"is_upload_successful": result["is_file_pushed"]}
 
     @record_execution_time
     async def _generate_paper(
