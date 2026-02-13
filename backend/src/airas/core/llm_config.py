@@ -68,7 +68,7 @@ DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
     # GenerateLatexSubgraph
     "convert_to_latex": BASE_CONFIG,
     # CompileLatexSubgraph
-    "compile_latex": NodeLLMConfig(llm_name="claude-sonnet-4-5"),
+    "compile_latex": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
     # GenerateHtmlSubgraph
     "convert_to_html": BASE_CONFIG,
 }
