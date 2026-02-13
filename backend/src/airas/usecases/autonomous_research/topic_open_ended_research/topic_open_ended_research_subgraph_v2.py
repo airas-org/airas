@@ -207,7 +207,6 @@ class TopicOpenEndedResearchStateV2(
     is_repository_ready: bool
     is_branch_ready: bool
     secrets_set: bool
-    retry_counts: dict[str, int]
     # dispatch-based execution states
     code_generation_dispatched: bool
     code_generation_workflow_run_id: int | None
@@ -215,6 +214,7 @@ class TopicOpenEndedResearchStateV2(
     code_generation_workflow_conclusion: GitHubActionsConclusion | None
     run_ids: list[str]
     current_run_id_index: int
+    sanity_check_retry_counts: dict[str, int]  # run_id -> retry_count
     sanity_check_dispatched: bool
     sanity_check_workflow_run_id: int | None
     sanity_check_workflow_status: GitHubActionsStatus | None
@@ -227,6 +227,12 @@ class TopicOpenEndedResearchStateV2(
     main_experiment_branches: list[str]
     main_experiment_branch_results: dict[str, dict]  # branch_name -> result
     main_experiment_retry_counts: dict[str, int]  # branch_name -> retry_count
+    main_experiment_branch_name: (
+        str  # Current branch being processed (used by Send for parallel execution)
+    )
+    main_experiment_retry_count: (
+        int  # Current retry count for main experiment (used by Send)
+    )
     main_experiment_dispatched: bool
     main_experiment_workflow_status: GitHubActionsStatus | None
     main_experiment_workflow_conclusion: GitHubActionsConclusion | None
@@ -892,7 +898,7 @@ class TopicOpenEndedResearchSubgraphV2:
             return {
                 "run_ids": run_ids,
                 "current_run_id_index": 0,
-                "retry_counts": {},
+                "sanity_check_retry_counts": {},
                 "visualization_retry_count": 0,
             }
         except WorkflowValidationError:
@@ -937,10 +943,9 @@ class TopicOpenEndedResearchSubgraphV2:
         current_index = state.get("current_run_id_index", 0)
         run_ids = state.get("run_ids", [])
         current_run_id = run_ids[current_index]
-        retry_count = state.get("retry_counts", {}).get(current_run_id, 0)
+        retry_count = state.get("sanity_check_retry_counts", {}).get(current_run_id, 0)
 
-        artifact_data = state.get("artifact_data", {})
-        action = artifact_data.get("validation_action")
+        action = state.get("artifact_data", {}).get("validation_action")
 
         if action == "retry":
             return self._check_retry_limit_and_route(
@@ -981,7 +986,10 @@ class TopicOpenEndedResearchSubgraphV2:
         run_ids = state.get("run_ids", [])
         current_run_id = run_ids[current_index]
         return self._increment_dict_retry_count(
-            state, "retry_counts", current_run_id, f"run_id={current_run_id}"
+            state,
+            "sanity_check_retry_counts",
+            current_run_id,
+            f"run_id={current_run_id}",
         )
 
     @record_execution_time
@@ -1017,16 +1025,11 @@ class TopicOpenEndedResearchSubgraphV2:
     def _dispatch_branches_for_main_experiment(
         self, state: TopicOpenEndedResearchStateV2
     ) -> list[Send]:
-        """
-        Dispatch each branch for independent processing.
-        Each branch will have its own retry loop.
-        """
         branches = state.get("main_experiment_branches", [])
         logger.info(
             f"=== Dispatching {len(branches)} branches for independent processing ==="
         )
 
-        # Initialize retry counts
         retry_counts = state.get("main_experiment_retry_counts", {})
 
         sends = []
@@ -1036,7 +1039,7 @@ class TopicOpenEndedResearchSubgraphV2:
                 Send(
                     "process_main_experiment_branch",
                     {
-                        "branch_name": branch,
+                        "main_experiment_branch_name": branch,
                         "run_id": run_id,
                         "base_github_config": state["github_config"],
                         "research_topic": state["research_topic"],
@@ -1044,7 +1047,7 @@ class TopicOpenEndedResearchSubgraphV2:
                         "experimental_design": state["experimental_design"],
                         "wandb_config": self.wandb_config,
                         "github_actions_agent": self.github_actions_agent,
-                        "retry_count": retry_counts.get(branch, 0),
+                        "main_experiment_retry_count": retry_counts.get(branch, 0),
                     },
                 )
             )
@@ -1055,18 +1058,19 @@ class TopicOpenEndedResearchSubgraphV2:
     async def _process_main_experiment_branch(
         self, state: dict[str, Any]
     ) -> dict[str, Any]:
-        branch_name: str = state["branch_name"]
+        main_experiment_branch_name: str = state["main_experiment_branch_name"]
         run_id: str = state["run_id"]
-        retry_count = state.get("main_experiment_retry_counts", {}).get(branch_name, 0)
+        # Use main_experiment_retry_count passed via Send (not from global state)
+        main_experiment_retry_count = state.get("main_experiment_retry_count", 0)
 
         logger.info(
-            f"=== Processing branch={branch_name}, run_id={run_id} "
-            f"(attempt {retry_count + 1}/{self.MAX_RETRY_GITHUB_ACTIONS_VALIDATION}) ==="
+            f"=== Processing branch={main_experiment_branch_name}, run_id={run_id} "
+            f"(attempt {main_experiment_retry_count + 1}/{self.MAX_RETRY_GITHUB_ACTIONS_VALIDATION}) ==="
         )
 
         branch_config = GitHubConfig(
             **state["base_github_config"].model_dump(exclude={"branch_name"}),
-            branch_name=branch_name,
+            branch_name=main_experiment_branch_name,
         )
 
         # Use the common helper function (single execution, no internal loop)
@@ -1080,17 +1084,26 @@ class TopicOpenEndedResearchSubgraphV2:
         )
 
         return {
+            "main_experiment_branch_name": main_experiment_branch_name,
+            "main_experiment_retry_count": main_experiment_retry_count,
             "artifact_data": result["artifact_data"],
+            "main_experiment_branch_results": {
+                main_experiment_branch_name: {
+                    "status": "success",
+                    "artifact_data": result["artifact_data"],
+                }
+            },
         }
 
     def _route_after_main_experiment_branch(self, state: dict[str, Any]) -> str:
-        branch_name: str = state["branch_name"]
-        retry_count = state.get("main_experiment_retry_counts", {}).get(branch_name, 0)
+        main_experiment_branch_name: str = state["main_experiment_branch_name"]
+        # Use main_experiment_retry_count from the process result (passed via Send)
+        main_experiment_retry_count = state.get("main_experiment_retry_count", 0)
 
         return self._check_retry_limit_and_route(
-            state,
-            f"branch={branch_name}",
-            retry_count,
+            state,  # type: ignore
+            f"branch={main_experiment_branch_name}",
+            main_experiment_retry_count,
             "increment_main_experiment_retry_count",
             "collect_main_experiment_results",
         )
@@ -1098,11 +1111,24 @@ class TopicOpenEndedResearchSubgraphV2:
     @record_execution_time
     def _increment_main_experiment_retry_count(
         self, state: dict[str, Any]
-    ) -> dict[str, dict[str, int]]:
-        branch_name: str = state["branch_name"]
-        return self._increment_dict_retry_count(
-            state, "main_experiment_retry_counts", branch_name, f"branch={branch_name}"
+    ) -> dict[str, Any]:
+        main_experiment_branch_name: str = state["main_experiment_branch_name"]
+        current_retry = state.get("main_experiment_retry_count", 0)
+        new_retry = current_retry + 1
+
+        logger.info(
+            f"Incrementing retry count for branch={main_experiment_branch_name}: {current_retry} -> {new_retry}"
         )
+
+        # Update both the global retry counts dict and the local main_experiment_retry_count
+        result = self._increment_dict_retry_count(
+            state,  # type: ignore
+            "main_experiment_retry_counts",
+            main_experiment_branch_name,
+            f"branch={main_experiment_branch_name}",
+        )
+        result["main_experiment_retry_count"] = new_retry
+        return result
 
     @record_execution_time
     def _collect_main_experiment_results(
@@ -1113,6 +1139,26 @@ class TopicOpenEndedResearchSubgraphV2:
 
         logger.info(f"=== Collecting results from {len(branches)} branches ===")
         logger.info(f"Branch results: {branch_results}")
+
+        # Check if we have results for all branches
+        if not branch_results:
+            error_msg = "No branch results found"
+            logger.error(error_msg)
+            return {
+                "main_experiment_workflow_status": GitHubActionsStatus.COMPLETED,
+                "main_experiment_workflow_conclusion": GitHubActionsConclusion.FAILURE,
+            }
+
+        if len(branch_results) != len(branches):
+            error_msg = (
+                f"Branch results count mismatch: expected {len(branches)}, "
+                f"got {len(branch_results)}"
+            )
+            logger.error(error_msg)
+            return {
+                "main_experiment_workflow_status": GitHubActionsStatus.COMPLETED,
+                "main_experiment_workflow_conclusion": GitHubActionsConclusion.FAILURE,
+            }
 
         # All branches must have completed successfully to reach here
         all_successful = all(

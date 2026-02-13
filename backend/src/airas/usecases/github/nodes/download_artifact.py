@@ -38,32 +38,26 @@ async def download_and_parse_artifact(
         f"from {github_config.repository_name}"
     )
 
-    artifacts_response = github_client.list_repository_artifacts(
+    artifacts_response = await github_client.alist_workflow_run_artifacts(
         github_owner=github_config.github_owner,
         repository_name=github_config.repository_name,
+        workflow_run_id=workflow_run_id,
     )
 
     if not artifacts_response or "artifacts" not in artifacts_response:
-        logger.error("No artifacts found in repository")
+        logger.error(f"No artifacts found for workflow_run_id={workflow_run_id}")
         return {}
 
-    artifacts = artifacts_response["artifacts"]
-
-    target_artifact = None
-    for artifact in artifacts:
-        workflow_run = artifact.get("workflow_run")
-        if workflow_run and workflow_run.get("id") == workflow_run_id:
-            target_artifact = artifact
-            break
-
-    if not target_artifact:
-        logger.warning(f"Artifact not found for workflow_run_id={workflow_run_id}")
+    if not (artifacts := artifacts_response["artifacts"]):
+        logger.warning(f"Artifact list is empty for workflow_run_id={workflow_run_id}")
         return {}
 
+    # Take the first artifact (typically there's only one per workflow run)
+    target_artifact = artifacts[0]
     artifact_id = target_artifact["id"]
     logger.info(f"Found artifact: {target_artifact['name']} (id={artifact_id})")
 
-    zip_data = github_client.download_artifact_archive(
+    zip_data = await github_client.adownload_artifact_archive(
         github_owner=github_config.github_owner,
         repository_name=github_config.repository_name,
         artifact_id=artifact_id,
