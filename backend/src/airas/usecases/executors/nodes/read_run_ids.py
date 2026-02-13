@@ -9,7 +9,7 @@ logger = getLogger(__name__)
 async def read_run_ids_from_repository(
     github_client: GithubClient,
     github_config: GitHubConfig,
-    config_dir: str = "config/runs",
+    config_dir: str = "config/run",
 ) -> list[str]:
     try:
         contents = await github_client.aget_repository_content(
