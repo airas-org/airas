@@ -26,6 +26,17 @@ from airas.usecases.generators.generate_experimental_design_subgraph.prompts.gen
 
 logger = logging.getLogger(__name__)
 
+# Benchmark datasets to use for experimental design
+BENCHMARK_DATASET_KEYS = [
+    "gsm8k",
+    "MATH", 
+    "MMLU",
+    "TruthfulQA",
+    "HumanEval",
+    "MBPP",
+    "GPQA",
+]
+
 
 class LLMOutput(BaseModel):
     experiment_summary: str
@@ -55,7 +66,7 @@ async def generate_experimental_design(
     # Filter datasets to include only the benchmark datasets specified in requirements
     benchmark_datasets = {
         key: LANGUAGE_MODEL_FINE_TUNING_DATASETS[key]
-        for key in ["gsm8k", "MATH", "MMLU", "TruthfulQA", "HumanEval", "MBPP", "GPQA"]
+        for key in BENCHMARK_DATASET_KEYS
         if key in LANGUAGE_MODEL_FINE_TUNING_DATASETS
     }
 
