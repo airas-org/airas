@@ -4,7 +4,7 @@
 /* eslint-disable */
 import type { ExperimentalResults } from './ExperimentalResults';
 export type FetchExperimentalResultsResponseBody = {
-    experiment_results: ExperimentalResults;
+    experimental_results: ExperimentalResults;
     execution_time: Record<string, Array<number>>;
 };
 

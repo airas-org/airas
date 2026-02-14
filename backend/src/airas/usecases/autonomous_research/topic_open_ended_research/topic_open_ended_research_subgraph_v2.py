@@ -1243,7 +1243,7 @@ class TopicOpenEndedResearchSubgraphV2:
         )
 
         return {
-            "experimental_results": result["experiment_results"],
+            "experimental_results": result["experimental_results"],
             "current_step": StepType.ANALYZE_EXPERIMENT_RESULTS,
         }
 
