@@ -4,7 +4,7 @@
 /* eslint-disable */
 export type ExperimentCode = {
     /**
-     * All code files keyed by relative path (e.g., 'src/train.py', 'config/runs/run1.yaml')
+     * All code files keyed by relative path (e.g., 'src/train.py', 'config/run/run1.yaml')
      */
     files?: Record<string, string>;
 };

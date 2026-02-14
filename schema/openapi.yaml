@@ -632,7 +632,7 @@ paths:
     post:
       tags:
       - github-actions
-      summary: Download GitHub Actions Artifacts
+      summary: Download Github Actions Artifacts
       operationId: download_github_actions_artifacts_airas_v1_github_actions_artifacts_download_post
       requestBody:
         content:
@@ -1182,7 +1182,7 @@ components:
         compile_latex:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: claude-sonnet-4-5
+            llm_name: anthropic/claude-sonnet-4-5
       type: object
       title: CompileLatexLLMMapping
     CompileLatexSubgraphRequestBody:
@@ -1593,7 +1593,7 @@ components:
           type: object
           title: Files
           description: All code files keyed by relative path (e.g., 'src/train.py',
-            'config/runs/run1.yaml')
+            'config/run/run1.yaml')
       type: object
       title: ExperimentCode
     ExperimentalAnalysis:
@@ -1777,7 +1777,7 @@ components:
       title: FetchExperimentalResultsRequestBody
     FetchExperimentalResultsResponseBody:
       properties:
-        experiment_results:
+        experimental_results:
           $ref: '#/components/schemas/ExperimentalResults'
         execution_time:
           additionalProperties:
@@ -1788,7 +1788,7 @@ components:
           title: Execution Time
       type: object
       required:
-      - experiment_results
+      - experimental_results
       - execution_time
       title: FetchExperimentalResultsResponseBody
     FetchRunIdsRequestBody:
@@ -2777,7 +2777,7 @@ components:
           - $ref: '#/components/schemas/ExperimentCode'
           - type: 'null'
           description: Generated experiment code and implementation
-        experiment_results:
+        experimental_results:
           anyOf:
           - $ref: '#/components/schemas/ExperimentalResults'
           - type: 'null'
@@ -2875,7 +2875,7 @@ components:
           - $ref: '#/components/schemas/ExperimentCode'
           - type: 'null'
           description: Generated experiment code and implementation
-        experiment_results:
+        experimental_results:
           anyOf:
           - $ref: '#/components/schemas/ExperimentalResults'
           - type: 'null'

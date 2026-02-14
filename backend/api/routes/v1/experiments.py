@@ -92,7 +92,7 @@ async def fetch_experimental_results(
         .ainvoke(request, config=config)
     )
     return FetchExperimentalResultsResponseBody(
-        experiment_results=result["experiment_results"],
+        experimental_results=result["experimental_results"],
         execution_time=result["execution_time"],
     )
 

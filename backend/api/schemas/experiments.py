@@ -29,7 +29,7 @@ class FetchExperimentalResultsRequestBody(BaseModel):
 
 
 class FetchExperimentalResultsResponseBody(BaseModel):
-    experiment_results: ExperimentalResults
+    experimental_results: ExperimentalResults
     execution_time: dict[str, list[float]]
 
 
