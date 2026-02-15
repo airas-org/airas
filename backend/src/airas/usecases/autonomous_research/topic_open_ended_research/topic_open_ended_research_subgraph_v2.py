@@ -155,11 +155,9 @@ class GitHubActionsWorkflowError(WorkflowExecutionError):
         self.conclusion = conclusion
 
 
-class WorkflowTimeouts:
-    STANDARD_WORKFLOW = (
-        3600  # 1 hour for code gen, sanity, review, main experiment, visualization
-    )
-    LATEX_COMPILATION = 300  # 5 minutes for LaTeX compilation
+class WorkflowRecursionLimits:
+    STANDARD_WORKFLOW = 50000  # Maximum recursion steps for code gen, sanity, review, main experiment, visualization
+    LATEX_COMPILATION = 10000  # Maximum recursion steps for LaTeX compilation
 
 
 class TopicOpenEndedResearchSubgraphV2LLMMapping(BaseModel):
@@ -316,7 +314,7 @@ class TopicOpenEndedResearchSubgraphV2:
         self,
         state: TopicOpenEndedResearchStateV2,
         workflow_name: str,
-        recursion_limit: int = WorkflowTimeouts.STANDARD_WORKFLOW,
+        recursion_limit: int = WorkflowRecursionLimits.STANDARD_WORKFLOW,
     ) -> tuple[GitHubActionsStatus | None, GitHubActionsConclusion | None, int | None]:
         logger.info(f"=== Poll {workflow_name} Workflow ===")
         result = (
@@ -461,7 +459,7 @@ class TopicOpenEndedResearchSubgraphV2:
             .build_graph()
             .ainvoke(
                 {"github_config": github_config},
-                {"recursion_limit": WorkflowTimeouts.STANDARD_WORKFLOW},
+                {"recursion_limit": WorkflowRecursionLimits.STANDARD_WORKFLOW},
             )
         )
 
@@ -525,7 +523,7 @@ class TopicOpenEndedResearchSubgraphV2:
             .build_graph()
             .ainvoke(
                 {"github_config": github_config},
-                {"recursion_limit": WorkflowTimeouts.STANDARD_WORKFLOW},
+                {"recursion_limit": WorkflowRecursionLimits.STANDARD_WORKFLOW},
             )
         )
 
@@ -1413,7 +1411,9 @@ class TopicOpenEndedResearchSubgraphV2:
         self, state: TopicOpenEndedResearchStateV2
     ) -> dict[str, GitHubActionsStatus | GitHubActionsConclusion | None]:
         status, conclusion, _ = await self._poll_workflow(
-            state, "Compile LaTeX", recursion_limit=WorkflowTimeouts.LATEX_COMPILATION
+            state,
+            "Compile LaTeX",
+            recursion_limit=WorkflowRecursionLimits.LATEX_COMPILATION,
         )
         return {
             "compile_latex_workflow_status": status,
