@@ -49,20 +49,31 @@ Section: {{ section.name }}
         ```
 - **Figures and images**:
     - Figures and images are ONLY allowed in the "Results" section.
-    - When the input text contains figure descriptions in the format "Figure N: caption text (filename: some_file.pdf)", you MUST convert each one into a proper LaTeX figure environment:
+    - The input text uses Pandoc/Quarto syntax for figures: `![Caption text](images/filename.pdf){% raw %}{#fig:label}{% endraw %}`
+    - You MUST convert each Pandoc/Quarto figure into a proper LaTeX figure environment:
         ```latex
         \\begin{figure}[H]
         \\centering
-        \\includegraphics[width=0.7\\linewidth]{images/some_file.pdf}
+        \\includegraphics[width=0.7\\linewidth]{images/filename.pdf}
         \\caption{Caption text.}
-        \\label{fig:some_descriptive_label}
+        \\label{fig:label}
         \\end{figure}
         ```
-    - Do NOT leave figure descriptions as plain text. They must always be converted to `\\begin{figure}` environments with `\\includegraphics`.
+    - Extract the caption, filename, and label from the Pandoc syntax and use them in the corresponding LaTeX commands
+    - Do NOT leave Pandoc figure syntax as-is. They must always be converted to `\\begin{figure}` environments with `\\includegraphics`.
     - Use LaTeX float option `[H]` to force placement.
     - The width must be selected based on the filename suffix:
         - If the filename ends with _pair1.pdf or _pair2.pdf, use 0.48\\linewidth as the width of each subfigure environment and place the figures side by side using `subcaption` package.
         - Otherwise (default), use 0.7\\linewidth
+
+    - **Figure references in body text**:
+        - The input text uses Pandoc/Quarto syntax for figure references: `@fig:label`
+        - You MUST convert each reference to LaTeX cross-reference format:
+            - `@fig:label` → `Figure~\\ref{% raw %}{fig:label}{% endraw %}`
+            - Example: "as shown in @fig:baseline" → "as shown in Figure~\\ref{% raw %}{fig:baseline}{% endraw %}"
+            - Example: "The results (@fig:comparison)" → "The results (Figure~\\ref{% raw %}{fig:comparison}{% endraw %})"
+        - Use a non-breaking space (`~`) before `\\ref` to prevent line breaks between "Figure" and the number.
+        - When `@fig:label` appears in parentheses, keep it in parentheses: `(@fig:label)` → `(Figure~\\ref{% raw %}{fig:label}{% endraw %})`
 
 - **Escaping special characters**:
     - LaTeX special characters (`#`, `$`, `%`, `&`, `~`, `_`, `^`, `{`, `}`, `\\`) must be escaped with a leading backslash when they appear in plain text (e.g., `data\\_set`, `C\\&C`).

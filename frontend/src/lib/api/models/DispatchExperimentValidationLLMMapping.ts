@@ -3,7 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
-export type ExecuteFullExperimentLLMMapping = {
-    dispatch_full_experiments?: NodeLLMConfig;
+export type DispatchExperimentValidationLLMMapping = {
+    dispatch_experiment_validation?: NodeLLMConfig;
 };
 

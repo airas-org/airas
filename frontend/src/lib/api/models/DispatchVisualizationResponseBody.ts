@@ -2,9 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type ExecuteFullResponseBody = {
-    all_dispatched: boolean;
-    branch_creation_results: Array<any[]>;
+export type DispatchVisualizationResponseBody = {
+    dispatched: boolean;
     execution_time: Record<string, Array<number>>;
 };
 

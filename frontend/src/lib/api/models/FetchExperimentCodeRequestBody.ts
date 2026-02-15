@@ -2,8 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type PushCodeSubgraphResponseBody = {
-    code_pushed: boolean;
-    execution_time: Record<string, Array<number>>;
+import type { GitHubConfig } from './GitHubConfig';
+export type FetchExperimentCodeRequestBody = {
+    github_config: GitHubConfig;
 };
 

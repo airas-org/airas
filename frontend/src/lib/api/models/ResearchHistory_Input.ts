@@ -38,7 +38,7 @@ export type ResearchHistory_Input = {
     /**
      * Results from running experiments
      */
-    experiment_results?: (ExperimentalResults | null);
+    experimental_results?: (ExperimentalResults | null);
     /**
      * Analysis and interpretation of experimental results
      */

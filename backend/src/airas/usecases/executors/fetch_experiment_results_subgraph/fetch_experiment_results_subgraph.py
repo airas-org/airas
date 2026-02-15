@@ -24,7 +24,7 @@ class FetchExperimentResultsSubgraphInputState(TypedDict):
 
 
 class FetchExperimentResultsSubgraphOutputState(ExecutionTimeState, total=False):
-    experiment_results: ExperimentalResults
+    experimental_results: ExperimentalResults
 
 
 class FetchExperimentResultsSubgraphState(
@@ -58,19 +58,19 @@ class FetchExperimentResultsSubgraph:
     ) -> dict[str, ExperimentalResults]:
         if not (run_ids := state.get("run_ids")):
             logger.error("No run_ids found in state")
-            return {"experiment_results": ExperimentalResults()}
+            return {"experimental_results": ExperimentalResults()}
 
         github_config = state["github_config"]
 
         logger.info(f"Retrieving results for {len(run_ids)} run_ids")
 
-        experiment_results = await fetch_results(
+        experimental_results = await fetch_results(
             self.github_client,
             github_config,
             run_ids,
         )
 
-        return {"experiment_results": experiment_results}
+        return {"experimental_results": experimental_results}
 
     def build_graph(self):
         graph_builder = StateGraph(

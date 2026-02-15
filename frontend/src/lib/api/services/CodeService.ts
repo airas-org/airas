@@ -2,26 +2,26 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { GenerateCodeSubgraphRequestBody } from '../models/GenerateCodeSubgraphRequestBody';
-import type { GenerateCodeSubgraphResponseBody } from '../models/GenerateCodeSubgraphResponseBody';
-import type { PushCodeSubgraphRequestBody } from '../models/PushCodeSubgraphRequestBody';
-import type { PushCodeSubgraphResponseBody } from '../models/PushCodeSubgraphResponseBody';
+import type { DispatchCodeGenerationRequestBody } from '../models/DispatchCodeGenerationRequestBody';
+import type { DispatchCodeGenerationResponseBody } from '../models/DispatchCodeGenerationResponseBody';
+import type { FetchExperimentCodeRequestBody } from '../models/FetchExperimentCodeRequestBody';
+import type { FetchExperimentCodeResponseBody } from '../models/FetchExperimentCodeResponseBody';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class CodeService {
     /**
-     * Generate Code
+     * Dispatch Code Generation
      * @param requestBody
-     * @returns GenerateCodeSubgraphResponseBody Successful Response
+     * @returns DispatchCodeGenerationResponseBody Successful Response
      * @throws ApiError
      */
-    public static generateCodeAirasV1CodeGenerationsPost(
-        requestBody: GenerateCodeSubgraphRequestBody,
-    ): CancelablePromise<GenerateCodeSubgraphResponseBody> {
+    public static dispatchCodeGenerationAirasV1CodeGenerationsDispatchPost(
+        requestBody: DispatchCodeGenerationRequestBody,
+    ): CancelablePromise<DispatchCodeGenerationResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/airas/v1/code/generations',
+            url: '/airas/v1/code/generations/dispatch',
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -30,17 +30,17 @@ export class CodeService {
         });
     }
     /**
-     * Push Code
+     * Fetch Experiment Code
      * @param requestBody
-     * @returns PushCodeSubgraphResponseBody Successful Response
+     * @returns FetchExperimentCodeResponseBody Successful Response
      * @throws ApiError
      */
-    public static pushCodeAirasV1CodePushPost(
-        requestBody: PushCodeSubgraphRequestBody,
-    ): CancelablePromise<PushCodeSubgraphResponseBody> {
+    public static fetchExperimentCodeAirasV1CodeFetchPost(
+        requestBody: FetchExperimentCodeRequestBody,
+    ): CancelablePromise<FetchExperimentCodeResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/airas/v1/code/push',
+            url: '/airas/v1/code/fetch',
             body: requestBody,
             mediaType: 'application/json',
             errors: {

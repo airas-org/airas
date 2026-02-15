@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import re
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, Mapping, Sequence
@@ -14,8 +15,39 @@ JSONValue = JSONScalar | dict[str, "JSONValue"] | list["JSONValue"]
 
 
 def _sanitize_string(s: str) -> str:
-    """Remove null characters that PostgreSQL JSONB cannot handle."""
-    return s.replace("\x00", "")
+    """
+    Sanitize string for PostgreSQL JSONB storage.
+
+    PostgreSQL JSONB cannot handle certain control characters and invalid UTF-8 sequences.
+    This function removes problematic characters and handles encoding issues.
+
+    Process:
+    1. Remove control characters (0x00-0x08, 0x0B, 0x0C, 0x0E-0x1F, 0x7F) that are invalid in JSONB
+    2. Handle surrogate pairs and invalid UTF-8 sequences by replacing them with U+FFFD (�)
+
+    Args:
+        s: Input string to sanitize
+
+    Returns:
+        Sanitized string safe for PostgreSQL JSONB storage
+    """
+    # Remove control characters that PostgreSQL JSONB cannot handle
+    # 0x09 (tab), 0x0A (newline), 0x0D (carriage return) are allowed
+    s = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", s)
+
+    # Handle surrogate pairs and invalid UTF-8 sequences
+    try:
+        s.encode("utf-8")
+    except UnicodeEncodeError:
+        # First attempt: preserve surrogates if they're part of valid pairs
+        try:
+            s = s.encode("utf-8", errors="surrogatepass").decode(
+                "utf-8", errors="replace"
+            )
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            # Fallback: replace all problematic characters with U+FFFD
+            s = s.encode("utf-8", errors="replace").decode("utf-8", errors="replace")
+    return s
 
 
 def to_dict_deep(obj: Any) -> Any:

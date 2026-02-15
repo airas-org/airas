@@ -2,7 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type TopicOpenEndedResearchResponseBody = {
-    task_id: string;
+export type DispatchMainExperimentResponseBody = {
+    dispatched: boolean;
+    execution_time: Record<string, Array<number>>;
 };
 

@@ -28,48 +28,108 @@ Content-Type: application/json
 
 ###
 
-### Execute trial experiment
-POST http://127.0.0.1:8000/airas/v1/experiments/test-runs
+### Dispatch sanity check
+POST http://127.0.0.1:8000/airas/v1/experiments/sanity-checks/dispatch
 Content-Type: application/json
 
 {
     "github_config": {
         "github_owner": "auto-res2",
-        "repository_name": "your-repo",
-        "branch_name": "your-branch"
+        "repository_name": "matsuzawa-2026-02-10",
+        "branch_name": "main"
+    },
+    "run_id": "proposed"
+}
+
+###
+
+### Dispatch experiment validation
+POST http://127.0.0.1:8000/airas/v1/experiments/validations/dispatch
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "matsuzawa-2026-02-10",
+        "branch_name": "main"
+    },
+    "research_topic": "Improving Chain-of-Thought reasoning with cycle-consistent grounding",
+    "run_id": "proposed",
+    "workflow_run_id": 21867927697,
+    "run_stage": "sanity",
+    "github_actions_agent": "open_code",
+    "llm_mapping": {
+        "dispatch_experiment_validation": {
+            "llm_name": "anthropic/claude-haiku-4-5"
+        }
+    },
+    "research_hypothesis": {
+        "open_problems": "Auto-CoT-style pipelines still lack a label-free way to detect \"plausible but ungrounded\" demonstrations",
+        "method": "Cycle-Consistent & Paraphrase-Invariant Reliability Auto-CoT (C3-AutoCoT)",
+        "experimental_setup": "Tasks/Datasets: SVAMP, Models: google/flan-t5-base",
+        "primary_metric": "accuracy",
+        "experimental_code": "import re, random\nimport numpy as np",
+        "expected_result": "On SVAMP with flan-t5-base: 0.30–0.40 accuracy",
+        "expected_conclusion": "C3-AutoCoT strengthens Auto-CoT with triple-check verification"
+    },
+    "experimental_design": {
+        "experiment_summary": "Task: Solve elementary arithmetic word problems by generating CoT rationale",
+        "evaluation_metrics": [
+            {
+                "name": "accuracy",
+                "description": "End-task correctness"
+            }
+        ],
+        "models_to_use": ["Qwen3-8B (8B parameters)"],
+        "datasets_to_use": ["SVAMP (MU-NLPC/Calc-svamp)"],
+        "proposed_method": {
+            "method_name": "C3-AutoCoT",
+            "description": "Inference-only enhancement to Auto-CoT demonstration construction"
+        },
+        "comparative_methods": [
+            {
+                "method_name": "PIR-AutoCoT",
+                "description": "Baseline that filters demos based on self-consistency and paraphrase invariance"
+            }
+        ]
+    },
+    "wandb_config": {
+        "entity": "airas",
+        "project": "2026-02-10-test"
     }
 }
 
 ###
 
-### Execute full experiment
-POST http://127.0.0.1:8000/airas/v1/experiments/full-runs
+### Dispatch main experiment
+POST http://127.0.0.1:8000/airas/v1/experiments/main-runs/dispatch
 Content-Type: application/json
 
 {
     "github_config": {
         "github_owner": "auto-res2",
-        "repository_name": "your-repo",
-        "branch_name": "your-branch"
+        "repository_name": "matsuzawa-2026-02-10",
+        "branch_name": "main"
+    },
+    "run_id": "proposed"
+}
+
+###
+
+### Dispatch visualization
+POST http://127.0.0.1:8000/airas/v1/experiments/visualizations/dispatch
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "matsuzawa-2026-02-10",
+        "branch_name": "main"
     },
     "run_ids": [
-        "run-id-1",
-        "run-id-2"
+        "proposed",
+        "comparative-1"
     ]
-}
-
-###
-
-### Execute evaluation
-POST http://127.0.0.1:8000/airas/v1/experiments/evaluations
-Content-Type: application/json
-
-{
-    "github_config": {
-        "github_owner": "auto-res2",
-        "repository_name": "your-repo",
-        "branch_name": "your-branch"
-    }
 }
 
 ###

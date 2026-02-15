@@ -33,7 +33,7 @@ class ResearchHistory(BaseModel):
     experiment_code: Optional[ExperimentCode] = Field(
         None, description="Generated experiment code and implementation"
     )
-    experiment_results: Optional[ExperimentalResults] = Field(
+    experimental_results: Optional[ExperimentalResults] = Field(
         None, description="Results from running experiments"
     )
     experimental_analysis: Optional[ExperimentalAnalysis] = Field(

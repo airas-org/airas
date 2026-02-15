@@ -17,8 +17,8 @@ from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service import (
     TopicOpenEndedResearchService,
 )
-from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_subgraph import (
-    TopicOpenEndedResearchSubgraph,
+from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_subgraph_v2 import (
+    TopicOpenEndedResearchSubgraphV2,
 )
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
@@ -26,10 +26,10 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_tit
 from api.schemas.topic_open_ended_research import (
     TopicOpenEndedResearchListItemResponse,
     TopicOpenEndedResearchListResponseBody,
-    TopicOpenEndedResearchRequestBody,
-    TopicOpenEndedResearchResponseBody,
     TopicOpenEndedResearchStatusResponseBody,
     TopicOpenEndedResearchUpdateRequestBody,
+    TopicOpenEndedResearchV2RequestBody,
+    TopicOpenEndedResearchV2ResponseBody,
 )
 
 logger = logging.getLogger(__name__)
@@ -49,9 +49,9 @@ DEFAULT_CREATED_BY = uuid.UUID("00000000-0000-0000-0000-000000000001")
 # HTTP timeouts and ensure resilience against server restarts.
 
 
-async def _execute_topic_open_ended_research(
+async def _execute_topic_open_ended_research_v2(
     task_id: uuid.UUID,
-    request: TopicOpenEndedResearchRequestBody,
+    request: TopicOpenEndedResearchV2RequestBody,
     search_index: AirasDbPaperSearchIndex | None,
     github_client: GithubClient,
     arxiv_client: ArxivClient,
@@ -62,12 +62,14 @@ async def _execute_topic_open_ended_research(
     e2e_service: TopicOpenEndedResearchService,
 ) -> None:
     try:
-        logger.info(f"[Task {task_id}] Starting E2E execution")
+        logger.info(f"[Task {task_id}] Starting E2E v2 execution")
 
-        graph = TopicOpenEndedResearchSubgraph(
+        graph = TopicOpenEndedResearchSubgraphV2(
             github_client=github_client,
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,
+            litellm_client=litellm_client,
+            qdrant_client=qdrant_client,
             e2e_service=e2e_service,
             runner_config=request.runner_config,
             wandb_config=request.wandb_config,
@@ -75,8 +77,6 @@ async def _execute_topic_open_ended_research(
             is_github_repo_private=request.is_github_repo_private,
             search_method=request.search_method,
             search_index=search_index,
-            litellm_client=litellm_client,
-            qdrant_client=qdrant_client,
             collection_name=request.collection_name,
             num_paper_search_queries=request.num_paper_search_queries,
             papers_per_query=request.papers_per_query,
@@ -84,14 +84,13 @@ async def _execute_topic_open_ended_research(
             num_experiment_models=request.num_experiment_models,
             num_experiment_datasets=request.num_experiment_datasets,
             num_comparison_methods=request.num_comparison_methods,
-            experiment_code_validation_iterations=request.experiment_code_validation_iterations,
             paper_content_refinement_iterations=request.paper_content_refinement_iterations,
             latex_template_name=request.latex_template_name,
             github_actions_agent=request.github_actions_agent,
             llm_mapping=request.llm_mapping,
         ).build_graph()
 
-        logger.info(f"[Task {task_id}] Streaming graph execution")
+        logger.info(f"[Task {task_id}] Streaming graph execution (v2)")
 
         config = {"recursion_limit": 100}
         if handler := langfuse_client.create_handler():
@@ -126,11 +125,11 @@ async def _execute_topic_open_ended_research(
             )
 
 
-@router.post("/run", response_model=TopicOpenEndedResearchResponseBody)
+@router.post("/run", response_model=TopicOpenEndedResearchV2ResponseBody)
 @inject
 @observe()
-async def execute_topic_open_ended_research(
-    request: TopicOpenEndedResearchRequestBody,
+async def execute_topic_open_ended_research_v2(
+    request: TopicOpenEndedResearchV2RequestBody,
     fastapi_request: Request,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
     arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
@@ -147,7 +146,7 @@ async def execute_topic_open_ended_research(
         TopicOpenEndedResearchService,
         Depends(Provide[Container.topic_open_ended_research_service]),
     ],
-) -> TopicOpenEndedResearchResponseBody:
+) -> TopicOpenEndedResearchV2ResponseBody:
     container: Container = fastapi_request.app.state.container
     task_id = uuid.uuid4()
 
@@ -161,7 +160,7 @@ async def execute_topic_open_ended_research(
         qdrant_client = None
 
     asyncio.create_task(
-        _execute_topic_open_ended_research(
+        _execute_topic_open_ended_research_v2(
             task_id=task_id,
             request=request,
             search_index=search_index,
@@ -175,7 +174,7 @@ async def execute_topic_open_ended_research(
         )
     )
 
-    return TopicOpenEndedResearchResponseBody(task_id=task_id)
+    return TopicOpenEndedResearchV2ResponseBody(task_id=task_id)
 
 
 @router.get(

@@ -21,3 +21,13 @@ class SetGithubActionsSecretsRequestBody(BaseModel):
 class SetGithubActionsSecretsResponseBody(BaseModel):
     secrets_set: bool
     execution_time: dict[str, list[float]]
+
+
+class DownloadGithubActionsArtifactsRequestBody(BaseModel):
+    github_config: GitHubConfig
+    workflow_run_id: int
+
+
+class DownloadGithubActionsArtifactsResponseBody(BaseModel):
+    artifact_data: dict
+    execution_time: dict[str, list[float]]

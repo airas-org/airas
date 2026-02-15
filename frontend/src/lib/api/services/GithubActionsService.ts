@@ -2,6 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { DownloadGithubActionsArtifactsRequestBody } from '../models/DownloadGithubActionsArtifactsRequestBody';
+import type { DownloadGithubActionsArtifactsResponseBody } from '../models/DownloadGithubActionsArtifactsResponseBody';
 import type { PollGithubActionsRequestBody } from '../models/PollGithubActionsRequestBody';
 import type { PollGithubActionsResponseBody } from '../models/PollGithubActionsResponseBody';
 import type { SetGithubActionsSecretsRequestBody } from '../models/SetGithubActionsSecretsRequestBody';
@@ -41,6 +43,25 @@ export class GithubActionsService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/github-actions/secrets',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Download Github Actions Artifacts
+     * @param requestBody
+     * @returns DownloadGithubActionsArtifactsResponseBody Successful Response
+     * @throws ApiError
+     */
+    public static downloadGithubActionsArtifactsAirasV1GithubActionsArtifactsDownloadPost(
+        requestBody: DownloadGithubActionsArtifactsRequestBody,
+    ): CancelablePromise<DownloadGithubActionsArtifactsResponseBody> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/airas/v1/github-actions/artifacts/download',
             body: requestBody,
             mediaType: 'application/json',
             errors: {
