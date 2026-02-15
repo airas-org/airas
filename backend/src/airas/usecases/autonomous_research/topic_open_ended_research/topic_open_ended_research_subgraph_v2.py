@@ -1131,17 +1131,6 @@ class TopicOpenEndedResearchSubgraphV2:
             f"branch={main_experiment_branch_name}",
         )
         result["main_experiment_retry_count"] = new_retry
-
-        # Preserve all fields needed by _process_main_experiment_branch for retry
-        result["main_experiment_branch_name"] = main_experiment_branch_name
-        result["run_id"] = state["run_id"]
-        result["base_github_config"] = state["base_github_config"]
-        result["research_topic"] = state["research_topic"]
-        result["research_hypothesis"] = state["research_hypothesis"]
-        result["experimental_design"] = state["experimental_design"]
-        result["wandb_config"] = state["wandb_config"]
-        result["github_actions_agent"] = state["github_actions_agent"]
-
         return result
 
     @record_execution_time
