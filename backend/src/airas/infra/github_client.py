@@ -1024,6 +1024,23 @@ class GithubClient(BaseHTTPClient):
                 self._raise_for_status(response, path)
                 return None
 
+    async def alist_workflow_run_jobs(
+        self,
+        github_owner: str,
+        repository_name: str,
+        run_id: int,
+    ) -> dict | None:
+        path = f"/repos/{github_owner}/{repository_name}/actions/runs/{run_id}/jobs"
+
+        response = await self.aget(path=path)
+        match response.status_code:
+            case 200:
+                logger.info(f"Success (200): {path}")
+                return response.json()
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
     async def aget_repository_content(
         self,
         github_owner: str,
