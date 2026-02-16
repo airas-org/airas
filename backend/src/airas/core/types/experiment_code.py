@@ -12,6 +12,3 @@ class ExperimentCode(BaseModel):
         default_factory=dict,
         description="All code files keyed by relative path (e.g., 'src/train.py', 'config/run/run1.yaml')",
     )
-
-    def to_file_dict(self) -> dict[str, str]:
-        return self.files.copy()

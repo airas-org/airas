@@ -591,6 +591,15 @@ class TopicOpenEndedResearchSubgraphV2:
         proceed_node_name: str,
     ) -> str:
         action = state.get("artifact_data", {}).get("validation_action")
+
+        if action is None:
+            error_msg = (
+                f"validation_action is missing in artifact_data for {item_name}. "
+                f"Expected 'retry' or 'proceed'"
+            )
+            logger.error(error_msg)
+            raise WorkflowValidationError(error_msg)
+
         if action == "retry":
             if retry_count >= self.MAX_RETRY_GITHUB_ACTIONS_VALIDATION:
                 error_msg = (
@@ -606,9 +615,17 @@ class TopicOpenEndedResearchSubgraphV2:
             )
             return retry_node_name
 
-        # action == "proceed"
-        logger.info(f"{item_name} passed after {retry_count + 1} attempt(s)")
-        return proceed_node_name
+        if action == "proceed":
+            logger.info(f"{item_name} passed after {retry_count + 1} attempt(s)")
+            return proceed_node_name
+
+        # Invalid action value (not None, not "retry", not "proceed")
+        error_msg = (
+            f"Invalid validation_action: '{action}' for {item_name}. "
+            f"Expected 'retry' or 'proceed'"
+        )
+        logger.error(error_msg)
+        raise WorkflowValidationError(error_msg)
 
     def _increment_dict_retry_count(
         self,
@@ -950,6 +967,14 @@ class TopicOpenEndedResearchSubgraphV2:
 
         action = state.get("artifact_data", {}).get("validation_action")
 
+        if action is None:
+            error_msg = (
+                f"validation_action is missing in artifact_data for run_id={current_run_id}. "
+                f"Expected 'retry' or 'proceed'"
+            )
+            logger.error(error_msg)
+            raise WorkflowValidationError(error_msg)
+
         if action == "retry":
             return self._check_retry_limit_and_route(
                 state,
@@ -959,18 +984,27 @@ class TopicOpenEndedResearchSubgraphV2:
                 "",
             )
 
-        if current_index + 1 < len(run_ids):
-            logger.info(
-                f"Sanity check passed for run_id={current_run_id} at index {current_index}. "
-                f"Moving to next run_id (index {current_index + 1}/{len(run_ids) - 1})"
-            )
-            return "increment_run_id_index"
-        else:
-            logger.info(
-                f"All {len(run_ids)} run IDs completed sanity checks successfully. "
-                f"Proceeding to main experiment phase."
-            )
-            return "fetch_experiment_code"
+        if action == "proceed":
+            if current_index + 1 < len(run_ids):
+                logger.info(
+                    f"Sanity check passed for run_id={current_run_id} at index {current_index}. "
+                    f"Moving to next run_id (index {current_index + 1}/{len(run_ids) - 1})"
+                )
+                return "increment_run_id_index"
+            else:
+                logger.info(
+                    f"All {len(run_ids)} run IDs completed sanity checks successfully. "
+                    f"Proceeding to main experiment phase."
+                )
+                return "fetch_experiment_code"
+
+        # Invalid action value (not None, not "retry", not "proceed")
+        error_msg = (
+            f"Invalid validation_action: '{action}' for run_id={current_run_id}. "
+            f"Expected 'retry' or 'proceed'"
+        )
+        logger.error(error_msg)
+        raise WorkflowValidationError(error_msg)
 
     @record_execution_time
     def _increment_run_id_index(
