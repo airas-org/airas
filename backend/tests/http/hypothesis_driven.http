@@ -1,0 +1,54 @@
+### Hypothesis-Driven Research - Dispatch Task
+
+POST http://localhost:8000/airas/v1/hypothesis_driven/run
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "hypothesis-test-20260217",
+        "branch_name": "main"
+    },
+    "research_hypothesis": {
+        "open_problems": "Current chain-of-thought prompting methods lack explicit reasoning step validation, leading to inconsistent performance across different problem types.",
+        "method": "We propose a self-validating chain-of-thought approach where each reasoning step is validated against predefined criteria before proceeding to the next step.",
+        "experimental_setup": "We will evaluate this method on GSM8K, MATH, and ARC datasets, comparing performance against standard CoT and zero-shot prompting.",
+        "primary_metric": "Accuracy on GSM8K, MATH, and ARC benchmarks",
+        "experimental_code": "Prompt engineering implementation without fine-tuning",
+        "expected_result": "5-10% improvement in accuracy over standard CoT across all three benchmarks",
+        "expected_conclusion": "Self-validating CoT improves reasoning consistency and reduces error propagation in multi-step problems"
+    },
+    "research_study_list": [],
+    "runner_config": {
+        "runner_label": ["self-hosted", "gpu-runner"],
+        "description": "NVIDIA H200, VRAM: 140 GB, RAM: 240 GB"
+    },
+    "wandb_config": {
+        "entity": "airas",
+        "project": "2026-02-17"
+    },
+    "is_github_repo_private": false,
+    "num_experiment_models": 1,
+    "num_experiment_datasets": 1,
+    "num_comparison_methods": 1,
+    "paper_content_refinement_iterations": 1,
+    "latex_template_name": "mdpi",
+    "github_actions_agent": "open_code"
+}
+
+### Hypothesis-Driven Research - Poll Task Status
+
+GET http://localhost:8000/airas/v1/hypothesis_driven/status/8032281d-a12a-42e6-adda-eba7e2159200
+
+### Hypothesis-Driven Research - List Sessions
+
+GET http://localhost:8000/airas/v1/hypothesis_driven?offset=0&limit=20
+
+### Hypothesis-Driven Research - Update Title
+
+PATCH http://localhost:8000/airas/v1/hypothesis_driven/f92899e5-90eb-4b50-9bdf-3a834e71f43c
+Content-Type: application/json
+
+{
+    "title": "Updated Hypothesis-Driven Research Title"
+}

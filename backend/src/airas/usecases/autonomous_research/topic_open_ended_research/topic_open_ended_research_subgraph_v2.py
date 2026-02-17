@@ -727,6 +727,32 @@ class TopicOpenEndedResearchSubgraphV2:
 
         return {"secrets_set": result["secrets_set"]}
 
+    def _route_after_setup(self, state: TopicOpenEndedResearchStateV2) -> str:
+        """
+        Route after initial setup.
+        If hypothesis is already provided in state, skip to experimental design.
+        Otherwise, start from query generation.
+        """
+        if state.get("research_hypothesis"):
+            logger.info("Hypothesis provided - skipping to experimental design")
+            return "skip_to_experimental_design"
+        logger.info("No hypothesis - starting from query generation")
+        return "generate_queries"
+
+    @record_execution_time
+    async def _skip_to_experimental_design(
+        self, state: TopicOpenEndedResearchStateV2
+    ) -> dict[str, Any]:
+        """
+        Skip node for hypothesis-first mode.
+        Sets the current step and ensures research_study_list is initialized.
+        """
+        logger.info("=== Skipping to Experimental Design (Hypothesis-First Mode) ===")
+        return {
+            "current_step": StepType.GENERATE_EXPERIMENTAL_DESIGN,
+            "research_study_list": state.get("research_study_list", []),
+        }
+
     @record_execution_time
     async def _generate_queries(
         self, state: TopicOpenEndedResearchStateV2
@@ -1489,6 +1515,7 @@ class TopicOpenEndedResearchSubgraphV2:
         graph_builder.add_node(
             "set_github_actions_secrets", self._set_github_actions_secrets
         )
+        graph_builder.add_node("skip_to_experimental_design", self._skip_to_experimental_design)
         graph_builder.add_node("generate_queries", self._generate_queries)
         graph_builder.add_node("search_paper_titles", self._search_paper_titles)
         graph_builder.add_node("retrieve_papers", self._retrieve_papers)
@@ -1562,7 +1589,17 @@ class TopicOpenEndedResearchSubgraphV2:
         graph_builder.add_edge(START, "create_record")
         graph_builder.add_edge("create_record", "prepare_repository")
         graph_builder.add_edge("prepare_repository", "set_github_actions_secrets")
-        graph_builder.add_edge("set_github_actions_secrets", "generate_queries")
+
+        # Conditional edge: if hypothesis is provided, skip to experimental design
+        # Otherwise, start from query generation
+        graph_builder.add_conditional_edges(
+            "set_github_actions_secrets",
+            self._route_after_setup,
+            {
+                "generate_queries": "generate_queries",
+                "skip_to_experimental_design": "skip_to_experimental_design",
+            },
+        )
 
         self._add_edge_with_upload(
             graph_builder, "generate_queries", "search_paper_titles", UPLOAD_AFTER
@@ -1579,6 +1616,8 @@ class TopicOpenEndedResearchSubgraphV2:
             "generate_experimental_design",
             UPLOAD_AFTER,
         )
+        # Edge from skip node to experimental design (for hypothesis-first mode)
+        graph_builder.add_edge("skip_to_experimental_design", "generate_experimental_design")
         self._add_edge_with_upload(
             graph_builder,
             "generate_experimental_design",

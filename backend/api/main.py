@@ -16,6 +16,7 @@ from api.routes.v1 import (
     experiments,
     github,
     github_actions,
+    hypothesis_driven,
     hypotheses,
     latex,
     models,
@@ -79,3 +80,4 @@ app.include_router(github_actions.router, prefix="/airas/v1")
 app.include_router(github.router, prefix="/airas/v1")
 app.include_router(assisted_research.router, prefix="/airas/v1")
 app.include_router(topic_open_ended_research.router, prefix="/airas/v1")
+app.include_router(hypothesis_driven.router, prefix="/airas/v1")

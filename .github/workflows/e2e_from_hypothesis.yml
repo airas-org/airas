@@ -1,0 +1,450 @@
+name: E2E From Hypothesis Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      hypothesis_open_problems:
+        description: 'Open Problems (problem statement)'
+        required: true
+        default: 'Current chain-of-thought prompting methods lack explicit reasoning step validation, leading to inconsistent performance across different problem types.'
+      hypothesis_method:
+        description: 'Proposed Method'
+        required: true
+        default: 'We propose a self-validating chain-of-thought approach where each reasoning step is validated against predefined criteria before proceeding to the next step.'
+      hypothesis_experimental_setup:
+        description: 'Experimental Setup'
+        required: true
+        default: 'We will evaluate this method on GSM8K, MATH, and ARC datasets, comparing performance against standard CoT and zero-shot prompting.'
+      hypothesis_primary_metric:
+        description: 'Primary Metric'
+        required: true
+        default: 'Accuracy on GSM8K, MATH, and ARC benchmarks'
+      hypothesis_experimental_code:
+        description: 'Experimental Code Description'
+        required: true
+        default: 'Prompt engineering implementation without fine-tuning'
+      hypothesis_expected_result:
+        description: 'Expected Result'
+        required: true
+        default: '5-10% improvement in accuracy over standard CoT across all three benchmarks'
+      hypothesis_expected_conclusion:
+        description: 'Expected Conclusion'
+        required: true
+        default: 'Self-validating CoT improves reasoning consistency and reduces error propagation in multi-step problems'
+      is_github_repo_private:
+        description: 'Make repository private'
+        required: false
+        type: boolean
+        default: false
+      github_owner:
+        description: 'GitHub owner for the generated repository'
+        required: false
+        default: 'auto-res2'
+      repository_name:
+        description: 'Repository name (leave empty for auto-generated: hypothesis-test-YYYYMMDD-HHMMSS)'
+        required: false
+        default: ''
+      branch_name:
+        description: 'Branch name for the generated repository'
+        required: false
+        default: 'main'
+      runner_label:
+        description: 'Runner labels as JSON array (e.g., ["self-hosted", "gpu-runner"])'
+        required: false
+        default: '["self-hosted", "gpu-runner"]'
+      runner_description:
+        description: 'Runner description'
+        required: false
+        default: 'NVIDIA H200, VRAM: 140 GB, RAM: 240 GB'
+      wandb_entity:
+        description: 'W&B entity name'
+        required: false
+        default: 'airas'
+      num_experiment_models:
+        description: 'Number of models to evaluate in experiments'
+        required: false
+        default: '1'
+      num_experiment_datasets:
+        description: 'Number of datasets to use in experiments'
+        required: false
+        default: '1'
+      num_comparison_methods:
+        description: 'Number of comparison methods'
+        required: false
+        default: '1'
+      paper_content_refinement_iterations:
+        description: 'Rounds of paper content refinement (write → refine loop)'
+        required: false
+        default: '1'
+      latex_template_name:
+        description: 'LaTeX template name (e.g., mdpi, iclr2024, agents4science_2025)'
+        required: false
+        default: 'mdpi'
+      # --- LLM model settings ---
+      primary_model:
+        description: 'Primary LLM (experimental design, analysis, writing, LaTeX)'
+        required: false
+        type: choice
+        options: &llm_options
+          - 'gpt-5.2'
+          - 'gpt-5.2-codex'
+          - 'o3-2025-04-16'
+          - 'o3-mini-2025-01-31'
+          - 'gpt-5-mini-2025-08-07'
+          - 'gemini-2.5-pro'
+          - 'gemini-2.5-flash'
+          - 'anthropic/claude-opus-4'
+          - 'anthropic/claude-sonnet-4-5'
+        default: 'gpt-5.2'
+      coding_model:
+        description: 'Coding LLM (code generation, code validation)'
+        required: false
+        type: choice
+        options: *llm_options
+        default: 'gpt-5.2-codex'
+      github_actions_agent:
+        description: 'GitHub Actions agent tool (claude_code or open_code)'
+        required: false
+        type: choice
+        options:
+          - claude_code
+          - open_code
+        default: 'open_code'
+      github_actions_model:
+        description: 'GitHub Actions LLM (experiment dispatch, evaluation dispatch, LaTeX compilation)'
+        required: false
+        type: choice
+        options: *llm_options
+        default: 'anthropic/claude-sonnet-4-5'
+
+jobs:
+  check-org-membership:
+    runs-on: ubuntu-latest
+    outputs:
+      is_member: ${{ steps.check.outputs.is_member }}
+    steps:
+      - name: Check organization membership
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.AIRAS_ORG_TOKEN }}
+        run: |
+          ACTOR="${{ github.actor }}"
+          ORG="airas-org"
+
+          echo "Checking if ${ACTOR} is a member of ${ORG}..."
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/orgs/${ORG}/members/${ACTOR}")
+
+          if [ "$HTTP_CODE" = "204" ]; then
+            echo "✅ ${ACTOR} is a member of ${ORG}"
+            echo "is_member=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ ${ACTOR} is not a member of ${ORG} (HTTP: ${HTTP_CODE})"
+            echo "is_member=false" >> $GITHUB_OUTPUT
+          fi
+
+  e2e-hypothesis-test:
+    needs: check-org-membership
+    if: needs.check-org-membership.outputs.is_member == 'true'
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 4320  # 72 hours
+
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_USER: airas
+          POSTGRES_PASSWORD: airas
+          POSTGRES_DB: airas
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U airas -d airas"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql+psycopg://airas:airas@localhost:5432/airas
+      GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+      QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+      QDRANT_BASE_URL: ${{ secrets.QDRANT_BASE_URL }}
+      WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+      LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.7.2"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --frozen
+
+      - name: Start backend server
+        working-directory: backend
+        run: |
+          mkdir -p /tmp/e2e-logs
+          uv run uvicorn api.main:app --host 0.0.0.0 --port 8000 \
+            > /tmp/e2e-logs/server.log 2>&1 &
+          echo $! > /tmp/e2e-logs/server.pid
+          echo "Server PID: $(cat /tmp/e2e-logs/server.pid)"
+          echo "Waiting for server to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8000/health > /dev/null 2>&1 || curl -s http://localhost:8000/ > /dev/null 2>&1; then
+              echo "Server is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+
+      - name: Generate dynamic parameters
+        id: params
+        run: |
+          TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
+          DATE_ONLY=$(date -u +"%Y-%m-%d")
+
+          INPUT_REPO_NAME="${{ github.event.inputs.repository_name }}"
+          if [ -n "$INPUT_REPO_NAME" ]; then
+            REPO_NAME="$INPUT_REPO_NAME"
+          else
+            REPO_NAME="hypothesis-test-${TIMESTAMP}"
+          fi
+
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "date_only=${DATE_ONLY}" >> $GITHUB_OUTPUT
+          echo "repo_name=${REPO_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Send E2E hypothesis test request
+        id: request
+        run: |
+          # === General parameters ===
+          GITHUB_OWNER="${{ github.event.inputs.github_owner || 'auto-res2' }}"
+          BRANCH_NAME="${{ github.event.inputs.branch_name || 'main' }}"
+          REPO_NAME="${{ steps.params.outputs.repo_name }}"
+          WANDB_ENTITY="${{ github.event.inputs.wandb_entity || 'airas' }}"
+          WANDB_PROJECT="${{ steps.params.outputs.date_only }}"
+          RUNNER_LABELS='${{ github.event.inputs.runner_label }}'
+          if [ -z "$RUNNER_LABELS" ]; then
+            RUNNER_LABELS='["self-hosted", "gpu-runner"]'
+          fi
+          RUNNER_DESC="${{ github.event.inputs.runner_description || 'NVIDIA H200, VRAM: 140 GB, RAM: 240 GB' }}"
+          IS_PRIVATE="${{ github.event.inputs.is_github_repo_private || 'false' }}"
+          NUM_MODELS="${{ github.event.inputs.num_experiment_models || '1' }}"
+          NUM_DATASETS="${{ github.event.inputs.num_experiment_datasets || '1' }}"
+          NUM_COMPARISONS="${{ github.event.inputs.num_comparison_methods || '1' }}"
+          PAPER_REFINE_ITERS="${{ github.event.inputs.paper_content_refinement_iterations || '1' }}"
+          LATEX_TEMPLATE="${{ github.event.inputs.latex_template_name || 'mdpi' }}"
+
+          # === Hypothesis parameters ===
+          OPEN_PROBLEMS="${{ github.event.inputs.hypothesis_open_problems }}"
+          METHOD="${{ github.event.inputs.hypothesis_method }}"
+          EXPERIMENTAL_SETUP="${{ github.event.inputs.hypothesis_experimental_setup }}"
+          PRIMARY_METRIC="${{ github.event.inputs.hypothesis_primary_metric }}"
+          EXPERIMENTAL_CODE="${{ github.event.inputs.hypothesis_experimental_code }}"
+          EXPECTED_RESULT="${{ github.event.inputs.hypothesis_expected_result }}"
+          EXPECTED_CONCLUSION="${{ github.event.inputs.hypothesis_expected_conclusion }}"
+
+          # === LLM model selections ===
+          PRIMARY_MODEL="${{ github.event.inputs.primary_model || 'gpt-5.2' }}"
+          CODING_MODEL="${{ github.event.inputs.coding_model || 'gpt-5.2-codex' }}"
+          GITHUB_ACTIONS_MODEL="${{ github.event.inputs.github_actions_model || 'anthropic/claude-sonnet-4-5' }}"
+          GITHUB_ACTIONS_AGENT="${{ github.event.inputs.github_actions_agent || 'open_code' }}"
+
+          # Remove anthropic/ prefix for claude_code
+          if [ "$GITHUB_ACTIONS_AGENT" = "claude_code" ]; then
+            GITHUB_ACTIONS_MODEL="${GITHUB_ACTIONS_MODEL#anthropic/}"
+            echo "Adjusted GITHUB_ACTIONS_MODEL for claude_code: ${GITHUB_ACTIONS_MODEL}"
+          fi
+
+          # === Build LLM mapping JSON ===
+          LLM_MAPPING=$(cat <<EOFLLM
+          {
+            "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY_MODEL}"}},
+            "dispatch_code_generation": {"dispatch_code_generation": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
+            "dispatch_experiment_validation": {"dispatch_experiment_validation": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
+            "analyze_experiment": {"analyze_experiment": {"llm_name": "${PRIMARY_MODEL}"}},
+            "write": {
+              "write_paper": {"llm_name": "${PRIMARY_MODEL}"},
+              "refine_paper": {"llm_name": "${PRIMARY_MODEL}"}
+            },
+            "generate_latex": {"convert_to_latex": {"llm_name": "${PRIMARY_MODEL}"}},
+            "compile_latex": {"compile_latex": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}}
+          }
+          EOFLLM
+          )
+
+          echo "Starting E2E hypothesis test with:"
+          echo "  Repository: ${GITHUB_OWNER}/${REPO_NAME}"
+          echo "  Branch: ${BRANCH_NAME}"
+          echo "  W&B: ${WANDB_ENTITY}/${WANDB_PROJECT}"
+          echo "  Hypothesis: ${OPEN_PROBLEMS}"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8000/airas/v1/hypothesis_driven/run \
+            -H "Content-Type: application/json" \
+            -d @- <<EOF
+          {
+            "github_config": {
+              "github_owner": "${GITHUB_OWNER}",
+              "repository_name": "${REPO_NAME}",
+              "branch_name": "${BRANCH_NAME}"
+            },
+            "research_hypothesis": {
+              "open_problems": "${OPEN_PROBLEMS}",
+              "method": "${METHOD}",
+              "experimental_setup": "${EXPERIMENTAL_SETUP}",
+              "primary_metric": "${PRIMARY_METRIC}",
+              "experimental_code": "${EXPERIMENTAL_CODE}",
+              "expected_result": "${EXPECTED_RESULT}",
+              "expected_conclusion": "${EXPECTED_CONCLUSION}"
+            },
+            "research_study_list": [],
+            "runner_config": {
+              "runner_label": ${RUNNER_LABELS},
+              "description": "${RUNNER_DESC}"
+            },
+            "wandb_config": {
+              "entity": "${WANDB_ENTITY}",
+              "project": "${WANDB_PROJECT}"
+            },
+            "is_github_repo_private": ${IS_PRIVATE},
+            "num_experiment_models": ${NUM_MODELS},
+            "num_experiment_datasets": ${NUM_DATASETS},
+            "num_comparison_methods": ${NUM_COMPARISONS},
+            "paper_content_refinement_iterations": ${PAPER_REFINE_ITERS},
+            "latex_template_name": "${LATEX_TEMPLATE}",
+            "github_actions_agent": "${GITHUB_ACTIONS_AGENT}",
+            "llm_mapping": ${LLM_MAPPING}
+          }
+          EOF
+          )
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response (HTTP ${HTTP_CODE}):"
+          echo "$BODY" | jq . || echo "$BODY"
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "✅ E2E hypothesis test request sent successfully"
+            TASK_ID=$(echo "$BODY" | jq -r '.task_id')
+            echo "task_id=${TASK_ID}" >> $GITHUB_OUTPUT
+          else
+            echo "❌ E2E hypothesis test request failed with HTTP ${HTTP_CODE}"
+            exit 1
+          fi
+
+      - name: Poll for task completion
+        run: |
+          TASK_ID="${{ steps.request.outputs.task_id }}"
+          echo "Polling task ${TASK_ID} ..."
+
+          START_TIME=$(date +%s)
+          POLL_COUNT=0
+          STEP_POLL_COUNT=0
+          CONSECUTIVE_ERRORS=0
+          MAX_CONSECUTIVE_ERRORS=10
+          PREV_STEP=""
+
+          get_poll_interval() {
+            local n=$1
+            if [ "$n" -le 10 ]; then echo 30
+            elif [ "$n" -le 30 ]; then echo 60
+            elif [ "$n" -le 60 ]; then echo 120
+            elif [ "$n" -le 120 ]; then echo 300
+            else echo 600; fi
+          }
+
+          while true; do
+            POLL_COUNT=$((POLL_COUNT + 1))
+            STEP_POLL_COUNT=$((STEP_POLL_COUNT + 1))
+            ELAPSED=$(( $(date +%s) - START_TIME ))
+
+            STATUS_RESPONSE=$(curl -s -w "\n%{http_code}" \
+              "http://localhost:8000/airas/v1/hypothesis_driven/status/${TASK_ID}")
+            STATUS_HTTP=$(echo "$STATUS_RESPONSE" | tail -n1)
+            STATUS_BODY=$(echo "$STATUS_RESPONSE" | sed '$d')
+
+            if [ "$STATUS_HTTP" -ne 200 ]; then
+              CONSECUTIVE_ERRORS=$((CONSECUTIVE_ERRORS + 1))
+              echo "[Poll #${POLL_COUNT}] HTTP ${STATUS_HTTP} (error ${CONSECUTIVE_ERRORS}/${MAX_CONSECUTIVE_ERRORS})"
+              echo "--- Error response body ---"
+              echo "$STATUS_BODY" | jq . 2>/dev/null || echo "$STATUS_BODY"
+              echo "--- Server log (last 20 lines) ---"
+              tail -n 20 /tmp/e2e-logs/server.log 2>/dev/null || echo "(no log)"
+              echo "---"
+              if [ "$CONSECUTIVE_ERRORS" -ge "$MAX_CONSECUTIVE_ERRORS" ]; then
+                echo "ABORT: Too many consecutive HTTP errors"
+                tail -n 100 /tmp/e2e-logs/server.log 2>/dev/null || true
+                exit 1
+              fi
+              POLL_INTERVAL=$(get_poll_interval $STEP_POLL_COUNT)
+              sleep $POLL_INTERVAL
+              continue
+            fi
+            CONSECUTIVE_ERRORS=0
+
+            TASK_STATUS=$(echo "$STATUS_BODY" | jq -r '.status')
+            CURRENT_STEP=$(echo "$STATUS_BODY" | jq -r '.current_step // "N/A"')
+            ERROR_MSG=$(echo "$STATUS_BODY" | jq -r '.error_message // empty')
+
+            if [ "$CURRENT_STEP" != "$PREV_STEP" ] && [ -n "$PREV_STEP" ]; then
+              STEP_POLL_COUNT=0
+              POLL_INTERVAL=30
+            else
+              POLL_INTERVAL=$(get_poll_interval $STEP_POLL_COUNT)
+            fi
+            PREV_STEP="$CURRENT_STEP"
+
+            echo "[Poll #${POLL_COUNT} | ${ELAPSED}s] ${TASK_STATUS} - ${CURRENT_STEP}"
+            echo "--- Status response ---"
+            echo "$STATUS_BODY" | jq 'del(.result, .research_history)'
+            echo "--- Server log (last 20 lines) ---"
+            tail -n 20 /tmp/e2e-logs/server.log 2>/dev/null || echo "(no log)"
+            echo "---"
+
+            if [ "$TASK_STATUS" = "completed" ]; then
+              echo "E2E hypothesis test completed (${ELAPSED}s)"
+              exit 0
+            fi
+
+            if [ "$TASK_STATUS" = "failed" ] || [ -n "$ERROR_MSG" ]; then
+              echo "E2E hypothesis test failed: ${ERROR_MSG}"
+              echo "--- Server log (last 100 lines) ---"
+              tail -n 100 /tmp/e2e-logs/server.log 2>/dev/null || true
+              exit 1
+            fi
+
+            sleep $POLL_INTERVAL
+          done
+
+      - name: Upload server logs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-hypothesis-server-logs-${{ steps.params.outputs.timestamp }}
+          path: /tmp/e2e-logs/
+          retention-days: 30
