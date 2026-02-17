@@ -13,12 +13,10 @@ from airas.core.types.experimental_design import (
 )
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.infra.langchain_client import LangChainClient
-from airas.resources.datasets.language_model_fine_tuning_dataset import (
-    LANGUAGE_MODEL_FINE_TUNING_DATASETS,
+from airas.resources.datasets.prompt_engineering_datasets import (
+    PROMPT_ENGINEERING_DATASETS,
 )
-from airas.resources.models.transformer_decoder_based_models import (
-    TRANSFORMER_DECODER_BASED_MODELS,
-)
+from airas.resources.models.lm_api_models import LM_API_MODELS
 from airas.usecases.generators.generate_experimental_design_subgraph.prompts.generate_experimental_design_prompt import (
     generate_experimental_design_prompt,
 )
@@ -53,11 +51,9 @@ async def generate_experimental_design(
     data = {
         "research_hypothesis": research_hypothesis,
         "runner_config": runner_config,
-        "model_list": json.dumps(
-            TRANSFORMER_DECODER_BASED_MODELS, indent=4, ensure_ascii=False
-        ),
+        "model_list": json.dumps(LM_API_MODELS, indent=4, ensure_ascii=False),
         "dataset_list": json.dumps(
-            LANGUAGE_MODEL_FINE_TUNING_DATASETS, indent=4, ensure_ascii=False
+            PROMPT_ENGINEERING_DATASETS, indent=4, ensure_ascii=False
         ),
         "num_models_to_use": num_models_to_use,
         "num_datasets_to_use": num_datasets_to_use,
