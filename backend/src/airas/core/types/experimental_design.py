@@ -8,9 +8,14 @@ ModelSubfield = Literal[
     "transformer_decoder_based_models",
     "image_models",
     "multi_modal_models",
+    "llm_api_models",
 ]
 
-DatasetSubfield = Literal["language_model_fine_tuning_datasets", "image_datasets"]
+DatasetSubfield = Literal[
+    "language_model_fine_tuning_datasets",
+    "image_datasets",
+    "prompt_engineering_datasets",
+]
 
 DataModalities = Literal[
     "text", "image", "audio", "video", "tabular", "time_series", "graph", "embeddings"
