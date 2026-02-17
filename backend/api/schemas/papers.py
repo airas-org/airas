@@ -17,7 +17,7 @@ class SearchPaperTitlesRequestBody(BaseModel):
     search_method: SearchMethod = "airas_db"
     queries: list[str]
     max_results_per_query: int = Field(default=3, gt=0)
-    collection_name: str = "airas_database"  # NOTE: collection_name is only used for qdrant; kept unified for simplicity despite ISP.
+    collection_name: str = "airas_papers_db"  # NOTE: collection_name is only used for qdrant; kept unified for simplicity despite ISP.
 
 
 class SearchPaperTitlesResponseBody(BaseModel):
