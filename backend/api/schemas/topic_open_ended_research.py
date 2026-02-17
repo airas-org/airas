@@ -110,7 +110,7 @@ class TopicOpenEndedResearchV2RequestBody(BaseModel):
     wandb_config: WandbConfig
     is_github_repo_private: bool = False
     search_method: SearchMethod = "airas_db"
-    collection_name: str = "airas_database"
+    collection_name: str = "airas_papers_db"
     num_paper_search_queries: int = 2
     papers_per_query: int = 5
     hypothesis_refinement_iterations: int = 1
