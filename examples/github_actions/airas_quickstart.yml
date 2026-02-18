@@ -171,7 +171,7 @@ jobs:
         run: uv sync --frozen
 
       - name: Install jq
-        run: command -v jq || sudo apt-get update -y && sudo apt-get install -y jq
+        run: if ! command -v jq >/dev/null 2>&1; then sudo apt-get update -y && sudo apt-get install -y jq; fi
 
       - name: Start backend server
         working-directory: backend
@@ -256,34 +256,35 @@ jobs:
           fi
 
           # === Build LLM mapping JSON ===
-          LLM_MAPPING=$(cat <<EOFLLM
-          {
-            "generate_queries": {"generate_queries": {"llm_name": "${PRIMARY_MODEL}"}},
-            "retrieve_paper": {
-              "search_arxiv_id_from_title": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
-              "summarize_paper": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
-              "extract_github_url_from_text": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
-              "select_experimental_files": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
-              "extract_reference_titles": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"}
-            },
-            "generate_hypothesis": {
-              "generate_hypothesis": {"llm_name": "${PRIMARY_MODEL}"},
-              "evaluate_novelty_and_significance": {"llm_name": "${PRIMARY_MODEL}"},
-              "refine_hypothesis": {"llm_name": "${PRIMARY_MODEL}"}
-            },
-            "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY_MODEL}"}},
-            "dispatch_code_generation": {"dispatch_code_generation": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
-            "dispatch_experiment_validation": {"dispatch_experiment_validation": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
-            "analyze_experiment": {"analyze_experiment": {"llm_name": "${PRIMARY_MODEL}"}},
-            "write": {
-              "write_paper": {"llm_name": "${PRIMARY_MODEL}"},
-              "refine_paper": {"llm_name": "${PRIMARY_MODEL}"}
-            },
-            "generate_latex": {"convert_to_latex": {"llm_name": "${PRIMARY_MODEL}"}},
-            "compile_latex": {"compile_latex": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}}
-          }
-          EOFLLM
-          )
+          LLM_MAPPING=$(jq -n \
+            --arg pm "$PRIMARY_MODEL" \
+            --arg prm "$PAPER_RETRIEVAL_MODEL" \
+            --arg gam "$GITHUB_ACTIONS_MODEL" \
+            '{
+              generate_queries: {generate_queries: {llm_name: $pm}},
+              retrieve_paper: {
+                search_arxiv_id_from_title: {llm_name: $prm},
+                summarize_paper: {llm_name: $prm},
+                extract_github_url_from_text: {llm_name: $prm},
+                select_experimental_files: {llm_name: $prm},
+                extract_reference_titles: {llm_name: $prm}
+              },
+              generate_hypothesis: {
+                generate_hypothesis: {llm_name: $pm},
+                evaluate_novelty_and_significance: {llm_name: $pm},
+                refine_hypothesis: {llm_name: $pm}
+              },
+              generate_experimental_design: {generate_experimental_design: {llm_name: $pm}},
+              dispatch_code_generation: {dispatch_code_generation: {llm_name: $gam}},
+              dispatch_experiment_validation: {dispatch_experiment_validation: {llm_name: $gam}},
+              analyze_experiment: {analyze_experiment: {llm_name: $pm}},
+              write: {
+                write_paper: {llm_name: $pm},
+                refine_paper: {llm_name: $pm}
+              },
+              generate_latex: {convert_to_latex: {llm_name: $pm}},
+              compile_latex: {compile_latex: {llm_name: $gam}}
+            }')
 
           echo "Starting research with:"
           echo "  Repository: ${GITHUB_OWNER}/${REPO_NAME}"
@@ -293,39 +294,59 @@ jobs:
           echo "  LLM Mapping:"
           echo "$LLM_MAPPING" | head -30
 
+          REQUEST_BODY=$(jq -n \
+            --arg github_owner "$GITHUB_OWNER" \
+            --arg repository_name "$REPO_NAME" \
+            --arg branch_name "$BRANCH_NAME" \
+            --arg research_topic "$RESEARCH_TOPIC" \
+            --argjson runner_label "$RUNNER_LABELS" \
+            --arg description "$RUNNER_DESC" \
+            --arg wandb_entity "$WANDB_ENTITY" \
+            --arg wandb_project "$WANDB_PROJECT" \
+            --argjson is_github_repo_private "$IS_PRIVATE" \
+            --arg search_method "airas_db" \
+            --argjson num_paper_search_queries "$NUM_QUERIES" \
+            --argjson papers_per_query "$PAPERS_PER_QUERY" \
+            --argjson hypothesis_refinement_iterations "$HYPOTHESIS_ITERS" \
+            --argjson num_experiment_models "$NUM_MODELS" \
+            --argjson num_experiment_datasets "$NUM_DATASETS" \
+            --argjson num_comparison_methods "$NUM_COMPARISONS" \
+            --argjson paper_content_refinement_iterations "$PAPER_REFINE_ITERS" \
+            --arg latex_template_name "$LATEX_TEMPLATE" \
+            --arg github_actions_agent "$GITHUB_ACTIONS_AGENT" \
+            --argjson llm_mapping "$LLM_MAPPING" \
+            '{
+              github_config: {
+                github_owner: $github_owner,
+                repository_name: $repository_name,
+                branch_name: $branch_name
+              },
+              research_topic: $research_topic,
+              runner_config: {
+                runner_label: $runner_label,
+                description: $description
+              },
+              wandb_config: {
+                entity: $wandb_entity,
+                project: $wandb_project
+              },
+              is_github_repo_private: $is_github_repo_private,
+              search_method: $search_method,
+              num_paper_search_queries: $num_paper_search_queries,
+              papers_per_query: $papers_per_query,
+              hypothesis_refinement_iterations: $hypothesis_refinement_iterations,
+              num_experiment_models: $num_experiment_models,
+              num_experiment_datasets: $num_experiment_datasets,
+              num_comparison_methods: $num_comparison_methods,
+              paper_content_refinement_iterations: $paper_content_refinement_iterations,
+              latex_template_name: $latex_template_name,
+              github_actions_agent: $github_actions_agent,
+              llm_mapping: $llm_mapping
+            }')
+
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8000/airas/v1/topic_open_ended_research/run \
             -H "Content-Type: application/json" \
-            -d @- <<EOF
-          {
-            "github_config": {
-              "github_owner": "${GITHUB_OWNER}",
-              "repository_name": "${REPO_NAME}",
-              "branch_name": "${BRANCH_NAME}"
-            },
-            "research_topic": "${RESEARCH_TOPIC}",
-            "runner_config": {
-              "runner_label": ${RUNNER_LABELS},
-              "description": "${RUNNER_DESC}"
-            },
-            "wandb_config": {
-              "entity": "${WANDB_ENTITY}",
-              "project": "${WANDB_PROJECT}"
-            },
-            "is_github_repo_private": ${IS_PRIVATE},
-            "search_method": "airas_db",
-            "num_paper_search_queries": ${NUM_QUERIES},
-            "papers_per_query": ${PAPERS_PER_QUERY},
-            "hypothesis_refinement_iterations": ${HYPOTHESIS_ITERS},
-            "num_experiment_models": ${NUM_MODELS},
-            "num_experiment_datasets": ${NUM_DATASETS},
-            "num_comparison_methods": ${NUM_COMPARISONS},
-            "paper_content_refinement_iterations": ${PAPER_REFINE_ITERS},
-            "latex_template_name": "${LATEX_TEMPLATE}",
-            "github_actions_agent": "${GITHUB_ACTIONS_AGENT}",
-            "llm_mapping": ${LLM_MAPPING}
-          }
-          EOF
-          )
+            -d "$REQUEST_BODY")
 
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
@@ -422,6 +443,11 @@ jobs:
               echo "Research failed: ${ERROR_MSG}"
               echo "--- Server log (last 100 lines) ---"
               tail -n 100 /tmp/e2e-logs/server.log 2>/dev/null || true
+              exit 1
+            fi
+
+            if [ "$TASK_STATUS" != "pending" ] && [ "$TASK_STATUS" != "running" ]; then
+              echo "❌ Unexpected task status: ${TASK_STATUS}"
               exit 1
             fi
 
