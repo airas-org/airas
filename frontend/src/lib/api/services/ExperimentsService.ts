@@ -4,12 +4,14 @@
 /* eslint-disable */
 import type { AnalyzeExperimentRequestBody } from '../models/AnalyzeExperimentRequestBody';
 import type { AnalyzeExperimentResponseBody } from '../models/AnalyzeExperimentResponseBody';
-import type { ExecuteEvaluationRequestBody } from '../models/ExecuteEvaluationRequestBody';
-import type { ExecuteEvaluationResponseBody } from '../models/ExecuteEvaluationResponseBody';
-import type { ExecuteFullRequestBody } from '../models/ExecuteFullRequestBody';
-import type { ExecuteFullResponseBody } from '../models/ExecuteFullResponseBody';
-import type { ExecuteTrialRequestBody } from '../models/ExecuteTrialRequestBody';
-import type { ExecuteTrialResponseBody } from '../models/ExecuteTrialResponseBody';
+import type { DispatchExperimentValidationRequestBody } from '../models/DispatchExperimentValidationRequestBody';
+import type { DispatchExperimentValidationResponseBody } from '../models/DispatchExperimentValidationResponseBody';
+import type { DispatchMainExperimentRequestBody } from '../models/DispatchMainExperimentRequestBody';
+import type { DispatchMainExperimentResponseBody } from '../models/DispatchMainExperimentResponseBody';
+import type { DispatchSanityCheckRequestBody } from '../models/DispatchSanityCheckRequestBody';
+import type { DispatchSanityCheckResponseBody } from '../models/DispatchSanityCheckResponseBody';
+import type { DispatchVisualizationRequestBody } from '../models/DispatchVisualizationRequestBody';
+import type { DispatchVisualizationResponseBody } from '../models/DispatchVisualizationResponseBody';
 import type { FetchExperimentalResultsRequestBody } from '../models/FetchExperimentalResultsRequestBody';
 import type { FetchExperimentalResultsResponseBody } from '../models/FetchExperimentalResultsResponseBody';
 import type { FetchRunIdsRequestBody } from '../models/FetchRunIdsRequestBody';
@@ -57,17 +59,17 @@ export class ExperimentsService {
         });
     }
     /**
-     * Execute Trial
+     * Dispatch Sanity Check
      * @param requestBody
-     * @returns ExecuteTrialResponseBody Successful Response
+     * @returns DispatchSanityCheckResponseBody Successful Response
      * @throws ApiError
      */
-    public static executeTrialAirasV1ExperimentsTestRunsPost(
-        requestBody: ExecuteTrialRequestBody,
-    ): CancelablePromise<ExecuteTrialResponseBody> {
+    public static dispatchSanityCheckAirasV1ExperimentsSanityChecksDispatchPost(
+        requestBody: DispatchSanityCheckRequestBody,
+    ): CancelablePromise<DispatchSanityCheckResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/airas/v1/experiments/test-runs',
+            url: '/airas/v1/experiments/sanity-checks/dispatch',
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -76,17 +78,17 @@ export class ExperimentsService {
         });
     }
     /**
-     * Execute Full
+     * Dispatch Experiment Validation
      * @param requestBody
-     * @returns ExecuteFullResponseBody Successful Response
+     * @returns DispatchExperimentValidationResponseBody Successful Response
      * @throws ApiError
      */
-    public static executeFullAirasV1ExperimentsFullRunsPost(
-        requestBody: ExecuteFullRequestBody,
-    ): CancelablePromise<ExecuteFullResponseBody> {
+    public static dispatchExperimentValidationAirasV1ExperimentsValidationsDispatchPost(
+        requestBody: DispatchExperimentValidationRequestBody,
+    ): CancelablePromise<DispatchExperimentValidationResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/airas/v1/experiments/full-runs',
+            url: '/airas/v1/experiments/validations/dispatch',
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -95,17 +97,36 @@ export class ExperimentsService {
         });
     }
     /**
-     * Execute Evaluation
+     * Dispatch Main Experiment
      * @param requestBody
-     * @returns ExecuteEvaluationResponseBody Successful Response
+     * @returns DispatchMainExperimentResponseBody Successful Response
      * @throws ApiError
      */
-    public static executeEvaluationAirasV1ExperimentsEvaluationsPost(
-        requestBody: ExecuteEvaluationRequestBody,
-    ): CancelablePromise<ExecuteEvaluationResponseBody> {
+    public static dispatchMainExperimentAirasV1ExperimentsMainRunsDispatchPost(
+        requestBody: DispatchMainExperimentRequestBody,
+    ): CancelablePromise<DispatchMainExperimentResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/airas/v1/experiments/evaluations',
+            url: '/airas/v1/experiments/main-runs/dispatch',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Dispatch Visualization
+     * @param requestBody
+     * @returns DispatchVisualizationResponseBody Successful Response
+     * @throws ApiError
+     */
+    public static dispatchVisualizationAirasV1ExperimentsVisualizationsDispatchPost(
+        requestBody: DispatchVisualizationRequestBody,
+    ): CancelablePromise<DispatchVisualizationResponseBody> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/airas/v1/experiments/visualizations/dispatch',
             body: requestBody,
             mediaType: 'application/json',
             errors: {

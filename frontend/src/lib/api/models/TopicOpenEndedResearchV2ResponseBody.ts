@@ -2,8 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type PushCodeSubgraphResponseBody = {
-    code_pushed: boolean;
-    execution_time: Record<string, Array<number>>;
+export type TopicOpenEndedResearchV2ResponseBody = {
+    task_id: string;
 };
 

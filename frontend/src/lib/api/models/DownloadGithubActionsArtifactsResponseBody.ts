@@ -2,9 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type ExecuteTrialResponseBody = {
-    dispatched: boolean;
-    run_ids: Array<string>;
+export type DownloadGithubActionsArtifactsResponseBody = {
+    artifact_data: Record<string, any>;
     execution_time: Record<string, Array<number>>;
 };
 

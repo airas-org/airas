@@ -2,7 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type TopicOpenEndedResearchResponseBody = {
-    task_id: string;
+import type { GitHubConfig } from './GitHubConfig';
+export type FetchExperimentCodeRequestBody = {
+    github_config: GitHubConfig;
 };
 

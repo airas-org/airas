@@ -9,7 +9,7 @@ on:
       research_topic:
         description: 'Research topic for the E2E test'
         required: false
-        default: 'Proposing an improved version of the Chain-of-Thought based on human thinking methods'
+        default: 'Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments'
       is_github_repo_private:
         description: 'Make repository private'
         required: false
@@ -63,10 +63,6 @@ on:
         description: 'Number of comparison methods'
         required: false
         default: '1'
-      experiment_code_validation_iterations:
-        description: 'Max retries for experiment code generation (generate → validate loop)'
-        required: false
-        default: '10'
       paper_content_refinement_iterations:
         description: 'Rounds of paper content refinement (write → refine loop)'
         required: false
@@ -93,12 +89,6 @@ on:
           - 'anthropic/claude-opus-4'
           - 'anthropic/claude-sonnet-4-5'
         default: 'gpt-5.2'
-      coding_model:
-        description: 'Coding LLM (code generation, code validation)'
-        required: false
-        type: choice
-        options: *llm_options
-        default: 'gpt-5.2-codex'
       paper_retrieval_model:
         description: 'Paper retrieval LLM (paper search, summarization, reference extraction)'
         required: false
@@ -264,7 +254,7 @@ jobs:
         run: |
           # === General parameters ===
           GITHUB_OWNER="${{ github.event.inputs.github_owner || 'auto-res2' }}"
-          RESEARCH_TOPIC="${{ github.event.inputs.research_topic || 'Proposing an improved version of the Chain-of-Thought based on human thinking methods' }}"
+          RESEARCH_TOPIC="${{ github.event.inputs.research_topic || 'Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments' }}"
           BRANCH_NAME="${{ github.event.inputs.branch_name || 'main' }}"
           REPO_NAME="${{ steps.params.outputs.repo_name }}"
           WANDB_ENTITY="${{ github.event.inputs.wandb_entity || 'airas' }}"
@@ -281,13 +271,11 @@ jobs:
           NUM_MODELS="${{ github.event.inputs.num_experiment_models || '1' }}"
           NUM_DATASETS="${{ github.event.inputs.num_experiment_datasets || '1' }}"
           NUM_COMPARISONS="${{ github.event.inputs.num_comparison_methods || '1' }}"
-          CODE_VALIDATION_ITERS="${{ github.event.inputs.experiment_code_validation_iterations || '10' }}"
           PAPER_REFINE_ITERS="${{ github.event.inputs.paper_content_refinement_iterations || '1' }}"
           LATEX_TEMPLATE="${{ github.event.inputs.latex_template_name || 'mdpi' }}"
 
           # === LLM model selections ===
           PRIMARY_MODEL="${{ github.event.inputs.primary_model || 'gpt-5.2' }}"
-          CODING_MODEL="${{ github.event.inputs.coding_model || 'gpt-5.2-codex' }}"
           PAPER_RETRIEVAL_MODEL="${{ github.event.inputs.paper_retrieval_model || 'gemini-2.5-flash' }}"
           GITHUB_ACTIONS_MODEL="${{ github.event.inputs.github_actions_model || 'anthropic/claude-sonnet-4-5' }}"
           GITHUB_ACTIONS_AGENT="${{ github.event.inputs.github_actions_agent || 'open_code' }}"
@@ -318,14 +306,8 @@ jobs:
               "refine_hypothesis": {"llm_name": "${PRIMARY_MODEL}"}
             },
             "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY_MODEL}"}},
-            "generate_code": {
-              "generate_run_config": {"llm_name": "${CODING_MODEL}"},
-              "generate_experiment_code": {"llm_name": "${CODING_MODEL}"},
-              "validate_experiment_code": {"llm_name": "${CODING_MODEL}"}
-            },
-            "execute_trial_experiment": {"dispatch_trial_experiment": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
-            "execute_full_experiment": {"dispatch_full_experiments": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
-            "execute_evaluation": {"dispatch_evaluation": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
+            "dispatch_code_generation": {"dispatch_code_generation": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
+            "dispatch_experiment_validation": {"dispatch_experiment_validation": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
             "analyze_experiment": {"analyze_experiment": {"llm_name": "${PRIMARY_MODEL}"}},
             "write": {
               "write_paper": {"llm_name": "${PRIMARY_MODEL}"},
@@ -371,7 +353,6 @@ jobs:
             "num_experiment_models": ${NUM_MODELS},
             "num_experiment_datasets": ${NUM_DATASETS},
             "num_comparison_methods": ${NUM_COMPARISONS},
-            "experiment_code_validation_iterations": ${CODE_VALIDATION_ITERS},
             "paper_content_refinement_iterations": ${PAPER_REFINE_ITERS},
             "latex_template_name": "${LATEX_TEMPLATE}",
             "github_actions_agent": "${GITHUB_ACTIONS_AGENT}",

@@ -2,9 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ExperimentalResults } from './ExperimentalResults';
-export type FetchExperimentalResultsResponseBody = {
-    experimental_results: ExperimentalResults;
+export type DispatchSanityCheckResponseBody = {
+    dispatched: boolean;
     execution_time: Record<string, Array<number>>;
 };
 
