@@ -34,6 +34,13 @@ Currently, it focuses on the automation of machine learning research.
 
 ## Quick Start
 
+### Option 1 — GitHub Actions (no local setup required)
+
+Run the full research pipeline directly from any GitHub repository using the provided workflow.
+See **[QUICKSTART.md](./QUICKSTART.md)** for setup instructions and required API keys.
+
+### Option 2 — Local setup
+
 Copy `.env.example` to `.env` and update the configuration as needed.
 Then, start the application by running:
 

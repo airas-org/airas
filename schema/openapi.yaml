@@ -838,13 +838,13 @@ paths:
     post:
       tags:
       - topic_open_ended_research
-      summary: Execute Topic Open Ended Research V2
-      operationId: execute_topic_open_ended_research_v2_airas_v1_topic_open_ended_research_run_post
+      summary: Execute Topic Open Ended Research
+      operationId: execute_topic_open_ended_research_airas_v1_topic_open_ended_research_run_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TopicOpenEndedResearchV2RequestBody'
+              $ref: '#/components/schemas/TopicOpenEndedResearchRequestBody'
         required: true
       responses:
         '200':
@@ -852,7 +852,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TopicOpenEndedResearchV2ResponseBody'
+                $ref: '#/components/schemas/TopicOpenEndedResearchResponseBody'
         '422':
           description: Validation Error
           content:
@@ -3024,6 +3024,7 @@ components:
           enum:
           - language_model_fine_tuning_datasets
           - image_datasets
+          - prompt_engineering_datasets
           title: Dataset Subfield
       type: object
       required:
@@ -3056,6 +3057,7 @@ components:
           - transformer_decoder_based_models
           - image_models
           - multi_modal_models
+          - llm_api_models
           title: Model Subfield
       type: object
       required:
@@ -3361,6 +3363,92 @@ components:
       required:
       - items
       title: TopicOpenEndedResearchListResponseBody
+    TopicOpenEndedResearchRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        research_topic:
+          type: string
+          title: Research Topic
+        runner_config:
+          $ref: '#/components/schemas/RunnerConfig'
+        wandb_config:
+          $ref: '#/components/schemas/WandbConfig'
+        is_github_repo_private:
+          type: boolean
+          title: Is Github Repo Private
+          default: false
+        search_method:
+          type: string
+          enum:
+          - airas_db
+          - qdrant
+          title: Search Method
+          default: airas_db
+        collection_name:
+          type: string
+          title: Collection Name
+          default: airas_papers_db
+        num_paper_search_queries:
+          type: integer
+          title: Num Paper Search Queries
+          default: 2
+        papers_per_query:
+          type: integer
+          title: Papers Per Query
+          default: 5
+        hypothesis_refinement_iterations:
+          type: integer
+          title: Hypothesis Refinement Iterations
+          default: 1
+        num_experiment_models:
+          type: integer
+          title: Num Experiment Models
+          default: 1
+        num_experiment_datasets:
+          type: integer
+          title: Num Experiment Datasets
+          default: 1
+        num_comparison_methods:
+          type: integer
+          title: Num Comparison Methods
+          default: 1
+        paper_content_refinement_iterations:
+          type: integer
+          title: Paper Content Refinement Iterations
+          default: 2
+        github_actions_agent:
+          type: string
+          enum:
+          - claude_code
+          - open_code
+          title: Github Actions Agent
+          default: open_code
+        latex_template_name:
+          type: string
+          title: Latex Template Name
+          default: mdpi
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/TopicOpenEndedResearchSubgraphLLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - github_config
+      - research_topic
+      - runner_config
+      - wandb_config
+      title: TopicOpenEndedResearchRequestBody
+    TopicOpenEndedResearchResponseBody:
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          title: Task Id
+      type: object
+      required:
+      - task_id
+      title: TopicOpenEndedResearchResponseBody
     TopicOpenEndedResearchStatusResponseBody:
       properties:
         id:
@@ -3431,7 +3519,7 @@ components:
       - error
       - research_history
       title: TopicOpenEndedResearchStatusResponseBody
-    TopicOpenEndedResearchSubgraphV2LLMMapping:
+    TopicOpenEndedResearchSubgraphLLMMapping:
       properties:
         generate_queries:
           anyOf:
@@ -3478,7 +3566,7 @@ components:
           - $ref: '#/components/schemas/SearchPaperTitlesFromQdrantLLMMapping'
           - type: 'null'
       type: object
-      title: TopicOpenEndedResearchSubgraphV2LLMMapping
+      title: TopicOpenEndedResearchSubgraphLLMMapping
     TopicOpenEndedResearchUpdateRequestBody:
       properties:
         title:
@@ -3512,92 +3600,6 @@ components:
           title: Github Url
       type: object
       title: TopicOpenEndedResearchUpdateRequestBody
-    TopicOpenEndedResearchV2RequestBody:
-      properties:
-        github_config:
-          $ref: '#/components/schemas/GitHubConfig'
-        research_topic:
-          type: string
-          title: Research Topic
-        runner_config:
-          $ref: '#/components/schemas/RunnerConfig'
-        wandb_config:
-          $ref: '#/components/schemas/WandbConfig'
-        is_github_repo_private:
-          type: boolean
-          title: Is Github Repo Private
-          default: false
-        search_method:
-          type: string
-          enum:
-          - airas_db
-          - qdrant
-          title: Search Method
-          default: airas_db
-        collection_name:
-          type: string
-          title: Collection Name
-          default: airas_papers_db
-        num_paper_search_queries:
-          type: integer
-          title: Num Paper Search Queries
-          default: 2
-        papers_per_query:
-          type: integer
-          title: Papers Per Query
-          default: 5
-        hypothesis_refinement_iterations:
-          type: integer
-          title: Hypothesis Refinement Iterations
-          default: 1
-        num_experiment_models:
-          type: integer
-          title: Num Experiment Models
-          default: 1
-        num_experiment_datasets:
-          type: integer
-          title: Num Experiment Datasets
-          default: 1
-        num_comparison_methods:
-          type: integer
-          title: Num Comparison Methods
-          default: 1
-        paper_content_refinement_iterations:
-          type: integer
-          title: Paper Content Refinement Iterations
-          default: 2
-        github_actions_agent:
-          type: string
-          enum:
-          - claude_code
-          - open_code
-          title: Github Actions Agent
-          default: open_code
-        latex_template_name:
-          type: string
-          title: Latex Template Name
-          default: mdpi
-        llm_mapping:
-          anyOf:
-          - $ref: '#/components/schemas/TopicOpenEndedResearchSubgraphV2LLMMapping'
-          - type: 'null'
-      type: object
-      required:
-      - github_config
-      - research_topic
-      - runner_config
-      - wandb_config
-      title: TopicOpenEndedResearchV2RequestBody
-    TopicOpenEndedResearchV2ResponseBody:
-      properties:
-        task_id:
-          type: string
-          format: uuid
-          title: Task Id
-      type: object
-      required:
-      - task_id
-      title: TopicOpenEndedResearchV2ResponseBody
     TrainingConfig:
       properties:
         learning_rate:

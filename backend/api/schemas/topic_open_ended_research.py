@@ -10,34 +10,9 @@ from airas.core.types.paper import SearchMethod
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.wandb import WandbConfig
 from airas.infra.db.models.e2e import Status, StepType
-from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_subgraph_v2 import (
-    TopicOpenEndedResearchSubgraphV2LLMMapping,
+from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_subgraph import (
+    TopicOpenEndedResearchSubgraphLLMMapping,
 )
-
-
-class TopicOpenEndedResearchRequestBody(BaseModel):
-    github_config: GitHubConfig
-    research_topic: str
-    runner_config: RunnerConfig
-    wandb_config: WandbConfig
-    is_github_repo_private: bool = False
-    search_method: SearchMethod = "airas_db"
-    collection_name: str = "airas_papers_db"
-    num_paper_search_queries: int = 1
-    papers_per_query: int = 2
-    hypothesis_refinement_iterations: int = 1
-    num_experiment_models: int = 1
-    num_experiment_datasets: int = 1
-    num_comparison_methods: int = 1
-    experiment_code_validation_iterations: int = 3
-    paper_content_refinement_iterations: int = 2
-    github_actions_agent: GitHubActionsAgent = "claude_code"
-    latex_template_name: str = "mdpi"
-    llm_mapping: TopicOpenEndedResearchSubgraphV2LLMMapping | None = None
-
-
-class TopicOpenEndedResearchResponseBody(BaseModel):
-    task_id: UUID
 
 
 class TopicOpenEndedResearchStatusResponseBody(BaseModel):
@@ -103,7 +78,7 @@ class TopicOpenEndedResearchUpdateRequestBody(BaseModel):
     github_url: str | None = None
 
 
-class TopicOpenEndedResearchV2RequestBody(BaseModel):
+class TopicOpenEndedResearchRequestBody(BaseModel):
     github_config: GitHubConfig
     research_topic: str
     runner_config: RunnerConfig
@@ -120,8 +95,8 @@ class TopicOpenEndedResearchV2RequestBody(BaseModel):
     paper_content_refinement_iterations: int = 2
     github_actions_agent: GitHubActionsAgent = "open_code"
     latex_template_name: str = "mdpi"
-    llm_mapping: TopicOpenEndedResearchSubgraphV2LLMMapping | None = None
+    llm_mapping: TopicOpenEndedResearchSubgraphLLMMapping | None = None
 
 
-class TopicOpenEndedResearchV2ResponseBody(BaseModel):
+class TopicOpenEndedResearchResponseBody(BaseModel):
     task_id: UUID

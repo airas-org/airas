@@ -4,15 +4,15 @@
 /* eslint-disable */
 import type { GitHubConfig } from './GitHubConfig';
 import type { RunnerConfig } from './RunnerConfig';
-import type { TopicOpenEndedResearchSubgraphV2LLMMapping } from './TopicOpenEndedResearchSubgraphV2LLMMapping';
+import type { TopicOpenEndedResearchSubgraphLLMMapping } from './TopicOpenEndedResearchSubgraphLLMMapping';
 import type { WandbConfig } from './WandbConfig';
-export type TopicOpenEndedResearchV2RequestBody = {
+export type TopicOpenEndedResearchRequestBody = {
     github_config: GitHubConfig;
     research_topic: string;
     runner_config: RunnerConfig;
     wandb_config: WandbConfig;
     is_github_repo_private?: boolean;
-    search_method?: TopicOpenEndedResearchV2RequestBody.search_method;
+    search_method?: TopicOpenEndedResearchRequestBody.search_method;
     collection_name?: string;
     num_paper_search_queries?: number;
     papers_per_query?: number;
@@ -21,11 +21,11 @@ export type TopicOpenEndedResearchV2RequestBody = {
     num_experiment_datasets?: number;
     num_comparison_methods?: number;
     paper_content_refinement_iterations?: number;
-    github_actions_agent?: TopicOpenEndedResearchV2RequestBody.github_actions_agent;
+    github_actions_agent?: TopicOpenEndedResearchRequestBody.github_actions_agent;
     latex_template_name?: string;
-    llm_mapping?: (TopicOpenEndedResearchSubgraphV2LLMMapping | null);
+    llm_mapping?: (TopicOpenEndedResearchSubgraphLLMMapping | null);
 };
-export namespace TopicOpenEndedResearchV2RequestBody {
+export namespace TopicOpenEndedResearchRequestBody {
     export enum search_method {
         AIRAS_DB = 'airas_db',
         QDRANT = 'qdrant',

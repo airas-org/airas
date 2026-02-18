@@ -14,11 +14,11 @@ from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.infra.litellm_client import LiteLLMClient
-from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service import (
-    TopicOpenEndedResearchService,
+from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service_protocol import (
+    TopicOpenEndedResearchServiceProtocol,
 )
-from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_subgraph_v2 import (
-    TopicOpenEndedResearchSubgraphV2,
+from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_subgraph import (
+    TopicOpenEndedResearchSubgraph,
 )
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
@@ -26,10 +26,10 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_tit
 from api.schemas.topic_open_ended_research import (
     TopicOpenEndedResearchListItemResponse,
     TopicOpenEndedResearchListResponseBody,
+    TopicOpenEndedResearchRequestBody,
+    TopicOpenEndedResearchResponseBody,
     TopicOpenEndedResearchStatusResponseBody,
     TopicOpenEndedResearchUpdateRequestBody,
-    TopicOpenEndedResearchV2RequestBody,
-    TopicOpenEndedResearchV2ResponseBody,
 )
 
 logger = logging.getLogger(__name__)
@@ -49,9 +49,9 @@ DEFAULT_CREATED_BY = uuid.UUID("00000000-0000-0000-0000-000000000001")
 # HTTP timeouts and ensure resilience against server restarts.
 
 
-async def _execute_topic_open_ended_research_v2(
+async def _execute_topic_open_ended_research(
     task_id: uuid.UUID,
-    request: TopicOpenEndedResearchV2RequestBody,
+    request: TopicOpenEndedResearchRequestBody,
     search_index: AirasDbPaperSearchIndex | None,
     github_client: GithubClient,
     arxiv_client: ArxivClient,
@@ -59,12 +59,12 @@ async def _execute_topic_open_ended_research_v2(
     litellm_client: LiteLLMClient,
     qdrant_client: Any | None,
     langfuse_client: LangfuseClient,
-    e2e_service: TopicOpenEndedResearchService,
+    e2e_service: TopicOpenEndedResearchServiceProtocol,
 ) -> None:
     try:
-        logger.info(f"[Task {task_id}] Starting E2E v2 execution")
+        logger.info(f"[Task {task_id}] Starting E2E execution")
 
-        graph = TopicOpenEndedResearchSubgraphV2(
+        graph = TopicOpenEndedResearchSubgraph(
             github_client=github_client,
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,
@@ -90,7 +90,7 @@ async def _execute_topic_open_ended_research_v2(
             llm_mapping=request.llm_mapping,
         ).build_graph()
 
-        logger.info(f"[Task {task_id}] Streaming graph execution (v2)")
+        logger.info(f"[Task {task_id}] Streaming graph execution")
 
         config = {"recursion_limit": 100}
         if handler := langfuse_client.create_handler():
@@ -125,11 +125,11 @@ async def _execute_topic_open_ended_research_v2(
             )
 
 
-@router.post("/run", response_model=TopicOpenEndedResearchV2ResponseBody)
+@router.post("/run", response_model=TopicOpenEndedResearchResponseBody)
 @inject
 @observe()
-async def execute_topic_open_ended_research_v2(
-    request: TopicOpenEndedResearchV2RequestBody,
+async def execute_topic_open_ended_research(
+    request: TopicOpenEndedResearchRequestBody,
     fastapi_request: Request,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
     arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
@@ -143,10 +143,10 @@ async def execute_topic_open_ended_research_v2(
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
     e2e_service: Annotated[
-        TopicOpenEndedResearchService,
+        TopicOpenEndedResearchServiceProtocol,
         Depends(Provide[Container.topic_open_ended_research_service]),
     ],
-) -> TopicOpenEndedResearchV2ResponseBody:
+) -> TopicOpenEndedResearchResponseBody:
     container: Container = fastapi_request.app.state.container
     task_id = uuid.uuid4()
 
@@ -160,7 +160,7 @@ async def execute_topic_open_ended_research_v2(
         qdrant_client = None
 
     asyncio.create_task(
-        _execute_topic_open_ended_research_v2(
+        _execute_topic_open_ended_research(
             task_id=task_id,
             request=request,
             search_index=search_index,
@@ -174,7 +174,7 @@ async def execute_topic_open_ended_research_v2(
         )
     )
 
-    return TopicOpenEndedResearchV2ResponseBody(task_id=task_id)
+    return TopicOpenEndedResearchResponseBody(task_id=task_id)
 
 
 @router.get(
@@ -185,7 +185,7 @@ async def execute_topic_open_ended_research_v2(
 async def get_topic_open_ended_research_status(
     task_id: uuid.UUID,
     e2e_service: Annotated[
-        TopicOpenEndedResearchService,
+        TopicOpenEndedResearchServiceProtocol,
         Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
     ],
 ) -> TopicOpenEndedResearchStatusResponseBody:
@@ -213,7 +213,7 @@ async def get_topic_open_ended_research_status(
 @observe()
 async def list_topic_open_ended_research(
     e2e_service: Annotated[
-        TopicOpenEndedResearchService,
+        TopicOpenEndedResearchServiceProtocol,
         Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
     ],
     offset: int = 0,
@@ -241,7 +241,7 @@ async def update_topic_open_ended_research(
     task_id: uuid.UUID,
     request: TopicOpenEndedResearchUpdateRequestBody,
     e2e_service: Annotated[
-        TopicOpenEndedResearchService,
+        TopicOpenEndedResearchServiceProtocol,
         Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
     ],
 ) -> TopicOpenEndedResearchStatusResponseBody:

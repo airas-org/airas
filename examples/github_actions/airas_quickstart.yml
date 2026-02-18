@@ -1,0 +1,437 @@
+name: AIRAS Quickstart
+
+# This workflow allows anyone to run the AIRAS end-to-end research pipeline
+# without requiring dedicated infrastructure.
+#
+# See QUICKSTART.md or examples/github_actions/README.md for setup instructions and required secrets.
+
+on:
+  workflow_dispatch:
+    inputs:
+      research_topic:
+        description: 'Research topic'
+        required: true
+        default: 'Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments'
+      github_owner:
+        description: 'GitHub owner for the generated repository (leave empty to use your GitHub username)'
+        required: false
+        default: ''
+      repository_name:
+        description: 'Repository name (leave empty for auto-generated: airas-YYYYMMDD-HHMMSS)'
+        required: false
+        default: ''
+      branch_name:
+        description: 'Branch name for the generated repository'
+        required: false
+        default: 'main'
+      is_github_repo_private:
+        description: 'Make generated repository private'
+        required: false
+        type: boolean
+        default: false
+      runner_label:
+        description: 'Runner labels as JSON array for experiment execution (e.g. ["ubuntu-latest"] or ["self-hosted","gpu-runner"])'
+        required: false
+        default: '["ubuntu-latest"]'
+      runner_description:
+        description: 'Runner description'
+        required: false
+        default: 'GitHub Actions ubuntu-latest runner (4 CPU, 16 GB RAM, 14 GB SSD, x64)'
+      wandb_entity:
+        description: 'W&B entity name (your W&B username or organization name)'
+        required: true
+      num_paper_search_queries:
+        description: 'Number of search queries'
+        required: false
+        default: '2'
+      papers_per_query:
+        description: 'Number of papers retrieved per search query'
+        required: false
+        default: '3'
+      hypothesis_refinement_iterations:
+        description: 'Rounds of hypothesis refinement'
+        required: false
+        default: '1'
+      num_experiment_models:
+        description: 'Number of models to evaluate'
+        required: false
+        default: '1'
+      num_experiment_datasets:
+        description: 'Number of datasets to use'
+        required: false
+        default: '1'
+      num_comparison_methods:
+        description: 'Number of comparison methods'
+        required: false
+        default: '1'
+      paper_content_refinement_iterations:
+        description: 'Rounds of paper content refinement'
+        required: false
+        default: '1'
+      latex_template_name:
+        description: 'LaTeX template name (e.g., mdpi, iclr2024, agents4science_2025)'
+        required: false
+        default: 'mdpi'
+      # --- LLM model settings ---
+      primary_model:
+        description: 'Primary LLM (query generation, hypothesis, design, analysis, writing, LaTeX)'
+        required: false
+        type: choice
+        # NOTE: Use bare model names (e.g. "gemini-2.5-flash") for LangChainClient compatibility.
+        # "provider/model" format (e.g. "google/gemini-2.5-flash") causes litellm.get_model_info() failures.
+        options:
+          - 'gemini-2.5-flash'
+          - 'gemini-2.5-pro'
+          - 'gpt-5.2'
+          - 'gpt-5.2-codex'
+          - 'o3-2025-04-16'
+          - 'o3-mini-2025-01-31'
+          - 'gpt-5-mini-2025-08-07'
+          - 'anthropic/claude-opus-4'
+          - 'anthropic/claude-sonnet-4-5'
+        default: 'gemini-2.5-flash'
+      paper_retrieval_model:
+        description: 'Paper retrieval LLM (paper search, summarization)'
+        required: false
+        type: choice
+        options:
+          - 'gemini-2.5-flash'
+          - 'gemini-2.5-pro'
+          - 'gpt-5.2'
+          - 'gpt-5.2-codex'
+          - 'o3-2025-04-16'
+          - 'o3-mini-2025-01-31'
+          - 'gpt-5-mini-2025-08-07'
+          - 'anthropic/claude-opus-4'
+          - 'anthropic/claude-sonnet-4-5'
+        default: 'gemini-2.5-flash'
+      github_actions_agent:
+        description: 'GitHub Actions agent tool'
+        required: false
+        type: choice
+        options:
+          - open_code
+          - claude_code
+        default: 'open_code'
+      github_actions_model:
+        description: 'GitHub Actions LLM (experiment dispatch, LaTeX compilation)'
+        required: false
+        type: choice
+        options:
+          - 'anthropic/claude-sonnet-4-5'
+          - 'gemini-2.5-flash'
+          - 'gemini-2.5-pro'
+          - 'gpt-5.2'
+          - 'gpt-5.2-codex'
+          - 'o3-2025-04-16'
+          - 'o3-mini-2025-01-31'
+          - 'gpt-5-mini-2025-08-07'
+          - 'anthropic/claude-opus-4'
+        default: 'anthropic/claude-sonnet-4-5'
+
+jobs:
+  e2e-test:
+    # GitHub-hosted runners have a 6-hour job time limit.
+    # If the pipeline is expected to take longer, change this to a self-hosted runner label.
+    runs-on: ubuntu-latest
+    timeout-minutes: 360  # 6 hours
+
+    env:
+      GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+      WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+      LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}
+
+    steps:
+      - name: Checkout airas repository
+        uses: actions/checkout@v4
+        with:
+          repository: airas-org/airas
+          ref: develop
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.7.2"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --frozen
+
+      - name: Install jq
+        run: command -v jq || sudo apt-get update -y && sudo apt-get install -y jq
+
+      - name: Start backend server
+        working-directory: backend
+        run: |
+          mkdir -p /tmp/e2e-logs
+          uv run uvicorn api.main:app --host 0.0.0.0 --port 8000 \
+            > /tmp/e2e-logs/server.log 2>&1 &
+          echo $! > /tmp/e2e-logs/server.pid
+          echo "Server PID: $(cat /tmp/e2e-logs/server.pid)"
+          echo "Waiting for server to start..."
+          SERVER_READY=false
+          for i in {1..30}; do
+            if curl -s http://localhost:8000/health > /dev/null 2>&1 || curl -s http://localhost:8000/ > /dev/null 2>&1; then
+              echo "Server is ready!"
+              SERVER_READY=true
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+          if [ "$SERVER_READY" = "false" ]; then
+            echo "❌ Server failed to start within 60 seconds"
+            echo "--- Server log ---"
+            cat /tmp/e2e-logs/server.log 2>/dev/null || echo "(no log)"
+            exit 1
+          fi
+
+      - name: Generate dynamic parameters
+        id: params
+        run: |
+          TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
+          DATE_ONLY=$(date -u +"%Y-%m-%d")
+
+          INPUT_REPO_NAME="${{ github.event.inputs.repository_name }}"
+          if [ -n "$INPUT_REPO_NAME" ]; then
+            REPO_NAME="$INPUT_REPO_NAME"
+          else
+            REPO_NAME="airas-${TIMESTAMP}"
+          fi
+
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "date_only=${DATE_ONLY}" >> $GITHUB_OUTPUT
+          echo "repo_name=${REPO_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Send research request
+        id: request
+        run: |
+          # === General parameters ===
+          # Use provided github_owner, or fall back to the actor running the workflow
+          INPUT_OWNER="${{ github.event.inputs.github_owner }}"
+          GITHUB_OWNER="${INPUT_OWNER:-${{ github.actor }}}"
+          RESEARCH_TOPIC="${{ github.event.inputs.research_topic }}"
+          BRANCH_NAME="${{ github.event.inputs.branch_name || 'main' }}"
+          REPO_NAME="${{ steps.params.outputs.repo_name }}"
+          WANDB_ENTITY="${{ github.event.inputs.wandb_entity }}"
+          WANDB_PROJECT="${{ steps.params.outputs.date_only }}"
+          RUNNER_LABELS='${{ github.event.inputs.runner_label }}'
+          if [ -z "$RUNNER_LABELS" ]; then
+            RUNNER_LABELS='["ubuntu-latest"]'
+          fi
+          RUNNER_DESC="${{ github.event.inputs.runner_description || 'GitHub Actions ubuntu-latest runner' }}"
+          IS_PRIVATE="${{ github.event.inputs.is_github_repo_private || 'false' }}"
+          NUM_QUERIES="${{ github.event.inputs.num_paper_search_queries || '2' }}"
+          PAPERS_PER_QUERY="${{ github.event.inputs.papers_per_query || '3' }}"
+          HYPOTHESIS_ITERS="${{ github.event.inputs.hypothesis_refinement_iterations || '1' }}"
+          NUM_MODELS="${{ github.event.inputs.num_experiment_models || '1' }}"
+          NUM_DATASETS="${{ github.event.inputs.num_experiment_datasets || '1' }}"
+          NUM_COMPARISONS="${{ github.event.inputs.num_comparison_methods || '1' }}"
+          PAPER_REFINE_ITERS="${{ github.event.inputs.paper_content_refinement_iterations || '1' }}"
+          LATEX_TEMPLATE="${{ github.event.inputs.latex_template_name || 'mdpi' }}"
+
+          # === LLM model selections ===
+          PRIMARY_MODEL="${{ github.event.inputs.primary_model || 'gemini-2.5-flash' }}"
+          PAPER_RETRIEVAL_MODEL="${{ github.event.inputs.paper_retrieval_model || 'gemini-2.5-flash' }}"
+          GITHUB_ACTIONS_MODEL="${{ github.event.inputs.github_actions_model || 'anthropic/claude-sonnet-4-5' }}"
+          GITHUB_ACTIONS_AGENT="${{ github.event.inputs.github_actions_agent || 'open_code' }}"
+
+          # Remove anthropic/ prefix for claude_code
+          if [ "$GITHUB_ACTIONS_AGENT" = "claude_code" ]; then
+            GITHUB_ACTIONS_MODEL="${GITHUB_ACTIONS_MODEL#anthropic/}"
+            echo "Adjusted GITHUB_ACTIONS_MODEL for claude_code: ${GITHUB_ACTIONS_MODEL}"
+          fi
+
+          # === Build LLM mapping JSON ===
+          LLM_MAPPING=$(cat <<EOFLLM
+          {
+            "generate_queries": {"generate_queries": {"llm_name": "${PRIMARY_MODEL}"}},
+            "retrieve_paper": {
+              "search_arxiv_id_from_title": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
+              "summarize_paper": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
+              "extract_github_url_from_text": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
+              "select_experimental_files": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
+              "extract_reference_titles": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"}
+            },
+            "generate_hypothesis": {
+              "generate_hypothesis": {"llm_name": "${PRIMARY_MODEL}"},
+              "evaluate_novelty_and_significance": {"llm_name": "${PRIMARY_MODEL}"},
+              "refine_hypothesis": {"llm_name": "${PRIMARY_MODEL}"}
+            },
+            "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY_MODEL}"}},
+            "dispatch_code_generation": {"dispatch_code_generation": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
+            "dispatch_experiment_validation": {"dispatch_experiment_validation": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
+            "analyze_experiment": {"analyze_experiment": {"llm_name": "${PRIMARY_MODEL}"}},
+            "write": {
+              "write_paper": {"llm_name": "${PRIMARY_MODEL}"},
+              "refine_paper": {"llm_name": "${PRIMARY_MODEL}"}
+            },
+            "generate_latex": {"convert_to_latex": {"llm_name": "${PRIMARY_MODEL}"}},
+            "compile_latex": {"compile_latex": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}}
+          }
+          EOFLLM
+          )
+
+          echo "Starting research with:"
+          echo "  Repository: ${GITHUB_OWNER}/${REPO_NAME}"
+          echo "  Branch: ${BRANCH_NAME}"
+          echo "  W&B: ${WANDB_ENTITY}/${WANDB_PROJECT}"
+          echo "  Topic: ${RESEARCH_TOPIC}"
+          echo "  LLM Mapping:"
+          echo "$LLM_MAPPING" | head -30
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8000/airas/v1/topic_open_ended_research/run \
+            -H "Content-Type: application/json" \
+            -d @- <<EOF
+          {
+            "github_config": {
+              "github_owner": "${GITHUB_OWNER}",
+              "repository_name": "${REPO_NAME}",
+              "branch_name": "${BRANCH_NAME}"
+            },
+            "research_topic": "${RESEARCH_TOPIC}",
+            "runner_config": {
+              "runner_label": ${RUNNER_LABELS},
+              "description": "${RUNNER_DESC}"
+            },
+            "wandb_config": {
+              "entity": "${WANDB_ENTITY}",
+              "project": "${WANDB_PROJECT}"
+            },
+            "is_github_repo_private": ${IS_PRIVATE},
+            "search_method": "airas_db",
+            "num_paper_search_queries": ${NUM_QUERIES},
+            "papers_per_query": ${PAPERS_PER_QUERY},
+            "hypothesis_refinement_iterations": ${HYPOTHESIS_ITERS},
+            "num_experiment_models": ${NUM_MODELS},
+            "num_experiment_datasets": ${NUM_DATASETS},
+            "num_comparison_methods": ${NUM_COMPARISONS},
+            "paper_content_refinement_iterations": ${PAPER_REFINE_ITERS},
+            "latex_template_name": "${LATEX_TEMPLATE}",
+            "github_actions_agent": "${GITHUB_ACTIONS_AGENT}",
+            "llm_mapping": ${LLM_MAPPING}
+          }
+          EOF
+          )
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response (HTTP ${HTTP_CODE}):"
+          echo "$BODY" | jq . || echo "$BODY"
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "✅ Research request submitted successfully"
+            TASK_ID=$(echo "$BODY" | jq -r '.task_id')
+            echo "task_id=${TASK_ID}" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Research request failed with HTTP ${HTTP_CODE}"
+            exit 1
+          fi
+
+      - name: Poll for task completion
+        run: |
+          TASK_ID="${{ steps.request.outputs.task_id }}"
+          echo "Polling task ${TASK_ID} ..."
+
+          START_TIME=$(date +%s)
+          POLL_COUNT=0
+          STEP_POLL_COUNT=0
+          CONSECUTIVE_ERRORS=0
+          MAX_CONSECUTIVE_ERRORS=10
+          PREV_STEP=""
+
+          # Progressive interval; resets on step transition.
+          get_poll_interval() {
+            local n=$1
+            if [ "$n" -le 10 ]; then echo 30
+            elif [ "$n" -le 30 ]; then echo 60
+            elif [ "$n" -le 60 ]; then echo 120
+            elif [ "$n" -le 120 ]; then echo 300
+            else echo 600; fi
+          }
+
+          while true; do
+            POLL_COUNT=$((POLL_COUNT + 1))
+            STEP_POLL_COUNT=$((STEP_POLL_COUNT + 1))
+            ELAPSED=$(( $(date +%s) - START_TIME ))
+
+            STATUS_RESPONSE=$(curl -s -w "\n%{http_code}" \
+              "http://localhost:8000/airas/v1/topic_open_ended_research/status/${TASK_ID}")
+            STATUS_HTTP=$(echo "$STATUS_RESPONSE" | tail -n1)
+            STATUS_BODY=$(echo "$STATUS_RESPONSE" | sed '$d')
+
+            if [ "$STATUS_HTTP" -ne 200 ]; then
+              CONSECUTIVE_ERRORS=$((CONSECUTIVE_ERRORS + 1))
+              echo "[Poll #${POLL_COUNT}] HTTP ${STATUS_HTTP} (error ${CONSECUTIVE_ERRORS}/${MAX_CONSECUTIVE_ERRORS})"
+              echo "--- Error response body ---"
+              echo "$STATUS_BODY" | jq . 2>/dev/null || echo "$STATUS_BODY"
+              echo "--- Server log (last 20 lines) ---"
+              tail -n 20 /tmp/e2e-logs/server.log 2>/dev/null || echo "(no log)"
+              echo "---"
+              if [ "$CONSECUTIVE_ERRORS" -ge "$MAX_CONSECUTIVE_ERRORS" ]; then
+                echo "ABORT: Too many consecutive HTTP errors"
+                tail -n 100 /tmp/e2e-logs/server.log 2>/dev/null || true
+                exit 1
+              fi
+              POLL_INTERVAL=$(get_poll_interval $STEP_POLL_COUNT)
+              sleep $POLL_INTERVAL
+              continue
+            fi
+            CONSECUTIVE_ERRORS=0
+
+            TASK_STATUS=$(echo "$STATUS_BODY" | jq -r '.status')
+            CURRENT_STEP=$(echo "$STATUS_BODY" | jq -r '.current_step // "N/A"')
+            ERROR_MSG=$(echo "$STATUS_BODY" | jq -r '.error_message // empty')
+
+            # Reset interval on step transition
+            if [ "$CURRENT_STEP" != "$PREV_STEP" ] && [ -n "$PREV_STEP" ]; then
+              STEP_POLL_COUNT=0
+              POLL_INTERVAL=30
+            else
+              POLL_INTERVAL=$(get_poll_interval $STEP_POLL_COUNT)
+            fi
+            PREV_STEP="$CURRENT_STEP"
+
+            echo "[Poll #${POLL_COUNT} | ${ELAPSED}s] ${TASK_STATUS} - ${CURRENT_STEP}"
+            echo "--- Status response ---"
+            echo "$STATUS_BODY" | jq 'del(.result, .research_history)'
+            echo "--- Server log (last 20 lines) ---"
+            tail -n 20 /tmp/e2e-logs/server.log 2>/dev/null || echo "(no log)"
+            echo "---"
+
+            if [ "$TASK_STATUS" = "completed" ]; then
+              echo "Research completed (${ELAPSED}s)"
+              exit 0
+            fi
+
+            if [ "$TASK_STATUS" = "failed" ] || [ -n "$ERROR_MSG" ]; then
+              echo "Research failed: ${ERROR_MSG}"
+              echo "--- Server log (last 100 lines) ---"
+              tail -n 100 /tmp/e2e-logs/server.log 2>/dev/null || true
+              exit 1
+            fi
+
+            sleep $POLL_INTERVAL
+          done
+
+      - name: Upload server logs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: airas-server-logs-${{ steps.params.outputs.timestamp }}
+          path: /tmp/e2e-logs/
+          retention-days: 30

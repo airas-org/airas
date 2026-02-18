@@ -11,7 +11,7 @@ from airas.repository.topic_open_ended_research_service_repository import (
 )
 
 
-class TopicOpenEndedResearchService:
+class SqlTopicOpenEndedResearchService:
     def __init__(self, session_factory: Callable[[], Session]):
         self._session_factory = session_factory
 
