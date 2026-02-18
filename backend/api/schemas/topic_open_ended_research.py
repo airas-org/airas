@@ -33,7 +33,7 @@ class TopicOpenEndedResearchRequestBody(BaseModel):
     paper_content_refinement_iterations: int = 2
     github_actions_agent: GitHubActionsAgent = "claude_code"
     latex_template_name: str = "mdpi"
-    llm_mapping: TopicOpenEndedResearchSubgraphLLMMapping | None = None
+    llm_mapping: TopicOpenEndedResearchSubgraphV2LLMMapping | None = None
 
 
 class TopicOpenEndedResearchResponseBody(BaseModel):

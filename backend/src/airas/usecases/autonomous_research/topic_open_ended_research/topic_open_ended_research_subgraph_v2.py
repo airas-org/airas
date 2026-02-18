@@ -988,7 +988,7 @@ class TopicOpenEndedResearchSubgraphV2:
             if current_index + 1 < len(run_ids):
                 logger.info(
                     f"Sanity check passed for run_id={current_run_id} at index {current_index}. "
-                    f"Moving to next run_id (index {current_index + 1}/{len(run_ids) - 1})"
+                    f"Moving to next run_id (index {current_index + 1}/{len(run_ids)})"
                 )
                 return "increment_run_id_index"
             else:

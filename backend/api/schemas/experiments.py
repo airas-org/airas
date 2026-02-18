@@ -36,6 +36,7 @@ class FetchExperimentalResultsResponseBody(BaseModel):
 class DispatchSanityCheckRequestBody(BaseModel):
     github_config: GitHubConfig
     run_id: str
+    runner_label: list[str] | None = None
 
 
 class DispatchSanityCheckResponseBody(BaseModel):
@@ -46,6 +47,7 @@ class DispatchSanityCheckResponseBody(BaseModel):
 class DispatchMainExperimentRequestBody(BaseModel):
     github_config: GitHubConfig
     run_id: str
+    runner_label: list[str] | None = None
 
 
 class DispatchMainExperimentResponseBody(BaseModel):
@@ -56,6 +58,7 @@ class DispatchMainExperimentResponseBody(BaseModel):
 class DispatchVisualizationRequestBody(BaseModel):
     github_config: GitHubConfig
     run_ids: list[str]
+    runner_label: list[str] | None = None
 
 
 class DispatchVisualizationResponseBody(BaseModel):

@@ -113,6 +113,7 @@ async def dispatch_sanity_check(
     result = (
         await DispatchSanityCheckSubgraph(
             github_client=github_client,
+            runner_label=request.runner_label,
         )
         .build_graph()
         .ainvoke(request, config=config)
@@ -168,6 +169,7 @@ async def dispatch_main_experiment(
     result = (
         await DispatchMainExperimentSubgraph(
             github_client=github_client,
+            runner_label=request.runner_label,
         )
         .build_graph()
         .ainvoke(request, config=config)
@@ -196,6 +198,7 @@ async def dispatch_visualization(
     result = (
         await DispatchVisualizationSubgraph(
             github_client=github_client,
+            runner_label=request.runner_label,
         )
         .build_graph()
         .ainvoke(request, config=config)

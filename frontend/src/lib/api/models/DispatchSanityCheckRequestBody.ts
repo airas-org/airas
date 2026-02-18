@@ -6,5 +6,6 @@ import type { GitHubConfig } from './GitHubConfig';
 export type DispatchSanityCheckRequestBody = {
     github_config: GitHubConfig;
     run_id: string;
+    runner_label?: (Array<string> | null);
 };
 
