@@ -1,4 +1,4 @@
-LM_API_MODELS = {
+LLM_API_MODELS = {
     "gemini-3-pro-preview": {
         "model_parameters": "Unknown",
         "model_architecture": "Gemini model architecture with enhanced capabilities",
