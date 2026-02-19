@@ -227,12 +227,13 @@ jobs:
           BRANCH_NAME="${{ github.event.inputs.branch_name || 'main' }}"
           REPO_NAME="${{ steps.params.outputs.repo_name }}"
           WANDB_ENTITY="${{ github.event.inputs.wandb_entity }}"
-          WANDB_PROJECT="${{ steps.params.outputs.date_only }}"
+          WANDB_PROJECT="${{ steps.params.outputs.timestamp }}"
           RUNNER_LABELS='${{ github.event.inputs.runner_label }}'
+          RUNNER_DESC="${{ github.event.inputs.runner_description }}"
           if [ -z "$RUNNER_LABELS" ]; then
             RUNNER_LABELS='["ubuntu-latest"]'
+            RUNNER_DESC='GitHub Actions ubuntu-latest runner (4 CPU, 16 GB RAM, 14 GB SSD, x64)'
           fi
-          RUNNER_DESC="${{ github.event.inputs.runner_description || 'GitHub Actions ubuntu-latest runner' }}"
           IS_PRIVATE="${{ github.event.inputs.is_github_repo_private || 'false' }}"
           NUM_QUERIES="${{ github.event.inputs.num_paper_search_queries || '2' }}"
           PAPERS_PER_QUERY="${{ github.event.inputs.papers_per_query || '3' }}"
@@ -248,12 +249,6 @@ jobs:
           PAPER_RETRIEVAL_MODEL="${{ github.event.inputs.paper_retrieval_model || 'gemini-2.5-flash' }}"
           GITHUB_ACTIONS_MODEL="${{ github.event.inputs.github_actions_model || 'anthropic/claude-sonnet-4-5' }}"
           GITHUB_ACTIONS_AGENT="${{ github.event.inputs.github_actions_agent || 'open_code' }}"
-
-          # Remove anthropic/ prefix for claude_code
-          if [ "$GITHUB_ACTIONS_AGENT" = "claude_code" ]; then
-            GITHUB_ACTIONS_MODEL="${GITHUB_ACTIONS_MODEL#anthropic/}"
-            echo "Adjusted GITHUB_ACTIONS_MODEL for claude_code: ${GITHUB_ACTIONS_MODEL}"
-          fi
 
           # === Build LLM mapping JSON ===
           LLM_MAPPING=$(jq -n \
