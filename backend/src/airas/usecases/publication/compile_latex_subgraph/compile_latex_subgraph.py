@@ -70,7 +70,7 @@ class CompileLatexSubgraph:
                 "subdir": self.latex_template_name,
                 "paper_name": self.paper_name,
                 "github_actions_agent": self.github_actions_agent,
-                "model_name": self.llm_mapping.compile_latex.llm_name,
+                "model_name": "anthropic/claude-sonnet-4-5",
             },
         )
 

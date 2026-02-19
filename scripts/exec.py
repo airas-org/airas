@@ -176,6 +176,7 @@ class AIRASAPIClient:
                 "repository_name": repository_name,
                 "branch_name": branch_name,
             },
+            "github_actions_agent": "open_code",
             "latex_template_name": latex_template_name,
         }
 
@@ -298,9 +299,10 @@ def main(
 
 if __name__ == "__main__":
     github_owner = "auto-res2"
-    repository_name = "20260209-airas-m-test-refinement"
+    # repository_name = "20260213-airas-m-test-refinement"
+    repository_name = "20260215-airas-m-refinement-v4"
     branch_name = "main"
-    port = "8001"
+    port = "8000"
     writing_refinement_rounds = 1
     research_data = {
         "research_hypothesis": {
