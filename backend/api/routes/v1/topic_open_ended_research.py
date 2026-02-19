@@ -14,11 +14,11 @@ from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.infra.litellm_client import LiteLLMClient
+from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research import (
+    TopicOpenEndedResearch,
+)
 from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service_protocol import (
     TopicOpenEndedResearchServiceProtocol,
-)
-from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_subgraph import (
-    TopicOpenEndedResearchSubgraph,
 )
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
@@ -64,7 +64,7 @@ async def _execute_topic_open_ended_research(
     try:
         logger.info(f"[Task {task_id}] Starting E2E execution")
 
-        graph = TopicOpenEndedResearchSubgraph(
+        graph = TopicOpenEndedResearch(
             github_client=github_client,
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,
@@ -97,7 +97,14 @@ async def _execute_topic_open_ended_research(
             config["callbacks"] = [handler]
 
         # NOTE:将来的にストリーミング UI に対応するためastreamで実装
-        async for chunk in graph.astream(request, config=config):
+        async for chunk in graph.astream(
+            {
+                "task_id": task_id,
+                "github_config": request.github_config,
+                "research_topic": request.research_topic,
+            },
+            config=config,
+        ):
             for node_name, node_output in chunk.items():
                 if not isinstance(node_output, dict):
                     continue
