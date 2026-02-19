@@ -2191,7 +2191,7 @@ components:
         generate_latex:
           $ref: '#/components/schemas/GenerateLatexLLMMapping'
           default:
-            convert_to_latex:
+            generate_latex:
               llm_name: gpt-5.2
         compile_latex:
           $ref: '#/components/schemas/CompileLatexLLMMapping'

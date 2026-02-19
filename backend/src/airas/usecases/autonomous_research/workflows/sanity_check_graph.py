@@ -335,7 +335,7 @@ class SanityCheckGraph:
         action = state.get("artifact_data", {}).get("validation_action")
 
         if action == "retry":
-            if retry_count >= _MAX_RETRY_GITHUB_ACTIONS_VALIDATION:
+            if retry_count >= _MAX_RETRY_GITHUB_ACTIONS_VALIDATION - 1:
                 error_msg = (
                     f"Maximum retry count ({_MAX_RETRY_GITHUB_ACTIONS_VALIDATION}) exceeded "
                     f"for run_id={current_run_id} at index {current_index}"
