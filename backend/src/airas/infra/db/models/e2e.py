@@ -16,6 +16,7 @@ class Status(str, Enum):
     FAILED = "failed"
 
 
+# TODO: Updates are required due to changes in the subgraph field.
 class StepType(str, Enum):
     GENERATE_QUERIES = "generate_queries"
     SEARCH_PAPER_TITLES = "search_paper_titles"

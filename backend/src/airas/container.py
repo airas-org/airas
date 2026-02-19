@@ -36,8 +36,8 @@ from airas.usecases.assisted_research.assisted_research_session_service import (
 from airas.usecases.assisted_research.assisted_research_step_service import (
     AssistedResearchStepService,
 )
-from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service import (
-    TopicOpenEndedResearchService,
+from airas.usecases.autonomous_research.topic_open_ended_research.sql_topic_open_ended_research_service import (
+    SqlTopicOpenEndedResearchService,
 )
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
@@ -218,7 +218,7 @@ class Container(containers.DeclarativeContainer):
 
     ## ---  Autonomous Research Service ---
     topic_open_ended_research_service = providers.Factory(
-        TopicOpenEndedResearchService, session_factory=session_factory
+        SqlTopicOpenEndedResearchService, session_factory=session_factory
     )
 
 

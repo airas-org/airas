@@ -1,62 +1,63 @@
-name: E2E Scheduled Test
+name: AIRAS Quickstart
+
+# This workflow allows anyone to run the AIRAS end-to-end research pipeline
+# without requiring dedicated infrastructure.
+#
+# See QUICKSTART.md or examples/github_actions/README.md for setup instructions and required secrets.
 
 on:
-  schedule:
-    # Run every Monday at 00:00 JST (Sunday 15:00 UTC)
-    - cron: '0 15 * * 0'
   workflow_dispatch:
     inputs:
       research_topic:
-        description: 'Research topic for the E2E test'
-        required: false
+        description: 'Research topic'
+        required: true
         default: 'Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments'
-      is_github_repo_private:
-        description: 'Make repository private'
-        required: false
-        type: boolean
-        default: false
       github_owner:
-        description: 'GitHub owner for the generated repository'
+        description: 'GitHub owner for the generated repository (leave empty to use your GitHub username)'
         required: false
-        default: 'auto-res2'
+        default: ''
       repository_name:
-        description: 'Repository name (leave empty for auto-generated: e2e-test-YYYYMMDD-HHMMSS)'
+        description: 'Repository name (leave empty for auto-generated: airas-YYYYMMDD-HHMMSS)'
         required: false
         default: ''
       branch_name:
         description: 'Branch name for the generated repository'
         required: false
         default: 'main'
-      runner_label:
-        description: 'Runner labels as JSON array (e.g., ["self-hosted", "gpu-runner"])'
+      is_github_repo_private:
+        description: 'Make generated repository private'
         required: false
-        default: '["self-hosted", "gpu-runner"]'
+        type: boolean
+        default: false
+      runner_label:
+        description: 'Runner labels as JSON array for experiment execution (e.g. ["ubuntu-latest"] or ["self-hosted","gpu-runner"])'
+        required: false
+        default: '["ubuntu-latest"]'
       runner_description:
         description: 'Runner description'
         required: false
-        default: 'NVIDIA H200, VRAM: 140 GB, RAM: 240 GB'
+        default: 'GitHub Actions ubuntu-latest runner (4 CPU, 16 GB RAM, 14 GB SSD, x64)'
       wandb_entity:
-        description: 'W&B entity name'
-        required: false
-        default: 'airas'
+        description: 'W&B entity name (your W&B username or organization name)'
+        required: true
       num_paper_search_queries:
         description: 'Number of search queries'
         required: false
-        default: '3'
+        default: '2'
       papers_per_query:
         description: 'Number of papers retrieved per search query'
         required: false
-        default: '5'
+        default: '3'
       hypothesis_refinement_iterations:
-        description: 'Rounds of hypothesis refinement (novelty evaluation → refine loop)'
+        description: 'Rounds of hypothesis refinement'
         required: false
-        default: '2'
+        default: '1'
       num_experiment_models:
-        description: 'Number of models to evaluate in experiments'
+        description: 'Number of models to evaluate'
         required: false
         default: '1'
       num_experiment_datasets:
-        description: 'Number of datasets to use in experiments'
+        description: 'Number of datasets to use'
         required: false
         default: '1'
       num_comparison_methods:
@@ -64,7 +65,7 @@ on:
         required: false
         default: '1'
       paper_content_refinement_iterations:
-        description: 'Rounds of paper content refinement (write → refine loop)'
+        description: 'Rounds of paper content refinement'
         required: false
         default: '1'
       latex_template_name:
@@ -78,106 +79,64 @@ on:
         type: choice
         # NOTE: Use bare model names (e.g. "gemini-2.5-flash") for LangChainClient compatibility.
         # "provider/model" format (e.g. "google/gemini-2.5-flash") causes litellm.get_model_info() failures.
-        options: &llm_options
+        options:
+          - 'gemini-2.5-flash'
+          - 'gemini-2.5-pro'
           - 'gpt-5.2'
           - 'gpt-5.2-codex'
           - 'o3-2025-04-16'
           - 'o3-mini-2025-01-31'
           - 'gpt-5-mini-2025-08-07'
-          - 'gemini-2.5-pro'
-          - 'gemini-2.5-flash'
           - 'anthropic/claude-opus-4'
           - 'anthropic/claude-sonnet-4-5'
-        default: 'gpt-5.2'
+        default: 'gemini-2.5-flash'
       paper_retrieval_model:
-        description: 'Paper retrieval LLM (paper search, summarization, reference extraction)'
+        description: 'Paper retrieval LLM (paper search, summarization)'
         required: false
         type: choice
-        options: *llm_options
+        options:
+          - 'gemini-2.5-flash'
+          - 'gemini-2.5-pro'
+          - 'gpt-5.2'
+          - 'gpt-5.2-codex'
+          - 'o3-2025-04-16'
+          - 'o3-mini-2025-01-31'
+          - 'gpt-5-mini-2025-08-07'
+          - 'anthropic/claude-opus-4'
+          - 'anthropic/claude-sonnet-4-5'
         default: 'gemini-2.5-flash'
       github_actions_agent:
-        description: 'GitHub Actions agent tool (claude_code or open_code)'
+        description: 'GitHub Actions agent tool'
         required: false
         type: choice
         options:
-          - claude_code
           - open_code
+          - claude_code
         default: 'open_code'
       github_actions_model:
-        description: 'GitHub Actions LLM (experiment dispatch, evaluation dispatch, LaTeX compilation)'
-        required: false
-        type: choice
-        options: *llm_options
-        default: 'anthropic/claude-sonnet-4-5'
-      search_method:
-        description: 'Paper search backend'
+        description: 'GitHub Actions LLM (experiment dispatch, LaTeX compilation)'
         required: false
         type: choice
         options:
-          - airas_db
-          - qdrant
-        default: 'qdrant'
+          - 'anthropic/claude-sonnet-4-5'
+          - 'gemini-2.5-flash'
+          - 'gemini-2.5-pro'
+          - 'gpt-5.2'
+          - 'gpt-5.2-codex'
+          - 'o3-2025-04-16'
+          - 'o3-mini-2025-01-31'
+          - 'gpt-5-mini-2025-08-07'
+          - 'anthropic/claude-opus-4'
+        default: 'anthropic/claude-sonnet-4-5'
 
 jobs:
-  check-org-membership:
-    runs-on: ubuntu-latest
-    outputs:
-      is_member: ${{ steps.check.outputs.is_member }}
-    steps:
-      - name: Check organization membership
-        id: check
-        env:
-          GH_TOKEN: ${{ secrets.AIRAS_ORG_TOKEN }}
-        run: |
-          # For scheduled runs, always allow
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "is_member=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # For workflow_dispatch, check membership
-          ACTOR="${{ github.actor }}"
-          ORG="airas-org"
-
-          echo "Checking if ${ACTOR} is a member of ${ORG}..."
-
-          # Check membership using GitHub API
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/orgs/${ORG}/members/${ACTOR}")
-
-          if [ "$HTTP_CODE" = "204" ]; then
-            echo "✅ ${ACTOR} is a member of ${ORG}"
-            echo "is_member=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ ${ACTOR} is not a member of ${ORG} (HTTP: ${HTTP_CODE})"
-            echo "is_member=false" >> $GITHUB_OUTPUT
-          fi
-
   e2e-test:
-    needs: check-org-membership
-    if: needs.check-org-membership.outputs.is_member == 'true'
-    runs-on: ubicloud-standard-2
-    timeout-minutes: 4320  # 72 hours
-
-    services:
-      db:
-        image: postgres:16
-        env:
-          POSTGRES_USER: airas
-          POSTGRES_PASSWORD: airas
-          POSTGRES_DB: airas
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U airas -d airas"
-          --health-interval 3s
-          --health-timeout 3s
-          --health-retries 20
+    # GitHub-hosted runners have a 6-hour job time limit.
+    # If the pipeline is expected to take longer, change this to a self-hosted runner label.
+    runs-on: ubuntu-latest
+    timeout-minutes: 360  # 6 hours
 
     env:
-      DATABASE_URL: postgresql+psycopg://airas:airas@localhost:5432/airas
       GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
 
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -186,8 +145,6 @@ jobs:
       AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
-      QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
-      QDRANT_BASE_URL: ${{ secrets.QDRANT_BASE_URL }}
       WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
@@ -195,9 +152,10 @@ jobs:
       LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout airas repository
         uses: actions/checkout@v4
         with:
+          repository: airas-org/airas
           ref: develop
 
       - name: Install uv
@@ -224,14 +182,22 @@ jobs:
           echo $! > /tmp/e2e-logs/server.pid
           echo "Server PID: $(cat /tmp/e2e-logs/server.pid)"
           echo "Waiting for server to start..."
+          SERVER_READY=false
           for i in {1..30}; do
             if curl -s http://localhost:8000/health > /dev/null 2>&1 || curl -s http://localhost:8000/ > /dev/null 2>&1; then
               echo "Server is ready!"
+              SERVER_READY=true
               break
             fi
             echo "Waiting... ($i/30)"
             sleep 2
           done
+          if [ "$SERVER_READY" = "false" ]; then
+            echo "❌ Server failed to start within 60 seconds"
+            echo "--- Server log ---"
+            cat /tmp/e2e-logs/server.log 2>/dev/null || echo "(no log)"
+            exit 1
+          fi
 
       - name: Generate dynamic parameters
         id: params
@@ -239,38 +205,39 @@ jobs:
           TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
           DATE_ONLY=$(date -u +"%Y-%m-%d")
 
-          # Use input repository_name if provided, otherwise generate
           INPUT_REPO_NAME="${{ github.event.inputs.repository_name }}"
           if [ -n "$INPUT_REPO_NAME" ]; then
             REPO_NAME="$INPUT_REPO_NAME"
           else
-            REPO_NAME="e2e-test-${TIMESTAMP}"
+            REPO_NAME="airas-${TIMESTAMP}"
           fi
 
           echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
           echo "date_only=${DATE_ONLY}" >> $GITHUB_OUTPUT
           echo "repo_name=${REPO_NAME}" >> $GITHUB_OUTPUT
 
-      - name: Send E2E test request
+      - name: Send research request
         id: request
         run: |
           # === General parameters ===
-          GITHUB_OWNER="${{ github.event.inputs.github_owner || 'auto-res2' }}"
-          RESEARCH_TOPIC="${{ github.event.inputs.research_topic || 'Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments' }}"
+          # Use provided github_owner, or fall back to the actor running the workflow
+          INPUT_OWNER="${{ github.event.inputs.github_owner }}"
+          GITHUB_OWNER="${INPUT_OWNER:-${{ github.actor }}}"
+          RESEARCH_TOPIC="${{ github.event.inputs.research_topic }}"
           BRANCH_NAME="${{ github.event.inputs.branch_name || 'main' }}"
           REPO_NAME="${{ steps.params.outputs.repo_name }}"
-          WANDB_ENTITY="${{ github.event.inputs.wandb_entity || 'airas' }}"
+          WANDB_ENTITY="${{ github.event.inputs.wandb_entity }}"
           WANDB_PROJECT="${{ steps.params.outputs.timestamp }}"
           RUNNER_LABELS='${{ github.event.inputs.runner_label }}'
           RUNNER_DESC="${{ github.event.inputs.runner_description }}"
           if [ -z "$RUNNER_LABELS" ]; then
-            RUNNER_LABELS='["self-hosted", "gpu-runner"]'
-            RUNNER_DESC='NVIDIA H200, VRAM: 140 GB, RAM: 240 GB'
+            RUNNER_LABELS='["ubuntu-latest"]'
+            RUNNER_DESC='GitHub Actions ubuntu-latest runner (4 CPU, 16 GB RAM, 14 GB SSD, x64)'
           fi
           IS_PRIVATE="${{ github.event.inputs.is_github_repo_private || 'false' }}"
-          NUM_QUERIES="${{ github.event.inputs.num_paper_search_queries || '3' }}"
-          PAPERS_PER_QUERY="${{ github.event.inputs.papers_per_query || '5' }}"
-          HYPOTHESIS_ITERS="${{ github.event.inputs.hypothesis_refinement_iterations || '2' }}"
+          NUM_QUERIES="${{ github.event.inputs.num_paper_search_queries || '2' }}"
+          PAPERS_PER_QUERY="${{ github.event.inputs.papers_per_query || '3' }}"
+          HYPOTHESIS_ITERS="${{ github.event.inputs.hypothesis_refinement_iterations || '1' }}"
           NUM_MODELS="${{ github.event.inputs.num_experiment_models || '1' }}"
           NUM_DATASETS="${{ github.event.inputs.num_experiment_datasets || '1' }}"
           NUM_COMPARISONS="${{ github.event.inputs.num_comparison_methods || '1' }}"
@@ -278,13 +245,10 @@ jobs:
           LATEX_TEMPLATE="${{ github.event.inputs.latex_template_name || 'mdpi' }}"
 
           # === LLM model selections ===
-          PRIMARY_MODEL="${{ github.event.inputs.primary_model || 'gpt-5.2' }}"
+          PRIMARY_MODEL="${{ github.event.inputs.primary_model || 'gemini-2.5-flash' }}"
           PAPER_RETRIEVAL_MODEL="${{ github.event.inputs.paper_retrieval_model || 'gemini-2.5-flash' }}"
           GITHUB_ACTIONS_MODEL="${{ github.event.inputs.github_actions_model || 'anthropic/claude-sonnet-4-5' }}"
           GITHUB_ACTIONS_AGENT="${{ github.event.inputs.github_actions_agent || 'open_code' }}"
-
-          # === Paper search settings ===
-          SEARCH_METHOD="${{ github.event.inputs.search_method || 'qdrant' }}"
 
           # === Build LLM mapping JSON ===
           LLM_MAPPING=$(jq -n \
@@ -317,7 +281,7 @@ jobs:
               compile_latex: {compile_latex: {llm_name: $gam}}
             }')
 
-          echo "Starting E2E test with:"
+          echo "Starting research with:"
           echo "  Repository: ${GITHUB_OWNER}/${REPO_NAME}"
           echo "  Branch: ${BRANCH_NAME}"
           echo "  W&B: ${WANDB_ENTITY}/${WANDB_PROJECT}"
@@ -335,7 +299,7 @@ jobs:
             --arg wandb_entity "$WANDB_ENTITY" \
             --arg wandb_project "$WANDB_PROJECT" \
             --argjson is_github_repo_private "$IS_PRIVATE" \
-            --arg search_method "$SEARCH_METHOD" \
+            --arg search_method "airas_db" \
             --argjson num_paper_search_queries "$NUM_QUERIES" \
             --argjson papers_per_query "$PAPERS_PER_QUERY" \
             --argjson hypothesis_refinement_iterations "$HYPOTHESIS_ITERS" \
@@ -386,11 +350,11 @@ jobs:
           echo "$BODY" | jq . || echo "$BODY"
 
           if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
-            echo "✅ E2E test request sent successfully"
+            echo "✅ Research request submitted successfully"
             TASK_ID=$(echo "$BODY" | jq -r '.task_id')
             echo "task_id=${TASK_ID}" >> $GITHUB_OUTPUT
           else
-            echo "❌ E2E test request failed with HTTP ${HTTP_CODE}"
+            echo "❌ Research request failed with HTTP ${HTTP_CODE}"
             exit 1
           fi
 
@@ -452,7 +416,6 @@ jobs:
             # Reset interval on step transition
             if [ "$CURRENT_STEP" != "$PREV_STEP" ] && [ -n "$PREV_STEP" ]; then
               STEP_POLL_COUNT=0
-              # Ensure next poll after a step change uses the shortest interval
               POLL_INTERVAL=30
             else
               POLL_INTERVAL=$(get_poll_interval $STEP_POLL_COUNT)
@@ -467,12 +430,12 @@ jobs:
             echo "---"
 
             if [ "$TASK_STATUS" = "completed" ]; then
-              echo "E2E test completed (${ELAPSED}s)"
+              echo "Research completed (${ELAPSED}s)"
               exit 0
             fi
 
             if [ "$TASK_STATUS" = "failed" ] || [ -n "$ERROR_MSG" ]; then
-              echo "E2E test failed: ${ERROR_MSG}"
+              echo "Research failed: ${ERROR_MSG}"
               echo "--- Server log (last 100 lines) ---"
               tail -n 100 /tmp/e2e-logs/server.log 2>/dev/null || true
               exit 1
@@ -490,6 +453,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: e2e-server-logs-${{ steps.params.outputs.timestamp }}
+          name: airas-server-logs-${{ steps.params.outputs.timestamp }}
           path: /tmp/e2e-logs/
           retention-days: 30

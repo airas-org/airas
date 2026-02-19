@@ -3,23 +3,23 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { TopicOpenEndedResearchListResponseBody } from '../models/TopicOpenEndedResearchListResponseBody';
+import type { TopicOpenEndedResearchRequestBody } from '../models/TopicOpenEndedResearchRequestBody';
+import type { TopicOpenEndedResearchResponseBody } from '../models/TopicOpenEndedResearchResponseBody';
 import type { TopicOpenEndedResearchStatusResponseBody } from '../models/TopicOpenEndedResearchStatusResponseBody';
 import type { TopicOpenEndedResearchUpdateRequestBody } from '../models/TopicOpenEndedResearchUpdateRequestBody';
-import type { TopicOpenEndedResearchV2RequestBody } from '../models/TopicOpenEndedResearchV2RequestBody';
-import type { TopicOpenEndedResearchV2ResponseBody } from '../models/TopicOpenEndedResearchV2ResponseBody';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class TopicOpenEndedResearchService {
     /**
-     * Execute Topic Open Ended Research V2
+     * Execute Topic Open Ended Research
      * @param requestBody
-     * @returns TopicOpenEndedResearchV2ResponseBody Successful Response
+     * @returns TopicOpenEndedResearchResponseBody Successful Response
      * @throws ApiError
      */
-    public static executeTopicOpenEndedResearchV2AirasV1TopicOpenEndedResearchRunPost(
-        requestBody: TopicOpenEndedResearchV2RequestBody,
-    ): CancelablePromise<TopicOpenEndedResearchV2ResponseBody> {
+    public static executeTopicOpenEndedResearchAirasV1TopicOpenEndedResearchRunPost(
+        requestBody: TopicOpenEndedResearchRequestBody,
+    ): CancelablePromise<TopicOpenEndedResearchResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/topic_open_ended_research/run',

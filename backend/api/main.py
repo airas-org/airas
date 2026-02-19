@@ -1,12 +1,16 @@
 import os
 from contextlib import asynccontextmanager
 
+from dependency_injector import providers
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 
 import api.routes.v1 as routes_v1
 from airas.container import Container
+from airas.usecases.autonomous_research.topic_open_ended_research.in_memory_topic_open_ended_research_service import (
+    InMemoryTopicOpenEndedResearchService,
+)
 from api.routes.v1 import (
     assisted_research,
     bibfile,
@@ -28,15 +32,21 @@ from api.routes.v1 import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    database_url = os.getenv("DATABASE_URL")
     container = Container()
-    container.config.from_dict({"database_url": os.getenv("DATABASE_URL")})
+    container.config.from_dict({"database_url": database_url})
 
     # Make container discoverable by dependency_injector's FastAPI integration (request.app.container)
     app.state.container = container
     app.container = container
 
-    engine = container.engine()
-    SQLModel.metadata.create_all(engine)
+    if database_url:
+        engine = container.engine()
+        SQLModel.metadata.create_all(engine)
+    else:
+        container.topic_open_ended_research_service.override(
+            providers.Singleton(InMemoryTopicOpenEndedResearchService)
+        )
 
     # Explicitly wire route modules so dependency_injector resolves Provide[] dependencies.
     container.wire(packages=[routes_v1])

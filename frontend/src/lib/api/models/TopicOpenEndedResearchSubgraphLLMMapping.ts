@@ -13,7 +13,7 @@ import type { GenerateQueriesLLMMapping } from './GenerateQueriesLLMMapping';
 import type { RetrievePaperSubgraphLLMMapping } from './RetrievePaperSubgraphLLMMapping';
 import type { SearchPaperTitlesFromQdrantLLMMapping } from './SearchPaperTitlesFromQdrantLLMMapping';
 import type { WriteLLMMapping } from './WriteLLMMapping';
-export type TopicOpenEndedResearchSubgraphV2LLMMapping = {
+export type TopicOpenEndedResearchSubgraphLLMMapping = {
     generate_queries?: (GenerateQueriesLLMMapping | null);
     retrieve_paper?: (RetrievePaperSubgraphLLMMapping | null);
     generate_hypothesis?: (GenerateHypothesisSubgraphV0LLMMapping | null);
