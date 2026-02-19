@@ -27,4 +27,7 @@ RUN apt-get install -y curl ca-certificates gnupg && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
+# Claude Code
+RUN curl -fsSL https://claude.ai/install.sh | bash
+
 CMD [ "bash" ]
