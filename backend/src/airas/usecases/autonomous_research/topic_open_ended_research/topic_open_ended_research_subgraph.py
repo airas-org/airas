@@ -130,7 +130,7 @@ from airas.usecases.writers.write_subgraph.write_subgraph import (
 setup_logging()
 logger = logging.getLogger(__name__)
 
-record_execution_time = lambda f: time_node("execute_e2e_v2")(f)  # noqa: E731
+record_execution_time = lambda f: time_node("execute_e2e")(f)  # noqa: E731
 
 
 class WorkflowExecutionError(Exception):
@@ -156,7 +156,7 @@ class GitHubActionsWorkflowError(WorkflowExecutionError):
 
 
 class WorkflowRecursionLimits:
-    STANDARD_WORKFLOW = 50000  # Maximum recursion steps for code gen, sanity, review, main experiment, visualization
+    STANDARD_WORKFLOW = 50000  # Maximum recursion steps for code gen, sanity, validation, main experiment, visualization
     LATEX_COMPILATION = 10000  # Maximum recursion steps for LaTeX compilation
 
 
@@ -174,20 +174,20 @@ class TopicOpenEndedResearchSubgraphLLMMapping(BaseModel):
     search_paper_titles_from_qdrant: SearchPaperTitlesFromQdrantLLMMapping | None = None
 
 
-class TopicOpenEndedResearchInputStateV2(TypedDict):
+class TopicOpenEndedResearchInputState(TypedDict):
     task_id: str | UUID
     github_config: GitHubConfig
     research_topic: str
 
 
-class TopicOpenEndedResearchOutputStateV2(ExecutionTimeState):
+class TopicOpenEndedResearchOutputState(ExecutionTimeState):
     status: str
     research_history: ResearchHistory | None
 
 
-class TopicOpenEndedResearchStateV2(
-    TopicOpenEndedResearchInputStateV2,
-    TopicOpenEndedResearchOutputStateV2,
+class TopicOpenEndedResearchState(
+    TopicOpenEndedResearchInputState,
+    TopicOpenEndedResearchOutputState,
     total=False,
 ):
     current_step: StepType
@@ -280,7 +280,7 @@ class TopicOpenEndedResearchSubgraph:
         hypothesis_refinement_iterations: int = 1,
         num_experiment_models: int = 1,
         num_experiment_datasets: int = 1,
-        num_comparison_methods: int = 0,
+        num_comparison_methods: int = 1,
         paper_content_refinement_iterations: int = 2,
         github_actions_agent: GitHubActionsAgent = "open_code",
         latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
@@ -312,7 +312,7 @@ class TopicOpenEndedResearchSubgraph:
 
     async def _poll_workflow(
         self,
-        state: TopicOpenEndedResearchStateV2,
+        state: TopicOpenEndedResearchState,
         workflow_name: str,
         recursion_limit: int = WorkflowRecursionLimits.STANDARD_WORKFLOW,
     ) -> tuple[GitHubActionsStatus | None, GitHubActionsConclusion | None, int | None]:
@@ -584,7 +584,7 @@ class TopicOpenEndedResearchSubgraph:
 
     def _check_retry_limit_and_route(
         self,
-        state: TopicOpenEndedResearchStateV2,
+        state: TopicOpenEndedResearchState,
         item_name: str,
         retry_count: int,
         retry_node_name: str,
@@ -629,7 +629,7 @@ class TopicOpenEndedResearchSubgraph:
 
     def _increment_dict_retry_count(
         self,
-        state: TopicOpenEndedResearchStateV2,
+        state: TopicOpenEndedResearchState,
         state_key: str,
         item_key: str,
         item_name: str,
@@ -643,7 +643,7 @@ class TopicOpenEndedResearchSubgraph:
         return {state_key: {**retry_counts, item_key: new_retry}}
 
     @record_execution_time
-    def _create_record(self, state: TopicOpenEndedResearchStateV2) -> dict[str, Any]:
+    def _create_record(self, state: TopicOpenEndedResearchState) -> dict[str, Any]:
         github_config = state["github_config"]
         github_url = (
             f"https://github.com/{github_config.github_owner}/"
@@ -651,7 +651,7 @@ class TopicOpenEndedResearchSubgraph:
         )
         self.e2e_service.create(
             id=self.task_id,
-            title="Untitled E2E Research Task V2",
+            title="Untitled E2E Research Task",
             created_by=UUID("00000000-0000-0000-0000-000000000001"),
             status=Status.RUNNING,
             current_step=StepType.GENERATE_QUERIES,
@@ -660,7 +660,7 @@ class TopicOpenEndedResearchSubgraph:
         return {}
 
     @record_execution_time
-    def _update_record(self, state: TopicOpenEndedResearchStateV2) -> dict[str, Any]:
+    def _update_record(self, state: TopicOpenEndedResearchState) -> dict[str, Any]:
         self.e2e_service.update(
             id=self.task_id,
             current_step=state.get("current_step"),
@@ -670,7 +670,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _upload_research_history(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, ResearchHistory]:
         logger.info("=== Upload Research History ===")
         research_history = ResearchHistory(
@@ -697,7 +697,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _prepare_repository(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== Repository Preparation ===")
         result = (
@@ -716,7 +716,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _set_github_actions_secrets(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, bool]:
         logger.info("=== Set GitHub Actions Secrets ===")
         result = (
@@ -729,7 +729,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _generate_queries(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== Query Generation ===")
         result = (
@@ -748,7 +748,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _search_paper_titles(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== Search Paper Titles ===")
         subgraph: (
@@ -779,6 +779,7 @@ class TopicOpenEndedResearchSubgraph:
                 )
             case _:
                 raise ValueError(f"Unsupported search_method: {self.search_method}")
+
         result = await subgraph.build_graph().ainvoke({"queries": state["queries"]})
         return {
             "paper_titles": result["paper_titles"],
@@ -787,7 +788,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _retrieve_papers(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== Paper Retrieval ===")
         result = (
@@ -809,7 +810,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _generate_hypothesis(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== Hypothesis Generation ===")
         result = (
@@ -834,7 +835,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _generate_experimental_design(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== Experimental Design ===")
         result = (
@@ -857,7 +858,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _dispatch_code_generation(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== Dispatch Code Generation ===")
         result = (
@@ -885,7 +886,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _poll_code_generation(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         status, conclusion, workflow_run_id = await self._poll_workflow(
             state, "Code Generation"
@@ -898,7 +899,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _fetch_run_ids(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== Fetch Run IDs ===")
         try:
@@ -929,7 +930,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _process_sanity_check_for_current_run_id(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         current_index = state.get("current_run_id_index", 0)
         run_ids = state.get("run_ids", [])
@@ -959,7 +960,7 @@ class TopicOpenEndedResearchSubgraph:
             "artifact_data": result["artifact_data"],
         }
 
-    def _route_after_sanity_check(self, state: TopicOpenEndedResearchStateV2) -> str:
+    def _route_after_sanity_check(self, state: TopicOpenEndedResearchState) -> str:
         current_index = state.get("current_run_id_index", 0)
         run_ids = state.get("run_ids", [])
         current_run_id = run_ids[current_index]
@@ -1008,7 +1009,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     def _increment_run_id_index(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, int]:
         current_index = state.get("current_run_id_index", 0)
         new_index = current_index + 1
@@ -1017,7 +1018,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     def _increment_retry_count(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, dict[str, int]]:
         current_index = state.get("current_run_id_index", 0)
         run_ids = state.get("run_ids", [])
@@ -1031,7 +1032,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _fetch_experiment_code(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, ExperimentCode]:
         logger.info("=== Fetch Experiment Code ===")
         result = (
@@ -1044,7 +1045,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _create_branches_for_main_experiment(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, list[str]]:
         logger.info("=== Create Branches for Main Experiment ===")
 
@@ -1060,7 +1061,7 @@ class TopicOpenEndedResearchSubgraph:
         return {"main_experiment_branches": branches}
 
     def _dispatch_branches_for_main_experiment(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> list[Send]:
         branches = state.get("main_experiment_branches", [])
         logger.info(
@@ -1172,7 +1173,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     def _collect_main_experiment_results(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         branch_results = state.get("main_experiment_branch_results", {})
         branches = state.get("main_experiment_branches", [])
@@ -1221,7 +1222,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _process_visualization(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         retry_count = state.get("visualization_retry_count", 0)
         logger.info(
@@ -1242,7 +1243,7 @@ class TopicOpenEndedResearchSubgraph:
             "artifact_data": result["artifact_data"],
         }
 
-    def _route_after_visualization(self, state: TopicOpenEndedResearchStateV2) -> str:
+    def _route_after_visualization(self, state: TopicOpenEndedResearchState) -> str:
         retry_count = state.get("visualization_retry_count", 0)
 
         return self._check_retry_limit_and_route(
@@ -1255,7 +1256,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     def _increment_visualization_retry_count(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, int]:
         current_count = state.get("visualization_retry_count", 0)
         new_count = current_count + 1
@@ -1268,7 +1269,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _fetch_experiment_results(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== Fetch Experiment Results ===")
         result = (
@@ -1284,7 +1285,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _analyze_experiment(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== Experiment Analysis ===")
         result = (
@@ -1310,7 +1311,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _generate_bibfile(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== Reference Generation ===")
         result = (
@@ -1326,7 +1327,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _push_bibfile(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, bool]:
         logger.info("=== Push Bibfile to GitHub ===")
         bibfile_path = f".research/latex/{self.latex_template_name}/references.bib"
@@ -1346,7 +1347,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _generate_paper(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== Paper Writing ===")
         result = (
@@ -1376,7 +1377,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _generate_latex(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== LaTeX Generation ===")
         result = (
@@ -1401,9 +1402,7 @@ class TopicOpenEndedResearchSubgraph:
         }
 
     @record_execution_time
-    async def _push_latex(
-        self, state: TopicOpenEndedResearchStateV2
-    ) -> dict[str, bool]:
+    async def _push_latex(self, state: TopicOpenEndedResearchState) -> dict[str, bool]:
         logger.info("=== Push LaTeX to GitHub ===")
         result = (
             await PushLatexSubgraph(
@@ -1423,7 +1422,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _compile_latex(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, Any]:
         logger.info("=== Compile LaTeX ===")
         result = (
@@ -1445,7 +1444,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _poll_compile_latex_workflow(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, GitHubActionsStatus | GitHubActionsConclusion | None]:
         status, conclusion, _ = await self._poll_workflow(
             state,
@@ -1459,7 +1458,7 @@ class TopicOpenEndedResearchSubgraph:
 
     @record_execution_time
     async def _finalize(
-        self, state: TopicOpenEndedResearchStateV2
+        self, state: TopicOpenEndedResearchState
     ) -> dict[str, str | ResearchHistory | None]:
         logger.info("=== Workflow Completed ===")
         logger.info(
@@ -1482,9 +1481,9 @@ class TopicOpenEndedResearchSubgraph:
 
     def build_graph(self):
         graph_builder = StateGraph(
-            TopicOpenEndedResearchStateV2,
-            input_schema=TopicOpenEndedResearchInputStateV2,
-            output_schema=TopicOpenEndedResearchOutputStateV2,
+            TopicOpenEndedResearchState,
+            input_schema=TopicOpenEndedResearchInputState,
+            output_schema=TopicOpenEndedResearchOutputState,
         )
 
         graph_builder.add_node("create_record", self._create_record)
