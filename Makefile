@@ -52,7 +52,7 @@ ruff:
 	cd backend && uv run ruff format .
 
 mypy:
-	cd backend && uv run mypy --config-file=pyproject.toml .
+	cd backend && uv run mypy .
 
 biome:
 	cd frontend && npx biome check --write .
