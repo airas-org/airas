@@ -1,0 +1,59 @@
+{
+  "enabledPlugins": {
+    "claude-mem@thedotmack": true,
+    "superpowers@claude-plugins-official": true
+  },
+  "mcpServers": {
+    "github": {
+      "transport": "sse",
+      "command": "echo",
+      "args": [
+        "unused-for-http"
+      ],
+      "url": "https://api.github.com/mcp"
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
+    },
+    "serena": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--project",
+        "/ABS/PATH/TO/YOUR/PROJECT"
+      ],
+      "env": {}
+    },
+    "sentry": {
+      "transport": "sse",
+      "command": "echo",
+      "args": [
+        "unused-for-http"
+      ],
+      "url": "https://mcp.sentry.dev/sse"
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic/mcp-brave-search"
+      ]
+    }
+  }
+}

@@ -186,4 +186,4 @@ dist-ssr
 !.gitkeep
 .github/instructions/*
 .serena/*
-.claude
+
