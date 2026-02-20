@@ -55,4 +55,4 @@ mypy:
 	cd backend && uv run mypy --config-file=pyproject.toml .
 
 biome:
-	cd frontend && npx biome check --write
+	cd frontend && npx biome check --write .
