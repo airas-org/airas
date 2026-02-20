@@ -12,9 +12,7 @@
     "deny": [
       "Bash(rm -rf:*)",
       "Bash(sudo:*)",
-      "Bash(git push --force:*)",
-      "Bash(curl:*)",
-      "Bash(brew:*)"
+      "Bash(git push --force:*)"
     ]
   },
   "enabledPlugins": {
