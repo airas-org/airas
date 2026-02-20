@@ -55,4 +55,4 @@ mypy:
 	cd backend && uv run mypy .
 
 biome:
-	cd frontend && npx biome check --write .
+	cd frontend && npx biome check .
