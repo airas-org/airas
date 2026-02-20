@@ -187,4 +187,5 @@ dist-ssr
 .github/instructions/*
 .serena/*
 .claude/CLAUDE.local.md
+.claude/settings.local.json
 
