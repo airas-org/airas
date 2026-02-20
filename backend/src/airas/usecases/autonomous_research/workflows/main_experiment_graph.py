@@ -74,12 +74,6 @@ class MainExperimentInputState(TypedDict):
 class MainExperimentState(MainExperimentInputState, total=False):
     main_experiment_branches: list[str]
     main_experiment_branch_results: Annotated[dict[str, dict], lambda x, y: {**x, **y}]
-    main_experiment_retry_counts: dict[str, int]
-    main_experiment_branch_name: Annotated[str, lambda x, y: y]
-    main_experiment_retry_count: Annotated[int, lambda x, y: y]
-    main_experiment_workflow_run_id: Annotated[str | None, lambda x, y: y]
-    main_experiment_validation_workflow_run_id: Annotated[str | None, lambda x, y: y]
-    artifact_data: Annotated[dict, lambda x, y: y]
 
 
 class MainExperimentGraph:
@@ -181,98 +175,28 @@ class MainExperimentGraph:
             f"=== Dispatching {len(branches)} branches for independent processing ==="
         )
 
-        retry_counts = state.get("main_experiment_retry_counts", {})
-
         return [
             Send(
-                "dispatch_main_experiment",
+                "run_branch_pipeline",
                 {
                     "main_experiment_branch_name": branch,
                     "github_config": state["github_config"],
                     "research_topic": state["research_topic"],
                     "research_hypothesis": state["research_hypothesis"],
                     "experimental_design": state["experimental_design"],
-                    "main_experiment_retry_count": retry_counts.get(branch, 0),
                 },
             )
             for branch in branches
         ]
 
     @record_execution_time
-    async def _dispatch_main_experiment(self, state: dict[str, Any]) -> dict[str, Any]:
-        main_experiment_branch_name: str = state["main_experiment_branch_name"]
-        github_config: GitHubConfig = state["github_config"]
-        run_id: str = main_experiment_branch_name.replace(
-            f"{github_config.branch_name}-", ""
-        )
-        main_experiment_retry_count = state.get("main_experiment_retry_count", 0)
-        logger.info(
-            f"=== Dispatch Main Experiment for branch={main_experiment_branch_name}, run_id={run_id} "
-            f"(attempt {main_experiment_retry_count + 1}/{_MAX_RETRY_GITHUB_ACTIONS_VALIDATION}) ==="
-        )
+    async def _run_branch_pipeline(self, state: dict[str, Any]) -> dict[str, Any]:
+        """Executes the entire pipeline for a single branch (dispatch → poll → validate → download), including retries.
 
-        branch_config = GitHubConfig(
-            **github_config.model_dump(exclude={"branch_name"}),
-            branch_name=main_experiment_branch_name,
-        )
-
-        dispatch_result = (
-            await DispatchMainExperimentSubgraph(
-                github_client=self.github_client,
-                runner_label=self.runner_config.runner_label,
-            )
-            .build_graph()
-            .ainvoke({"github_config": branch_config, "run_id": run_id})
-        )
-
-        if not dispatch_result.get("dispatched", False):
-            error_msg = f"Failed to dispatch main experiment workflow for branch={main_experiment_branch_name}"
-            logger.error(error_msg)
-            raise WorkflowExecutionError(error_msg)
-
-        logger.info(
-            f"Main experiment workflow dispatched successfully for branch={main_experiment_branch_name}"
-        )
-        return {
-            "main_experiment_branch_name": main_experiment_branch_name,
-            "main_experiment_retry_count": main_experiment_retry_count,
-        }
-
-    @record_execution_time
-    async def _poll_main_experiment(self, state: dict[str, Any]) -> dict[str, Any]:
-        main_experiment_branch_name: str = state["main_experiment_branch_name"]
-        github_config: GitHubConfig = state["github_config"]
-        branch_config = GitHubConfig(
-            **github_config.model_dump(exclude={"branch_name"}),
-            branch_name=main_experiment_branch_name,
-        )
-        logger.info(
-            f"Polling main experiment workflow for branch={main_experiment_branch_name}..."
-        )
-
-        poll_result = (
-            await PollGithubActionsSubgraph(github_client=self.github_client)
-            .build_graph()
-            .ainvoke(
-                {"github_config": branch_config},
-                {"recursion_limit": _STANDARD_WORKFLOW_RECURSION_LIMIT},
-            )
-        )
-
-        workflow_run_id = poll_result.get("workflow_run_id")
-        status = poll_result.get("status")
-        conclusion = poll_result.get("conclusion")
-        logger.info(
-            f"Main experiment workflow completed for branch={main_experiment_branch_name}: "
-            f"status={status}, conclusion={conclusion}"
-        )
-        self._validate_github_actions_completion("Main", status, conclusion)
-        return {"main_experiment_workflow_run_id": workflow_run_id}
-
-    @record_execution_time
-    async def _dispatch_main_experiment_validation(
-        self, state: dict[str, Any]
-    ) -> dict[str, Any]:
+        Since this is invoked via Send as an independent node per branch, LangGraph’s
+        superstep synchronization does not occur, and validation begins immediately
+        after the experiment completes.
+        """
         main_experiment_branch_name: str = state["main_experiment_branch_name"]
         github_config: GitHubConfig = state["github_config"]
         run_id: str = main_experiment_branch_name.replace(
@@ -282,179 +206,173 @@ class MainExperimentGraph:
             **github_config.model_dump(exclude={"branch_name"}),
             branch_name=main_experiment_branch_name,
         )
-        logger.info(
-            f"Dispatching validation for main experiment (branch={main_experiment_branch_name})..."
-        )
 
-        validation_dispatch_result = (
-            await DispatchExperimentValidationSubgraph(
-                github_client=self.github_client,
-                llm_mapping=self.llm_mapping,
+        retry_count = 0
+        artifact_data: dict = {}
+
+        while True:
+            # Step 1: Dispatch main experiment
+            logger.info(
+                f"=== Dispatch Main Experiment for branch={main_experiment_branch_name}, run_id={run_id} "
+                f"(attempt {retry_count + 1}/{_MAX_RETRY_GITHUB_ACTIONS_VALIDATION}) ==="
             )
-            .build_graph()
-            .ainvoke(
-                {
-                    "github_config": branch_config,
-                    "research_topic": state["research_topic"],
-                    "run_id": run_id,
-                    "workflow_run_id": state.get("main_experiment_workflow_run_id"),
-                    "run_stage": "main",
-                    "research_hypothesis": state["research_hypothesis"],
-                    "experimental_design": state["experimental_design"],
-                    "wandb_config": self.wandb_config,
-                    "github_actions_agent": self.github_actions_agent,
-                }
+            dispatch_result = (
+                await DispatchMainExperimentSubgraph(
+                    github_client=self.github_client,
+                    runner_label=self.runner_config.runner_label,
+                )
+                .build_graph()
+                .ainvoke({"github_config": branch_config, "run_id": run_id})
             )
-        )
+            if not dispatch_result.get("dispatched", False):
+                error_msg = f"Failed to dispatch main experiment workflow for branch={main_experiment_branch_name}"
+                logger.error(error_msg)
+                raise WorkflowExecutionError(error_msg)
 
-        if not validation_dispatch_result.get("dispatched", False):
-            error_msg = f"Failed to dispatch validation for main experiment (branch={main_experiment_branch_name})"
-            logger.error(error_msg)
-            raise WorkflowExecutionError(error_msg)
-
-        logger.info(
-            f"Validation for main experiment dispatched successfully (branch={main_experiment_branch_name})"
-        )
-        return {}
-
-    @record_execution_time
-    async def _poll_main_experiment_validation(
-        self, state: dict[str, Any]
-    ) -> dict[str, Any]:
-        main_experiment_branch_name: str = state["main_experiment_branch_name"]
-        github_config: GitHubConfig = state["github_config"]
-        branch_config = GitHubConfig(
-            **github_config.model_dump(exclude={"branch_name"}),
-            branch_name=main_experiment_branch_name,
-        )
-        logger.info(
-            f"Polling validation for main experiment (branch={main_experiment_branch_name})..."
-        )
-
-        validation_poll_result = (
-            await PollGithubActionsSubgraph(github_client=self.github_client)
-            .build_graph()
-            .ainvoke(
-                {"github_config": branch_config},
-                {"recursion_limit": _STANDARD_WORKFLOW_RECURSION_LIMIT},
+            logger.info(
+                f"Main experiment workflow dispatched successfully for branch={main_experiment_branch_name}"
             )
-        )
 
-        validation_workflow_run_id = validation_poll_result.get("workflow_run_id")
-        validation_status = validation_poll_result.get("status")
-        validation_conclusion = validation_poll_result.get("conclusion")
-        logger.info(
-            f"Main experiment validation completed for branch={main_experiment_branch_name}: "
-            f"status={validation_status}, conclusion={validation_conclusion}"
-        )
-        self._validate_github_actions_completion(
-            "Main Validation", validation_status, validation_conclusion
-        )
-        return {
-            "main_experiment_validation_workflow_run_id": validation_workflow_run_id
-        }
-
-    @record_execution_time
-    async def _download_main_experiment_artifact(
-        self, state: dict[str, Any]
-    ) -> dict[str, Any]:
-        main_experiment_branch_name: str = state["main_experiment_branch_name"]
-        main_experiment_retry_count = state.get("main_experiment_retry_count", 0)
-        github_config: GitHubConfig = state["github_config"]
-        branch_config = GitHubConfig(
-            **github_config.model_dump(exclude={"branch_name"}),
-            branch_name=main_experiment_branch_name,
-        )
-        logger.info(
-            f"Downloading artifact from main experiment validation (branch={main_experiment_branch_name})..."
-        )
-
-        artifact_result = (
-            await DownloadGithubActionsArtifactsSubgraph(
-                github_client=self.github_client
+            # Step 2: Poll main experiment
+            logger.info(
+                f"Polling main experiment workflow for branch={main_experiment_branch_name}..."
             )
-            .build_graph()
-            .ainvoke(
-                {
-                    "github_config": branch_config,
-                    "workflow_run_id": state.get(
-                        "main_experiment_validation_workflow_run_id"
-                    ),
-                }
+            poll_result = (
+                await PollGithubActionsSubgraph(github_client=self.github_client)
+                .build_graph()
+                .ainvoke(
+                    {"github_config": branch_config},
+                    {"recursion_limit": _STANDARD_WORKFLOW_RECURSION_LIMIT},
+                )
             )
-        )
-
-        if not (artifact_data := artifact_result.get("artifact_data", {})):
-            error_msg = f"No artifact data found for main experiment (branch={main_experiment_branch_name})"
-            logger.error(error_msg)
-            raise WorkflowValidationError(error_msg)
-
-        if (validation_action := artifact_data.get("validation_action")) not in {
-            "retry",
-            "proceed",
-        }:
-            error_msg = (
-                f"Invalid validation_action: '{validation_action}' for main experiment (branch={main_experiment_branch_name}). "
-                f"Expected 'retry' or 'proceed'"
+            workflow_run_id = poll_result.get("workflow_run_id")
+            logger.info(
+                f"Main experiment workflow completed for branch={main_experiment_branch_name}: "
+                f"status={poll_result.get('status')}, conclusion={poll_result.get('conclusion')}"
             )
-            logger.error(error_msg)
-            raise WorkflowValidationError(error_msg)
+            self._validate_github_actions_completion(
+                "Main", poll_result.get("status"), poll_result.get("conclusion")
+            )
 
-        logger.info(
-            f"Main experiment validation result for branch={main_experiment_branch_name}: {validation_action}"
-        )
-        return {
-            "artifact_data": artifact_data,
-            "main_experiment_branch_results": {
-                main_experiment_branch_name: {
-                    "status": "success",
-                    "artifact_data": artifact_data,
-                }
-            },
-            "main_experiment_retry_count": main_experiment_retry_count,
-        }
+            # Step 3: Dispatch validation
+            logger.info(
+                f"Dispatching validation for main experiment (branch={main_experiment_branch_name})..."
+            )
+            validation_dispatch_result = (
+                await DispatchExperimentValidationSubgraph(
+                    github_client=self.github_client,
+                    llm_mapping=self.llm_mapping,
+                )
+                .build_graph()
+                .ainvoke(
+                    {
+                        "github_config": branch_config,
+                        "research_topic": state["research_topic"],
+                        "run_id": run_id,
+                        "workflow_run_id": workflow_run_id,
+                        "run_stage": "main",
+                        "research_hypothesis": state["research_hypothesis"],
+                        "experimental_design": state["experimental_design"],
+                        "wandb_config": self.wandb_config,
+                        "github_actions_agent": self.github_actions_agent,
+                    }
+                )
+            )
+            if not validation_dispatch_result.get("dispatched", False):
+                error_msg = f"Failed to dispatch validation for main experiment (branch={main_experiment_branch_name})"
+                logger.error(error_msg)
+                raise WorkflowExecutionError(error_msg)
 
-    def _route_after_main_experiment_branch(self, state: dict[str, Any]) -> str:
-        main_experiment_branch_name: str = state["main_experiment_branch_name"]
-        main_experiment_retry_count = state.get("main_experiment_retry_count", 0)
-        action = state.get("artifact_data", {}).get("validation_action")
+            logger.info(
+                f"Validation for main experiment dispatched successfully (branch={main_experiment_branch_name})"
+            )
 
-        if action == "retry":
-            if main_experiment_retry_count >= _MAX_RETRY_GITHUB_ACTIONS_VALIDATION - 1:
+            # Step 4: Poll validation
+            logger.info(
+                f"Polling validation for main experiment (branch={main_experiment_branch_name})..."
+            )
+            validation_poll_result = (
+                await PollGithubActionsSubgraph(github_client=self.github_client)
+                .build_graph()
+                .ainvoke(
+                    {"github_config": branch_config},
+                    {"recursion_limit": _STANDARD_WORKFLOW_RECURSION_LIMIT},
+                )
+            )
+            validation_workflow_run_id = validation_poll_result.get("workflow_run_id")
+            logger.info(
+                f"Main experiment validation completed for branch={main_experiment_branch_name}: "
+                f"status={validation_poll_result.get('status')}, conclusion={validation_poll_result.get('conclusion')}"
+            )
+            self._validate_github_actions_completion(
+                "Main Validation",
+                validation_poll_result.get("status"),
+                validation_poll_result.get("conclusion"),
+            )
+
+            # Step 5: Download artifact
+            logger.info(
+                f"Downloading artifact from main experiment validation (branch={main_experiment_branch_name})..."
+            )
+            artifact_result = (
+                await DownloadGithubActionsArtifactsSubgraph(
+                    github_client=self.github_client
+                )
+                .build_graph()
+                .ainvoke(
+                    {
+                        "github_config": branch_config,
+                        "workflow_run_id": validation_workflow_run_id,
+                    }
+                )
+            )
+            artifact_data = artifact_result.get("artifact_data", {})
+            if not artifact_data:
+                error_msg = f"No artifact data found for main experiment (branch={main_experiment_branch_name})"
+                logger.error(error_msg)
+                raise WorkflowValidationError(error_msg)
+
+            validation_action = artifact_data.get("validation_action")
+            if validation_action not in {"retry", "proceed"}:
+                error_msg = (
+                    f"Invalid validation_action: '{validation_action}' for main experiment (branch={main_experiment_branch_name}). "
+                    f"Expected 'retry' or 'proceed'"
+                )
+                logger.error(error_msg)
+                raise WorkflowValidationError(error_msg)
+
+            logger.info(
+                f"Main experiment validation result for branch={main_experiment_branch_name}: {validation_action}"
+            )
+
+            # Step 6: Route — proceed or retry
+            if validation_action == "proceed":
+                logger.info(
+                    f"branch={main_experiment_branch_name} passed after {retry_count + 1} attempt(s)"
+                )
+                break
+
+            if retry_count >= _MAX_RETRY_GITHUB_ACTIONS_VALIDATION - 1:
                 error_msg = (
                     f"Maximum retry count ({_MAX_RETRY_GITHUB_ACTIONS_VALIDATION}) exceeded "
                     f"for branch={main_experiment_branch_name}"
                 )
                 logger.error(error_msg)
                 raise WorkflowValidationError(error_msg)
+
+            retry_count += 1
             logger.warning(
                 f"Validation failed for branch={main_experiment_branch_name} "
-                f"(retry {main_experiment_retry_count + 1}/{_MAX_RETRY_GITHUB_ACTIONS_VALIDATION}). Retrying."
+                f"(retry {retry_count}/{_MAX_RETRY_GITHUB_ACTIONS_VALIDATION}). Retrying."
             )
-            return "retry"
 
-        logger.info(
-            f"branch={main_experiment_branch_name} passed after {main_experiment_retry_count + 1} attempt(s)"
-        )
-        return "proceed"
-
-    @record_execution_time
-    def _increment_main_experiment_retry_count(
-        self, state: dict[str, Any]
-    ) -> dict[str, Any]:
-        main_experiment_branch_name: str = state["main_experiment_branch_name"]
-        current_retry = state.get("main_experiment_retry_count", 0)
-        new_retry = current_retry + 1
-        logger.info(
-            f"Incrementing retry count for branch={main_experiment_branch_name}: {current_retry} -> {new_retry}"
-        )
-        retry_counts: dict[str, int] = state.get("main_experiment_retry_counts", {})
         return {
-            "main_experiment_retry_counts": {
-                **retry_counts,
-                main_experiment_branch_name: new_retry,
-            },
-            "main_experiment_retry_count": new_retry,
+            "main_experiment_branch_results": {
+                main_experiment_branch_name: {
+                    "status": "success",
+                    "artifact_data": artifact_data,
+                }
+            }
         }
 
     @record_execution_time
@@ -499,24 +417,7 @@ class MainExperimentGraph:
         )
 
         graph_builder.add_node("create_branches", self._create_branches)
-        graph_builder.add_node(
-            "dispatch_main_experiment", self._dispatch_main_experiment
-        )
-        graph_builder.add_node("poll_main_experiment", self._poll_main_experiment)
-        graph_builder.add_node(
-            "dispatch_main_experiment_validation",
-            self._dispatch_main_experiment_validation,
-        )
-        graph_builder.add_node(
-            "poll_main_experiment_validation", self._poll_main_experiment_validation
-        )
-        graph_builder.add_node(
-            "download_main_experiment_artifact", self._download_main_experiment_artifact
-        )
-        graph_builder.add_node(
-            "increment_main_experiment_retry_count",
-            self._increment_main_experiment_retry_count,
-        )
+        graph_builder.add_node("run_branch_pipeline", self._run_branch_pipeline)
         graph_builder.add_node(
             "collect_main_experiment_results", self._collect_main_experiment_results
         )
@@ -526,27 +427,7 @@ class MainExperimentGraph:
             "create_branches",
             self._dispatch_branches,
         )
-        graph_builder.add_edge("dispatch_main_experiment", "poll_main_experiment")
-        graph_builder.add_edge(
-            "poll_main_experiment", "dispatch_main_experiment_validation"
-        )
-        graph_builder.add_edge(
-            "dispatch_main_experiment_validation", "poll_main_experiment_validation"
-        )
-        graph_builder.add_edge(
-            "poll_main_experiment_validation", "download_main_experiment_artifact"
-        )
-        graph_builder.add_conditional_edges(
-            "download_main_experiment_artifact",
-            self._route_after_main_experiment_branch,
-            {
-                "retry": "increment_main_experiment_retry_count",
-                "proceed": "collect_main_experiment_results",
-            },
-        )
-        graph_builder.add_edge(
-            "increment_main_experiment_retry_count", "dispatch_main_experiment"
-        )
+        graph_builder.add_edge("run_branch_pipeline", "collect_main_experiment_results")
         graph_builder.add_edge("collect_main_experiment_results", END)
 
         return graph_builder.compile()
