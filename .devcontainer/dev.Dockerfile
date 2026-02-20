@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     lsof \
     build-essential \
     locales \
+    tmux \
     && locale-gen en_US.UTF-8 && \
     update-locale LANG=en_US.UTF-8 && \
     rm -rf /var/lib/apt/lists/*

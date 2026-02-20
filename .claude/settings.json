@@ -1,4 +1,22 @@
 {
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Write",
+      "Edit",
+      "Bash",
+      "mcp__serena__*"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)",
+      "Bash(git push --force:*)",
+      "Bash(curl:*)",
+      "Bash(brew:*)"
+    ]
+  },
   "enabledPlugins": {
     "claude-mem@thedotmack": true,
     "superpowers@claude-plugins-official": true
@@ -17,10 +35,7 @@
     },
     "context7": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@upstash/context7-mcp"
-      ]
+      "args": ["-y", "@upstash/context7-mcp@latest"]
     },
     "playwright": {
       "command": "npx",
@@ -43,5 +58,16 @@
       ],
       "env": {}
     }
-  }
+  },
+  "PostToolUse": [
+    {
+      "matcher": "Write|Edit|implement",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "make ruff && npm make mypy $$ make biome"
+        }
+      ]
+    }
+  ]
 }
