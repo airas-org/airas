@@ -117,6 +117,8 @@ logger = logging.getLogger(__name__)
 
 record_execution_time = lambda f: time_node("execute_e2e")(f)  # noqa: E731
 
+_STANDARD_WORKFLOW_RECURSION_LIMIT = 50000
+
 
 class TopicOpenEndedResearchLLMMapping(BaseModel):
     generate_queries: GenerateQueriesLLMMapping | None = None
@@ -478,7 +480,8 @@ class TopicOpenEndedResearch:
                     "research_topic": state["research_topic"],
                     "research_hypothesis": state["research_hypothesis"],
                     "experimental_design": state["experimental_design"],
-                }
+                },
+                {"recursion_limit": _STANDARD_WORKFLOW_RECURSION_LIMIT},
             )
         )
         return {}
@@ -544,7 +547,8 @@ class TopicOpenEndedResearch:
                     "research_topic": state["research_topic"],
                     "research_hypothesis": state["research_hypothesis"],
                     "experimental_design": state["experimental_design"],
-                }
+                },
+                {"recursion_limit": _STANDARD_WORKFLOW_RECURSION_LIMIT},
             )
         )
         return {}
