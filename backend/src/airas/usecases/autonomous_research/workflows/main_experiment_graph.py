@@ -167,6 +167,14 @@ class MainExperimentGraph:
         branches = [branch_name for _, branch_name, is_success in results if is_success]
         logger.info(f"Created {len(branches)} branches: {branches}")
 
+        if not branches:
+            error_msg = (
+                f"No branches were successfully created for run_ids={state.get('run_ids', [])}. "
+                "Aborting main experiment workflow."
+            )
+            logger.error(error_msg)
+            raise WorkflowExecutionError(error_msg)
+
         return {"main_experiment_branches": branches}
 
     def _dispatch_branches(self, state: MainExperimentState) -> list[Send]:
