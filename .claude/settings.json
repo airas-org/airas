@@ -10,7 +10,10 @@
       "args": [
         "unused-for-http"
       ],
-      "url": "https://api.github.com/mcp"
+      "url": "https://api.github.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_TOKEN}"
+      }
     },
     "context7": {
       "command": "npx",
@@ -36,24 +39,9 @@
         "--context",
         "ide-assistant",
         "--project",
-        "/ABS/PATH/TO/YOUR/PROJECT"
+        "/workspaces/airas"
       ],
       "env": {}
-    },
-    "sentry": {
-      "transport": "sse",
-      "command": "echo",
-      "args": [
-        "unused-for-http"
-      ],
-      "url": "https://mcp.sentry.dev/sse"
-    },
-    "brave-search": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@anthropic/mcp-brave-search"
-      ]
     }
   }
 }
