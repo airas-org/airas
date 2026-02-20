@@ -65,7 +65,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "make ruff && npm make mypy $$ make biome"
+          "command": "make ruff && make mypy && make biome"
         }
       ]
     }
