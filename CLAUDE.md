@@ -9,6 +9,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Code Quality
 
-- `make ruff` - Pythonコードのlint・自動修正・フォーマット（backend/）
-- `make mypy` - Pythonコードの型チェック（backend/）
-- `make biome` - JavaScript/TypeScriptコードのlint・フォーマット（frontend/）
+- `make ruff` - Run Python linter, auto-fix, and formatter (backend/)
+- `make mypy` - Run Python type checking (backend/)
+- `make biome` - Run JavaScript/TypeScript linter and formatter (frontend/)

@@ -48,11 +48,11 @@ generate-openapi:
 	cd frontend && npm run generate-api
 
 ruff:
-	cd backend && ruff check --fix --show-fixes .
-	cd backend && ruff format .
+	cd backend && uv run ruff check --fix --show-fixes .
+	cd backend && uv run ruff format .
 
 mypy:
-	cd backend && mypy --config-file=pyproject.toml .
+	cd backend && uv run mypy --config-file=pyproject.toml .
 
 biome:
 	cd frontend && npx biome check --write
