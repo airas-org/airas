@@ -49,6 +49,8 @@ dependencies = [
     "rank-bm25>=0.2.2",
     "nltk>=3.9.2",
     "litellm>=1.80.16",
+    "PyJWT[crypto]>=2.8.0",
+    "stripe>=8.0.0",
 ]
 
 [project.urls]
