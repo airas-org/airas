@@ -186,4 +186,6 @@ dist-ssr
 !.gitkeep
 .github/instructions/*
 .serena/*
-.claude
+.claude/CLAUDE.local.md
+.claude/settings.local.json
+

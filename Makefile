@@ -19,7 +19,7 @@ MIGRATE_SERVICE ?= migrate
 
 COMPOSE_CMD := $(COMPOSE) -f $(COMPOSE_FILE) -p $(PROJECT)
 
-.PHONY: up down logs ps migrate db-reset update-api generate-openapi
+.PHONY: up down logs ps migrate db-reset update-api generate-openapi ruff mypy biome
 
 up:
 	$(COMPOSE_CMD) up --build
@@ -46,3 +46,13 @@ update-api: generate-openapi
 generate-openapi:
 	cd backend && uv run python scripts/generate_openapi.py
 	cd frontend && npm run generate-api
+
+ruff:
+	cd backend && uv run ruff check --fix --show-fixes .
+	cd backend && uv run ruff format .
+
+mypy:
+	cd backend && uv run mypy .
+
+biome:
+	cd frontend && npx biome check .
