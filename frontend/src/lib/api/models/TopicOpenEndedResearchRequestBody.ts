@@ -4,7 +4,7 @@
 /* eslint-disable */
 import type { GitHubConfig } from './GitHubConfig';
 import type { RunnerConfig } from './RunnerConfig';
-import type { TopicOpenEndedResearchSubgraphLLMMapping } from './TopicOpenEndedResearchSubgraphLLMMapping';
+import type { TopicOpenEndedResearchLLMMapping } from './TopicOpenEndedResearchLLMMapping';
 import type { WandbConfig } from './WandbConfig';
 export type TopicOpenEndedResearchRequestBody = {
     github_config: GitHubConfig;
@@ -23,7 +23,7 @@ export type TopicOpenEndedResearchRequestBody = {
     paper_content_refinement_iterations?: number;
     github_actions_agent?: TopicOpenEndedResearchRequestBody.github_actions_agent;
     latex_template_name?: string;
-    llm_mapping?: (TopicOpenEndedResearchSubgraphLLMMapping | null);
+    llm_mapping?: (TopicOpenEndedResearchLLMMapping | null);
 };
 export namespace TopicOpenEndedResearchRequestBody {
     export enum search_method {

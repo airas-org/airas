@@ -10,8 +10,8 @@ from airas.core.types.paper import SearchMethod
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.wandb import WandbConfig
 from airas.infra.db.models.e2e import Status, StepType
-from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_subgraph import (
-    TopicOpenEndedResearchSubgraphLLMMapping,
+from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research import (
+    TopicOpenEndedResearchLLMMapping,
 )
 
 
@@ -95,7 +95,7 @@ class TopicOpenEndedResearchRequestBody(BaseModel):
     paper_content_refinement_iterations: int = 2
     github_actions_agent: GitHubActionsAgent = "open_code"
     latex_template_name: str = "mdpi"
-    llm_mapping: TopicOpenEndedResearchSubgraphLLMMapping | None = None
+    llm_mapping: TopicOpenEndedResearchLLMMapping | None = None
 
 
 class TopicOpenEndedResearchResponseBody(BaseModel):
