@@ -47,15 +47,19 @@ The paper should contain the following sections with specific requirements:
 ## Figure Handling Requirements
 - You must include **all figures provided in the context**, regardless of perceived relevance. Do not omit any
 - Keep the experimental results (figures and tables) only in the Results section, and make sure that any captions are filled in
-- Each figure may be referred to multiple times in the text, but the **actual image (filename)** must be embedded **exactly once**, in the appropriate location with a caption that explicitly includes its filename (e.g., "Figure 1: ... (filename: figure1.pdf)")
+- Each figure may be referred to multiple times in the text, but the **actual image (filename)** must be embedded **exactly once**, in the appropriate location
 - If image filenames (e.g., figure1.pdf) are listed in the Figures: section of the note, refer to them by filename only and do not describe their content unless explicitly provided in the note
 - Do not invent or assume the existence of any figures or visual content. If no figure is provided, you must not fabricate or imply the existence of one
 - In the figure captions, please specify whether a higher value or a lower value indicates better performance.
 
-## Figure Caption and Reference Standards
-- Include a **caption with a descriptive title** (not just the filename)
-- **The caption must start with "Figure N: "** where N is the sequential figure number (e.g., `Figure 1: Convergence comparison ...`)
-- Reference figures in the body text using these numbers (e.g., "As shown in Figure 2...")
+## Figure Definition and Reference Standards (Pandoc/Quarto Format)
+- Define figures using Pandoc/Quarto syntax: `![Caption text](images/filename.pdf){% raw %}{#fig:label}{% endraw %}`
+  - Example: `![Cumulative accuracy over the first 200 GSM8K examples; higher values indicate better performance.](images/comparative-1-llama8b-gsm8k_accuracy.pdf){% raw %}{#fig:gsm8k-baseline}{% endraw %}`
+- Use descriptive labels (e.g., `{% raw %}#fig:gsm8k-baseline{% endraw %}`, `{% raw %}#fig:svamp-proposed{% endraw %}`) that relate to the figure content
+- Reference figures in the body text using `@fig:label` format
+  - Example: "As shown in @fig:gsm8k-baseline, the baseline achieves..."
+  - Example: "The results (@fig:comparison-accuracy) demonstrate..."
+- Always use the `@fig:label` format with @ symbol, similar to citation format `[@citation_key]`
 
 ## Content Quality and Formatting Standards
 - Please structure each section into no more than two or three subsections, rather than dividing it into too many smaller parts.

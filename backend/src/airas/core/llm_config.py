@@ -2,7 +2,6 @@ from pydantic import BaseModel
 
 from airas.infra.llm_specs import (
     LLMParams,
-    OpenAIParams,
 )
 
 
@@ -14,15 +13,16 @@ class NodeLLMConfig(BaseModel):
 
 
 BASE_CONFIG = NodeLLMConfig(llm_name="gpt-5.2")
-SEARCH_CONFIG = NodeLLMConfig(llm_name="gpt-5-nano-2025-08-07")
-CODING_CONFIG = NodeLLMConfig(
-    llm_name="gpt-5.2-codex", params=OpenAIParams(reasoning_effort="high")
-)
+SEARCH_CONFIG = NodeLLMConfig(llm_name="gemini-2.5-flash")
+CODING_CONFIG = NodeLLMConfig(llm_name="gpt-5.2-codex")
+EMBEDDING_CONFIG = NodeLLMConfig(llm_name="gemini/gemini-embedding-001")
 
 DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
     # retrieve/
     # GenerateQueriesSubgraph
     "generate_queries": BASE_CONFIG,
+    # SearchPaperTitlesFromQdrantSubgraph
+    "search_paper_titles_from_qdrant": EMBEDDING_CONFIG,
     # RetrievePaperSubgraph
     "search_arxiv_id_from_title": SEARCH_CONFIG,
     "summarize_paper": BASE_CONFIG,
@@ -40,15 +40,23 @@ DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
     "generate_run_config": CODING_CONFIG,
     "generate_experiment_code": CODING_CONFIG,
     "validate_experiment_code": CODING_CONFIG,
+    # generators/
+    # DispatchCodeGenerationSubgraph
+    "dispatch_code_generation": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
+    # executors/
+    # DispatchExperimentValidationSubgraph
+    "dispatch_experiment_validation": NodeLLMConfig(
+        llm_name="anthropic/claude-sonnet-4-5"
+    ),
     # executors/
     # ExecuteTrialExperimentSubgraph
     # NOTE: GitHub Actions nodes use "provider/model" format for LiteLLM compatibility.
     # All nodes will migrate to this format when fully transitioning to LiteLLM.
-    "dispatch_trial_experiment": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
+    "dispatch_trial_experiment": NodeLLMConfig(llm_name="claude-sonnet-4-5"),
     # ExecuteFullExperimentSubgraph
-    "dispatch_full_experiments": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
+    "dispatch_full_experiments": NodeLLMConfig(llm_name="claude-sonnet-4-5"),
     # ExecuteEvaluationSubgraph
-    "dispatch_evaluation": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
+    "dispatch_evaluation": NodeLLMConfig(llm_name="claude-sonnet-4-5"),
     # analyzers/
     # AnalyzeExperimentSubgraph
     "analyze_experiment": BASE_CONFIG,

@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     lsof \
     build-essential \
     locales \
+    tmux \
     && locale-gen en_US.UTF-8 && \
     update-locale LANG=en_US.UTF-8 && \
     rm -rf /var/lib/apt/lists/*
@@ -26,5 +27,8 @@ RUN apt-get install -y curl ca-certificates gnupg && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
+
+# Claude Code
+RUN curl -fsSL https://claude.ai/install.sh | bash
 
 CMD [ "bash" ]

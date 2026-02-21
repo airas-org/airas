@@ -11,14 +11,17 @@ from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
-from airas.usecases.executors.execute_evaluation_subgraph.execute_evaluation_subgraph import (
-    ExecuteEvaluationSubgraph,
+from airas.usecases.executors.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
+    DispatchExperimentValidationSubgraph,
 )
-from airas.usecases.executors.execute_full_experiment_subgraph.execute_full_experiment_subgraph import (
-    ExecuteFullExperimentSubgraph,
+from airas.usecases.executors.dispatch_main_experiment_subgraph.dispatch_main_experiment_subgraph import (
+    DispatchMainExperimentSubgraph,
 )
-from airas.usecases.executors.execute_trial_experiment_subgraph.execute_trial_experiment_subgraph import (
-    ExecuteTrialExperimentSubgraph,
+from airas.usecases.executors.dispatch_sanity_check_subgraph.dispatch_sanity_check_subgraph import (
+    DispatchSanityCheckSubgraph,
+)
+from airas.usecases.executors.dispatch_visualization_subgraph.dispatch_visualization_subgraph import (
+    DispatchVisualizationSubgraph,
 )
 from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment_results_subgraph import (
     FetchExperimentResultsSubgraph,
@@ -29,12 +32,14 @@ from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph impo
 from api.schemas.experiments import (
     AnalyzeExperimentRequestBody,
     AnalyzeExperimentResponseBody,
-    ExecuteEvaluationRequestBody,
-    ExecuteEvaluationResponseBody,
-    ExecuteFullRequestBody,
-    ExecuteFullResponseBody,
-    ExecuteTrialRequestBody,
-    ExecuteTrialResponseBody,
+    DispatchExperimentValidationRequestBody,
+    DispatchExperimentValidationResponseBody,
+    DispatchMainExperimentRequestBody,
+    DispatchMainExperimentResponseBody,
+    DispatchSanityCheckRequestBody,
+    DispatchSanityCheckResponseBody,
+    DispatchVisualizationRequestBody,
+    DispatchVisualizationResponseBody,
     FetchExperimentalResultsRequestBody,
     FetchExperimentalResultsResponseBody,
     FetchRunIdsRequestBody,
@@ -87,89 +92,118 @@ async def fetch_experimental_results(
         .ainvoke(request, config=config)
     )
     return FetchExperimentalResultsResponseBody(
-        experiment_results=result["experiment_results"],
+        experimental_results=result["experimental_results"],
         execution_time=result["execution_time"],
     )
 
 
-@router.post("/test-runs", response_model=ExecuteTrialResponseBody)
+@router.post("/sanity-checks/dispatch", response_model=DispatchSanityCheckResponseBody)
 @inject
 @observe()
-async def execute_trial(
-    request: ExecuteTrialRequestBody,
+async def dispatch_sanity_check(
+    request: DispatchSanityCheckRequestBody,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
-) -> ExecuteTrialResponseBody:
+) -> DispatchSanityCheckResponseBody:
     handler = langfuse_client.create_handler()
     config = {"callbacks": [handler]} if handler else {}
 
     result = (
-        await ExecuteTrialExperimentSubgraph(
+        await DispatchSanityCheckSubgraph(
             github_client=github_client,
-            llm_mapping=request.llm_mapping,
+            runner_label=request.runner_label,
         )
         .build_graph()
         .ainvoke(request, config=config)
     )
-    return ExecuteTrialResponseBody(
+    return DispatchSanityCheckResponseBody(
         dispatched=result["dispatched"],
-        run_ids=result["run_ids"],
         execution_time=result["execution_time"],
     )
 
 
-@router.post("/full-runs", response_model=ExecuteFullResponseBody)
+@router.post(
+    "/validations/dispatch", response_model=DispatchExperimentValidationResponseBody
+)
 @inject
 @observe()
-async def execute_full(
-    request: ExecuteFullRequestBody,
+async def dispatch_experiment_validation(
+    request: DispatchExperimentValidationRequestBody,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
-) -> ExecuteFullResponseBody:
+) -> DispatchExperimentValidationResponseBody:
     handler = langfuse_client.create_handler()
     config = {"callbacks": [handler]} if handler else {}
 
     result = (
-        await ExecuteFullExperimentSubgraph(
+        await DispatchExperimentValidationSubgraph(
             github_client=github_client,
             llm_mapping=request.llm_mapping,
         )
         .build_graph()
         .ainvoke(request, config=config)
     )
-    return ExecuteFullResponseBody(
-        all_dispatched=result["all_dispatched"],
-        branch_creation_results=result["branch_creation_results"],
+    return DispatchExperimentValidationResponseBody(
+        dispatched=result["dispatched"],
         execution_time=result["execution_time"],
     )
 
 
-@router.post("/evaluations", response_model=ExecuteEvaluationResponseBody)
+@router.post("/main-runs/dispatch", response_model=DispatchMainExperimentResponseBody)
 @inject
 @observe()
-async def execute_evaluation(
-    request: ExecuteEvaluationRequestBody,
+async def dispatch_main_experiment(
+    request: DispatchMainExperimentRequestBody,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
-) -> ExecuteEvaluationResponseBody:
+) -> DispatchMainExperimentResponseBody:
     handler = langfuse_client.create_handler()
     config = {"callbacks": [handler]} if handler else {}
 
     result = (
-        await ExecuteEvaluationSubgraph(
+        await DispatchMainExperimentSubgraph(
             github_client=github_client,
-            llm_mapping=request.llm_mapping,
+            runner_label=request.runner_label,
         )
         .build_graph()
         .ainvoke(request, config=config)
     )
-    return ExecuteEvaluationResponseBody(
+    return DispatchMainExperimentResponseBody(
+        dispatched=result["dispatched"],
+        execution_time=result["execution_time"],
+    )
+
+
+@router.post(
+    "/visualizations/dispatch", response_model=DispatchVisualizationResponseBody
+)
+@inject
+@observe()
+async def dispatch_visualization(
+    request: DispatchVisualizationRequestBody,
+    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
+) -> DispatchVisualizationResponseBody:
+    handler = langfuse_client.create_handler()
+    config = {"callbacks": [handler]} if handler else {}
+
+    result = (
+        await DispatchVisualizationSubgraph(
+            github_client=github_client,
+            runner_label=request.runner_label,
+        )
+        .build_graph()
+        .ainvoke(request, config=config)
+    )
+    return DispatchVisualizationResponseBody(
         dispatched=result["dispatched"],
         execution_time=result["execution_time"],
     )

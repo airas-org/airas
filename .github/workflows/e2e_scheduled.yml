@@ -9,7 +9,7 @@ on:
       research_topic:
         description: 'Research topic for the E2E test'
         required: false
-        default: 'Proposing an improved version of the Chain-of-Thought based on human thinking methods'
+        default: 'Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments'
       is_github_repo_private:
         description: 'Make repository private'
         required: false
@@ -63,10 +63,6 @@ on:
         description: 'Number of comparison methods'
         required: false
         default: '1'
-      experiment_code_validation_iterations:
-        description: 'Max retries for experiment code generation (generate → validate loop)'
-        required: false
-        default: '10'
       paper_content_refinement_iterations:
         description: 'Rounds of paper content refinement (write → refine loop)'
         required: false
@@ -93,12 +89,6 @@ on:
           - 'anthropic/claude-opus-4'
           - 'anthropic/claude-sonnet-4-5'
         default: 'gpt-5.2'
-      coding_model:
-        description: 'Coding LLM (code generation, code validation)'
-        required: false
-        type: choice
-        options: *llm_options
-        default: 'gpt-5.2-codex'
       paper_retrieval_model:
         description: 'Paper retrieval LLM (paper search, summarization, reference extraction)'
         required: false
@@ -131,7 +121,6 @@ on:
 jobs:
   check-org-membership:
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     outputs:
       is_member: ${{ steps.check.outputs.is_member }}
     steps:
@@ -223,6 +212,9 @@ jobs:
         working-directory: backend
         run: uv sync --frozen
 
+      - name: Install jq
+        run: if ! command -v jq >/dev/null 2>&1; then sudo apt-get update -y && sudo apt-get install -y jq; fi
+
       - name: Start backend server
         working-directory: backend
         run: |
@@ -264,16 +256,17 @@ jobs:
         run: |
           # === General parameters ===
           GITHUB_OWNER="${{ github.event.inputs.github_owner || 'auto-res2' }}"
-          RESEARCH_TOPIC="${{ github.event.inputs.research_topic || 'Proposing an improved version of the Chain-of-Thought based on human thinking methods' }}"
+          RESEARCH_TOPIC="${{ github.event.inputs.research_topic || 'Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments' }}"
           BRANCH_NAME="${{ github.event.inputs.branch_name || 'main' }}"
           REPO_NAME="${{ steps.params.outputs.repo_name }}"
           WANDB_ENTITY="${{ github.event.inputs.wandb_entity || 'airas' }}"
-          WANDB_PROJECT="${{ steps.params.outputs.date_only }}"
+          WANDB_PROJECT="${{ steps.params.outputs.timestamp }}"
           RUNNER_LABELS='${{ github.event.inputs.runner_label }}'
+          RUNNER_DESC="${{ github.event.inputs.runner_description }}"
           if [ -z "$RUNNER_LABELS" ]; then
             RUNNER_LABELS='["self-hosted", "gpu-runner"]'
+            RUNNER_DESC='NVIDIA H200, VRAM: 140 GB, RAM: 240 GB'
           fi
-          RUNNER_DESC="${{ github.event.inputs.runner_description || 'NVIDIA H200, VRAM: 140 GB, RAM: 240 GB' }}"
           IS_PRIVATE="${{ github.event.inputs.is_github_repo_private || 'false' }}"
           NUM_QUERIES="${{ github.event.inputs.num_paper_search_queries || '3' }}"
           PAPERS_PER_QUERY="${{ github.event.inputs.papers_per_query || '5' }}"
@@ -281,13 +274,11 @@ jobs:
           NUM_MODELS="${{ github.event.inputs.num_experiment_models || '1' }}"
           NUM_DATASETS="${{ github.event.inputs.num_experiment_datasets || '1' }}"
           NUM_COMPARISONS="${{ github.event.inputs.num_comparison_methods || '1' }}"
-          CODE_VALIDATION_ITERS="${{ github.event.inputs.experiment_code_validation_iterations || '10' }}"
           PAPER_REFINE_ITERS="${{ github.event.inputs.paper_content_refinement_iterations || '1' }}"
           LATEX_TEMPLATE="${{ github.event.inputs.latex_template_name || 'mdpi' }}"
 
           # === LLM model selections ===
           PRIMARY_MODEL="${{ github.event.inputs.primary_model || 'gpt-5.2' }}"
-          CODING_MODEL="${{ github.event.inputs.coding_model || 'gpt-5.2-codex' }}"
           PAPER_RETRIEVAL_MODEL="${{ github.event.inputs.paper_retrieval_model || 'gemini-2.5-flash' }}"
           GITHUB_ACTIONS_MODEL="${{ github.event.inputs.github_actions_model || 'anthropic/claude-sonnet-4-5' }}"
           GITHUB_ACTIONS_AGENT="${{ github.event.inputs.github_actions_agent || 'open_code' }}"
@@ -295,47 +286,36 @@ jobs:
           # === Paper search settings ===
           SEARCH_METHOD="${{ github.event.inputs.search_method || 'qdrant' }}"
 
-          # Remove anthropic/ prefix for claude_code
-          if [ "$GITHUB_ACTIONS_AGENT" = "claude_code" ]; then
-            GITHUB_ACTIONS_MODEL="${GITHUB_ACTIONS_MODEL#anthropic/}"
-            echo "Adjusted GITHUB_ACTIONS_MODEL for claude_code: ${GITHUB_ACTIONS_MODEL}"
-          fi
-
           # === Build LLM mapping JSON ===
-          LLM_MAPPING=$(cat <<EOFLLM
-          {
-            "generate_queries": {"generate_queries": {"llm_name": "${PRIMARY_MODEL}"}},
-            "retrieve_paper": {
-              "search_arxiv_id_from_title": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
-              "summarize_paper": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
-              "extract_github_url_from_text": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
-              "select_experimental_files": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"},
-              "extract_reference_titles": {"llm_name": "${PAPER_RETRIEVAL_MODEL}"}
-            },
-            "generate_hypothesis": {
-              "generate_hypothesis": {"llm_name": "${PRIMARY_MODEL}"},
-              "evaluate_novelty_and_significance": {"llm_name": "${PRIMARY_MODEL}"},
-              "refine_hypothesis": {"llm_name": "${PRIMARY_MODEL}"}
-            },
-            "generate_experimental_design": {"generate_experimental_design": {"llm_name": "${PRIMARY_MODEL}"}},
-            "generate_code": {
-              "generate_run_config": {"llm_name": "${CODING_MODEL}"},
-              "generate_experiment_code": {"llm_name": "${CODING_MODEL}"},
-              "validate_experiment_code": {"llm_name": "${CODING_MODEL}"}
-            },
-            "execute_trial_experiment": {"dispatch_trial_experiment": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
-            "execute_full_experiment": {"dispatch_full_experiments": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
-            "execute_evaluation": {"dispatch_evaluation": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}},
-            "analyze_experiment": {"analyze_experiment": {"llm_name": "${PRIMARY_MODEL}"}},
-            "write": {
-              "write_paper": {"llm_name": "${PRIMARY_MODEL}"},
-              "refine_paper": {"llm_name": "${PRIMARY_MODEL}"}
-            },
-            "generate_latex": {"convert_to_latex": {"llm_name": "${PRIMARY_MODEL}"}},
-            "compile_latex": {"compile_latex": {"llm_name": "${GITHUB_ACTIONS_MODEL}"}}
-          }
-          EOFLLM
-          )
+          LLM_MAPPING=$(jq -n \
+            --arg pm "$PRIMARY_MODEL" \
+            --arg prm "$PAPER_RETRIEVAL_MODEL" \
+            --arg gam "$GITHUB_ACTIONS_MODEL" \
+            '{
+              generate_queries: {generate_queries: {llm_name: $pm}},
+              retrieve_paper: {
+                search_arxiv_id_from_title: {llm_name: $prm},
+                summarize_paper: {llm_name: $prm},
+                extract_github_url_from_text: {llm_name: $prm},
+                select_experimental_files: {llm_name: $prm},
+                extract_reference_titles: {llm_name: $prm}
+              },
+              generate_hypothesis: {
+                generate_hypothesis: {llm_name: $pm},
+                evaluate_novelty_and_significance: {llm_name: $pm},
+                refine_hypothesis: {llm_name: $pm}
+              },
+              generate_experimental_design: {generate_experimental_design: {llm_name: $pm}},
+              dispatch_code_generation: {dispatch_code_generation: {llm_name: $gam}},
+              dispatch_experiment_validation: {dispatch_experiment_validation: {llm_name: $gam}},
+              analyze_experiment: {analyze_experiment: {llm_name: $pm}},
+              write: {
+                write_paper: {llm_name: $pm},
+                refine_paper: {llm_name: $pm}
+              },
+              generate_latex: {convert_to_latex: {llm_name: $pm}},
+              compile_latex: {compile_latex: {llm_name: $gam}}
+            }')
 
           echo "Starting E2E test with:"
           echo "  Repository: ${GITHUB_OWNER}/${REPO_NAME}"
@@ -345,40 +325,59 @@ jobs:
           echo "  LLM Mapping:"
           echo "$LLM_MAPPING" | head -30
 
+          REQUEST_BODY=$(jq -n \
+            --arg github_owner "$GITHUB_OWNER" \
+            --arg repository_name "$REPO_NAME" \
+            --arg branch_name "$BRANCH_NAME" \
+            --arg research_topic "$RESEARCH_TOPIC" \
+            --argjson runner_label "$RUNNER_LABELS" \
+            --arg description "$RUNNER_DESC" \
+            --arg wandb_entity "$WANDB_ENTITY" \
+            --arg wandb_project "$WANDB_PROJECT" \
+            --argjson is_github_repo_private "$IS_PRIVATE" \
+            --arg search_method "$SEARCH_METHOD" \
+            --argjson num_paper_search_queries "$NUM_QUERIES" \
+            --argjson papers_per_query "$PAPERS_PER_QUERY" \
+            --argjson hypothesis_refinement_iterations "$HYPOTHESIS_ITERS" \
+            --argjson num_experiment_models "$NUM_MODELS" \
+            --argjson num_experiment_datasets "$NUM_DATASETS" \
+            --argjson num_comparison_methods "$NUM_COMPARISONS" \
+            --argjson paper_content_refinement_iterations "$PAPER_REFINE_ITERS" \
+            --arg latex_template_name "$LATEX_TEMPLATE" \
+            --arg github_actions_agent "$GITHUB_ACTIONS_AGENT" \
+            --argjson llm_mapping "$LLM_MAPPING" \
+            '{
+              github_config: {
+                github_owner: $github_owner,
+                repository_name: $repository_name,
+                branch_name: $branch_name
+              },
+              research_topic: $research_topic,
+              runner_config: {
+                runner_label: $runner_label,
+                description: $description
+              },
+              wandb_config: {
+                entity: $wandb_entity,
+                project: $wandb_project
+              },
+              is_github_repo_private: $is_github_repo_private,
+              search_method: $search_method,
+              num_paper_search_queries: $num_paper_search_queries,
+              papers_per_query: $papers_per_query,
+              hypothesis_refinement_iterations: $hypothesis_refinement_iterations,
+              num_experiment_models: $num_experiment_models,
+              num_experiment_datasets: $num_experiment_datasets,
+              num_comparison_methods: $num_comparison_methods,
+              paper_content_refinement_iterations: $paper_content_refinement_iterations,
+              latex_template_name: $latex_template_name,
+              github_actions_agent: $github_actions_agent,
+              llm_mapping: $llm_mapping
+            }')
+
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8000/airas/v1/topic_open_ended_research/run \
             -H "Content-Type: application/json" \
-            -d @- <<EOF
-          {
-            "github_config": {
-              "github_owner": "${GITHUB_OWNER}",
-              "repository_name": "${REPO_NAME}",
-              "branch_name": "${BRANCH_NAME}"
-            },
-            "research_topic": "${RESEARCH_TOPIC}",
-            "runner_config": {
-              "runner_label": ${RUNNER_LABELS},
-              "description": "${RUNNER_DESC}"
-            },
-            "wandb_config": {
-              "entity": "${WANDB_ENTITY}",
-              "project": "${WANDB_PROJECT}"
-            },
-            "is_github_repo_private": ${IS_PRIVATE},
-            "search_method": "${SEARCH_METHOD}",
-            "num_paper_search_queries": ${NUM_QUERIES},
-            "papers_per_query": ${PAPERS_PER_QUERY},
-            "hypothesis_refinement_iterations": ${HYPOTHESIS_ITERS},
-            "num_experiment_models": ${NUM_MODELS},
-            "num_experiment_datasets": ${NUM_DATASETS},
-            "num_comparison_methods": ${NUM_COMPARISONS},
-            "experiment_code_validation_iterations": ${CODE_VALIDATION_ITERS},
-            "paper_content_refinement_iterations": ${PAPER_REFINE_ITERS},
-            "latex_template_name": "${LATEX_TEMPLATE}",
-            "github_actions_agent": "${GITHUB_ACTIONS_AGENT}",
-            "llm_mapping": ${LLM_MAPPING}
-          }
-          EOF
-          )
+            -d "$REQUEST_BODY")
 
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
@@ -476,6 +475,11 @@ jobs:
               echo "E2E test failed: ${ERROR_MSG}"
               echo "--- Server log (last 100 lines) ---"
               tail -n 100 /tmp/e2e-logs/server.log 2>/dev/null || true
+              exit 1
+            fi
+
+            if [ "$TASK_STATUS" != "pending" ] && [ "$TASK_STATUS" != "running" ]; then
+              echo "❌ Unexpected task status: ${TASK_STATUS}"
               exit 1
             fi
 

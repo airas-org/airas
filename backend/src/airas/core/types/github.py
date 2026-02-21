@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -34,3 +35,6 @@ class GitHubActionsConclusion(str, Enum):
     STALE = "stale"
     SUCCESS = "success"
     TIMED_OUT = "timed_out"
+
+
+GitHubActionsAgent = Literal["claude_code", "open_code"]

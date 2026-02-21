@@ -21,6 +21,9 @@ from airas.usecases.github.poll_github_actions_subgraph.nodes.get_latest_workflo
 from airas.usecases.github.poll_github_actions_subgraph.nodes.get_workflow_runs import (
     get_workflow_runs,
 )
+from airas.usecases.github.poll_github_actions_subgraph.nodes.log_workflow_failure_details import (
+    log_workflow_failure_details,
+)
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -165,10 +168,33 @@ class PollGithubActionsSubgraph:
                 f"Workflow chain completed. Final workflow {workflow_run_id} "
                 f"with conclusion: {conclusion}"
             )
+
+            # Only log failure details if workflow failed
+            if conclusion not in {
+                GitHubActionsConclusion.SUCCESS,
+                GitHubActionsConclusion.NEUTRAL,
+                GitHubActionsConclusion.SKIPPED,
+            }:
+                return Command(goto="log_workflow_failure_details")
+
             return Command(goto=END)
 
         logger.warning(f"Unknown workflow status: {status}, waiting...")
         return Command(goto="sleep_and_retry")
+
+    @record_execution_time
+    async def _log_workflow_failure_details(
+        self, state: PollGithubActionsState
+    ) -> Command:
+        workflow_run_id = state["workflow_run_id"]
+
+        await log_workflow_failure_details(
+            workflow_run_id=workflow_run_id,
+            github_config=state["github_config"],
+            github_client=self.github_client,
+        )
+
+        return Command(goto=END)
 
     @record_execution_time
     async def _sleep_and_retry(
@@ -183,6 +209,9 @@ class PollGithubActionsSubgraph:
         graph_builder.add_node("initialize", self._initialize)
         graph_builder.add_node("poll_workflow_status", self._poll_workflow_status)
         graph_builder.add_node("check_completion", self._check_completion)
+        graph_builder.add_node(
+            "log_workflow_failure_details", self._log_workflow_failure_details
+        )
         graph_builder.add_node("sleep_and_retry", self._sleep_and_retry)
 
         graph_builder.add_edge(START, "initialize")

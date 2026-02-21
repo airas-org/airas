@@ -822,6 +822,89 @@ class GithubClient(BaseHTTPClient):
                 self._raise_for_status(response, path)
                 return None
 
+    @GITHUB_RETRY
+    async def alist_repository_artifacts(
+        self,
+        github_owner: str,
+        repository_name: str,
+    ) -> dict | None:
+        # https://docs.github.com/ja/rest/actions/artifacts?apiVersion=2022-11-28#list-artifacts-for-a-repository
+        path = f"/repos/{github_owner}/{repository_name}/actions/artifacts"
+        response = await self.aget(path=path)
+        match response.status_code:
+            case 200:
+                logger.info(f"Success (200): {path}")
+                return self._parser.parse(response, as_="json")
+            case 403:
+                logger.error(f"Access forbidden (403): {path}")
+                raise GithubClientFatalError(f"Access forbidden (403): {path}")
+            case 404:
+                logger.error(f"Workflow or repository not found (404): {path}")
+                raise GithubClientFatalError(
+                    f"Workflow or repository not found (404): {path}"
+                )
+            case 422:
+                logger.error(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
+                raise GithubClientFatalError(
+                    f"Validation failed, or the endpoint has been spammed (422): {path}"
+                )
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
+    @GITHUB_RETRY
+    async def adownload_artifact_archive(
+        self,
+        github_owner: str,
+        repository_name: str,
+        artifact_id: int,
+    ) -> bytes | None:
+        # https://docs.github.com/ja/rest/actions/artifacts?apiVersion=2022-11-28#download-an-artifact
+        path = f"/repos/{github_owner}/{repository_name}/actions/artifacts/{artifact_id}/zip"
+
+        response = await self.aget(path=path)
+        match response.status_code:
+            case 200:
+                logger.info(f"Success (200): {path}")
+                return self._parser.parse(response, as_="bytes")
+            case 302:
+                logger.info(f"Found (302): {path}")
+                return self._parser.parse(response, as_="bytes")
+            case 404:
+                logger.error(f"Artifact not found: {artifact_id} (404)")
+                raise GithubClientFatalError(f"Artifact not found: {artifact_id} (404)")
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
+    @GITHUB_RETRY
+    async def alist_workflow_run_artifacts(
+        self,
+        github_owner: str,
+        repository_name: str,
+        workflow_run_id: int,
+    ) -> dict | None:
+        """
+        List artifacts for a specific workflow run.
+        More efficient than listing all repository artifacts when you know the workflow run ID.
+
+        https://docs.github.com/en/rest/actions/artifacts#list-workflow-run-artifacts
+        """
+        path = f"/repos/{github_owner}/{repository_name}/actions/runs/{workflow_run_id}/artifacts"
+        response = await self.aget(path=path)
+        match response.status_code:
+            case 200:
+                logger.info(f"Success (200): {path}")
+                return self._parser.parse(response, as_="json")
+            case 404:
+                logger.error(f"Workflow run not found (404): {path}")
+                raise GithubClientFatalError(f"Workflow run not found (404): {path}")
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
     # --------------------------------------------------
     # Secrets (Actions)
     # --------------------------------------------------
@@ -1020,6 +1103,23 @@ class GithubClient(BaseHTTPClient):
                 raise GithubClientFatalError(
                     f"Validation failed, or the endpoint has been spammed (422): {path}"
                 )
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
+    async def alist_workflow_run_jobs(
+        self,
+        github_owner: str,
+        repository_name: str,
+        run_id: int,
+    ) -> dict | None:
+        path = f"/repos/{github_owner}/{repository_name}/actions/runs/{run_id}/jobs"
+
+        response = await self.aget(path=path)
+        match response.status_code:
+            case 200:
+                logger.info(f"Success (200): {path}")
+                return response.json()
             case _:
                 self._raise_for_status(response, path)
                 return None

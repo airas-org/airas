@@ -34,6 +34,13 @@ Currently, it focuses on the automation of machine learning research.
 
 ## Quick Start
 
+### Option 1 — GitHub Actions (no local setup required)
+
+Run the full research pipeline directly from any GitHub repository using the provided workflow.
+See **[QUICKSTART.md](./QUICKSTART.md)** for setup instructions and required API keys.
+
+### Option 2 — Local setup
+
 Copy `.env.example` to `.env` and update the configuration as needed.
 Then, start the application by running:
 
@@ -73,7 +80,7 @@ See the [LICENSE](./LICENSE) file for details.
 
 By contributing to this project, you agree that your contributions are subject to the Contributor License Agreement (CLA) and may be used, modified, redistributed, and relicensed by the project owner, including for commercial, enterprise, and SaaS offerings.
 
-See [CLA.md](./CLA.md) for details.
+See [CLA.md](https://github.com/airas-org/airas/blob/main/README.md#contributions) for details.
 
 ## Citation
 

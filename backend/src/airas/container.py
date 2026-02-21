@@ -14,7 +14,9 @@ from airas.infra.github_client import GithubClient
 from airas.infra.hugging_face_client import HuggingFaceClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.openalex_client import OpenAlexClient
+from airas.infra.qdrant_client import QdrantClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.repository.assisted_research_link_repository import (
     AssistedResearchLinkRepository,
@@ -25,9 +27,6 @@ from airas.repository.assisted_research_session_repository import (
 from airas.repository.assisted_research_step_repository import (
     AssistedResearchStepRepository,
 )
-from airas.repository.topic_open_ended_research_service_repository import (
-    TopicOpenEndedResearchRepository,
-)
 from airas.usecases.assisted_research.assisted_research_link_service import (
     AssistedResearchLinkService,
 )
@@ -37,8 +36,8 @@ from airas.usecases.assisted_research.assisted_research_session_service import (
 from airas.usecases.assisted_research.assisted_research_step_service import (
     AssistedResearchStepService,
 )
-from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service import (
-    TopicOpenEndedResearchService,
+from airas.usecases.autonomous_research.topic_open_ended_research.sql_topic_open_ended_research_service import (
+    SqlTopicOpenEndedResearchService,
 )
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
@@ -95,13 +94,15 @@ async def init_async_session() -> AsyncGenerator[httpx.AsyncClient, None]:
 
 # NOTE:  GitHub-specific sessions (no caching to avoid stale SHA conflicts)
 def init_github_sync_session() -> Generator[httpx.Client, None, None]:
-    client = httpx.Client(follow_redirects=True)
+    timeout = httpx.Timeout(connect=10.0, read=60.0, write=120.0, pool=5.0)
+    client = httpx.Client(follow_redirects=True, timeout=timeout)
     yield client
     client.close()
 
 
 async def init_github_async_session() -> AsyncGenerator[httpx.AsyncClient, None]:
-    client = httpx.AsyncClient(follow_redirects=True)
+    timeout = httpx.Timeout(connect=10.0, read=60.0, write=120.0, pool=5.0)
+    client = httpx.AsyncClient(follow_redirects=True, timeout=timeout)
     yield client
     await client.aclose()
 
@@ -119,6 +120,9 @@ class Container(containers.DeclarativeContainer):
 
     # --- LangChain Client ---
     langchain_client: providers.Factory = providers.Factory(LangChainClient)
+
+    # --- LiteLLM Client ---
+    litellm_client: providers.Factory = providers.Factory(LiteLLMClient)
 
     # --- Observability ---
     langfuse_client: providers.Factory[LangfuseClient] = providers.Factory(
@@ -154,6 +158,13 @@ class Container(containers.DeclarativeContainer):
         OpenAlexClient,
         sync_session=sync_session,
         async_session=None,
+    )
+
+    # --- Vector Database ---
+    qdrant_client: providers.Factory[QdrantClient] = providers.Factory(
+        QdrantClient,
+        sync_session=sync_session,
+        async_session=async_session,
     )
 
     # --- Search Index ---
@@ -206,11 +217,8 @@ class Container(containers.DeclarativeContainer):
     )
 
     ## ---  Autonomous Research Service ---
-    topic_open_ended_research_repository = providers.Factory(
-        TopicOpenEndedResearchRepository, db=db_session
-    )
     topic_open_ended_research_service = providers.Factory(
-        TopicOpenEndedResearchService, repo=topic_open_ended_research_repository
+        SqlTopicOpenEndedResearchService, session_factory=session_factory
     )
 
 

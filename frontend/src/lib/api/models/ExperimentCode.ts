@@ -3,16 +3,9 @@
 /* tslint:disable */
 /* eslint-disable */
 export type ExperimentCode = {
-    train_py?: string;
-    evaluate_py?: string;
-    preprocess_py?: string;
-    model_py?: string;
-    main_py?: string;
-    pyproject_toml?: string;
-    config_yaml?: string;
     /**
-     * Run configuration YAMLs keyed by run_id
+     * All code files keyed by relative path (e.g., 'src/train.py', 'config/run/run1.yaml')
      */
-    run_configs?: (Record<string, string> | null);
+    files?: Record<string, string>;
 };
 

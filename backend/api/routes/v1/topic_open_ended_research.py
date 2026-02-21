@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
 from dependency_injector.wiring import Closing, Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -13,8 +13,9 @@ from airas.infra.db.models.e2e import Status
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
-from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service import (
-    TopicOpenEndedResearchService,
+from airas.infra.litellm_client import LiteLLMClient
+from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_service_protocol import (
+    TopicOpenEndedResearchServiceProtocol,
 )
 from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research_subgraph import (
     TopicOpenEndedResearchSubgraph,
@@ -51,35 +52,41 @@ DEFAULT_CREATED_BY = uuid.UUID("00000000-0000-0000-0000-000000000001")
 async def _execute_topic_open_ended_research(
     task_id: uuid.UUID,
     request: TopicOpenEndedResearchRequestBody,
-    search_index: AirasDbPaperSearchIndex,
+    search_index: AirasDbPaperSearchIndex | None,
     github_client: GithubClient,
     arxiv_client: ArxivClient,
     langchain_client: LangChainClient,
+    litellm_client: LiteLLMClient,
+    qdrant_client: Any | None,
     langfuse_client: LangfuseClient,
-    e2e_service: TopicOpenEndedResearchService,
+    e2e_service: TopicOpenEndedResearchServiceProtocol,
 ) -> None:
     try:
         logger.info(f"[Task {task_id}] Starting E2E execution")
 
         graph = TopicOpenEndedResearchSubgraph(
-            search_index=search_index,
             github_client=github_client,
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,
+            litellm_client=litellm_client,
+            qdrant_client=qdrant_client,
             e2e_service=e2e_service,
             runner_config=request.runner_config,
             wandb_config=request.wandb_config,
             task_id=task_id,
             is_github_repo_private=request.is_github_repo_private,
+            search_method=request.search_method,
+            search_index=search_index,
+            collection_name=request.collection_name,
             num_paper_search_queries=request.num_paper_search_queries,
             papers_per_query=request.papers_per_query,
             hypothesis_refinement_iterations=request.hypothesis_refinement_iterations,
             num_experiment_models=request.num_experiment_models,
             num_experiment_datasets=request.num_experiment_datasets,
             num_comparison_methods=request.num_comparison_methods,
-            experiment_code_validation_iterations=request.experiment_code_validation_iterations,
             paper_content_refinement_iterations=request.paper_content_refinement_iterations,
             latex_template_name=request.latex_template_name,
+            github_actions_agent=request.github_actions_agent,
             llm_mapping=request.llm_mapping,
         ).build_graph()
 
@@ -116,8 +123,6 @@ async def _execute_topic_open_ended_research(
                 f"[Task {task_id}] CRITICAL: Failed to update status to FAILED. "
                 f"Task may remain in RUNNING state."
             )
-    finally:
-        e2e_service.close()
 
 
 @router.post("/run", response_model=TopicOpenEndedResearchResponseBody)
@@ -131,25 +136,39 @@ async def execute_topic_open_ended_research(
     langchain_client: Annotated[
         LangChainClient, Depends(Provide[Container.langchain_client])
     ],
+    litellm_client: Annotated[
+        LiteLLMClient, Depends(Provide[Container.litellm_client])
+    ],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
     e2e_service: Annotated[
-        TopicOpenEndedResearchService,
-        Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
+        TopicOpenEndedResearchServiceProtocol,
+        Depends(Provide[Container.topic_open_ended_research_service]),
     ],
 ) -> TopicOpenEndedResearchResponseBody:
     container: Container = fastapi_request.app.state.container
     task_id = uuid.uuid4()
 
+    if request.search_method == "qdrant":
+        search_index = None
+        qdrant_client = container.qdrant_client()
+        if hasattr(qdrant_client, "__await__"):
+            qdrant_client = await qdrant_client
+    else:
+        search_index = container.airas_db_search_index()
+        qdrant_client = None
+
     asyncio.create_task(
         _execute_topic_open_ended_research(
             task_id=task_id,
             request=request,
-            search_index=container.airas_db_search_index(),
+            search_index=search_index,
             github_client=github_client,
             arxiv_client=arxiv_client,
             langchain_client=langchain_client,
+            litellm_client=litellm_client,
+            qdrant_client=qdrant_client,
             langfuse_client=langfuse_client,
             e2e_service=e2e_service,
         )
@@ -166,7 +185,7 @@ async def execute_topic_open_ended_research(
 async def get_topic_open_ended_research_status(
     task_id: uuid.UUID,
     e2e_service: Annotated[
-        TopicOpenEndedResearchService,
+        TopicOpenEndedResearchServiceProtocol,
         Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
     ],
 ) -> TopicOpenEndedResearchStatusResponseBody:
@@ -194,7 +213,7 @@ async def get_topic_open_ended_research_status(
 @observe()
 async def list_topic_open_ended_research(
     e2e_service: Annotated[
-        TopicOpenEndedResearchService,
+        TopicOpenEndedResearchServiceProtocol,
         Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
     ],
     offset: int = 0,
@@ -222,7 +241,7 @@ async def update_topic_open_ended_research(
     task_id: uuid.UUID,
     request: TopicOpenEndedResearchUpdateRequestBody,
     e2e_service: Annotated[
-        TopicOpenEndedResearchService,
+        TopicOpenEndedResearchServiceProtocol,
         Depends(Closing[Provide[Container.topic_open_ended_research_service]]),
     ],
 ) -> TopicOpenEndedResearchStatusResponseBody:

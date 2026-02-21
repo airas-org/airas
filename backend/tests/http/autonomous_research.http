@@ -6,33 +6,34 @@ Content-Type: application/json
 {
     "github_config": {
         "github_owner": "auto-res2",
-        "repository_name": "matsuzawa-20260120-2",
+        "repository_name": "matsuzawa-20260211-4",
         "branch_name": "main"
     },
-    "research_topic": "Data-efficient image classification methods using novel regularization and augmentation techniques",
+    "research_topic": "Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments",
     "runner_config": {
         "runner_label": ["self-hosted", "gpu-runner"],
-        "description": "NVIDIA A100 or H200, VRAM: 80 GB or more, RAM: 2048 GB or more"
+        "description": "NVIDIA H200, VRAM: 140 GB, RAM: 240 GB"
     },
     "wandb_config": {
-        "entity": "gengaru617-personal",
-        "project": "2026-01-20"
+        "entity": "airas",
+        "project": "2026-02-11"
     },
     "is_github_repo_private": false,
-    "num_paper_search_queries": 10,
+    "num_paper_search_queries": 3,
     "papers_per_query": 3,
-    "hypothesis_refinement_iterations": 2,
+    "hypothesis_refinement_iterations": 1,
     "num_experiment_models": 1,
     "num_experiment_datasets": 1,
     "num_comparison_methods": 1,
-    "experiment_code_validation_iterations": 10,
     "paper_content_refinement_iterations": 1,
-    "latex_template_name": "iclr2024"
+    "latex_template_name": "mdpi",
+    "github_actions_agent": "open_code",
+    "search_method": "qdrant"
 }
 
 ### Autonomous Research - Poll Task Status
 
-GET http://localhost:8000/airas/v1/topic_open_ended_research/status/f92899e5-90eb-4b50-9bdf-3a834e71f43c
+GET http://localhost:8000/airas/v1/topic_open_ended_research/status/8032281d-a12a-42e6-adda-eba7e2159200
 
 ### Autonomous Research - List Sessions
 

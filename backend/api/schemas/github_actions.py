@@ -12,3 +12,22 @@ class PollGithubActionsResponseBody(BaseModel):
     status: str | None
     conclusion: str | None
     execution_time: dict[str, list[float]]
+
+
+class SetGithubActionsSecretsRequestBody(BaseModel):
+    github_config: GitHubConfig
+
+
+class SetGithubActionsSecretsResponseBody(BaseModel):
+    secrets_set: bool
+    execution_time: dict[str, list[float]]
+
+
+class DownloadGithubActionsArtifactsRequestBody(BaseModel):
+    github_config: GitHubConfig
+    workflow_run_id: int
+
+
+class DownloadGithubActionsArtifactsResponseBody(BaseModel):
+    artifact_data: dict
+    execution_time: dict[str, list[float]]

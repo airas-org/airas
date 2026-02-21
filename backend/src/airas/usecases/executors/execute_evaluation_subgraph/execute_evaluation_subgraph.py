@@ -8,7 +8,7 @@ from typing_extensions import TypedDict
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
-from airas.core.types.github import GitHubConfig
+from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.infra.github_client import GithubClient
 from airas.usecases.executors.nodes.read_run_ids import (
     read_run_ids_from_repository,
@@ -47,11 +47,13 @@ class ExecuteEvaluationSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
-        workflow_file: str = "dev_run_evaluation_with_open_code.yml",
+        workflow_file: str = "run_evaluation.yml",
+        github_actions_agent: GitHubActionsAgent = "claude_code",
         llm_mapping: ExecuteEvaluationLLMMapping | None = None,
     ):
         self.github_client = github_client
         self.workflow_file = workflow_file
+        self.github_actions_agent = github_actions_agent
         self.llm_mapping = llm_mapping or ExecuteEvaluationLLMMapping()
 
     @record_execution_time
@@ -81,7 +83,9 @@ class ExecuteEvaluationSubgraph:
         logger.info(f"Run IDs: {', '.join(run_ids)}")
 
         inputs = {
+            "branch_name": github_config.branch_name,
             "run_ids": json.dumps(run_ids),
+            "github_actions_agent": self.github_actions_agent,
             "model_name": self.llm_mapping.dispatch_evaluation.llm_name,
         }
 

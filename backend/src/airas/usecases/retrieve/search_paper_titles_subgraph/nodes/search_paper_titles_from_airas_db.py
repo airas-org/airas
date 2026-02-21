@@ -1,30 +1,24 @@
+import asyncio
 import re
 from logging import getLogger
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from nltk.stem import PorterStemmer
 from rank_bm25 import BM25Okapi
 
+from airas.core.papers_db_config import (
+    AIRAS_PAPERS_REPO_BASE_URL,
+    CONFERENCES_AND_YEARS,
+)
+
 logger = getLogger(__name__)
 
-DB_BASE_URL = "https://raw.githubusercontent.com/airas-org/airas-papers-db/main/data"
-
-CONFERENCES_AND_YEARS = {
-    "cvpr": ["2023", "2024"],
-    "iclr": ["2020", "2021", "2022", "2023", "2024"],
-    "icml": ["2020", "2021", "2022", "2023", "2024"],
-    "neurips": ["2020", "2021", "2022", "2023", "2024"],
-}
+# Concurrent request limit to avoid overwhelming the server
+MAX_CONCURRENT_REQUESTS = 10
 
 
 class AirasDbPaperSearchIndex:
-    """Singleton search index for AIRAS paper database with BM25 and stemming.
-
-    Managed by DI container as a singleton. Only the loaded data is cached.
-    HTTP session is managed via context manager during fetch.
-    """
-
     def __init__(self) -> None:
         self._papers: list[dict[str, Any]] | None = None
         self._titles: list[str] | None = None
@@ -35,24 +29,61 @@ class AirasDbPaperSearchIndex:
         tokens = re.findall(r"\w+", text.lower())
         return [self._stemmer.stem(token) for token in tokens]
 
+    async def _fetch_papers_from_url(
+        self, client: httpx.AsyncClient, url: str
+    ) -> list[dict[str, Any]]:
+        logger.info(f"Fetching paper data from {url}...")
+        try:
+            response = await client.get(url, timeout=60)
+            response.raise_for_status()
+            papers = response.json()
+            logger.info(f"  -> Successfully fetched {len(papers)} papers from {url}")
+            return papers
+        except httpx.HTTPStatusError as e:
+            logger.error(f"  -> HTTP error while fetching data from {url}: {e}")
+            raise
+        except httpx.RequestError as e:
+            logger.error(f"  -> Network error while fetching data from {url}: {e}")
+            raise
+        except ValueError as e:
+            logger.error(f"  -> Failed to parse JSON from {url}: {e}")
+            raise
+
     async def _fetch_all_papers(self) -> list[dict[str, Any]]:
-        all_papers: list[dict[str, Any]] = []
         async with httpx.AsyncClient() as client:
+            semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
+
+            async def _bounded_fetch(url: str) -> list[dict[str, Any]]:
+                async with semaphore:
+                    return await self._fetch_papers_from_url(client, url)
+
+            tasks = []
+            urls = []
             for conference, years in CONFERENCES_AND_YEARS.items():
                 for year in years:
-                    url = f"{DB_BASE_URL}/{conference}/{year}.json"
-                    logger.info(f"Fetching paper data from {url}...")
-                    try:
-                        response = await client.get(url, timeout=60)
-                        response.raise_for_status()
-                        papers = response.json()
-                        all_papers.extend(papers)
-                    except httpx.HTTPStatusError as e:
-                        logger.error(
-                            f"  -> An error occurred while fetching data from {url}: {e}"
-                        )
-                    except ValueError as e:
-                        logger.error(f"  -> Failed to parse JSON from {url}: {e}")
+                    url = f"{AIRAS_PAPERS_REPO_BASE_URL}/{conference}/{year}.json"
+                    task = _bounded_fetch(url)
+                    tasks.append(task)
+                    urls.append(url)
+
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            all_papers: list[dict[str, Any]] = []
+            failed_count = 0
+            for url, result in zip(urls, results, strict=True):
+                if isinstance(result, Exception):
+                    failed_count += 1
+                    logger.warning(f"  -> Failed to fetch {url}: {result}")
+                    continue
+                papers = cast(list[dict[str, Any]], result)
+                all_papers.extend(papers)
+
+            if failed_count > 0:
+                logger.warning(
+                    f"Failed to fetch {failed_count}/{len(urls)} URLs. "
+                    f"Successfully loaded {len(all_papers)} papers from {len(urls) - failed_count} URLs."
+                )
+
         return all_papers
 
     async def _ensure_loaded(self) -> None:
@@ -112,3 +143,49 @@ async def search_paper_titles_from_airas_db(
                     results.append(title)
 
     return results
+
+
+async def main() -> None:
+    import logging
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
+
+    logger.info("=" * 80)
+    logger.info("Starting AIRAS DB paper search test...")
+    logger.info("=" * 80)
+
+    search_index = AirasDbPaperSearchIndex()
+
+    test_queries = [
+        "transformer",
+        "attention mechanism",
+        "neural network",
+    ]
+
+    logger.info(f"\nTest queries: {test_queries}")
+    logger.info("-" * 80)
+
+    results = await search_paper_titles_from_airas_db(
+        queries=test_queries,
+        max_results_per_query=5,
+        search_index=search_index,
+    )
+
+    logger.info(f"\n{'=' * 80}")
+    logger.info(f"Found {len(results)} unique papers:")
+    logger.info(f"{'=' * 80}")
+    for i, title in enumerate(results, 1):
+        logger.info(f"{i:3d}. {title}")
+
+    logger.info(f"\n{'=' * 80}")
+    logger.info("Test completed successfully!")
+    logger.info(f"{'=' * 80}")
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(main())
