@@ -5,8 +5,9 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from airas.infra.db.models.e2e import Status, StepType
+from api.ee.auth.dependencies import SYSTEM_USER_ID, get_current_user_id
 
-SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
+__all__ = ["SYSTEM_USER_ID", "get_current_user_id"]
 
 
 # session
@@ -21,11 +22,6 @@ class AssistedResearchSessionResponse(BaseModel):
     created_at: datetime
     created_by: UUID
     active_head_step_id: UUID | None
-
-
-def get_current_user_id() -> UUID:
-    # NOTE: 認証導入まで固定値にする。後でJWT等に置き換えを行う。
-    return SYSTEM_USER_ID
 
 
 # step
