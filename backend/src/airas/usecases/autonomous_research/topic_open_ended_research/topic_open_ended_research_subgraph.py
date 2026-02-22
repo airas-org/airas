@@ -271,6 +271,7 @@ class TopicOpenEndedResearchSubgraph:
         runner_config: RunnerConfig,
         wandb_config: WandbConfig,
         task_id: UUID,
+        created_by: UUID,
         is_github_repo_private: bool = False,
         search_method: SearchMethod = "airas_db",
         search_index: AirasDbPaperSearchIndex | None = None,
@@ -298,6 +299,7 @@ class TopicOpenEndedResearchSubgraph:
         self.runner_config = runner_config
         self.wandb_config = wandb_config
         self.task_id = task_id
+        self.created_by = created_by
         self.is_github_repo_private = is_github_repo_private
         self.num_paper_search_queries = num_paper_search_queries
         self.papers_per_query = papers_per_query
@@ -652,7 +654,7 @@ class TopicOpenEndedResearchSubgraph:
         self.e2e_service.create(
             id=self.task_id,
             title="Untitled E2E Research Task",
-            created_by=UUID("00000000-0000-0000-0000-000000000001"),
+            created_by=self.created_by,
             status=Status.RUNNING,
             current_step=StepType.GENERATE_QUERIES,
             github_url=github_url,

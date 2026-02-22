@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from dependency_injector.wiring import Closing, Provide, inject
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from airas.container import Container
 from airas.usecases.assisted_research.assisted_research_link_service import (
@@ -15,6 +15,7 @@ from airas.usecases.assisted_research.assisted_research_session_service import (
 from airas.usecases.assisted_research.assisted_research_step_service import (
     AssistedResearchStepService,
 )
+from api.ee.auth.dependencies import get_current_user_id
 from api.schemas.assisted_research import (
     AssistedResearchLinkCreateRequest,
     AssistedResearchLinkListResponse,
@@ -33,12 +34,14 @@ router = APIRouter(prefix="/assisted_research", tags=["assisted_research"])
 @inject
 def create_session(
     request: AssistedResearchSessionCreateRequest,
+    fastapi_request: Request,
     session_service: Annotated[
         AssistedResearchSessionService,
         Depends(Closing[Provide[Container.assisted_research_session_service]]),
     ],
 ) -> AssistedResearchSessionResponse:
-    session = session_service.create(title=request.title, created_by=request.created_by)
+    current_user_id = get_current_user_id(fastapi_request)
+    session = session_service.create(title=request.title, created_by=current_user_id)
     return AssistedResearchSessionResponse(
         id=session.id,
         title=session.title,
@@ -72,14 +75,16 @@ def get_session(
 @inject
 def create_step(
     request: AssistedResearchStepCreateRequest,
+    fastapi_request: Request,
     step_service: Annotated[
         AssistedResearchStepService,
         Depends(Closing[Provide[Container.assisted_research_step_service]]),
     ],
 ) -> AssistedResearchStepResponse:
+    current_user_id = get_current_user_id(fastapi_request)
     step = step_service.create(
         session_id=request.session_id,
-        created_by=request.created_by,
+        created_by=current_user_id,
         status=request.status,
         step_type=request.step_type,
         error_message=request.error_message,

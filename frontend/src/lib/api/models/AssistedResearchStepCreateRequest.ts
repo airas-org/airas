@@ -6,7 +6,6 @@ import type { Status } from './Status';
 import type { StepType } from './StepType';
 export type AssistedResearchStepCreateRequest = {
     session_id: string;
-    created_by: string;
     status: Status;
     step_type: StepType;
     error_message: (string | null);

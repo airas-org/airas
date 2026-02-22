@@ -5,15 +5,11 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from airas.infra.db.models.e2e import Status, StepType
-from api.ee.auth.dependencies import SYSTEM_USER_ID, get_current_user_id
-
-__all__ = ["SYSTEM_USER_ID", "get_current_user_id"]
 
 
 # session
 class AssistedResearchSessionCreateRequest(BaseModel):
     title: str = Field(min_length=1, max_length=200)
-    created_by: UUID
 
 
 class AssistedResearchSessionResponse(BaseModel):
@@ -27,7 +23,6 @@ class AssistedResearchSessionResponse(BaseModel):
 # step
 class AssistedResearchStepCreateRequest(BaseModel):
     session_id: UUID
-    created_by: UUID
     status: Status
     step_type: StepType
     error_message: str | None
