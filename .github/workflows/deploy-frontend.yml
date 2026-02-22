@@ -24,6 +24,7 @@ jobs:
 
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-1' }}
+      S3_BUCKET: ${{ vars.S3_BUCKET || 'airas-dev-frontend' }}
 
     steps:
       - name: Checkout
@@ -53,8 +54,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Validate required variables
+        run: |
+          if [ -z "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            echo "::error::CLOUDFRONT_DISTRIBUTION_ID is not set in environment variables"
+            exit 1
+          fi
+
       - name: Deploy to S3
-        run: aws s3 sync frontend/dist/ s3://${{ vars.S3_BUCKET }} --delete
+        run: aws s3 sync frontend/dist/ s3://${{ env.S3_BUCKET }} --delete
 
       - name: Invalidate CloudFront cache
         run: |

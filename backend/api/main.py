@@ -11,6 +11,7 @@ from airas.container import Container
 from airas.usecases.autonomous_research.topic_open_ended_research.in_memory_topic_open_ended_research_service import (
     InMemoryTopicOpenEndedResearchService,
 )
+from api.ee.settings import get_ee_settings
 from api.routes.v1 import (
     assisted_research,
     bibfile,
@@ -95,3 +96,10 @@ app.include_router(github_actions.router, prefix="/airas/v1")
 app.include_router(github.router, prefix="/airas/v1")
 app.include_router(assisted_research.router, prefix="/airas/v1")
 app.include_router(topic_open_ended_research.router, prefix="/airas/v1")
+
+# Register EE routes if enterprise is enabled
+_ee_settings = get_ee_settings()
+if _ee_settings.enabled:
+    from api.ee.auth.routes import router as ee_auth_router
+
+    app.include_router(ee_auth_router, prefix="/airas/ee")

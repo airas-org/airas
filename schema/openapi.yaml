@@ -964,6 +964,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/auth/me:
+    get:
+      tags:
+      - ee-auth
+      summary: Get Me
+      description: Return the current authenticated user's ID.
+      operationId: get_me_airas_ee_auth_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
 components:
   schemas:
     AnalyzeExperimentLLMMapping:
@@ -1068,14 +1081,9 @@ components:
           maxLength: 200
           minLength: 1
           title: Title
-        created_by:
-          type: string
-          format: uuid
-          title: Created By
       type: object
       required:
       - title
-      - created_by
       title: AssistedResearchSessionCreateRequest
     AssistedResearchSessionResponse:
       properties:
@@ -1114,10 +1122,6 @@ components:
           type: string
           format: uuid
           title: Session Id
-        created_by:
-          type: string
-          format: uuid
-          title: Created By
         status:
           $ref: '#/components/schemas/Status'
         step_type:
@@ -1136,7 +1140,6 @@ components:
       type: object
       required:
       - session_id
-      - created_by
       - status
       - step_type
       - error_message

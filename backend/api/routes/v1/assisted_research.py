@@ -15,6 +15,7 @@ from airas.usecases.assisted_research.assisted_research_session_service import (
 from airas.usecases.assisted_research.assisted_research_step_service import (
     AssistedResearchStepService,
 )
+from api.ee.auth.dependencies import get_current_user_id
 from api.schemas.assisted_research import (
     AssistedResearchLinkCreateRequest,
     AssistedResearchLinkListResponse,
@@ -33,12 +34,13 @@ router = APIRouter(prefix="/assisted_research", tags=["assisted_research"])
 @inject
 def create_session(
     request: AssistedResearchSessionCreateRequest,
+    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     session_service: Annotated[
         AssistedResearchSessionService,
         Depends(Closing[Provide[Container.assisted_research_session_service]]),
     ],
 ) -> AssistedResearchSessionResponse:
-    session = session_service.create(title=request.title, created_by=request.created_by)
+    session = session_service.create(title=request.title, created_by=current_user_id)
     return AssistedResearchSessionResponse(
         id=session.id,
         title=session.title,
@@ -72,6 +74,7 @@ def get_session(
 @inject
 def create_step(
     request: AssistedResearchStepCreateRequest,
+    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     step_service: Annotated[
         AssistedResearchStepService,
         Depends(Closing[Provide[Container.assisted_research_step_service]]),
@@ -79,7 +82,7 @@ def create_step(
 ) -> AssistedResearchStepResponse:
     step = step_service.create(
         session_id=request.session_id,
-        created_by=request.created_by,
+        created_by=current_user_id,
         status=request.status,
         step_type=request.step_type,
         error_message=request.error_message,
