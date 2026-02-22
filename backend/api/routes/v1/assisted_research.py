@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from dependency_injector.wiring import Closing, Provide, inject
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 
 from airas.container import Container
 from airas.usecases.assisted_research.assisted_research_link_service import (
@@ -34,13 +34,12 @@ router = APIRouter(prefix="/assisted_research", tags=["assisted_research"])
 @inject
 def create_session(
     request: AssistedResearchSessionCreateRequest,
-    fastapi_request: Request,
+    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     session_service: Annotated[
         AssistedResearchSessionService,
         Depends(Closing[Provide[Container.assisted_research_session_service]]),
     ],
 ) -> AssistedResearchSessionResponse:
-    current_user_id = get_current_user_id(fastapi_request)
     session = session_service.create(title=request.title, created_by=current_user_id)
     return AssistedResearchSessionResponse(
         id=session.id,
@@ -75,13 +74,12 @@ def get_session(
 @inject
 def create_step(
     request: AssistedResearchStepCreateRequest,
-    fastapi_request: Request,
+    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     step_service: Annotated[
         AssistedResearchStepService,
         Depends(Closing[Provide[Container.assisted_research_step_service]]),
     ],
 ) -> AssistedResearchStepResponse:
-    current_user_id = get_current_user_id(fastapi_request)
     step = step_service.create(
         session_id=request.session_id,
         created_by=current_user_id,

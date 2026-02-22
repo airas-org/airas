@@ -157,6 +157,7 @@ class RetrieveHuggingFaceSubgraph(BaseSubgraph):
 
 def main():
     from airas.infra.api_clients_container import sync_container
+
     from airas.usecases.retrieve.retrieve_hugging_face_subgraph.input_data import (
         retrieve_hugging_face_subgraph_input_data,
     )
