@@ -26,6 +26,7 @@ jobs:
       AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-1' }}
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || 'airas-backend' }}
       ECS_CONTAINER_NAME: ${{ vars.ECS_CONTAINER_NAME || 'backend' }}
+      ECS_TASK_FAMILY: ${{ vars.ECS_TASK_FAMILY || 'airas-dev-backend' }}
       ECS_SERVICE: ${{ vars.ECS_SERVICE || 'airas-dev-backend' }}
       ECS_CLUSTER: ${{ vars.ECS_CLUSTER || 'airas-dev-cluster' }}
 
@@ -57,7 +58,7 @@ jobs:
         id: render-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: .aws/task-definition.json
+          task-definition: ${{ env.ECS_TASK_FAMILY }}
           container-name: ${{ env.ECS_CONTAINER_NAME }}
           image: ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
