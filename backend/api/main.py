@@ -61,6 +61,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AIRAS API", version="0.0.1", lifespan=lifespan)
 
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 # Allow frontend (e.g., Vite dev server) to call the API with browser preflight
 app.add_middleware(
     CORSMiddleware,

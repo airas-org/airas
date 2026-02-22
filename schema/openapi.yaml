@@ -3,6 +3,16 @@ info:
   title: AIRAS API
   version: 0.0.1
 paths:
+  /health:
+    get:
+      summary: Health
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
   /airas/v1/papers/search:
     post:
       tags:
