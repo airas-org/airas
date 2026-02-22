@@ -25,7 +25,7 @@ jobs:
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-1' }}
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || 'airas-backend' }}
-      ECS_CONTAINER_NAME: ${{ vars.ECS_CONTAINER_NAME || 'airas-backend' }}
+      ECS_CONTAINER_NAME: ${{ vars.ECS_CONTAINER_NAME || 'backend' }}
       ECS_SERVICE: ${{ vars.ECS_SERVICE || 'airas-dev-backend' }}
       ECS_CLUSTER: ${{ vars.ECS_CLUSTER || 'airas-dev-cluster' }}
 
