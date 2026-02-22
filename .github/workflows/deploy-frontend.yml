@@ -16,14 +16,14 @@ permissions:
   id-token: write
   contents: read
 
-env:
-  AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-1' }}
-
 jobs:
   deploy:
     name: Build & Deploy Frontend
     runs-on: ubuntu-latest
     environment: dev
+
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-1' }}
 
     steps:
       - name: Checkout
