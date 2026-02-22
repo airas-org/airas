@@ -4,6 +4,5 @@
 /* eslint-disable */
 export type AssistedResearchSessionCreateRequest = {
     title: string;
-    created_by: string;
 };
 
