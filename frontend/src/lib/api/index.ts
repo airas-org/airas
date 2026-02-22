@@ -124,6 +124,7 @@ export { AssistedResearchService } from './services/AssistedResearchService';
 export { BibfileService } from './services/BibfileService';
 export { CodeService } from './services/CodeService';
 export { DatasetsService } from './services/DatasetsService';
+export { DefaultService } from './services/DefaultService';
 export { EeAuthService } from './services/EeAuthService';
 export { ExperimentalSettingsService } from './services/ExperimentalSettingsService';
 export { ExperimentsService } from './services/ExperimentsService';
