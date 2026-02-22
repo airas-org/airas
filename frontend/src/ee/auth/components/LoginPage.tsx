@@ -1,7 +1,7 @@
 import { useAuth } from "@/ee/auth/hooks/useAuth";
 
 export function LoginPage() {
-  const { signInWithGoogle, signInWithGithub } = useAuth();
+  const { signInWithGoogle } = useAuth();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
@@ -17,13 +17,6 @@ export function LoginPage() {
             className="flex w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/60 transition-colors"
           >
             Sign in with Google
-          </button>
-          <button
-            type="button"
-            onClick={signInWithGithub}
-            className="flex w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/60 transition-colors"
-          >
-            Sign in with GitHub
           </button>
         </div>
       </div>

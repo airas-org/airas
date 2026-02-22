@@ -1,12 +1,12 @@
-# EE Auth & Billing Implementation Plan
+# EE Auth Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Add enterprise authentication (Supabase Auth) and billing (Stripe Subscription) to AIRAS under `ee/` directories with ELv2 license, keeping OSS behavior unchanged.
+**Goal:** Add enterprise authentication (Supabase Auth) to AIRAS under `ee/` directories with ELv2 license, keeping OSS behavior unchanged. Authentication only (no billing for now).
 
-**Architecture:** Frontend uses Supabase JS SDK for OAuth login (Google/GitHub), backend verifies JWT with PyJWT. Stripe Checkout handles payments, Stripe Webhooks sync subscription state to PostgreSQL. `ENTERPRISE_ENABLED` env var toggles the entire EE stack on/off.
+**Architecture:** Frontend uses Supabase JS SDK for OAuth login (Google/GitHub), backend verifies JWT with PyJWT. `ENTERPRISE_ENABLED` env var toggles the entire EE stack on/off.
 
-**Tech Stack:** Supabase Auth, Stripe, PyJWT, FastAPI, React, Axios, SQLModel
+**Tech Stack:** Supabase Auth, PyJWT, FastAPI, React, Axios
 
 ---
 
@@ -17,14 +17,10 @@
 - Create: `backend/api/ee/__init__.py`
 - Create: `backend/api/ee/LICENSE`
 - Create: `backend/api/ee/auth/__init__.py`
-- Create: `backend/api/ee/billing/__init__.py`
 - Create: `frontend/src/ee/config.ts`
 - Create: `frontend/src/ee/auth/lib/.gitkeep`
 - Create: `frontend/src/ee/auth/hooks/.gitkeep`
 - Create: `frontend/src/ee/auth/components/.gitkeep`
-- Create: `frontend/src/ee/billing/lib/.gitkeep`
-- Create: `frontend/src/ee/billing/hooks/.gitkeep`
-- Create: `frontend/src/ee/billing/components/.gitkeep`
 
 **Step 1: Create directories and ELv2 LICENSE files**
 
@@ -51,7 +47,7 @@ git commit -m "feat(ee): scaffold EE directory structure with ELv2 licenses"
 
 ---
 
-## Task 2: Backend — Add PyJWT and stripe dependencies
+## Task 2: Backend — Add PyJWT dependency
 
 **Files:**
 - Modify: `backend/pyproject.toml`
@@ -62,7 +58,6 @@ Add to the `[project.dependencies]` section:
 
 ```toml
 "PyJWT[crypto]>=2.8.0",
-"stripe>=8.0.0",
 ```
 
 **Step 2: Install dependencies**
@@ -75,7 +70,7 @@ cd backend && uv sync
 
 ```bash
 git add backend/pyproject.toml backend/uv.lock
-git commit -m "feat(ee): add PyJWT and stripe dependencies"
+git commit -m "feat(ee): add PyJWT dependency"
 ```
 
 ---
@@ -100,8 +95,6 @@ class EESettings:
     supabase_url: str
     supabase_anon_key: str
     supabase_jwt_secret: str
-    stripe_api_key: str
-    stripe_webhook_secret: str
 
 
 def get_ee_settings() -> EESettings:
@@ -110,8 +103,6 @@ def get_ee_settings() -> EESettings:
         supabase_url=os.getenv("SUPABASE_URL", ""),
         supabase_anon_key=os.getenv("SUPABASE_ANON_KEY", ""),
         supabase_jwt_secret=os.getenv("SUPABASE_JWT_SECRET", ""),
-        stripe_api_key=os.getenv("STRIPE_API_KEY", ""),
-        stripe_webhook_secret=os.getenv("STRIPE_WEBHOOK_SECRET", ""),
     )
 ```
 
@@ -125,12 +116,9 @@ ENTERPRISE_ENABLED=false
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
 SUPABASE_JWT_SECRET=
-STRIPE_API_KEY=
-STRIPE_WEBHOOK_SECRET=
 VITE_ENTERPRISE_ENABLED=false
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
-VITE_STRIPE_PUBLISHABLE_KEY=
 ```
 
 **Step 3: Commit**
@@ -245,10 +233,8 @@ from api.ee.settings import get_ee_settings
 ee_settings = get_ee_settings()
 if ee_settings.enabled:
     from api.ee.auth.routes import router as ee_auth_router
-    from api.ee.billing.routes import router as ee_billing_router
 
     app.include_router(ee_auth_router, prefix="/airas/ee")
-    app.include_router(ee_billing_router, prefix="/airas/ee")
 ```
 
 **Step 5: Commit**
@@ -293,345 +279,7 @@ git commit -m "feat(ee): add /ee/auth/me endpoint"
 
 ---
 
-## Task 6: Backend — Subscription database model
-
-**Files:**
-- Create: `backend/api/ee/billing/models.py`
-
-**Step 1: Create SubscriptionModel**
-
-```python
-# backend/api/ee/billing/models.py
-import enum
-from datetime import datetime, timezone
-from uuid import UUID, uuid4
-
-from sqlmodel import Column, Enum, Field, SQLModel
-
-
-class PlanType(str, enum.Enum):
-    FREE = "free"
-    PRO = "pro"
-    ENTERPRISE = "enterprise"
-
-
-class SubscriptionStatus(str, enum.Enum):
-    ACTIVE = "active"
-    CANCELED = "canceled"
-    PAST_DUE = "past_due"
-    INCOMPLETE = "incomplete"
-    TRIALING = "trialing"
-
-
-class SubscriptionModel(SQLModel, table=True):
-    __tablename__ = "subscriptions"
-
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
-    user_id: UUID = Field(index=True, nullable=False)
-    stripe_customer_id: str = Field(index=True, nullable=False)
-    stripe_subscription_id: str | None = Field(default=None, index=True)
-    plan: PlanType = Field(
-        sa_column=Column(Enum(PlanType), nullable=False, default=PlanType.FREE)
-    )
-    status: SubscriptionStatus = Field(
-        sa_column=Column(
-            Enum(SubscriptionStatus),
-            nullable=False,
-            default=SubscriptionStatus.INCOMPLETE,
-        )
-    )
-    current_period_start: datetime | None = Field(default=None)
-    current_period_end: datetime | None = Field(default=None)
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        nullable=False,
-    )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        nullable=False,
-    )
-```
-
-**Step 2: Commit**
-
-```bash
-git add backend/api/ee/billing/models.py
-git commit -m "feat(ee): add Subscription database model"
-```
-
----
-
-## Task 7: Backend — Stripe billing service
-
-**Files:**
-- Create: `backend/api/ee/billing/service.py`
-
-**Step 1: Create Stripe service**
-
-```python
-# backend/api/ee/billing/service.py
-from datetime import datetime, timezone
-from uuid import UUID
-
-import stripe
-from sqlmodel import Session, select
-
-from api.ee.billing.models import PlanType, SubscriptionModel, SubscriptionStatus
-from api.ee.settings import get_ee_settings
-
-
-def _init_stripe() -> None:
-    settings = get_ee_settings()
-    stripe.api_key = settings.stripe_api_key
-
-
-def create_checkout_session(
-    user_id: UUID,
-    price_id: str,
-    success_url: str,
-    cancel_url: str,
-    db: Session,
-) -> str:
-    """Create a Stripe Checkout session and return the URL."""
-    _init_stripe()
-
-    # Find or create Stripe customer
-    sub = db.exec(
-        select(SubscriptionModel).where(SubscriptionModel.user_id == user_id)
-    ).first()
-
-    if sub and sub.stripe_customer_id:
-        customer_id = sub.stripe_customer_id
-    else:
-        customer = stripe.Customer.create(metadata={"user_id": str(user_id)})
-        customer_id = customer.id
-        if not sub:
-            sub = SubscriptionModel(
-                user_id=user_id,
-                stripe_customer_id=customer_id,
-                plan=PlanType.FREE,
-                status=SubscriptionStatus.INCOMPLETE,
-            )
-            db.add(sub)
-            db.commit()
-
-    session = stripe.checkout.Session.create(
-        customer=customer_id,
-        payment_method_types=["card"],
-        mode="subscription",
-        line_items=[{"price": price_id, "quantity": 1}],
-        success_url=success_url,
-        cancel_url=cancel_url,
-    )
-    return session.url
-
-
-def create_portal_session(user_id: UUID, return_url: str, db: Session) -> str:
-    """Create a Stripe Billing Portal session and return the URL."""
-    _init_stripe()
-    sub = db.exec(
-        select(SubscriptionModel).where(SubscriptionModel.user_id == user_id)
-    ).first()
-    if not sub or not sub.stripe_customer_id:
-        raise ValueError("No subscription found for user")
-
-    session = stripe.billing_portal.Session.create(
-        customer=sub.stripe_customer_id,
-        return_url=return_url,
-    )
-    return session.url
-
-
-def handle_webhook_event(payload: bytes, sig_header: str, db: Session) -> None:
-    """Process a Stripe webhook event."""
-    settings = get_ee_settings()
-    _init_stripe()
-
-    event = stripe.Webhook.construct_event(
-        payload, sig_header, settings.stripe_webhook_secret
-    )
-
-    if event["type"] == "checkout.session.completed":
-        _handle_checkout_completed(event["data"]["object"], db)
-    elif event["type"] in (
-        "customer.subscription.updated",
-        "customer.subscription.deleted",
-    ):
-        _handle_subscription_change(event["data"]["object"], db)
-
-
-def _handle_checkout_completed(session: dict, db: Session) -> None:
-    customer_id = session["customer"]
-    subscription_id = session["subscription"]
-
-    sub = db.exec(
-        select(SubscriptionModel).where(
-            SubscriptionModel.stripe_customer_id == customer_id
-        )
-    ).first()
-    if sub:
-        sub.stripe_subscription_id = subscription_id
-        sub.status = SubscriptionStatus.ACTIVE
-        sub.plan = PlanType.PRO
-        sub.updated_at = datetime.now(timezone.utc)
-        db.add(sub)
-        db.commit()
-
-
-def _handle_subscription_change(subscription: dict, db: Session) -> None:
-    subscription_id = subscription["id"]
-    status_str = subscription["status"]
-
-    sub = db.exec(
-        select(SubscriptionModel).where(
-            SubscriptionModel.stripe_subscription_id == subscription_id
-        )
-    ).first()
-    if not sub:
-        return
-
-    status_map = {
-        "active": SubscriptionStatus.ACTIVE,
-        "canceled": SubscriptionStatus.CANCELED,
-        "past_due": SubscriptionStatus.PAST_DUE,
-        "incomplete": SubscriptionStatus.INCOMPLETE,
-        "trialing": SubscriptionStatus.TRIALING,
-    }
-    sub.status = status_map.get(status_str, SubscriptionStatus.INCOMPLETE)
-
-    period_start = subscription.get("current_period_start")
-    period_end = subscription.get("current_period_end")
-    if period_start:
-        sub.current_period_start = datetime.fromtimestamp(
-            period_start, tz=timezone.utc
-        )
-    if period_end:
-        sub.current_period_end = datetime.fromtimestamp(period_end, tz=timezone.utc)
-
-    if status_str == "canceled":
-        sub.plan = PlanType.FREE
-
-    sub.updated_at = datetime.now(timezone.utc)
-    db.add(sub)
-    db.commit()
-```
-
-**Step 2: Commit**
-
-```bash
-git add backend/api/ee/billing/service.py
-git commit -m "feat(ee): add Stripe billing service"
-```
-
----
-
-## Task 8: Backend — Billing routes
-
-**Files:**
-- Create: `backend/api/ee/billing/routes.py`
-
-**Step 1: Create billing routes**
-
-```python
-# backend/api/ee/billing/routes.py
-from uuid import UUID
-
-from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel
-from sqlmodel import Session
-
-from api.ee.auth.dependencies import get_current_user_id
-from api.ee.billing.service import (
-    create_checkout_session,
-    create_portal_session,
-    handle_webhook_event,
-)
-
-router = APIRouter(prefix="/billing", tags=["ee-billing"])
-
-
-class CheckoutRequest(BaseModel):
-    price_id: str
-    success_url: str
-    cancel_url: str
-
-
-class CheckoutResponse(BaseModel):
-    url: str
-
-
-class PortalRequest(BaseModel):
-    return_url: str
-
-
-class PortalResponse(BaseModel):
-    url: str
-
-
-def _get_db(request: Request) -> Session:
-    """Get database session from container."""
-    container = request.app.state.container
-    return container.session_factory()
-
-
-@router.post("/create-checkout-session", response_model=CheckoutResponse)
-async def create_checkout(
-    body: CheckoutRequest,
-    user_id: UUID = Depends(get_current_user_id),
-    db: Session = Depends(_get_db),
-):
-    url = create_checkout_session(
-        user_id=user_id,
-        price_id=body.price_id,
-        success_url=body.success_url,
-        cancel_url=body.cancel_url,
-        db=db,
-    )
-    if not url:
-        raise HTTPException(status_code=500, detail="Failed to create checkout session")
-    return CheckoutResponse(url=url)
-
-
-@router.post("/create-portal-session", response_model=PortalResponse)
-async def create_portal(
-    body: PortalRequest,
-    user_id: UUID = Depends(get_current_user_id),
-    db: Session = Depends(_get_db),
-):
-    try:
-        url = create_portal_session(
-            user_id=user_id,
-            return_url=body.return_url,
-            db=db,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    return PortalResponse(url=url)
-
-
-@router.post("/webhook")
-async def stripe_webhook(request: Request, db: Session = Depends(_get_db)):
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature")
-    if not sig_header:
-        raise HTTPException(status_code=400, detail="Missing stripe-signature header")
-    try:
-        handle_webhook_event(payload, sig_header, db)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    return {"status": "ok"}
-```
-
-**Step 2: Commit**
-
-```bash
-git add backend/api/ee/billing/routes.py
-git commit -m "feat(ee): add billing routes (checkout, portal, webhook)"
-```
-
----
-
-## Task 9: Frontend — Add Supabase dependency and EE config
+## Task 6: Frontend — Add Supabase dependency and EE config
 
 **Files:**
 - Modify: `frontend/package.json`
@@ -652,7 +300,7 @@ git commit -m "feat(ee): add @supabase/supabase-js dependency"
 
 ---
 
-## Task 10: Frontend — Supabase client and auth hooks
+## Task 7: Frontend — Supabase client and auth hooks
 
 **Files:**
 - Create: `frontend/src/ee/auth/lib/supabase.ts`
@@ -743,7 +391,7 @@ git commit -m "feat(ee): add Supabase client and auth hooks"
 
 ---
 
-## Task 11: Frontend — Auth components (LoginPage, AuthGuard, AuthCallback, UserMenu)
+## Task 8: Frontend — Auth components (LoginPage, AuthGuard, AuthCallback, UserMenu)
 
 **Files:**
 - Create: `frontend/src/ee/auth/components/LoginPage.tsx`
@@ -899,7 +547,7 @@ git commit -m "feat(ee): add LoginPage, AuthGuard, AuthCallback, UserMenu compon
 
 ---
 
-## Task 12: Frontend — Axios interceptor for JWT
+## Task 9: Frontend — Axios interceptor for JWT
 
 **Files:**
 - Create: `frontend/src/ee/auth/lib/axios-interceptor.ts`
@@ -934,7 +582,7 @@ git commit -m "feat(ee): add Axios auth interceptor"
 
 ---
 
-## Task 13: Frontend — Integrate EE into App.tsx
+## Task 10: Frontend — Integrate EE into App.tsx
 
 **Files:**
 - Modify: `frontend/src/App.tsx`
@@ -1037,184 +685,7 @@ git commit -m "feat(ee): integrate auth into App.tsx with conditional loading"
 
 ---
 
-## Task 14: Frontend — Billing components
-
-**Files:**
-- Create: `frontend/src/ee/billing/hooks/useSubscription.ts`
-- Create: `frontend/src/ee/billing/components/PricingPage.tsx`
-- Create: `frontend/src/ee/billing/components/BillingPortal.tsx`
-- Create: `frontend/src/ee/billing/components/PlanBadge.tsx`
-
-**Step 1: Create useSubscription hook**
-
-```typescript
-// frontend/src/ee/billing/hooks/useSubscription.ts
-import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
-
-interface Subscription {
-  plan: "free" | "pro" | "enterprise";
-  status: "active" | "canceled" | "past_due" | "incomplete" | "trialing";
-}
-
-export function useSubscription() {
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchSubscription = useCallback(async () => {
-    try {
-      const res = await axios.get("/airas/ee/billing/subscription");
-      setSubscription(res.data);
-    } catch {
-      setSubscription(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSubscription();
-  }, [fetchSubscription]);
-
-  return { subscription, loading, refetch: fetchSubscription };
-}
-```
-
-**Step 2: Create PricingPage**
-
-```tsx
-// frontend/src/ee/billing/components/PricingPage.tsx
-import axios from "axios";
-
-const plans = [
-  {
-    name: "Free",
-    price: "$0",
-    period: "forever",
-    features: ["Basic research", "Community support"],
-    priceId: null,
-  },
-  {
-    name: "Pro",
-    price: "$29",
-    period: "/month",
-    features: ["Unlimited research", "Priority support", "Advanced analytics"],
-    priceId: "price_pro_monthly", // Replace with actual Stripe price ID
-  },
-];
-
-export function PricingPage() {
-  const handleCheckout = async (priceId: string) => {
-    const res = await axios.post("/airas/ee/billing/create-checkout-session", {
-      price_id: priceId,
-      success_url: `${window.location.origin}/?checkout=success`,
-      cancel_url: `${window.location.origin}/?checkout=canceled`,
-    });
-    window.location.href = res.data.url;
-  };
-
-  return (
-    <div className="mx-auto max-w-3xl p-8">
-      <h2 className="text-2xl font-bold text-foreground mb-8 text-center">
-        Choose your plan
-      </h2>
-      <div className="grid grid-cols-2 gap-6">
-        {plans.map((plan) => (
-          <div
-            key={plan.name}
-            className="rounded-lg border border-border bg-card p-6 space-y-4"
-          >
-            <h3 className="text-lg font-semibold">{plan.name}</h3>
-            <div className="text-3xl font-bold">
-              {plan.price}
-              <span className="text-sm font-normal text-muted-foreground">
-                {plan.period}
-              </span>
-            </div>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              {plan.features.map((f) => (
-                <li key={f}>{f}</li>
-              ))}
-            </ul>
-            {plan.priceId && (
-              <button
-                type="button"
-                onClick={() => handleCheckout(plan.priceId!)}
-                className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-              >
-                Subscribe
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-```
-
-**Step 3: Create BillingPortal**
-
-```tsx
-// frontend/src/ee/billing/components/BillingPortal.tsx
-import axios from "axios";
-
-export function BillingPortal() {
-  const handlePortal = async () => {
-    const res = await axios.post("/airas/ee/billing/create-portal-session", {
-      return_url: window.location.origin,
-    });
-    window.location.href = res.data.url;
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handlePortal}
-      className="rounded-md border border-border px-4 py-2 text-sm text-foreground hover:bg-muted/60 transition-colors"
-    >
-      Manage subscription
-    </button>
-  );
-}
-```
-
-**Step 4: Create PlanBadge**
-
-```tsx
-// frontend/src/ee/billing/components/PlanBadge.tsx
-import { cn } from "@/lib/utils";
-
-interface PlanBadgeProps {
-  plan: "free" | "pro" | "enterprise";
-}
-
-export function PlanBadge({ plan }: PlanBadgeProps) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-        plan === "pro" && "bg-blue-100 text-blue-800",
-        plan === "enterprise" && "bg-purple-100 text-purple-800",
-        plan === "free" && "bg-gray-100 text-gray-800",
-      )}
-    >
-      {plan.charAt(0).toUpperCase() + plan.slice(1)}
-    </span>
-  );
-}
-```
-
-**Step 5: Commit**
-
-```bash
-git add frontend/src/ee/billing/
-git commit -m "feat(ee): add billing components (PricingPage, BillingPortal, PlanBadge)"
-```
-
----
-
-## Task 15: Update .env.example and cleanup
+## Task 11: Update .env.example and cleanup
 
 **Files:**
 - Modify: `.env.example` (if not done in Task 3)
@@ -1233,7 +704,7 @@ git commit -m "chore(ee): cleanup gitkeep files"
 
 ---
 
-## Task 16: Verify EE-disabled mode (OSS regression check)
+## Task 12: Verify EE-disabled mode (OSS regression check)
 
 **Step 1: Ensure ENTERPRISE_ENABLED is not set (or false)**
 
@@ -1276,11 +747,9 @@ cd frontend && npm run dev
 ```
 Task 1 (scaffold) → Task 2 (deps) → Task 3 (settings)
   → Task 4 (JWT middleware) → Task 5 (auth routes)
-  → Task 6 (subscription model) → Task 7 (billing service) → Task 8 (billing routes)
-  → Task 9 (frontend deps) → Task 10 (supabase client) → Task 11 (auth components)
-  → Task 12 (axios interceptor) → Task 13 (App.tsx integration)
-  → Task 14 (billing components)
-  → Task 15 (cleanup) → Task 16 (regression check)
+  → Task 6 (frontend deps) → Task 7 (supabase client) → Task 8 (auth components)
+  → Task 9 (axios interceptor) → Task 10 (App.tsx integration)
+  → Task 11 (cleanup) → Task 12 (regression check)
 ```
 
-Backend tasks (1-8) and frontend tasks (9-14) can be parallelized after Task 3.
+Backend tasks (1-5) and frontend tasks (6-10) can be parallelized after Task 3.

@@ -95,7 +95,5 @@ app.include_router(topic_open_ended_research.router, prefix="/airas/v1")
 _ee_settings = get_ee_settings()
 if _ee_settings.enabled:
     from api.ee.auth.routes import router as ee_auth_router
-    from api.ee.billing.routes import router as ee_billing_router
 
     app.include_router(ee_auth_router, prefix="/airas/ee")
-    app.include_router(ee_billing_router, prefix="/airas/ee")
