@@ -3,6 +3,16 @@ info:
   title: AIRAS API
   version: 0.0.1
 paths:
+  /health:
+    get:
+      summary: Health
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
   /airas/v1/papers/search:
     post:
       tags:
@@ -1058,14 +1068,9 @@ components:
           maxLength: 200
           minLength: 1
           title: Title
-        created_by:
-          type: string
-          format: uuid
-          title: Created By
       type: object
       required:
       - title
-      - created_by
       title: AssistedResearchSessionCreateRequest
     AssistedResearchSessionResponse:
       properties:
@@ -1104,10 +1109,6 @@ components:
           type: string
           format: uuid
           title: Session Id
-        created_by:
-          type: string
-          format: uuid
-          title: Created By
         status:
           $ref: '#/components/schemas/Status'
         step_type:
@@ -1126,7 +1127,6 @@ components:
       type: object
       required:
       - session_id
-      - created_by
       - status
       - step_type
       - error_message
@@ -2191,7 +2191,7 @@ components:
         generate_latex:
           $ref: '#/components/schemas/GenerateLatexLLMMapping'
           default:
-            generate_latex:
+            convert_to_latex:
               llm_name: gpt-5.2
         compile_latex:
           $ref: '#/components/schemas/CompileLatexLLMMapping'

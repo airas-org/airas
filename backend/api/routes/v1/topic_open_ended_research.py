@@ -23,6 +23,7 @@ from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_end
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
+from api.ee.auth.dependencies import get_current_user_id
 from api.schemas.topic_open_ended_research import (
     TopicOpenEndedResearchListItemResponse,
     TopicOpenEndedResearchListResponseBody,
@@ -37,7 +38,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix="/topic_open_ended_research", tags=["topic_open_ended_research"]
 )
-DEFAULT_CREATED_BY = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
 # TODO: [Polling/Redis] Implement asynchronous polling mechanism.
 # Redis is required to persist task state (status, logs) across processes,
@@ -51,6 +51,7 @@ DEFAULT_CREATED_BY = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
 async def _execute_topic_open_ended_research(
     task_id: uuid.UUID,
+    created_by: uuid.UUID,
     request: TopicOpenEndedResearchRequestBody,
     search_index: AirasDbPaperSearchIndex | None,
     github_client: GithubClient,
@@ -74,6 +75,7 @@ async def _execute_topic_open_ended_research(
             runner_config=request.runner_config,
             wandb_config=request.wandb_config,
             task_id=task_id,
+            created_by=created_by,
             is_github_repo_private=request.is_github_repo_private,
             search_method=request.search_method,
             search_index=search_index,
@@ -138,6 +140,7 @@ async def _execute_topic_open_ended_research(
 async def execute_topic_open_ended_research(
     request: TopicOpenEndedResearchRequestBody,
     fastapi_request: Request,
+    current_user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
     arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
     langchain_client: Annotated[
@@ -169,6 +172,7 @@ async def execute_topic_open_ended_research(
     asyncio.create_task(
         _execute_topic_open_ended_research(
             task_id=task_id,
+            created_by=current_user_id,
             request=request,
             search_index=search_index,
             github_client=github_client,

@@ -32,4 +32,12 @@ else
 fi
 
 set +x
+
+# --- Load .env into shell profile ---
+if [ -f /workspaces/airas/.env ]; then
+  if ! grep -q "source /workspaces/airas/.env" ~/.bashrc 2>/dev/null; then
+    echo 'set -a; source /workspaces/airas/.env; set +a' >> ~/.bashrc
+  fi
+fi
+
 echo "[setup] done"

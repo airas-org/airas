@@ -6,13 +6,10 @@ from pydantic import BaseModel, Field
 
 from airas.infra.db.models.e2e import Status, StepType
 
-SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
-
 
 # session
 class AssistedResearchSessionCreateRequest(BaseModel):
     title: str = Field(min_length=1, max_length=200)
-    created_by: UUID
 
 
 class AssistedResearchSessionResponse(BaseModel):
@@ -23,15 +20,9 @@ class AssistedResearchSessionResponse(BaseModel):
     active_head_step_id: UUID | None
 
 
-def get_current_user_id() -> UUID:
-    # NOTE: 認証導入まで固定値にする。後でJWT等に置き換えを行う。
-    return SYSTEM_USER_ID
-
-
 # step
 class AssistedResearchStepCreateRequest(BaseModel):
     session_id: UUID
-    created_by: UUID
     status: Status
     step_type: StepType
     error_message: str | None
