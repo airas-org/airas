@@ -2,19 +2,6 @@
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
-  "permissions": {
-    "allow": [
-      "Write",
-      "Edit",
-      "Bash",
-      "mcp__serena__*"
-    ],
-    "deny": [
-      "Bash(rm -rf:*)",
-      "Bash(sudo:*)",
-      "Bash(git push --force:*)"
-    ]
-  },
   "enabledPlugins": {
     "claude-mem@thedotmack": true,
     "superpowers@claude-plugins-official": true
