@@ -47,9 +47,9 @@ jobs:
           exit 1
 
       - name: Validate staging deployment branch
-        if: inputs.environment == 'staging' && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop'
+        if: inputs.environment == 'staging' && github.ref != 'refs/heads/develop'
         run: |
-          echo "::error::Staging deployments are only allowed from the main or develop branch"
+          echo "::error::Staging deployments are only allowed from the develop branch"
           exit 1
 
       - name: Setup Node.js
