@@ -964,19 +964,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/ee/auth/me:
-    get:
-      tags:
-      - ee-auth
-      summary: Get Me
-      description: Return the current authenticated user's ID.
-      operationId: get_me_airas_ee_auth_me_get
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema: {}
 components:
   schemas:
     AnalyzeExperimentLLMMapping:
@@ -1190,6 +1177,15 @@ components:
       - result
       - schema_version
       title: AssistedResearchStepResponse
+    CodeGenerationGraphLLMMapping:
+      properties:
+        dispatch_code_generation:
+          $ref: '#/components/schemas/DispatchCodeGenerationLLMMapping'
+          default:
+            dispatch_code_generation:
+              llm_name: anthropic/claude-sonnet-4-5
+      type: object
+      title: CodeGenerationGraphLLMMapping
     CompileLatexLLMMapping:
       properties:
         compile_latex:
@@ -2190,6 +2186,20 @@ components:
           description: ''
       type: object
       title: LLMExtractedInfo
+    LaTeXGraphLLMMapping:
+      properties:
+        generate_latex:
+          $ref: '#/components/schemas/GenerateLatexLLMMapping'
+          default:
+            convert_to_latex:
+              llm_name: gpt-5.2
+        compile_latex:
+          $ref: '#/components/schemas/CompileLatexLLMMapping'
+          default:
+            compile_latex:
+              llm_name: anthropic/claude-sonnet-4-5
+      type: object
+      title: LaTeXGraphLLMMapping
     MetaData:
       properties:
         arxiv_id:
@@ -3319,6 +3329,50 @@ components:
       - compile_latex
       - done
       title: StepType
+    TopicOpenEndedResearchLLMMapping:
+      properties:
+        generate_queries:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateQueriesLLMMapping'
+          - type: 'null'
+        retrieve_paper:
+          anyOf:
+          - $ref: '#/components/schemas/RetrievePaperSubgraphLLMMapping'
+          - type: 'null'
+        generate_hypothesis:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateHypothesisSubgraphV0LLMMapping'
+          - type: 'null'
+        generate_experimental_design:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateExperimentalDesignLLMMapping'
+          - type: 'null'
+        code_generation:
+          anyOf:
+          - $ref: '#/components/schemas/CodeGenerationGraphLLMMapping'
+          - type: 'null'
+        dispatch_experiment_validation:
+          anyOf:
+          - $ref: '#/components/schemas/DispatchExperimentValidationLLMMapping'
+          - type: 'null'
+        analyze_experiment:
+          anyOf:
+          - $ref: '#/components/schemas/AnalyzeExperimentLLMMapping'
+          - type: 'null'
+        write:
+          anyOf:
+          - $ref: '#/components/schemas/WriteLLMMapping'
+          - type: 'null'
+        latex:
+          anyOf:
+          - $ref: '#/components/schemas/LaTeXGraphLLMMapping'
+          - type: 'null'
+        search_paper_titles_from_qdrant:
+          anyOf:
+          - $ref: '#/components/schemas/SearchPaperTitlesFromQdrantLLMMapping'
+          - type: 'null'
+      type: object
+      title: TopicOpenEndedResearchLLMMapping
     TopicOpenEndedResearchListItemResponse:
       properties:
         id:
@@ -3443,7 +3497,7 @@ components:
           default: mdpi
         llm_mapping:
           anyOf:
-          - $ref: '#/components/schemas/TopicOpenEndedResearchSubgraphLLMMapping'
+          - $ref: '#/components/schemas/TopicOpenEndedResearchLLMMapping'
           - type: 'null'
       type: object
       required:
@@ -3532,54 +3586,6 @@ components:
       - error
       - research_history
       title: TopicOpenEndedResearchStatusResponseBody
-    TopicOpenEndedResearchSubgraphLLMMapping:
-      properties:
-        generate_queries:
-          anyOf:
-          - $ref: '#/components/schemas/GenerateQueriesLLMMapping'
-          - type: 'null'
-        retrieve_paper:
-          anyOf:
-          - $ref: '#/components/schemas/RetrievePaperSubgraphLLMMapping'
-          - type: 'null'
-        generate_hypothesis:
-          anyOf:
-          - $ref: '#/components/schemas/GenerateHypothesisSubgraphV0LLMMapping'
-          - type: 'null'
-        generate_experimental_design:
-          anyOf:
-          - $ref: '#/components/schemas/GenerateExperimentalDesignLLMMapping'
-          - type: 'null'
-        dispatch_code_generation:
-          anyOf:
-          - $ref: '#/components/schemas/DispatchCodeGenerationLLMMapping'
-          - type: 'null'
-        dispatch_experiment_validation:
-          anyOf:
-          - $ref: '#/components/schemas/DispatchExperimentValidationLLMMapping'
-          - type: 'null'
-        analyze_experiment:
-          anyOf:
-          - $ref: '#/components/schemas/AnalyzeExperimentLLMMapping'
-          - type: 'null'
-        write:
-          anyOf:
-          - $ref: '#/components/schemas/WriteLLMMapping'
-          - type: 'null'
-        generate_latex:
-          anyOf:
-          - $ref: '#/components/schemas/GenerateLatexLLMMapping'
-          - type: 'null'
-        compile_latex:
-          anyOf:
-          - $ref: '#/components/schemas/CompileLatexLLMMapping'
-          - type: 'null'
-        search_paper_titles_from_qdrant:
-          anyOf:
-          - $ref: '#/components/schemas/SearchPaperTitlesFromQdrantLLMMapping'
-          - type: 'null'
-      type: object
-      title: TopicOpenEndedResearchSubgraphLLMMapping
     TopicOpenEndedResearchUpdateRequestBody:
       properties:
         title:
