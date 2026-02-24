@@ -107,6 +107,17 @@ export const SUBGRAPH_NODE_CONFIGS = {
   compile_latex: [{ key: "compile_latex", label: "LaTeXコンパイル" }],
 } as const;
 
+/**
+ * Mapping from display subgraph key to actual nested path in TopicOpenEndedResearchLLMMapping.
+ * After #706, `dispatch_code_generation` is nested under `code_generation`,
+ * and `generate_latex`/`compile_latex` are nested under `latex`.
+ */
+export const NESTED_SUBGRAPH_PATHS: Record<string, { topKey: string; nestedKey: string }> = {
+  dispatch_code_generation: { topKey: "code_generation", nestedKey: "dispatch_code_generation" },
+  generate_latex: { topKey: "latex", nestedKey: "generate_latex" },
+  compile_latex: { topKey: "latex", nestedKey: "compile_latex" },
+};
+
 export const SUBGRAPH_DISPLAY_CONFIG = [
   { key: "generate_queries", title: "1. クエリ生成" },
   { key: "search_paper_titles_from_qdrant", title: "2. Qdrant論文検索" },
