@@ -6,12 +6,10 @@ from uuid import UUID
 from sqlmodel import Session
 
 from airas.infra.db.models.e2e import E2EModel, Status, StepType
-from airas.repository.topic_open_ended_research_service_repository import (
-    TopicOpenEndedResearchRepository,
-)
+from airas.repository.e2e_research_repository import E2EResearchRepository
 
 
-class SqlTopicOpenEndedResearchService:
+class SqlE2EResearchService:
     def __init__(self, session_factory: Callable[[], Session]):
         self._session_factory = session_factory
 
@@ -28,7 +26,7 @@ class SqlTopicOpenEndedResearchService:
         github_url: str | None = None,
     ) -> E2EModel:
         with self._session_factory() as session:
-            repo = TopicOpenEndedResearchRepository(db=session)
+            repo = E2EResearchRepository(db=session)
             e2e = E2EModel(
                 id=id,
                 title=title,
@@ -53,7 +51,7 @@ class SqlTopicOpenEndedResearchService:
         github_url: str | None = None,
     ) -> E2EModel:
         with self._session_factory() as session:
-            repo = TopicOpenEndedResearchRepository(db=session)
+            repo = E2EResearchRepository(db=session)
             updates: dict[str, Any] = {}
 
             if title is not None:
@@ -62,7 +60,6 @@ class SqlTopicOpenEndedResearchService:
                 updates["status"] = status
             if current_step is not None:
                 updates["current_step"] = current_step
-            # TODO: error_message を取得するように変更する
             if error_message is not None:
                 updates["error_message"] = error_message
             if result is not None:
@@ -80,7 +77,7 @@ class SqlTopicOpenEndedResearchService:
 
     def get(self, id: UUID) -> E2EModel:
         with self._session_factory() as session:
-            repo = TopicOpenEndedResearchRepository(db=session)
+            repo = E2EResearchRepository(db=session)
             step = repo.get(id)
             if step is None:
                 raise ValueError("e2e result not found")
@@ -88,12 +85,12 @@ class SqlTopicOpenEndedResearchService:
 
     def list(self, *, offset: int = 0, limit: int | None = None) -> list[E2EModel]:
         with self._session_factory() as session:
-            repo = TopicOpenEndedResearchRepository(db=session)
+            repo = E2EResearchRepository(db=session)
             return repo.list(offset=offset, limit=limit)
 
     def delete(self, id: UUID) -> None:
         with self._session_factory() as session:
-            repo = TopicOpenEndedResearchRepository(db=session)
+            repo = E2EResearchRepository(db=session)
             deleted = repo.delete(id)
             if not deleted:
                 raise ValueError("e2e result not found")

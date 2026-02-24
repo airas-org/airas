@@ -1,94 +1,67 @@
 import asyncio
 import logging
 import uuid
-from typing import Annotated, Any
+from typing import Annotated
 
 from dependency_injector.wiring import Closing, Provide, inject
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from langfuse import observe
 
 from airas.container import Container
-from airas.infra.arxiv_client import ArxivClient
 from airas.infra.db.models.e2e import Status
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
-from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.autonomous_research.e2e_research_service_protocol import (
     E2EResearchServiceProtocol,
 )
-from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research import (
-    TopicOpenEndedResearch,
-)
-from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
-    AirasDbPaperSearchIndex,
+from airas.usecases.autonomous_research.hypothesis_driven_research.hypothesis_driven_research import (
+    HypothesisDrivenResearch,
 )
 from api.ee.auth.dependencies import get_current_user_id
-from api.schemas.topic_open_ended_research import (
-    TopicOpenEndedResearchListItemResponse,
-    TopicOpenEndedResearchListResponseBody,
-    TopicOpenEndedResearchRequestBody,
-    TopicOpenEndedResearchResponseBody,
-    TopicOpenEndedResearchStatusResponseBody,
-    TopicOpenEndedResearchUpdateRequestBody,
+from api.schemas.hypothesis_driven_research import (
+    HypothesisDrivenResearchListItemResponse,
+    HypothesisDrivenResearchListResponseBody,
+    HypothesisDrivenResearchRequestBody,
+    HypothesisDrivenResearchResponseBody,
+    HypothesisDrivenResearchStatusResponseBody,
+    HypothesisDrivenResearchUpdateRequestBody,
 )
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/topic_open_ended_research", tags=["topic_open_ended_research"]
+    prefix="/hypothesis_driven_research", tags=["hypothesis_driven_research"]
 )
 
-# TODO: [Polling/Redis] Implement asynchronous polling mechanism.
-# Redis is required to persist task state (status, logs) across processes,
-# allowing the client to poll progress via a separate GET /status endpoint.
 
-# TODO: [Architecture/Celery] Introduce Celery for production hosting.
-# Currently, this runs in the web server process. For long-running tasks,
-# execution should be offloaded to a separate Worker process to prevent
-# HTTP timeouts and ensure resilience against server restarts.
-
-
-async def _execute_topic_open_ended_research(
+async def _execute_hypothesis_driven_research(
     task_id: uuid.UUID,
     created_by: uuid.UUID,
-    request: TopicOpenEndedResearchRequestBody,
-    search_index: AirasDbPaperSearchIndex | None,
+    request: HypothesisDrivenResearchRequestBody,
     github_client: GithubClient,
-    arxiv_client: ArxivClient,
     langchain_client: LangChainClient,
-    litellm_client: LiteLLMClient,
-    qdrant_client: Any | None,
     langfuse_client: LangfuseClient,
     e2e_service: E2EResearchServiceProtocol,
 ) -> None:
     try:
-        logger.info(f"[Task {task_id}] Starting E2E execution")
+        logger.info(f"[Task {task_id}] Starting HypothesisDrivenResearch execution")
 
-        graph = TopicOpenEndedResearch(
+        graph = HypothesisDrivenResearch(
             github_client=github_client,
-            arxiv_client=arxiv_client,
             langchain_client=langchain_client,
-            litellm_client=litellm_client,
-            qdrant_client=qdrant_client,
             e2e_service=e2e_service,
             runner_config=request.runner_config,
             wandb_config=request.wandb_config,
             task_id=task_id,
             created_by=created_by,
             is_github_repo_private=request.is_github_repo_private,
-            search_method=request.search_method,
-            search_index=search_index,
-            collection_name=request.collection_name,
-            num_paper_search_queries=request.num_paper_search_queries,
-            papers_per_query=request.papers_per_query,
-            hypothesis_refinement_iterations=request.hypothesis_refinement_iterations,
             num_experiment_models=request.num_experiment_models,
             num_experiment_datasets=request.num_experiment_datasets,
             num_comparison_methods=request.num_comparison_methods,
             paper_content_refinement_iterations=request.paper_content_refinement_iterations,
-            latex_template_name=request.latex_template_name,
             github_actions_agent=request.github_actions_agent,
+            latex_template_name=request.latex_template_name,
             llm_mapping=request.llm_mapping,
         ).build_graph()
 
@@ -98,11 +71,11 @@ async def _execute_topic_open_ended_research(
         if handler := langfuse_client.create_handler():
             config["callbacks"] = [handler]
 
-        # NOTE:将来的にストリーミング UI に対応するためastreamで実装
         async for chunk in graph.astream(
             {
                 "task_id": task_id,
                 "github_config": request.github_config,
+                "research_hypothesis": request.research_hypothesis,
                 "research_topic": request.research_topic,
             },
             config=config,
@@ -125,29 +98,21 @@ async def _execute_topic_open_ended_research(
                 id=task_id, status=Status.FAILED, error_message=error_msg
             )
         except Exception:
-            # If we fail to update status to FAILED, the task will remain in RUNNING state.
-            # Since this runs in an async task (asyncio.create_task), exceptions won't
-            # propagate to the caller, but at least we can log the error.
             logger.exception(
                 f"[Task {task_id}] CRITICAL: Failed to update status to FAILED. "
                 f"Task may remain in RUNNING state."
             )
 
 
-@router.post("/run", response_model=TopicOpenEndedResearchResponseBody)
+@router.post("/run", response_model=HypothesisDrivenResearchResponseBody)
 @inject
 @observe()
-async def execute_topic_open_ended_research(
-    request: TopicOpenEndedResearchRequestBody,
-    fastapi_request: Request,
+async def execute_hypothesis_driven_research(
+    request: HypothesisDrivenResearchRequestBody,
     current_user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
-    arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
     langchain_client: Annotated[
         LangChainClient, Depends(Provide[Container.langchain_client])
-    ],
-    litellm_client: Annotated[
-        LiteLLMClient, Depends(Provide[Container.litellm_client])
     ],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
@@ -156,50 +121,36 @@ async def execute_topic_open_ended_research(
         E2EResearchServiceProtocol,
         Depends(Provide[Container.e2e_research_service]),
     ],
-) -> TopicOpenEndedResearchResponseBody:
-    container: Container = fastapi_request.app.state.container
+) -> HypothesisDrivenResearchResponseBody:
     task_id = uuid.uuid4()
 
-    if request.search_method == "qdrant":
-        search_index = None
-        qdrant_client = container.qdrant_client()
-        if hasattr(qdrant_client, "__await__"):
-            qdrant_client = await qdrant_client
-    else:
-        search_index = container.airas_db_search_index()
-        qdrant_client = None
-
     asyncio.create_task(
-        _execute_topic_open_ended_research(
+        _execute_hypothesis_driven_research(
             task_id=task_id,
             created_by=current_user_id,
             request=request,
-            search_index=search_index,
             github_client=github_client,
-            arxiv_client=arxiv_client,
             langchain_client=langchain_client,
-            litellm_client=litellm_client,
-            qdrant_client=qdrant_client,
             langfuse_client=langfuse_client,
             e2e_service=e2e_service,
         )
     )
 
-    return TopicOpenEndedResearchResponseBody(task_id=task_id)
+    return HypothesisDrivenResearchResponseBody(task_id=task_id)
 
 
 @router.get(
-    "/status/{task_id}", response_model=TopicOpenEndedResearchStatusResponseBody
+    "/status/{task_id}", response_model=HypothesisDrivenResearchStatusResponseBody
 )
 @inject
 @observe()
-async def get_topic_open_ended_research_status(
+async def get_hypothesis_driven_research_status(
     task_id: uuid.UUID,
     e2e_service: Annotated[
         E2EResearchServiceProtocol,
         Depends(Closing[Provide[Container.e2e_research_service]]),
     ],
-) -> TopicOpenEndedResearchStatusResponseBody:
+) -> HypothesisDrivenResearchStatusResponseBody:
     try:
         result = e2e_service.get(task_id)
     except ValueError as exc:
@@ -211,7 +162,7 @@ async def get_topic_open_ended_research_status(
         raise HTTPException(status_code=500, detail="Internal Server Error") from exc
 
     try:
-        return TopicOpenEndedResearchStatusResponseBody.model_validate(result)
+        return HypothesisDrivenResearchStatusResponseBody.model_validate(result)
     except Exception as exc:  # pragma: no cover - defensive
         logger.exception(f"[Status {task_id}] Failed to validate response")
         raise HTTPException(
@@ -219,23 +170,23 @@ async def get_topic_open_ended_research_status(
         ) from exc
 
 
-@router.get("", response_model=TopicOpenEndedResearchListResponseBody)
+@router.get("", response_model=HypothesisDrivenResearchListResponseBody)
 @inject
 @observe()
-async def list_topic_open_ended_research(
+async def list_hypothesis_driven_research(
     e2e_service: Annotated[
         E2EResearchServiceProtocol,
         Depends(Closing[Provide[Container.e2e_research_service]]),
     ],
     offset: int = 0,
     limit: int | None = None,
-) -> TopicOpenEndedResearchListResponseBody:
+) -> HypothesisDrivenResearchListResponseBody:
     records = e2e_service.list(offset=offset, limit=limit)
     sorted_records = sorted(records, key=lambda record: record.created_at, reverse=True)
 
-    return TopicOpenEndedResearchListResponseBody(
+    return HypothesisDrivenResearchListResponseBody(
         items=[
-            TopicOpenEndedResearchListItemResponse.model_validate(record)
+            HypothesisDrivenResearchListItemResponse.model_validate(record)
             for record in sorted_records
         ]
     )
@@ -243,19 +194,19 @@ async def list_topic_open_ended_research(
 
 @router.patch(
     "/{task_id}",
-    response_model=TopicOpenEndedResearchStatusResponseBody,
+    response_model=HypothesisDrivenResearchStatusResponseBody,
     status_code=200,
 )
 @inject
 @observe()
-async def update_topic_open_ended_research(
+async def update_hypothesis_driven_research(
     task_id: uuid.UUID,
-    request: TopicOpenEndedResearchUpdateRequestBody,
+    request: HypothesisDrivenResearchUpdateRequestBody,
     e2e_service: Annotated[
         E2EResearchServiceProtocol,
         Depends(Closing[Provide[Container.e2e_research_service]]),
     ],
-) -> TopicOpenEndedResearchStatusResponseBody:
+) -> HypothesisDrivenResearchStatusResponseBody:
     updates = request.model_dump(exclude_none=True)
     if not updates:
         raise HTTPException(status_code=400, detail="No fields provided for update")
@@ -269,7 +220,7 @@ async def update_topic_open_ended_research(
         raise HTTPException(status_code=500, detail="Internal Server Error") from exc
 
     try:
-        return TopicOpenEndedResearchStatusResponseBody.model_validate(updated)
+        return HypothesisDrivenResearchStatusResponseBody.model_validate(updated)
     except Exception as exc:  # pragma: no cover - defensive
         logger.exception(f"[Update {task_id}] Failed to validate response")
         raise HTTPException(
