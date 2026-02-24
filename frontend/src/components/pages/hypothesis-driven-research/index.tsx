@@ -344,7 +344,7 @@ export function HypothesisDrivenResearchPage({
                     value={titleDraft}
                     onChange={(e) => setTitleDraft(e.target.value)}
                     className="bg-muted/40 border-border/70 text-lg"
-                    placeholder=""
+                    placeholder="Enter research title"
                   />
                 ) : (
                   <p className="text-xl font-semibold leading-tight text-foreground">
