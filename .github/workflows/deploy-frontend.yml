@@ -40,6 +40,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate deployment branch
+        if: inputs.environment == 'prod' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Production deployments are only allowed from the main branch"
+          exit 1
+
+      - name: Validate staging deployment branch
+        if: inputs.environment == 'staging' && github.ref != 'refs/heads/develop'
+        run: |
+          echo "::error::Staging deployments are only allowed from the develop branch"
+          exit 1
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
