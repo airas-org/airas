@@ -8,8 +8,8 @@ from sqlmodel import SQLModel
 
 import api.routes.v1 as routes_v1
 from airas.container import Container
-from airas.usecases.autonomous_research.topic_open_ended_research.in_memory_topic_open_ended_research_service import (
-    InMemoryTopicOpenEndedResearchService,
+from airas.usecases.autonomous_research.in_memory_e2e_research_service import (
+    InMemoryE2EResearchService,
 )
 from api.ee.settings import get_ee_settings
 from api.routes.v1 import (
@@ -22,6 +22,7 @@ from api.routes.v1 import (
     github,
     github_actions,
     hypotheses,
+    hypothesis_driven_research,
     latex,
     models,
     papers,
@@ -45,8 +46,8 @@ async def lifespan(app: FastAPI):
         engine = container.engine()
         SQLModel.metadata.create_all(engine)
     else:
-        container.topic_open_ended_research_service.override(
-            providers.Singleton(InMemoryTopicOpenEndedResearchService)
+        container.e2e_research_service.override(
+            providers.Singleton(InMemoryE2EResearchService)
         )
 
     # Explicitly wire route modules so dependency_injector resolves Provide[] dependencies.
@@ -96,6 +97,7 @@ app.include_router(github_actions.router, prefix="/airas/v1")
 app.include_router(github.router, prefix="/airas/v1")
 app.include_router(assisted_research.router, prefix="/airas/v1")
 app.include_router(topic_open_ended_research.router, prefix="/airas/v1")
+app.include_router(hypothesis_driven_research.router, prefix="/airas/v1")
 
 # Register EE routes if enterprise is enabled
 _ee_settings = get_ee_settings()

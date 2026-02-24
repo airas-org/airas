@@ -964,6 +964,126 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/hypothesis_driven_research/run:
+    post:
+      tags:
+      - hypothesis_driven_research
+      summary: Execute Hypothesis Driven Research
+      operationId: execute_hypothesis_driven_research_airas_v1_hypothesis_driven_research_run_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HypothesisDrivenResearchRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisDrivenResearchResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/hypothesis_driven_research/status/{task_id}:
+    get:
+      tags:
+      - hypothesis_driven_research
+      summary: Get Hypothesis Driven Research Status
+      operationId: get_hypothesis_driven_research_status_airas_v1_hypothesis_driven_research_status__task_id__get
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisDrivenResearchStatusResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/hypothesis_driven_research:
+    get:
+      tags:
+      - hypothesis_driven_research
+      summary: List Hypothesis Driven Research
+      operationId: list_hypothesis_driven_research_airas_v1_hypothesis_driven_research_get
+      parameters:
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisDrivenResearchListResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/hypothesis_driven_research/{task_id}:
+    patch:
+      tags:
+      - hypothesis_driven_research
+      summary: Update Hypothesis Driven Research
+      operationId: update_hypothesis_driven_research_airas_v1_hypothesis_driven_research__task_id__patch
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HypothesisDrivenResearchUpdateRequestBody'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisDrivenResearchStatusResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AnalyzeExperimentLLMMapping:
@@ -2140,6 +2260,260 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    HypothesisDrivenResearchLLMMapping:
+      properties:
+        generate_experimental_design:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateExperimentalDesignLLMMapping'
+          - type: 'null'
+        code_generation:
+          anyOf:
+          - $ref: '#/components/schemas/CodeGenerationGraphLLMMapping'
+          - type: 'null'
+        dispatch_experiment_validation:
+          anyOf:
+          - $ref: '#/components/schemas/DispatchExperimentValidationLLMMapping'
+          - type: 'null'
+        analyze_experiment:
+          anyOf:
+          - $ref: '#/components/schemas/AnalyzeExperimentLLMMapping'
+          - type: 'null'
+        write:
+          anyOf:
+          - $ref: '#/components/schemas/WriteLLMMapping'
+          - type: 'null'
+        latex:
+          anyOf:
+          - $ref: '#/components/schemas/LaTeXGraphLLMMapping'
+          - type: 'null'
+      type: object
+      title: HypothesisDrivenResearchLLMMapping
+    HypothesisDrivenResearchListItemResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        title:
+          type: string
+          title: Title
+        created_by:
+          type: string
+          format: uuid
+          title: Created By
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        status:
+          $ref: '#/components/schemas/Status'
+        current_step:
+          anyOf:
+          - $ref: '#/components/schemas/StepType'
+          - type: 'null'
+        error_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Message
+        last_updated_at:
+          type: string
+          format: date-time
+          title: Last Updated At
+        github_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Url
+      type: object
+      required:
+      - id
+      - title
+      - created_by
+      - created_at
+      - status
+      - last_updated_at
+      title: HypothesisDrivenResearchListItemResponse
+    HypothesisDrivenResearchListResponseBody:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/HypothesisDrivenResearchListItemResponse'
+          type: array
+          title: Items
+      type: object
+      required:
+      - items
+      title: HypothesisDrivenResearchListResponseBody
+    HypothesisDrivenResearchRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        research_hypothesis:
+          $ref: '#/components/schemas/ResearchHypothesis'
+        research_topic:
+          type: string
+          title: Research Topic
+          default: ''
+        runner_config:
+          $ref: '#/components/schemas/RunnerConfig'
+        wandb_config:
+          $ref: '#/components/schemas/WandbConfig'
+        is_github_repo_private:
+          type: boolean
+          title: Is Github Repo Private
+          default: false
+        num_experiment_models:
+          type: integer
+          title: Num Experiment Models
+          default: 1
+        num_experiment_datasets:
+          type: integer
+          title: Num Experiment Datasets
+          default: 1
+        num_comparison_methods:
+          type: integer
+          title: Num Comparison Methods
+          default: 1
+        paper_content_refinement_iterations:
+          type: integer
+          title: Paper Content Refinement Iterations
+          default: 2
+        github_actions_agent:
+          type: string
+          enum:
+          - claude_code
+          - open_code
+          title: Github Actions Agent
+          default: open_code
+        latex_template_name:
+          type: string
+          title: Latex Template Name
+          default: mdpi
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/HypothesisDrivenResearchLLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - github_config
+      - research_hypothesis
+      - runner_config
+      - wandb_config
+      title: HypothesisDrivenResearchRequestBody
+    HypothesisDrivenResearchResponseBody:
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          title: Task Id
+      type: object
+      required:
+      - task_id
+      title: HypothesisDrivenResearchResponseBody
+    HypothesisDrivenResearchStatusResponseBody:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        title:
+          type: string
+          title: Title
+        created_by:
+          type: string
+          format: uuid
+          title: Created By
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        status:
+          $ref: '#/components/schemas/Status'
+        current_step:
+          anyOf:
+          - $ref: '#/components/schemas/StepType'
+          - type: 'null'
+        error_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Message
+        last_updated_at:
+          type: string
+          format: date-time
+          title: Last Updated At
+        result:
+          additionalProperties: true
+          type: object
+          title: Result
+        github_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Url
+        task_id:
+          type: string
+          format: uuid
+          title: Task Id
+          readOnly: true
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+          readOnly: true
+        research_history:
+          anyOf:
+          - $ref: '#/components/schemas/ResearchHistory-Output'
+          - type: 'null'
+          readOnly: true
+      type: object
+      required:
+      - id
+      - title
+      - created_by
+      - created_at
+      - status
+      - last_updated_at
+      - result
+      - task_id
+      - error
+      - research_history
+      title: HypothesisDrivenResearchStatusResponseBody
+    HypothesisDrivenResearchUpdateRequestBody:
+      properties:
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Title
+        status:
+          anyOf:
+          - $ref: '#/components/schemas/Status'
+          - type: 'null'
+        current_step:
+          anyOf:
+          - $ref: '#/components/schemas/StepType'
+          - type: 'null'
+        error_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Message
+        result:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Result
+        github_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Url
+      type: object
+      title: HypothesisDrivenResearchUpdateRequestBody
     LLMExtractedInfo:
       properties:
         main_contributions:

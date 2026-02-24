@@ -1,0 +1,54 @@
+### Hypothesis Driven Research - Dispatch Task
+
+POST http://localhost:8000/airas/v1/hypothesis_driven_research/run
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "hypothesis-test-20260223",
+        "branch_name": "main"
+    },
+    "research_hypothesis": {
+        "open_problems": "Current Chain-of-Thought prompting lacks explicit alignment with human cognitive steps, leading to suboptimal reasoning on multi-step tasks.",
+        "method": "Introduce a structured prompt template that mirrors human thinking phases (problem decomposition, analogical reasoning, verification) without any model fine-tuning.",
+        "experimental_setup": "Evaluate on GSM8K and ARC-Challenge benchmarks using GPT-4o with the proposed prompt template vs. standard CoT baseline.",
+        "primary_metric": "Accuracy (%) on GSM8K and ARC-Challenge test sets.",
+        "experimental_code": "Run evaluation scripts using the OpenAI API with temperature=0 for reproducibility.",
+        "expected_result": "The proposed human-aligned CoT template achieves at least 3% higher accuracy than standard CoT on both benchmarks.",
+        "expected_conclusion": "Structuring prompts to reflect human cognitive phases improves LLM reasoning without requiring fine-tuning."
+    },
+    "research_topic": "Improved Chain-of-Thought prompting aligned with human thinking",
+    "runner_config": {
+        "runner_label": ["self-hosted", "gpu-runner"],
+        "description": "NVIDIA H200, VRAM: 140 GB, RAM: 240 GB"
+    },
+    "wandb_config": {
+        "entity": "airas",
+        "project": "2026-0223-hypothesis"
+    },
+    "is_github_repo_private": false,
+    "num_experiment_models": 1,
+    "num_experiment_datasets": 1,
+    "num_comparison_methods": 1,
+    "paper_content_refinement_iterations": 1,
+    "latex_template_name": "mdpi",
+    "github_actions_agent": "open_code"
+}
+
+### Hypothesis Driven Research - Poll Task Status
+
+GET http://localhost:8000/airas/v1/hypothesis_driven_research/status/00000000-0000-0000-0000-000000000000
+
+### Hypothesis Driven Research - List Tasks
+
+GET http://localhost:8000/airas/v1/hypothesis_driven_research?offset=0&limit=20
+
+### Hypothesis Driven Research - Update Title
+
+PATCH http://localhost:8000/airas/v1/hypothesis_driven_research/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+{
+    "title": "Updated Research Title"
+}

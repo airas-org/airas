@@ -17,18 +17,15 @@ from airas.core.types.github import (
     GitHubConfig,
 )
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
-from airas.core.types.paper import PaperContent, SearchMethod
+from airas.core.types.paper import PaperContent
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
 from airas.core.types.wandb import WandbConfig
 from airas.core.utils import to_dict_deep
-from airas.infra.arxiv_client import ArxivClient
 from airas.infra.db.models.e2e import Status, StepType
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
-from airas.infra.litellm_client import LiteLLMClient
-from airas.infra.qdrant_client import QdrantClient
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentLLMMapping,
     AnalyzeExperimentSubgraph,
@@ -73,14 +70,6 @@ from airas.usecases.generators.generate_experimental_design_subgraph.generate_ex
     GenerateExperimentalDesignLLMMapping,
     GenerateExperimentalDesignSubgraph,
 )
-from airas.usecases.generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph_v0 import (
-    GenerateHypothesisSubgraphV0,
-    GenerateHypothesisSubgraphV0LLMMapping,
-)
-from airas.usecases.generators.generate_queries_subgraph.generate_queries_subgraph import (
-    GenerateQueriesLLMMapping,
-    GenerateQueriesSubgraph,
-)
 from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,
 )
@@ -89,20 +78,6 @@ from airas.usecases.github.push_github_subgraph.push_github_subgraph import (
 )
 from airas.usecases.github.set_github_actions_secrets_subgraph.set_github_actions_secrets_subgraph import (
     SetGithubActionsSecretsSubgraph,
-)
-from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
-    RetrievePaperSubgraph,
-    RetrievePaperSubgraphLLMMapping,
-)
-from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
-    AirasDbPaperSearchIndex,
-)
-from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_airas_db_subgraph import (
-    SearchPaperTitlesFromAirasDbSubgraph,
-)
-from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_qdrant_subgraph import (
-    SearchPaperTitlesFromQdrantLLMMapping,
-    SearchPaperTitlesFromQdrantSubgraph,
 )
 from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
     GenerateBibfileSubgraph,
@@ -120,40 +95,34 @@ record_execution_time = lambda f: time_node("execute_e2e")(f)  # noqa: E731
 _STANDARD_WORKFLOW_RECURSION_LIMIT = 50000
 
 
-class TopicOpenEndedResearchLLMMapping(BaseModel):
-    generate_queries: GenerateQueriesLLMMapping | None = None
-    retrieve_paper: RetrievePaperSubgraphLLMMapping | None = None
-    generate_hypothesis: GenerateHypothesisSubgraphV0LLMMapping | None = None
+class HypothesisDrivenResearchLLMMapping(BaseModel):
     generate_experimental_design: GenerateExperimentalDesignLLMMapping | None = None
     code_generation: CodeGenerationGraphLLMMapping | None = None
     dispatch_experiment_validation: DispatchExperimentValidationLLMMapping | None = None
     analyze_experiment: AnalyzeExperimentLLMMapping | None = None
     write: WriteLLMMapping | None = None
     latex: LaTeXGraphLLMMapping | None = None
-    search_paper_titles_from_qdrant: SearchPaperTitlesFromQdrantLLMMapping | None = None
 
 
-class TopicOpenEndedResearchInputState(TypedDict):
+class HypothesisDrivenResearchInputState(TypedDict):
     task_id: str | UUID
     github_config: GitHubConfig
-    research_topic: str
+    research_hypothesis: ResearchHypothesis
+    research_topic: str  # Context label for downstream LLM nodes; can be empty string
 
 
-class TopicOpenEndedResearchOutputState(ExecutionTimeState):
+class HypothesisDrivenResearchOutputState(ExecutionTimeState):
     status: str
     research_history: ResearchHistory | None
 
 
-class TopicOpenEndedResearchState(
-    TopicOpenEndedResearchInputState,
-    TopicOpenEndedResearchOutputState,
+class HypothesisDrivenResearchState(
+    HypothesisDrivenResearchInputState,
+    HypothesisDrivenResearchOutputState,
     total=False,
 ):
     current_step: StepType
-    queries: list[str]
-    paper_titles: list[str]
     research_study_list: list[ResearchStudy]
-    research_hypothesis: ResearchHypothesis
     experimental_design: ExperimentalDesign
     experiment_code: ExperimentCode
     experimental_results: ExperimentalResults
@@ -168,41 +137,26 @@ class TopicOpenEndedResearchState(
     is_upload_successful: bool
 
 
-class TopicOpenEndedResearch:
+class HypothesisDrivenResearch:
     def __init__(
         self,
         github_client: GithubClient,
-        arxiv_client: ArxivClient,
         langchain_client: LangChainClient,
-        litellm_client: LiteLLMClient,
-        qdrant_client: QdrantClient | None,
         e2e_service: E2EResearchServiceProtocol,
         runner_config: RunnerConfig,
         wandb_config: WandbConfig,
         task_id: UUID,
         created_by: UUID,
         is_github_repo_private: bool = False,
-        search_method: SearchMethod = "airas_db",
-        search_index: AirasDbPaperSearchIndex | None = None,
-        collection_name: str = "airas_papers_db",
-        num_paper_search_queries: int = 2,
-        papers_per_query: int = 5,
-        hypothesis_refinement_iterations: int = 1,
         num_experiment_models: int = 1,
         num_experiment_datasets: int = 1,
         num_comparison_methods: int = 1,
         paper_content_refinement_iterations: int = 2,
         github_actions_agent: GitHubActionsAgent = "open_code",
         latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-        llm_mapping: TopicOpenEndedResearchLLMMapping | None = None,
+        llm_mapping: HypothesisDrivenResearchLLMMapping | None = None,
     ):
-        self.search_method = search_method
-        self.search_index = search_index
-        self.litellm_client = litellm_client
-        self.qdrant_client = qdrant_client
-        self.collection_name = collection_name
         self.github_client = github_client
-        self.arxiv_client = arxiv_client
         self.langchain_client = langchain_client
         self.e2e_service = e2e_service
         self.runner_config = runner_config
@@ -210,19 +164,16 @@ class TopicOpenEndedResearch:
         self.task_id = task_id
         self.created_by = created_by
         self.is_github_repo_private = is_github_repo_private
-        self.num_paper_search_queries = num_paper_search_queries
-        self.papers_per_query = papers_per_query
-        self.hypothesis_refinement_iterations = hypothesis_refinement_iterations
         self.num_experiment_models = num_experiment_models
         self.num_experiment_datasets = num_experiment_datasets
         self.num_comparison_methods = num_comparison_methods
         self.paper_content_refinement_iterations = paper_content_refinement_iterations
         self.latex_template_name = latex_template_name
         self.github_actions_agent = github_actions_agent
-        self.llm_mapping = llm_mapping or TopicOpenEndedResearchLLMMapping()
+        self.llm_mapping = llm_mapping or HypothesisDrivenResearchLLMMapping()
 
     @record_execution_time
-    def _create_record(self, state: TopicOpenEndedResearchState) -> dict[str, Any]:
+    def _create_record(self, state: HypothesisDrivenResearchState) -> dict[str, Any]:
         github_config = state["github_config"]
         github_url = (
             f"https://github.com/{github_config.github_owner}/"
@@ -233,14 +184,14 @@ class TopicOpenEndedResearch:
             title="Untitled E2E Research Task",
             created_by=self.created_by,
             status=Status.RUNNING,
-            current_step=StepType.GENERATE_QUERIES,
+            current_step=StepType.GENERATE_EXPERIMENTAL_DESIGN,
             github_url=github_url,
         )
         return {}
 
     @record_execution_time
     async def _prepare_repository(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, Any]:
         logger.info("=== Repository Preparation ===")
         result = (
@@ -259,7 +210,7 @@ class TopicOpenEndedResearch:
 
     @record_execution_time
     async def _set_github_actions_secrets(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, bool]:
         logger.info("=== Set GitHub Actions Secrets ===")
         result = (
@@ -273,122 +224,8 @@ class TopicOpenEndedResearch:
     @record_execution_time
     @save_to_db
     @upload_to_github
-    async def _generate_queries(
-        self, state: TopicOpenEndedResearchState
-    ) -> dict[str, Any]:
-        logger.info("=== Query Generation ===")
-        result = (
-            await GenerateQueriesSubgraph(
-                llm_client=self.langchain_client,
-                num_paper_search_queries=self.num_paper_search_queries,
-                llm_mapping=self.llm_mapping.generate_queries,
-            )
-            .build_graph()
-            .ainvoke({"research_topic": state["research_topic"]})
-        )
-        return {
-            "queries": result["queries"],
-            "current_step": StepType.SEARCH_PAPER_TITLES,
-        }
-
-    @record_execution_time
-    @save_to_db
-    @upload_to_github
-    async def _search_paper_titles(
-        self, state: TopicOpenEndedResearchState
-    ) -> dict[str, Any]:
-        logger.info("=== Search Paper Titles ===")
-        subgraph: (
-            SearchPaperTitlesFromQdrantSubgraph | SearchPaperTitlesFromAirasDbSubgraph
-        )
-
-        match self.search_method:
-            case "qdrant":
-                if self.qdrant_client is None:
-                    raise ValueError(
-                        "qdrant_client is required when search_method is 'qdrant'"
-                    )
-                subgraph = SearchPaperTitlesFromQdrantSubgraph(
-                    litellm_client=self.litellm_client,
-                    qdrant_client=self.qdrant_client,
-                    collection_name=self.collection_name,
-                    papers_per_query=self.papers_per_query,
-                    llm_mapping=self.llm_mapping.search_paper_titles_from_qdrant,
-                )
-            case "airas_db":
-                if self.search_index is None:
-                    raise ValueError(
-                        "search_index is required when search_method is 'airas_db'"
-                    )
-                subgraph = SearchPaperTitlesFromAirasDbSubgraph(
-                    search_index=self.search_index,
-                    papers_per_query=self.papers_per_query,
-                )
-            case _:
-                raise ValueError(f"Unsupported search_method: {self.search_method}")
-
-        result = await subgraph.build_graph().ainvoke({"queries": state["queries"]})
-        return {
-            "paper_titles": result["paper_titles"],
-            "current_step": StepType.RETRIEVE_PAPERS,
-        }
-
-    @record_execution_time
-    @save_to_db
-    @upload_to_github
-    async def _retrieve_papers(
-        self, state: TopicOpenEndedResearchState
-    ) -> dict[str, Any]:
-        logger.info("=== Paper Retrieval ===")
-        result = (
-            await RetrievePaperSubgraph(
-                langchain_client=self.langchain_client,
-                arxiv_client=self.arxiv_client,
-                github_client=self.github_client,
-                llm_mapping=self.llm_mapping.retrieve_paper,
-            )
-            .build_graph()
-            .ainvoke({"paper_titles": state["paper_titles"]})
-        )
-        research_study_list = result["research_study_list"]
-        logger.info(f"Retrieved {len(research_study_list)} papers")
-        return {
-            "research_study_list": research_study_list,
-            "current_step": StepType.GENERATE_HYPOTHESIS,
-        }
-
-    @record_execution_time
-    @save_to_db
-    @upload_to_github
-    async def _generate_hypothesis(
-        self, state: TopicOpenEndedResearchState
-    ) -> dict[str, Any]:
-        logger.info("=== Hypothesis Generation ===")
-        result = (
-            await GenerateHypothesisSubgraphV0(
-                langchain_client=self.langchain_client,
-                refinement_rounds=self.hypothesis_refinement_iterations,
-                llm_mapping=self.llm_mapping.generate_hypothesis,
-            )
-            .build_graph()
-            .ainvoke(
-                {
-                    "research_topic": state["research_topic"],
-                    "research_study_list": state["research_study_list"],
-                }
-            )
-        )
-
-        return {
-            "research_hypothesis": result["research_hypothesis"],
-            "current_step": StepType.GENERATE_EXPERIMENTAL_DESIGN,
-        }
-
-    @record_execution_time
-    @save_to_db
-    @upload_to_github
     async def _generate_experimental_design(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, Any]:
         logger.info("=== Experimental Design ===")
         result = (
@@ -411,7 +248,7 @@ class TopicOpenEndedResearch:
 
     @record_execution_time
     async def _run_code_generation(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, Any]:
         logger.info("=== Run Code Generation ===")
         await (
@@ -425,7 +262,7 @@ class TopicOpenEndedResearch:
             .ainvoke(
                 {
                     "github_config": state["github_config"],
-                    "research_topic": state["research_topic"],
+                    "research_topic": state.get("research_topic", ""),
                     "research_hypothesis": state["research_hypothesis"],
                     "experimental_design": state["experimental_design"],
                 }
@@ -437,7 +274,7 @@ class TopicOpenEndedResearch:
     @save_to_db
     @upload_to_github
     async def _fetch_run_ids(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, Any]:
         logger.info("=== Fetch Run IDs ===")
         try:
@@ -463,7 +300,7 @@ class TopicOpenEndedResearch:
 
     @record_execution_time
     async def _run_sanity_check(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, Any]:
         logger.info("=== Run Sanity Check ===")
         await (
@@ -479,7 +316,7 @@ class TopicOpenEndedResearch:
                 {
                     "github_config": state["github_config"],
                     "run_ids": state["run_ids"],
-                    "research_topic": state["research_topic"],
+                    "research_topic": state.get("research_topic", ""),
                     "research_hypothesis": state["research_hypothesis"],
                     "experimental_design": state["experimental_design"],
                 },
@@ -492,7 +329,7 @@ class TopicOpenEndedResearch:
     @save_to_db
     @upload_to_github
     async def _fetch_experiment_code(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, ExperimentCode]:
         logger.info("=== Fetch Experiment Code ===")
         result = (
@@ -505,7 +342,7 @@ class TopicOpenEndedResearch:
 
     @record_execution_time
     async def _run_main_experiment(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, Any]:
         logger.info("=== Run Main Experiment ===")
         await (
@@ -521,7 +358,7 @@ class TopicOpenEndedResearch:
                 {
                     "github_config": state["github_config"],
                     "run_ids": state["run_ids"],
-                    "research_topic": state["research_topic"],
+                    "research_topic": state.get("research_topic", ""),
                     "research_hypothesis": state["research_hypothesis"],
                     "experimental_design": state["experimental_design"],
                 }
@@ -531,7 +368,7 @@ class TopicOpenEndedResearch:
 
     @record_execution_time
     async def _run_visualization(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, Any]:
         logger.info("=== Run Visualization ===")
         await (
@@ -546,7 +383,7 @@ class TopicOpenEndedResearch:
                 {
                     "github_config": state["github_config"],
                     "run_ids": state["run_ids"],
-                    "research_topic": state["research_topic"],
+                    "research_topic": state.get("research_topic", ""),
                     "research_hypothesis": state["research_hypothesis"],
                     "experimental_design": state["experimental_design"],
                 },
@@ -559,7 +396,7 @@ class TopicOpenEndedResearch:
     @save_to_db
     @upload_to_github
     async def _fetch_experiment_results(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, Any]:
         logger.info("=== Fetch Experiment Results ===")
         result = (
@@ -577,7 +414,7 @@ class TopicOpenEndedResearch:
     @save_to_db
     @upload_to_github
     async def _analyze_experiment(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, Any]:
         logger.info("=== Experiment Analysis ===")
         result = (
@@ -605,13 +442,13 @@ class TopicOpenEndedResearch:
     @save_to_db
     @upload_to_github
     async def _generate_bibfile(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, Any]:
         logger.info("=== Reference Generation ===")
         result = (
             await GenerateBibfileSubgraph()
             .build_graph()
-            .ainvoke({"research_study_list": state["research_study_list"]})
+            .ainvoke({"research_study_list": state.get("research_study_list", [])})
         )
 
         return {
@@ -621,7 +458,7 @@ class TopicOpenEndedResearch:
 
     @record_execution_time
     async def _push_bibfile(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, bool]:
         logger.info("=== Push Bibfile to GitHub ===")
         bibfile_path = f".research/latex/{self.latex_template_name}/references.bib"
@@ -643,7 +480,7 @@ class TopicOpenEndedResearch:
     @save_to_db
     @upload_to_github
     async def _generate_paper(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, Any]:
         logger.info("=== Paper Writing ===")
         result = (
@@ -660,7 +497,7 @@ class TopicOpenEndedResearch:
                     "experiment_code": state["experiment_code"],
                     "experimental_results": state["experimental_results"],
                     "experimental_analysis": state["experimental_analysis"],
-                    "research_study_list": state["research_study_list"],
+                    "research_study_list": state.get("research_study_list", []),
                     "references_bib": state["references_bib"],
                 }
             )
@@ -672,7 +509,7 @@ class TopicOpenEndedResearch:
         }
 
     @record_execution_time
-    async def _run_latex(self, state: TopicOpenEndedResearchState) -> dict[str, Any]:
+    async def _run_latex(self, state: HypothesisDrivenResearchState) -> dict[str, Any]:
         logger.info("=== Run LaTeX ===")
         result = (
             await LaTeXGraph(
@@ -699,7 +536,7 @@ class TopicOpenEndedResearch:
 
     @record_execution_time
     async def _finalize(
-        self, state: TopicOpenEndedResearchState
+        self, state: HypothesisDrivenResearchState
     ) -> dict[str, str | ResearchHistory | None]:
         logger.info("=== Workflow Completed ===")
         logger.info(
@@ -722,9 +559,9 @@ class TopicOpenEndedResearch:
 
     def build_graph(self):
         graph_builder = StateGraph(
-            TopicOpenEndedResearchState,
-            input_schema=TopicOpenEndedResearchInputState,
-            output_schema=TopicOpenEndedResearchOutputState,
+            HypothesisDrivenResearchState,
+            input_schema=HypothesisDrivenResearchInputState,
+            output_schema=HypothesisDrivenResearchOutputState,
         )
 
         graph_builder.add_node("create_record", self._create_record)
@@ -732,10 +569,6 @@ class TopicOpenEndedResearch:
         graph_builder.add_node(
             "set_github_actions_secrets", self._set_github_actions_secrets
         )
-        graph_builder.add_node("generate_queries", self._generate_queries)
-        graph_builder.add_node("search_paper_titles", self._search_paper_titles)
-        graph_builder.add_node("retrieve_papers", self._retrieve_papers)
-        graph_builder.add_node("generate_hypothesis", self._generate_hypothesis)
         graph_builder.add_node(
             "generate_experimental_design", self._generate_experimental_design
         )
@@ -758,11 +591,9 @@ class TopicOpenEndedResearch:
         graph_builder.add_edge(START, "create_record")
         graph_builder.add_edge("create_record", "prepare_repository")
         graph_builder.add_edge("prepare_repository", "set_github_actions_secrets")
-        graph_builder.add_edge("set_github_actions_secrets", "generate_queries")
-        graph_builder.add_edge("generate_queries", "search_paper_titles")
-        graph_builder.add_edge("search_paper_titles", "retrieve_papers")
-        graph_builder.add_edge("retrieve_papers", "generate_hypothesis")
-        graph_builder.add_edge("generate_hypothesis", "generate_experimental_design")
+        graph_builder.add_edge(
+            "set_github_actions_secrets", "generate_experimental_design"
+        )
         graph_builder.add_edge("generate_experimental_design", "run_code_generation")
         graph_builder.add_edge("run_code_generation", "fetch_run_ids")
         graph_builder.add_edge("fetch_run_ids", "run_sanity_check")
