@@ -1,30 +1,75 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
-import type { NodeLLMConfig, TopicOpenEndedResearchSubgraphLLMMapping } from "@/lib/api";
-import { SUBGRAPH_DISPLAY_CONFIG, SUBGRAPH_NODE_CONFIGS } from "./constants";
+import type { NodeLLMConfig, TopicOpenEndedResearchLLMMapping } from "@/lib/api";
+import { NESTED_SUBGRAPH_PATHS, SUBGRAPH_DISPLAY_CONFIG, SUBGRAPH_NODE_CONFIGS } from "./constants";
 import { SubgraphLLMConfig } from "./subgraph-llm-config";
 
 interface AllLLMConfigProps {
-  llmMapping: TopicOpenEndedResearchSubgraphLLMMapping | null | undefined;
-  onChange: (mapping: TopicOpenEndedResearchSubgraphLLMMapping | null) => void;
+  llmMapping: TopicOpenEndedResearchLLMMapping | null | undefined;
+  onChange: (mapping: TopicOpenEndedResearchLLMMapping | null) => void;
+}
+
+type AnyMapping = Record<string, unknown>;
+
+function getSubgraphConfig(
+  llmMapping: TopicOpenEndedResearchLLMMapping | null | undefined,
+  key: string,
+): Record<string, NodeLLMConfig | null> | undefined {
+  if (!llmMapping) return undefined;
+  const nested = NESTED_SUBGRAPH_PATHS[key];
+  if (nested) {
+    const parent = (llmMapping as AnyMapping)?.[nested.topKey] as AnyMapping | undefined;
+    return parent?.[nested.nestedKey] as Record<string, NodeLLMConfig | null> | undefined;
+  }
+  return (llmMapping as AnyMapping)?.[key] as Record<string, NodeLLMConfig | null> | undefined;
 }
 
 export function AllLLMConfig({ llmMapping, onChange }: AllLLMConfigProps) {
   const [showLLMConfig, setShowLLMConfig] = useState(false);
 
   const handleSubgraphChange = (
-    subgraphKey: keyof TopicOpenEndedResearchSubgraphLLMMapping,
+    subgraphKey: string,
     config: Record<string, NodeLLMConfig | null> | null,
   ) => {
-    if (!config) {
-      if (!llmMapping) return;
-      const { [subgraphKey]: _, ...rest } = llmMapping;
-      onChange(Object.keys(rest).length === 0 ? null : rest);
+    const nested = NESTED_SUBGRAPH_PATHS[subgraphKey];
+    if (nested) {
+      const currentParent = ((llmMapping as AnyMapping)?.[nested.topKey] ?? {}) as AnyMapping;
+      if (!config) {
+        const { [nested.nestedKey]: _, ...restParent } = currentParent;
+        const newParent = Object.keys(restParent).length === 0 ? undefined : restParent;
+        if (!newParent) {
+          if (!llmMapping) return;
+          const { [nested.topKey]: __, ...restMapping } = llmMapping as AnyMapping;
+          onChange(
+            Object.keys(restMapping).length === 0
+              ? null
+              : (restMapping as TopicOpenEndedResearchLLMMapping),
+          );
+        } else {
+          onChange({
+            ...llmMapping,
+            [nested.topKey]: newParent,
+          } as TopicOpenEndedResearchLLMMapping);
+        }
+      } else {
+        onChange({
+          ...llmMapping,
+          [nested.topKey]: { ...currentParent, [nested.nestedKey]: config },
+        } as TopicOpenEndedResearchLLMMapping);
+      }
     } else {
-      onChange({
-        ...llmMapping,
-        [subgraphKey]: config,
-      });
+      if (!config) {
+        if (!llmMapping) return;
+        const { [subgraphKey]: _, ...rest } = llmMapping as AnyMapping;
+        onChange(
+          Object.keys(rest).length === 0 ? null : (rest as TopicOpenEndedResearchLLMMapping),
+        );
+      } else {
+        onChange({
+          ...llmMapping,
+          [subgraphKey]: config,
+        } as TopicOpenEndedResearchLLMMapping);
+      }
     }
   };
 
@@ -50,7 +95,7 @@ export function AllLLMConfig({ llmMapping, onChange }: AllLLMConfigProps) {
                 key={key}
                 title={title}
                 nodes={SUBGRAPH_NODE_CONFIGS[key]}
-                config={llmMapping?.[key]}
+                config={getSubgraphConfig(llmMapping, key)}
                 onChange={(config) => handleSubgraphChange(key, config)}
               />
             ))}

@@ -18,10 +18,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   Status,
+  type TopicOpenEndedResearchLLMMapping,
   type TopicOpenEndedResearchRequestBody,
   TopicOpenEndedResearchService,
   type TopicOpenEndedResearchStatusResponseBody,
-  type TopicOpenEndedResearchSubgraphLLMMapping,
 } from "@/lib/api";
 import type { ResearchSection } from "@/types/research";
 import {
@@ -77,9 +77,7 @@ export function AutonomousResearchPage({
     useState("2");
   const [autoLatexTemplateName, setAutoLatexTemplateName] = useState("mdpi");
   // LLM設定
-  const [llmMapping, setLlmMapping] = useState<TopicOpenEndedResearchSubgraphLLMMapping | null>(
-    null,
-  );
+  const [llmMapping, setLlmMapping] = useState<TopicOpenEndedResearchLLMMapping | null>(null);
   const [autoStatus, setAutoStatus] = useState<TopicOpenEndedResearchStatusResponseBody | null>(
     null,
   );
