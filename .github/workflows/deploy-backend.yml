@@ -8,9 +8,18 @@ on:
     paths:
       - "backend/**"
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deploy target environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - dev
+          - prod
 
 concurrency:
-  group: deploy-backend-${{ github.ref_name }}
+  group: deploy-backend-${{ inputs.environment || (github.ref == 'refs/heads/main' && 'prod' || 'dev') }}
   cancel-in-progress: false
 
 permissions:
@@ -21,7 +30,7 @@ jobs:
   deploy:
     name: Build & Deploy Backend
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+    environment: ${{ inputs.environment || (github.ref == 'refs/heads/main' && 'prod' || 'dev') }}
 
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-1' }}
