@@ -187,7 +187,10 @@ export function HypothesisDrivenResearchPage({
         );
       setStatus(response);
       if (response.error) setError(response.error);
-      const finished = response.status === Status.COMPLETED || Boolean(response.error);
+      const finished =
+        response.status === Status.COMPLETED ||
+        response.status === Status.FAILED ||
+        Boolean(response.error);
       if (finished) stopPolling();
     } catch (err) {
       const message = err instanceof Error ? err.message : "ステータスの取得に失敗しました";
@@ -297,7 +300,7 @@ export function HypothesisDrivenResearchPage({
       setTitleDraft(updated.title);
       onUpdateSectionTitle(updated.title);
       setIsEditingTitle(false);
-      await onRefreshHypothesisSections(updated.id);
+      await onRefreshHypothesisSessions(updated.id);
     } catch (err) {
       const message = err instanceof Error ? err.message : "タイトルの更新に失敗しました";
       setError(message);
@@ -591,6 +594,7 @@ export function HypothesisDrivenResearchPage({
                   type="button"
                   className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground cursor-pointer"
                   onClick={() => setShowAdvancedSettings((prev) => !prev)}
+                  aria-expanded={showAdvancedSettings}
                 >
                   <span>詳細設定</span>
                   {showAdvancedSettings ? (

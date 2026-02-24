@@ -336,14 +336,16 @@ export default function App() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    disabled
-                    className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground opacity-50 cursor-not-allowed"
-                  >
-                    <UserCircle className="h-5 w-5" />
-                    <span>Login</span>
-                  </button>
+                  <span aria-disabled="true" className="inline-flex">
+                    <button
+                      type="button"
+                      disabled
+                      className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground opacity-50 cursor-not-allowed"
+                    >
+                      <UserCircle className="h-5 w-5" />
+                      <span>Login</span>
+                    </button>
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Enterprise Edition is not enabled</p>
@@ -374,6 +376,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setIsAutonomousExpanded((prev) => !prev)}
+              aria-expanded={isAutonomousExpanded}
               className={cn(
                 "w-full px-3 py-1.5 text-left text-sm transition-colors border-l-2 border-transparent flex items-center justify-between cursor-pointer",
                 activeNav === "autonomous-research"

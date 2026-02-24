@@ -476,6 +476,7 @@ export function AutonomousResearchPage({
                   type="button"
                   className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground cursor-pointer"
                   onClick={() => setShowAdvancedSettings((prev) => !prev)}
+                  aria-expanded={showAdvancedSettings}
                 >
                   <span>詳細設定</span>
                   {showAdvancedSettings ? (
