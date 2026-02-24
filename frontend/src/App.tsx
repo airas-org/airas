@@ -1,11 +1,14 @@
 // frontend/src/App.tsx
 
+import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons";
 import axios from "axios";
-import { FileText, Github, UserCircle, X as XIcon } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, UserCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { MainContent, type NavKey } from "@/components/main-content";
+import { type AutonomousSubNav, MainContent, type NavKey } from "@/components/main-content";
 import { useAutonomousResearchSessions } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
+import { useHypothesisDrivenSessions } from "@/components/pages/hypothesis-driven-research/use-hypothesis-driven-sessions";
 import { SectionsSidebar } from "@/components/sections-sidebar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isEnterpriseEnabled } from "@/ee/config";
 import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
@@ -75,22 +78,35 @@ function useEEComponents() {
 export default function App() {
   const eeComponents = useEEComponents();
 
-  const [researchSections, setResearchSections] = useState<ResearchSection[]>(mockResearchSections);
-  const [autoSections, setAutoSections] = useState<ResearchSection[]>([]);
-  const [activeResearchSection, setActiveResearchSection] = useState<ResearchSection | null>(
+  const [assistedSections, setAssistedSections] = useState<ResearchSection[]>(mockResearchSections);
+  const [autonomousSections, setAutonomousSections] = useState<ResearchSection[]>([]);
+  const [hypothesisSections, setHypothesisSections] = useState<ResearchSection[]>([]);
+  const [activeAssistedSection, setActiveAssistedSection] = useState<ResearchSection | null>(
     mockResearchSections[0],
   );
-  const [activeAutoSection, setActiveAutoSection] = useState<ResearchSection | null>(null);
+  const [activeAutonomousSection, setActiveAutonomousSection] = useState<ResearchSection | null>(
+    null,
+  );
+  const [activeHypothesisSection, setActiveHypothesisSection] = useState<ResearchSection | null>(
+    null,
+  );
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const [workflowTree, setWorkflowTree] = useState<WorkflowTree>(initialWorkflowTree);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
-  // 現在、何が選ばれているか
+  // Currently selected (default)
   const [activeNav, setActiveNav] = useState<NavKey>("autonomous-research");
+  const [isAutonomousExpanded, setIsAutonomousExpanded] = useState(true);
+  const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
   const [sessionsExpanded, setSessionsExpanded] = useState(false);
 
   const { fetchAutoSections } = useAutonomousResearchSessions({
-    setAutoSections,
-    setActiveAutoSection,
+    setAutonomousSections,
+    setActiveAutonomousSection,
+  });
+
+  const { fetchHypothesisSections } = useHypothesisDrivenSessions({
+    setHypothesisSections,
+    setActiveHypothesisSection,
   });
 
   const handleCreateSection = () => {
@@ -101,10 +117,14 @@ export default function App() {
       status: "in-progress",
     };
     if (activeNav === "autonomous-research") {
-      setActiveAutoSection(null);
+      if (autonomousSubNav === "hypothesis-driven") {
+        setActiveHypothesisSection(null);
+      } else {
+        setActiveAutonomousSection(null);
+      }
     } else {
-      setResearchSections([newSection, ...researchSections]);
-      setActiveResearchSection(newSection);
+      setAssistedSections([newSection, ...assistedSections]);
+      setActiveAssistedSection(newSection);
     }
     setWorkflowTree(initialWorkflowTree);
     setActiveNodeId(null);
@@ -215,27 +235,35 @@ export default function App() {
   const handleUpdateSectionTitle = useCallback(
     (title: string) => {
       if (activeNav === "autonomous-research") {
-        if (!activeAutoSection) return;
-        setAutoSections((prev) =>
-          prev.map((s) => (s.id === activeAutoSection.id ? { ...s, title } : s)),
-        );
-        setActiveAutoSection((prev) => (prev ? { ...prev, title } : prev));
+        if (autonomousSubNav === "hypothesis-driven") {
+          if (!activeHypothesisSection) return;
+          setHypothesisSections((prev) =>
+            prev.map((s) => (s.id === activeHypothesisSection.id ? { ...s, title } : s)),
+          );
+          setActiveHypothesisSection((prev) => (prev ? { ...prev, title } : prev));
+        } else {
+          if (!activeAutonomousSection) return;
+          setAutonomousSections((prev) =>
+            prev.map((s) => (s.id === activeAutonomousSection.id ? { ...s, title } : s)),
+          );
+          setActiveAutonomousSection((prev) => (prev ? { ...prev, title } : prev));
+        }
       } else {
-        if (!activeResearchSection) return;
-        setResearchSections((prev) =>
-          prev.map((s) => (s.id === activeResearchSection.id ? { ...s, title } : s)),
+        if (!activeAssistedSection) return;
+        setAssistedSections((prev) =>
+          prev.map((s) => (s.id === activeAssistedSection.id ? { ...s, title } : s)),
         );
-        setActiveResearchSection((prev) => (prev ? { ...prev, title } : prev));
+        setActiveAssistedSection((prev) => (prev ? { ...prev, title } : prev));
       }
     },
-    [activeAutoSection, activeNav, activeResearchSection],
+    [
+      activeAutonomousSection,
+      activeHypothesisSection,
+      autonomousSubNav,
+      activeNav,
+      activeAssistedSection,
+    ],
   );
-
-  const navItems: { key: NavKey; label: string; disabled?: boolean }[] = [
-    { key: "papers", label: "Paper", disabled: true },
-    { key: "assisted-research", label: "Assisted Research", disabled: true },
-    { key: "autonomous-research", label: "Autonomous Research" },
-  ];
 
   const handleNavChange = useCallback((key: NavKey) => {
     setActiveNav(key);
@@ -272,7 +300,7 @@ export default function App() {
             className="text-muted-foreground hover:text-foreground transition-colors"
             aria-label="GitHub"
           >
-            <Github className="h-6 w-6" />
+            <SiGithub className="h-6 w-6" />
           </a>
           <a
             href="https://airas-org.github.io/airas/"
@@ -280,57 +308,125 @@ export default function App() {
             rel="noreferrer"
             className="text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Documentation"
+            title="Documentation"
           >
             <FileText className="h-6 w-6" />
+          </a>
+          <a
+            href="https://discord.gg/KGm5FGY5"
+            target="_blank"
+            rel="noreferrer"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Discord"
+          >
+            <SiDiscord className="h-6 w-6" />
           </a>
           <a
             href="https://x.com/fuyu_quant"
             target="_blank"
             rel="noreferrer"
             className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="X (formerly Twitter)"
+            aria-label="X"
           >
-            <XIcon className="h-6 w-6" />
+            <SiX className="h-6 w-6" />
           </a>
           {eeComponents ? (
             <eeComponents.UserMenu />
           ) : (
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
-            >
-              <UserCircle className="h-5 w-5" />
-              <span>Login</span>
-            </button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    disabled
+                    className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground opacity-50 cursor-not-allowed"
+                  >
+                    <UserCircle className="h-5 w-5" />
+                    <span>Login</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Enterprise Edition is not enabled</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
       </header>
 
       <div className="flex flex-1">
-        <aside className="w-40 border-r border-border bg-card/60 flex-shrink-0 flex flex-col">
-          <div className="flex flex-col gap-2 p-3">
-            {navItems.map((item) => {
-              const isActive = activeNav === item.key;
-              const isDisabled = item.disabled;
-              return (
+        <aside className="w-52 border-r border-border bg-card/60 flex-shrink-0 flex flex-col">
+          <div className="flex flex-col gap-1 p-3">
+            <button
+              type="button"
+              disabled
+              className="w-full px-3 py-1.5 text-left text-sm border-l-2 text-muted-foreground cursor-not-allowed border-transparent"
+            >
+              Paper
+            </button>
+            <button
+              type="button"
+              disabled
+              className="w-full px-3 py-1.5 text-left text-sm border-l-2 text-muted-foreground cursor-not-allowed border-transparent"
+            >
+              Assisted Research
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAutonomousExpanded((prev) => !prev)}
+              className={cn(
+                "w-full px-3 py-1.5 text-left text-sm transition-colors border-l-2 border-transparent flex items-center justify-between cursor-pointer",
+                activeNav === "autonomous-research"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
+              )}
+            >
+              <span>Autonomous Research</span>
+              {isAutonomousExpanded ? (
+                <ChevronDown className="h-4 w-4 shrink-0" />
+              ) : (
+                <ChevronRight className="h-4 w-4 shrink-0" />
+              )}
+            </button>
+            <div
+              className={cn(
+                "grid transition-all duration-200 ease-in-out",
+                isAutonomousExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+              )}
+            >
+              <div className="overflow-hidden flex flex-col gap-1">
                 <button
-                  key={item.key}
                   type="button"
-                  disabled={isDisabled}
-                  onClick={() => handleNavChange(item.key)}
+                  onClick={() => {
+                    setAutonomousSubNav("topic-driven");
+                    handleNavChange("autonomous-research");
+                  }}
                   className={cn(
-                    "w-full px-3 py-1.5 text-left text-sm transition-colors",
-                    isDisabled
-                      ? "text-muted-foreground cursor-not-allowed"
-                      : isActive
-                        ? "text-foreground font-semibold"
-                        : "text-muted-foreground hover:text-foreground",
+                    "w-full pl-6 pr-3 py-1.5 text-left text-sm transition-colors border-l-2 hover:text-foreground hover:bg-muted/40 cursor-pointer",
+                    activeNav === "autonomous-research" && autonomousSubNav === "topic-driven"
+                      ? "text-foreground font-semibold border-blue-700"
+                      : "text-muted-foreground border-transparent",
                   )}
                 >
-                  <span className="block">{item.label}</span>
+                  Topic-Driven
                 </button>
-              );
-            })}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAutonomousSubNav("hypothesis-driven");
+                    handleNavChange("autonomous-research");
+                  }}
+                  className={cn(
+                    "w-full pl-6 pr-3 py-1.5 text-left text-sm transition-colors border-l-2 hover:text-foreground hover:bg-muted/40 cursor-pointer",
+                    activeNav === "autonomous-research" && autonomousSubNav === "hypothesis-driven"
+                      ? "text-foreground font-semibold border-blue-700"
+                      : "text-muted-foreground border-transparent",
+                  )}
+                >
+                  Hypothesis-Driven
+                </button>
+              </div>
+            </div>
           </div>
         </aside>
 
@@ -348,24 +444,38 @@ export default function App() {
               )}
             >
               <SectionsSidebar
-                sections={activeNav === "autonomous-research" ? autoSections : researchSections}
+                sections={
+                  activeNav === "autonomous-research"
+                    ? autonomousSubNav === "hypothesis-driven"
+                      ? hypothesisSections
+                      : autonomousSections
+                    : assistedSections
+                }
                 activeSection={
-                  activeNav === "autonomous-research" ? activeAutoSection : activeResearchSection
+                  activeNav === "autonomous-research"
+                    ? autonomousSubNav === "hypothesis-driven"
+                      ? activeHypothesisSection
+                      : activeAutonomousSection
+                    : activeAssistedSection
                 }
                 onSelectSection={
                   activeNav === "autonomous-research"
-                    ? setActiveAutoSection
-                    : setActiveResearchSection
+                    ? autonomousSubNav === "hypothesis-driven"
+                      ? setActiveHypothesisSection
+                      : setActiveAutonomousSection
+                    : setActiveAssistedSection
                 }
               />
             </div>
           </div>
         )}
         <MainContent
-          assistedSection={activeResearchSection}
-          autonomousSection={activeAutoSection}
+          assistedSection={activeAssistedSection}
+          autonomousSection={activeAutonomousSection}
+          hypothesisSection={activeHypothesisSection}
           activeFeature={activeFeature}
           activeNav={activeNav}
+          autonomousSubNav={autonomousSubNav}
           assistedResearchProps={{
             workflowTree,
             activeNodeId,
@@ -380,6 +490,7 @@ export default function App() {
           onCreateSection={handleCreateSection}
           onUpdateSectionTitle={handleUpdateSectionTitle}
           onRefreshAutoSessions={fetchAutoSections}
+          onRefreshHypothesisSessions={fetchHypothesisSections}
         />
       </div>
     </div>

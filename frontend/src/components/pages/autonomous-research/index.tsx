@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Status,
   type TopicOpenEndedResearchLLMMapping,
-  type TopicOpenEndedResearchRequestBody,
+  TopicOpenEndedResearchRequestBody,
   TopicOpenEndedResearchService,
   type TopicOpenEndedResearchStatusResponseBody,
 } from "@/lib/api";
@@ -33,7 +33,7 @@ import {
 const DEFAULT_RESEARCH_TITLE = "Untitled Research";
 const AUTO_STATUS_POLL_INTERVAL_MS = 5000;
 
-const RequiredMark = () => <span className="text-destructive ml-0.5">*</span>;
+const RequiredMark = () => <span className="text-rose-400 ml-0.5">*</span>;
 
 interface AutonomousResearchPageProps {
   section: ResearchSection | null;
@@ -75,6 +75,9 @@ export function AutonomousResearchPage({
     useState("4");
   const [autoPaperContentRefinementIterations, setAutoPaperContentRefinementIteration] =
     useState("2");
+  const [autoGithubActionsAgent, setAutoGithubActionsAgent] = useState<
+    TopicOpenEndedResearchRequestBody.github_actions_agent | ""
+  >("");
   const [autoLatexTemplateName, setAutoLatexTemplateName] = useState("mdpi");
   // LLM設定
   const [llmMapping, setLlmMapping] = useState<TopicOpenEndedResearchLLMMapping | null>(null);
@@ -151,6 +154,7 @@ export function AutonomousResearchPage({
       num_experiment_datasets: toNumber(autoNumExperimentDatasets),
       num_comparison_methods: toNumber(autoNumComparativeMethods),
       paper_content_refinement_iterations: toNumber(autoPaperContentRefinementIterations),
+      github_actions_agent: autoGithubActionsAgent || undefined,
       latex_template_name: autoLatexTemplateName.trim() || undefined,
       llm_mapping: llmMapping,
     };
@@ -303,7 +307,7 @@ export function AutonomousResearchPage({
         <div className="space-y-2 pl-9">
           <h2 className="text-lg font-semibold text-foreground">Autonomous Research</h2>
         </div>
-        <Button onClick={onCreateSection} className="bg-black text-white hover:bg-black/90">
+        <Button onClick={onCreateSection}>
           <Plus className="h-4 w-4 mr-2" />
           New Session
         </Button>
@@ -341,7 +345,7 @@ export function AutonomousResearchPage({
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="auto-queries">
-                  研究内容
+                  研究テーマ
                   <RequiredMark />
                 </Label>
                 <Textarea
@@ -352,7 +356,9 @@ export function AutonomousResearchPage({
                 />
               </div>
 
-              <div className="space-y-3 rounded-md border border-border bg-card/60 p-4">
+              <hr className="border-border" />
+
+              <div className="space-y-3 rounded-md bg-muted/40 p-4">
                 <p className="text-sm font-semibold text-foreground">GitHub</p>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-2">
@@ -401,7 +407,9 @@ export function AutonomousResearchPage({
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-md border border-border bg-card/60 p-4">
+              <hr className="border-border" />
+
+              <div className="space-y-3 rounded-md bg-muted/40 p-4">
                 <p className="text-sm font-semibold text-foreground">GitHub Actions Runners</p>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
@@ -431,7 +439,9 @@ export function AutonomousResearchPage({
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-md border border-border bg-card/60 p-4">
+              <hr className="border-border" />
+
+              <div className="space-y-3 rounded-md bg-muted/40 p-4">
                 <p className="text-sm font-semibold text-foreground">Weights &amp; Biases</p>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
@@ -459,10 +469,12 @@ export function AutonomousResearchPage({
                 </div>
               </div>
 
-              <div className="rounded-md border border-border">
+              <hr className="border-border" />
+
+              <div className="rounded-md bg-muted/40">
                 <button
                   type="button"
-                  className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground"
+                  className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground cursor-pointer"
                   onClick={() => setShowAdvancedSettings((prev) => !prev)}
                 >
                   <span>詳細設定</span>
@@ -473,8 +485,8 @@ export function AutonomousResearchPage({
                   )}
                 </button>
                 {showAdvancedSettings && (
-                  <div className="p-4 space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
+                  <div className="p-6 space-y-6">
+                    <div className="grid gap-6 md:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="auto-num-paper-search-queries">
                           論文取得にための検索クエリの数
@@ -568,6 +580,39 @@ export function AutonomousResearchPage({
                         />
                       </div>
                       <div className="space-y-2">
+                        <Label htmlFor="auto-github-actions-agent">
+                          GitHub Actionsエージェント
+                        </Label>
+                        <Select
+                          value={autoGithubActionsAgent}
+                          onValueChange={(val) =>
+                            setAutoGithubActionsAgent(
+                              val as TopicOpenEndedResearchRequestBody.github_actions_agent | "",
+                            )
+                          }
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="デフォルト" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem
+                              value={
+                                TopicOpenEndedResearchRequestBody.github_actions_agent.CLAUDE_CODE
+                              }
+                            >
+                              Claude Code
+                            </SelectItem>
+                            <SelectItem
+                              value={
+                                TopicOpenEndedResearchRequestBody.github_actions_agent.OPEN_CODE
+                              }
+                            >
+                              Open Code
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
                         <Label htmlFor="auto-latex-template-name">
                           利用するLatexのテンプレート
                         </Label>
@@ -590,7 +635,11 @@ export function AutonomousResearchPage({
                 )}
               </div>
 
+              <hr className="border-border" />
+
               <AllLLMConfig llmMapping={llmMapping} onChange={setLlmMapping} />
+
+              <hr className="border-border" />
 
               <div className="flex flex-wrap gap-3">
                 <Button

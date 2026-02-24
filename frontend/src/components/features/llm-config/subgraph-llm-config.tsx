@@ -28,10 +28,10 @@ export function SubgraphLLMConfig({ title, nodes, config, onChange }: SubgraphLL
   };
 
   return (
-    <div className="rounded-md border border-border">
+    <div>
       <button
         type="button"
-        className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/50"
+        className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-foreground hover:bg-muted/50 cursor-pointer"
         onClick={() => setIsExpanded((prev) => !prev)}
         aria-expanded={isExpanded}
       >
@@ -40,7 +40,7 @@ export function SubgraphLLMConfig({ title, nodes, config, onChange }: SubgraphLL
       </button>
 
       {isExpanded && (
-        <div className="border-t border-border p-3 space-y-3 bg-card/60">
+        <div className="px-4 pb-4 space-y-4">
           {nodes.map((node) => (
             <NodeLLMSelector
               key={node.key}

@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, Code2, ExternalLink, Github } from "lucide-react";
+import { SiGithub } from "@icons-pack/react-simple-icons";
+import { Check, Code2, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -127,7 +128,7 @@ export function CodeGenerationSection({
 
               {!githubUrl ? (
                 <Button onClick={handlePushToGitHub} disabled={isPushing} className="w-full">
-                  <Github className="w-4 h-4 mr-2" />
+                  <SiGithub className="w-4 h-4 mr-2" />
                   {isPushing ? "送信中..." : "GitHubへ送信"}
                 </Button>
               ) : (
@@ -143,7 +144,7 @@ export function CodeGenerationSection({
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-sm text-blue-700 hover:underline"
                     >
-                      <Github className="w-4 h-4" />
+                      <SiGithub className="w-4 h-4" />
                       {githubUrl}
                       <ExternalLink className="w-3 h-3" />
                     </a>

@@ -74,10 +74,10 @@ export function AllLLMConfig({ llmMapping, onChange }: AllLLMConfigProps) {
   };
 
   return (
-    <div className="rounded-md border border-border">
+    <div className="rounded-md bg-muted/40">
       <button
         type="button"
-        className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground"
+        className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground cursor-pointer"
         onClick={() => setShowLLMConfig((prev) => !prev)}
         aria-expanded={showLLMConfig}
       >
@@ -85,11 +85,11 @@ export function AllLLMConfig({ llmMapping, onChange }: AllLLMConfigProps) {
         {showLLMConfig ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
       {showLLMConfig && (
-        <div className="p-4 space-y-4">
+        <div className="p-6 space-y-4">
           <p className="text-xs text-muted-foreground">
             各サブグラフで使用するLLMモデルをカスタマイズできます。指定しない場合はデフォルト設定が適用されます。
           </p>
-          <div className="space-y-3">
+          <div className="divide-y divide-border">
             {SUBGRAPH_DISPLAY_CONFIG.map(({ key, title }) => (
               <SubgraphLLMConfig
                 key={key}

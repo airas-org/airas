@@ -8,8 +8,8 @@ import {
 import type { ResearchSection } from "@/types/research";
 
 interface UseAutonomousResearchSessionsParams {
-  setAutoSections: Dispatch<SetStateAction<ResearchSection[]>>;
-  setActiveAutoSection: Dispatch<SetStateAction<ResearchSection | null>>;
+  setAutonomousSections: Dispatch<SetStateAction<ResearchSection[]>>;
+  setActiveAutonomousSection: Dispatch<SetStateAction<ResearchSection | null>>;
 }
 
 const mapAutoResearchRecordToSection = (
@@ -25,8 +25,8 @@ const mapAutoResearchRecordToSection = (
 };
 
 export const useAutonomousResearchSessions = ({
-  setAutoSections,
-  setActiveAutoSection,
+  setAutonomousSections,
+  setActiveAutonomousSection,
 }: UseAutonomousResearchSessionsParams) => {
   const fetchAutoSections = useCallback(
     async (preferredId?: string) => {
@@ -36,8 +36,8 @@ export const useAutonomousResearchSessions = ({
         const sections = response.items
           .map(mapAutoResearchRecordToSection)
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-        setAutoSections(sections);
-        setActiveAutoSection((prev) => {
+        setAutonomousSections(sections);
+        setActiveAutonomousSection((prev) => {
           if (preferredId) {
             return sections.find((section) => section.id === preferredId) ?? sections[0] ?? null;
           }
@@ -50,7 +50,7 @@ export const useAutonomousResearchSessions = ({
         console.error("Failed to load autonomous research sessions", error);
       }
     },
-    [setActiveAutoSection, setAutoSections],
+    [setActiveAutonomousSection, setAutonomousSections],
   );
 
   return { fetchAutoSections };
