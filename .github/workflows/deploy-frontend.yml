@@ -4,12 +4,13 @@ on:
   push:
     branches:
       - develop
+      - main
     paths:
       - "frontend/**"
   workflow_dispatch:
 
 concurrency:
-  group: deploy-frontend-dev
+  group: deploy-frontend-${{ github.ref_name }}
   cancel-in-progress: false
 
 permissions:
@@ -20,7 +21,7 @@ jobs:
   deploy:
     name: Build & Deploy Frontend
     runs-on: ubuntu-latest
-    environment: dev
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
 
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-1' }}
