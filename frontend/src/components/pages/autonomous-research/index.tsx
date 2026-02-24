@@ -152,7 +152,6 @@ export function AutonomousResearchPage({
       num_experiment_models: toNumber(autoNumExperimentModels),
       num_experiment_datasets: toNumber(autoNumExperimentDatasets),
       num_comparison_methods: toNumber(autoNumComparativeMethods),
-      experiment_code_validation_iterations: toNumber(autoExperimentCodeValidationIterations),
       paper_content_refinement_iterations: toNumber(autoPaperContentRefinementIterations),
       latex_template_name: autoLatexTemplateName.trim() || undefined,
       llm_mapping: llmMapping,

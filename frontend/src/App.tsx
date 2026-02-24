@@ -1,10 +1,12 @@
 // frontend/src/App.tsx
 
+import axios from "axios";
 import { FileText, Github, UserCircle, X as XIcon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MainContent, type NavKey } from "@/components/main-content";
 import { useAutonomousResearchSessions } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
 import { SectionsSidebar } from "@/components/sections-sidebar";
+import { isEnterpriseEnabled } from "@/ee/config";
 import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
 
@@ -35,7 +37,44 @@ const initialWorkflowTree: WorkflowTree = {
   activeNodeId: null,
 };
 
+// Lazy-loaded EE components (only imported when EE is enabled)
+type AuthGuardType = typeof import("@/ee/auth/components/AuthGuard").AuthGuard;
+type UserMenuType = typeof import("@/ee/auth/components/UserMenu").UserMenu;
+type AuthCallbackType = typeof import("@/ee/auth/components/AuthCallback").AuthCallback;
+
+interface EEComponents {
+  AuthGuard: AuthGuardType;
+  UserMenu: UserMenuType;
+  AuthCallback: AuthCallbackType;
+}
+
+function useEEComponents() {
+  const [eeComponents, setEeComponents] = useState<EEComponents | null>(null);
+
+  useEffect(() => {
+    if (!isEnterpriseEnabled()) return;
+
+    Promise.all([
+      import("@/ee/auth/components/AuthGuard"),
+      import("@/ee/auth/components/UserMenu"),
+      import("@/ee/auth/components/AuthCallback"),
+      import("@/ee/auth/lib/axios-interceptor"),
+    ]).then(([authGuard, userMenu, authCallback, interceptor]) => {
+      setEeComponents({
+        AuthGuard: authGuard.AuthGuard,
+        UserMenu: userMenu.UserMenu,
+        AuthCallback: authCallback.AuthCallback,
+      });
+      axios.interceptors.request.use(interceptor.authRequestInterceptor);
+    });
+  }, []);
+
+  return eeComponents;
+}
+
 export default function App() {
+  const eeComponents = useEEComponents();
+
   const [researchSections, setResearchSections] = useState<ResearchSection[]>(mockResearchSections);
   const [autoSections, setAutoSections] = useState<ResearchSection[]>([]);
   const [activeResearchSection, setActiveResearchSection] = useState<ResearchSection | null>(
@@ -206,7 +245,19 @@ export default function App() {
     }
   }, []);
 
-  return (
+  // Handle OAuth callback route
+  if (isEnterpriseEnabled() && window.location.pathname === "/auth/callback") {
+    if (!eeComponents) {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-muted-foreground">Loading...</div>
+        </div>
+      );
+    }
+    return <eeComponents.AuthCallback />;
+  }
+
+  const appContent = (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="h-12 border-b border-border bg-card px-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -241,13 +292,17 @@ export default function App() {
           >
             <XIcon className="h-6 w-6" />
           </a>
-          <button
-            type="button"
-            className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
-          >
-            <UserCircle className="h-5 w-5" />
-            <span>Login</span>
-          </button>
+          {eeComponents ? (
+            <eeComponents.UserMenu />
+          ) : (
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
+            >
+              <UserCircle className="h-5 w-5" />
+              <span>Login</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -329,4 +384,10 @@ export default function App() {
       </div>
     </div>
   );
+
+  if (eeComponents) {
+    return <eeComponents.AuthGuard>{appContent}</eeComponents.AuthGuard>;
+  }
+
+  return appContent;
 }

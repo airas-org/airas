@@ -4,26 +4,28 @@ on:
   push:
     branches:
       - develop
+      - main
     paths:
       - "frontend/**"
   workflow_dispatch:
 
 concurrency:
-  group: deploy-frontend-dev
+  group: deploy-frontend-${{ github.ref_name }}
   cancel-in-progress: false
 
 permissions:
   id-token: write
   contents: read
 
-env:
-  AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-1' }}
-
 jobs:
   deploy:
     name: Build & Deploy Frontend
     runs-on: ubuntu-latest
-    environment: dev
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-1' }}
+      S3_BUCKET: ${{ vars.S3_BUCKET || 'airas-dev-frontend' }}
 
     steps:
       - name: Checkout
@@ -49,11 +51,19 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Validate required variables
+        run: |
+          if [ -z "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            echo "::error::CLOUDFRONT_DISTRIBUTION_ID is not set in environment variables"
+            exit 1
+          fi
+
       - name: Deploy to S3
-        run: aws s3 sync frontend/dist/ s3://${{ vars.S3_BUCKET }} --delete
+        run: aws s3 sync frontend/dist/ s3://${{ env.S3_BUCKET }} --delete
 
       - name: Invalidate CloudFront cache
         run: |
