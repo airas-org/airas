@@ -73,7 +73,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://app.airas.io",
-        "https://dev.airas.io",
+        "https://app-dev.airas.io",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:8000",
