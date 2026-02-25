@@ -5,7 +5,7 @@ from airas.infra.db.models.e2e import E2EModel, Status, StepType
 
 
 @runtime_checkable
-class TopicOpenEndedResearchServiceProtocol(Protocol):
+class E2EResearchServiceProtocol(Protocol):
     def create(
         self,
         id: UUID,

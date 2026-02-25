@@ -2,15 +2,16 @@ import os
 from contextlib import asynccontextmanager
 
 from dependency_injector import providers
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 
 import api.routes.v1 as routes_v1
 from airas.container import Container
-from airas.usecases.autonomous_research.topic_open_ended_research.in_memory_topic_open_ended_research_service import (
-    InMemoryTopicOpenEndedResearchService,
+from airas.usecases.autonomous_research.in_memory_e2e_research_service import (
+    InMemoryE2EResearchService,
 )
+from api.ee.auth.dependencies import get_current_user_id
 from api.ee.settings import get_ee_settings
 from api.routes.v1 import (
     assisted_research,
@@ -22,6 +23,7 @@ from api.routes.v1 import (
     github,
     github_actions,
     hypotheses,
+    hypothesis_driven_research,
     latex,
     models,
     papers,
@@ -45,8 +47,8 @@ async def lifespan(app: FastAPI):
         engine = container.engine()
         SQLModel.metadata.create_all(engine)
     else:
-        container.topic_open_ended_research_service.override(
-            providers.Singleton(InMemoryTopicOpenEndedResearchService)
+        container.e2e_research_service.override(
+            providers.Singleton(InMemoryE2EResearchService)
         )
 
     # Explicitly wire route modules so dependency_injector resolves Provide[] dependencies.
@@ -68,34 +70,42 @@ def health():
     return {"status": "ok"}
 
 
-# Allow frontend (e.g., Vite dev server) to call the API with browser preflight
+# Allow frontend to call the API with browser preflight
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://app.airas.io",
+        "https://app-dev.airas.io",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(papers.router, prefix="/airas/v1")
-app.include_router(models.router, prefix="/airas/v1")
-app.include_router(datasets.router, prefix="/airas/v1")
-app.include_router(hypotheses.router, prefix="/airas/v1")
-app.include_router(experimental_settings.router, prefix="/airas/v1")
-app.include_router(experiments.router, prefix="/airas/v1")
-app.include_router(code.router, prefix="/airas/v1")
-app.include_router(repositories.router, prefix="/airas/v1")
-app.include_router(bibfile.router, prefix="/airas/v1")
-app.include_router(latex.router, prefix="/airas/v1")
-app.include_router(research_history.router, prefix="/airas/v1")
-app.include_router(github_actions.router, prefix="/airas/v1")
-app.include_router(github.router, prefix="/airas/v1")
-app.include_router(assisted_research.router, prefix="/airas/v1")
-app.include_router(topic_open_ended_research.router, prefix="/airas/v1")
+auth_deps = [Depends(get_current_user_id)]
+app.include_router(papers.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(models.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(datasets.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(hypotheses.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(
+    experimental_settings.router, prefix="/airas/v1", dependencies=auth_deps
+)
+app.include_router(experiments.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(code.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(repositories.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(bibfile.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(latex.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(research_history.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(github_actions.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(github.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(assisted_research.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(
+    topic_open_ended_research.router, prefix="/airas/v1", dependencies=auth_deps
+)
+app.include_router(
+    hypothesis_driven_research.router, prefix="/airas/v1", dependencies=auth_deps
+)
 
 # Register EE routes if enterprise is enabled
 _ee_settings = get_ee_settings()
