@@ -94,11 +94,17 @@ export default function App() {
 
   // Autonomous Research
   const initialAutonomousSectionsMap = AUTONOMOUS_SUB_NAVS.reduce<AutonomousSectionsMap>(
-    (acc, nav) => ({ ...acc, [nav]: [] }),
+    (acc, nav) => {
+      acc[nav] = [];
+      return acc;
+    },
     {} as AutonomousSectionsMap,
   );
   const initialAutonomousActiveSectionMap = AUTONOMOUS_SUB_NAVS.reduce<AutonomousActiveSectionMap>(
-    (acc, nav) => ({ ...acc, [nav]: null }),
+    (acc, nav) => {
+      acc[nav] = null;
+      return acc;
+    },
     {} as AutonomousActiveSectionMap,
   );
   const [autonomousSectionsMap, setAutonomousSectionsMap] = useState<AutonomousSectionsMap>(

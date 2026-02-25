@@ -25,7 +25,12 @@ const mapTopicRecord = (record: TopicOpenEndedResearchListItemResponse): Researc
     id: record.id,
     title: record.title || "Untitled Research",
     createdAt: Number.isNaN(createdAt.valueOf()) ? new Date() : createdAt,
-    status: record.status === TopicOpenEndedResearchStatus.COMPLETED ? "completed" : "in-progress",
+    status:
+      record.status === TopicOpenEndedResearchStatus.COMPLETED
+        ? "completed"
+        : record.status === TopicOpenEndedResearchStatus.FAILED
+          ? "failed"
+          : "in-progress",
   };
 };
 
@@ -36,7 +41,11 @@ const mapHypothesisRecord = (record: HypothesisDrivenResearchListItemResponse): 
     title: record.title || "Untitled Research",
     createdAt: Number.isNaN(createdAt.valueOf()) ? new Date() : createdAt,
     status:
-      record.status === HypothesisDrivenResearchStatus.COMPLETED ? "completed" : "in-progress",
+      record.status === HypothesisDrivenResearchStatus.COMPLETED
+        ? "completed"
+        : record.status === HypothesisDrivenResearchStatus.FAILED
+          ? "failed"
+          : "in-progress",
   };
 };
 

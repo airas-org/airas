@@ -124,6 +124,7 @@ export function AutonomousResearchPage({
 
   const buildAutoResearchPayload = (): TopicOpenEndedResearchRequestBody => {
     const toNumber = (value: string): number | undefined => {
+      if (value.trim() === "") return undefined;
       const parsed = Number(value);
       return Number.isFinite(parsed) ? parsed : undefined;
     };
