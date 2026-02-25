@@ -41,7 +41,7 @@ interface HypothesisDrivenResearchPageProps {
   onToggleSessions: () => void;
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
-  onRefreshHypothesisSessions: (preferredId?: string) => Promise<void>;
+  onRefreshSessions: (preferredId?: string) => Promise<void>;
 }
 
 export function HypothesisDrivenResearchPage({
@@ -50,7 +50,7 @@ export function HypothesisDrivenResearchPage({
   onToggleSessions,
   onCreateSection,
   onUpdateSectionTitle,
-  onRefreshHypothesisSessions,
+  onRefreshSessions,
 }: HypothesisDrivenResearchPageProps) {
   // ResearchHypothesis fields (all required)
   const [openProblems, setOpenProblems] = useState("");
@@ -132,8 +132,8 @@ export function HypothesisDrivenResearchPage({
 
   useEffect(() => {
     if (!sessionsExpanded) return;
-    void onRefreshHypothesisSessions(section?.id);
-  }, [onRefreshHypothesisSessions, section?.id, sessionsExpanded]);
+    void onRefreshSessions(section?.id);
+  }, [onRefreshSessions, section?.id, sessionsExpanded]);
 
   useEffect(
     () => () => {
@@ -300,7 +300,7 @@ export function HypothesisDrivenResearchPage({
       setTitleDraft(updated.title);
       onUpdateSectionTitle(updated.title);
       setIsEditingTitle(false);
-      await onRefreshHypothesisSessions(updated.id);
+      await onRefreshSessions(updated.id);
     } catch (err) {
       const message = err instanceof Error ? err.message : "タイトルの更新に失敗しました";
       setError(message);

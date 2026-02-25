@@ -5,8 +5,11 @@ import axios from "axios";
 import { ChevronDown, ChevronRight, FileText, UserCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { type AutonomousSubNav, MainContent, type NavKey } from "@/components/main-content";
-import { useAutonomousResearchSessions } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
-import { useHypothesisDrivenSessions } from "@/components/pages/hypothesis-driven-research/use-hypothesis-driven-sessions";
+import {
+  type ActiveSectionMap,
+  type SectionsMap,
+  useAutonomousResearchSessions,
+} from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
 import { SectionsSidebar } from "@/components/sections-sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isEnterpriseEnabled } from "@/ee/config";
@@ -79,17 +82,18 @@ export default function App() {
   const eeComponents = useEEComponents();
 
   const [assistedSections, setAssistedSections] = useState<ResearchSection[]>(mockResearchSections);
-  const [autonomousSections, setAutonomousSections] = useState<ResearchSection[]>([]);
-  const [hypothesisSections, setHypothesisSections] = useState<ResearchSection[]>([]);
   const [activeAssistedSection, setActiveAssistedSection] = useState<ResearchSection | null>(
     mockResearchSections[0],
   );
-  const [activeAutonomousSection, setActiveAutonomousSection] = useState<ResearchSection | null>(
-    null,
-  );
-  const [activeHypothesisSection, setActiveHypothesisSection] = useState<ResearchSection | null>(
-    null,
-  );
+
+  const initialSectionsMap: SectionsMap = { "topic-driven": [], "hypothesis-driven": [] };
+  const initialActiveSectionMap: ActiveSectionMap = {
+    "topic-driven": null,
+    "hypothesis-driven": null,
+  };
+  const [sectionsMap, setSectionsMap] = useState<SectionsMap>(initialSectionsMap);
+  const [activeSectionMap, setActiveSectionMap] =
+    useState<ActiveSectionMap>(initialActiveSectionMap);
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const [workflowTree, setWorkflowTree] = useState<WorkflowTree>(initialWorkflowTree);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
@@ -99,14 +103,9 @@ export default function App() {
   const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
   const [sessionsExpanded, setSessionsExpanded] = useState(false);
 
-  const { fetchAutoSections } = useAutonomousResearchSessions({
-    setAutonomousSections,
-    setActiveAutonomousSection,
-  });
-
-  const { fetchHypothesisSections } = useHypothesisDrivenSessions({
-    setHypothesisSections,
-    setActiveHypothesisSection,
+  const { fetchSections } = useAutonomousResearchSessions({
+    setSectionsMap,
+    setActiveSectionMap,
   });
 
   const handleCreateSection = () => {
@@ -117,11 +116,7 @@ export default function App() {
       status: "in-progress",
     };
     if (activeNav === "autonomous-research") {
-      if (autonomousSubNav === "hypothesis-driven") {
-        setActiveHypothesisSection(null);
-      } else {
-        setActiveAutonomousSection(null);
-      }
+      setActiveSectionMap((prev) => ({ ...prev, [autonomousSubNav]: null }));
     } else {
       setAssistedSections([newSection, ...assistedSections]);
       setActiveAssistedSection(newSection);
@@ -235,19 +230,17 @@ export default function App() {
   const handleUpdateSectionTitle = useCallback(
     (title: string) => {
       if (activeNav === "autonomous-research") {
-        if (autonomousSubNav === "hypothesis-driven") {
-          if (!activeHypothesisSection) return;
-          setHypothesisSections((prev) =>
-            prev.map((s) => (s.id === activeHypothesisSection.id ? { ...s, title } : s)),
-          );
-          setActiveHypothesisSection((prev) => (prev ? { ...prev, title } : prev));
-        } else {
-          if (!activeAutonomousSection) return;
-          setAutonomousSections((prev) =>
-            prev.map((s) => (s.id === activeAutonomousSection.id ? { ...s, title } : s)),
-          );
-          setActiveAutonomousSection((prev) => (prev ? { ...prev, title } : prev));
-        }
+        setSectionsMap((prev) => ({
+          ...prev,
+          [autonomousSubNav]: prev[autonomousSubNav].map((s) =>
+            s.id === activeSectionMap[autonomousSubNav]?.id ? { ...s, title } : s,
+          ),
+        }));
+        setActiveSectionMap((prev) => {
+          const current = prev[autonomousSubNav];
+          if (!current) return prev;
+          return { ...prev, [autonomousSubNav]: { ...current, title } };
+        });
       } else {
         if (!activeAssistedSection) return;
         setAssistedSections((prev) =>
@@ -256,13 +249,7 @@ export default function App() {
         setActiveAssistedSection((prev) => (prev ? { ...prev, title } : prev));
       }
     },
-    [
-      activeAutonomousSection,
-      activeHypothesisSection,
-      autonomousSubNav,
-      activeNav,
-      activeAssistedSection,
-    ],
+    [activeNav, autonomousSubNav, activeSectionMap, activeAssistedSection],
   );
 
   const handleNavChange = useCallback((key: NavKey) => {
@@ -449,23 +436,18 @@ export default function App() {
               <SectionsSidebar
                 sections={
                   activeNav === "autonomous-research"
-                    ? autonomousSubNav === "hypothesis-driven"
-                      ? hypothesisSections
-                      : autonomousSections
+                    ? sectionsMap[autonomousSubNav]
                     : assistedSections
                 }
                 activeSection={
                   activeNav === "autonomous-research"
-                    ? autonomousSubNav === "hypothesis-driven"
-                      ? activeHypothesisSection
-                      : activeAutonomousSection
+                    ? activeSectionMap[autonomousSubNav]
                     : activeAssistedSection
                 }
                 onSelectSection={
                   activeNav === "autonomous-research"
-                    ? autonomousSubNav === "hypothesis-driven"
-                      ? setActiveHypothesisSection
-                      : setActiveAutonomousSection
+                    ? (section) =>
+                        setActiveSectionMap((prev) => ({ ...prev, [autonomousSubNav]: section }))
                     : setActiveAssistedSection
                 }
               />
@@ -474,8 +456,7 @@ export default function App() {
         )}
         <MainContent
           assistedSection={activeAssistedSection}
-          autonomousSection={activeAutonomousSection}
-          hypothesisSection={activeHypothesisSection}
+          autonomousSection={activeSectionMap[autonomousSubNav]}
           activeFeature={activeFeature}
           activeNav={activeNav}
           autonomousSubNav={autonomousSubNav}
@@ -492,8 +473,7 @@ export default function App() {
           onToggleSessions={handleToggleSessions}
           onCreateSection={handleCreateSection}
           onUpdateSectionTitle={handleUpdateSectionTitle}
-          onRefreshAutoSessions={fetchAutoSections}
-          onRefreshHypothesisSessions={fetchHypothesisSections}
+          onRefreshSessions={(preferredId) => fetchSections(autonomousSubNav, preferredId)}
         />
       </div>
     </div>

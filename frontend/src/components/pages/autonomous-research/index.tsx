@@ -41,7 +41,7 @@ interface AutonomousResearchPageProps {
   onToggleSessions: () => void;
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
-  onRefreshAutoSessions: (preferredId?: string) => Promise<void>;
+  onRefreshSessions: (preferredId?: string) => Promise<void>;
 }
 
 export function AutonomousResearchPage({
@@ -50,7 +50,7 @@ export function AutonomousResearchPage({
   onToggleSessions,
   onCreateSection,
   onUpdateSectionTitle,
-  onRefreshAutoSessions,
+  onRefreshSessions,
 }: AutonomousResearchPageProps) {
   // topic_open_ended_research/run request params
   const [autoResearchTopic, setAutoResearchTopic] = useState("");
@@ -112,8 +112,8 @@ export function AutonomousResearchPage({
 
   useEffect(() => {
     if (!sessionsExpanded) return;
-    void onRefreshAutoSessions(section?.id);
-  }, [onRefreshAutoSessions, section?.id, sessionsExpanded]);
+    void onRefreshSessions(section?.id);
+  }, [onRefreshSessions, section?.id, sessionsExpanded]);
 
   useEffect(
     () => () => {
@@ -280,7 +280,7 @@ export function AutonomousResearchPage({
       setAutoTitleDraft(updated.title);
       onUpdateSectionTitle(updated.title);
       setIsEditingAutoTitle(false);
-      await onRefreshAutoSessions(updated.id);
+      await onRefreshSessions(updated.id);
     } catch (error) {
       const message = error instanceof Error ? error.message : "タイトルの更新に失敗しました";
       setAutoError(message);

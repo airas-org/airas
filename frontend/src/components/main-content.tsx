@@ -35,7 +35,6 @@ interface AssistedResearchProps {
 interface MainContentProps {
   assistedSection: ResearchSection | null;
   autonomousSection: ResearchSection | null;
-  hypothesisSection: ResearchSection | null;
   activeFeature: string | null;
   activeNav: NavKey;
   autonomousSubNav: AutonomousSubNav;
@@ -44,8 +43,7 @@ interface MainContentProps {
   onToggleSessions: () => void;
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
-  onRefreshAutoSessions: (preferredId?: string) => Promise<void>;
-  onRefreshHypothesisSessions: (preferredId?: string) => Promise<void>;
+  onRefreshSessions: (preferredId?: string) => Promise<void>;
 }
 
 const NoSectionSelected = () => (
@@ -62,7 +60,6 @@ const NoSectionSelected = () => (
 export function MainContent({
   assistedSection,
   autonomousSection,
-  hypothesisSection,
   activeFeature,
   activeNav,
   autonomousSubNav,
@@ -71,8 +68,7 @@ export function MainContent({
   onToggleSessions,
   onCreateSection,
   onUpdateSectionTitle,
-  onRefreshAutoSessions,
-  onRefreshHypothesisSessions,
+  onRefreshSessions,
 }: MainContentProps) {
   const [selectedPapers, setSelectedPapers] = useState<Paper[]>([]);
 
@@ -135,16 +131,16 @@ export function MainContent({
             onToggleSessions={onToggleSessions}
             onCreateSection={onCreateSection}
             onUpdateSectionTitle={onUpdateSectionTitle}
-            onRefreshAutoSessions={onRefreshAutoSessions}
+            onRefreshSessions={onRefreshSessions}
           />
         ) : (
           <HypothesisDrivenResearchPage
-            section={hypothesisSection}
+            section={autonomousSection}
             sessionsExpanded={sessionsExpanded}
             onToggleSessions={onToggleSessions}
             onCreateSection={onCreateSection}
             onUpdateSectionTitle={onUpdateSectionTitle}
-            onRefreshHypothesisSessions={onRefreshHypothesisSessions}
+            onRefreshSessions={onRefreshSessions}
           />
         )}
       </div>
