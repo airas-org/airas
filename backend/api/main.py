@@ -69,10 +69,12 @@ def health():
     return {"status": "ok"}
 
 
-# Allow frontend (e.g., Vite dev server) to call the API with browser preflight
+# Allow frontend to call the API with browser preflight
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://app.airas.io",
+        "https://app-dev.airas.io",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ],
