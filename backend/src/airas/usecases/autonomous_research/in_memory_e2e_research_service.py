@@ -5,7 +5,7 @@ from uuid import UUID
 from airas.infra.db.models.e2e import E2EModel, Status, StepType
 
 
-class InMemoryTopicOpenEndedResearchService:
+class InMemoryE2EResearchService:
     def __init__(self) -> None:
         self._store: dict[UUID, E2EModel] = {}
 
