@@ -11,12 +11,12 @@ import {
 } from "@/lib/api";
 import type { ResearchSection } from "@/types/research";
 
-export type SectionsMap = Record<AutonomousSubNav, ResearchSection[]>;
-export type ActiveSectionMap = Record<AutonomousSubNav, ResearchSection | null>;
+export type AutonomousSectionsMap = Record<AutonomousSubNav, ResearchSection[]>;
+export type AutonomousActiveSectionMap = Record<AutonomousSubNav, ResearchSection | null>;
 
 interface UseAutonomousResearchSessionsParams {
-  setSectionsMap: Dispatch<SetStateAction<SectionsMap>>;
-  setActiveSectionMap: Dispatch<SetStateAction<ActiveSectionMap>>;
+  setAutonomousSectionsMap: Dispatch<SetStateAction<AutonomousSectionsMap>>;
+  setAutonomousActiveSectionMap: Dispatch<SetStateAction<AutonomousActiveSectionMap>>;
 }
 
 const mapTopicRecord = (record: TopicOpenEndedResearchListItemResponse): ResearchSection => {
@@ -41,8 +41,8 @@ const mapHypothesisRecord = (record: HypothesisDrivenResearchListItemResponse): 
 };
 
 export const useAutonomousResearchSessions = ({
-  setSectionsMap,
-  setActiveSectionMap,
+  setAutonomousSectionsMap,
+  setAutonomousActiveSectionMap,
 }: UseAutonomousResearchSessionsParams) => {
   const fetchSections = useCallback(
     async (subNav: AutonomousSubNav, preferredId?: string) => {
@@ -60,8 +60,8 @@ export const useAutonomousResearchSessions = ({
                 .map(mapHypothesisRecord)
                 .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-        setSectionsMap((prev) => ({ ...prev, [subNav]: sections }));
-        setActiveSectionMap((prev) => {
+        setAutonomousSectionsMap((prev) => ({ ...prev, [subNav]: sections }));
+        setAutonomousActiveSectionMap((prev) => {
           const current = prev[subNav];
           const next = preferredId
             ? (sections.find((s) => s.id === preferredId) ?? sections[0] ?? null)
@@ -74,7 +74,7 @@ export const useAutonomousResearchSessions = ({
         console.error(`Failed to load ${subNav} research sessions`, error);
       }
     },
-    [setSectionsMap, setActiveSectionMap],
+    [setAutonomousSectionsMap, setAutonomousActiveSectionMap],
   );
 
   return { fetchSections };

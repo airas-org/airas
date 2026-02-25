@@ -4,10 +4,15 @@ import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons";
 import axios from "axios";
 import { ChevronDown, ChevronRight, FileText, UserCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { type AutonomousSubNav, MainContent, type NavKey } from "@/components/main-content";
 import {
-  type ActiveSectionMap,
-  type SectionsMap,
+  AUTONOMOUS_SUB_NAVS,
+  type AutonomousSubNav,
+  MainContent,
+  type NavKey,
+} from "@/components/main-content";
+import {
+  type AutonomousActiveSectionMap,
+  type AutonomousSectionsMap,
   useAutonomousResearchSessions,
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
 import { SectionsSidebar } from "@/components/sections-sidebar";
@@ -81,31 +86,39 @@ function useEEComponents() {
 export default function App() {
   const eeComponents = useEEComponents();
 
+  // Assisted Research
   const [assistedSections, setAssistedSections] = useState<ResearchSection[]>(mockResearchSections);
   const [activeAssistedSection, setActiveAssistedSection] = useState<ResearchSection | null>(
     mockResearchSections[0],
   );
 
-  const initialSectionsMap: SectionsMap = { "topic-driven": [], "hypothesis-driven": [] };
-  const initialActiveSectionMap: ActiveSectionMap = {
-    "topic-driven": null,
-    "hypothesis-driven": null,
-  };
-  const [sectionsMap, setSectionsMap] = useState<SectionsMap>(initialSectionsMap);
-  const [activeSectionMap, setActiveSectionMap] =
-    useState<ActiveSectionMap>(initialActiveSectionMap);
+  // Autonomous Research
+  const initialAutonomousSectionsMap = Object.fromEntries(
+    AUTONOMOUS_SUB_NAVS.map((nav) => [nav, []]),
+  ) as AutonomousSectionsMap;
+  const initialAutonomousActiveSectionMap = Object.fromEntries(
+    AUTONOMOUS_SUB_NAVS.map((nav) => [nav, null]),
+  ) as AutonomousActiveSectionMap;
+  const [autonomousSectionsMap, setAutonomousSectionsMap] = useState<AutonomousSectionsMap>(
+    initialAutonomousSectionsMap,
+  );
+  const [autonomousActiveSectionMap, setAutonomousActiveSectionMap] =
+    useState<AutonomousActiveSectionMap>(initialAutonomousActiveSectionMap);
+
+  // Assisted Research workflow
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const [workflowTree, setWorkflowTree] = useState<WorkflowTree>(initialWorkflowTree);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
-  // Currently selected (default)
+
+  // Navigation
   const [activeNav, setActiveNav] = useState<NavKey>("autonomous-research");
   const [isAutonomousExpanded, setIsAutonomousExpanded] = useState(true);
   const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
   const [sessionsExpanded, setSessionsExpanded] = useState(false);
 
   const { fetchSections } = useAutonomousResearchSessions({
-    setSectionsMap,
-    setActiveSectionMap,
+    setAutonomousSectionsMap,
+    setAutonomousActiveSectionMap,
   });
 
   const handleCreateSection = () => {
@@ -116,7 +129,7 @@ export default function App() {
       status: "in-progress",
     };
     if (activeNav === "autonomous-research") {
-      setActiveSectionMap((prev) => ({ ...prev, [autonomousSubNav]: null }));
+      setAutonomousActiveSectionMap((prev) => ({ ...prev, [autonomousSubNav]: null }));
     } else {
       setAssistedSections([newSection, ...assistedSections]);
       setActiveAssistedSection(newSection);
@@ -230,13 +243,13 @@ export default function App() {
   const handleUpdateSectionTitle = useCallback(
     (title: string) => {
       if (activeNav === "autonomous-research") {
-        setSectionsMap((prev) => ({
+        setAutonomousSectionsMap((prev) => ({
           ...prev,
           [autonomousSubNav]: prev[autonomousSubNav].map((s) =>
-            s.id === activeSectionMap[autonomousSubNav]?.id ? { ...s, title } : s,
+            s.id === autonomousActiveSectionMap[autonomousSubNav]?.id ? { ...s, title } : s,
           ),
         }));
-        setActiveSectionMap((prev) => {
+        setAutonomousActiveSectionMap((prev) => {
           const current = prev[autonomousSubNav];
           if (!current) return prev;
           return { ...prev, [autonomousSubNav]: { ...current, title } };
@@ -249,7 +262,7 @@ export default function App() {
         setActiveAssistedSection((prev) => (prev ? { ...prev, title } : prev));
       }
     },
-    [activeNav, autonomousSubNav, activeSectionMap, activeAssistedSection],
+    [activeNav, autonomousSubNav, autonomousActiveSectionMap, activeAssistedSection],
   );
 
   const handleNavChange = useCallback((key: NavKey) => {
@@ -436,18 +449,21 @@ export default function App() {
               <SectionsSidebar
                 sections={
                   activeNav === "autonomous-research"
-                    ? sectionsMap[autonomousSubNav]
+                    ? autonomousSectionsMap[autonomousSubNav]
                     : assistedSections
                 }
                 activeSection={
                   activeNav === "autonomous-research"
-                    ? activeSectionMap[autonomousSubNav]
+                    ? autonomousActiveSectionMap[autonomousSubNav]
                     : activeAssistedSection
                 }
                 onSelectSection={
                   activeNav === "autonomous-research"
                     ? (section) =>
-                        setActiveSectionMap((prev) => ({ ...prev, [autonomousSubNav]: section }))
+                        setAutonomousActiveSectionMap((prev) => ({
+                          ...prev,
+                          [autonomousSubNav]: section,
+                        }))
                     : setActiveAssistedSection
                 }
               />
@@ -456,7 +472,7 @@ export default function App() {
         )}
         <MainContent
           assistedSection={activeAssistedSection}
-          autonomousSection={activeSectionMap[autonomousSubNav]}
+          autonomousSection={autonomousActiveSectionMap[autonomousSubNav]}
           activeFeature={activeFeature}
           activeNav={activeNav}
           autonomousSubNav={autonomousSubNav}

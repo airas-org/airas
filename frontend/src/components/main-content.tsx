@@ -14,7 +14,8 @@ import type {
 } from "@/types/research";
 
 export type NavKey = "papers" | "assisted-research" | "autonomous-research";
-export type AutonomousSubNav = "topic-driven" | "hypothesis-driven";
+export const AUTONOMOUS_SUB_NAVS = ["topic-driven", "hypothesis-driven"] as const;
+export type AutonomousSubNav = (typeof AUTONOMOUS_SUB_NAVS)[number];
 
 interface AssistedResearchProps {
   workflowTree: WorkflowTreeType;
