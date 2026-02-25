@@ -48,6 +48,22 @@ const initialWorkflowTree: WorkflowTree = {
   activeNodeId: null,
 };
 
+const initialAutonomousSectionsMap = AUTONOMOUS_SUB_NAVS.reduce<AutonomousSectionsMap>(
+  (acc, nav) => {
+    acc[nav] = [];
+    return acc;
+  },
+  {} as AutonomousSectionsMap,
+);
+
+const initialAutonomousActiveSectionMap = AUTONOMOUS_SUB_NAVS.reduce<AutonomousActiveSectionMap>(
+  (acc, nav) => {
+    acc[nav] = null;
+    return acc;
+  },
+  {} as AutonomousActiveSectionMap,
+);
+
 // Lazy-loaded EE components (only imported when EE is enabled)
 type AuthGuardType = typeof import("@/ee/auth/components/AuthGuard").AuthGuard;
 type UserMenuType = typeof import("@/ee/auth/components/UserMenu").UserMenu;
@@ -93,20 +109,6 @@ export default function App() {
   );
 
   // Autonomous Research
-  const initialAutonomousSectionsMap = AUTONOMOUS_SUB_NAVS.reduce<AutonomousSectionsMap>(
-    (acc, nav) => {
-      acc[nav] = [];
-      return acc;
-    },
-    {} as AutonomousSectionsMap,
-  );
-  const initialAutonomousActiveSectionMap = AUTONOMOUS_SUB_NAVS.reduce<AutonomousActiveSectionMap>(
-    (acc, nav) => {
-      acc[nav] = null;
-      return acc;
-    },
-    {} as AutonomousActiveSectionMap,
-  );
   const [autonomousSectionsMap, setAutonomousSectionsMap] = useState<AutonomousSectionsMap>(
     initialAutonomousSectionsMap,
   );
