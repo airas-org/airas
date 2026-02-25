@@ -93,12 +93,14 @@ export default function App() {
   );
 
   // Autonomous Research
-  const initialAutonomousSectionsMap = Object.fromEntries(
-    AUTONOMOUS_SUB_NAVS.map((nav) => [nav, []]),
-  ) as AutonomousSectionsMap;
-  const initialAutonomousActiveSectionMap = Object.fromEntries(
-    AUTONOMOUS_SUB_NAVS.map((nav) => [nav, null]),
-  ) as AutonomousActiveSectionMap;
+  const initialAutonomousSectionsMap = AUTONOMOUS_SUB_NAVS.reduce<AutonomousSectionsMap>(
+    (acc, nav) => ({ ...acc, [nav]: [] }),
+    {} as AutonomousSectionsMap,
+  );
+  const initialAutonomousActiveSectionMap = AUTONOMOUS_SUB_NAVS.reduce<AutonomousActiveSectionMap>(
+    (acc, nav) => ({ ...acc, [nav]: null }),
+    {} as AutonomousActiveSectionMap,
+  );
   const [autonomousSectionsMap, setAutonomousSectionsMap] = useState<AutonomousSectionsMap>(
     initialAutonomousSectionsMap,
   );
