@@ -50,22 +50,9 @@ interface EEComponents {
 
 function useEEComponents() {
   const [eeComponents, setEeComponents] = useState<EEComponents | null>(null);
-  const [signInWithGoogle, setSignInWithGoogle] = useState<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
     if (!isEnterpriseEnabled()) return;
-
-    // Load signInWithGoogle first so the Login button works during EE component loading
-    import("@/ee/auth/lib/supabase").then((mod) => {
-      const signIn = async () => {
-        const { error } = await mod.supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: { redirectTo: `${window.location.origin}/auth/callback` },
-        });
-        if (error) throw error;
-      };
-      setSignInWithGoogle(() => signIn);
-    });
 
     Promise.all([
       import("@/ee/auth/components/AuthGuard"),
@@ -82,11 +69,11 @@ function useEEComponents() {
     });
   }, []);
 
-  return { eeComponents, signInWithGoogle };
+  return { eeComponents };
 }
 
 export default function App() {
-  const { eeComponents, signInWithGoogle } = useEEComponents();
+  const { eeComponents } = useEEComponents();
 
   const [researchSections, setResearchSections] = useState<ResearchSection[]>(mockResearchSections);
   const [autoSections, setAutoSections] = useState<ResearchSection[]>([]);
@@ -307,16 +294,23 @@ export default function App() {
           </a>
           {eeComponents ? (
             <eeComponents.UserMenu />
-          ) : (
+          ) : isEnterpriseEnabled() ? (
             <button
               type="button"
               className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
-              onClick={signInWithGoogle ?? undefined}
+              onClick={() => {
+                import("@/ee/auth/lib/supabase").then((mod) => {
+                  mod.supabase.auth.signInWithOAuth({
+                    provider: "google",
+                    options: { redirectTo: `${window.location.origin}/auth/callback` },
+                  });
+                });
+              }}
             >
               <UserCircle className="h-5 w-5" />
               <span>Login</span>
             </button>
-          )}
+          ) : null}
         </div>
       </header>
 
