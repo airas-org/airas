@@ -1,13 +1,11 @@
 "use client";
 
 import axios from "axios";
-import { CheckCircle, Eye, EyeOff, Github, Loader2, Trash2, XCircle } from "lucide-react";
+import { CheckCircle, Github, Loader2, Trash2, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { OpenAPI } from "@/lib/api";
 
 interface GitHubSettings {
@@ -22,15 +20,17 @@ interface ConnectionStatus {
   error: string | null;
 }
 
+interface OAuthAuthorizeResponse {
+  authorize_url: string;
+}
+
 const API_BASE = OpenAPI.BASE || "";
 
 export function SettingsPage() {
   const [githubSettings, setGithubSettings] = useState<GitHubSettings | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus | null>(null);
-  const [tokenInput, setTokenInput] = useState("");
-  const [showToken, setShowToken] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,32 +48,43 @@ export function SettingsPage() {
     }
   }, []);
 
+  // Check for OAuth callback result in URL params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const githubStatus = params.get("github");
+
+    if (githubStatus === "connected") {
+      setSuccessMessage("GitHub account connected successfully!");
+      // Clean URL params
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (githubStatus === "error") {
+      const message = params.get("message") || "Connection failed";
+      setError(`GitHub connection failed: ${message}`);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   useEffect(() => {
     void fetchSettings();
   }, [fetchSettings]);
 
-  const handleSaveToken = async () => {
-    if (!tokenInput.trim()) return;
-    setIsSaving(true);
+  const handleConnectGitHub = async () => {
+    setIsConnecting(true);
     setError(null);
-    setSuccessMessage(null);
 
     try {
-      const response = await axios.post<GitHubSettings>(`${API_BASE}/airas/v1/settings/github`, {
-        github_token: tokenInput.trim(),
-      });
-      setGithubSettings(response.data);
-      setTokenInput("");
-      setSuccessMessage("GitHub token saved successfully");
-      setConnectionStatus(null);
+      const response = await axios.get<OAuthAuthorizeResponse>(
+        `${API_BASE}/airas/v1/settings/github/oauth/authorize`,
+      );
+      // Redirect to GitHub authorization page
+      window.location.href = response.data.authorize_url;
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.detail) {
         setError(String(err.response.data.detail));
       } else {
-        setError("Failed to save GitHub token");
+        setError("Failed to start GitHub connection");
       }
-    } finally {
-      setIsSaving(false);
+      setIsConnecting(false);
     }
   };
 
@@ -230,49 +241,50 @@ export function SettingsPage() {
                   </div>
                 )}
 
-                {/* Token Input */}
-                <div className="space-y-3">
-                  <Label htmlFor="github-token">
-                    {githubSettings?.is_connected
-                      ? "Update Personal Access Token"
-                      : "Personal Access Token"}
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Create a token at{" "}
-                    <a
-                      href="https://github.com/settings/tokens"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary underline"
+                {/* Connect Button (when not connected) */}
+                {!githubSettings?.is_connected && (
+                  <div className="space-y-3">
+                    <Button
+                      onClick={handleConnectGitHub}
+                      disabled={isConnecting}
+                      className="gap-2"
                     >
-                      github.com/settings/tokens
-                    </a>{" "}
-                    with <code className="text-xs bg-muted px-1 py-0.5 rounded">repo</code> and{" "}
-                    <code className="text-xs bg-muted px-1 py-0.5 rounded">workflow</code> scopes.
-                  </p>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        id="github-token"
-                        type={showToken ? "text" : "password"}
-                        value={tokenInput}
-                        onChange={(e) => setTokenInput(e.target.value)}
-                        placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                        className="pr-10"
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        onClick={() => setShowToken((prev) => !prev)}
-                      >
-                        {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    <Button onClick={handleSaveToken} disabled={isSaving || !tokenInput.trim()}>
-                      {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                      {isConnecting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Github className="h-4 w-4" />
+                      )}
+                      Connect with GitHub
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      You will be redirected to GitHub to authorize this application.
+                      We request{" "}
+                      <code className="text-xs bg-muted px-1 py-0.5 rounded">repo</code> and{" "}
+                      <code className="text-xs bg-muted px-1 py-0.5 rounded">workflow</code>{" "}
+                      permissions.
+                    </p>
+                  </div>
+                )}
+
+                {/* Reconnect option (when already connected) */}
+                {githubSettings?.is_connected && (
+                  <div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleConnectGitHub}
+                      disabled={isConnecting}
+                      className="gap-2"
+                    >
+                      {isConnecting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Github className="h-4 w-4" />
+                      )}
+                      Reconnect with GitHub
                     </Button>
                   </div>
-                </div>
+                )}
 
                 {/* Messages */}
                 {error && (
@@ -292,13 +304,14 @@ export function SettingsPage() {
                     How GitHub integration works
                   </p>
                   <p>
-                    When a token is set here, it is used automatically for all GitHub operations
-                    (repository creation, code push, GitHub Actions, etc.) without needing to set
-                    the{" "}
+                    When connected, your GitHub account is used automatically for all GitHub
+                    operations (repository creation, code push, GitHub Actions, etc.).
+                  </p>
+                  <p>
+                    If not connected, the system falls back to the{" "}
                     <code className="bg-muted px-1 py-0.5 rounded">GH_PERSONAL_ACCESS_TOKEN</code>{" "}
                     environment variable.
                   </p>
-                  <p>If no token is set here, the system falls back to the environment variable.</p>
                 </div>
               </>
             )}

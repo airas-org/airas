@@ -27,6 +27,7 @@ from airas.repository.assisted_research_session_repository import (
 from airas.repository.assisted_research_step_repository import (
     AssistedResearchStepRepository,
 )
+from airas.repository.github_oauth_state_repository import GitHubOAuthStateRepository
 from airas.repository.github_settings_repository import GitHubSettingsRepository
 from airas.usecases.assisted_research.assisted_research_link_service import (
     AssistedResearchLinkService,
@@ -222,8 +223,13 @@ class Container(containers.DeclarativeContainer):
     github_settings_repository = providers.Factory(
         GitHubSettingsRepository, db=db_session
     )
+    github_oauth_state_repository = providers.Factory(
+        GitHubOAuthStateRepository, db=db_session
+    )
     github_settings_service = providers.Factory(
-        GitHubSettingsService, repo=github_settings_repository
+        GitHubSettingsService,
+        repo=github_settings_repository,
+        oauth_state_repo=github_oauth_state_repository,
     )
 
     ## ---  Autonomous Research Service ---

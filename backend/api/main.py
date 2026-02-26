@@ -102,6 +102,8 @@ app.include_router(research_history.router, prefix="/airas/v1", dependencies=aut
 app.include_router(github_actions.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(github.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(settings.router, prefix="/airas/v1", dependencies=auth_deps)
+# OAuth callback is called by GitHub redirect (no user auth token available)
+app.include_router(settings.oauth_callback_router, prefix="/airas/v1")
 app.include_router(assisted_research.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(
     topic_open_ended_research.router, prefix="/airas/v1", dependencies=auth_deps

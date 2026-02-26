@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
 
-class SaveGitHubTokenRequest(BaseModel):
-    github_token: str
+class GitHubOAuthAuthorizeResponse(BaseModel):
+    authorize_url: str
 
 
 class GitHubSettingsResponse(BaseModel):
