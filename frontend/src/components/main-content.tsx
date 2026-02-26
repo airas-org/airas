@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { AssistedResearchPage } from "@/components/pages/assisted-research/index";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { PapersPage } from "@/components/pages/papers";
+import { SettingsPage } from "@/components/pages/settings";
 import type {
   FeatureType,
   Paper,
@@ -12,7 +13,7 @@ import type {
   WorkflowTree as WorkflowTreeType,
 } from "@/types/research";
 
-export type NavKey = "papers" | "assisted-research" | "autonomous-research";
+export type NavKey = "papers" | "assisted-research" | "autonomous-research" | "settings";
 
 interface AssistedResearchProps {
   workflowTree: WorkflowTreeType;
@@ -152,6 +153,10 @@ export function MainContent({
         ) : (
           <NoSectionSelected />
         )}
+      </div>
+
+      <div className={activeNav === "settings" ? "flex-1 flex" : "hidden"}>
+        <SettingsPage />
       </div>
     </div>
   );

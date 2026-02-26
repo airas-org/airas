@@ -10,6 +10,7 @@ from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.github.push_github_subgraph.push_github_subgraph import (
     PushGitHubSubgraph,
 )
+from api.dependencies.github import get_user_github_client
 from api.schemas.github import (
     PushGitHubRequestBody,
     PushGitHubResponseBody,
@@ -23,7 +24,7 @@ router = APIRouter(prefix="/github", tags=["github"])
 @observe()
 async def push_github(
     request: PushGitHubRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_user_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

@@ -17,6 +17,7 @@ from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph 
 from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
     PushLatexSubgraph,
 )
+from api.dependencies.github import get_user_github_client
 from api.schemas.latex import (
     CompileLatexSubgraphRequestBody,
     CompileLatexSubgraphResponseBody,
@@ -37,7 +38,7 @@ async def generate_latex(
     langchain_client: Annotated[
         LangChainClient, Depends(Provide[Container.langchain_client])
     ],
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_user_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -66,7 +67,7 @@ async def generate_latex(
 @observe()
 async def push_latex(
     request: PushLatexSubgraphRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_user_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -94,7 +95,7 @@ async def push_latex(
 @observe()
 async def compile_latex(
     request: CompileLatexSubgraphRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_user_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

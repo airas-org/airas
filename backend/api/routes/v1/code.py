@@ -13,6 +13,7 @@ from airas.usecases.executors.fetch_experiment_code_subgraph.fetch_experiment_co
 from airas.usecases.generators.dispatch_code_generation_subgraph.dispatch_code_generation_subgraph import (
     DispatchCodeGenerationSubgraph,
 )
+from api.dependencies.github import get_user_github_client
 from api.schemas.code import (
     DispatchCodeGenerationRequestBody,
     DispatchCodeGenerationResponseBody,
@@ -28,7 +29,7 @@ router = APIRouter(prefix="/code", tags=["code"])
 @observe()
 async def dispatch_code_generation(
     request: DispatchCodeGenerationRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_user_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -55,7 +56,7 @@ async def dispatch_code_generation(
 @observe()
 async def fetch_experiment_code(
     request: FetchExperimentCodeRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_user_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

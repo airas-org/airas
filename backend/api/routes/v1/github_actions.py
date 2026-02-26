@@ -16,6 +16,7 @@ from airas.usecases.github.poll_github_actions_subgraph.poll_github_actions_subg
 from airas.usecases.github.set_github_actions_secrets_subgraph.set_github_actions_secrets_subgraph import (
     SetGithubActionsSecretsSubgraph,
 )
+from api.dependencies.github import get_user_github_client
 from api.schemas.github_actions import (
     DownloadGithubActionsArtifactsRequestBody,
     DownloadGithubActionsArtifactsResponseBody,
@@ -33,7 +34,7 @@ router = APIRouter(prefix="/github-actions", tags=["github-actions"])
 @observe()
 async def poll_github_actions(
     request: PollGithubActionsRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_user_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -60,7 +61,7 @@ async def poll_github_actions(
 @observe()
 async def set_github_actions_secrets(
     request: SetGithubActionsSecretsRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_user_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -86,7 +87,7 @@ async def set_github_actions_secrets(
 @observe()
 async def download_github_actions_artifacts(
     request: DownloadGithubActionsArtifactsRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_user_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

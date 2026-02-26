@@ -27,6 +27,7 @@ from airas.repository.assisted_research_session_repository import (
 from airas.repository.assisted_research_step_repository import (
     AssistedResearchStepRepository,
 )
+from airas.repository.github_settings_repository import GitHubSettingsRepository
 from airas.usecases.assisted_research.assisted_research_link_service import (
     AssistedResearchLinkService,
 )
@@ -42,6 +43,7 @@ from airas.usecases.autonomous_research.sql_e2e_research_service import (
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
+from airas.usecases.settings.github_settings_service import GitHubSettingsService
 
 T = TypeVar("T")
 
@@ -214,6 +216,14 @@ class Container(containers.DeclarativeContainer):
     )
     assisted_research_link_service = providers.Factory(
         AssistedResearchLinkService, repo=assisted_research_link_repository
+    )
+
+    ## ---  GitHub Settings Service ---
+    github_settings_repository = providers.Factory(
+        GitHubSettingsRepository, db=db_session
+    )
+    github_settings_service = providers.Factory(
+        GitHubSettingsService, repo=github_settings_repository
     )
 
     ## ---  Autonomous Research Service ---

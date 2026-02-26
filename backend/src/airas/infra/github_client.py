@@ -63,10 +63,12 @@ class GithubClient(BaseHTTPClient):
         parser: ResponseParserProtocol | None = None,
         sync_session: httpx.Client | None = None,
         async_session: httpx.AsyncClient | None = None,
+        token: str | None = None,
     ) -> None:
+        resolved_token = token or os.getenv("GH_PERSONAL_ACCESS_TOKEN") or ""
         auth_headers = {
             "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {os.getenv('GH_PERSONAL_ACCESS_TOKEN')}",
+            "Authorization": f"Bearer {resolved_token}",
             "X-GitHub-Api-Version": "2022-11-28",
         }
         super().__init__(

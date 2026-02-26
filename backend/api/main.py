@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 
+import api.dependencies as api_dependencies
 import api.routes.v1 as routes_v1
 from airas.container import Container
 from airas.usecases.autonomous_research.in_memory_e2e_research_service import (
@@ -29,6 +30,7 @@ from api.routes.v1 import (
     papers,
     repositories,
     research_history,
+    settings,
     topic_open_ended_research,
 )
 
@@ -52,7 +54,7 @@ async def lifespan(app: FastAPI):
         )
 
     # Explicitly wire route modules so dependency_injector resolves Provide[] dependencies.
-    container.wire(packages=[routes_v1])
+    container.wire(packages=[routes_v1, api_dependencies])
     await container.init_resources()
 
     try:
@@ -99,6 +101,7 @@ app.include_router(latex.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(research_history.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(github_actions.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(github.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(settings.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(assisted_research.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(
     topic_open_ended_research.router, prefix="/airas/v1", dependencies=auth_deps

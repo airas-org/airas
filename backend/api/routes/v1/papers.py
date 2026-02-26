@@ -19,6 +19,7 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_fr
     SearchPaperTitlesFromQdrantSubgraph,
 )
 from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
+from api.dependencies.github import get_user_github_client
 from api.schemas.papers import (
     RetrievePaperSubgraphRequestBody,
     RetrievePaperSubgraphResponseBody,
@@ -90,7 +91,7 @@ async def get_paper_title(
         LangChainClient, Depends(Provide[Container.langchain_client])
     ],
     arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_user_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

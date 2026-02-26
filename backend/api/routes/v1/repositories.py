@@ -10,6 +10,7 @@ from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,
 )
+from api.dependencies.github import get_user_github_client
 from api.schemas.repositories import (
     PrepareRepositorySubgraphRequestBody,
     PrepareRepositorySubgraphResponseBody,
@@ -23,7 +24,7 @@ router = APIRouter(prefix="/repositories", tags=["repositories"])
 @observe()
 async def prepare_repository(
     request: PrepareRepositorySubgraphRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_user_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

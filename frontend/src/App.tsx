@@ -235,6 +235,7 @@ export default function App() {
     { key: "papers", label: "Paper", disabled: true },
     { key: "assisted-research", label: "Assisted Research", disabled: true },
     { key: "autonomous-research", label: "Autonomous Research" },
+    { key: "settings", label: "Settings" },
   ];
 
   const handleNavChange = useCallback((key: NavKey) => {
