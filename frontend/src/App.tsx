@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
 
 const mockResearchSections: ResearchSection[] = [
-  {
+  
     id: "1",
     title: "Untitled Research",
     createdAt: new Date("2024-01-15"),
@@ -50,6 +50,7 @@ interface EEComponents {
 
 function useEEComponents() {
   const [eeComponents, setEeComponents] = useState<EEComponents | null>(null);
+  const [signInWithGoogle, setSignInWithGoogle] = useState<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
     if (!isEnterpriseEnabled()) return;
@@ -66,14 +67,17 @@ function useEEComponents() {
         AuthCallback: authCallback.AuthCallback,
       });
       axios.interceptors.request.use(interceptor.authRequestInterceptor);
+      import("@/ee/auth/hooks/useAuth").then((mod) => {
+        setSignInWithGoogle(() => mod.useAuth().signInWithGoogle);
+      });
     });
   }, []);
 
-  return eeComponents;
+  return { eeComponents, signInWithGoogle };
 }
 
 export default function App() {
-  const eeComponents = useEEComponents();
+  const { eeComponents, signInWithGoogle } = useEEComponents();
 
   const [researchSections, setResearchSections] = useState<ResearchSection[]>(mockResearchSections);
   const [autoSections, setAutoSections] = useState<ResearchSection[]>([]);
@@ -298,6 +302,7 @@ export default function App() {
             <button
               type="button"
               className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
+            onClick={signInWithGoogle ?? undefined}
             >
               <UserCircle className="h-5 w-5" />
               <span>Login</span>
