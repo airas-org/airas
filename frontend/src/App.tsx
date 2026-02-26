@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
 
 const mockResearchSections: ResearchSection[] = [
-  
+  {
     id: "1",
     title: "Untitled Research",
     createdAt: new Date("2024-01-15"),
@@ -67,8 +67,15 @@ function useEEComponents() {
         AuthCallback: authCallback.AuthCallback,
       });
       axios.interceptors.request.use(interceptor.authRequestInterceptor);
-      import("@/ee/auth/hooks/useAuth").then((mod) => {
-        setSignInWithGoogle(() => mod.useAuth().signInWithGoogle);
+      import("@/ee/auth/lib/supabase").then((mod) => {
+        const signIn = async () => {
+          const { error } = await mod.supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: { redirectTo: `${window.location.origin}/auth/callback` },
+          });
+          if (error) throw error;
+        };
+        setSignInWithGoogle(() => signIn);
       });
     });
   }, []);
@@ -302,7 +309,7 @@ export default function App() {
             <button
               type="button"
               className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
-            onClick={signInWithGoogle ?? undefined}
+              onClick={signInWithGoogle ?? undefined}
             >
               <UserCircle className="h-5 w-5" />
               <span>Login</span>
