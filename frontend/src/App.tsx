@@ -55,6 +55,18 @@ function useEEComponents() {
   useEffect(() => {
     if (!isEnterpriseEnabled()) return;
 
+    // Load signInWithGoogle first so the Login button works during EE component loading
+    import("@/ee/auth/lib/supabase").then((mod) => {
+      const signIn = async () => {
+        const { error } = await mod.supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: `${window.location.origin}/auth/callback` },
+        });
+        if (error) throw error;
+      };
+      setSignInWithGoogle(() => signIn);
+    });
+
     Promise.all([
       import("@/ee/auth/components/AuthGuard"),
       import("@/ee/auth/components/UserMenu"),
@@ -67,16 +79,6 @@ function useEEComponents() {
         AuthCallback: authCallback.AuthCallback,
       });
       axios.interceptors.request.use(interceptor.authRequestInterceptor);
-      import("@/ee/auth/lib/supabase").then((mod) => {
-        const signIn = async () => {
-          const { error } = await mod.supabase.auth.signInWithOAuth({
-            provider: "google",
-            options: { redirectTo: `${window.location.origin}/auth/callback` },
-          });
-          if (error) throw error;
-        };
-        setSignInWithGoogle(() => signIn);
-      });
     });
   }, []);
 
