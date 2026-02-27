@@ -36,7 +36,7 @@ class DiagramGenerationInputState(TypedDict):
 
 
 class DiagramGenerationState(DiagramGenerationInputState, total=False):
-    diagram_workflow_run_id: str | None
+    diagram_workflow_run_id: int | None
 
 
 class DiagramGenerationGraph:

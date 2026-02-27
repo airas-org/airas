@@ -72,8 +72,8 @@ class VisualizationInputState(TypedDict):
 class VisualizationState(VisualizationInputState, total=False):
     visualization_retry_count: int
     artifact_data: Annotated[dict, lambda x, y: y]
-    visualization_workflow_run_id: str | None
-    visualization_validation_workflow_run_id: str | None
+    visualization_workflow_run_id: int | None
+    visualization_validation_workflow_run_id: int | None
 
 
 class VisualizationGraph:
