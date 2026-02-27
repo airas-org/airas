@@ -1,57 +1,90 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useCallback } from "react";
+import type { AutonomousSubNav } from "@/components/main-content";
 import {
+  type HypothesisDrivenResearchListItemResponse,
+  HypothesisDrivenResearchService,
+  Status as HypothesisDrivenResearchStatus,
   type TopicOpenEndedResearchListItemResponse,
   TopicOpenEndedResearchService,
   Status as TopicOpenEndedResearchStatus,
 } from "@/lib/api";
 import type { ResearchSection } from "@/types/research";
 
+export type AutonomousSectionsMap = Record<AutonomousSubNav, ResearchSection[]>;
+export type AutonomousActiveSectionMap = Record<AutonomousSubNav, ResearchSection | null>;
+
 interface UseAutonomousResearchSessionsParams {
-  setAutoSections: Dispatch<SetStateAction<ResearchSection[]>>;
-  setActiveAutoSection: Dispatch<SetStateAction<ResearchSection | null>>;
+  setAutonomousSectionsMap: Dispatch<SetStateAction<AutonomousSectionsMap>>;
+  setAutonomousActiveSectionMap: Dispatch<SetStateAction<AutonomousActiveSectionMap>>;
 }
 
-const mapAutoResearchRecordToSection = (
-  record: TopicOpenEndedResearchListItemResponse,
-): ResearchSection => {
+const mapTopicRecord = (record: TopicOpenEndedResearchListItemResponse): ResearchSection => {
   const createdAt = new Date(record.created_at);
   return {
     id: record.id,
     title: record.title || "Untitled Research",
     createdAt: Number.isNaN(createdAt.valueOf()) ? new Date() : createdAt,
-    status: record.status === TopicOpenEndedResearchStatus.COMPLETED ? "completed" : "in-progress",
+    status:
+      record.status === TopicOpenEndedResearchStatus.COMPLETED
+        ? "completed"
+        : record.status === TopicOpenEndedResearchStatus.FAILED
+          ? "failed"
+          : "in-progress",
+  };
+};
+
+const mapHypothesisRecord = (record: HypothesisDrivenResearchListItemResponse): ResearchSection => {
+  const createdAt = new Date(record.created_at);
+  return {
+    id: record.id,
+    title: record.title || "Untitled Research",
+    createdAt: Number.isNaN(createdAt.valueOf()) ? new Date() : createdAt,
+    status:
+      record.status === HypothesisDrivenResearchStatus.COMPLETED
+        ? "completed"
+        : record.status === HypothesisDrivenResearchStatus.FAILED
+          ? "failed"
+          : "in-progress",
   };
 };
 
 export const useAutonomousResearchSessions = ({
-  setAutoSections,
-  setActiveAutoSection,
+  setAutonomousSectionsMap,
+  setAutonomousActiveSectionMap,
 }: UseAutonomousResearchSessionsParams) => {
-  const fetchAutoSections = useCallback(
-    async (preferredId?: string) => {
+  const fetchSections = useCallback(
+    async (subNav: AutonomousSubNav, preferredId?: string) => {
       try {
-        const response =
-          await TopicOpenEndedResearchService.listTopicOpenEndedResearchAirasV1TopicOpenEndedResearchGet();
-        const sections = response.items
-          .map(mapAutoResearchRecordToSection)
-          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-        setAutoSections(sections);
-        setActiveAutoSection((prev) => {
-          if (preferredId) {
-            return sections.find((section) => section.id === preferredId) ?? sections[0] ?? null;
-          }
-          if (prev) {
-            return sections.find((section) => section.id === prev.id) ?? sections[0] ?? null;
-          }
-          return sections[0] ?? null;
+        const sections =
+          subNav === "topic-driven"
+            ? (
+                await TopicOpenEndedResearchService.listTopicOpenEndedResearchAirasV1TopicOpenEndedResearchGet()
+              ).items
+                .map(mapTopicRecord)
+                .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            : (
+                await HypothesisDrivenResearchService.listHypothesisDrivenResearchAirasV1HypothesisDrivenResearchGet()
+              ).items
+                .map(mapHypothesisRecord)
+                .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+        setAutonomousSectionsMap((prev) => ({ ...prev, [subNav]: sections }));
+        setAutonomousActiveSectionMap((prev) => {
+          const current = prev[subNav];
+          const next = preferredId
+            ? (sections.find((s) => s.id === preferredId) ?? sections[0] ?? null)
+            : current
+              ? (sections.find((s) => s.id === current.id) ?? sections[0] ?? null)
+              : (sections[0] ?? null);
+          return { ...prev, [subNav]: next };
         });
       } catch (error) {
-        console.error("Failed to load autonomous research sessions", error);
+        console.error(`Failed to load ${subNav} research sessions`, error);
       }
     },
-    [setActiveAutoSection, setAutoSections],
+    [setAutonomousSectionsMap, setAutonomousActiveSectionMap],
   );
 
-  return { fetchAutoSections };
+  return { fetchSections };
 };
