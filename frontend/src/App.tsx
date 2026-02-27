@@ -375,13 +375,6 @@ export default function App() {
               disabled
               className="w-full px-3 py-1.5 text-left text-sm border-l-2 text-muted-foreground cursor-not-allowed border-transparent"
             >
-              Paper
-            </button>
-            <button
-              type="button"
-              disabled
-              className="w-full px-3 py-1.5 text-left text-sm border-l-2 text-muted-foreground cursor-not-allowed border-transparent"
-            >
               Assisted Research
             </button>
             <button
