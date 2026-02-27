@@ -131,3 +131,31 @@ export const SUBGRAPH_DISPLAY_CONFIG = [
   { key: "generate_latex", title: "10. LaTeX生成" },
   { key: "compile_latex", title: "11. LaTeXコンパイル" },
 ] as const;
+
+export const HYPOTHESIS_SUBGRAPH_NODE_CONFIGS = {
+  generate_experimental_design: [
+    { key: "generate_experimental_design", label: "実験デザイン生成" },
+  ],
+  code_generation: [{ key: "dispatch_code_generation", label: "コード生成ディスパッチ" }],
+  dispatch_experiment_validation: [
+    { key: "dispatch_experiment_validation", label: "実験バリデーション" },
+  ],
+  analyze_experiment: [{ key: "analyze_experiment", label: "実験分析" }],
+  write: [
+    { key: "write_paper", label: "論文執筆" },
+    { key: "refine_paper", label: "論文精緻化" },
+  ],
+  latex: [
+    { key: "convert_to_latex", label: "LaTeX変換" },
+    { key: "compile_latex", label: "LaTeXコンパイル" },
+  ],
+} as const;
+
+export const HYPOTHESIS_SUBGRAPH_DISPLAY_CONFIG = [
+  { key: "generate_experimental_design", title: "1. 実験デザイン生成" },
+  { key: "code_generation", title: "2. コード生成" },
+  { key: "dispatch_experiment_validation", title: "3. 実験バリデーション" },
+  { key: "analyze_experiment", title: "4. 実験分析" },
+  { key: "write", title: "5. 論文執筆" },
+  { key: "latex", title: "6. LaTeX生成" },
+] as const;
