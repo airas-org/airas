@@ -441,6 +441,18 @@ export default function App() {
                 </button>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={() => handleNavChange("settings")}
+              className={cn(
+                "w-full px-3 py-1.5 text-left text-sm transition-colors border-l-2 cursor-pointer",
+                activeNav === "settings"
+                  ? "text-foreground font-semibold border-blue-700"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border-transparent",
+              )}
+            >
+              Settings
+            </button>
           </div>
         </aside>
 

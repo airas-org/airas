@@ -5,6 +5,7 @@ import { AssistedResearchPage } from "@/components/pages/assisted-research/index
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
 import { PapersPage } from "@/components/pages/papers";
+import { SettingsPage } from "@/components/pages/settings";
 import type {
   FeatureType,
   Paper,
@@ -13,7 +14,7 @@ import type {
   WorkflowTree as WorkflowTreeType,
 } from "@/types/research";
 
-export type NavKey = "papers" | "assisted-research" | "autonomous-research";
+export type NavKey = "papers" | "assisted-research" | "autonomous-research" | "settings";
 export const AUTONOMOUS_SUB_NAVS = ["topic-driven", "hypothesis-driven"] as const;
 export type AutonomousSubNav = (typeof AUTONOMOUS_SUB_NAVS)[number];
 
@@ -168,6 +169,10 @@ export function MainContent({
         ) : (
           <NoSectionSelected />
         )}
+      </div>
+
+      <div className={activeNav === "settings" ? "flex-1 flex" : "hidden"}>
+        <SettingsPage />
       </div>
     </div>
   );
