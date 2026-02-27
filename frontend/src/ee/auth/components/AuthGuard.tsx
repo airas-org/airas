@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
+import { LoadingSpinner } from "@/ee/auth/components/LoadingSpinner";
 import { LoginPage } from "@/ee/auth/components/LoginPage";
 import { useSession } from "@/ee/auth/hooks/useSession";
-import { LoadingSpinner } from "@/ee/auth/components/LoadingSpinner";
 
 export function AuthGuard({ children }: { children: ReactNode }) {
   const { session, loading } = useSession();

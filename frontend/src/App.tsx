@@ -2,8 +2,7 @@
 
 import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons";
 import axios from "axios";
-import { ChevronDown, ChevronRight, UserCircle } from "lucide-react";
-import { FileText, Github, X as XIcon } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, UserCircle } from "lucide-react";
 
 import { useCallback, useEffect, useState } from "react";
 import {
