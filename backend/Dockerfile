@@ -17,6 +17,7 @@ RUN uv sync --frozen
 
 COPY . /app
 
-EXPOSE 8000
+ENV PORT=8000
+EXPOSE ${PORT}
 
-CMD ["bash", "-lc", "uv run uvicorn api.main:app --host 0.0.0.0 --port 8000"]
+CMD ["bash", "-lc", "uv run uvicorn api.main:app --host 0.0.0.0 --port ${PORT}"]
