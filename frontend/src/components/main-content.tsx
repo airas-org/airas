@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { AssistedResearchPage } from "@/components/pages/assisted-research/index";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
 import { PapersPage } from "@/components/pages/papers";
@@ -48,21 +47,8 @@ interface MainContentProps {
   onRefreshSessions: (preferredId?: string) => Promise<void>;
 }
 
-const NoSectionSelected = () => (
-  <div className="flex-1 flex items-center justify-center bg-background">
-    <div className="text-center">
-      <h2 className="text-xl font-semibold text-muted-foreground">No Section Selected</h2>
-      <p className="text-sm text-muted-foreground mt-2">
-        Create or select a research section to begin
-      </p>
-    </div>
-  </div>
-);
-
 export function MainContent({
-  assistedSection,
   autonomousSection,
-  activeFeature,
   activeNav,
   autonomousSubNav,
   assistedResearchProps,
@@ -147,28 +133,15 @@ export function MainContent({
         )}
       </div>
 
-      <div className={activeNav === "assisted-research" ? "flex-1 flex" : "hidden"}>
-        {assistedSection ? (
-          <AssistedResearchPage
-            section={assistedSection}
-            activeFeature={activeFeature}
-            selectedPapers={selectedPapers}
-            onSelectedPapersChange={setSelectedPapers}
-            sessionsExpanded={sessionsExpanded}
-            onToggleSessions={onToggleSessions}
-            onCreateSection={onCreateSection}
-            onUpdateSectionTitle={onUpdateSectionTitle}
-            workflowTree={assistedResearchProps.workflowTree}
-            activeNodeId={assistedResearchProps.activeNodeId}
-            setActiveNodeId={assistedResearchProps.setActiveNodeId}
-            addWorkflowNode={assistedResearchProps.addWorkflowNode}
-            updateNodeSnapshot={assistedResearchProps.updateNodeSnapshot}
-            resetDownstreamSessions={assistedResearchProps.resetDownstreamSessions}
-            onNavigate={assistedResearchProps.onNavigate}
-          />
-        ) : (
-          <NoSectionSelected />
-        )}
+      <div
+        className={
+          activeNav === "assisted-research" ? "flex-1 flex items-center justify-center" : "hidden"
+        }
+      >
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-muted-foreground">Assisted Research</h2>
+          <p className="text-sm text-muted-foreground mt-2">Coming soon</p>
+        </div>
       </div>
 
       <div className={activeNav === "settings" ? "flex-1 flex" : "hidden"}>
