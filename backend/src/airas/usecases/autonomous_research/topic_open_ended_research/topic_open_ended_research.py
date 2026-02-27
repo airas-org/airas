@@ -44,6 +44,9 @@ from airas.usecases.autonomous_research.workflows.code_generation_graph import (
     CodeGenerationGraph,
     CodeGenerationGraphLLMMapping,
 )
+from airas.usecases.autonomous_research.workflows.diagram_generation_graph import (
+    DiagramGenerationGraph,
+)
 from airas.usecases.autonomous_research.workflows.latex_graph import (
     LaTeXGraph,
     LaTeXGraphLLMMapping,
@@ -556,6 +559,25 @@ class TopicOpenEndedResearch:
         return {}
 
     @record_execution_time
+    async def _run_diagram_generation(
+        self, state: TopicOpenEndedResearchState
+    ) -> dict[str, Any]:
+        logger.info("=== Run Diagram Generation ===")
+        await (
+            DiagramGenerationGraph(
+                github_client=self.github_client,
+            )
+            .build_graph()
+            .ainvoke(
+                {
+                    "github_config": state["github_config"],
+                },
+                {"recursion_limit": _STANDARD_WORKFLOW_RECURSION_LIMIT},
+            )
+        )
+        return {}
+
+    @record_execution_time
     @save_to_db
     @upload_to_github
     async def _fetch_experiment_results(
@@ -745,6 +767,7 @@ class TopicOpenEndedResearch:
         graph_builder.add_node("fetch_experiment_code", self._fetch_experiment_code)
         graph_builder.add_node("run_main_experiment", self._run_main_experiment)
         graph_builder.add_node("run_visualization", self._run_visualization)
+        graph_builder.add_node("run_diagram_generation", self._run_diagram_generation)
         graph_builder.add_node(
             "fetch_experiment_results", self._fetch_experiment_results
         )
@@ -769,7 +792,8 @@ class TopicOpenEndedResearch:
         graph_builder.add_edge("run_sanity_check", "fetch_experiment_code")
         graph_builder.add_edge("fetch_experiment_code", "run_main_experiment")
         graph_builder.add_edge("run_main_experiment", "run_visualization")
-        graph_builder.add_edge("run_visualization", "fetch_experiment_results")
+        graph_builder.add_edge("run_visualization", "run_diagram_generation")
+        graph_builder.add_edge("run_diagram_generation", "fetch_experiment_results")
         graph_builder.add_edge("fetch_experiment_results", "analyze_experiment")
         graph_builder.add_edge("analyze_experiment", "generate_bibfile")
         graph_builder.add_edge("generate_bibfile", "push_bibfile")

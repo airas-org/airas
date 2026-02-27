@@ -338,6 +338,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/experiments/diagrams/dispatch:
+    post:
+      tags:
+      - experiments
+      summary: Dispatch Diagram Generation
+      operationId: dispatch_diagram_generation_airas_v1_experiments_diagrams_dispatch_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DispatchDiagramGenerationRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DispatchDiagramGenerationResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/experiments/analyses:
     post:
       tags:
@@ -1504,6 +1529,60 @@ components:
       - dispatched
       - execution_time
       title: DispatchCodeGenerationResponseBody
+    DispatchDiagramGenerationLLMMapping:
+      properties:
+        dispatch_diagram_generation:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: anthropic/claude-sonnet-4-5
+      type: object
+      title: DispatchDiagramGenerationLLMMapping
+    DispatchDiagramGenerationRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        github_actions_agent:
+          type: string
+          enum:
+          - claude_code
+          - open_code
+          title: Github Actions Agent
+          default: claude_code
+        diagram_description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Diagram Description
+        prompt_path:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Prompt Path
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/DispatchDiagramGenerationLLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - github_config
+      title: DispatchDiagramGenerationRequestBody
+    DispatchDiagramGenerationResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - execution_time
+      title: DispatchDiagramGenerationResponseBody
     DispatchExperimentValidationLLMMapping:
       properties:
         dispatch_experiment_validation:

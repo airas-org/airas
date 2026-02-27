@@ -314,7 +314,8 @@ jobs:
                 refine_paper: {llm_name: $pm}
               },
               generate_latex: {convert_to_latex: {llm_name: $pm}},
-              compile_latex: {compile_latex: {llm_name: $gam}}
+              compile_latex: {compile_latex: {llm_name: $gam}},
+              dispatch_diagram_generation: {dispatch_diagram_generation: {llm_name: $gam}}
             }')
 
           echo "Starting E2E test with:"

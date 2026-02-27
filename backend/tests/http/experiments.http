@@ -134,6 +134,21 @@ Content-Type: application/json
 
 ###
 
+### Dispatch diagram generation
+POST http://127.0.0.1:8000/airas/v1/experiments/diagrams/dispatch
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "matsuzawa-20260213-2",
+        "branch_name": "main"
+    },
+    "github_actions_agent": "open_code"
+}
+
+###
+
 ### Analyze experiment
 POST http://127.0.0.1:8000/airas/v1/experiments/analyses
 Content-Type: application/json

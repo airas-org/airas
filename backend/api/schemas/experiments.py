@@ -13,6 +13,9 @@ from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_sub
 from airas.usecases.executors.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
     DispatchExperimentValidationLLMMapping,
 )
+from airas.usecases.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
+    DispatchDiagramGenerationLLMMapping,
+)
 
 
 class FetchRunIdsRequestBody(BaseModel):
@@ -80,6 +83,19 @@ class DispatchExperimentValidationRequestBody(BaseModel):
 
 
 class DispatchExperimentValidationResponseBody(BaseModel):
+    dispatched: bool
+    execution_time: dict[str, list[float]]
+
+
+class DispatchDiagramGenerationRequestBody(BaseModel):
+    github_config: GitHubConfig
+    github_actions_agent: GitHubActionsAgent = "claude_code"
+    diagram_description: str | None = None
+    prompt_path: str | None = None
+    llm_mapping: DispatchDiagramGenerationLLMMapping | None = None
+
+
+class DispatchDiagramGenerationResponseBody(BaseModel):
     dispatched: bool
     execution_time: dict[str, list[float]]
 
