@@ -244,11 +244,7 @@ export function SettingsPage() {
                 {/* Connect Button (when not connected) */}
                 {!githubSettings?.is_connected && (
                   <div className="space-y-3">
-                    <Button
-                      onClick={handleConnectGitHub}
-                      disabled={isConnecting}
-                      className="gap-2"
-                    >
+                    <Button onClick={handleConnectGitHub} disabled={isConnecting} className="gap-2">
                       {isConnecting ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
@@ -257,8 +253,7 @@ export function SettingsPage() {
                       Connect with GitHub
                     </Button>
                     <p className="text-xs text-muted-foreground">
-                      You will be redirected to GitHub to authorize this application.
-                      We request{" "}
+                      You will be redirected to GitHub to authorize this application. We request{" "}
                       <code className="text-xs bg-muted px-1 py-0.5 rounded">repo</code> and{" "}
                       <code className="text-xs bg-muted px-1 py-0.5 rounded">workflow</code>{" "}
                       permissions.

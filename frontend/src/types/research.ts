@@ -2,7 +2,7 @@ export interface ResearchSection {
   id: string;
   title: string;
   createdAt: Date;
-  status: "in-progress" | "completed";
+  status: "in-progress" | "completed" | "failed";
 }
 
 export interface Paper {
