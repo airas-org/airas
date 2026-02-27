@@ -1,7 +1,7 @@
 name: Deploy Docs to GitHub Pages
 
 on:
-  pull_request:
+  push:
     branches: [main]
     paths:
       - 'docs/**'
