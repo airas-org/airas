@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useAuth } from "@/ee/auth/hooks/useAuth";
 import { LoadingSpinner } from "@/ee/auth/components/LoadingSpinner";
+import { useAuth } from "@/ee/auth/hooks/useAuth";
 
 type SignInProvider = "google" | "github" | null;
 

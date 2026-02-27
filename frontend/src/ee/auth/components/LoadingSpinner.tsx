@@ -12,14 +12,7 @@ export function LoadingSpinner({ className = "h-5 w-5" }: LoadingSpinnerProps) {
       role="img"
       aria-label="Loading"
     >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path
         className="opacity-75"
         fill="currentColor"
