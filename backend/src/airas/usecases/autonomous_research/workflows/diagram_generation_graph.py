@@ -7,6 +7,7 @@ from typing_extensions import TypedDict
 from airas.core.execution_timers import time_node
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import (
+    GitHubActionsAgent,
     GitHubActionsConclusion,
     GitHubActionsStatus,
     GitHubConfig,
@@ -43,11 +44,13 @@ class DiagramGenerationGraph:
     def __init__(
         self,
         github_client: GithubClient,
+        github_actions_agent: GitHubActionsAgent,
         diagram_description: str | None = None,
         prompt_path: str | None = None,
         llm_mapping: DispatchDiagramGenerationLLMMapping | None = None,
     ):
         self.github_client = github_client
+        self.github_actions_agent = github_actions_agent
         self.diagram_description = diagram_description
         self.prompt_path = prompt_path
         self.llm_mapping = llm_mapping or DispatchDiagramGenerationLLMMapping()
@@ -69,7 +72,7 @@ class DiagramGenerationGraph:
             .ainvoke(
                 {
                     "github_config": state["github_config"],
-                    "github_actions_agent": "claude_code",
+                    "github_actions_agent": self.github_actions_agent,
                 }
             )
         )

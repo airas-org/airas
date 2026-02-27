@@ -566,6 +566,7 @@ class TopicOpenEndedResearch:
         await (
             DiagramGenerationGraph(
                 github_client=self.github_client,
+                github_actions_agent=self.github_actions_agent,
             )
             .build_graph()
             .ainvoke(
