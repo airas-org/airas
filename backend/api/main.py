@@ -36,6 +36,9 @@ from api.routes.v1 import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     database_url = os.getenv("DATABASE_URL")
+    # Railway provides postgresql:// but SQLAlchemy needs the psycopg driver specified
+    if database_url and database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
     container = Container()
     container.config.from_dict({"database_url": database_url})
 
