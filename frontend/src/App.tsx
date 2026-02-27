@@ -372,15 +372,13 @@ export default function App() {
           <div className="flex flex-col gap-1 p-3">
             <button
               type="button"
-              disabled
-              className="w-full px-3 py-1.5 text-left text-sm border-l-2 text-muted-foreground cursor-not-allowed border-transparent"
-            >
-              Paper
-            </button>
-            <button
-              type="button"
-              disabled
-              className="w-full px-3 py-1.5 text-left text-sm border-l-2 text-muted-foreground cursor-not-allowed border-transparent"
+              onClick={() => handleNavChange("assisted-research")}
+              className={cn(
+                "w-full px-3 py-1.5 text-left text-sm transition-colors border-l-2 cursor-pointer",
+                activeNav === "assisted-research"
+                  ? "text-foreground font-semibold border-blue-700"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border-transparent",
+              )}
             >
               Assisted Research
             </button>
@@ -441,6 +439,18 @@ export default function App() {
                 </button>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={() => handleNavChange("settings")}
+              className={cn(
+                "w-full px-3 py-1.5 text-left text-sm transition-colors border-l-2 cursor-pointer",
+                activeNav === "settings"
+                  ? "text-foreground font-semibold border-blue-700"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border-transparent",
+              )}
+            >
+              Settings
+            </button>
           </div>
         </aside>
 
