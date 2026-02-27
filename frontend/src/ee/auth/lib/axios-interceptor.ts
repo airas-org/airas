@@ -1,15 +1,27 @@
 import type { InternalAxiosRequestConfig } from "axios";
 import { supabase } from "@/ee/auth/lib/supabase";
 
-export async function authRequestInterceptor(
-  config: InternalAxiosRequestConfig,
-): Promise<InternalAxiosRequestConfig> {
+async function getAccessToken(): Promise<string | null> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
+}
 
-  if (session?.access_token) {
-    config.headers.Authorization = `Bearer ${session.access_token}`;
+export async function authRequestInterceptor(
+  config: InternalAxiosRequestConfig,
+): Promise<InternalAxiosRequestConfig> {
+  const token = await getAccessToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+}
+
+/**
+ * Token resolver for the OpenAPI generated client.
+ * Set as `OpenAPI.TOKEN` to attach auth tokens to all generated API calls.
+ */
+export async function openApiTokenResolver(): Promise<string> {
+  return (await getAccessToken()) ?? "";
 }
