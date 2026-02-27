@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { AssistedResearchPage } from "@/components/pages/assisted-research/index";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
+import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
 import { PapersPage } from "@/components/pages/papers";
 import type {
   FeatureType,
@@ -13,6 +14,8 @@ import type {
 } from "@/types/research";
 
 export type NavKey = "papers" | "assisted-research" | "autonomous-research";
+export const AUTONOMOUS_SUB_NAVS = ["topic-driven", "hypothesis-driven"] as const;
+export type AutonomousSubNav = (typeof AUTONOMOUS_SUB_NAVS)[number];
 
 interface AssistedResearchProps {
   workflowTree: WorkflowTreeType;
@@ -35,12 +38,13 @@ interface MainContentProps {
   autonomousSection: ResearchSection | null;
   activeFeature: string | null;
   activeNav: NavKey;
+  autonomousSubNav: AutonomousSubNav;
   assistedResearchProps: AssistedResearchProps;
   sessionsExpanded: boolean;
   onToggleSessions: () => void;
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
-  onRefreshAutoSessions: (preferredId?: string) => Promise<void>;
+  onRefreshSessions: (preferredId?: string) => Promise<void>;
 }
 
 const NoSectionSelected = () => (
@@ -59,12 +63,13 @@ export function MainContent({
   autonomousSection,
   activeFeature,
   activeNav,
+  autonomousSubNav,
   assistedResearchProps,
   sessionsExpanded,
   onToggleSessions,
   onCreateSection,
   onUpdateSectionTitle,
-  onRefreshAutoSessions,
+  onRefreshSessions,
 }: MainContentProps) {
   const [selectedPapers, setSelectedPapers] = useState<Paper[]>([]);
 
@@ -120,14 +125,25 @@ export function MainContent({
       </div>
 
       <div className={activeNav === "autonomous-research" ? "flex-1 flex" : "hidden"}>
-        <AutonomousResearchPage
-          section={autonomousSection}
-          sessionsExpanded={sessionsExpanded}
-          onToggleSessions={onToggleSessions}
-          onCreateSection={onCreateSection}
-          onUpdateSectionTitle={onUpdateSectionTitle}
-          onRefreshAutoSessions={onRefreshAutoSessions}
-        />
+        {autonomousSubNav === "topic-driven" ? (
+          <AutonomousResearchPage
+            section={autonomousSection}
+            sessionsExpanded={sessionsExpanded}
+            onToggleSessions={onToggleSessions}
+            onCreateSection={onCreateSection}
+            onUpdateSectionTitle={onUpdateSectionTitle}
+            onRefreshSessions={onRefreshSessions}
+          />
+        ) : (
+          <HypothesisDrivenResearchPage
+            section={autonomousSection}
+            sessionsExpanded={sessionsExpanded}
+            onToggleSessions={onToggleSessions}
+            onCreateSection={onCreateSection}
+            onUpdateSectionTitle={onUpdateSectionTitle}
+            onRefreshSessions={onRefreshSessions}
+          />
+        )}
       </div>
 
       <div className={activeNav === "assisted-research" ? "flex-1 flex" : "hidden"}>

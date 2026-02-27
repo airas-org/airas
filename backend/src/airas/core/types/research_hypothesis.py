@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 
 class ResearchHypothesis(BaseModel):
+    # TODO: Consider making some fields optional (e.g. experimental_code).
     open_problems: str
     method: str
     experimental_setup: str
