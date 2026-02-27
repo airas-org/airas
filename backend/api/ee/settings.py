@@ -13,7 +13,7 @@ class EESettings:
 def get_ee_settings() -> EESettings:
     return EESettings(
         enabled=os.getenv("ENTERPRISE_ENABLED", "false").lower() == "true",
-        supabase_url=os.getenv("SUPABASE_URL", ""),
-        supabase_anon_key=os.getenv("SUPABASE_ANON_KEY", ""),
-        supabase_jwt_secret=os.getenv("SUPABASE_JWT_SECRET", ""),
+        supabase_url=os.getenv("SUPABASE_URL", "").strip(),
+        supabase_anon_key=os.getenv("SUPABASE_ANON_KEY", "").strip(),
+        supabase_jwt_secret=os.getenv("SUPABASE_JWT_SECRET", "").strip(),
     )
