@@ -1,7 +1,7 @@
 // frontend/src/App.tsx
 
 import axios from "axios";
-import { FileText, Github, UserCircle, X as XIcon } from "lucide-react";
+import { FileText, Github, X as XIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { MainContent, type NavKey } from "@/components/main-content";
 import { useAutonomousResearchSessions } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
@@ -292,17 +292,7 @@ export default function App() {
           >
             <XIcon className="h-6 w-6" />
           </a>
-          {eeComponents ? (
-            <eeComponents.UserMenu />
-          ) : (
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
-            >
-              <UserCircle className="h-5 w-5" />
-              <span>Login</span>
-            </button>
-          )}
+          {eeComponents && <eeComponents.UserMenu />}
         </div>
       </header>
 
