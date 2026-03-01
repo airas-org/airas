@@ -294,7 +294,8 @@ jobs:
               latex: {
                 generate_latex: {convert_to_latex: {llm_name: $pm}},
                 compile_latex: {compile_latex: {llm_name: $gam}}
-              }
+              },
+              dispatch_diagram_generation: {dispatch_diagram_generation: {llm_name: $gam}}
             }')
 
           echo "Starting Hypothesis Driven Research E2E test with:"

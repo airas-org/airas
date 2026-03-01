@@ -29,9 +29,14 @@ from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment
 from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph import (
     FetchRunIdsSubgraph,
 )
+from airas.usecases.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
+    DispatchDiagramGenerationSubgraph,
+)
 from api.schemas.experiments import (
     AnalyzeExperimentRequestBody,
     AnalyzeExperimentResponseBody,
+    DispatchDiagramGenerationRequestBody,
+    DispatchDiagramGenerationResponseBody,
     DispatchExperimentValidationRequestBody,
     DispatchExperimentValidationResponseBody,
     DispatchMainExperimentRequestBody,
@@ -204,6 +209,35 @@ async def dispatch_visualization(
         .ainvoke(request, config=config)
     )
     return DispatchVisualizationResponseBody(
+        dispatched=result["dispatched"],
+        execution_time=result["execution_time"],
+    )
+
+
+@router.post("/diagrams/dispatch", response_model=DispatchDiagramGenerationResponseBody)
+@inject
+@observe()
+async def dispatch_diagram_generation(
+    request: DispatchDiagramGenerationRequestBody,
+    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
+) -> DispatchDiagramGenerationResponseBody:
+    handler = langfuse_client.create_handler()
+    config = {"callbacks": [handler]} if handler else {}
+
+    result = (
+        await DispatchDiagramGenerationSubgraph(
+            github_client=github_client,
+            diagram_description=request.diagram_description,
+            prompt_path=request.prompt_path,
+            llm_mapping=request.llm_mapping,
+        )
+        .build_graph()
+        .ainvoke(request, config=config)
+    )
+    return DispatchDiagramGenerationResponseBody(
         dispatched=result["dispatched"],
         execution_time=result["execution_time"],
     )

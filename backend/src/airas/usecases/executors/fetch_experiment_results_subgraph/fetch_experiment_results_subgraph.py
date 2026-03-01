@@ -13,6 +13,9 @@ from airas.usecases.executors.fetch_experiment_results_subgraph.nodes.fetch_resu
 )
 from airas.usecases.executors.nodes.read_run_ids import read_run_ids_from_repository
 
+# TODO: Consider converting to a dispatch_subgraph-based approach (agent-driven)
+# so that generated diagrams can be recognized and incorporated during paper writing.
+
 setup_logging()
 logger = logging.getLogger(__name__)
 
