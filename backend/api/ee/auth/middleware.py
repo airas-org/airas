@@ -21,7 +21,11 @@ def _get_jwks_client(supabase_url: str) -> jwt.PyJWKClient:
 
 
 def verify_jwt(token: str) -> dict:
-    """Verify Supabase JWT and return payload."""
+    """Verify Supabase JWT and return payload.
+
+    Supabase may sign tokens with either HS256 (symmetric) or ES256 (asymmetric).
+    We inspect the token header to choose the appropriate verification strategy.
+    """
     settings = get_ee_settings()
     if not settings.supabase_url:
         logger.error("SUPABASE_URL is not configured but ENTERPRISE_ENABLED is true")
@@ -30,14 +34,31 @@ def verify_jwt(token: str) -> dict:
             detail="Authentication is not configured on this server",
         )
     try:
-        jwks_client = _get_jwks_client(settings.supabase_url)
-        signing_key = jwks_client.get_signing_key_from_jwt(token)
-        payload = jwt.decode(
-            token,
-            signing_key.key,
-            algorithms=["ES256"],
-            audience="authenticated",
-        )
+        header = jwt.get_unverified_header(token)
+        alg = header.get("alg", "")
+
+        if alg == "HS256":
+            if not settings.supabase_jwt_secret:
+                logger.error("SUPABASE_JWT_SECRET is required for HS256 tokens")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Authentication is not configured on this server",
+                )
+            payload = jwt.decode(
+                token,
+                settings.supabase_jwt_secret,
+                algorithms=["HS256"],
+                audience="authenticated",
+            )
+        else:
+            jwks_client = _get_jwks_client(settings.supabase_url)
+            signing_key = jwks_client.get_signing_key_from_jwt(token)
+            payload = jwt.decode(
+                token,
+                signing_key.key,
+                algorithms=["ES256"],
+                audience="authenticated",
+            )
         return payload
     except jwt.ExpiredSignatureError as exc:
         raise HTTPException(
