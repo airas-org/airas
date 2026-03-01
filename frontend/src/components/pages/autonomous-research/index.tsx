@@ -53,15 +53,17 @@ export function AutonomousResearchPage({
   onRefreshSessions,
 }: AutonomousResearchPageProps) {
   // topic_open_ended_research/run request params
-  const [autoResearchTopic, setAutoResearchTopic] = useState("");
-  const [autoGithubOwner, setAutoGithubOwner] = useState("");
+  const [autoResearchTopic, setAutoResearchTopic] = useState(
+    "Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments",
+  );
+  const [autoGithubOwner, setAutoGithubOwner] = useState("auto-res2");
   const [autoRepoName, setAutoRepoName] = useState("");
   const [autoBranch, setAutoBranch] = useState("main");
-  const [autoRunnerLabels, setAutoRunnerLabels] = useState("ubuntu-latest");
+  const [autoRunnerLabels, setAutoRunnerLabels] = useState("self-hosted,gpu-runner");
   const [autoRunnerDescription, setAutoRunnerDescription] = useState(
     "NVIDIA H200, VRAM: 140 GB, RAM: 240 GB",
   );
-  const [autoWandbEntity, setAutoWandbEntity] = useState("");
+  const [autoWandbEntity, setAutoWandbEntity] = useState("airas");
   const [autoWandbProject, setAutoWandbProject] = useState("");
   const [autoIsPrivate, setAutoIsPrivate] = useState(false);
 
