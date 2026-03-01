@@ -36,6 +36,7 @@ def verify_jwt(token: str) -> dict:
     try:
         header = jwt.get_unverified_header(token)
         alg = header.get("alg", "")
+        logger.info("JWT header alg=%s kid=%s", alg, header.get("kid", "N/A"))
 
         if alg == "HS256":
             if not settings.supabase_jwt_secret:
