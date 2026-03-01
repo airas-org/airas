@@ -10,20 +10,31 @@ export function UserMenu() {
 
   if (!session) return null;
 
-  const email = session.user.email ?? "";
+  const avatarUrl = (session.user.user_metadata?.avatar_url as string) ?? "";
 
   return (
     <div className="relative">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
+        className="flex items-center rounded-full hover:opacity-80 transition-opacity"
       >
-        <UserCircle className="h-5 w-5" />
-        <span className="max-w-[120px] truncate">{email}</span>
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt="User avatar"
+            className="h-8 w-8 rounded-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <UserCircle className="h-8 w-8 text-muted-foreground" />
+        )}
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 w-48 rounded-md border border-border bg-card shadow-lg z-50">
+          <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border truncate">
+            {session.user.email ?? ""}
+          </div>
           <button
             type="button"
             onClick={() => {
