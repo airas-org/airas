@@ -8,23 +8,34 @@ from api.ee.settings import get_ee_settings
 
 logger = logging.getLogger(__name__)
 
+_jwks_client: jwt.PyJWKClient | None = None
+
+
+def _get_jwks_client(supabase_url: str) -> jwt.PyJWKClient:
+    """Return a cached JWKS client for the Supabase project."""
+    global _jwks_client
+    if _jwks_client is None:
+        jwks_url = f"{supabase_url}/auth/v1/.well-known/jwks.json"
+        _jwks_client = jwt.PyJWKClient(jwks_url, cache_keys=True)
+    return _jwks_client
+
 
 def verify_jwt(token: str) -> dict:
     """Verify Supabase JWT and return payload."""
     settings = get_ee_settings()
-    if not settings.supabase_jwt_secret:
-        logger.error(
-            "SUPABASE_JWT_SECRET is not configured but ENTERPRISE_ENABLED is true"
-        )
+    if not settings.supabase_url:
+        logger.error("SUPABASE_URL is not configured but ENTERPRISE_ENABLED is true")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Authentication is not configured on this server",
         )
     try:
+        jwks_client = _get_jwks_client(settings.supabase_url)
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
         payload = jwt.decode(
             token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
+            signing_key.key,
+            algorithms=["ES256"],
             audience="authenticated",
         )
         return payload
