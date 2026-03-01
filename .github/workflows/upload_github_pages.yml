@@ -7,6 +7,9 @@ on:
       - 'docs/**'
       - '.github/workflows/upload_github_pages.yml'
 
+permissions:
+  contents: write
+
 jobs:
   deploy-docs:
     runs-on: ubuntu-latest
