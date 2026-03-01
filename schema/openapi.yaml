@@ -38,6 +38,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/papers/retrieval:
     post:
       tags:
@@ -63,6 +65,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/papers/generations:
     post:
       tags:
@@ -88,6 +92,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/models:
     post:
       tags:
@@ -113,6 +119,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/datasets:
     post:
       tags:
@@ -138,6 +146,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/hypotheses/generations:
     post:
       tags:
@@ -163,6 +173,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/experimental_settings/generations:
     post:
       tags:
@@ -188,6 +200,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/experiments/run-ids:
     post:
       tags:
@@ -213,6 +227,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/experiments/results:
     post:
       tags:
@@ -238,6 +254,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/experiments/sanity-checks/dispatch:
     post:
       tags:
@@ -263,6 +281,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/experiments/validations/dispatch:
     post:
       tags:
@@ -288,6 +308,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/experiments/main-runs/dispatch:
     post:
       tags:
@@ -313,6 +335,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/experiments/visualizations/dispatch:
     post:
       tags:
@@ -338,6 +362,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /airas/v1/experiments/diagrams/dispatch:
+    post:
+      tags:
+      - experiments
+      summary: Dispatch Diagram Generation
+      operationId: dispatch_diagram_generation_airas_v1_experiments_diagrams_dispatch_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DispatchDiagramGenerationRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DispatchDiagramGenerationResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/experiments/analyses:
     post:
       tags:
@@ -363,6 +416,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/code/generations/dispatch:
     post:
       tags:
@@ -388,6 +443,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/code/fetch:
     post:
       tags:
@@ -413,6 +470,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/repositories:
     post:
       tags:
@@ -438,6 +497,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/bibfile/generations:
     post:
       tags:
@@ -463,6 +524,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/latex/generations:
     post:
       tags:
@@ -488,6 +551,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/latex/push:
     post:
       tags:
@@ -513,6 +578,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/latex/compile:
     post:
       tags:
@@ -538,6 +605,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/research-history/download:
     post:
       tags:
@@ -563,6 +632,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/research-history/upload:
     post:
       tags:
@@ -588,6 +659,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/github-actions/polling:
     post:
       tags:
@@ -613,6 +686,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/github-actions/secrets:
     post:
       tags:
@@ -638,6 +713,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/github-actions/artifacts/download:
     post:
       tags:
@@ -663,6 +740,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/github/push:
     post:
       tags:
@@ -688,6 +767,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/assisted_research/session:
     post:
       tags:
@@ -713,12 +794,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/assisted_research/session/{session_id}:
     get:
       tags:
       - assisted_research
       summary: Get Session
       operationId: get_session_airas_v1_assisted_research_session__session_id__get
+      security:
+      - HTTPBearer: []
       parameters:
       - name: session_id
         in: path
@@ -765,12 +850,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/assisted_research/step/{step_id}:
     get:
       tags:
       - assisted_research
       summary: Get Step
       operationId: get_step_airas_v1_assisted_research_step__step_id__get
+      security:
+      - HTTPBearer: []
       parameters:
       - name: step_id
         in: path
@@ -817,12 +906,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/assisted_research/link/{from_step_id}:
     get:
       tags:
       - assisted_research
       summary: Get Link
       operationId: get_link_airas_v1_assisted_research_link__from_step_id__get
+      security:
+      - HTTPBearer: []
       parameters:
       - name: from_step_id
         in: path
@@ -869,12 +962,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/topic_open_ended_research/status/{task_id}:
     get:
       tags:
       - topic_open_ended_research
       summary: Get Topic Open Ended Research Status
       operationId: get_topic_open_ended_research_status_airas_v1_topic_open_ended_research_status__task_id__get
+      security:
+      - HTTPBearer: []
       parameters:
       - name: task_id
         in: path
@@ -902,6 +999,8 @@ paths:
       - topic_open_ended_research
       summary: List Topic Open Ended Research
       operationId: list_topic_open_ended_research_airas_v1_topic_open_ended_research_get
+      security:
+      - HTTPBearer: []
       parameters:
       - name: offset
         in: query
@@ -937,6 +1036,8 @@ paths:
       - topic_open_ended_research
       summary: Update Topic Open Ended Research
       operationId: update_topic_open_ended_research_airas_v1_topic_open_ended_research__task_id__patch
+      security:
+      - HTTPBearer: []
       parameters:
       - name: task_id
         in: path
@@ -989,12 +1090,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/hypothesis_driven_research/status/{task_id}:
     get:
       tags:
       - hypothesis_driven_research
       summary: Get Hypothesis Driven Research Status
       operationId: get_hypothesis_driven_research_status_airas_v1_hypothesis_driven_research_status__task_id__get
+      security:
+      - HTTPBearer: []
       parameters:
       - name: task_id
         in: path
@@ -1022,6 +1127,8 @@ paths:
       - hypothesis_driven_research
       summary: List Hypothesis Driven Research
       operationId: list_hypothesis_driven_research_airas_v1_hypothesis_driven_research_get
+      security:
+      - HTTPBearer: []
       parameters:
       - name: offset
         in: query
@@ -1057,6 +1164,8 @@ paths:
       - hypothesis_driven_research
       summary: Update Hypothesis Driven Research
       operationId: update_hypothesis_driven_research_airas_v1_hypothesis_driven_research__task_id__patch
+      security:
+      - HTTPBearer: []
       parameters:
       - name: task_id
         in: path
@@ -1504,6 +1613,60 @@ components:
       - dispatched
       - execution_time
       title: DispatchCodeGenerationResponseBody
+    DispatchDiagramGenerationLLMMapping:
+      properties:
+        dispatch_diagram_generation:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: anthropic/claude-sonnet-4-5
+      type: object
+      title: DispatchDiagramGenerationLLMMapping
+    DispatchDiagramGenerationRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        github_actions_agent:
+          type: string
+          enum:
+          - claude_code
+          - open_code
+          title: Github Actions Agent
+          default: claude_code
+        diagram_description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Diagram Description
+        prompt_path:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Prompt Path
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/DispatchDiagramGenerationLLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - github_config
+      title: DispatchDiagramGenerationRequestBody
+    DispatchDiagramGenerationResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - execution_time
+      title: DispatchDiagramGenerationResponseBody
     DispatchExperimentValidationLLMMapping:
       properties:
         dispatch_experiment_validation:
@@ -4166,3 +4329,7 @@ components:
       - paper_content
       - execution_time
       title: WriteSubgraphResponseBody
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      scheme: bearer

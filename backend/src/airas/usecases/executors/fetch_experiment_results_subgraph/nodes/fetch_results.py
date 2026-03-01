@@ -137,6 +137,23 @@ async def _process_comparison_data(
     return metrics, files
 
 
+async def _fetch_diagram_files(
+    client: GithubClient,
+    config: GitHubConfig,
+    diagrams_dir: str = ".research/diagrams",
+) -> list[str]:
+    files = await _fetch_file_paths(
+        client,
+        config.github_owner,
+        config.repository_name,
+        diagrams_dir,
+        config.branch_name,
+    )
+    if files:
+        logger.info(f"Retrieved {len(files)} diagram files from {diagrams_dir}")
+    return [f"{diagrams_dir}/{f}" for f in files]
+
+
 async def fetch_results(
     github_client: GithubClient,
     github_config: GitHubConfig,
@@ -154,9 +171,10 @@ async def fetch_results(
         for run_id in run_ids
     ]
     comp_task = _process_comparison_data(github_client, github_config, results_dir)
+    diagrams_task = _fetch_diagram_files(github_client, github_config)
 
-    run_results_list, (comp_metrics, comp_files) = await asyncio.gather(
-        asyncio.gather(*tasks), comp_task
+    run_results_list, (comp_metrics, comp_files), diagram_files = await asyncio.gather(
+        asyncio.gather(*tasks), comp_task, diagrams_task
     )
 
     final_metrics: dict[str, Any] = {}
@@ -172,6 +190,8 @@ async def fetch_results(
         final_metrics["comparison"] = comp_metrics
     if comp_files:
         final_figures.extend(comp_files)
+    if diagram_files:
+        final_figures.extend(diagram_files)
 
     logger.info(
         f"Combined results: {len(final_metrics)} metrics entries, {len(final_figures)} figures"

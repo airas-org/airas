@@ -3,7 +3,6 @@
 import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons";
 import axios from "axios";
 import { ChevronDown, ChevronRight, FileText, UserCircle } from "lucide-react";
-
 import { useCallback, useEffect, useState } from "react";
 import {
   AUTONOMOUS_SUB_NAVS,
@@ -19,6 +18,7 @@ import {
 import { SectionsSidebar } from "@/components/sections-sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isEnterpriseEnabled } from "@/ee/config";
+import { OpenAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
 
@@ -88,12 +88,15 @@ function useEEComponents() {
       import("@/ee/auth/components/AuthCallback"),
       import("@/ee/auth/lib/axios-interceptor"),
     ]).then(([authGuard, userMenu, authCallback, interceptor]) => {
+      // Set token resolver for the OpenAPI generated client
+      OpenAPI.TOKEN = interceptor.openApiTokenResolver;
+      // Also keep axios interceptor for any direct axios calls
+      axios.interceptors.request.use(interceptor.authRequestInterceptor);
       setEeComponents({
         AuthGuard: authGuard.AuthGuard,
         UserMenu: userMenu.UserMenu,
         AuthCallback: authCallback.AuthCallback,
       });
-      axios.interceptors.request.use(interceptor.authRequestInterceptor);
     });
   }, []);
 
@@ -372,15 +375,13 @@ export default function App() {
           <div className="flex flex-col gap-1 p-3">
             <button
               type="button"
-              disabled
-              className="w-full px-3 py-1.5 text-left text-sm border-l-2 text-muted-foreground cursor-not-allowed border-transparent"
-            >
-              Paper
-            </button>
-            <button
-              type="button"
-              disabled
-              className="w-full px-3 py-1.5 text-left text-sm border-l-2 text-muted-foreground cursor-not-allowed border-transparent"
+              onClick={() => handleNavChange("assisted-research")}
+              className={cn(
+                "w-full px-3 py-1.5 text-left text-sm transition-colors border-l-2 cursor-pointer",
+                activeNav === "assisted-research"
+                  ? "text-foreground font-semibold border-blue-700"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border-transparent",
+              )}
             >
               Assisted Research
             </button>
@@ -441,6 +442,18 @@ export default function App() {
                 </button>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={() => handleNavChange("settings")}
+              className={cn(
+                "w-full px-3 py-1.5 text-left text-sm transition-colors border-l-2 cursor-pointer",
+                activeNav === "settings"
+                  ? "text-foreground font-semibold border-blue-700"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border-transparent",
+              )}
+            >
+              Settings
+            </button>
           </div>
         </aside>
 

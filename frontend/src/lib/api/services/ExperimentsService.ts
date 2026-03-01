@@ -4,6 +4,8 @@
 /* eslint-disable */
 import type { AnalyzeExperimentRequestBody } from '../models/AnalyzeExperimentRequestBody';
 import type { AnalyzeExperimentResponseBody } from '../models/AnalyzeExperimentResponseBody';
+import type { DispatchDiagramGenerationRequestBody } from '../models/DispatchDiagramGenerationRequestBody';
+import type { DispatchDiagramGenerationResponseBody } from '../models/DispatchDiagramGenerationResponseBody';
 import type { DispatchExperimentValidationRequestBody } from '../models/DispatchExperimentValidationRequestBody';
 import type { DispatchExperimentValidationResponseBody } from '../models/DispatchExperimentValidationResponseBody';
 import type { DispatchMainExperimentRequestBody } from '../models/DispatchMainExperimentRequestBody';
@@ -127,6 +129,25 @@ export class ExperimentsService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/experiments/visualizations/dispatch',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Dispatch Diagram Generation
+     * @param requestBody
+     * @returns DispatchDiagramGenerationResponseBody Successful Response
+     * @throws ApiError
+     */
+    public static dispatchDiagramGenerationAirasV1ExperimentsDiagramsDispatchPost(
+        requestBody: DispatchDiagramGenerationRequestBody,
+    ): CancelablePromise<DispatchDiagramGenerationResponseBody> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/airas/v1/experiments/diagrams/dispatch',
             body: requestBody,
             mediaType: 'application/json',
             errors: {

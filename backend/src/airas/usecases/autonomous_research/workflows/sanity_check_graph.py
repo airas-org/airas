@@ -73,8 +73,8 @@ class SanityCheckState(SanityCheckInputState, total=False):
     current_run_id_index: int
     sanity_check_retry_counts: dict[str, int]
     artifact_data: Annotated[dict, lambda x, y: y]
-    sanity_workflow_run_id: str | None
-    sanity_validation_workflow_run_id: str | None
+    sanity_workflow_run_id: int | None
+    sanity_validation_workflow_run_id: int | None
 
 
 class SanityCheckGraph:
