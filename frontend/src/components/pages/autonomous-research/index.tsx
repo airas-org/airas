@@ -59,10 +59,8 @@ export function AutonomousResearchPage({
   const [autoGithubOwner, setAutoGithubOwner] = useState("auto-res2");
   const [autoRepoName, setAutoRepoName] = useState("");
   const [autoBranch, setAutoBranch] = useState("main");
-  const [autoRunnerLabels, setAutoRunnerLabels] = useState("self-hosted,gpu-runner");
-  const [autoRunnerDescription, setAutoRunnerDescription] = useState(
-    "NVIDIA H200, VRAM: 140 GB, RAM: 240 GB",
-  );
+  const [autoRunnerLabels, setAutoRunnerLabels] = useState("ubuntu-latest");
+  const [autoRunnerDescription, setAutoRunnerDescription] = useState("CPU: 4 vCPU, RAM: 16 GB");
   const [autoWandbEntity, setAutoWandbEntity] = useState("airas");
   const [autoWandbProject, setAutoWandbProject] = useState("");
   const [autoIsPrivate, setAutoIsPrivate] = useState(false);
