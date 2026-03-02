@@ -3,24 +3,25 @@ from typing import Annotated
 from uuid import UUID
 
 import stripe
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from airas.container import Container
+from airas.repository.user_plan_repository import UserPlanRepository
 from airas.usecases.ee.plan_service import PlanService
 from api.ee.auth.dependencies import get_current_user_id
+from api.ee.dependencies import EEDBSession
 from api.schemas.ee import CheckoutRequest, CheckoutResponse
 
 router = APIRouter(prefix="/stripe", tags=["ee-stripe"])
 
 
 @router.post("/checkout", response_model=CheckoutResponse)
-@inject
 def create_checkout(
     request: CheckoutRequest,
     current_user_id: Annotated[UUID, Depends(get_current_user_id)],
-    service: Annotated[PlanService, Depends(Provide[Container.plan_service])],
+    db: EEDBSession,
 ) -> CheckoutResponse:
+    repo = UserPlanRepository(db=db)
+    service = PlanService(repo=repo)
     url = service.create_checkout_session(
         user_id=current_user_id,
         success_url=request.success_url,
@@ -30,11 +31,12 @@ def create_checkout(
 
 
 @router.post("/cancel")
-@inject
 def cancel_subscription(
     current_user_id: Annotated[UUID, Depends(get_current_user_id)],
-    service: Annotated[PlanService, Depends(Provide[Container.plan_service])],
+    db: EEDBSession,
 ):
+    repo = UserPlanRepository(db=db)
+    service = PlanService(repo=repo)
     service.cancel_subscription(current_user_id)
     return {"status": "canceled"}
 
@@ -55,7 +57,7 @@ async def stripe_webhook(request: Request):
     from sqlalchemy.orm import sessionmaker
     from sqlmodel import Session, create_engine
 
-    from airas.repository.user_plan_repository import UserPlanRepository
+    from airas.repository.user_plan_repository import UserPlanRepository as _Repo
 
     database_url = os.getenv("DATABASE_URL", "")
     if database_url.startswith("postgresql://"):
@@ -63,7 +65,7 @@ async def stripe_webhook(request: Request):
     engine = create_engine(database_url)
     factory = sessionmaker(bind=engine, class_=Session, expire_on_commit=False)
     with factory() as session:
-        repo = UserPlanRepository(db=session)
+        repo = _Repo(db=session)
         plan_service = PlanService(repo=repo)
         plan_service.handle_webhook_event(event)
 

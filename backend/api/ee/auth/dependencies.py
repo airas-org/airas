@@ -1,13 +1,13 @@
-from typing import Annotated
 from uuid import UUID
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from airas.container import Container
+from airas.repository.user_api_key_repository import UserApiKeyRepository
+from airas.repository.user_plan_repository import UserPlanRepository
 from airas.usecases.ee.api_key_resolver import ApiKeyResolver
 from api.ee.auth.middleware import extract_user_id_from_request
+from api.ee.dependencies import EEDBSession
 from api.ee.settings import get_ee_settings
 
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
@@ -28,19 +28,19 @@ def get_current_user_id(
     return extract_user_id_from_request(request)
 
 
-@inject
 def require_api_keys(
     request: Request,
+    db: EEDBSession,
     _credentials: HTTPAuthorizationCredentials | None = _bearer_dependency,
-    resolver: Annotated[
-        ApiKeyResolver, Depends(Provide[Container.api_key_resolver])
-    ] = None,
 ) -> None:
     """Raise 403 if the user has no API keys configured."""
     settings = get_ee_settings()
     if not settings.enabled:
         return
     user_id = extract_user_id_from_request(request)
+    plan_repo = UserPlanRepository(db=db)
+    api_key_repo = UserApiKeyRepository(db=db)
+    resolver = ApiKeyResolver(plan_repo=plan_repo, api_key_repo=api_key_repo)
     keys = resolver.resolve_keys(user_id)
     if not keys:
         raise HTTPException(

@@ -37,6 +37,7 @@ const AUTO_STATUS_POLL_INTERVAL_MS = 5000;
 const RequiredMark = () => <span className="text-rose-400 ml-0.5">*</span>;
 
 interface AutonomousResearchPageProps {
+  eeReady: boolean;
   section: ResearchSection | null;
   sessionsExpanded: boolean;
   onToggleSessions: () => void;
@@ -46,6 +47,7 @@ interface AutonomousResearchPageProps {
 }
 
 export function AutonomousResearchPage({
+  eeReady,
   section,
   sessionsExpanded,
   onToggleSessions,
@@ -110,6 +112,7 @@ export function AutonomousResearchPage({
   ].every((value) => value.trim().length > 0);
 
   useEffect(() => {
+    if (!eeReady) return;
     (async () => {
       try {
         const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -129,7 +132,7 @@ export function AutonomousResearchPage({
         // Fallback: show all models
       }
     })();
-  }, []);
+  }, [eeReady]);
 
   useEffect(() => {
     const nextTitle = section?.title ?? DEFAULT_RESEARCH_TITLE;
