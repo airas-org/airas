@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { GoogleGenAIParams, NodeLLMConfig, OpenAIParams } from "@/lib/api";
+import { useAvailableProviders } from "./available-providers-context";
 import {
   ANTHROPIC_MODELS,
   DEFAULT_NODE_LLM_CONFIG,
@@ -37,6 +38,10 @@ function getProviderType(modelName: string): "openai" | "google" | "anthropic" |
 }
 
 export function NodeLLMSelector({ nodeKey, label, value, onChange }: NodeLLMSelectorProps) {
+  const availableProviders = useAvailableProviders();
+  const showOpenai = !availableProviders || availableProviders.includes("openai");
+  const showGoogle = !availableProviders || availableProviders.includes("google");
+  const showAnthropic = !availableProviders || availableProviders.includes("anthropic");
   const defaultModelName = DEFAULT_NODE_LLM_CONFIG[nodeKey as keyof typeof DEFAULT_NODE_LLM_CONFIG];
   const currentModelName = value?.llm_name ?? "__default__";
   // If default is selected, determine provider from the default model name
@@ -101,32 +106,42 @@ export function NodeLLMSelector({ nodeKey, label, value, onChange }: NodeLLMSele
           </SelectItem>
           <SelectSeparator />
 
-          <SelectGroup>
-            <SelectLabel>OpenAI</SelectLabel>
-            {OPENAI_MODELS.map((model) => (
-              <SelectItem key={model} value={model}>
-                {model}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-          <SelectSeparator />
-          <SelectGroup>
-            <SelectLabel>Google</SelectLabel>
-            {GOOGLE_MODELS.map((model) => (
-              <SelectItem key={model} value={model}>
-                {model}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-          <SelectSeparator />
-          <SelectGroup>
-            <SelectLabel>Anthropic</SelectLabel>
-            {ANTHROPIC_MODELS.map((model) => (
-              <SelectItem key={model} value={model}>
-                {model}
-              </SelectItem>
-            ))}
-          </SelectGroup>
+          {showOpenai && (
+            <>
+              <SelectGroup>
+                <SelectLabel>OpenAI</SelectLabel>
+                {OPENAI_MODELS.map((model) => (
+                  <SelectItem key={model} value={model}>
+                    {model}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectSeparator />
+            </>
+          )}
+          {showGoogle && (
+            <>
+              <SelectGroup>
+                <SelectLabel>Google</SelectLabel>
+                {GOOGLE_MODELS.map((model) => (
+                  <SelectItem key={model} value={model}>
+                    {model}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectSeparator />
+            </>
+          )}
+          {showAnthropic && (
+            <SelectGroup>
+              <SelectLabel>Anthropic</SelectLabel>
+              {ANTHROPIC_MODELS.map((model) => (
+                <SelectItem key={model} value={model}>
+                  {model}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          )}
         </SelectContent>
       </Select>
 

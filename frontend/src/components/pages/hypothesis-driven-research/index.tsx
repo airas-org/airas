@@ -3,6 +3,7 @@
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HypothesisAllLLMConfig } from "@/components/features/llm-config";
+import { AvailableProvidersProvider } from "@/components/features/llm-config/available-providers-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,6 +22,7 @@ import {
   HypothesisDrivenResearchRequestBody,
   HypothesisDrivenResearchService,
   type HypothesisDrivenResearchStatusResponseBody,
+  OpenAPI,
   Status,
 } from "@/lib/api";
 import type { ResearchSection } from "@/types/research";
@@ -91,6 +93,7 @@ export function HypothesisDrivenResearchPage({
   const [latexTemplateName, setLatexTemplateName] = useState("mdpi");
 
   // LLM config
+  const [availableProviders, setAvailableProviders] = useState<string[] | null>(null);
   const [llmMapping, setLlmMapping] = useState<HypothesisDrivenResearchLLMMapping | null>(null);
 
   // Status and polling
@@ -124,6 +127,28 @@ export function HypothesisDrivenResearchPage({
     wandbEntity,
     wandbProject,
   ].every((v) => v.trim().length > 0);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (OpenAPI.TOKEN) {
+          const token =
+            typeof OpenAPI.TOKEN === "function"
+              ? await (OpenAPI.TOKEN as (options: unknown) => Promise<string>)({})
+              : OpenAPI.TOKEN;
+          if (token) headers.Authorization = `Bearer ${token}`;
+        }
+        const res = await fetch(`${OpenAPI.BASE}/airas/ee/plan`, { headers });
+        if (res.ok) {
+          const data = (await res.json()) as { available_providers?: string[] };
+          setAvailableProviders(data.available_providers ?? null);
+        }
+      } catch {
+        // Fallback: show all models
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     const nextTitle = section?.title ?? DEFAULT_RESEARCH_TITLE;
@@ -269,7 +294,12 @@ export function HypothesisDrivenResearchPage({
       setTaskId(response.task_id);
       startPolling(response.task_id);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "研究の実行に失敗しました";
+      const message =
+        err != null && typeof err === "object" && "body" in err
+          ? ((err as { body: { detail?: string } }).body?.detail ?? "研究の実行に失敗しました")
+          : err instanceof Error
+            ? err.message
+            : "研究の実行に失敗しました";
       setError(message);
       stopPolling();
     }
@@ -708,7 +738,9 @@ export function HypothesisDrivenResearchPage({
 
               <hr className="border-border" />
 
-              <HypothesisAllLLMConfig llmMapping={llmMapping} onChange={setLlmMapping} />
+              <AvailableProvidersProvider value={availableProviders}>
+                <HypothesisAllLLMConfig llmMapping={llmMapping} onChange={setLlmMapping} />
+              </AvailableProvidersProvider>
 
               <hr className="border-border" />
 

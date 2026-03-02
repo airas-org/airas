@@ -23,7 +23,7 @@ from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_end
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
-from api.ee.auth.dependencies import get_current_user_id
+from api.ee.auth.dependencies import get_current_user_id, require_api_keys
 from api.schemas.topic_open_ended_research import (
     TopicOpenEndedResearchListItemResponse,
     TopicOpenEndedResearchListResponseBody,
@@ -141,6 +141,7 @@ async def execute_topic_open_ended_research(
     request: TopicOpenEndedResearchRequestBody,
     fastapi_request: Request,
     current_user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
+    _keys_check: Annotated[None, Depends(require_api_keys)],
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
     arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
     langchain_client: Annotated[

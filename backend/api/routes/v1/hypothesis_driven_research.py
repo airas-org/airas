@@ -18,7 +18,7 @@ from airas.usecases.autonomous_research.e2e_research_service_protocol import (
 from airas.usecases.autonomous_research.hypothesis_driven_research.hypothesis_driven_research import (
     HypothesisDrivenResearch,
 )
-from api.ee.auth.dependencies import get_current_user_id
+from api.ee.auth.dependencies import get_current_user_id, require_api_keys
 from api.schemas.hypothesis_driven_research import (
     HypothesisDrivenResearchListItemResponse,
     HypothesisDrivenResearchListResponseBody,
@@ -110,6 +110,7 @@ async def _execute_hypothesis_driven_research(
 async def execute_hypothesis_driven_research(
     request: HypothesisDrivenResearchRequestBody,
     current_user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
+    _keys_check: Annotated[None, Depends(require_api_keys)],
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
     langchain_client: Annotated[
         LangChainClient, Depends(Provide[Container.langchain_client])

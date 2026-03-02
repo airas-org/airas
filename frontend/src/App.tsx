@@ -124,8 +124,13 @@ export default function App() {
   const [workflowTree, setWorkflowTree] = useState<WorkflowTree>(initialWorkflowTree);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
 
-  // Navigation
-  const [activeNav, setActiveNav] = useState<NavKey>("autonomous-research");
+  // Navigation — check URL params for post-checkout redirect
+  const [activeNav, setActiveNav] = useState<NavKey>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const nav = params.get("nav");
+    if (nav === "user-plan" || nav === "integration") return nav;
+    return "autonomous-research";
+  });
   const [isAutonomousExpanded, setIsAutonomousExpanded] = useState(true);
   const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
   const [sessionsExpanded, setSessionsExpanded] = useState(false);
@@ -444,15 +449,27 @@ export default function App() {
             </div>
             <button
               type="button"
-              onClick={() => handleNavChange("settings")}
+              onClick={() => handleNavChange("integration")}
               className={cn(
                 "w-full px-3 py-1.5 text-left text-sm transition-colors border-l-2 cursor-pointer",
-                activeNav === "settings"
+                activeNav === "integration"
                   ? "text-foreground font-semibold border-blue-700"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border-transparent",
               )}
             >
-              Settings
+              Integration
+            </button>
+            <button
+              type="button"
+              onClick={() => handleNavChange("user-plan")}
+              className={cn(
+                "w-full px-3 py-1.5 text-left text-sm transition-colors border-l-2 cursor-pointer",
+                activeNav === "user-plan"
+                  ? "text-foreground font-semibold border-blue-700"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border-transparent",
+              )}
+            >
+              User Plan
             </button>
           </div>
         </aside>
