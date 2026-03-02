@@ -24,6 +24,7 @@ from api.routes.v1 import (
     github_actions,
     hypotheses,
     hypothesis_driven_research,
+    interactive_repo_agent,
     latex,
     models,
     papers,
@@ -104,6 +105,9 @@ app.include_router(research_history.router, prefix="/airas/v1", dependencies=aut
 app.include_router(github_actions.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(github.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(assisted_research.router, prefix="/airas/v1", dependencies=auth_deps)
+app.include_router(
+    interactive_repo_agent.router, prefix="/airas/v1", dependencies=auth_deps
+)
 app.include_router(
     topic_open_ended_research.router, prefix="/airas/v1", dependencies=auth_deps
 )

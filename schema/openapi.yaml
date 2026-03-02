@@ -937,6 +937,67 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/interactive-repo-agent/dispatch:
+    post:
+      tags:
+      - interactive-repo-agent
+      summary: Dispatch Interactive Repo Agent
+      operationId: dispatch_interactive_repo_agent_airas_v1_interactive_repo_agent_dispatch_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DispatchInteractiveRepoAgentRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DispatchInteractiveRepoAgentResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /airas/v1/interactive-repo-agent/{workflow_run_id}/cancel:
+    post:
+      tags:
+      - interactive-repo-agent
+      summary: Cancel Interactive Repo Agent
+      operationId: cancel_interactive_repo_agent_airas_v1_interactive_repo_agent__workflow_run_id__cancel_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: workflow_run_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Run Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelInteractiveRepoAgentRequestBody'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelInteractiveRepoAgentResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/topic_open_ended_research/run:
     post:
       tags:
@@ -1406,6 +1467,31 @@ components:
       - result
       - schema_version
       title: AssistedResearchStepResponse
+    CancelInteractiveRepoAgentRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+      type: object
+      required:
+      - github_config
+      title: CancelInteractiveRepoAgentRequestBody
+    CancelInteractiveRepoAgentResponseBody:
+      properties:
+        cancelled:
+          type: boolean
+          title: Cancelled
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - cancelled
+      - execution_time
+      title: CancelInteractiveRepoAgentResponseBody
     CodeGenerationGraphLLMMapping:
       properties:
         dispatch_code_generation:
@@ -1742,6 +1828,58 @@ components:
       - dispatched
       - execution_time
       title: DispatchExperimentValidationResponseBody
+    DispatchInteractiveRepoAgentRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfig'
+        github_actions_agent:
+          type: string
+          enum:
+          - claude_code
+          - open_code
+          title: Github Actions Agent
+        session_username:
+          type: string
+          title: Session Username
+        session_password:
+          type: string
+          title: Session Password
+      type: object
+      required:
+      - github_config
+      - github_actions_agent
+      - session_username
+      - session_password
+      title: DispatchInteractiveRepoAgentRequestBody
+    DispatchInteractiveRepoAgentResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        workflow_run_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Workflow Run Id
+        tunnel_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tunnel Url
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - workflow_run_id
+      - tunnel_url
+      - execution_time
+      title: DispatchInteractiveRepoAgentResponseBody
     DispatchMainExperimentRequestBody:
       properties:
         github_config:
