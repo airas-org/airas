@@ -92,7 +92,7 @@ export function UserPlanPage() {
     setError(null);
     try {
       await apiFetch("/stripe/cancel", { method: "POST" });
-      await fetchPlan();
+      window.location.reload();
     } catch {
       setError("Failed to cancel subscription. Please try again.");
     } finally {
