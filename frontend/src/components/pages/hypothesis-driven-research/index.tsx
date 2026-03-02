@@ -281,6 +281,10 @@ export function HypothesisDrivenResearchPage({
 
   const handleRun = async () => {
     if (!isFormValid) return;
+    if (availableProviders !== null && availableProviders.length === 0) {
+      setError("API keyが設定されていません。IntegrationページでAPI keyを設定してください。");
+      return;
+    }
     const payload = buildPayload();
     setError(null);
     setStatus(null);

@@ -256,6 +256,10 @@ export function AutonomousResearchPage({
 
   const handleRunAutoResearch = async () => {
     if (!isAutoFormValid) return;
+    if (availableProviders !== null && availableProviders.length === 0) {
+      setAutoError("API keyが設定されていません。IntegrationページでAPI keyを設定してください。");
+      return;
+    }
     const payload = buildAutoResearchPayload();
     setAutoError(null);
 
