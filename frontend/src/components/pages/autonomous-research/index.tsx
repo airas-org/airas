@@ -3,7 +3,6 @@
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AllLLMConfig } from "@/components/features/llm-config";
-import { AvailableProvidersProvider } from "@/components/features/llm-config/available-providers-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -676,9 +675,7 @@ export function AutonomousResearchPage({
 
               <hr className="border-border" />
 
-              <AvailableProvidersProvider value={availableProviders}>
-                <AllLLMConfig llmMapping={llmMapping} onChange={setLlmMapping} />
-              </AvailableProvidersProvider>
+              <AllLLMConfig llmMapping={llmMapping} onChange={setLlmMapping} />
 
               <hr className="border-border" />
 
