@@ -62,6 +62,21 @@ export function UserPlanPage() {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("plan")) {
+      // Redirected from Stripe checkout - poll for plan update
+      params.delete("plan");
+      const cleanUrl = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
+      window.history.replaceState({}, "", cleanUrl);
+
+      let attempts = 0;
+      const poll = setInterval(() => {
+        attempts++;
+        void fetchPlan();
+        if (attempts >= 10) clearInterval(poll);
+      }, 2000);
+      return () => clearInterval(poll);
+    }
     void fetchPlan();
   }, [fetchPlan]);
 
@@ -72,7 +87,7 @@ export function UserPlanPage() {
       const data = await apiFetch<{ checkout_url: string }>("/stripe/checkout", {
         method: "POST",
         body: JSON.stringify({
-          success_url: `${window.location.origin}?plan=upgraded`,
+          success_url: `${window.location.origin}?plan=upgraded&nav=user-plan`,
           cancel_url: window.location.href,
         }),
       });
