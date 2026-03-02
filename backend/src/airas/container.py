@@ -41,6 +41,7 @@ from airas.usecases.assisted_research.assisted_research_step_service import (
 from airas.usecases.autonomous_research.sql_e2e_research_service import (
     SqlE2EResearchService,
 )
+from airas.usecases.ee.api_key_resolver import ApiKeyResolver
 from airas.usecases.ee.api_key_service import ApiKeyService
 from airas.usecases.ee.plan_service import PlanService
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
@@ -226,6 +227,12 @@ class Container(containers.DeclarativeContainer):
 
     user_plan_repository = providers.Factory(UserPlanRepository, db=db_session)
     plan_service = providers.Factory(PlanService, repo=user_plan_repository)
+
+    api_key_resolver = providers.Factory(
+        ApiKeyResolver,
+        plan_repo=user_plan_repository,
+        api_key_repo=user_api_key_repository,
+    )
 
     ## ---  Autonomous Research Service ---
     e2e_research_service = providers.Factory(

@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Loader2, Save, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Info, Loader2, Save, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +55,17 @@ export function IntegrationPage() {
   const [saving, setSaving] = useState<ApiProvider | null>(null);
   const [deleting, setDeleting] = useState<ApiProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [requiresApiKeys, setRequiresApiKeys] = useState(true);
+
+  const fetchPlan = useCallback(async () => {
+    try {
+      const data = await apiFetch<{ requires_api_keys: boolean }>("/plan");
+      setRequiresApiKeys(data.requires_api_keys);
+    } catch {
+      // Fallback: show API keys section
+      setRequiresApiKeys(true);
+    }
+  }, []);
 
   const fetchKeys = useCallback(async () => {
     try {
@@ -67,8 +78,9 @@ export function IntegrationPage() {
   }, []);
 
   useEffect(() => {
+    void fetchPlan();
     void fetchKeys();
-  }, [fetchKeys]);
+  }, [fetchPlan, fetchKeys]);
 
   const handleSave = async (provider: ApiProvider) => {
     const key = drafts[provider].trim();
@@ -133,79 +145,97 @@ export function IntegrationPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>API Keys</CardTitle>
-            <CardDescription>
-              Manage your API keys for LLM providers. Keys are encrypted and stored securely.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {PROVIDERS.map(({ id, label, placeholder }) => {
-              const saved = getSavedKey(id);
-              return (
-                <div key={id} className="space-y-3 rounded-md bg-muted/40 p-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-semibold">{label}</Label>
-                    {saved && (
-                      <span className="text-xs text-muted-foreground font-mono">
-                        {saved.masked_key}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        type={visibleDrafts[id] ? "text" : "password"}
-                        value={drafts[id]}
-                        onChange={(e) => setDrafts((prev) => ({ ...prev, [id]: e.target.value }))}
-                        placeholder={saved ? "Enter new key to update..." : placeholder}
-                        className="pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => toggleVisibility(id)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {visibleDrafts[id] ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => handleSave(id)}
-                      disabled={!drafts[id].trim() || saving === id}
-                    >
-                      {saving === id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4" />
+        {requiresApiKeys ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>API Keys</CardTitle>
+              <CardDescription>
+                Manage your API keys for LLM providers. Keys are encrypted and stored securely.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {PROVIDERS.map(({ id, label, placeholder }) => {
+                const saved = getSavedKey(id);
+                return (
+                  <div key={id} className="space-y-3 rounded-md bg-muted/40 p-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-semibold">{label}</Label>
+                      {saved && (
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {saved.masked_key}
+                        </span>
                       )}
-                    </Button>
-                    {saved && (
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <Input
+                          type={visibleDrafts[id] ? "text" : "password"}
+                          value={drafts[id]}
+                          onChange={(e) => setDrafts((prev) => ({ ...prev, [id]: e.target.value }))}
+                          placeholder={saved ? "Enter new key to update..." : placeholder}
+                          className="pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => toggleVisibility(id)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {visibleDrafts[id] ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={() => handleDelete(id)}
-                        disabled={deleting === id}
-                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleSave(id)}
+                        disabled={!drafts[id].trim() || saving === id}
                       >
-                        {deleting === id ? (
+                        {saving === id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <Trash2 className="h-4 w-4" />
+                          <Save className="h-4 w-4" />
                         )}
                       </Button>
-                    )}
+                      {saved && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(id)}
+                          disabled={deleting === id}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          {deleting === id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
+                );
+              })}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>API Keys</CardTitle>
+              <CardDescription>API keys are managed by your Pro plan.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-start gap-3 rounded-md bg-blue-500/10 border border-blue-500/20 p-4">
+                <Info className="h-5 w-5 mt-0.5 text-blue-500 shrink-0" />
+                <p className="text-sm text-muted-foreground">
+                  As a Pro plan member, platform-provided API keys are automatically used for all
+                  LLM requests. No manual configuration is needed.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

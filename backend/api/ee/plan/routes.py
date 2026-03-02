@@ -19,8 +19,10 @@ def get_plan(
     service: Annotated[PlanService, Depends(Provide[Container.plan_service])],
 ) -> UserPlanResponse:
     plan = service.get_plan(current_user_id)
+    is_pro = plan.plan_type == "pro"
     return UserPlanResponse(
         plan_type=plan.plan_type,
         status=plan.status,
         stripe_customer_id=plan.stripe_customer_id,
+        requires_api_keys=not is_pro,
     )
