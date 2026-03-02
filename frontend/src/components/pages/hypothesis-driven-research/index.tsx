@@ -269,7 +269,12 @@ export function HypothesisDrivenResearchPage({
       setTaskId(response.task_id);
       startPolling(response.task_id);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "研究の実行に失敗しました";
+      const message =
+        err != null && typeof err === "object" && "body" in err
+          ? ((err as { body: { detail?: string } }).body?.detail ?? "研究の実行に失敗しました")
+          : err instanceof Error
+            ? err.message
+            : "研究の実行に失敗しました";
       setError(message);
       stopPolling();
     }

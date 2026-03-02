@@ -245,7 +245,13 @@ export function AutonomousResearchPage({
       setAutoTaskId(response.task_id);
       startAutoPolling(response.task_id);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "自動研究の実行に失敗しました";
+      const message =
+        error != null && typeof error === "object" && "body" in error
+          ? ((error as { body: { detail?: string } }).body?.detail ??
+            "自動研究の実行に失敗しました")
+          : error instanceof Error
+            ? error.message
+            : "自動研究の実行に失敗しました";
       setAutoError(message);
       stopAutoPolling();
     }
