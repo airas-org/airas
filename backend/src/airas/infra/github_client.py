@@ -1124,6 +1124,58 @@ class GithubClient(BaseHTTPClient):
                 self._raise_for_status(response, path)
                 return None
 
+    async def alist_workflow_runs_for_workflow(
+        self,
+        github_owner: str,
+        repository_name: str,
+        workflow_file_name: str,
+        branch_name: str | None = None,
+        per_page: int = 10,
+    ) -> dict | None:
+        path = f"/repos/{github_owner}/{repository_name}/actions/workflows/{workflow_file_name}/runs"
+        params: dict = {"per_page": per_page}
+        if branch_name:
+            params["branch"] = branch_name
+
+        response = await self.aget(path=path, params=params)
+        match response.status_code:
+            case 200:
+                logger.info(f"Success (200): {path}")
+                return response.json()
+            case 403:
+                logger.error(f"Access forbidden (403): {path}")
+                raise GithubClientFatalError(f"Access forbidden (403): {path}")
+            case 404:
+                logger.error(f"Workflow or repository not found (404): {path}")
+                raise GithubClientFatalError(
+                    f"Workflow or repository not found (404): {path}"
+                )
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
+    async def acancel_workflow_run(
+        self,
+        github_owner: str,
+        repository_name: str,
+        workflow_run_id: int,
+    ) -> bool:
+        path = f"/repos/{github_owner}/{repository_name}/actions/runs/{workflow_run_id}/cancel"
+
+        response = await self.apost(path=path)
+        match response.status_code:
+            case 202:
+                logger.info(f"Workflow run {workflow_run_id} cancel accepted (202)")
+                return True
+            case 409:
+                logger.warning(
+                    f"Workflow run {workflow_run_id} is already completed (409)"
+                )
+                return False
+            case _:
+                self._raise_for_status(response, path)
+                return False
+
     async def aget_repository_content(
         self,
         github_owner: str,
