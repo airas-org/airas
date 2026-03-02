@@ -40,7 +40,6 @@ interface AssistedResearchProps {
 }
 
 interface MainContentProps {
-  eeReady: boolean;
   assistedSection: ResearchSection | null;
   autonomousSection: ResearchSection | null;
   activeFeature: string | null;
@@ -55,7 +54,6 @@ interface MainContentProps {
 }
 
 export function MainContent({
-  eeReady,
   autonomousSection,
   activeNav,
   autonomousSubNav,
@@ -122,7 +120,6 @@ export function MainContent({
       <div className={activeNav === "autonomous-research" ? "flex-1 flex" : "hidden"}>
         {autonomousSubNav === "topic-driven" ? (
           <AutonomousResearchPage
-            eeReady={eeReady}
             section={autonomousSection}
             sessionsExpanded={sessionsExpanded}
             onToggleSessions={onToggleSessions}
@@ -132,7 +129,6 @@ export function MainContent({
           />
         ) : (
           <HypothesisDrivenResearchPage
-            eeReady={eeReady}
             section={autonomousSection}
             sessionsExpanded={sessionsExpanded}
             onToggleSessions={onToggleSessions}

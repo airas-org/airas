@@ -37,7 +37,6 @@ const AUTO_STATUS_POLL_INTERVAL_MS = 5000;
 const RequiredMark = () => <span className="text-rose-400 ml-0.5">*</span>;
 
 interface HypothesisDrivenResearchPageProps {
-  eeReady: boolean;
   section: ResearchSection | null;
   sessionsExpanded: boolean;
   onToggleSessions: () => void;
@@ -47,7 +46,6 @@ interface HypothesisDrivenResearchPageProps {
 }
 
 export function HypothesisDrivenResearchPage({
-  eeReady,
   section,
   sessionsExpanded,
   onToggleSessions,
@@ -130,7 +128,6 @@ export function HypothesisDrivenResearchPage({
   ].every((v) => v.trim().length > 0);
 
   useEffect(() => {
-    if (!eeReady) return;
     (async () => {
       try {
         const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -150,7 +147,7 @@ export function HypothesisDrivenResearchPage({
         // Fallback: show all models
       }
     })();
-  }, [eeReady]);
+  }, []);
 
   useEffect(() => {
     const nextTitle = section?.title ?? DEFAULT_RESEARCH_TITLE;

@@ -1,14 +1,13 @@
 from typing import Annotated
 from uuid import UUID
 
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 
-from airas.repository.user_api_key_repository import UserApiKeyRepository
-from airas.repository.user_plan_repository import UserPlanRepository
+from airas.container import Container
 from airas.usecases.ee.api_key_resolver import ApiKeyResolver
 from airas.usecases.ee.plan_service import PlanService
 from api.ee.auth.dependencies import get_current_user_id
-from api.ee.dependencies import EEDBSession
 from api.schemas.ee import UserPlanResponse
 
 # Mapping from env var name to provider display name
@@ -22,15 +21,12 @@ router = APIRouter(prefix="/plan", tags=["ee-plan"])
 
 
 @router.get("", response_model=UserPlanResponse)
+@inject
 def get_plan(
     current_user_id: Annotated[UUID, Depends(get_current_user_id)],
-    db: EEDBSession,
+    service: Annotated[PlanService, Depends(Provide[Container.plan_service])],
+    resolver: Annotated[ApiKeyResolver, Depends(Provide[Container.api_key_resolver])],
 ) -> UserPlanResponse:
-    plan_repo = UserPlanRepository(db=db)
-    api_key_repo = UserApiKeyRepository(db=db)
-    service = PlanService(repo=plan_repo)
-    resolver = ApiKeyResolver(plan_repo=plan_repo, api_key_repo=api_key_repo)
-
     plan = service.get_plan(current_user_id)
     is_pro = plan.plan_type == "pro"
     keys = resolver.resolve_keys(current_user_id)

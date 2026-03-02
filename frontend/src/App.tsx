@@ -512,7 +512,6 @@ export default function App() {
           </div>
         )}
         <MainContent
-          eeReady={!!eeComponents}
           assistedSection={activeAssistedSection}
           autonomousSection={autonomousActiveSectionMap[autonomousSubNav]}
           activeFeature={activeFeature}
