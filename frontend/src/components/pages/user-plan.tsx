@@ -48,6 +48,7 @@ export function UserPlanPage() {
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
   const [downgrading, setDowngrading] = useState(false);
+  const [confirmDowngrade, setConfirmDowngrade] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPlan = useCallback(async () => {
@@ -82,8 +83,12 @@ export function UserPlanPage() {
   }, [fetchPlan]);
 
   const handleDowngrade = async () => {
-    if (!window.confirm("Are you sure you want to cancel your Pro subscription?")) return;
+    if (!confirmDowngrade) {
+      setConfirmDowngrade(true);
+      return;
+    }
     setDowngrading(true);
+    setConfirmDowngrade(false);
     setError(null);
     try {
       await apiFetch("/stripe/cancel", { method: "POST" });
@@ -169,21 +174,34 @@ export function UserPlanPage() {
               ))}
             </ul>
             {currentPlan !== "free" && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleDowngrade}
-                disabled={downgrading}
-              >
-                {downgrading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Downgrade"
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className={`flex-1 ${confirmDowngrade ? "border-destructive text-destructive hover:bg-destructive/10" : ""}`}
+                  onClick={handleDowngrade}
+                  disabled={downgrading}
+                >
+                  {downgrading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : confirmDowngrade ? (
+                    "Are you sure?"
+                  ) : (
+                    "Downgrade"
+                  )}
+                </Button>
+                {confirmDowngrade && (
+                  <Button
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={() => setConfirmDowngrade(false)}
+                  >
+                    Cancel
+                  </Button>
                 )}
-              </Button>
+              </div>
             )}
           </CardContent>
         </Card>
