@@ -7,14 +7,18 @@ when the request finishes, preventing connection pool exhaustion.
 from collections.abc import Generator
 from typing import Annotated
 
+from dependency_injector.wiring import Provide, inject
 from fastapi import Depends
+from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session
 
-from airas.container import container
+from airas.container import Container
 
 
-def get_ee_db_session() -> Generator[Session, None, None]:
-    factory = container.session_factory()
+@inject
+def get_ee_db_session(
+    factory: Annotated[sessionmaker, Depends(Provide[Container.session_factory])],
+) -> Generator[Session, None, None]:
     session: Session = factory()
     try:
         yield session
