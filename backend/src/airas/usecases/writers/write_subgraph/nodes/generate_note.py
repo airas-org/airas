@@ -51,6 +51,10 @@ def generate_note(
 ) -> str:
     mapped_studies = _map_studies_to_bibtex(research_study_list, references_bib)
 
+    all_figures = experimental_results.figures or []
+    diagram_figures = [f for f in all_figures if "diagrams" in f]
+    result_figures = [f for f in all_figures if "diagrams" not in f]
+
     template = Template(
         """\
 # Research Paper Note
@@ -61,16 +65,43 @@ def generate_note(
 ## 2. Experimental Design
 {{ experimental_design }}
 
-## 3. Experiment Code
+## 3. Method Diagrams
+The following diagram files illustrate the proposed method architecture and should be placed in the **Method section** of the paper.
+{% if diagram_figures %}
+Figures:
+{% for f in diagram_figures %}
+- {{ f }}
+{% endfor %}
+{% else %}
+No method diagrams available.
+{% endif %}
+
+## 4. Experiment Code
 {{ experiment_code }}
 
-## 4. Experimental Results
-{{ experimental_results }}
+## 5. Experimental Results
+### Result Figures (place in the Results section of the paper):
+{% if result_figures %}
+{% for f in result_figures %}
+- {{ f }}
+{% endfor %}
+{% else %}
+No result figures available.
+{% endif %}
 
-## 5. Experimental Analysis
+### Stdout:
+{{ experimental_results.stdout }}
+
+### Stderr:
+{{ experimental_results.stderr }}
+
+### Metrics Data:
+{{ experimental_results.metrics_data }}
+
+## 6. Experimental Analysis
 {{ experimental_analysis }}
 
-## 6. Reference Candidates (Source Material)
+## 7. Reference Candidates (Source Material)
 This section lists papers available for citation.
 **Instructions for Writer:**
 - The **Citation Key** (e.g., `[@vaswani-2017-attention]`) matches the entry in the BibTeX references.
@@ -91,7 +122,7 @@ This section lists papers available for citation.
 ---
 {% endfor %}
 
-## 7. Full BibTeX (For Reference)
+## 8. Full BibTeX (For Reference)
 {{ references_bib }}"""
     )
 
@@ -101,6 +132,8 @@ This section lists papers available for citation.
         experiment_code=experiment_code,
         experimental_results=experimental_results,
         experimental_analysis=experimental_analysis,
+        diagram_figures=diagram_figures,
+        result_figures=result_figures,
         mapped_studies=mapped_studies,
         references_bib=references_bib,
     ).strip()
