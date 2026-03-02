@@ -86,5 +86,16 @@ class PlanService:
             self.repo.db.add(plan)
             self.repo.db.commit()
 
+    def cancel_subscription(self, user_id: UUID) -> None:
+        plan = self.get_plan(user_id)
+        if plan.plan_type != PlanType.PRO or not plan.stripe_subscription_id:
+            return
+        stripe.Subscription.cancel(plan.stripe_subscription_id)
+        plan.plan_type = PlanType.FREE
+        plan.status = PlanStatus.CANCELED
+        plan.stripe_subscription_id = None
+        self.repo.db.add(plan)
+        self.repo.db.commit()
+
     def close(self) -> None:
         self.repo.db.close()

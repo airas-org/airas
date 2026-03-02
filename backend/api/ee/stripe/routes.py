@@ -29,6 +29,16 @@ def create_checkout(
     return CheckoutResponse(checkout_url=url)
 
 
+@router.post("/cancel")
+@inject
+def cancel_subscription(
+    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
+    service: Annotated[PlanService, Depends(Provide[Container.plan_service])],
+):
+    service.cancel_subscription(current_user_id)
+    return {"status": "canceled"}
+
+
 @router.post("/webhook")
 async def stripe_webhook(request: Request):
     payload = await request.body()

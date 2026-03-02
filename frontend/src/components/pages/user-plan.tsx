@@ -47,6 +47,7 @@ export function UserPlanPage() {
   });
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
+  const [downgrading, setDowngrading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPlan = useCallback(async () => {
@@ -79,6 +80,20 @@ export function UserPlanPage() {
     }
     void fetchPlan();
   }, [fetchPlan]);
+
+  const handleDowngrade = async () => {
+    if (!window.confirm("Are you sure you want to cancel your Pro subscription?")) return;
+    setDowngrading(true);
+    setError(null);
+    try {
+      await apiFetch("/stripe/cancel", { method: "POST" });
+      await fetchPlan();
+    } catch {
+      setError("Failed to cancel subscription. Please try again.");
+    } finally {
+      setDowngrading(false);
+    }
+  };
 
   const handleUpgrade = async () => {
     setUpgrading(true);
@@ -154,8 +169,20 @@ export function UserPlanPage() {
               ))}
             </ul>
             {currentPlan !== "free" && (
-              <Button variant="outline" className="w-full" disabled>
-                Downgrade
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleDowngrade}
+                disabled={downgrading}
+              >
+                {downgrading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Downgrade"
+                )}
               </Button>
             )}
           </CardContent>
