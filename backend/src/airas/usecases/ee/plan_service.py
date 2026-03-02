@@ -27,7 +27,7 @@ class PlanService:
         self, *, user_id: UUID, success_url: str, cancel_url: str
     ) -> str:
         plan = self.get_plan(user_id)
-        price_id = os.getenv("STRIPE_PRO_PRICE_ID", "")
+        price_id = os.getenv("STRIPE_PRICE_ID", "")
 
         customer_id = plan.stripe_customer_id
         if not customer_id:
