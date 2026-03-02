@@ -30,7 +30,7 @@ def record_execution_time(f):
 # polling for the artifact here avoids an extra round-trip from the caller.
 
 _ARTIFACT_POLL_INTERVAL_SECONDS = 10
-_ARTIFACT_MAX_ATTEMPTS = 30
+_ARTIFACT_MAX_ATTEMPTS = 12  # max ~120s; process normally completes in ~50s
 _ARTIFACT_NAME = "tunnel-url"
 
 
@@ -148,7 +148,9 @@ class DispatchInteractiveRepoAgentSubgraph:
                     repository_name=github_config.repository_name,
                     artifact_id=artifact_id,
                 )
-                logger.info(f"Session URL retrieved: {artifact_data.get('tunnel_url')}")
+                logger.info(
+                    "Session URL retrieved"
+                )  # URL intentionally omitted to avoid leaking session access
                 return {"artifact_data": artifact_data}
 
             logger.info(

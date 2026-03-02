@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 from airas.infra.github_client import GithubClient
@@ -28,6 +29,8 @@ async def dispatch_workflow_and_get_run_id(
     if before and "workflow_runs" in before:
         existing_ids = {run["id"] for run in before["workflow_runs"]}
 
+    dispatch_time_str = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
     success = await github_client.acreate_workflow_dispatch(
         github_owner,
         repository_name,
@@ -54,7 +57,10 @@ async def dispatch_workflow_and_get_run_id(
             continue
 
         for run in after["workflow_runs"]:
-            if run["id"] not in existing_ids:
+            if (
+                run["id"] not in existing_ids
+                and run.get("created_at", "") >= dispatch_time_str
+            ):
                 run_id: int = run["id"]
                 logger.info(f"New workflow run detected: {run_id} (attempt {attempt})")
                 return run_id

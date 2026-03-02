@@ -25,7 +25,7 @@ router = APIRouter(prefix="/interactive-repo-agent", tags=["interactive-repo-age
 
 @router.post("/dispatch", response_model=DispatchInteractiveRepoAgentResponseBody)
 @inject
-@observe()
+@observe(capture_input=False)
 async def dispatch_interactive_repo_agent(
     request: DispatchInteractiveRepoAgentRequestBody,
     github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
@@ -40,7 +40,7 @@ async def dispatch_interactive_repo_agent(
         await DispatchInteractiveRepoAgentSubgraph(
             github_client=github_client,
             session_username=request.session_username,
-            session_password=request.session_password,
+            session_password=request.session_password.get_secret_value(),
         )
         .build_graph()
         .ainvoke(

@@ -1843,7 +1843,9 @@ components:
           title: Session Username
         session_password:
           type: string
+          format: password
           title: Session Password
+          writeOnly: true
       type: object
       required:
       - github_config
