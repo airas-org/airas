@@ -1,3 +1,4 @@
+import json
 import re
 from typing import Any
 
@@ -90,13 +91,13 @@ No result figures available.
 {% endif %}
 
 ### Stdout:
-{{ experimental_results.stdout }}
+{% if experimental_results.stdout %}{{ experimental_results.stdout }}{% else %}(not available){% endif %}
 
 ### Stderr:
-{{ experimental_results.stderr }}
+{% if experimental_results.stderr %}{{ experimental_results.stderr }}{% else %}(not available){% endif %}
 
 ### Metrics Data:
-{{ experimental_results.metrics_data }}
+{% if experimental_results.metrics_data %}{{ metrics_data_json }}{% else %}(not available){% endif %}
 
 ## 6. Experimental Analysis
 {{ experimental_analysis }}
@@ -126,6 +127,12 @@ This section lists papers available for citation.
 {{ references_bib }}"""
     )
 
+    metrics_data_json = (
+        json.dumps(experimental_results.metrics_data, indent=2, ensure_ascii=False)
+        if experimental_results.metrics_data
+        else ""
+    )
+
     return template.render(
         research_hypothesis=research_hypothesis,
         experimental_design=experimental_design,
@@ -134,6 +141,7 @@ This section lists papers available for citation.
         experimental_analysis=experimental_analysis,
         diagram_figures=diagram_figures,
         result_figures=result_figures,
+        metrics_data_json=metrics_data_json,
         mapped_studies=mapped_studies,
         references_bib=references_bib,
     ).strip()
