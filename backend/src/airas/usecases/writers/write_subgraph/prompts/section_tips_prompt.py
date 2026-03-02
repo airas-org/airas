@@ -47,6 +47,7 @@ section_tips_prompt = {
 - What we do. Why we do it. All described using the general Formalism introduced in the Problem Setting and building on top of the concepts/foundations introduced in Background
 - Include citations only when building upon or adapting existing methods or techniques
 - Provide clear technical descriptions with proper mathematical notation
+- If method diagram figures are provided in the "Method Diagrams" section of the note, embed them here using Pandoc figure syntax
 - Please avoid dividing the text into too many subsections, and instead present it as a coherent, well-connected narrative.""",
     "Experimental Setup": """\
 - Expected length: about 4000 characters (~1–1.5 pages)
