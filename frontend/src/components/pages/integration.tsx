@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Info, Loader2, Save, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Save, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -219,23 +219,7 @@ export function IntegrationPage() {
               })}
             </CardContent>
           </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>API Keys</CardTitle>
-              <CardDescription>API keys are managed by your Pro plan.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-start gap-3 rounded-md bg-blue-500/10 border border-blue-500/20 p-4">
-                <Info className="h-5 w-5 mt-0.5 text-blue-500 shrink-0" />
-                <p className="text-sm text-muted-foreground">
-                  As a Pro plan member, platform-provided API keys are automatically used for all
-                  LLM requests. No manual configuration is needed.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        ) : null}
       </div>
     </div>
   );
