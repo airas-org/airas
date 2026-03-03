@@ -1978,6 +1978,8 @@ components:
           description: Max instance lifetime in hours (safety net for orphaned instances)
           default: '120'
       type: object
+      required:
+      - type
       title: EphemeralCloudRunnerConfig
     EvaluationMetric:
       properties:
@@ -3941,6 +3943,8 @@ components:
           description: Runner labels used by GitHub Actions (e.g., ['ubuntu-latest']
             or ['self-hosted', 'gpu-runner'])
       type: object
+      required:
+      - type
       title: StaticRunnerConfig
     Status:
       type: string
