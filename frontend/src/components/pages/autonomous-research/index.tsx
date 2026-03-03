@@ -2,7 +2,20 @@
 
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ComputeEnvironmentForm,
+  type ComputeEnvironmentFormState,
+  defaultComputeEnvironmentFormState,
+  toComputeEnvironmentPayload,
+} from "@/components/features/compute-environment-form";
 import { AllLLMConfig } from "@/components/features/llm-config";
+import {
+  defaultRunnerConfigFormState,
+  isRunnerConfigFormValid,
+  RunnerConfigForm,
+  type RunnerConfigFormState,
+  toRunnerConfigPayload,
+} from "@/components/features/runner-config-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -59,8 +72,12 @@ export function AutonomousResearchPage({
   const [autoGithubOwner, setAutoGithubOwner] = useState("auto-res2");
   const [autoRepoName, setAutoRepoName] = useState("");
   const [autoBranch, setAutoBranch] = useState("main");
-  const [autoRunnerLabels, setAutoRunnerLabels] = useState("ubuntu-latest");
-  const [autoRunnerDescription, setAutoRunnerDescription] = useState("CPU: 4 vCPU, RAM: 16 GB");
+  const [autoRunnerConfig, setAutoRunnerConfig] = useState<RunnerConfigFormState>(
+    defaultRunnerConfigFormState,
+  );
+  const [autoComputeEnv, setAutoComputeEnv] = useState<ComputeEnvironmentFormState>(
+    defaultComputeEnvironmentFormState,
+  );
   const [autoWandbEntity, setAutoWandbEntity] = useState("airas");
   const [autoWandbProject, setAutoWandbProject] = useState("");
   const [autoIsPrivate, setAutoIsPrivate] = useState(false);
@@ -96,16 +113,15 @@ export function AutonomousResearchPage({
   const [autoTitleDraft, setAutoTitleDraft] = useState(section?.title ?? DEFAULT_RESEARCH_TITLE);
   const [autoResultSnapshot, setAutoResultSnapshot] = useState<AutoResearchResultSnapshot>({});
 
-  const isAutoFormValid = [
-    autoResearchTopic,
-    autoGithubOwner,
-    autoRepoName,
-    autoBranch,
-    autoRunnerLabels,
-    autoRunnerDescription,
-    autoWandbEntity,
-    autoWandbProject,
-  ].every((value) => value.trim().length > 0);
+  const isAutoFormValid =
+    [
+      autoResearchTopic,
+      autoGithubOwner,
+      autoRepoName,
+      autoBranch,
+      autoWandbEntity,
+      autoWandbProject,
+    ].every((value) => value.trim().length > 0) && isRunnerConfigFormValid(autoRunnerConfig);
 
   useEffect(() => {
     const nextTitle = section?.title ?? DEFAULT_RESEARCH_TITLE;
@@ -138,13 +154,8 @@ export function AutonomousResearchPage({
         branch_name: autoBranch,
       },
       research_topic: autoResearchTopic,
-      runner_config: {
-        runner_label: autoRunnerLabels
-          .split(",")
-          .map((label) => label.trim())
-          .filter((label) => label.length > 0),
-        description: autoRunnerDescription,
-      },
+      compute_environment: toComputeEnvironmentPayload(autoComputeEnv),
+      runner_config: toRunnerConfigPayload(autoRunnerConfig),
       wandb_config: {
         entity: autoWandbEntity,
         project: autoWandbProject,
@@ -398,7 +409,7 @@ export function AutonomousResearchPage({
                     />
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 mt-2">
                   <Checkbox
                     id="auto-private"
                     checked={autoIsPrivate}
@@ -412,35 +423,19 @@ export function AutonomousResearchPage({
 
               <hr className="border-border" />
 
-              <div className="space-y-3 rounded-md bg-muted/40 p-4">
-                <p className="text-sm font-semibold text-foreground">GitHub Actions Runners</p>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="auto-runner-labels">
-                      ラベル
-                      <RequiredMark />
-                    </Label>
-                    <Input
-                      id="auto-runner-labels"
-                      value={autoRunnerLabels}
-                      onChange={(e) => setAutoRunnerLabels(e.target.value)}
-                      placeholder="ubuntu-latest,gpu-runner"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="auto-runner-desc">
-                      説明
-                      <RequiredMark />
-                    </Label>
-                    <Textarea
-                      id="auto-runner-desc"
-                      value={autoRunnerDescription}
-                      onChange={(e) => setAutoRunnerDescription(e.target.value)}
-                      placeholder="A100 x1, 40GB / 8 vCPU / 32GB RAM"
-                    />
-                  </div>
-                </div>
-              </div>
+              <RunnerConfigForm
+                idPrefix="auto"
+                value={autoRunnerConfig}
+                onChange={setAutoRunnerConfig}
+              />
+
+              <hr className="border-border" />
+
+              <ComputeEnvironmentForm
+                idPrefix="auto"
+                value={autoComputeEnv}
+                onChange={setAutoComputeEnv}
+              />
 
               <hr className="border-border" />
 

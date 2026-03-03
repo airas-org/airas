@@ -2,7 +2,20 @@
 
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ComputeEnvironmentForm,
+  type ComputeEnvironmentFormState,
+  defaultComputeEnvironmentFormState,
+  toComputeEnvironmentPayload,
+} from "@/components/features/compute-environment-form";
 import { HypothesisAllLLMConfig } from "@/components/features/llm-config";
+import {
+  defaultRunnerConfigFormState,
+  isRunnerConfigFormValid,
+  RunnerConfigForm,
+  type RunnerConfigFormState,
+  toRunnerConfigPayload,
+} from "@/components/features/runner-config-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -71,8 +84,12 @@ export function HypothesisDrivenResearchPage({
   const [isPrivate, setIsPrivate] = useState(false);
 
   // Runner config
-  const [runnerLabels, setRunnerLabels] = useState("ubuntu-latest");
-  const [runnerDescription, setRunnerDescription] = useState("");
+  const [runnerConfig, setRunnerConfig] = useState<RunnerConfigFormState>(
+    defaultRunnerConfigFormState,
+  );
+  const [computeEnv, setComputeEnv] = useState<ComputeEnvironmentFormState>(
+    defaultComputeEnvironmentFormState,
+  );
 
   // W&B config
   const [wandbEntity, setWandbEntity] = useState("");
@@ -108,22 +125,21 @@ export function HypothesisDrivenResearchPage({
 
   const [resultSnapshot, setResultSnapshot] = useState<AutoResearchResultSnapshot>({});
 
-  const isFormValid = [
-    openProblems,
-    method,
-    experimentalSetup,
-    primaryMetric,
-    experimentalCode,
-    expectedResult,
-    expectedConclusion,
-    githubOwner,
-    repoName,
-    branch,
-    runnerLabels,
-    runnerDescription,
-    wandbEntity,
-    wandbProject,
-  ].every((v) => v.trim().length > 0);
+  const isFormValid =
+    [
+      openProblems,
+      method,
+      experimentalSetup,
+      primaryMetric,
+      experimentalCode,
+      expectedResult,
+      expectedConclusion,
+      githubOwner,
+      repoName,
+      branch,
+      wandbEntity,
+      wandbProject,
+    ].every((v) => v.trim().length > 0) && isRunnerConfigFormValid(runnerConfig);
 
   useEffect(() => {
     const nextTitle = section?.title ?? DEFAULT_RESEARCH_TITLE;
@@ -232,13 +248,8 @@ export function HypothesisDrivenResearchPage({
         expected_conclusion: expectedConclusion,
       },
       research_topic: researchTopic.trim() || undefined,
-      runner_config: {
-        runner_label: runnerLabels
-          .split(",")
-          .map((l) => l.trim())
-          .filter((l) => l.length > 0),
-        description: runnerDescription,
-      },
+      compute_environment: toComputeEnvironmentPayload(computeEnv),
+      runner_config: toRunnerConfigPayload(runnerConfig),
       wandb_config: {
         entity: wandbEntity,
         project: wandbProject,
@@ -514,7 +525,7 @@ export function HypothesisDrivenResearchPage({
                     />
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 mt-2">
                   <Checkbox
                     id="hypothesis-private"
                     checked={isPrivate}
@@ -528,35 +539,19 @@ export function HypothesisDrivenResearchPage({
 
               <hr className="border-border" />
 
-              <div className="space-y-3 rounded-md bg-muted/40 p-4">
-                <p className="text-sm font-semibold text-foreground">GitHub Actions Runners</p>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="hypothesis-runner-labels">
-                      ラベル
-                      <RequiredMark />
-                    </Label>
-                    <Input
-                      id="hypothesis-runner-labels"
-                      value={runnerLabels}
-                      onChange={(e) => setRunnerLabels(e.target.value)}
-                      placeholder="ubuntu-latest,gpu-runner"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="hypothesis-runner-desc">
-                      説明
-                      <RequiredMark />
-                    </Label>
-                    <Textarea
-                      id="hypothesis-runner-desc"
-                      value={runnerDescription}
-                      onChange={(e) => setRunnerDescription(e.target.value)}
-                      placeholder="A100 x1, 40GB / 8 vCPU / 32GB RAM"
-                    />
-                  </div>
-                </div>
-              </div>
+              <RunnerConfigForm
+                idPrefix="hypothesis"
+                value={runnerConfig}
+                onChange={setRunnerConfig}
+              />
+
+              <hr className="border-border" />
+
+              <ComputeEnvironmentForm
+                idPrefix="hypothesis"
+                value={computeEnv}
+                onChange={setComputeEnv}
+              />
 
               <hr className="border-border" />
 
