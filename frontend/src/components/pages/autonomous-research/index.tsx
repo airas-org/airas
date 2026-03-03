@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  OpenAPI,
   Status,
   type TopicOpenEndedResearchLLMMapping,
   TopicOpenEndedResearchRequestBody,
@@ -83,7 +82,6 @@ export function AutonomousResearchPage({
   >("");
   const [autoLatexTemplateName, setAutoLatexTemplateName] = useState("mdpi");
   // LLM設定
-  const [availableProviders, setAvailableProviders] = useState<string[] | null>(null);
   const [llmMapping, setLlmMapping] = useState<TopicOpenEndedResearchLLMMapping | null>(null);
   const [autoStatus, setAutoStatus] = useState<TopicOpenEndedResearchStatusResponseBody | null>(
     null,
@@ -108,28 +106,6 @@ export function AutonomousResearchPage({
     autoWandbEntity,
     autoWandbProject,
   ].every((value) => value.trim().length > 0);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        if (OpenAPI.TOKEN) {
-          const token =
-            typeof OpenAPI.TOKEN === "function"
-              ? await (OpenAPI.TOKEN as (options: unknown) => Promise<string>)({})
-              : OpenAPI.TOKEN;
-          if (token) headers.Authorization = `Bearer ${token}`;
-        }
-        const res = await fetch(`${OpenAPI.BASE}/airas/ee/plan`, { headers });
-        if (res.ok) {
-          const data = (await res.json()) as { available_providers?: string[] };
-          setAvailableProviders(data.available_providers ?? null);
-        }
-      } catch {
-        // Fallback: show all models
-      }
-    })();
-  }, []);
 
   useEffect(() => {
     const nextTitle = section?.title ?? DEFAULT_RESEARCH_TITLE;
@@ -255,10 +231,6 @@ export function AutonomousResearchPage({
 
   const handleRunAutoResearch = async () => {
     if (!isAutoFormValid) return;
-    if (availableProviders !== null && availableProviders.length === 0) {
-      setAutoError("API keyが設定されていません。IntegrationページでAPI keyを設定してください。");
-      return;
-    }
     const payload = buildAutoResearchPayload();
     setAutoError(null);
 
@@ -273,13 +245,7 @@ export function AutonomousResearchPage({
       setAutoTaskId(response.task_id);
       startAutoPolling(response.task_id);
     } catch (error) {
-      const message =
-        error != null && typeof error === "object" && "body" in error
-          ? ((error as { body: { detail?: string } }).body?.detail ??
-            "自動研究の実行に失敗しました")
-          : error instanceof Error
-            ? error.message
-            : "自動研究の実行に失敗しました";
+      const message = error instanceof Error ? error.message : "自動研究の実行に失敗しました";
       setAutoError(message);
       stopAutoPolling();
     }

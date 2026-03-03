@@ -26,7 +26,6 @@ class UserPlanResponse(BaseModel):
     status: str
     stripe_customer_id: str | None = None
     requires_api_keys: bool = True
-    available_providers: list[str] = []
 
 
 class CheckoutRequest(BaseModel):
