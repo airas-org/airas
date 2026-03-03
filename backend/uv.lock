@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.10, <3.13"
 resolution-markers = [
     "python_full_version >= '3.12' and sys_platform == 'linux'",
@@ -109,6 +109,7 @@ dependencies = [
     { name = "alembic" },
     { name = "anthropic" },
     { name = "bibtexparser" },
+    { name = "cryptography" },
     { name = "dependency-injector" },
     { name = "fastapi" },
     { name = "feedparser" },
@@ -138,6 +139,7 @@ dependencies = [
     { name = "semanticscholar" },
     { name = "sqlalchemy" },
     { name = "sqlmodel" },
+    { name = "stripe" },
     { name = "tenacity" },
     { name = "tiktoken" },
     { name = "toml" },
@@ -175,6 +177,7 @@ requires-dist = [
     { name = "anthropic", specifier = ">=0.66.0" },
     { name = "asyncio", marker = "extra == 'mcp'", specifier = ">=3.4.3" },
     { name = "bibtexparser", specifier = ">=1.4.3" },
+    { name = "cryptography", specifier = ">=44.0.0" },
     { name = "dependency-injector", specifier = ">=4.48.2" },
     { name = "fastapi", specifier = ">=0.120.4" },
     { name = "feedparser", specifier = ">=6.0.11" },
@@ -206,6 +209,7 @@ requires-dist = [
     { name = "semanticscholar", specifier = ">=0.8.4" },
     { name = "sqlalchemy", specifier = ">=2.0.44" },
     { name = "sqlmodel", specifier = ">=0.0.27" },
+    { name = "stripe", specifier = ">=12.0.0" },
     { name = "tenacity", specifier = ">=9.0.0" },
     { name = "tiktoken", specifier = ">=0.9.0" },
     { name = "toml", specifier = ">=0.10.2" },
@@ -4103,6 +4107,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/de/1a/608df0b10b53b0beb96a37854ee05864d182ddd4b1156a22f1ad3860425a/starlette-0.49.3.tar.gz", hash = "sha256:1c14546f299b5901a1ea0e34410575bc33bbd741377a10484a54445588d00284", size = 2655031, upload-time = "2025-11-01T15:12:26.13Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a3/e0/021c772d6a662f43b63044ab481dc6ac7592447605b5b35a957785363122/starlette-0.49.3-py3-none-any.whl", hash = "sha256:b579b99715fdc2980cf88c8ec96d3bf1ce16f5a8051a7c2b84ef9b1cdecaea2f", size = 74340, upload-time = "2025-11-01T15:12:24.387Z" },
+]
+
+[[package]]
+name = "stripe"
+version = "14.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6a/ec/0f17cff3f7c91b0215266959c5a2a96b0bf9f45ac041c50b99ad8f9b5047/stripe-14.4.0.tar.gz", hash = "sha256:ddaa06f5e38a582bef7e93e06fc304ba8ae3b4c0c2aac43da02c84926f05fa0a", size = 1472370, upload-time = "2026-02-25T17:52:40.905Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/38/09/fcecad01d76dbe027015dd559ec1b6dccfc319c2540991dde4b1de81ba34/stripe-14.4.0-py3-none-any.whl", hash = "sha256:357151a816cd0bb012d6cb29f108fae50b9f6eece8530d7bc31dfa90c9ceb84c", size = 2115405, upload-time = "2026-02-25T17:52:39.128Z" },
 ]
 
 [[package]]
