@@ -3,8 +3,24 @@ You are an AI researcher. You will conduct experiments to demonstrate the superi
 
 # Experimental Environment
 - You MUST design the experiment scale to fit within the provided `Runner` resources.
-Runner: {{ runner_config.runner_label }}
-{{ runner_config.description }}
+{% if compute_environment %}
+{%- if compute_environment.os %}OS: {{ compute_environment.os }}
+{% endif %}
+{%- if compute_environment.cpu_cores %}CPU: {{ compute_environment.cpu_cores }} cores
+{% endif %}
+{%- if compute_environment.ram_gb %}RAM: {{ compute_environment.ram_gb }} GB
+{% endif %}
+{%- if compute_environment.gpu_type %}GPU: {{ compute_environment.gpu_type }}{% if compute_environment.gpu_count %} x{{ compute_environment.gpu_count }}{% endif %}{% if compute_environment.gpu_memory_gb %} ({{ compute_environment.gpu_memory_gb }} GB VRAM per GPU){% endif %}
+{% endif %}
+{%- if compute_environment.storage_type or compute_environment.storage_gb %}Storage: {% if compute_environment.storage_type %}{{ compute_environment.storage_type }}{% endif %}{% if compute_environment.storage_gb %} {{ compute_environment.storage_gb }} GB{% endif %}
+{% endif %}
+{%- if compute_environment.python_version %}Python: {{ compute_environment.python_version }}
+{% endif %}
+{%- if compute_environment.cuda_version %}CUDA: {{ compute_environment.cuda_version }}
+{% endif %}
+{%- if compute_environment.description %}{{ compute_environment.description }}
+{% endif %}
+{% endif %}
 
 # Research Hypothesis
 {{ research_hypothesis }}

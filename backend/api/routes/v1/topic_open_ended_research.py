@@ -72,6 +72,7 @@ async def _execute_topic_open_ended_research(
             litellm_client=litellm_client,
             qdrant_client=qdrant_client,
             e2e_service=e2e_service,
+            compute_environment=request.compute_environment,
             runner_config=request.runner_config,
             wandb_config=request.wandb_config,
             task_id=task_id,

@@ -2,16 +2,19 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ComputeEnvironment } from './ComputeEnvironment';
+import type { EphemeralCloudRunnerConfig } from './EphemeralCloudRunnerConfig';
 import type { GitHubConfig } from './GitHubConfig';
 import type { HypothesisDrivenResearchLLMMapping } from './HypothesisDrivenResearchLLMMapping';
 import type { ResearchHypothesis } from './ResearchHypothesis';
-import type { RunnerConfig } from './RunnerConfig';
+import type { StaticRunnerConfig } from './StaticRunnerConfig';
 import type { WandbConfig } from './WandbConfig';
 export type HypothesisDrivenResearchRequestBody = {
     github_config: GitHubConfig;
     research_hypothesis: ResearchHypothesis;
     research_topic?: string;
-    runner_config: RunnerConfig;
+    compute_environment: ComputeEnvironment;
+    runner_config: (StaticRunnerConfig | EphemeralCloudRunnerConfig);
     wandb_config: WandbConfig;
     is_github_repo_private?: boolean;
     num_experiment_models?: number;

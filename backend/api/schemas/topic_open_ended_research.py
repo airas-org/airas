@@ -4,10 +4,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, computed_field
 
-from airas.core.types.experimental_design import RunnerConfig
+from airas.core.types.experimental_design import ComputeEnvironment
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.paper import SearchMethod
 from airas.core.types.research_history import ResearchHistory
+from airas.core.types.runner import ExperimentRunnerConfig
 from airas.core.types.wandb import WandbConfig
 from airas.infra.db.models.e2e import Status, StepType
 from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research import (
@@ -81,7 +82,8 @@ class TopicOpenEndedResearchUpdateRequestBody(BaseModel):
 class TopicOpenEndedResearchRequestBody(BaseModel):
     github_config: GitHubConfig
     research_topic: str
-    runner_config: RunnerConfig
+    compute_environment: ComputeEnvironment
+    runner_config: ExperimentRunnerConfig
     wandb_config: WandbConfig
     is_github_repo_private: bool = False
     search_method: SearchMethod = "airas_db"
