@@ -395,7 +395,7 @@ export default function App() {
             label={
               <>
                 自動研究{" "}
-                <span className="text-[10px] font-normal text-warning-600">Experimental</span>
+                <span className="text-[10px] font-normal text-neutral-400">Experimental</span>
               </>
             }
           >
