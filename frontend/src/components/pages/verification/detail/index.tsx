@@ -178,7 +178,7 @@ export function VerificationDetailPage({
       {hasQuery && (
         <div className="flex-1">
           {tocEntries.length > 0 && <TocNav entries={tocEntries} />}
-          <div className="flex-1 p-6 xl:pr-28 space-y-6 max-w-5xl mx-auto w-full">
+          <div className="flex-1 p-6 xl:pr-28 space-y-6 w-full">
             <div className="border-b border-solid border-neutral-border pb-4">
               <h2 className="text-heading-3 font-heading-3 text-default-font">
                 {verification.title}
