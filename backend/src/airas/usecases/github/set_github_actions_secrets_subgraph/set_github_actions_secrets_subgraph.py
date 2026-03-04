@@ -50,6 +50,7 @@ class SetGithubActionsSecretsSubgraph:
             "LANGFUSE_SECRET_KEY",
             "LANGFUSE_PUBLIC_KEY",
             "LANGFUSE_BASE_URL",
+            "GH_PERSONAL_ACCESS_TOKEN",
         ]
         self.github_client = github_client
 
