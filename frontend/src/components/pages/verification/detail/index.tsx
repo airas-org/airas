@@ -199,8 +199,14 @@ export function VerificationDetailPage({
                 <VerificationPlanView
                   plan={verification.plan}
                   onGenerateCode={handleGenerateCode}
-                  isGenerating={isGenerating}
+                  showButton={!isGenerating && !verification.implementation}
                 />
+              </div>
+            )}
+            {isGenerating && (
+              <div className="flex items-center gap-2 px-3 py-4">
+                <Loader size="small" />
+                <span className="text-xs text-muted-foreground">Generating experiment code...</span>
               </div>
             )}
             {verification.implementation && (

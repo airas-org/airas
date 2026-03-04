@@ -1,10 +1,9 @@
-import { Loader } from "@/ui";
 import type { VerificationPlan } from "../types";
 
 interface VerificationPlanViewProps {
   plan: VerificationPlan;
   onGenerateCode: () => void;
-  isGenerating: boolean;
+  showButton: boolean;
 }
 
 function splitToSteps(text: string): string[] {
@@ -15,7 +14,7 @@ function splitToSteps(text: string): string[] {
 export function VerificationPlanView({
   plan,
   onGenerateCode,
-  isGenerating,
+  showButton,
 }: VerificationPlanViewProps) {
   const steps = splitToSteps(plan.method);
 
@@ -39,13 +38,8 @@ export function VerificationPlanView({
           </ul>
         </div>
       </div>
-      <div className="mt-5 flex justify-end">
-        {isGenerating ? (
-          <div className="flex items-center gap-2 px-3 py-1.5">
-            <Loader size="small" />
-            <span className="text-xs text-muted-foreground">Generating code...</span>
-          </div>
-        ) : (
+      {showButton && (
+        <div className="mt-5 flex justify-end">
           <button
             type="button"
             onClick={onGenerateCode}
@@ -53,8 +47,8 @@ export function VerificationPlanView({
           >
             Generate experiment code
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

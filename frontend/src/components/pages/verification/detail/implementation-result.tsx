@@ -2,7 +2,6 @@ import { FeatherChevronDown, FeatherChevronRight, FeatherPlus } from "@subframe/
 import { useState } from "react";
 import { Table } from "@/ui";
 import type { ImplementationInfo } from "../types";
-import { CodeEditorModal } from "./code-editor-modal";
 import { ExperimentCard } from "./experiment-card";
 
 interface ImplementationResultProps {
@@ -14,7 +13,6 @@ export function ImplementationResult({
   implementation,
   onRunExperiment,
 }: ImplementationResultProps) {
-  const [codeEditorOpen, setCodeEditorOpen] = useState(false);
   const [othersExpanded, setOthersExpanded] = useState(false);
 
   const mainParams = implementation.fixedParameters.slice(0, 2);
@@ -24,7 +22,8 @@ export function ImplementationResult({
     <>
       <div id="sec-code" className="rounded-lg border border-border bg-card p-6">
         <h2 className="text-lg font-semibold text-foreground">実験コード</h2>
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-sm font-medium text-foreground">GitHub URL:</span>
           <a
             href={implementation.githubUrl}
             target="_blank"
@@ -33,19 +32,7 @@ export function ImplementationResult({
           >
             {implementation.githubUrl}
           </a>
-          <button
-            type="button"
-            onClick={() => setCodeEditorOpen(true)}
-            className="rounded-md bg-neutral-200 px-2.5 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-300 hover:text-neutral-900 transition-colors cursor-pointer"
-          >
-            View code
-          </button>
         </div>
-        <CodeEditorModal
-          open={codeEditorOpen}
-          onClose={() => setCodeEditorOpen(false)}
-          githubUrl={implementation.githubUrl}
-        />
       </div>
 
       <div id="sec-settings" className="rounded-lg border border-border bg-card p-6">
