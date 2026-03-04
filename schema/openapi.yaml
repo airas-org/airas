@@ -1973,10 +1973,11 @@ components:
             for GCP)
           default: g4dn.xlarge
         max_instance_hours:
-          type: string
+          type: integer
+          minimum: 1
           title: Max Instance Hours
           description: Max instance lifetime in hours (safety net for orphaned instances)
-          default: '120'
+          default: 120
       type: object
       required:
       - type

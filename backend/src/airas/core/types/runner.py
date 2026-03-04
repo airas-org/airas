@@ -15,7 +15,7 @@ class StaticRunnerConfig(BaseModel):
     @field_validator("runner_label")
     @classmethod
     def labels_not_empty(cls, v: list[str]) -> list[str]:
-        filtered = [label for label in v if label.strip()]
+        filtered = [label.strip() for label in v if label.strip()]
         if not filtered:
             raise ValueError("runner_label must contain at least one non-empty label")
         return filtered
@@ -32,10 +32,18 @@ class EphemeralCloudRunnerConfig(BaseModel):
         default="g4dn.xlarge",
         description="Instance type (e.g., 'g4dn.xlarge' for AWS, 'n1-standard-4' for GCP)",
     )
-    max_instance_hours: str = Field(
-        default="120",
+    max_instance_hours: int = Field(
+        default=120,
+        ge=1,
         description="Max instance lifetime in hours (safety net for orphaned instances)",
     )
+
+    @field_validator("gpu_instance_type")
+    @classmethod
+    def gpu_instance_type_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("gpu_instance_type must not be empty")
+        return v.strip()
 
 
 ExperimentRunnerConfig = Annotated[

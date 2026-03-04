@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def record_execution_time(f):
-    return time_node("dispatch_experiment_on_ephemeral_cloud_subgraph")(f)  # noqa: E731
+    return time_node("dispatch_experiment_on_ephemeral_cloud_subgraph")(f)
 
 
 _CLOUD_RUNNER_WORKFLOW_FILE = "run_on_cloud_runner.yml"
@@ -44,7 +44,7 @@ class DispatchExperimentOnEphemeralCloudSubgraph:
         target_workflow: str,
         cloud_provider: str = "aws",
         gpu_instance_type: str = "g4dn.xlarge",
-        max_instance_hours: str = "120",
+        max_instance_hours: int = 120,
     ):
         self.github_client = github_client
         self.target_workflow = target_workflow
@@ -71,7 +71,7 @@ class DispatchExperimentOnEphemeralCloudSubgraph:
             "branch_name": github_config.branch_name,
             "cloud_provider": self.cloud_provider,
             "gpu_instance_type": self.gpu_instance_type,
-            "max_instance_hours": self.max_instance_hours,
+            "max_instance_hours": str(self.max_instance_hours),
         }
 
         success = await dispatch_workflow(

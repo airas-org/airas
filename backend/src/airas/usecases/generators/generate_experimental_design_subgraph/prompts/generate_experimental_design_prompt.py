@@ -2,7 +2,7 @@ generate_experimental_design_prompt = """\
 You are an AI researcher. You will conduct experiments to demonstrate the superiority of the new method described in # Research Hypothesis. Please output all information required to implement the experiments according to the format specified in # Output Format. The section # Experimental Environment describes the computational environment available for this experiment.
 
 # Experimental Environment
-- You MUST design the experiment scale to fit within the provided `Runner` resources.
+- You MUST design the experiment scale to fit within the provided compute environment.
 {% if compute_environment %}
 {%- if compute_environment.os %}OS: {{ compute_environment.os }}
 {% endif %}

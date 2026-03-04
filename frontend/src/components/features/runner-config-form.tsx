@@ -50,7 +50,7 @@ export function toRunnerConfigPayload(
     type: "ephemeral_cloud",
     cloud_provider: state.cloudProvider as EphemeralCloudRunnerConfig.cloud_provider,
     gpu_instance_type: state.gpuInstanceType || undefined,
-    max_instance_hours: state.maxInstanceHours || undefined,
+    max_instance_hours: state.maxInstanceHours ? Number(state.maxInstanceHours) : undefined,
   };
 }
 
@@ -143,6 +143,8 @@ export function RunnerConfigForm({ idPrefix, value, onChange }: RunnerConfigForm
               id={`${idPrefix}-max-instance-hours`}
               type="number"
               inputMode="numeric"
+              min={1}
+              step={1}
               value={value.maxInstanceHours}
               onChange={(e) => onChange({ ...value, maxInstanceHours: e.target.value })}
               placeholder="120"

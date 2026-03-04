@@ -15,7 +15,7 @@ export type EphemeralCloudRunnerConfig = {
     /**
      * Max instance lifetime in hours (safety net for orphaned instances)
      */
-    max_instance_hours?: string;
+    max_instance_hours?: number;
 };
 export namespace EphemeralCloudRunnerConfig {
     /**
