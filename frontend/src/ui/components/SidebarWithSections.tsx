@@ -41,7 +41,7 @@ const NavItem = React.forwardRef<HTMLDivElement, NavItemProps>(function NavItem(
     >
       {icon ? (
         <SubframeCore.IconWrapper
-          className={SubframeUtils.twClassNames("text-heading-3 font-heading-3 text-neutral-600", {
+          className={SubframeUtils.twClassNames("text-sm text-neutral-600", {
             "text-brand-700": selected,
           })}
         >
@@ -51,7 +51,7 @@ const NavItem = React.forwardRef<HTMLDivElement, NavItemProps>(function NavItem(
       {children ? (
         <span
           className={SubframeUtils.twClassNames(
-            "line-clamp-1 grow shrink-0 basis-0 text-body-bold font-body-bold text-neutral-600",
+            "line-clamp-1 grow shrink-0 basis-0 text-sm font-medium text-neutral-600",
             { "text-brand-700": selected },
           )}
         >
