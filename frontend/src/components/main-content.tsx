@@ -3,8 +3,9 @@
 import { useCallback, useState } from "react";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
+import { IntegrationPage } from "@/components/pages/integration";
 import { PapersPage } from "@/components/pages/papers";
-import { SettingsPage } from "@/components/pages/settings";
+import { UserPlanPage } from "@/components/pages/user-plan";
 import type {
   FeatureType,
   Paper,
@@ -13,7 +14,12 @@ import type {
   WorkflowTree as WorkflowTreeType,
 } from "@/types/research";
 
-export type NavKey = "papers" | "assisted-research" | "autonomous-research" | "settings";
+export type NavKey =
+  | "papers"
+  | "assisted-research"
+  | "autonomous-research"
+  | "integration"
+  | "user-plan";
 export const AUTONOMOUS_SUB_NAVS = ["topic-driven", "hypothesis-driven"] as const;
 export type AutonomousSubNav = (typeof AUTONOMOUS_SUB_NAVS)[number];
 
@@ -144,8 +150,11 @@ export function MainContent({
         </div>
       </div>
 
-      <div className={activeNav === "settings" ? "flex-1 flex" : "hidden"}>
-        <SettingsPage />
+      <div className={activeNav === "integration" ? "flex-1 flex" : "hidden"}>
+        <IntegrationPage />
+      </div>
+      <div className={activeNav === "user-plan" ? "flex-1 flex" : "hidden"}>
+        <UserPlanPage />
       </div>
     </div>
   );
