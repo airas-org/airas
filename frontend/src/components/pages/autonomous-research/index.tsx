@@ -308,7 +308,7 @@ export function AutonomousResearchPage({
           )}
         </button>
         <div className="space-y-2 pl-9">
-          <h2 className="text-lg font-semibold text-foreground">自動研究</h2>
+          <h2 className="text-lg font-semibold text-foreground">Topic-Driven</h2>
         </div>
         <button
           type="button"
