@@ -132,6 +132,9 @@ export function VerificationDetailPage({
       verification.proposedMethods && verification.proposedMethods.length > 0;
     const isDone =
       verification.phase === "experiments-done" || verification.phase === "paper-writing";
+    const anyCompleted = verification.implementation?.experimentSettings.some(
+      (exp) => exp.status === "completed",
+    );
     const entries: { id: string; label: string }[] = [];
     if (hasProposedMethods) entries.push({ id: "sec-methods", label: "検証方針" });
     if (verification.plan) entries.push({ id: "sec-plan", label: "検証方法" });
@@ -139,8 +142,10 @@ export function VerificationDetailPage({
       entries.push({ id: "sec-code", label: "実験コード" });
       entries.push({ id: "sec-settings", label: "実験設定" });
     }
-    if (isDone) {
+    if (anyCompleted) {
       entries.push({ id: "sec-dashboard", label: "実験結果" });
+    }
+    if (isDone) {
       entries.push({ id: "sec-paper", label: "論文執筆" });
     }
     return entries;
@@ -153,6 +158,9 @@ export function VerificationDetailPage({
   const showMethods = verification.proposedMethods && verification.proposedMethods.length > 0;
   const allExperimentsDone =
     verification.phase === "experiments-done" || verification.phase === "paper-writing";
+  const hasAnyCompleted = verification.implementation?.experimentSettings.some(
+    (exp) => exp.status === "completed",
+  );
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto">
@@ -215,7 +223,7 @@ export function VerificationDetailPage({
                 onRunExperiment={handleRunExperiment}
               />
             )}
-            {allExperimentsDone && verification.implementation && (
+            {hasAnyCompleted && verification.implementation && (
               <div id="sec-dashboard">
                 <ExperimentDashboard experiments={verification.implementation.experimentSettings} />
               </div>
