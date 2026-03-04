@@ -1,5 +1,5 @@
 import { FeatherSearch } from "@subframe/core";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Verification } from "../types";
 import { VerificationCard } from "./verification-card";
 
@@ -28,9 +28,9 @@ function CategoryColumn({
   onDuplicate,
 }: CategoryColumnProps) {
   return (
-    <div className="flex-1 min-w-0 rounded-lg border border-border bg-card p-4">
+    <div className="min-w-[180px] flex-1 rounded-lg border border-border bg-card p-4">
       <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-caption-bold font-caption-bold text-subtext-color uppercase tracking-wider">
+        <h2 className="text-caption-bold font-caption-bold text-subtext-color uppercase tracking-wider whitespace-nowrap">
           {label}
         </h2>
         <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-neutral-200 px-1.5 text-[10px] font-medium text-neutral-600">
@@ -55,6 +55,36 @@ function CategoryColumn({
   );
 }
 
+type CategoryKey = "methods" | "plan" | "code" | "settings" | "results" | "paper-writing" | "paper";
+
+const categories: { key: CategoryKey; label: string }[] = [
+  { key: "methods", label: "検証方針" },
+  { key: "plan", label: "検証方法" },
+  { key: "code", label: "実験コード" },
+  { key: "settings", label: "実験設定" },
+  { key: "results", label: "実験結果" },
+  { key: "paper-writing", label: "論文執筆" },
+  { key: "paper", label: "論文" },
+];
+
+function getCategoryKey(v: Verification): CategoryKey {
+  switch (v.phase) {
+    case "initial":
+    case "methods-proposed":
+      return "methods";
+    case "plan-generated":
+      return "plan";
+    case "code-generating":
+      return "code";
+    case "code-generated":
+      return "settings";
+    case "experiments-done":
+      return "results";
+    case "paper-writing":
+      return v.paperDraft?.status === "ready" ? "paper" : "paper-writing";
+  }
+}
+
 export function VerificationHomePage({
   verifications,
   onSelectVerification,
@@ -71,17 +101,25 @@ export function VerificationHomePage({
       )
     : verifications;
 
-  const drafts = filtered.filter((v) => v.phase === "initial");
-  const active = filtered.filter(
-    (v) => v.phase !== "initial" && v.phase !== "experiments-done" && v.phase !== "paper-writing",
-  );
-  const completed = filtered.filter(
-    (v) => v.phase === "experiments-done" || v.phase === "paper-writing",
-  );
+  const grouped = useMemo(() => {
+    const map: Record<CategoryKey, Verification[]> = {
+      methods: [],
+      plan: [],
+      code: [],
+      settings: [],
+      results: [],
+      "paper-writing": [],
+      paper: [],
+    };
+    for (const v of filtered) {
+      map[getCategoryKey(v)].push(v);
+    }
+    return map;
+  }, [filtered]);
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-6xl mx-auto px-8 py-8">
+      <div className="max-w-full mx-auto px-8 py-8">
         <div className="flex items-end justify-between gap-4">
           <div>
             <h1 className="text-heading-2 font-heading-2 text-default-font">Verifications</h1>
@@ -101,31 +139,18 @@ export function VerificationHomePage({
           </div>
         </div>
 
-        <div className="mt-6 flex gap-4 items-start">
-          <CategoryColumn
-            label="Drafts"
-            count={drafts.length}
-            verifications={drafts}
-            onSelect={onSelectVerification}
-            onDelete={onDeleteVerification}
-            onDuplicate={onDuplicateVerification}
-          />
-          <CategoryColumn
-            label="In Progress"
-            count={active.length}
-            verifications={active}
-            onSelect={onSelectVerification}
-            onDelete={onDeleteVerification}
-            onDuplicate={onDuplicateVerification}
-          />
-          <CategoryColumn
-            label="Completed"
-            count={completed.length}
-            verifications={completed}
-            onSelect={onSelectVerification}
-            onDelete={onDeleteVerification}
-            onDuplicate={onDuplicateVerification}
-          />
+        <div className="mt-6 flex gap-4 items-start overflow-x-auto">
+          {categories.map((cat) => (
+            <CategoryColumn
+              key={cat.key}
+              label={cat.label}
+              count={grouped[cat.key].length}
+              verifications={grouped[cat.key]}
+              onSelect={onSelectVerification}
+              onDelete={onDeleteVerification}
+              onDuplicate={onDuplicateVerification}
+            />
+          ))}
         </div>
       </div>
     </div>
