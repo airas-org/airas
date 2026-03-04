@@ -490,7 +490,8 @@ export default function App() {
             </SidebarWithSections.NavItem>
             <SidebarWithSections.NavItem
               icon={<FeatherHelpCircle />}
-              onClick={() => window.open("https://discord.gg/KGm5FGY5", "_blank")}
+              selected={activeNav === "help"}
+              onClick={() => handleNavChange("help")}
             >
               ヘルプ
             </SidebarWithSections.NavItem>

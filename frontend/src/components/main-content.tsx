@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { DashboardPage } from "@/components/pages/dashboard";
 import { FeedbackPage } from "@/components/pages/feedback";
+import { HelpPage } from "@/components/pages/help";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
 import { IntegrationPage } from "@/components/pages/integration";
 import { LegalPage } from "@/components/pages/legal";
@@ -36,7 +37,8 @@ export type NavKey =
   | "notifications"
   | "search"
   | "legal"
-  | "feedback";
+  | "feedback"
+  | "help";
 export const AUTONOMOUS_SUB_NAVS = ["topic-driven", "hypothesis-driven"] as const;
 export type AutonomousSubNav = (typeof AUTONOMOUS_SUB_NAVS)[number];
 
@@ -210,6 +212,9 @@ export function MainContent({
       </div>
       <div className={activeNav === "feedback" ? "flex-1 flex" : "hidden"}>
         <FeedbackPage />
+      </div>
+      <div className={activeNav === "help" ? "flex-1 flex" : "hidden"}>
+        <HelpPage />
       </div>
     </div>
   );
