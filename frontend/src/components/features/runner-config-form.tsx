@@ -94,7 +94,7 @@ export function RunnerConfigForm({ idPrefix, value, onChange }: RunnerConfigForm
       </div>
 
       {value.type === "static" && (
-        <div className="space-y-2 mt-1">
+        <div className="space-y-2 mt-6">
           <Label htmlFor={`${idPrefix}-runner-labels`}>
             ラベル
             <RequiredMark />
@@ -109,7 +109,7 @@ export function RunnerConfigForm({ idPrefix, value, onChange }: RunnerConfigForm
       )}
 
       {value.type === "ephemeral_cloud" && (
-        <div className="grid gap-4 md:grid-cols-3 mt-2">
+        <div className="grid gap-4 md:grid-cols-3 mt-6">
           <div className="space-y-2">
             <Label htmlFor={`${idPrefix}-cloud-provider`}>クラウドプロバイダー</Label>
             <Select
@@ -133,6 +133,9 @@ export function RunnerConfigForm({ idPrefix, value, onChange }: RunnerConfigForm
               onChange={(e) => onChange({ ...value, gpuInstanceType: e.target.value })}
               placeholder="g4dn.xlarge"
             />
+            <p className="text-xs text-muted-foreground">
+              ※指定したインスタンスタイプが利用できない場合は、別のタイプで実行されます。
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor={`${idPrefix}-max-instance-hours`}>最大稼働時間 (h)</Label>

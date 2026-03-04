@@ -27,6 +27,7 @@ class EphemeralCloudRunnerConfig(BaseModel):
         default="aws",
         description="Cloud provider ('aws' or 'gcp')",
     )
+    # Note: availability of the specified instance type is not guaranteed; the runner script will attempt fallback instance types if the requested one is unavailable.
     gpu_instance_type: str = Field(
         default="g4dn.xlarge",
         description="Instance type (e.g., 'g4dn.xlarge' for AWS, 'n1-standard-4' for GCP)",
