@@ -391,7 +391,14 @@ export default function App() {
           >
             検証一覧
           </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavSection label="自動研究">
+          <SidebarWithSections.NavSection
+            label={
+              <>
+                自動研究{" "}
+                <span className="text-[10px] font-normal text-neutral-400">Experimental</span>
+              </>
+            }
+          >
             <SidebarWithSections.NavItem
               icon={<span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
               selected={activeNav === "autonomous-research" && autonomousSubNav === "topic-driven"}
