@@ -1,6 +1,5 @@
 import { FeatherArrowRight } from "@subframe/core";
 import { useState } from "react";
-import { IconButton } from "@/ui";
 
 interface ChatInputProps {
   onSubmit: (query: string) => void;
@@ -53,15 +52,14 @@ export function ChatInput({ onSubmit, disabled = false, initialQuery = "" }: Cha
           rows={3}
           className="w-full resize-none rounded-xl border border-solid border-neutral-border bg-default-background px-4 py-3 pr-12 text-body font-body text-default-font outline-none placeholder:text-neutral-400 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary shadow-sm"
         />
-        <div className="absolute right-2 bottom-2">
-          <IconButton
-            variant="brand-primary"
-            size="medium"
-            icon={<FeatherArrowRight />}
-            onClick={handleSubmit}
-            disabled={!query.trim()}
-          />
-        </div>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!query.trim()}
+          className="absolute right-2.5 bottom-2.5 flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-900 text-white shadow-sm transition-all hover:bg-neutral-800 hover:shadow-md active:scale-95 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:shadow-none disabled:cursor-default cursor-pointer"
+        >
+          <FeatherArrowRight className="h-4 w-4" />
+        </button>
       </div>
       <div className="flex items-center gap-6">
         {["Hypothesis Testing", "Model Comparison", "Ablation Study"].map((tag) => (

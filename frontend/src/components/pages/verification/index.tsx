@@ -5,6 +5,7 @@ export type {
   ExperimentResult,
   ExperimentSetting,
   ImplementationInfo,
+  ProposedMethod,
   Verification,
   VerificationPhase,
   VerificationPlan,

@@ -23,8 +23,11 @@ import {
   type AutonomousSectionsMap,
   useAutonomousResearchSessions,
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
-import { mockVerifications } from "@/components/pages/verification/mock-data";
-import type { ProposedMethod, Verification } from "@/components/pages/verification/types";
+import {
+  mockVerifications,
+  type ProposedMethod,
+  type Verification,
+} from "@/components/pages/verification";
 import { SectionsSidebar } from "@/components/sections-sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isEnterpriseEnabled } from "@/ee/config";
@@ -104,7 +107,6 @@ export default function App() {
     useState<AutonomousActiveSectionMap>(initialAutonomousActiveSectionMap);
 
   // Workflow
-  const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const [workflowTree, setWorkflowTree] = useState<WorkflowTree>(initialWorkflowTree);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
 
@@ -135,7 +137,6 @@ export default function App() {
     }
     setWorkflowTree(initialWorkflowTree);
     setActiveNodeId(null);
-    setActiveFeature(null);
   };
 
   const handleCreateVerification = useCallback(() => {
@@ -217,7 +218,6 @@ export default function App() {
       const node = workflowTree.nodes[nodeId];
       if (node) {
         setActiveNodeId(nodeId);
-        setActiveFeature(node.type);
       }
     },
     [workflowTree],
@@ -519,7 +519,6 @@ export default function App() {
           )}
           <MainContent
             autonomousSection={autonomousActiveSectionMap[autonomousSubNav]}
-            activeFeature={activeFeature}
             activeNav={activeNav}
             autonomousSubNav={autonomousSubNav}
             assistedResearchProps={{

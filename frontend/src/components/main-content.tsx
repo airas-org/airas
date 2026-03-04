@@ -1,13 +1,15 @@
-"use client";
-
 import { useCallback, useState } from "react";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
 import { IntegrationPage } from "@/components/pages/integration";
 import { PapersPage } from "@/components/pages/papers";
 import { UserPlanPage } from "@/components/pages/user-plan";
-import { VerificationDetailPage, VerificationHomePage } from "@/components/pages/verification";
-import type { ProposedMethod, Verification } from "@/components/pages/verification/types";
+import {
+  type ProposedMethod,
+  type Verification,
+  VerificationDetailPage,
+  VerificationHomePage,
+} from "@/components/pages/verification";
 import type {
   FeatureType,
   Paper,
@@ -44,7 +46,6 @@ interface AssistedResearchProps {
 
 interface MainContentProps {
   autonomousSection: ResearchSection | null;
-  activeFeature: string | null;
   activeNav: NavKey;
   autonomousSubNav: AutonomousSubNav;
   assistedResearchProps: AssistedResearchProps;

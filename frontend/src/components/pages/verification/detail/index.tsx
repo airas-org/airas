@@ -1,12 +1,11 @@
 import { useCallback, useMemo } from "react";
 import { Loader } from "@/ui";
-import type {
-  ImplementationInfo,
-  PaperDraft,
-  ProposedMethod,
-  Verification,
-  VerificationPlan,
-} from "../types";
+import {
+  mockExperimentResultResponse,
+  mockImplementationResponse,
+  mockProposedMethodsResponse,
+} from "../mock-data";
+import type { PaperDraft, ProposedMethod, Verification, VerificationPlan } from "../types";
 import { ChatInput } from "./chat-input";
 import { ExperimentDashboard } from "./experiment-dashboard";
 import { ImplementationResult } from "./implementation-result";
@@ -14,74 +13,6 @@ import { PaperWritingSection } from "./paper-writing";
 import { ProposedMethodsList } from "./proposed-methods";
 import { TocNav } from "./toc-nav";
 import { VerificationPlanView } from "./verification-plan";
-
-const mockProposedMethods: ProposedMethod[] = [
-  {
-    id: "pm-1",
-    title: "対照実験による統計的検証",
-    whatToVerify:
-      "入力されたクエリに基づく仮説の検証。実験条件を変えた場合の結果の変動を測定し、統計的有意性を確認する。",
-    method:
-      "対照実験を設計し、独立変数を操作した3つの実験条件を設定。各条件でN=100のサンプルサイズで実験を実施し、ANOVA分析で条件間の有意差を検定。",
-    pros: ["統計的に堅牢な結果が得られる", "先行研究との比較が容易", "再現性が高い"],
-    cons: ["サンプルサイズが限定的", "実験条件が3つのみ"],
-  },
-  {
-    id: "pm-2",
-    title: "ベイズ推論を用いた適応的実験",
-    whatToVerify:
-      "同じ仮説をベイズ的アプローチで検証し、事前分布の設定が結果に与える影響を分析する。",
-    method:
-      "ベイズ推論フレームワークを構築し、事前分布を3パターン設定。MCMC法でパラメータを推定し、ベイズファクターで仮説を評価。",
-    pros: ["事前知識を活用できる", "逐次的にデータを追加可能", "信用区間で不確実性を表現"],
-    cons: ["事前分布の設定に恣意性がある", "計算コストが高い"],
-  },
-];
-
-const mockImplementation: ImplementationInfo = {
-  githubUrl: "https://github.com/airas-org/exp-generated",
-  fixedParameters: [
-    { name: "random_seed", value: "42" },
-    { name: "n_samples", value: "100" },
-    { name: "significance_level", value: "0.05" },
-  ],
-  experimentSettings: [
-    {
-      id: "exp-new-1",
-      title: "条件A（対照群）",
-      description: "標準的な条件でのベースライン測定。",
-      parameters: [{ name: "condition", value: "control" }],
-      status: "pending",
-    },
-    {
-      id: "exp-new-2",
-      title: "条件B（実験群1）",
-      description: "変数Xを増加させた条件での測定。",
-      parameters: [
-        { name: "condition", value: "treatment_1" },
-        { name: "factor_x", value: "2.0" },
-      ],
-      status: "pending",
-    },
-    {
-      id: "exp-new-3",
-      title: "条件C（実験群2）",
-      description: "変数Xを最大化した条件での測定。",
-      parameters: [
-        { name: "condition", value: "treatment_2" },
-        { name: "factor_x", value: "4.0" },
-      ],
-      status: "pending",
-    },
-  ],
-};
-
-const mockExperimentResult = {
-  summary: "実験が正常に完了しました。統計的に有意な結果が得られました。",
-  metrics: { accuracy: 0.89, p_value: 0.003, effect_size: 0.72 },
-  details:
-    "実験は正常に完了し、仮説を支持する結果が得られました。詳細な分析レポートを確認してください。",
-};
 
 interface VerificationDetailPageProps {
   verification: Verification | null;
@@ -104,7 +35,7 @@ export function VerificationDetailPage({
       setTimeout(() => {
         onUpdateVerification(verification.id, {
           phase: "methods-proposed",
-          proposedMethods: mockProposedMethods,
+          proposedMethods: mockProposedMethodsResponse,
         });
       }, 1500);
     },
@@ -139,7 +70,7 @@ export function VerificationDetailPage({
     setTimeout(() => {
       onUpdateVerification(verification.id, {
         phase: "code-generated",
-        implementation: mockImplementation,
+        implementation: mockImplementationResponse,
       });
     }, 2000);
   }, [verification, onUpdateVerification]);
@@ -160,7 +91,7 @@ export function VerificationDetailPage({
       setTimeout(() => {
         const completedSettings = updatedSettings.map((exp) =>
           exp.id === experimentId
-            ? { ...exp, status: "completed" as const, result: mockExperimentResult }
+            ? { ...exp, status: "completed" as const, result: mockExperimentResultResponse }
             : exp,
         );
         const allDone = completedSettings.every((exp) => exp.status === "completed");
