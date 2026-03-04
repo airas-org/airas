@@ -226,6 +226,10 @@ class GithubClient(BaseHTTPClient):
             "message": commit_message,
             "branch": branch_name,
             "content": base64.b64encode(file_content).decode(),
+            "committer": {
+                "name": "github-actions[bot]",
+                "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            },
         }
         if sha:
             payload["sha"] = sha
@@ -543,6 +547,14 @@ class GithubClient(BaseHTTPClient):
             "message": message,
             "tree": tree_sha,
             "parents": parent_shas,
+            "author": {
+                "name": "github-actions[bot]",
+                "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            },
+            "committer": {
+                "name": "github-actions[bot]",
+                "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            },
         }
 
         response = self.post(path=path, json=payload)
@@ -1278,6 +1290,14 @@ class GithubClient(BaseHTTPClient):
             "message": message,
             "tree": tree_sha,
             "parents": parent_shas,
+            "author": {
+                "name": "github-actions[bot]",
+                "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            },
+            "committer": {
+                "name": "github-actions[bot]",
+                "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            },
         }
 
         response = await self.apost(path=path, json=payload)
