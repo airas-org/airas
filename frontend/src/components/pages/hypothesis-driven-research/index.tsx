@@ -370,7 +370,7 @@ export function HypothesisDrivenResearchPage({
 
               <div className="space-y-3 rounded-md bg-muted/40 p-3">
                 <p className="text-sm font-semibold text-foreground">研究仮説</p>
-                <div className="grid gap-3 xl:grid-cols-2">
+                <div className="grid gap-3 grid-cols-2">
                   <div className="space-y-1">
                     <Label htmlFor="hypothesis-open-problems">
                       解決すべき問題
@@ -448,19 +448,19 @@ export function HypothesisDrivenResearchPage({
                       placeholder="ex) 5% accuracy improvement over baseline on ActivityNet-QA"
                     />
                   </div>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="hypothesis-expected-conclusion">
-                    期待される結論
-                    <RequiredMark />
-                  </Label>
-                  <Textarea
-                    id="hypothesis-expected-conclusion"
-                    className="min-h-16"
-                    value={expectedConclusion}
-                    onChange={(e) => setExpectedConclusion(e.target.value)}
-                    placeholder="ex) Hierarchical temporal attention significantly improves video QA"
-                  />
+                  <div className="col-span-2 space-y-1">
+                    <Label htmlFor="hypothesis-expected-conclusion">
+                      期待される結論
+                      <RequiredMark />
+                    </Label>
+                    <Textarea
+                      id="hypothesis-expected-conclusion"
+                      className="min-h-16"
+                      value={expectedConclusion}
+                      onChange={(e) => setExpectedConclusion(e.target.value)}
+                      placeholder="ex) Hierarchical temporal attention significantly improves video QA"
+                    />
+                  </div>
                 </div>
               </div>
 
