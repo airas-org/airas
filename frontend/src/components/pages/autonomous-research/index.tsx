@@ -309,10 +309,10 @@ export function AutonomousResearchPage({
           </button>
         </div>
       </div>
-      <div className="p-6">
-        <div className="space-y-6">
+      <div className="p-4">
+        <div className="space-y-4">
           <Card>
-            <CardHeader className="space-y-4">
+            <CardHeader className="px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 {isEditingAutoTitle ? (
                   <Input
@@ -339,7 +339,7 @@ export function AutonomousResearchPage({
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2 px-4 pb-4">
               <div className="space-y-1">
                 <Label htmlFor="auto-queries">
                   研究テーマ
@@ -353,10 +353,10 @@ export function AutonomousResearchPage({
                 />
               </div>
 
-              <div className="grid gap-3 xl:grid-cols-2">
-                <div className="space-y-3 rounded-md bg-muted/40 p-3">
+              <div className="grid gap-2 xl:grid-cols-2">
+                <div className="space-y-2 rounded-md bg-muted/40 p-2">
                   <p className="text-sm font-semibold text-foreground">GitHub</p>
-                  <div className="grid gap-3 grid-cols-3">
+                  <div className="grid gap-2 grid-cols-3">
                     <div className="space-y-1">
                       <Label htmlFor="auto-github-owner">
                         owner
@@ -403,10 +403,10 @@ export function AutonomousResearchPage({
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="space-y-3 rounded-md bg-muted/40 p-3">
+                <div className="space-y-2">
+                  <div className="space-y-2 rounded-md bg-muted/40 p-2">
                     <p className="text-sm font-semibold text-foreground">GitHub Actions Runners</p>
-                    <div className="grid gap-3 grid-cols-2">
+                    <div className="grid gap-2 grid-cols-2">
                       <div className="space-y-1">
                         <Label htmlFor="auto-runner-labels">
                           ラベル
@@ -435,9 +435,9 @@ export function AutonomousResearchPage({
                     </div>
                   </div>
 
-                  <div className="space-y-3 rounded-md bg-muted/40 p-3">
+                  <div className="space-y-2 rounded-md bg-muted/40 p-2">
                     <p className="text-sm font-semibold text-foreground">Weights &amp; Biases</p>
-                    <div className="grid gap-3 grid-cols-2">
+                    <div className="grid gap-2 grid-cols-2">
                       <div className="space-y-1">
                         <Label htmlFor="auto-wandb-entity">
                           entity

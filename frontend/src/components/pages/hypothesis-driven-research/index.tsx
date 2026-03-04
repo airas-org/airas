@@ -328,10 +328,10 @@ export function HypothesisDrivenResearchPage({
         </div>
       </div>
 
-      <div className="p-6">
-        <div className="space-y-6">
+      <div className="p-4">
+        <div className="space-y-4">
           <Card>
-            <CardHeader className="space-y-4">
+            <CardHeader className="px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 {isEditingTitle ? (
                   <Input
@@ -357,7 +357,7 @@ export function HypothesisDrivenResearchPage({
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2 px-4 pb-4">
               <div className="space-y-1">
                 <Label htmlFor="hypothesis-research-topic">研究テーマ（任意）</Label>
                 <Input
@@ -368,9 +368,9 @@ export function HypothesisDrivenResearchPage({
                 />
               </div>
 
-              <div className="space-y-3 rounded-md bg-muted/40 p-3">
+              <div className="space-y-2 rounded-md bg-muted/40 p-2">
                 <p className="text-sm font-semibold text-foreground">研究仮説</p>
-                <div className="grid gap-3 grid-cols-2">
+                <div className="grid gap-2 grid-cols-2">
                   <div className="space-y-1">
                     <Label htmlFor="hypothesis-open-problems">
                       解決すべき問題
@@ -464,10 +464,10 @@ export function HypothesisDrivenResearchPage({
                 </div>
               </div>
 
-              <div className="grid gap-3 xl:grid-cols-2">
-                <div className="space-y-3 rounded-md bg-muted/40 p-3">
+              <div className="grid gap-2 xl:grid-cols-2">
+                <div className="space-y-2 rounded-md bg-muted/40 p-2">
                   <p className="text-sm font-semibold text-foreground">GitHub</p>
-                  <div className="grid gap-3 grid-cols-3">
+                  <div className="grid gap-2 grid-cols-3">
                     <div className="space-y-1">
                       <Label htmlFor="hypothesis-github-owner">
                         owner
@@ -514,10 +514,10 @@ export function HypothesisDrivenResearchPage({
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="space-y-3 rounded-md bg-muted/40 p-3">
+                <div className="space-y-2">
+                  <div className="space-y-2 rounded-md bg-muted/40 p-2">
                     <p className="text-sm font-semibold text-foreground">GitHub Actions Runners</p>
-                    <div className="grid gap-3 grid-cols-2">
+                    <div className="grid gap-2 grid-cols-2">
                       <div className="space-y-1">
                         <Label htmlFor="hypothesis-runner-labels">
                           ラベル
@@ -546,9 +546,9 @@ export function HypothesisDrivenResearchPage({
                     </div>
                   </div>
 
-                  <div className="space-y-3 rounded-md bg-muted/40 p-3">
+                  <div className="space-y-2 rounded-md bg-muted/40 p-2">
                     <p className="text-sm font-semibold text-foreground">Weights &amp; Biases</p>
-                    <div className="grid gap-3 grid-cols-2">
+                    <div className="grid gap-2 grid-cols-2">
                       <div className="space-y-1">
                         <Label htmlFor="hypothesis-wandb-entity">
                           entity
