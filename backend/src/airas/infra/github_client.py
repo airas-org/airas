@@ -226,6 +226,10 @@ class GithubClient(BaseHTTPClient):
             "message": commit_message,
             "branch": branch_name,
             "content": base64.b64encode(file_content).decode(),
+            "author": {
+                "name": "github-actions[bot]",
+                "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            },
             "committer": {
                 "name": "github-actions[bot]",
                 "email": "41898282+github-actions[bot]@users.noreply.github.com",
