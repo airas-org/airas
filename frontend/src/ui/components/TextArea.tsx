@@ -5,7 +5,6 @@
  * Text Area — https://app.subframe.com/32f8a386b602/library?component=Text+Area_4ec05ee8-8f1c-46b2-b863-5419aa7f5cce
  */
 
-import * as SubframeCore from "@subframe/core";
 import React from "react";
 import * as SubframeUtils from "../utils";
 
