@@ -2,12 +2,18 @@
 
 import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons";
 import {
+  FeatherBell,
   FeatherFileText,
+  FeatherHelpCircle,
+  FeatherHome,
   FeatherList,
+  FeatherMessageSquare,
   FeatherPanelLeftClose,
   FeatherPanelLeftOpen,
   FeatherPlus,
+  FeatherSearch,
   FeatherSettings,
+  FeatherShield,
   FeatherUser,
 } from "@subframe/core";
 import axios from "axios";
@@ -23,6 +29,7 @@ import {
   type AutonomousSectionsMap,
   useAutonomousResearchSessions,
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
+import { OnboardingOverlay } from "@/components/pages/onboarding";
 import {
   mockVerifications,
   type ProposedMethod,
@@ -125,6 +132,9 @@ export default function App() {
   const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
   const [sessionsExpanded, setSessionsExpanded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return !localStorage.getItem("airas-onboarding-done");
+  });
 
   const { fetchSections } = useAutonomousResearchSessions({
     setAutonomousSectionsMap,
@@ -378,6 +388,13 @@ export default function App() {
           }
         >
           <SidebarWithSections.NavItem
+            icon={<FeatherHome />}
+            selected={activeNav === "dashboard"}
+            onClick={() => handleNavChange("dashboard")}
+          >
+            ダッシュボード
+          </SidebarWithSections.NavItem>
+          <SidebarWithSections.NavItem
             icon={<FeatherPlus />}
             onClick={handleCreateVerification}
             className="bg-brand-50"
@@ -390,6 +407,20 @@ export default function App() {
             onClick={() => handleNavChange("home")}
           >
             検証一覧
+          </SidebarWithSections.NavItem>
+          <SidebarWithSections.NavItem
+            icon={<FeatherSearch />}
+            selected={activeNav === "search"}
+            onClick={() => handleNavChange("search")}
+          >
+            検索
+          </SidebarWithSections.NavItem>
+          <SidebarWithSections.NavItem
+            icon={<FeatherBell />}
+            selected={activeNav === "notifications"}
+            onClick={() => handleNavChange("notifications")}
+          >
+            通知
           </SidebarWithSections.NavItem>
           <SidebarWithSections.NavSection
             label={
@@ -436,6 +467,35 @@ export default function App() {
               onClick={() => handleNavChange("user-plan")}
             >
               User Plan
+            </SidebarWithSections.NavItem>
+            <SidebarWithSections.NavItem
+              icon={<FeatherUser />}
+              selected={activeNav === "profile"}
+              onClick={() => handleNavChange("profile")}
+            >
+              プロフィール
+            </SidebarWithSections.NavItem>
+          </SidebarWithSections.NavSection>
+          <SidebarWithSections.NavSection label="Support">
+            <SidebarWithSections.NavItem
+              icon={<FeatherMessageSquare />}
+              selected={activeNav === "feedback"}
+              onClick={() => handleNavChange("feedback")}
+            >
+              お問い合わせ
+            </SidebarWithSections.NavItem>
+            <SidebarWithSections.NavItem
+              icon={<FeatherHelpCircle />}
+              onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
+            >
+              ヘルプ・ドキュメント
+            </SidebarWithSections.NavItem>
+            <SidebarWithSections.NavItem
+              icon={<FeatherShield />}
+              selected={activeNav === "legal"}
+              onClick={() => handleNavChange("legal")}
+            >
+              利用規約
             </SidebarWithSections.NavItem>
           </SidebarWithSections.NavSection>
         </SidebarWithSections>
@@ -551,15 +611,28 @@ export default function App() {
             onDuplicateVerification={handleDuplicateVerification}
             onUpdateVerification={handleUpdateVerification}
             onCreateWithMethod={handleCreateWithMethod}
+            onNavChange={handleNavChange}
           />
         </div>
       </div>
     </div>
   );
 
+  const handleOnboardingComplete = () => {
+    localStorage.setItem("airas-onboarding-done", "true");
+    setShowOnboarding(false);
+  };
+
+  const content = (
+    <>
+      {appContent}
+      {showOnboarding && <OnboardingOverlay onComplete={handleOnboardingComplete} />}
+    </>
+  );
+
   if (eeComponents) {
-    return <eeComponents.AuthGuard>{appContent}</eeComponents.AuthGuard>;
+    return <eeComponents.AuthGuard>{content}</eeComponents.AuthGuard>;
   }
 
-  return appContent;
+  return content;
 }
