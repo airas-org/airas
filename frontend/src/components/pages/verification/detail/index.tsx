@@ -231,7 +231,7 @@ export function VerificationDetailPage({
               </div>
             )}
             {hasAnyCompleted && verification.implementation && (
-              <div id="sec-paper">
+              <div id="sec-paper" className="space-y-6">
                 <PaperWritingSection
                   experiments={verification.implementation.experimentSettings}
                   paperDraft={verification.paperDraft}

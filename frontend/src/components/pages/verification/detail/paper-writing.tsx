@@ -65,23 +65,23 @@ export function PaperWritingSection({
       {paperDraft && (
         <div className="rounded-lg border border-border bg-card p-6">
           <h2 className="text-lg font-semibold text-foreground">論文</h2>
-          <div className="mt-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground">GitHub URL:</span>
-              <a
-                href={paperDraft.paperUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-brand-600 hover:underline"
-              >
-                {paperDraft.paperUrl}
-              </a>
-            </div>
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-sm font-medium text-foreground">GitHub URL:</span>
+            <a
+              href={paperDraft.paperUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-brand-600 hover:underline"
+            >
+              {paperDraft.paperUrl}
+            </a>
+          </div>
+          <div className="mt-3 flex justify-end">
             <a
               href={paperDraft.overleafUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 rounded-md bg-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-300 hover:text-neutral-900 transition-colors"
+              className="rounded-md bg-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-300 hover:text-neutral-900 transition-colors"
             >
               Overleafで編集する
             </a>
