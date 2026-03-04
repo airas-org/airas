@@ -44,7 +44,7 @@ export function ImplementationResult({
             <Table
               header={
                 <Table.HeaderRow>
-                  <Table.HeaderCell className="text-[11px]">パラメータ</Table.HeaderCell>
+                  <Table.HeaderCell className="text-[11px]">名称</Table.HeaderCell>
                   <Table.HeaderCell className="text-[11px]">説明</Table.HeaderCell>
                 </Table.HeaderRow>
               }
@@ -82,7 +82,7 @@ export function ImplementationResult({
                 <Table
                   header={
                     <Table.HeaderRow>
-                      <Table.HeaderCell className="text-[11px]">パラメータ</Table.HeaderCell>
+                      <Table.HeaderCell className="text-[11px]">名称</Table.HeaderCell>
                       <Table.HeaderCell className="text-[11px]">説明</Table.HeaderCell>
                     </Table.HeaderRow>
                   }
