@@ -60,7 +60,7 @@ Content-Type: application/json
         "type": "ephemeral_cloud",
         "cloud_provider": "aws",
         "gpu_instance_type": "g4dn.xlarge",
-        "max_instance_hours": "120"
+        "max_instance_hours": 120
     }
 }
 
@@ -173,7 +173,7 @@ Content-Type: application/json
         "type": "ephemeral_cloud",
         "cloud_provider": "aws",
         "gpu_instance_type": "g4dn.xlarge",
-        "max_instance_hours": "120"
+        "max_instance_hours": 120
     }
 }
 

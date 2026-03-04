@@ -1968,6 +1968,7 @@ components:
           default: aws
         gpu_instance_type:
           type: string
+          minLength: 1
           title: Gpu Instance Type
           description: Instance type (e.g., 'g4dn.xlarge' for AWS, 'n1-standard-4'
             for GCP)
@@ -3939,7 +3940,9 @@ components:
         runner_label:
           items:
             type: string
+            minLength: 1
           type: array
+          minItems: 1
           title: Runner Label
           description: Runner labels used by GitHub Actions (e.g., ['ubuntu-latest']
             or ['self-hosted', 'gpu-runner'])

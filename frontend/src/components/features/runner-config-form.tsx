@@ -31,7 +31,8 @@ export function isRunnerConfigFormValid(state: RunnerConfigFormState): boolean {
   if (state.type === "static") {
     return state.runnerLabels.split(",").some((l) => l.trim().length > 0);
   }
-  return true;
+  const hours = Number(state.maxInstanceHours);
+  return Number.isInteger(hours) && hours >= 1;
 }
 
 export function toRunnerConfigPayload(
