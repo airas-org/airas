@@ -490,9 +490,15 @@ export default function App() {
             </SidebarWithSections.NavItem>
             <SidebarWithSections.NavItem
               icon={<FeatherHelpCircle />}
+              onClick={() => window.open("https://discord.gg/KGm5FGY5", "_blank")}
+            >
+              ヘルプ
+            </SidebarWithSections.NavItem>
+            <SidebarWithSections.NavItem
+              icon={<FeatherFileText />}
               onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
             >
-              ヘルプ・ドキュメント
+              ドキュメント
             </SidebarWithSections.NavItem>
             <SidebarWithSections.NavItem
               icon={<FeatherShield />}
