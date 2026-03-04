@@ -312,7 +312,7 @@ export function HypothesisDrivenResearchPage({
 
   return (
     <div className="flex-1 bg-background overflow-y-auto">
-      <div className="sticky top-0 z-10 border-b border-border bg-default-background px-6 py-4 flex items-center justify-between relative">
+      <div className="sticky top-0 z-10 bg-default-background px-6 py-4 flex items-center justify-between relative">
         <button
           type="button"
           className="absolute left-2 top-1/2 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground shadow-sm"
