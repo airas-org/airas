@@ -63,7 +63,7 @@ export function PaperWritingSection({
       </div>
 
       {paperDraft && (
-        <div className="rounded-lg border border-border bg-card p-6">
+        <div id="sec-generated-paper" className="rounded-lg border border-border bg-card p-6">
           <h2 className="text-lg font-semibold text-foreground">論文</h2>
           <div className="mt-3 flex items-center gap-2">
             <span className="text-sm font-medium text-foreground">GitHub URL:</span>

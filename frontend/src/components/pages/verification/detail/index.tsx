@@ -152,6 +152,9 @@ export function VerificationDetailPage({
     if (anyCompleted) {
       entries.push({ id: "sec-paper", label: "論文執筆" });
     }
+    if (verification.paperDraft) {
+      entries.push({ id: "sec-generated-paper", label: "論文" });
+    }
     return entries;
   }, [verification]);
 
