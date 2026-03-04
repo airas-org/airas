@@ -393,6 +393,7 @@ export default function App() {
           </SidebarWithSections.NavItem>
           <SidebarWithSections.NavSection label="自動研究">
             <SidebarWithSections.NavItem
+              icon={<span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
               selected={activeNav === "autonomous-research" && autonomousSubNav === "topic-driven"}
               onClick={() => {
                 setAutonomousSubNav("topic-driven");
@@ -402,6 +403,7 @@ export default function App() {
               Topic-Driven
             </SidebarWithSections.NavItem>
             <SidebarWithSections.NavItem
+              icon={<span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
               selected={
                 activeNav === "autonomous-research" && autonomousSubNav === "hypothesis-driven"
               }
