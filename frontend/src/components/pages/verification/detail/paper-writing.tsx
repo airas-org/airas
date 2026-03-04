@@ -31,7 +31,7 @@ export function PaperWritingSection({
   return (
     <>
       <div className="rounded-lg border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold text-foreground">論文執筆</h2>
+        <h2 className="text-lg font-semibold text-foreground">執筆のための情報収集</h2>
         <p className="text-sm text-muted-foreground mt-1">実験結果を基に論文ドラフトを生成します</p>
 
         <div className="mt-4">

@@ -150,7 +150,7 @@ export function VerificationDetailPage({
       entries.push({ id: "sec-dashboard", label: "実験結果" });
     }
     if (anyCompleted) {
-      entries.push({ id: "sec-paper", label: "論文執筆" });
+      entries.push({ id: "sec-paper", label: "執筆のための情報収集" });
     }
     if (verification.paperDraft) {
       entries.push({ id: "sec-generated-paper", label: "論文" });

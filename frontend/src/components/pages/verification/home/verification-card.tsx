@@ -20,7 +20,7 @@ const badgeLabelMap: Record<VerificationPhase, string> = {
   "code-generating": "生成中",
   "code-generated": "実装済み",
   "experiments-done": "実験完了",
-  "paper-writing": "論文執筆中",
+  "paper-writing": "情報収集中",
 };
 
 interface VerificationCardProps {

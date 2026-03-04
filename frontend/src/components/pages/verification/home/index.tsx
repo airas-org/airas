@@ -63,7 +63,7 @@ const categories: { key: CategoryKey; label: string }[] = [
   { key: "code", label: "実験コード" },
   { key: "settings", label: "実験設定" },
   { key: "results", label: "実験結果" },
-  { key: "paper-writing", label: "論文執筆" },
+  { key: "paper-writing", label: "執筆のための情報収集" },
   { key: "paper", label: "論文" },
 ];
 
