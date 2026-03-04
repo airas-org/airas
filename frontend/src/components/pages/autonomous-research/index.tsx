@@ -294,7 +294,7 @@ export function AutonomousResearchPage({
 
   return (
     <div className="flex-1 bg-background overflow-y-auto">
-      <div className="sticky top-0 z-10 border-b border-border bg-card px-6 py-4 flex items-center justify-between relative">
+      <div className="sticky top-0 z-10 border-b border-border bg-default-background px-6 py-4 flex items-center justify-between relative">
         <button
           type="button"
           className="absolute left-2 top-1/2 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground shadow-sm"
@@ -310,10 +310,14 @@ export function AutonomousResearchPage({
         <div className="space-y-2 pl-9">
           <h2 className="text-lg font-semibold text-foreground">自動研究</h2>
         </div>
-        <Button onClick={onCreateSection}>
-          <Plus className="h-4 w-4 mr-2" />
+        <button
+          type="button"
+          onClick={onCreateSection}
+          className="flex items-center gap-1.5 rounded-md bg-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-300 hover:text-neutral-900 transition-colors cursor-pointer"
+        >
+          <Plus className="h-3.5 w-3.5" />
           New Session
-        </Button>
+        </button>
       </div>
       <div className="p-6">
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-[1fr_2fr] items-start">
