@@ -39,20 +39,24 @@ export function ImplementationResult({
         <h2 className="text-lg font-semibold text-foreground">実験設定</h2>
 
         <div className="mt-4">
-          <p className="text-sm font-medium text-foreground">主要パラメータ</p>
-          <div className="mt-2">
+          <p className="text-xs font-medium text-foreground">主要パラメータ</p>
+          <div className="mt-1.5 rounded-md border border-solid border-neutral-border overflow-hidden">
             <Table
               header={
                 <Table.HeaderRow>
-                  <Table.HeaderCell>パラメータ</Table.HeaderCell>
-                  <Table.HeaderCell>値</Table.HeaderCell>
+                  <Table.HeaderCell className="text-[11px]">パラメータ</Table.HeaderCell>
+                  <Table.HeaderCell className="text-[11px]">説明</Table.HeaderCell>
                 </Table.HeaderRow>
               }
             >
               {mainParams.map((param) => (
                 <Table.Row key={param.name}>
-                  <Table.Cell>{param.name}</Table.Cell>
-                  <Table.Cell>{param.value}</Table.Cell>
+                  <Table.Cell className="text-[11px] text-foreground font-medium h-9">
+                    {param.name}
+                  </Table.Cell>
+                  <Table.Cell className="text-[11px] text-muted-foreground h-9">
+                    {param.description}
+                  </Table.Cell>
                 </Table.Row>
               ))}
             </Table>
@@ -74,19 +78,23 @@ export function ImplementationResult({
               その他のパラメータ（{otherParams.length}）
             </button>
             {othersExpanded && (
-              <div className="mt-2">
+              <div className="mt-1.5 rounded-md border border-solid border-neutral-border overflow-hidden">
                 <Table
                   header={
                     <Table.HeaderRow>
-                      <Table.HeaderCell>パラメータ</Table.HeaderCell>
-                      <Table.HeaderCell>値</Table.HeaderCell>
+                      <Table.HeaderCell className="text-[11px]">パラメータ</Table.HeaderCell>
+                      <Table.HeaderCell className="text-[11px]">説明</Table.HeaderCell>
                     </Table.HeaderRow>
                   }
                 >
                   {otherParams.map((param) => (
                     <Table.Row key={param.name}>
-                      <Table.Cell>{param.name}</Table.Cell>
-                      <Table.Cell>{param.value}</Table.Cell>
+                      <Table.Cell className="text-[11px] text-foreground font-medium h-9">
+                        {param.name}
+                      </Table.Cell>
+                      <Table.Cell className="text-[11px] text-muted-foreground h-9">
+                        {param.description}
+                      </Table.Cell>
                     </Table.Row>
                   ))}
                 </Table>

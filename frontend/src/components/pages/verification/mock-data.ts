@@ -78,9 +78,9 @@ export const mockProposedMethodsResponse: ProposedMethod[] = [
 export const mockImplementationResponse: ImplementationInfo = {
   githubUrl: "https://github.com/airas-org/exp-generated",
   fixedParameters: [
-    { name: "random_seed", value: "42" },
-    { name: "n_samples", value: "100" },
-    { name: "significance_level", value: "0.05" },
+    { name: "random_seed", description: "再現性を確保するための乱数シード値" },
+    { name: "n_samples", description: "各実験条件ごとのサンプルサイズ" },
+    { name: "significance_level", description: "統計的有意性の判定閾値（p値）" },
   ],
   experimentSettings: [
     {
@@ -139,10 +139,10 @@ export const mockVerifications: Verification[] = [
     implementation: {
       githubUrl: "https://github.com/airas-org/exp-sparse-attention",
       fixedParameters: [
-        { name: "model_base", value: "bert-base-uncased" },
-        { name: "dataset", value: "SST-2" },
-        { name: "batch_size", value: "32" },
-        { name: "epochs", value: "3" },
+        { name: "model_base", description: "事前学習済みBERT-base-uncasedモデルを使用" },
+        { name: "dataset", description: "GLUE BenchmarkのSST-2感情分析タスク" },
+        { name: "batch_size", description: "学習・推論時のミニバッチサイズ" },
+        { name: "epochs", description: "全データを3回学習するエポック数" },
       ],
       experimentSettings: [
         {
@@ -251,10 +251,10 @@ export const mockVerifications: Verification[] = [
     implementation: {
       githubUrl: "https://github.com/airas-org/exp-data-augmentation",
       fixedParameters: [
-        { name: "model", value: "ResNet-18" },
-        { name: "dataset", value: "CIFAR-10 subset" },
-        { name: "learning_rate", value: "0.001" },
-        { name: "epochs", value: "100" },
+        { name: "model", description: "18層のResidual Networkアーキテクチャ" },
+        { name: "dataset", description: "CIFAR-10から1000枚を抽出したサブセット" },
+        { name: "learning_rate", description: "Adam optimizerの初期学習率" },
+        { name: "epochs", description: "収束を確認するための十分なエポック数" },
       ],
       experimentSettings: [
         {

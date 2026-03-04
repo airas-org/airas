@@ -43,7 +43,7 @@ export interface VerificationPlan {
 
 export interface ImplementationInfo {
   githubUrl: string;
-  fixedParameters: { name: string; value: string }[];
+  fixedParameters: { name: string; description: string }[];
   experimentSettings: ExperimentSetting[];
 }
 
