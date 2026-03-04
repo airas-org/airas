@@ -51,6 +51,8 @@ class SetGithubActionsSecretsSubgraph:
             "LANGFUSE_PUBLIC_KEY",
             "LANGFUSE_BASE_URL",
             "GH_PERSONAL_ACCESS_TOKEN",
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
         ]
         self.github_client = github_client
 
