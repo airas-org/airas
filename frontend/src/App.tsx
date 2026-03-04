@@ -35,12 +35,11 @@ import {
   type ProposedMethod,
   type Verification,
 } from "@/components/pages/verification";
-import { SectionsSidebar } from "@/components/sections-sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isEnterpriseEnabled } from "@/ee/config";
 import { OpenAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import type { FeatureType, WorkflowNode, WorkflowTree } from "@/types/research";
+import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
 import { Avatar, IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
 
 const initialWorkflowTree: WorkflowTree = {
@@ -130,7 +129,6 @@ export default function App() {
     return "home";
   });
   const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
-  const [sessionsExpanded, setSessionsExpanded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return !localStorage.getItem("airas-onboarding-done");
@@ -219,9 +217,15 @@ export default function App() {
     [],
   );
 
-  const handleToggleSessions = useCallback(() => {
-    setSessionsExpanded((prev) => !prev);
-  }, []);
+  const handleSelectAutonomousSession = useCallback(
+    (section: ResearchSection) => {
+      setAutonomousActiveSectionMap((prev) => ({
+        ...prev,
+        [autonomousSubNav]: section,
+      }));
+    },
+    [autonomousSubNav],
+  );
 
   const handleNavigate = useCallback(
     (nodeId: string) => {
@@ -560,34 +564,10 @@ export default function App() {
           }
         />
         <div className="flex-1 flex min-h-0">
-          {activeNav === "autonomous-research" && (
-            <div
-              className={cn(
-                "relative flex-shrink-0 h-full transition-[width] duration-200 ease-in-out",
-                sessionsExpanded ? "w-56" : "w-0",
-              )}
-            >
-              <div
-                className={cn(
-                  "overflow-hidden transition-[width,opacity] duration-200 ease-in-out h-full",
-                  sessionsExpanded ? "w-56 opacity-100" : "w-0 opacity-0",
-                )}
-              >
-                <SectionsSidebar
-                  sections={autonomousSectionsMap[autonomousSubNav]}
-                  activeSection={autonomousActiveSectionMap[autonomousSubNav]}
-                  onSelectSection={(section) =>
-                    setAutonomousActiveSectionMap((prev) => ({
-                      ...prev,
-                      [autonomousSubNav]: section,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-          )}
           <MainContent
             autonomousSection={autonomousActiveSectionMap[autonomousSubNav]}
+            autonomousSessions={autonomousSectionsMap[autonomousSubNav]}
+            onSelectAutonomousSession={handleSelectAutonomousSession}
             activeNav={activeNav}
             autonomousSubNav={autonomousSubNav}
             assistedResearchProps={{
@@ -599,8 +579,6 @@ export default function App() {
               resetDownstreamSessions,
               onNavigate: handleNavigate,
             }}
-            sessionsExpanded={sessionsExpanded}
-            onToggleSessions={handleToggleSessions}
             onCreateSection={handleCreateSection}
             onUpdateSectionTitle={handleUpdateSectionTitle}
             onRefreshSessions={(preferredId) => fetchSections(autonomousSubNav, preferredId)}

@@ -1,8 +1,9 @@
 "use client";
 
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AllLLMConfig } from "@/components/features/llm-config";
+import { SessionDropdown } from "@/components/session-dropdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,8 +38,8 @@ const RequiredMark = () => <span className="text-rose-400 ml-0.5">*</span>;
 
 interface AutonomousResearchPageProps {
   section: ResearchSection | null;
-  sessionsExpanded: boolean;
-  onToggleSessions: () => void;
+  sessions: ResearchSection[];
+  onSelectSession: (section: ResearchSection) => void;
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
   onRefreshSessions: (preferredId?: string) => Promise<void>;
@@ -46,8 +47,8 @@ interface AutonomousResearchPageProps {
 
 export function AutonomousResearchPage({
   section,
-  sessionsExpanded,
-  onToggleSessions,
+  sessions,
+  onSelectSession,
   onCreateSection,
   onUpdateSectionTitle,
   onRefreshSessions,
@@ -111,11 +112,6 @@ export function AutonomousResearchPage({
     const nextTitle = section?.title ?? DEFAULT_RESEARCH_TITLE;
     setAutoTitleDraft(nextTitle);
   }, [section?.title]);
-
-  useEffect(() => {
-    if (!sessionsExpanded) return;
-    void onRefreshSessions(section?.id);
-  }, [onRefreshSessions, section?.id, sessionsExpanded]);
 
   useEffect(
     () => () => {
@@ -294,21 +290,15 @@ export function AutonomousResearchPage({
 
   return (
     <div className="flex-1 bg-background overflow-y-auto">
-      <div className="sticky top-0 z-10 bg-default-background px-6 py-4 flex items-center justify-between relative">
-        <button
-          type="button"
-          className="absolute left-2 top-1/2 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground shadow-sm"
-          onClick={onToggleSessions}
-          aria-label="Toggle sessions"
-        >
-          {sessionsExpanded ? (
-            <ChevronLeft className="h-4 w-4" />
-          ) : (
-            <ChevronRight className="h-4 w-4" />
-          )}
-        </button>
-        <div className="space-y-2 pl-9">
+      <div className="sticky top-0 z-10 bg-default-background px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
           <h2 className="text-lg font-semibold text-foreground">Topic-Driven Research</h2>
+          <SessionDropdown
+            sessions={sessions}
+            activeSession={section}
+            onSelectSession={onSelectSession}
+            onRefreshSessions={onRefreshSessions}
+          />
         </div>
         <button
           type="button"
@@ -320,7 +310,7 @@ export function AutonomousResearchPage({
         </button>
       </div>
       <div className="p-6">
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-[1fr_2fr] items-start">
+        <div className="space-y-6">
           <Card>
             <CardHeader className="space-y-4">
               <div className="flex items-center justify-between gap-3">
