@@ -308,7 +308,7 @@ export function AutonomousResearchPage({
           )}
         </button>
         <div className="space-y-2 pl-9">
-          <h2 className="text-lg font-semibold text-foreground">Autonomous Research</h2>
+          <h2 className="text-lg font-semibold text-foreground">自動研究</h2>
         </div>
         <Button onClick={onCreateSection}>
           <Plus className="h-4 w-4 mr-2" />

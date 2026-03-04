@@ -391,7 +391,7 @@ export default function App() {
           >
             検証一覧
           </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavSection label="Autonomous Research">
+          <SidebarWithSections.NavSection label="自動研究">
             <SidebarWithSections.NavItem
               selected={activeNav === "autonomous-research" && autonomousSubNav === "topic-driven"}
               onClick={() => {
