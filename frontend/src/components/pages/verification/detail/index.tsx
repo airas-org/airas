@@ -130,8 +130,6 @@ export function VerificationDetailPage({
     if (!verification) return [];
     const hasProposedMethods =
       verification.proposedMethods && verification.proposedMethods.length > 0;
-    const isDone =
-      verification.phase === "experiments-done" || verification.phase === "paper-writing";
     const anyCompleted = verification.implementation?.experimentSettings.some(
       (exp) => exp.status === "completed",
     );
@@ -145,7 +143,7 @@ export function VerificationDetailPage({
     if (anyCompleted) {
       entries.push({ id: "sec-dashboard", label: "実験結果" });
     }
-    if (isDone) {
+    if (anyCompleted) {
       entries.push({ id: "sec-paper", label: "論文執筆" });
     }
     return entries;
@@ -156,8 +154,6 @@ export function VerificationDetailPage({
   const hasQuery = verification.phase !== "initial";
   const isGenerating = verification.phase === "code-generating";
   const showMethods = verification.proposedMethods && verification.proposedMethods.length > 0;
-  const allExperimentsDone =
-    verification.phase === "experiments-done" || verification.phase === "paper-writing";
   const hasAnyCompleted = verification.implementation?.experimentSettings.some(
     (exp) => exp.status === "completed",
   );
@@ -228,7 +224,7 @@ export function VerificationDetailPage({
                 <ExperimentDashboard experiments={verification.implementation.experimentSettings} />
               </div>
             )}
-            {allExperimentsDone && verification.implementation && (
+            {hasAnyCompleted && verification.implementation && (
               <div id="sec-paper">
                 <PaperWritingSection
                   experiments={verification.implementation.experimentSettings}
