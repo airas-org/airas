@@ -18,7 +18,7 @@ export function TocNav({ entries }: TocNavProps) {
   };
 
   return (
-    <nav className="fixed right-4 top-1/2 -translate-y-1/2 z-10 hidden lg:flex">
+    <nav className="fixed right-4 top-1/2 -translate-y-1/2 z-10 hidden xl:flex">
       <div className="relative">
         {/* Single continuous vertical line */}
         <div className="absolute left-[3px] top-1 bottom-1 w-px bg-neutral-300" />
