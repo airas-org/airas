@@ -83,7 +83,7 @@ export function PaperWritingSection({
               rel="noopener noreferrer"
               className="rounded-md bg-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-300 hover:text-neutral-900 transition-colors"
             >
-              Overleafで編集する
+              Edit on Overleaf
             </a>
           </div>
         </div>

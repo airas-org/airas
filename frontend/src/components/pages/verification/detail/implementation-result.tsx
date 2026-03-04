@@ -21,7 +21,17 @@ export function ImplementationResult({
   return (
     <>
       <div id="sec-code" className="rounded-lg border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold text-foreground">実験コード</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">実験コード</h2>
+          <a
+            href={implementation.githubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-md bg-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-300 hover:text-neutral-900 transition-colors"
+          >
+            Edit code
+          </a>
+        </div>
         <div className="mt-3 flex items-center gap-2">
           <span className="text-sm font-medium text-foreground">GitHub URL:</span>
           <a
