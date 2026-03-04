@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Loader } from "@/ui";
 import {
   mockExperimentResultResponse,
@@ -107,13 +107,18 @@ export function VerificationDetailPage({
     [verification, onUpdateVerification],
   );
 
+  const [isPaperGenerating, setIsPaperGenerating] = useState(false);
+
   const handleGeneratePaper = useCallback(
     (selectedExperimentIds: string[]) => {
       if (!verification) return;
+      setIsPaperGenerating(true);
       setTimeout(() => {
         const draft: PaperDraft = {
           title: `${verification.title}: A Comparative Study`,
           selectedExperimentIds,
+          paperUrl:
+            "https://github.com/airas-org/exp-data-augmentation/.research/generated_paper.pdf",
           overleafUrl: "https://www.overleaf.com/project/mock-project-id-67890",
           status: "ready",
         };
@@ -121,6 +126,7 @@ export function VerificationDetailPage({
           phase: "paper-writing",
           paperDraft: draft,
         });
+        setIsPaperGenerating(false);
       }, 2000);
     },
     [verification, onUpdateVerification],
@@ -229,8 +235,15 @@ export function VerificationDetailPage({
                 <PaperWritingSection
                   experiments={verification.implementation.experimentSettings}
                   paperDraft={verification.paperDraft}
+                  isGenerating={isPaperGenerating}
                   onGeneratePaper={handleGeneratePaper}
                 />
+              </div>
+            )}
+            {isPaperGenerating && !verification.paperDraft && (
+              <div className="flex items-center gap-2 px-3 py-4">
+                <Loader size="small" />
+                <span className="text-xs text-muted-foreground">論文を生成中...</span>
               </div>
             )}
           </div>

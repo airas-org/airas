@@ -218,6 +218,7 @@ export const mockVerifications: Verification[] = [
     paperDraft: {
       title: "Sparse Attention Mechanisms for Efficient Transformer Inference: A Comparative Study",
       selectedExperimentIds: ["exp-1-1", "exp-1-2", "exp-1-3"],
+      paperUrl: "https://github.com/airas-org/exp-data-augmentation/.research/generated_paper.pdf",
       overleafUrl: "https://www.overleaf.com/project/mock-project-id-12345",
       status: "ready",
     },

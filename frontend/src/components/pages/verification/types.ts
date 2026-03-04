@@ -19,6 +19,7 @@ export interface ProposedMethod {
 export interface PaperDraft {
   title: string;
   selectedExperimentIds: string[];
+  paperUrl: string;
   overleafUrl: string;
   status: "generating" | "ready";
 }
