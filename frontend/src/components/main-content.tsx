@@ -6,6 +6,8 @@ import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driv
 import { IntegrationPage } from "@/components/pages/integration";
 import { PapersPage } from "@/components/pages/papers";
 import { UserPlanPage } from "@/components/pages/user-plan";
+import { VerificationDetailPage, VerificationHomePage } from "@/components/pages/verification";
+import type { ProposedMethod, Verification } from "@/components/pages/verification/types";
 import type {
   FeatureType,
   Paper,
@@ -15,11 +17,12 @@ import type {
 } from "@/types/research";
 
 export type NavKey =
+  | "home"
   | "papers"
-  | "assisted-research"
   | "autonomous-research"
   | "integration"
-  | "user-plan";
+  | "user-plan"
+  | "verification";
 export const AUTONOMOUS_SUB_NAVS = ["topic-driven", "hypothesis-driven"] as const;
 export type AutonomousSubNav = (typeof AUTONOMOUS_SUB_NAVS)[number];
 
@@ -40,7 +43,6 @@ interface AssistedResearchProps {
 }
 
 interface MainContentProps {
-  assistedSection: ResearchSection | null;
   autonomousSection: ResearchSection | null;
   activeFeature: string | null;
   activeNav: NavKey;
@@ -51,6 +53,13 @@ interface MainContentProps {
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
   onRefreshSessions: (preferredId?: string) => Promise<void>;
+  verifications: Verification[];
+  activeVerification: Verification | null;
+  onSelectVerification: (id: string) => void;
+  onDeleteVerification: (id: string) => void;
+  onDuplicateVerification: (id: string) => void;
+  onUpdateVerification: (id: string, updates: Partial<Verification>) => void;
+  onCreateWithMethod: (sourceVerification: Verification, method: ProposedMethod) => void;
 }
 
 export function MainContent({
@@ -63,6 +72,13 @@ export function MainContent({
   onCreateSection,
   onUpdateSectionTitle,
   onRefreshSessions,
+  verifications,
+  activeVerification,
+  onSelectVerification,
+  onDeleteVerification,
+  onDuplicateVerification,
+  onUpdateVerification,
+  onCreateWithMethod,
 }: MainContentProps) {
   const [selectedPapers, setSelectedPapers] = useState<Paper[]>([]);
 
@@ -108,6 +124,23 @@ export function MainContent({
 
   return (
     <div className="flex-1 flex">
+      <div className={activeNav === "home" ? "flex-1 flex" : "hidden"}>
+        <VerificationHomePage
+          verifications={verifications}
+          onSelectVerification={onSelectVerification}
+          onDeleteVerification={onDeleteVerification}
+          onDuplicateVerification={onDuplicateVerification}
+        />
+      </div>
+
+      <div className={activeNav === "verification" ? "flex-1 flex" : "hidden"}>
+        <VerificationDetailPage
+          verification={activeVerification}
+          onUpdateVerification={onUpdateVerification}
+          onCreateWithMethod={onCreateWithMethod}
+        />
+      </div>
+
       <div className={activeNav === "papers" ? "flex-1 flex" : "hidden"}>
         <PapersPage
           selectedPapers={selectedPapers}
@@ -137,17 +170,6 @@ export function MainContent({
             onRefreshSessions={onRefreshSessions}
           />
         )}
-      </div>
-
-      <div
-        className={
-          activeNav === "assisted-research" ? "flex-1 flex items-center justify-center" : "hidden"
-        }
-      >
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-muted-foreground">Assisted Research</h2>
-          <p className="text-sm text-muted-foreground mt-2">Coming soon</p>
-        </div>
       </div>
 
       <div className={activeNav === "integration" ? "flex-1 flex" : "hidden"}>
