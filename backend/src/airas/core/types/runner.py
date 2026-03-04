@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 CloudProvider = Literal["aws", "gcp"]
 
@@ -11,6 +11,14 @@ class StaticRunnerConfig(BaseModel):
         default_factory=lambda: ["ubuntu-latest"],
         description="Runner labels used by GitHub Actions (e.g., ['ubuntu-latest'] or ['self-hosted', 'gpu-runner'])",
     )
+
+    @field_validator("runner_label")
+    @classmethod
+    def labels_not_empty(cls, v: list[str]) -> list[str]:
+        filtered = [label for label in v if label.strip()]
+        if not filtered:
+            raise ValueError("runner_label must contain at least one non-empty label")
+        return filtered
 
 
 class EphemeralCloudRunnerConfig(BaseModel):

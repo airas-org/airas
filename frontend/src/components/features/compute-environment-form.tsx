@@ -43,7 +43,7 @@ export const defaultComputeEnvironmentFormState: ComputeEnvironmentFormState = {
 const toNumber = (value: string): number | undefined => {
   if (value.trim() === "") return undefined;
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
+  return Number.isFinite(parsed) && Number.isInteger(parsed) ? parsed : undefined;
 };
 
 export function toComputeEnvironmentPayload(

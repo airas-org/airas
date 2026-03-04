@@ -29,7 +29,7 @@ export const defaultRunnerConfigFormState: RunnerConfigFormState = {
 
 export function isRunnerConfigFormValid(state: RunnerConfigFormState): boolean {
   if (state.type === "static") {
-    return state.runnerLabels.trim().length > 0;
+    return state.runnerLabels.split(",").some((l) => l.trim().length > 0);
   }
   return true;
 }
