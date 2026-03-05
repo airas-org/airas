@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { ApiTokenPage } from "@/components/pages/api-token";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { DashboardPage } from "@/components/pages/dashboard";
 import { FeedbackPage } from "@/components/pages/feedback";
@@ -38,7 +39,8 @@ export type NavKey =
   | "search"
   | "legal"
   | "feedback"
-  | "help";
+  | "help"
+  | "api-token";
 export const AUTONOMOUS_SUB_NAVS = ["topic-driven", "hypothesis-driven"] as const;
 export type AutonomousSubNav = (typeof AUTONOMOUS_SUB_NAVS)[number];
 
@@ -215,6 +217,9 @@ export function MainContent({
       </div>
       <div className={activeNav === "help" ? "flex-1 flex" : "hidden"}>
         <HelpPage />
+      </div>
+      <div className={activeNav === "api-token" ? "flex-1 flex" : "hidden"}>
+        <ApiTokenPage />
       </div>
     </div>
   );

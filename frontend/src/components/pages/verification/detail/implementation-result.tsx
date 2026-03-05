@@ -2,6 +2,7 @@ import { FeatherChevronDown, FeatherChevronRight, FeatherPlus } from "@subframe/
 import { useState } from "react";
 import { Table } from "@/ui";
 import type { ImplementationInfo } from "../types";
+import { CodeEditorModal } from "./code-editor-modal";
 import { ExperimentCard } from "./experiment-card";
 
 interface ImplementationResultProps {
@@ -14,6 +15,7 @@ export function ImplementationResult({
   onRunExperiment,
 }: ImplementationResultProps) {
   const [othersExpanded, setOthersExpanded] = useState(false);
+  const [codeModalOpen, setCodeModalOpen] = useState(false);
 
   const mainParams = implementation.fixedParameters.slice(0, 2);
   const otherParams = implementation.fixedParameters.slice(2);
@@ -23,14 +25,13 @@ export function ImplementationResult({
       <div id="sec-code" className="rounded-lg border border-border bg-card p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">実験コード</h2>
-          <a
-            href={implementation.githubUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-md bg-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-300 hover:text-neutral-900 transition-colors"
+          <button
+            type="button"
+            onClick={() => setCodeModalOpen(true)}
+            className="rounded-md bg-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-300 hover:text-neutral-900 transition-colors cursor-pointer"
           >
             Edit code
-          </a>
+          </button>
         </div>
         <div className="mt-3 flex items-center gap-2">
           <span className="text-sm font-medium text-foreground">GitHub URL:</span>
@@ -126,6 +127,11 @@ export function ImplementationResult({
           </button>
         </div>
       </div>
+      <CodeEditorModal
+        open={codeModalOpen}
+        onClose={() => setCodeModalOpen(false)}
+        githubUrl={implementation.githubUrl}
+      />
     </>
   );
 }

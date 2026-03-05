@@ -1,12 +1,16 @@
 // frontend/src/App.tsx
 
 import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons";
+import * as SubframeCore from "@subframe/core";
 import {
   FeatherBell,
+  FeatherChevronUp,
   FeatherFileText,
   FeatherHelpCircle,
   FeatherHome,
+  FeatherKey,
   FeatherList,
+  FeatherLogOut,
   FeatherMessageSquare,
   FeatherPanelLeftClose,
   FeatherPanelLeftOpen,
@@ -40,7 +44,7 @@ import { isEnterpriseEnabled } from "@/ee/config";
 import { OpenAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
-import { Avatar, IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
+import { Avatar, DropdownMenu, IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
 
 const initialWorkflowTree: WorkflowTree = {
   nodes: {},
@@ -383,12 +387,50 @@ export default function App() {
             </div>
           }
           footer={
-            <div className="flex w-full items-center gap-3">
-              <Avatar variant="neutral" size="small">
-                G
-              </Avatar>
-              <span className="text-body font-body text-default-font">Guest</span>
-            </div>
+            <SubframeCore.DropdownMenu.Root>
+              <SubframeCore.DropdownMenu.Trigger asChild>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-md px-1 py-1 -mx-1 hover:bg-neutral-100 transition-colors cursor-pointer"
+                >
+                  <Avatar variant="brand" size="small">
+                    Dev
+                  </Avatar>
+                  <span className="flex-1 text-body font-body text-default-font text-left">
+                    開発者
+                  </span>
+                  <FeatherChevronUp className="h-4 w-4 text-subtext-color" />
+                </button>
+              </SubframeCore.DropdownMenu.Trigger>
+              <SubframeCore.DropdownMenu.Portal>
+                <SubframeCore.DropdownMenu.Content side="top" align="start" sideOffset={8}>
+                  <DropdownMenu>
+                    <DropdownMenu.DropdownItem
+                      icon={<FeatherUser />}
+                      onSelect={() => handleNavChange("profile")}
+                    >
+                      プロフィール
+                    </DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem
+                      icon={<FeatherKey />}
+                      onSelect={() => handleNavChange("api-token")}
+                    >
+                      API Token
+                    </DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem
+                      icon={<FeatherSettings />}
+                      onSelect={() => handleNavChange("integration")}
+                    >
+                      インテグレーション
+                    </DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownDivider />
+                    <DropdownMenu.DropdownItem icon={<FeatherLogOut />}>
+                      ログアウト
+                    </DropdownMenu.DropdownItem>
+                  </DropdownMenu>
+                </SubframeCore.DropdownMenu.Content>
+              </SubframeCore.DropdownMenu.Portal>
+            </SubframeCore.DropdownMenu.Root>
           }
         >
           <SidebarWithSections.NavItem
