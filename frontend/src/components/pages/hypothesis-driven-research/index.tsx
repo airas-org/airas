@@ -3,7 +3,6 @@
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ComputeEnvironmentForm,
   type ComputeEnvironmentFormState,
   defaultComputeEnvironmentFormState,
   toComputeEnvironmentPayload,
@@ -88,9 +87,7 @@ export function HypothesisDrivenResearchPage({
   const [runnerConfig, setRunnerConfig] = useState<RunnerConfigFormState>(
     defaultRunnerConfigFormState,
   );
-  const [computeEnv, setComputeEnv] = useState<ComputeEnvironmentFormState>(
-    defaultComputeEnvironmentFormState,
-  );
+  const computeEnv: ComputeEnvironmentFormState = defaultComputeEnvironmentFormState;
 
   // W&B config
   const [wandbEntity, setWandbEntity] = useState("");

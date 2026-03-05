@@ -3,7 +3,6 @@
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ComputeEnvironmentForm,
   type ComputeEnvironmentFormState,
   defaultComputeEnvironmentFormState,
   toComputeEnvironmentPayload,
@@ -76,9 +75,7 @@ export function AutonomousResearchPage({
   const [autoRunnerConfig, setAutoRunnerConfig] = useState<RunnerConfigFormState>(
     defaultRunnerConfigFormState,
   );
-  const [autoComputeEnv, setAutoComputeEnv] = useState<ComputeEnvironmentFormState>(
-    defaultComputeEnvironmentFormState,
-  );
+  const autoComputeEnv: ComputeEnvironmentFormState = defaultComputeEnvironmentFormState;
   const [autoWandbEntity, setAutoWandbEntity] = useState("airas");
   const [autoWandbProject, setAutoWandbProject] = useState("");
   const [autoIsPrivate, setAutoIsPrivate] = useState(false);
