@@ -9,6 +9,13 @@ import {
   toComputeEnvironmentPayload,
 } from "@/components/features/compute-environment-form";
 import { HypothesisAllLLMConfig } from "@/components/features/llm-config";
+import {
+  defaultRunnerConfigFormState,
+  isRunnerConfigFormValid,
+  RunnerConfigForm,
+  type RunnerConfigFormState,
+  toRunnerConfigPayload,
+} from "@/components/features/runner-config-form";
 import { SessionDropdown } from "@/components/session-dropdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -519,36 +526,11 @@ export function HypothesisDrivenResearchPage({
                 </div>
 
                 <div className="space-y-2">
-                  <div className="space-y-2 rounded-md bg-muted/40 p-2">
-                    <p className="text-sm font-semibold text-foreground">GitHub Actions Runners</p>
-                    <div className="grid gap-2 grid-cols-2">
-                      <div className="space-y-1">
-                        <Label htmlFor="hypothesis-runner-labels">
-                          ラベル
-                          <RequiredMark />
-                        </Label>
-                        <Input
-                          id="hypothesis-runner-labels"
-                          value={runnerLabels}
-                          onChange={(e) => setRunnerLabels(e.target.value)}
-                          placeholder="ubuntu-latest,gpu-runner"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="hypothesis-runner-desc">
-                          説明
-                          <RequiredMark />
-                        </Label>
-                        <Textarea
-                          id="hypothesis-runner-desc"
-                          value={runnerDescription}
-                          onChange={(e) => setRunnerDescription(e.target.value)}
-                          placeholder="A100 x1, 40GB / 8 vCPU / 32GB RAM"
-                          className="min-h-0 h-9"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  <RunnerConfigForm
+                    idPrefix="hypothesis"
+                    value={runnerConfig}
+                    onChange={setRunnerConfig}
+                  />
 
                   <div className="space-y-2 rounded-md bg-muted/40 p-2">
                     <p className="text-sm font-semibold text-foreground">Weights &amp; Biases</p>
