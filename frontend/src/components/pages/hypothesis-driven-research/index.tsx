@@ -1,8 +1,9 @@
 "use client";
 
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HypothesisAllLLMConfig } from "@/components/features/llm-config";
+import { SessionDropdown } from "@/components/session-dropdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,8 +38,8 @@ const RequiredMark = () => <span className="text-rose-400 ml-0.5">*</span>;
 
 interface HypothesisDrivenResearchPageProps {
   section: ResearchSection | null;
-  sessionsExpanded: boolean;
-  onToggleSessions: () => void;
+  sessions: ResearchSection[];
+  onSelectSession: (section: ResearchSection) => void;
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
   onRefreshSessions: (preferredId?: string) => Promise<void>;
@@ -46,8 +47,8 @@ interface HypothesisDrivenResearchPageProps {
 
 export function HypothesisDrivenResearchPage({
   section,
-  sessionsExpanded,
-  onToggleSessions,
+  sessions,
+  onSelectSession,
   onCreateSection,
   onUpdateSectionTitle,
   onRefreshSessions,
@@ -129,11 +130,6 @@ export function HypothesisDrivenResearchPage({
     const nextTitle = section?.title ?? DEFAULT_RESEARCH_TITLE;
     setTitleDraft(nextTitle);
   }, [section?.title]);
-
-  useEffect(() => {
-    if (!sessionsExpanded) return;
-    void onRefreshSessions(section?.id);
-  }, [onRefreshSessions, section?.id, sessionsExpanded]);
 
   useEffect(
     () => () => {
@@ -312,32 +308,30 @@ export function HypothesisDrivenResearchPage({
 
   return (
     <div className="flex-1 bg-background overflow-y-auto">
-      <div className="sticky top-0 z-10 border-b border-border bg-card px-6 py-4 flex items-center justify-between relative">
-        <button
-          type="button"
-          className="absolute left-2 top-1/2 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground shadow-sm"
-          onClick={onToggleSessions}
-          aria-label="Toggle sessions"
-        >
-          {sessionsExpanded ? (
-            <ChevronLeft className="h-4 w-4" />
-          ) : (
-            <ChevronRight className="h-4 w-4" />
-          )}
-        </button>
-        <div className="space-y-2 pl-9">
-          <h2 className="text-lg font-semibold text-foreground">Hypothesis-Driven Research</h2>
+      <div className="sticky top-0 z-10 bg-default-background px-6 py-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-foreground">Hypothesis-Driven Research</h2>
+        <div className="flex items-center gap-2">
+          <SessionDropdown
+            sessions={sessions}
+            activeSession={section}
+            onSelectSession={onSelectSession}
+            onRefreshSessions={onRefreshSessions}
+          />
+          <button
+            type="button"
+            onClick={onCreateSection}
+            className="flex items-center gap-1.5 rounded-md bg-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-300 hover:text-neutral-900 transition-colors cursor-pointer"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New Session
+          </button>
         </div>
-        <Button onClick={onCreateSection}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Session
-        </Button>
       </div>
 
-      <div className="p-6">
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-[1fr_2fr] items-start">
+      <div className="p-4">
+        <div className="space-y-4">
           <Card>
-            <CardHeader className="space-y-4">
+            <CardHeader className="px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 {isEditingTitle ? (
                   <Input
@@ -363,8 +357,8 @@ export function HypothesisDrivenResearchPage({
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
+            <CardContent className="space-y-2 px-4 pb-4">
+              <div className="space-y-1">
                 <Label htmlFor="hypothesis-research-topic">研究テーマ（任意）</Label>
                 <Input
                   id="hypothesis-research-topic"
@@ -374,221 +368,213 @@ export function HypothesisDrivenResearchPage({
                 />
               </div>
 
-              <div className="space-y-6 rounded-md bg-muted/40 p-4">
+              <div className="space-y-2 rounded-md bg-muted/40 p-2">
                 <p className="text-sm font-semibold text-foreground">研究仮説</p>
-
-                <div className="space-y-2">
-                  <Label htmlFor="hypothesis-open-problems">
-                    解決すべき問題
-                    <RequiredMark />
-                  </Label>
-                  <Textarea
-                    id="hypothesis-open-problems"
-                    className="min-h-28"
-                    value={openProblems}
-                    onChange={(e) => setOpenProblems(e.target.value)}
-                    placeholder="ex) Existing models struggle with temporal reasoning in long videos"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="hypothesis-method">
-                    提案手法
-                    <RequiredMark />
-                  </Label>
-                  <Textarea
-                    id="hypothesis-method"
-                    className="min-h-28"
-                    value={method}
-                    onChange={(e) => setMethod(e.target.value)}
-                    placeholder="ex) A hierarchical attention mechanism that models temporal dependencies"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="hypothesis-experimental-setup">
-                    実験設定
-                    <RequiredMark />
-                  </Label>
-                  <Textarea
-                    id="hypothesis-experimental-setup"
-                    className="min-h-24"
-                    value={experimentalSetup}
-                    onChange={(e) => setExperimentalSetup(e.target.value)}
-                    placeholder="ex) Evaluate on ActivityNet-QA and EgoSchema benchmarks"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="hypothesis-primary-metric">
-                    主要評価指標
-                    <RequiredMark />
-                  </Label>
-                  <Input
-                    id="hypothesis-primary-metric"
-                    value={primaryMetric}
-                    onChange={(e) => setPrimaryMetric(e.target.value)}
-                    placeholder="ex) Accuracy on ActivityNet-QA"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="hypothesis-experimental-code">
-                    実験コード
-                    <RequiredMark />
-                  </Label>
-                  <Textarea
-                    id="hypothesis-experimental-code"
-                    className="min-h-28"
-                    value={experimentalCode}
-                    onChange={(e) => setExperimentalCode(e.target.value)}
-                    placeholder="ex) PyTorch implementation using transformers library"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="hypothesis-expected-result">
-                    期待される結果
-                    <RequiredMark />
-                  </Label>
-                  <Textarea
-                    id="hypothesis-expected-result"
-                    className="min-h-24"
-                    value={expectedResult}
-                    onChange={(e) => setExpectedResult(e.target.value)}
-                    placeholder="ex) 5% accuracy improvement over baseline on ActivityNet-QA"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="hypothesis-expected-conclusion">
-                    期待される結論
-                    <RequiredMark />
-                  </Label>
-                  <Textarea
-                    id="hypothesis-expected-conclusion"
-                    className="min-h-24"
-                    value={expectedConclusion}
-                    onChange={(e) => setExpectedConclusion(e.target.value)}
-                    placeholder="ex) Hierarchical temporal attention significantly improves video QA"
-                  />
-                </div>
-              </div>
-
-              <hr className="border-border" />
-
-              <div className="space-y-3 rounded-md bg-muted/40 p-4">
-                <p className="text-sm font-semibold text-foreground">GitHub</p>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="hypothesis-github-owner">
-                      owner
-                      <RequiredMark />
-                    </Label>
-                    <Input
-                      id="hypothesis-github-owner"
-                      value={githubOwner}
-                      onChange={(e) => setGithubOwner(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="hypothesis-repo-name">
-                      repository
-                      <RequiredMark />
-                    </Label>
-                    <Input
-                      id="hypothesis-repo-name"
-                      value={repoName}
-                      onChange={(e) => setRepoName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="hypothesis-branch">
-                      branch
-                      <RequiredMark />
-                    </Label>
-                    <Input
-                      id="hypothesis-branch"
-                      value={branch}
-                      onChange={(e) => setBranch(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Checkbox
-                    id="hypothesis-private"
-                    checked={isPrivate}
-                    onCheckedChange={(val) => setIsPrivate(Boolean(val))}
-                  />
-                  <Label htmlFor="hypothesis-private" className="text-sm text-muted-foreground">
-                    リポジトリをprivateにする
-                  </Label>
-                </div>
-              </div>
-
-              <hr className="border-border" />
-
-              <div className="space-y-3 rounded-md bg-muted/40 p-4">
-                <p className="text-sm font-semibold text-foreground">GitHub Actions Runners</p>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="hypothesis-runner-labels">
-                      ラベル
-                      <RequiredMark />
-                    </Label>
-                    <Input
-                      id="hypothesis-runner-labels"
-                      value={runnerLabels}
-                      onChange={(e) => setRunnerLabels(e.target.value)}
-                      placeholder="ubuntu-latest,gpu-runner"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="hypothesis-runner-desc">
-                      説明
+                <div className="grid gap-2 grid-cols-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="hypothesis-open-problems">
+                      解決すべき問題
                       <RequiredMark />
                     </Label>
                     <Textarea
-                      id="hypothesis-runner-desc"
-                      value={runnerDescription}
-                      onChange={(e) => setRunnerDescription(e.target.value)}
-                      placeholder="A100 x1, 40GB / 8 vCPU / 32GB RAM"
+                      id="hypothesis-open-problems"
+                      className="min-h-20"
+                      value={openProblems}
+                      onChange={(e) => setOpenProblems(e.target.value)}
+                      placeholder="ex) Existing models struggle with temporal reasoning in long videos"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="hypothesis-method">
+                      提案手法
+                      <RequiredMark />
+                    </Label>
+                    <Textarea
+                      id="hypothesis-method"
+                      className="min-h-20"
+                      value={method}
+                      onChange={(e) => setMethod(e.target.value)}
+                      placeholder="ex) A hierarchical attention mechanism that models temporal dependencies"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="hypothesis-experimental-setup">
+                      実験設定
+                      <RequiredMark />
+                    </Label>
+                    <Textarea
+                      id="hypothesis-experimental-setup"
+                      className="min-h-16"
+                      value={experimentalSetup}
+                      onChange={(e) => setExperimentalSetup(e.target.value)}
+                      placeholder="ex) Evaluate on ActivityNet-QA and EgoSchema benchmarks"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="hypothesis-primary-metric">
+                      主要評価指標
+                      <RequiredMark />
+                    </Label>
+                    <Input
+                      id="hypothesis-primary-metric"
+                      value={primaryMetric}
+                      onChange={(e) => setPrimaryMetric(e.target.value)}
+                      placeholder="ex) Accuracy on ActivityNet-QA"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="hypothesis-experimental-code">
+                      実験コード
+                      <RequiredMark />
+                    </Label>
+                    <Textarea
+                      id="hypothesis-experimental-code"
+                      className="min-h-20"
+                      value={experimentalCode}
+                      onChange={(e) => setExperimentalCode(e.target.value)}
+                      placeholder="ex) PyTorch implementation using transformers library"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="hypothesis-expected-result">
+                      期待される結果
+                      <RequiredMark />
+                    </Label>
+                    <Textarea
+                      id="hypothesis-expected-result"
+                      className="min-h-16"
+                      value={expectedResult}
+                      onChange={(e) => setExpectedResult(e.target.value)}
+                      placeholder="ex) 5% accuracy improvement over baseline on ActivityNet-QA"
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label htmlFor="hypothesis-expected-conclusion">
+                      期待される結論
+                      <RequiredMark />
+                    </Label>
+                    <Textarea
+                      id="hypothesis-expected-conclusion"
+                      className="min-h-16"
+                      value={expectedConclusion}
+                      onChange={(e) => setExpectedConclusion(e.target.value)}
+                      placeholder="ex) Hierarchical temporal attention significantly improves video QA"
                     />
                   </div>
                 </div>
               </div>
 
-              <hr className="border-border" />
-
-              <div className="space-y-3 rounded-md bg-muted/40 p-4">
-                <p className="text-sm font-semibold text-foreground">Weights &amp; Biases</p>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="hypothesis-wandb-entity">
-                      entity
-                      <RequiredMark />
-                    </Label>
-                    <Input
-                      id="hypothesis-wandb-entity"
-                      value={wandbEntity}
-                      onChange={(e) => setWandbEntity(e.target.value)}
-                    />
+              <div className="grid gap-2 xl:grid-cols-2">
+                <div className="space-y-2 rounded-md bg-muted/40 p-2">
+                  <p className="text-sm font-semibold text-foreground">GitHub</p>
+                  <div className="grid gap-2 grid-cols-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="hypothesis-github-owner">
+                        owner
+                        <RequiredMark />
+                      </Label>
+                      <Input
+                        id="hypothesis-github-owner"
+                        value={githubOwner}
+                        onChange={(e) => setGithubOwner(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="hypothesis-repo-name">
+                        repository
+                        <RequiredMark />
+                      </Label>
+                      <Input
+                        id="hypothesis-repo-name"
+                        value={repoName}
+                        onChange={(e) => setRepoName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="hypothesis-branch">
+                        branch
+                        <RequiredMark />
+                      </Label>
+                      <Input
+                        id="hypothesis-branch"
+                        value={branch}
+                        onChange={(e) => setBranch(e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="hypothesis-wandb-project">
-                      project
-                      <RequiredMark />
-                    </Label>
-                    <Input
-                      id="hypothesis-wandb-project"
-                      value={wandbProject}
-                      onChange={(e) => setWandbProject(e.target.value)}
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id="hypothesis-private"
+                      checked={isPrivate}
+                      onCheckedChange={(val) => setIsPrivate(Boolean(val))}
                     />
+                    <Label htmlFor="hypothesis-private" className="text-sm text-muted-foreground">
+                      リポジトリをprivateにする
+                    </Label>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="space-y-2 rounded-md bg-muted/40 p-2">
+                    <p className="text-sm font-semibold text-foreground">GitHub Actions Runners</p>
+                    <div className="grid gap-2 grid-cols-2">
+                      <div className="space-y-1">
+                        <Label htmlFor="hypothesis-runner-labels">
+                          ラベル
+                          <RequiredMark />
+                        </Label>
+                        <Input
+                          id="hypothesis-runner-labels"
+                          value={runnerLabels}
+                          onChange={(e) => setRunnerLabels(e.target.value)}
+                          placeholder="ubuntu-latest,gpu-runner"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="hypothesis-runner-desc">
+                          説明
+                          <RequiredMark />
+                        </Label>
+                        <Textarea
+                          id="hypothesis-runner-desc"
+                          value={runnerDescription}
+                          onChange={(e) => setRunnerDescription(e.target.value)}
+                          placeholder="A100 x1, 40GB / 8 vCPU / 32GB RAM"
+                          className="min-h-0 h-9"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 rounded-md bg-muted/40 p-2">
+                    <p className="text-sm font-semibold text-foreground">Weights &amp; Biases</p>
+                    <div className="grid gap-2 grid-cols-2">
+                      <div className="space-y-1">
+                        <Label htmlFor="hypothesis-wandb-entity">
+                          entity
+                          <RequiredMark />
+                        </Label>
+                        <Input
+                          id="hypothesis-wandb-entity"
+                          value={wandbEntity}
+                          onChange={(e) => setWandbEntity(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="hypothesis-wandb-project">
+                          project
+                          <RequiredMark />
+                        </Label>
+                        <Input
+                          id="hypothesis-wandb-project"
+                          value={wandbProject}
+                          onChange={(e) => setWandbProject(e.target.value)}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-
-              <hr className="border-border" />
 
               <div className="rounded-md bg-muted/40">
                 <button
@@ -706,11 +692,7 @@ export function HypothesisDrivenResearchPage({
                 )}
               </div>
 
-              <hr className="border-border" />
-
               <HypothesisAllLLMConfig llmMapping={llmMapping} onChange={setLlmMapping} />
-
-              <hr className="border-border" />
 
               <div className="flex flex-wrap gap-3">
                 <Button onClick={handleRun} disabled={isRunning || !isFormValid}>
