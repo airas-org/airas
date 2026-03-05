@@ -82,7 +82,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ],
-    allow_origin_regex=r"https://airas.*\.vercel\.app",
+    allow_origin_regex=r"https://(airas.*\.vercel\.app|.*\.trycloudflare\.com)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
