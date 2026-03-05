@@ -75,4 +75,9 @@ DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
     "dispatch_diagram_generation": NodeLLMConfig(
         llm_name="anthropic/claude-sonnet-4-5"
     ),
+    # assisted_research/
+    # DispatchInteractiveRepoAgentSubgraph
+    "dispatch_interactive_repo_agent": NodeLLMConfig(
+        llm_name="anthropic/claude-sonnet-4-5"
+    ),
 }

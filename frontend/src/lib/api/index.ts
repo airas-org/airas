@@ -18,6 +18,8 @@ export type { AssistedResearchSessionCreateRequest } from './models/AssistedRese
 export type { AssistedResearchSessionResponse } from './models/AssistedResearchSessionResponse';
 export type { AssistedResearchStepCreateRequest } from './models/AssistedResearchStepCreateRequest';
 export type { AssistedResearchStepResponse } from './models/AssistedResearchStepResponse';
+export type { CancelInteractiveRepoAgentRequestBody } from './models/CancelInteractiveRepoAgentRequestBody';
+export type { CancelInteractiveRepoAgentResponseBody } from './models/CancelInteractiveRepoAgentResponseBody';
 export type { CodeGenerationGraphLLMMapping } from './models/CodeGenerationGraphLLMMapping';
 export type { CompileLatexLLMMapping } from './models/CompileLatexLLMMapping';
 export { CompileLatexSubgraphRequestBody } from './models/CompileLatexSubgraphRequestBody';
@@ -32,6 +34,8 @@ export type { DispatchDiagramGenerationResponseBody } from './models/DispatchDia
 export type { DispatchExperimentValidationLLMMapping } from './models/DispatchExperimentValidationLLMMapping';
 export { DispatchExperimentValidationRequestBody } from './models/DispatchExperimentValidationRequestBody';
 export type { DispatchExperimentValidationResponseBody } from './models/DispatchExperimentValidationResponseBody';
+export { DispatchInteractiveRepoAgentRequestBody } from './models/DispatchInteractiveRepoAgentRequestBody';
+export type { DispatchInteractiveRepoAgentResponseBody } from './models/DispatchInteractiveRepoAgentResponseBody';
 export type { DispatchMainExperimentRequestBody } from './models/DispatchMainExperimentRequestBody';
 export type { DispatchMainExperimentResponseBody } from './models/DispatchMainExperimentResponseBody';
 export type { DispatchSanityCheckRequestBody } from './models/DispatchSanityCheckRequestBody';
@@ -143,6 +147,7 @@ export { GithubService } from './services/GithubService';
 export { GithubActionsService } from './services/GithubActionsService';
 export { HypothesesService } from './services/HypothesesService';
 export { HypothesisDrivenResearchService } from './services/HypothesisDrivenResearchService';
+export { InteractiveRepoAgentService } from './services/InteractiveRepoAgentService';
 export { LatexService } from './services/LatexService';
 export { ModelsService } from './services/ModelsService';
 export { PapersService } from './services/PapersService';
