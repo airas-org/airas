@@ -1,0 +1,158 @@
+import { FeatherSearch } from "@subframe/core";
+import { useMemo, useState } from "react";
+import type { Verification } from "../types";
+import { VerificationCard } from "./verification-card";
+
+interface VerificationHomePageProps {
+  verifications: Verification[];
+  onSelectVerification: (id: string) => void;
+  onDeleteVerification: (id: string) => void;
+  onDuplicateVerification: (id: string) => void;
+}
+
+interface CategoryColumnProps {
+  label: string;
+  count: number;
+  verifications: Verification[];
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
+}
+
+function CategoryColumn({
+  label,
+  count,
+  verifications,
+  onSelect,
+  onDelete,
+  onDuplicate,
+}: CategoryColumnProps) {
+  return (
+    <div className="min-w-[180px] flex-1 rounded-lg border border-border bg-card p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <h2 className="text-caption-bold font-caption-bold text-subtext-color uppercase tracking-wider whitespace-nowrap">
+          {label}
+        </h2>
+        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-neutral-200 px-1.5 text-[10px] font-medium text-neutral-600">
+          {count}
+        </span>
+      </div>
+      <div className="flex flex-col gap-2">
+        {verifications.map((v) => (
+          <VerificationCard
+            key={v.id}
+            verification={v}
+            onClick={() => onSelect(v.id)}
+            onDelete={() => onDelete(v.id)}
+            onDuplicate={() => onDuplicate(v.id)}
+          />
+        ))}
+        {verifications.length === 0 && (
+          <p className="py-6 text-center text-caption font-caption text-neutral-400">No items</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type CategoryKey = "methods" | "plan" | "code" | "settings" | "results" | "paper-writing" | "paper";
+
+const categories: { key: CategoryKey; label: string }[] = [
+  { key: "methods", label: "検証方針" },
+  { key: "plan", label: "検証方法" },
+  { key: "code", label: "実験コード" },
+  { key: "settings", label: "実験設定" },
+  { key: "results", label: "実験結果" },
+  { key: "paper-writing", label: "執筆のための情報収集" },
+  { key: "paper", label: "論文" },
+];
+
+function getCategoryKey(v: Verification): CategoryKey {
+  switch (v.phase) {
+    case "initial":
+    case "methods-proposed":
+      return "methods";
+    case "plan-generated":
+      return "plan";
+    case "code-generating":
+      return "code";
+    case "code-generated":
+      return "settings";
+    case "experiments-done":
+      return "results";
+    case "paper-writing":
+      return v.paperDraft?.status === "ready" ? "paper" : "paper-writing";
+  }
+}
+
+export function VerificationHomePage({
+  verifications,
+  onSelectVerification,
+  onDeleteVerification,
+  onDuplicateVerification,
+}: VerificationHomePageProps) {
+  const [search, setSearch] = useState("");
+
+  const filtered = search
+    ? verifications.filter(
+        (v) =>
+          v.title.toLowerCase().includes(search.toLowerCase()) ||
+          v.query.toLowerCase().includes(search.toLowerCase()),
+      )
+    : verifications;
+
+  const grouped = useMemo(() => {
+    const map: Record<CategoryKey, Verification[]> = {
+      methods: [],
+      plan: [],
+      code: [],
+      settings: [],
+      results: [],
+      "paper-writing": [],
+      paper: [],
+    };
+    for (const v of filtered) {
+      map[getCategoryKey(v)].push(v);
+    }
+    return map;
+  }, [filtered]);
+
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <div className="max-w-full mx-auto px-8 py-8">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h1 className="text-heading-2 font-heading-2 text-default-font">Verifications</h1>
+            <p className="text-caption font-caption text-subtext-color mt-1">
+              {verifications.length} projects
+            </p>
+          </div>
+          <div className="w-56 rounded-lg border border-border bg-card px-3 py-1.5 flex items-center gap-2">
+            <FeatherSearch className="h-4 w-4 text-subtext-color shrink-0" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-transparent text-body font-body text-default-font outline-none placeholder:text-neutral-400"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex gap-4 items-start overflow-x-auto">
+          {categories.map((cat) => (
+            <CategoryColumn
+              key={cat.key}
+              label={cat.label}
+              count={grouped[cat.key].length}
+              verifications={grouped[cat.key]}
+              onSelect={onSelectVerification}
+              onDelete={onDeleteVerification}
+              onDuplicate={onDuplicateVerification}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

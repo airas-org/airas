@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ComputeEnvironmentForm,
@@ -9,13 +9,7 @@ import {
   toComputeEnvironmentPayload,
 } from "@/components/features/compute-environment-form";
 import { AllLLMConfig } from "@/components/features/llm-config";
-import {
-  defaultRunnerConfigFormState,
-  isRunnerConfigFormValid,
-  RunnerConfigForm,
-  type RunnerConfigFormState,
-  toRunnerConfigPayload,
-} from "@/components/features/runner-config-form";
+import { SessionDropdown } from "@/components/session-dropdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -50,8 +44,8 @@ const RequiredMark = () => <span className="text-rose-400 ml-0.5">*</span>;
 
 interface AutonomousResearchPageProps {
   section: ResearchSection | null;
-  sessionsExpanded: boolean;
-  onToggleSessions: () => void;
+  sessions: ResearchSection[];
+  onSelectSession: (section: ResearchSection) => void;
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
   onRefreshSessions: (preferredId?: string) => Promise<void>;
@@ -59,8 +53,8 @@ interface AutonomousResearchPageProps {
 
 export function AutonomousResearchPage({
   section,
-  sessionsExpanded,
-  onToggleSessions,
+  sessions,
+  onSelectSession,
   onCreateSection,
   onUpdateSectionTitle,
   onRefreshSessions,
@@ -127,11 +121,6 @@ export function AutonomousResearchPage({
     const nextTitle = section?.title ?? DEFAULT_RESEARCH_TITLE;
     setAutoTitleDraft(nextTitle);
   }, [section?.title]);
-
-  useEffect(() => {
-    if (!sessionsExpanded) return;
-    void onRefreshSessions(section?.id);
-  }, [onRefreshSessions, section?.id, sessionsExpanded]);
 
   useEffect(
     () => () => {
@@ -305,31 +294,29 @@ export function AutonomousResearchPage({
 
   return (
     <div className="flex-1 bg-background overflow-y-auto">
-      <div className="sticky top-0 z-10 border-b border-border bg-card px-6 py-4 flex items-center justify-between relative">
-        <button
-          type="button"
-          className="absolute left-2 top-1/2 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground shadow-sm"
-          onClick={onToggleSessions}
-          aria-label="Toggle sessions"
-        >
-          {sessionsExpanded ? (
-            <ChevronLeft className="h-4 w-4" />
-          ) : (
-            <ChevronRight className="h-4 w-4" />
-          )}
-        </button>
-        <div className="space-y-2 pl-9">
-          <h2 className="text-lg font-semibold text-foreground">Autonomous Research</h2>
+      <div className="sticky top-0 z-10 bg-default-background px-6 py-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-foreground">Topic-Driven Research</h2>
+        <div className="flex items-center gap-2">
+          <SessionDropdown
+            sessions={sessions}
+            activeSession={section}
+            onSelectSession={onSelectSession}
+            onRefreshSessions={onRefreshSessions}
+          />
+          <button
+            type="button"
+            onClick={onCreateSection}
+            className="flex items-center gap-1.5 rounded-md bg-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-300 hover:text-neutral-900 transition-colors cursor-pointer"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New Session
+          </button>
         </div>
-        <Button onClick={onCreateSection}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Session
-        </Button>
       </div>
-      <div className="p-6">
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-[1fr_2fr] items-start">
+      <div className="p-4">
+        <div className="space-y-4">
           <Card>
-            <CardHeader className="space-y-4">
+            <CardHeader className="px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 {isEditingAutoTitle ? (
                   <Input
@@ -356,8 +343,8 @@ export function AutonomousResearchPage({
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
+            <CardContent className="space-y-2 px-4 pb-4">
+              <div className="space-y-1">
                 <Label htmlFor="auto-queries">
                   研究テーマ
                   <RequiredMark />
@@ -370,104 +357,117 @@ export function AutonomousResearchPage({
                 />
               </div>
 
-              <hr className="border-border" />
-
-              <div className="space-y-3 rounded-md bg-muted/40 p-4">
-                <p className="text-sm font-semibold text-foreground">GitHub</p>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="auto-github-owner">
-                      owner
-                      <RequiredMark />
-                    </Label>
-                    <Input
-                      id="auto-github-owner"
-                      value={autoGithubOwner}
-                      onChange={(e) => setAutoGithubOwner(e.target.value)}
-                    />
+              <div className="grid gap-2 xl:grid-cols-2">
+                <div className="space-y-2 rounded-md bg-muted/40 p-2">
+                  <p className="text-sm font-semibold text-foreground">GitHub</p>
+                  <div className="grid gap-2 grid-cols-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="auto-github-owner">
+                        owner
+                        <RequiredMark />
+                      </Label>
+                      <Input
+                        id="auto-github-owner"
+                        value={autoGithubOwner}
+                        onChange={(e) => setAutoGithubOwner(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="auto-repo-name">
+                        repository
+                        <RequiredMark />
+                      </Label>
+                      <Input
+                        id="auto-repo-name"
+                        value={autoRepoName}
+                        onChange={(e) => setAutoRepoName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="auto-branch">
+                        branch
+                        <RequiredMark />
+                      </Label>
+                      <Input
+                        id="auto-branch"
+                        value={autoBranch}
+                        onChange={(e) => setAutoBranch(e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="auto-repo-name">
-                      repository
-                      <RequiredMark />
-                    </Label>
-                    <Input
-                      id="auto-repo-name"
-                      value={autoRepoName}
-                      onChange={(e) => setAutoRepoName(e.target.value)}
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id="auto-private"
+                      checked={autoIsPrivate}
+                      onCheckedChange={(val) => setAutoIsPrivate(Boolean(val))}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="auto-branch">
-                      branch
-                      <RequiredMark />
+                    <Label htmlFor="auto-private" className="text-sm text-muted-foreground">
+                      リポジトリをprivateにする
                     </Label>
-                    <Input
-                      id="auto-branch"
-                      value={autoBranch}
-                      onChange={(e) => setAutoBranch(e.target.value)}
-                    />
                   </div>
                 </div>
-                <div className="flex items-center gap-3 mt-2">
-                  <Checkbox
-                    id="auto-private"
-                    checked={autoIsPrivate}
-                    onCheckedChange={(val) => setAutoIsPrivate(Boolean(val))}
-                  />
-                  <Label htmlFor="auto-private" className="text-sm text-muted-foreground">
-                    リポジトリをprivateにする
-                  </Label>
+
+                <div className="space-y-2">
+                  <div className="space-y-2 rounded-md bg-muted/40 p-2">
+                    <p className="text-sm font-semibold text-foreground">GitHub Actions Runners</p>
+                    <div className="grid gap-2 grid-cols-2">
+                      <div className="space-y-1">
+                        <Label htmlFor="auto-runner-labels">
+                          ラベル
+                          <RequiredMark />
+                        </Label>
+                        <Input
+                          id="auto-runner-labels"
+                          value={autoRunnerLabels}
+                          onChange={(e) => setAutoRunnerLabels(e.target.value)}
+                          placeholder="ubuntu-latest,gpu-runner"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="auto-runner-desc">
+                          説明
+                          <RequiredMark />
+                        </Label>
+                        <Textarea
+                          id="auto-runner-desc"
+                          value={autoRunnerDescription}
+                          onChange={(e) => setAutoRunnerDescription(e.target.value)}
+                          placeholder="A100 x1, 40GB / 8 vCPU / 32GB RAM"
+                          className="min-h-0 h-9"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 rounded-md bg-muted/40 p-2">
+                    <p className="text-sm font-semibold text-foreground">Weights &amp; Biases</p>
+                    <div className="grid gap-2 grid-cols-2">
+                      <div className="space-y-1">
+                        <Label htmlFor="auto-wandb-entity">
+                          entity
+                          <RequiredMark />
+                        </Label>
+                        <Input
+                          id="auto-wandb-entity"
+                          value={autoWandbEntity}
+                          onChange={(e) => setAutoWandbEntity(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="auto-wandb-project">
+                          project
+                          <RequiredMark />
+                        </Label>
+                        <Input
+                          id="auto-wandb-project"
+                          value={autoWandbProject}
+                          onChange={(e) => setAutoWandbProject(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              <hr className="border-border" />
-
-              <RunnerConfigForm
-                idPrefix="auto"
-                value={autoRunnerConfig}
-                onChange={setAutoRunnerConfig}
-              />
-
-              <hr className="border-border" />
-
-              <ComputeEnvironmentForm
-                idPrefix="auto"
-                value={autoComputeEnv}
-                onChange={setAutoComputeEnv}
-              />
-
-              <hr className="border-border" />
-
-              <div className="space-y-3 rounded-md bg-muted/40 p-4">
-                <p className="text-sm font-semibold text-foreground">Weights &amp; Biases</p>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="auto-wandb-entity">
-                      entity
-                      <RequiredMark />
-                    </Label>
-                    <Input
-                      id="auto-wandb-entity"
-                      value={autoWandbEntity}
-                      onChange={(e) => setAutoWandbEntity(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="auto-wandb-project">
-                      project
-                      <RequiredMark />
-                    </Label>
-                    <Input
-                      id="auto-wandb-project"
-                      value={autoWandbProject}
-                      onChange={(e) => setAutoWandbProject(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <hr className="border-border" />
 
               <div className="rounded-md bg-muted/40">
                 <button
@@ -634,11 +634,7 @@ export function AutonomousResearchPage({
                 )}
               </div>
 
-              <hr className="border-border" />
-
               <AllLLMConfig llmMapping={llmMapping} onChange={setLlmMapping} />
-
-              <hr className="border-border" />
 
               <div className="flex flex-wrap gap-3">
                 <Button
