@@ -366,12 +366,12 @@ export default function App() {
     <div className="flex min-h-screen bg-default-background">
       <aside
         className={cn(
-          "fixed left-0 top-0 h-screen z-30 transition-[width] duration-200 ease-in-out overflow-hidden",
-          sidebarOpen ? "w-60" : "w-0",
+          "fixed left-0 top-0 h-screen z-30 bg-default-background transition-[width] duration-200 ease-in-out overflow-hidden",
+          sidebarOpen ? "w-52" : "w-0",
         )}
       >
         <SidebarWithSections
-          className="min-w-[15rem]"
+          className="min-w-[13rem]"
           header={
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-3">
@@ -557,7 +557,7 @@ export default function App() {
       <div
         className={cn(
           "flex-1 flex flex-col min-w-0 transition-[margin-left] duration-200 ease-in-out",
-          sidebarOpen ? "ml-60" : "ml-0",
+          sidebarOpen ? "ml-52" : "ml-0",
         )}
       >
         <TopbarWithRightNav

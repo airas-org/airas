@@ -55,33 +55,35 @@ function CategoryColumn({
   );
 }
 
-type CategoryKey = "methods" | "plan" | "code" | "settings" | "results" | "paper-writing" | "paper";
+type CategoryKey =
+  | "hypothesis"
+  | "plan-decided"
+  | "implementation-done"
+  | "experiments-done"
+  | "paper-done";
 
 const categories: { key: CategoryKey; label: string }[] = [
-  { key: "methods", label: "検証方針" },
-  { key: "plan", label: "検証方法" },
-  { key: "code", label: "実験コード" },
-  { key: "settings", label: "実験設定" },
-  { key: "results", label: "実験結果" },
-  { key: "paper-writing", label: "執筆のための情報収集" },
-  { key: "paper", label: "論文" },
+  { key: "hypothesis", label: "仮説入力済み" },
+  { key: "plan-decided", label: "方針決定済み" },
+  { key: "implementation-done", label: "実装完了" },
+  { key: "experiments-done", label: "実験完了" },
+  { key: "paper-done", label: "論文生成が完了" },
 ];
 
 function getCategoryKey(v: Verification): CategoryKey {
   switch (v.phase) {
     case "initial":
     case "methods-proposed":
-      return "methods";
+      return "hypothesis";
     case "plan-generated":
-      return "plan";
+      return "plan-decided";
     case "code-generating":
-      return "code";
     case "code-generated":
-      return "settings";
+      return "implementation-done";
     case "experiments-done":
-      return "results";
+      return "experiments-done";
     case "paper-writing":
-      return v.paperDraft?.status === "ready" ? "paper" : "paper-writing";
+      return v.paperDraft?.status === "ready" ? "paper-done" : "experiments-done";
   }
 }
 
@@ -103,13 +105,11 @@ export function VerificationHomePage({
 
   const grouped = useMemo(() => {
     const map: Record<CategoryKey, Verification[]> = {
-      methods: [],
-      plan: [],
-      code: [],
-      settings: [],
-      results: [],
-      "paper-writing": [],
-      paper: [],
+      hypothesis: [],
+      "plan-decided": [],
+      "implementation-done": [],
+      "experiments-done": [],
+      "paper-done": [],
     };
     for (const v of filtered) {
       map[getCategoryKey(v)].push(v);
@@ -122,7 +122,7 @@ export function VerificationHomePage({
       <div className="max-w-full mx-auto px-8 py-8">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-heading-2 font-heading-2 text-default-font">Verifications</h1>
+            <h1 className="text-heading-2 font-heading-2 text-default-font">検証一覧</h1>
             <p className="text-caption font-caption text-subtext-color mt-1">
               {verifications.length} projects
             </p>
