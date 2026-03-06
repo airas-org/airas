@@ -1,0 +1,30 @@
+### Dispatch interactive repo agent
+POST http://127.0.0.1:8000/airas/v1/interactive-repo-agent/dispatch
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "matsuzawa-20260213-2",
+        "branch_name": "main"
+    },
+    "github_actions_agent": "open_code",
+    "session_username": "your-username",
+    "session_password": "your-password"
+}
+
+###
+
+### Cancel interactive repo agent session
+POST http://127.0.0.1:8000/airas/v1/interactive-repo-agent/22563720213/cancel
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "matsuzawa-20260213-2",
+        "branch_name": "main"
+    }
+}
+
+###

@@ -8,6 +8,9 @@ import { defineConfig } from "vite";
 export default defineConfig({
   envDir: path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."),
   plugins: [react()],
+  server: {
+    allowedHosts: [".trycloudflare.com"],
+  },
   resolve: {
     alias: {
       "@": path.resolve(path.dirname(fileURLToPath(import.meta.url)), "./src"),
