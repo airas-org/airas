@@ -118,7 +118,7 @@ export function VerificationHomePage({
   }, [filtered]);
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-hidden">
+    <div className="flex-1 overflow-y-auto">
       <div className="max-w-full mx-auto px-8 py-8">
         <div className="flex items-end justify-between gap-4">
           <div>
