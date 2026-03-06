@@ -1,5 +1,3 @@
-// frontend/src/App.tsx
-
 import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons";
 import * as SubframeCore from "@subframe/core";
 import {
@@ -33,6 +31,7 @@ import {
   type AutonomousSectionsMap,
   useAutonomousResearchSessions,
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
+import { GitHubOAuthCallback } from "@/components/pages/integration";
 import { OnboardingOverlay } from "@/components/pages/onboarding";
 import {
   mockVerifications,
@@ -349,6 +348,20 @@ export default function App() {
   const handleNavChange = useCallback((key: NavKey) => {
     setActiveNav(key);
   }, []);
+
+  // Handle GitHub OAuth callback route
+  if (window.location.pathname === "/auth/github/callback") {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    const savedState = sessionStorage.getItem("github_oauth_state");
+
+    if (code && state && state === savedState) {
+      return <GitHubOAuthCallback code={code} />;
+    }
+    window.location.href = "/";
+    return null;
+  }
 
   // Handle OAuth callback route
   if (isEnterpriseEnabled() && window.location.pathname === "/auth/callback") {
