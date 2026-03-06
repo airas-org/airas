@@ -1,15 +1,10 @@
 # CLAUDE.md
 @.claude/CLAUDE.local.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+A web application for research automation. The frontend is built with React, the backend with FastAPI, and PostgreSQL is used as the database.
 
+# Module Structure
 
-## Testing
-
-- `backend/tests/http` - API request samples.
-
-## Code Quality
-
-- `make ruff` - Run Python linter, auto-fix, and formatter (backend/)
-- `make mypy` - Run Python type checking (backend/)
-- `make biome` - Run JavaScript/TypeScript linter and formatter (frontend/)
+- `backend/`: Backend code implemented in Python (FastAPI)
+- `frontend/`: Frontend code implemented in TypeScript + React (Vite)
+- `docs/`: Documentation site implemented in TypeScript (Docusaurus)
