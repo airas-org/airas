@@ -24,6 +24,7 @@ from api.routes.v1 import (
     github_actions,
     hypotheses,
     hypothesis_driven_research,
+    interactive_repo_agent,
     latex,
     models,
     papers,
@@ -55,7 +56,9 @@ async def lifespan(app: FastAPI):
         )
 
     # Explicitly wire route modules so dependency_injector resolves Provide[] dependencies.
-    container.wire(packages=[routes_v1])
+    import api.ee as ee_pkg
+
+    container.wire(packages=[routes_v1, ee_pkg])
     await container.init_resources()
 
     try:
@@ -82,7 +85,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ],
-    allow_origin_regex=r"https://airas.*\.vercel\.app",
+    allow_origin_regex=r"https://(airas.*\.vercel\.app|.*\.trycloudflare\.com)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -105,6 +108,9 @@ app.include_router(github_actions.router, prefix="/airas/v1", dependencies=auth_
 app.include_router(github.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(assisted_research.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(
+    interactive_repo_agent.router, prefix="/airas/v1", dependencies=auth_deps
+)
+app.include_router(
     topic_open_ended_research.router, prefix="/airas/v1", dependencies=auth_deps
 )
 app.include_router(
@@ -114,6 +120,14 @@ app.include_router(
 # Register EE routes if enterprise is enabled
 _ee_settings = get_ee_settings()
 if _ee_settings.enabled:
+    from api.ee.api_keys.routes import router as ee_api_keys_router
     from api.ee.auth.routes import router as ee_auth_router
+    from api.ee.github_oauth.routes import router as ee_github_oauth_router
+    from api.ee.plan.routes import router as ee_plan_router
+    from api.ee.stripe.routes import router as ee_stripe_router
 
     app.include_router(ee_auth_router, prefix="/airas/ee")
+    app.include_router(ee_api_keys_router, prefix="/airas/ee")
+    app.include_router(ee_plan_router, prefix="/airas/ee")
+    app.include_router(ee_stripe_router, prefix="/airas/ee")
+    app.include_router(ee_github_oauth_router, prefix="/airas/ee")

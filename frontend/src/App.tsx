@@ -1,8 +1,26 @@
 // frontend/src/App.tsx
 
 import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons";
+import * as SubframeCore from "@subframe/core";
+import {
+  FeatherBell,
+  FeatherChevronUp,
+  FeatherFileText,
+  FeatherHelpCircle,
+  FeatherHome,
+  FeatherKey,
+  FeatherList,
+  FeatherLogOut,
+  FeatherMessageSquare,
+  FeatherPanelLeftClose,
+  FeatherPanelLeftOpen,
+  FeatherPlus,
+  FeatherSearch,
+  FeatherSettings,
+  FeatherShield,
+  FeatherUser,
+} from "@subframe/core";
 import axios from "axios";
-import { ChevronDown, ChevronRight, FileText, UserCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   AUTONOMOUS_SUB_NAVS,
@@ -15,33 +33,19 @@ import {
   type AutonomousSectionsMap,
   useAutonomousResearchSessions,
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
-import { SectionsSidebar } from "@/components/sections-sidebar";
+import { GitHubOAuthCallback } from "@/components/pages/integration";
+import { OnboardingOverlay } from "@/components/pages/onboarding";
+import {
+  mockVerifications,
+  type ProposedMethod,
+  type Verification,
+} from "@/components/pages/verification";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isEnterpriseEnabled } from "@/ee/config";
 import { OpenAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
-
-const mockResearchSections: ResearchSection[] = [
-  {
-    id: "1",
-    title: "Untitled Research",
-    createdAt: new Date("2024-01-15"),
-    status: "in-progress",
-  },
-  {
-    id: "2",
-    title: "GAN-based Image Generation",
-    createdAt: new Date("2024-01-10"),
-    status: "completed",
-  },
-  {
-    id: "3",
-    title: "Reinforcement Learning Study",
-    createdAt: new Date("2024-01-05"),
-    status: "completed",
-  },
-];
+import { Avatar, DropdownMenu, IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
 
 const initialWorkflowTree: WorkflowTree = {
   nodes: {},
@@ -106,12 +110,6 @@ function useEEComponents() {
 export default function App() {
   const eeComponents = useEEComponents();
 
-  // Assisted Research
-  const [assistedSections, setAssistedSections] = useState<ResearchSection[]>(mockResearchSections);
-  const [activeAssistedSection, setActiveAssistedSection] = useState<ResearchSection | null>(
-    mockResearchSections[0],
-  );
-
   // Autonomous Research
   const [autonomousSectionsMap, setAutonomousSectionsMap] = useState<AutonomousSectionsMap>(
     initialAutonomousSectionsMap,
@@ -119,16 +117,27 @@ export default function App() {
   const [autonomousActiveSectionMap, setAutonomousActiveSectionMap] =
     useState<AutonomousActiveSectionMap>(initialAutonomousActiveSectionMap);
 
-  // Assisted Research workflow
-  const [activeFeature, setActiveFeature] = useState<string | null>(null);
+  // Workflow
   const [workflowTree, setWorkflowTree] = useState<WorkflowTree>(initialWorkflowTree);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
 
-  // Navigation
-  const [activeNav, setActiveNav] = useState<NavKey>("autonomous-research");
-  const [isAutonomousExpanded, setIsAutonomousExpanded] = useState(true);
+  // Verification
+  const [verifications, setVerifications] = useState<Verification[]>(mockVerifications);
+  const [activeVerificationId, setActiveVerificationId] = useState<string | null>(null);
+  const activeVerification = verifications.find((v) => v.id === activeVerificationId) ?? null;
+
+  // Navigation — check URL params for post-checkout redirect
+  const [activeNav, setActiveNav] = useState<NavKey>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const nav = params.get("nav");
+    if (nav === "user-plan" || nav === "integration") return nav;
+    return "home";
+  });
   const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
-  const [sessionsExpanded, setSessionsExpanded] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return !localStorage.getItem("airas-onboarding-done");
+  });
 
   const { fetchSections } = useAutonomousResearchSessions({
     setAutonomousSectionsMap,
@@ -136,33 +145,98 @@ export default function App() {
   });
 
   const handleCreateSection = () => {
-    const newSection: ResearchSection = {
-      id: Date.now().toString(),
-      title: "Untitled Research",
-      createdAt: new Date(),
-      status: "in-progress",
-    };
     if (activeNav === "autonomous-research") {
       setAutonomousActiveSectionMap((prev) => ({ ...prev, [autonomousSubNav]: null }));
-    } else {
-      setAssistedSections([newSection, ...assistedSections]);
-      setActiveAssistedSection(newSection);
     }
     setWorkflowTree(initialWorkflowTree);
     setActiveNodeId(null);
-    setActiveFeature(null);
   };
 
-  const handleToggleSessions = useCallback(() => {
-    setSessionsExpanded((prev) => !prev);
+  const handleCreateVerification = useCallback(() => {
+    const newVerification: Verification = {
+      id: `v-${Date.now()}`,
+      title: "新規検証",
+      query: "",
+      createdAt: new Date(),
+      phase: "initial",
+    };
+    setVerifications((prev) => [newVerification, ...prev]);
+    setActiveVerificationId(newVerification.id);
+    setActiveNav("verification");
   }, []);
+
+  const handleSelectVerification = useCallback((id: string) => {
+    setActiveVerificationId(id);
+    setActiveNav("verification");
+  }, []);
+
+  const handleUpdateVerification = useCallback((id: string, updates: Partial<Verification>) => {
+    setVerifications((prev) => prev.map((v) => (v.id === id ? { ...v, ...updates } : v)));
+  }, []);
+
+  const handleDeleteVerification = useCallback(
+    (id: string) => {
+      setVerifications((prev) => prev.filter((v) => v.id !== id));
+      if (activeVerificationId === id) {
+        setActiveVerificationId(null);
+        setActiveNav("home");
+      }
+    },
+    [activeVerificationId],
+  );
+
+  const handleDuplicateVerification = useCallback((id: string) => {
+    setVerifications((prev) => {
+      const source = prev.find((v) => v.id === id);
+      if (!source) return prev;
+      const copy: Verification = {
+        ...source,
+        id: `v-${Date.now()}`,
+        title: `${source.title} (コピー)`,
+        createdAt: new Date(),
+      };
+      return [copy, ...prev];
+    });
+  }, []);
+
+  const handleCreateWithMethod = useCallback(
+    (sourceVerification: Verification, method: ProposedMethod) => {
+      const newId = `v-${Date.now()}`;
+      const newVerification: Verification = {
+        id: newId,
+        title: method.title,
+        query: sourceVerification.query,
+        createdAt: new Date(),
+        phase: "plan-generated",
+        proposedMethods: [method],
+        selectedMethodId: method.id,
+        plan: {
+          whatToVerify: method.whatToVerify,
+          method: method.method,
+        },
+      };
+      setVerifications((prev) => [newVerification, ...prev]);
+      setActiveVerificationId(newId);
+      setActiveNav("verification");
+    },
+    [],
+  );
+
+  const handleSelectAutonomousSession = useCallback(
+    (section: ResearchSection) => {
+      setAutonomousActiveSectionMap((prev) => ({
+        ...prev,
+        [autonomousSubNav]: section,
+      }));
+    },
+    [autonomousSubNav],
+  );
 
   const handleNavigate = useCallback(
     (nodeId: string) => {
       const node = workflowTree.nodes[nodeId];
       if (node) {
         setActiveNodeId(nodeId);
-        setActiveFeature(node.type);
       }
     },
     [workflowTree],
@@ -268,24 +342,28 @@ export default function App() {
           if (!current) return prev;
           return { ...prev, [autonomousSubNav]: { ...current, title } };
         });
-      } else {
-        if (!activeAssistedSection) return;
-        setAssistedSections((prev) =>
-          prev.map((s) => (s.id === activeAssistedSection.id ? { ...s, title } : s)),
-        );
-        setActiveAssistedSection((prev) => (prev ? { ...prev, title } : prev));
       }
     },
-    [activeNav, autonomousSubNav, autonomousActiveSectionMap, activeAssistedSection],
+    [activeNav, autonomousSubNav, autonomousActiveSectionMap],
   );
 
   const handleNavChange = useCallback((key: NavKey) => {
     setActiveNav(key);
-    if (key === "assisted-research") {
-      setWorkflowTree(initialWorkflowTree);
-      setActiveNodeId(null);
-    }
   }, []);
+
+  // Handle GitHub OAuth callback route
+  if (window.location.pathname === "/auth/github/callback") {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    const savedState = sessionStorage.getItem("github_oauth_state");
+
+    if (code && state && state === savedState) {
+      return <GitHubOAuthCallback code={code} />;
+    }
+    window.location.href = "/";
+    return null;
+  }
 
   // Handle OAuth callback route
   if (isEnterpriseEnabled() && window.location.pathname === "/auth/callback") {
@@ -300,228 +378,303 @@ export default function App() {
   }
 
   const appContent = (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="h-12 border-b border-border bg-card px-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <img src="/airas_logo.png" alt="AIRAS logo" className="h-8 w-auto" />
-          <p className="text-base font-semibold text-foreground leading-none">AIRAS</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <a
-            href="https://github.com/airas-org/airas"
-            target="_blank"
-            rel="noreferrer"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="GitHub"
-          >
-            <SiGithub className="h-6 w-6" />
-          </a>
-          <a
-            href="https://airas-org.github.io/airas/"
-            target="_blank"
-            rel="noreferrer"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Documentation"
-            title="Documentation"
-          >
-            <FileText className="h-6 w-6" />
-          </a>
-          <a
-            href="https://discord.gg/KGm5FGY5"
-            target="_blank"
-            rel="noreferrer"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Discord"
-          >
-            <SiDiscord className="h-6 w-6" />
-          </a>
-          <a
-            href="https://x.com/fuyu_quant"
-            target="_blank"
-            rel="noreferrer"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="X"
-          >
-            <SiX className="h-6 w-6" />
-          </a>
-          {eeComponents ? (
-            <eeComponents.UserMenu />
-          ) : (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span aria-disabled="true" className="inline-flex">
-                    <button
-                      type="button"
-                      disabled
-                      className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground opacity-50 cursor-not-allowed"
-                    >
-                      <UserCircle className="h-5 w-5" />
-                      <span>Login</span>
-                    </button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Enterprise Edition is not enabled</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-      </header>
-
-      <div className="flex flex-1">
-        <aside className="w-52 border-r border-border bg-card/60 flex-shrink-0 flex flex-col">
-          <div className="flex flex-col gap-1 p-3">
-            <button
-              type="button"
-              onClick={() => handleNavChange("assisted-research")}
-              className={cn(
-                "w-full px-3 py-1.5 text-left text-sm transition-colors border-l-2 cursor-pointer",
-                activeNav === "assisted-research"
-                  ? "text-foreground font-semibold border-blue-700"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border-transparent",
-              )}
-            >
-              Assisted Research
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsAutonomousExpanded((prev) => !prev)}
-              aria-expanded={isAutonomousExpanded}
-              className={cn(
-                "w-full px-3 py-1.5 text-left text-sm transition-colors border-l-2 border-transparent flex items-center justify-between cursor-pointer",
-                activeNav === "autonomous-research"
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
-              )}
-            >
-              <span>Autonomous Research</span>
-              {isAutonomousExpanded ? (
-                <ChevronDown className="h-4 w-4 shrink-0" />
-              ) : (
-                <ChevronRight className="h-4 w-4 shrink-0" />
-              )}
-            </button>
-            <div
-              className={cn(
-                "grid transition-all duration-200 ease-in-out",
-                isAutonomousExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-              )}
-            >
-              <div className="overflow-hidden flex flex-col gap-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAutonomousSubNav("topic-driven");
-                    handleNavChange("autonomous-research");
-                  }}
-                  className={cn(
-                    "w-full pl-6 pr-3 py-1.5 text-left text-sm transition-colors border-l-2 hover:text-foreground hover:bg-muted/40 cursor-pointer",
-                    activeNav === "autonomous-research" && autonomousSubNav === "topic-driven"
-                      ? "text-foreground font-semibold border-blue-700"
-                      : "text-muted-foreground border-transparent",
-                  )}
-                >
-                  Topic-Driven
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAutonomousSubNav("hypothesis-driven");
-                    handleNavChange("autonomous-research");
-                  }}
-                  className={cn(
-                    "w-full pl-6 pr-3 py-1.5 text-left text-sm transition-colors border-l-2 hover:text-foreground hover:bg-muted/40 cursor-pointer",
-                    activeNav === "autonomous-research" && autonomousSubNav === "hypothesis-driven"
-                      ? "text-foreground font-semibold border-blue-700"
-                      : "text-muted-foreground border-transparent",
-                  )}
-                >
-                  Hypothesis-Driven
-                </button>
+    <div className="flex min-h-screen bg-default-background">
+      <aside
+        className={cn(
+          "fixed left-0 top-0 h-screen z-30 transition-[width] duration-200 ease-in-out overflow-hidden",
+          sidebarOpen ? "w-60" : "w-0",
+        )}
+      >
+        <SidebarWithSections
+          className="min-w-[15rem]"
+          header={
+            <div className="flex w-full items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img src="/airas_logo.png" alt="AIRAS logo" className="h-7 w-auto" />
+                <span className="text-heading-3 font-heading-3 text-default-font">AIRAS</span>
               </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleNavChange("settings")}
-              className={cn(
-                "w-full px-3 py-1.5 text-left text-sm transition-colors border-l-2 cursor-pointer",
-                activeNav === "settings"
-                  ? "text-foreground font-semibold border-blue-700"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border-transparent",
-              )}
-            >
-              Settings
-            </button>
-          </div>
-        </aside>
-
-        {(activeNav === "assisted-research" || activeNav === "autonomous-research") && (
-          <div
-            className={cn(
-              "relative flex-shrink-0 h-full transition-[width] duration-200 ease-in-out",
-              sessionsExpanded ? "w-56" : "w-0",
-            )}
-          >
-            <div
-              className={cn(
-                "overflow-hidden transition-[width,opacity] duration-200 ease-in-out h-full",
-                sessionsExpanded ? "w-56 opacity-100" : "w-0 opacity-0",
-              )}
-            >
-              <SectionsSidebar
-                sections={
-                  activeNav === "autonomous-research"
-                    ? autonomousSectionsMap[autonomousSubNav]
-                    : assistedSections
-                }
-                activeSection={
-                  activeNav === "autonomous-research"
-                    ? autonomousActiveSectionMap[autonomousSubNav]
-                    : activeAssistedSection
-                }
-                onSelectSection={
-                  activeNav === "autonomous-research"
-                    ? (section) =>
-                        setAutonomousActiveSectionMap((prev) => ({
-                          ...prev,
-                          [autonomousSubNav]: section,
-                        }))
-                    : setActiveAssistedSection
-                }
+              <IconButton
+                size="small"
+                variant="neutral-tertiary"
+                icon={<FeatherPanelLeftClose />}
+                onClick={() => setSidebarOpen(false)}
               />
             </div>
-          </div>
+          }
+          footer={
+            <SubframeCore.DropdownMenu.Root>
+              <SubframeCore.DropdownMenu.Trigger asChild>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-md px-1 py-1 -mx-1 hover:bg-neutral-100 transition-colors cursor-pointer"
+                >
+                  <Avatar variant="brand" size="small">
+                    Dev
+                  </Avatar>
+                  <span className="flex-1 text-body font-body text-default-font text-left">
+                    開発者
+                  </span>
+                  <FeatherChevronUp className="h-4 w-4 text-subtext-color" />
+                </button>
+              </SubframeCore.DropdownMenu.Trigger>
+              <SubframeCore.DropdownMenu.Portal>
+                <SubframeCore.DropdownMenu.Content side="top" align="start" sideOffset={8}>
+                  <DropdownMenu>
+                    <DropdownMenu.DropdownItem
+                      icon={<FeatherUser />}
+                      onSelect={() => handleNavChange("profile")}
+                    >
+                      プロフィール
+                    </DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem
+                      icon={<FeatherKey />}
+                      onSelect={() => handleNavChange("api-token")}
+                    >
+                      API Token
+                    </DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem
+                      icon={<FeatherSettings />}
+                      onSelect={() => handleNavChange("integration")}
+                    >
+                      インテグレーション
+                    </DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownDivider />
+                    <DropdownMenu.DropdownItem icon={<FeatherLogOut />}>
+                      ログアウト
+                    </DropdownMenu.DropdownItem>
+                  </DropdownMenu>
+                </SubframeCore.DropdownMenu.Content>
+              </SubframeCore.DropdownMenu.Portal>
+            </SubframeCore.DropdownMenu.Root>
+          }
+        >
+          <SidebarWithSections.NavItem
+            icon={<FeatherHome />}
+            selected={activeNav === "dashboard"}
+            onClick={() => handleNavChange("dashboard")}
+          >
+            ダッシュボード
+          </SidebarWithSections.NavItem>
+          <SidebarWithSections.NavItem
+            icon={<FeatherPlus />}
+            onClick={handleCreateVerification}
+            className="bg-brand-50"
+          >
+            新規検証
+          </SidebarWithSections.NavItem>
+          <SidebarWithSections.NavItem
+            icon={<FeatherList />}
+            selected={activeNav === "home"}
+            onClick={() => handleNavChange("home")}
+          >
+            検証一覧
+          </SidebarWithSections.NavItem>
+          <SidebarWithSections.NavItem
+            icon={<FeatherSearch />}
+            selected={activeNav === "search"}
+            onClick={() => handleNavChange("search")}
+          >
+            検索
+          </SidebarWithSections.NavItem>
+          <SidebarWithSections.NavItem
+            icon={<FeatherBell />}
+            selected={activeNav === "notifications"}
+            onClick={() => handleNavChange("notifications")}
+          >
+            通知
+          </SidebarWithSections.NavItem>
+          <SidebarWithSections.NavSection
+            label={
+              <>
+                自動研究{" "}
+                <span className="text-[10px] font-normal text-neutral-400">Experimental</span>
+              </>
+            }
+          >
+            <SidebarWithSections.NavItem
+              icon={<span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
+              selected={activeNav === "autonomous-research" && autonomousSubNav === "topic-driven"}
+              onClick={() => {
+                setAutonomousSubNav("topic-driven");
+                handleNavChange("autonomous-research");
+              }}
+            >
+              Topic-Driven
+            </SidebarWithSections.NavItem>
+            <SidebarWithSections.NavItem
+              icon={<span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
+              selected={
+                activeNav === "autonomous-research" && autonomousSubNav === "hypothesis-driven"
+              }
+              onClick={() => {
+                setAutonomousSubNav("hypothesis-driven");
+                handleNavChange("autonomous-research");
+              }}
+            >
+              Hypothesis-Driven
+            </SidebarWithSections.NavItem>
+          </SidebarWithSections.NavSection>
+          <SidebarWithSections.NavSection label="Settings">
+            <SidebarWithSections.NavItem
+              icon={<FeatherSettings />}
+              selected={activeNav === "integration"}
+              onClick={() => handleNavChange("integration")}
+            >
+              Integration
+            </SidebarWithSections.NavItem>
+            <SidebarWithSections.NavItem
+              icon={<FeatherUser />}
+              selected={activeNav === "user-plan"}
+              onClick={() => handleNavChange("user-plan")}
+            >
+              User Plan
+            </SidebarWithSections.NavItem>
+            <SidebarWithSections.NavItem
+              icon={<FeatherUser />}
+              selected={activeNav === "profile"}
+              onClick={() => handleNavChange("profile")}
+            >
+              プロフィール
+            </SidebarWithSections.NavItem>
+          </SidebarWithSections.NavSection>
+          <SidebarWithSections.NavSection label="Support">
+            <SidebarWithSections.NavItem
+              icon={<FeatherMessageSquare />}
+              selected={activeNav === "feedback"}
+              onClick={() => handleNavChange("feedback")}
+            >
+              お問い合わせ
+            </SidebarWithSections.NavItem>
+            <SidebarWithSections.NavItem
+              icon={<FeatherHelpCircle />}
+              selected={activeNav === "help"}
+              onClick={() => handleNavChange("help")}
+            >
+              ヘルプ
+            </SidebarWithSections.NavItem>
+            <SidebarWithSections.NavItem
+              icon={<FeatherFileText />}
+              onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
+            >
+              ドキュメント
+            </SidebarWithSections.NavItem>
+            <SidebarWithSections.NavItem
+              icon={<FeatherShield />}
+              selected={activeNav === "legal"}
+              onClick={() => handleNavChange("legal")}
+            >
+              利用規約
+            </SidebarWithSections.NavItem>
+          </SidebarWithSections.NavSection>
+        </SidebarWithSections>
+      </aside>
+
+      <div
+        className={cn(
+          "flex-1 flex flex-col min-w-0 transition-[margin-left] duration-200 ease-in-out",
+          sidebarOpen ? "ml-60" : "ml-0",
         )}
-        <MainContent
-          assistedSection={activeAssistedSection}
-          autonomousSection={autonomousActiveSectionMap[autonomousSubNav]}
-          activeFeature={activeFeature}
-          activeNav={activeNav}
-          autonomousSubNav={autonomousSubNav}
-          assistedResearchProps={{
-            workflowTree,
-            activeNodeId,
-            setActiveNodeId,
-            addWorkflowNode,
-            updateNodeSnapshot,
-            resetDownstreamSessions,
-            onNavigate: handleNavigate,
-          }}
-          sessionsExpanded={sessionsExpanded}
-          onToggleSessions={handleToggleSessions}
-          onCreateSection={handleCreateSection}
-          onUpdateSectionTitle={handleUpdateSectionTitle}
-          onRefreshSessions={(preferredId) => fetchSections(autonomousSubNav, preferredId)}
+      >
+        <TopbarWithRightNav
+          leftSlot={
+            !sidebarOpen ? (
+              <IconButton
+                size="small"
+                variant="neutral-tertiary"
+                icon={<FeatherPanelLeftOpen />}
+                onClick={() => setSidebarOpen(true)}
+              />
+            ) : undefined
+          }
+          rightSlot={
+            <>
+              <IconButton
+                variant="neutral-tertiary"
+                icon={<SiGithub className="h-4 w-4" />}
+                onClick={() => window.open("https://github.com/airas-org/airas", "_blank")}
+              />
+              <IconButton
+                variant="neutral-tertiary"
+                icon={<FeatherFileText />}
+                onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
+              />
+              <IconButton
+                variant="neutral-tertiary"
+                icon={<SiDiscord className="h-4 w-4" />}
+                onClick={() => window.open("https://discord.gg/KGm5FGY5", "_blank")}
+              />
+              <IconButton
+                variant="neutral-tertiary"
+                icon={<SiX className="h-4 w-4" />}
+                onClick={() => window.open("https://x.com/fuyu_quant", "_blank")}
+              />
+              {eeComponents ? (
+                <eeComponents.UserMenu />
+              ) : (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <IconButton disabled variant="neutral-secondary" icon={<FeatherUser />} />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Enterprise Edition is not enabled</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </>
+          }
         />
+        <div className="flex-1 flex min-h-0">
+          <MainContent
+            autonomousSection={autonomousActiveSectionMap[autonomousSubNav]}
+            autonomousSessions={autonomousSectionsMap[autonomousSubNav]}
+            onSelectAutonomousSession={handleSelectAutonomousSession}
+            activeNav={activeNav}
+            autonomousSubNav={autonomousSubNav}
+            assistedResearchProps={{
+              workflowTree,
+              activeNodeId,
+              setActiveNodeId,
+              addWorkflowNode,
+              updateNodeSnapshot,
+              resetDownstreamSessions,
+              onNavigate: handleNavigate,
+            }}
+            onCreateSection={handleCreateSection}
+            onUpdateSectionTitle={handleUpdateSectionTitle}
+            onRefreshSessions={(preferredId) => fetchSections(autonomousSubNav, preferredId)}
+            verifications={verifications}
+            activeVerification={activeVerification}
+            onSelectVerification={handleSelectVerification}
+            onDeleteVerification={handleDeleteVerification}
+            onDuplicateVerification={handleDuplicateVerification}
+            onUpdateVerification={handleUpdateVerification}
+            onCreateWithMethod={handleCreateWithMethod}
+            onNavChange={handleNavChange}
+          />
+        </div>
       </div>
     </div>
   );
 
+  const handleOnboardingComplete = () => {
+    localStorage.setItem("airas-onboarding-done", "true");
+    setShowOnboarding(false);
+  };
+
+  const content = (
+    <>
+      {appContent}
+      {showOnboarding && <OnboardingOverlay onComplete={handleOnboardingComplete} />}
+    </>
+  );
+
   if (eeComponents) {
-    return <eeComponents.AuthGuard>{appContent}</eeComponents.AuthGuard>;
+    return <eeComponents.AuthGuard>{content}</eeComponents.AuthGuard>;
   }
 
-  return appContent;
+  return content;
 }
