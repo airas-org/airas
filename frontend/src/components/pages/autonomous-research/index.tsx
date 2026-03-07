@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ResearchSection } from "@/types/research";
 import { TopicDrivenDetail } from "./topic-driven-detail";
 import { TopicDrivenInput } from "./topic-driven-input";
@@ -43,6 +43,12 @@ export function AutonomousResearchPage({
   const handleBackToList = useCallback(() => {
     setSubView("list");
   }, []);
+
+  useEffect(() => {
+    if (subView === "list") {
+      void onRefreshSessions();
+    }
+  }, [subView, onRefreshSessions]);
 
   const handleResearchStarted = useCallback(
     async (taskId: string) => {

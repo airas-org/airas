@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ResearchSection } from "@/types/research";
 import { HypothesisDrivenDetail } from "./hypothesis-driven-detail";
 import { HypothesisDrivenInput } from "./hypothesis-driven-input";
@@ -43,6 +43,12 @@ export function HypothesisDrivenResearchPage({
   const handleBackToList = useCallback(() => {
     setSubView("list");
   }, []);
+
+  useEffect(() => {
+    if (subView === "list") {
+      void onRefreshSessions();
+    }
+  }, [subView, onRefreshSessions]);
 
   const handleResearchStarted = useCallback(
     async (taskId: string) => {
