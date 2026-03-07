@@ -33,6 +33,7 @@ import {
   type AutonomousSectionsMap,
   useAutonomousResearchSessions,
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
+import { GitHubOAuthCallback } from "@/components/pages/integration";
 import type { SettingsTab } from "@/components/pages/settings";
 import {
   mockVerifications,
@@ -366,6 +367,20 @@ export default function App() {
   const handleMobileNavClose = useCallback(() => {
     if (isMobile) setSidebarOpen(false);
   }, [isMobile]);
+
+  // Handle GitHub OAuth callback route
+  if (window.location.pathname === "/auth/github/callback") {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    const savedState = sessionStorage.getItem("github_oauth_state");
+
+    if (code && state && state === savedState) {
+      return <GitHubOAuthCallback code={code} />;
+    }
+    window.location.href = "/";
+    return null;
+  }
 
   // Handle OAuth callback route
   if (isEnterpriseEnabled() && window.location.pathname === "/auth/callback") {
