@@ -540,8 +540,11 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
               キャンセル
             </Button>
             <Button
+              className="disabled:bg-neutral-600 disabled:opacity-60 hover:disabled:bg-neutral-600 active:disabled:bg-neutral-600"
               variant="brand-primary"
-              icon={<FeatherPlay />}
+              size="large"
+              icon={isRunning ? undefined : <FeatherPlay />}
+              loading={isRunning}
               disabled={isRunning || !isFormValid}
               onClick={handleRun}
             >
