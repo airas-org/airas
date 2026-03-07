@@ -47,22 +47,23 @@ export function HypothesisDrivenList({
     });
 
   const statusBadge = (status: ResearchSection["status"]) => {
+    const cls = "text-[11px] py-0 px-1.5";
     if (status === "completed") {
       return (
-        <Badge variant="success" icon={<FeatherCheck />}>
+        <Badge className={cls} variant="success" icon={<FeatherCheck className="h-3 w-3" />}>
           完了
         </Badge>
       );
     }
     if (status === "failed") {
       return (
-        <Badge variant="error" icon={<FeatherX />}>
+        <Badge className={cls} variant="error" icon={<FeatherX className="h-3 w-3" />}>
           失敗
         </Badge>
       );
     }
     return (
-      <Badge variant="brand" icon={<FeatherLoader />}>
+      <Badge className={cls} variant="brand" icon={<FeatherLoader className="h-3 w-3" />}>
         進行中
       </Badge>
     );
@@ -168,8 +169,8 @@ export function HypothesisDrivenList({
               <div className="flex w-full items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1">
-                    <FeatherCalendar className="text-caption font-caption text-subtext-color" />
-                    <span className="text-caption font-caption text-subtext-color">
+                    <FeatherCalendar className="h-3 w-3 text-subtext-color" />
+                    <span className="text-[11px] text-subtext-color">
                       {session.createdAt.toLocaleDateString("ja-JP", {
                         year: "numeric",
                         month: "long",
