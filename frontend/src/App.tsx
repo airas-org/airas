@@ -7,7 +7,6 @@ import {
   FeatherChevronUp,
   FeatherFileText,
   FeatherHelpCircle,
-  FeatherHome,
   FeatherKey,
   FeatherList,
   FeatherLogOut,
@@ -130,7 +129,7 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const nav = params.get("nav");
     if (nav === "user-plan" || nav === "integration") return nav;
-    return "home";
+    return "verification";
   });
   const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -142,6 +141,14 @@ export default function App() {
     setAutonomousSectionsMap,
     setAutonomousActiveSectionMap,
   });
+
+  // 初回起動時に新規検証を自動作成
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 初回マウント時のみ実行
+  useEffect(() => {
+    if (activeNav === "verification" && !activeVerificationId) {
+      handleCreateVerification();
+    }
+  }, []);
 
   const handleCreateSection = () => {
     if (activeNav === "autonomous-research") {
@@ -433,13 +440,14 @@ export default function App() {
             </SubframeCore.DropdownMenu.Root>
           }
         >
-          <SidebarWithSections.NavItem
-            icon={<FeatherHome />}
-            selected={activeNav === "dashboard"}
-            onClick={() => handleNavChange("dashboard")}
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 cursor-pointer hover:border-neutral-300 transition-colors"
+            onClick={() => handleNavChange("search")}
           >
-            ダッシュボード
-          </SidebarWithSections.NavItem>
+            <FeatherSearch className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+            <span className="text-sm text-neutral-400">検索...</span>
+          </button>
           <SidebarWithSections.NavItem
             icon={<FeatherPlus />}
             onClick={handleCreateVerification}
@@ -453,13 +461,6 @@ export default function App() {
             onClick={() => handleNavChange("home")}
           >
             検証一覧
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherSearch />}
-            selected={activeNav === "search"}
-            onClick={() => handleNavChange("search")}
-          >
-            検索
           </SidebarWithSections.NavItem>
           <SidebarWithSections.NavSection
             label={

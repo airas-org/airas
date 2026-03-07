@@ -1,7 +1,6 @@
 import { useCallback, useState } from "react";
 import { ApiTokenPage } from "@/components/pages/api-token";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
-import { DashboardPage } from "@/components/pages/dashboard";
 import { FeedbackPage } from "@/components/pages/feedback";
 import { HelpPage } from "@/components/pages/help";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
@@ -28,7 +27,6 @@ import type {
 
 export type NavKey =
   | "home"
-  | "dashboard"
   | "papers"
   | "autonomous-research"
   | "integration"
@@ -196,9 +194,6 @@ export function MainContent({
       </div>
       <div className={activeNav === "user-plan" ? "flex-1 flex" : "hidden"}>
         <UserPlanPage />
-      </div>
-      <div className={activeNav === "dashboard" ? "flex-1 flex" : "hidden"}>
-        <DashboardPage onNavigate={(nav) => onNavChange(nav as NavKey)} />
       </div>
       <div className={activeNav === "profile" ? "flex-1 flex" : "hidden"}>
         <ProfilePage />
