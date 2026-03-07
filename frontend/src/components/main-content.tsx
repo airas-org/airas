@@ -169,7 +169,7 @@ export function MainContent({
   return (
     <div className="flex-1 flex min-w-0">
       <Routes>
-        <Route path="/" element={<Navigate to="/home" replace />} />
+        <Route path="/" element={null} />
         <Route
           path="/home"
           element={

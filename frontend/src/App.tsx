@@ -197,6 +197,13 @@ export default function App() {
     navigate(`/verification/${newVerification.id}`);
   }, [navigate]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 初回マウント時のみ実行
+  useEffect(() => {
+    if (location.pathname === "/") {
+      handleCreateVerification();
+    }
+  }, []);
+
   const handleUpdateVerification = useCallback((id: string, updates: Partial<Verification>) => {
     setVerifications((prev) => prev.map((v) => (v.id === id ? { ...v, ...updates } : v)));
   }, []);
