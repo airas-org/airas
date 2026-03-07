@@ -543,6 +543,7 @@ export default function App() {
                   }
                   onClick={() => {
                     setAutonomousSubNav("topic-driven");
+                    setAutonomousActiveSectionMap((prev) => ({ ...prev, "topic-driven": null }));
                     handleNavChange("autonomous-research");
                     handleMobileNavClose();
                   }}
@@ -556,6 +557,10 @@ export default function App() {
                   }
                   onClick={() => {
                     setAutonomousSubNav("hypothesis-driven");
+                    setAutonomousActiveSectionMap((prev) => ({
+                      ...prev,
+                      "hypothesis-driven": null,
+                    }));
                     handleNavChange("autonomous-research");
                     handleMobileNavClose();
                   }}

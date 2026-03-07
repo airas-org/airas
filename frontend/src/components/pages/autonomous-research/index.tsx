@@ -27,6 +27,13 @@ export function AutonomousResearchPage({
 }: AutonomousResearchPageProps) {
   const [subView, setSubView] = useState<SubView>(section ? "detail" : "list");
 
+  // サイドバーからクリック時は常に一覧画面を表示
+  useEffect(() => {
+    if (!section) {
+      setSubView("list");
+    }
+  }, [section]);
+
   const handleSelectSession = useCallback(
     (s: ResearchSection) => {
       onSelectSession(s);
