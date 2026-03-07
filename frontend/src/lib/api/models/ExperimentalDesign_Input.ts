@@ -2,9 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ComputeEnvironment } from './ComputeEnvironment';
 import type { EvaluationMetric } from './EvaluationMetric';
 import type { MethodConfig_Input } from './MethodConfig_Input';
-import type { RunnerConfig } from './RunnerConfig';
 export type ExperimentalDesign_Input = {
     /**
      * Overall experimental design including task definition, data handling approach, and implementation details
@@ -13,7 +13,7 @@ export type ExperimentalDesign_Input = {
     /**
      * Computational environment specification
      */
-    runner_config?: (RunnerConfig | null);
+    compute_environment?: (ComputeEnvironment | null);
     /**
      * Evaluation metrics with detailed calculation methods and visualizations
      */

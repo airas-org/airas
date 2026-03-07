@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from airas.core.types.experiment_code import ExperimentCode, RunStage
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
@@ -6,6 +6,7 @@ from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.core.types.runner import ExperimentRunnerConfig, StaticRunnerConfig
 from airas.core.types.wandb import WandbConfig
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentLLMMapping,
@@ -39,7 +40,7 @@ class FetchExperimentalResultsResponseBody(BaseModel):
 class DispatchSanityCheckRequestBody(BaseModel):
     github_config: GitHubConfig
     run_id: str
-    runner_label: list[str] | None = None
+    runner_config: ExperimentRunnerConfig = Field(default_factory=StaticRunnerConfig)
 
 
 class DispatchSanityCheckResponseBody(BaseModel):
@@ -50,7 +51,7 @@ class DispatchSanityCheckResponseBody(BaseModel):
 class DispatchMainExperimentRequestBody(BaseModel):
     github_config: GitHubConfig
     run_id: str
-    runner_label: list[str] | None = None
+    runner_config: ExperimentRunnerConfig = Field(default_factory=StaticRunnerConfig)
 
 
 class DispatchMainExperimentResponseBody(BaseModel):

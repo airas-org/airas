@@ -1559,6 +1559,69 @@ components:
       - paper_url
       - execution_time
       title: CompileLatexSubgraphResponseBody
+    ComputeEnvironment:
+      properties:
+        os:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Os
+        cpu_cores:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Cpu Cores
+        ram_gb:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Ram Gb
+        gpu_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Gpu Type
+        gpu_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Gpu Count
+        gpu_memory_gb:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Gpu Memory Gb
+        storage_type:
+          anyOf:
+          - type: string
+            enum:
+            - nvme
+            - ssd
+            - hdd
+          - type: 'null'
+          title: Storage Type
+        storage_gb:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Storage Gb
+        python_version:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Python Version
+        cuda_version:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cuda Version
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+      type: object
+      title: ComputeEnvironment
     DatasetConfig:
       properties:
         description:
@@ -1889,13 +1952,16 @@ components:
         run_id:
           type: string
           title: Run Id
-        runner_label:
-          anyOf:
-          - items:
-              type: string
-            type: array
-          - type: 'null'
-          title: Runner Label
+        runner_config:
+          oneOf:
+          - $ref: '#/components/schemas/StaticRunnerConfig'
+          - $ref: '#/components/schemas/EphemeralCloudRunnerConfig'
+          title: Runner Config
+          discriminator:
+            propertyName: type
+            mapping:
+              ephemeral_cloud: '#/components/schemas/EphemeralCloudRunnerConfig'
+              static: '#/components/schemas/StaticRunnerConfig'
       type: object
       required:
       - github_config
@@ -1925,13 +1991,16 @@ components:
         run_id:
           type: string
           title: Run Id
-        runner_label:
-          anyOf:
-          - items:
-              type: string
-            type: array
-          - type: 'null'
-          title: Runner Label
+        runner_config:
+          oneOf:
+          - $ref: '#/components/schemas/StaticRunnerConfig'
+          - $ref: '#/components/schemas/EphemeralCloudRunnerConfig'
+          title: Runner Config
+          discriminator:
+            propertyName: type
+            mapping:
+              ephemeral_cloud: '#/components/schemas/EphemeralCloudRunnerConfig'
+              static: '#/components/schemas/StaticRunnerConfig'
       type: object
       required:
       - github_config
@@ -2022,6 +2091,38 @@ components:
       - artifact_data
       - execution_time
       title: DownloadGithubActionsArtifactsResponseBody
+    EphemeralCloudRunnerConfig:
+      properties:
+        type:
+          type: string
+          const: ephemeral_cloud
+          title: Type
+          default: ephemeral_cloud
+        cloud_provider:
+          type: string
+          enum:
+          - aws
+          - gcp
+          title: Cloud Provider
+          description: Cloud provider ('aws' or 'gcp')
+          default: aws
+        gpu_instance_type:
+          type: string
+          minLength: 1
+          title: Gpu Instance Type
+          description: Instance type (e.g., 'g4dn.xlarge' for AWS, 'n1-standard-4'
+            for GCP)
+          default: g4dn.xlarge
+        max_instance_hours:
+          type: integer
+          minimum: 1
+          title: Max Instance Hours
+          description: Max instance lifetime in hours (safety net for orphaned instances)
+          default: 120
+      type: object
+      required:
+      - type
+      title: EphemeralCloudRunnerConfig
     EvaluationMetric:
       properties:
         name:
@@ -2068,9 +2169,9 @@ components:
           title: Experiment Summary
           description: Overall experimental design including task definition, data
             handling approach, and implementation details
-        runner_config:
+        compute_environment:
           anyOf:
-          - $ref: '#/components/schemas/RunnerConfig'
+          - $ref: '#/components/schemas/ComputeEnvironment'
           - type: 'null'
           description: Computational environment specification
         evaluation_metrics:
@@ -2121,9 +2222,9 @@ components:
           title: Experiment Summary
           description: Overall experimental design including task definition, data
             handling approach, and implementation details
-        runner_config:
+        compute_environment:
           anyOf:
-          - $ref: '#/components/schemas/RunnerConfig'
+          - $ref: '#/components/schemas/ComputeEnvironment'
           - type: 'null'
           description: Computational environment specification
         evaluation_metrics:
@@ -2311,8 +2412,8 @@ components:
       properties:
         research_hypothesis:
           $ref: '#/components/schemas/ResearchHypothesis'
-        runner_config:
-          $ref: '#/components/schemas/RunnerConfig'
+        compute_environment:
+          $ref: '#/components/schemas/ComputeEnvironment'
         num_models_to_use:
           type: integer
           title: Num Models To Use
@@ -2329,7 +2430,7 @@ components:
       type: object
       required:
       - research_hypothesis
-      - runner_config
+      - compute_environment
       - num_models_to_use
       - num_datasets_to_use
       - num_comparative_methods
@@ -2658,8 +2759,18 @@ components:
           type: string
           title: Research Topic
           default: ''
+        compute_environment:
+          $ref: '#/components/schemas/ComputeEnvironment'
         runner_config:
-          $ref: '#/components/schemas/RunnerConfig'
+          oneOf:
+          - $ref: '#/components/schemas/StaticRunnerConfig'
+          - $ref: '#/components/schemas/EphemeralCloudRunnerConfig'
+          title: Runner Config
+          discriminator:
+            propertyName: type
+            mapping:
+              ephemeral_cloud: '#/components/schemas/EphemeralCloudRunnerConfig'
+              static: '#/components/schemas/StaticRunnerConfig'
         wandb_config:
           $ref: '#/components/schemas/WandbConfig'
         is_github_repo_private:
@@ -2701,6 +2812,7 @@ components:
       required:
       - github_config
       - research_hypothesis
+      - compute_environment
       - runner_config
       - wandb_config
       title: HypothesisDrivenResearchRequestBody
@@ -3840,25 +3952,6 @@ components:
       - research_study_list
       - execution_time
       title: RetrievePaperSubgraphResponseBody
-    RunnerConfig:
-      properties:
-        runner_label:
-          items:
-            type: string
-          type: array
-          title: Runner Label
-          description: Runner labels used by GitHub Actions (e.g., ['ubuntu-latest']
-            or ['self-hosted', 'gpu-runner'])
-        description:
-          type: string
-          title: Description
-          description: Machine specifications and environment details for LLM to design
-            appropriate experiments
-      type: object
-      required:
-      - runner_label
-      - description
-      title: RunnerConfig
     SearchPaperTitlesFromQdrantLLMMapping:
       properties:
         search_paper_titles_from_qdrant:
@@ -3977,6 +4070,26 @@ components:
       - secrets_set
       - execution_time
       title: SetGithubActionsSecretsResponseBody
+    StaticRunnerConfig:
+      properties:
+        type:
+          type: string
+          const: static
+          title: Type
+          default: static
+        runner_label:
+          items:
+            type: string
+            minLength: 1
+          type: array
+          minItems: 1
+          title: Runner Label
+          description: Runner labels used by GitHub Actions (e.g., ['ubuntu-latest']
+            or ['self-hosted', 'gpu-runner'])
+      type: object
+      required:
+      - type
+      title: StaticRunnerConfig
     Status:
       type: string
       enum:
@@ -4114,8 +4227,18 @@ components:
         research_topic:
           type: string
           title: Research Topic
+        compute_environment:
+          $ref: '#/components/schemas/ComputeEnvironment'
         runner_config:
-          $ref: '#/components/schemas/RunnerConfig'
+          oneOf:
+          - $ref: '#/components/schemas/StaticRunnerConfig'
+          - $ref: '#/components/schemas/EphemeralCloudRunnerConfig'
+          title: Runner Config
+          discriminator:
+            propertyName: type
+            mapping:
+              ephemeral_cloud: '#/components/schemas/EphemeralCloudRunnerConfig'
+              static: '#/components/schemas/StaticRunnerConfig'
         wandb_config:
           $ref: '#/components/schemas/WandbConfig'
         is_github_repo_private:
@@ -4180,6 +4303,7 @@ components:
       required:
       - github_config
       - research_topic
+      - compute_environment
       - runner_config
       - wandb_config
       title: TopicOpenEndedResearchRequestBody

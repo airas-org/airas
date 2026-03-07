@@ -10,7 +10,7 @@ from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
-from airas.core.types.experimental_design import ExperimentalDesign, RunnerConfig
+from airas.core.types.experimental_design import ComputeEnvironment, ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import (
     GitHubActionsAgent,
@@ -21,6 +21,7 @@ from airas.core.types.paper import PaperContent
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
+from airas.core.types.runner import ExperimentRunnerConfig
 from airas.core.types.wandb import WandbConfig
 from airas.core.utils import to_dict_deep
 from airas.infra.db.models.e2e import Status, StepType
@@ -146,7 +147,8 @@ class HypothesisDrivenResearch:
         github_client: GithubClient,
         langchain_client: LangChainClient,
         e2e_service: E2EResearchServiceProtocol,
-        runner_config: RunnerConfig,
+        compute_environment: ComputeEnvironment,
+        runner_config: ExperimentRunnerConfig,
         wandb_config: WandbConfig,
         task_id: UUID,
         created_by: UUID,
@@ -162,6 +164,7 @@ class HypothesisDrivenResearch:
         self.github_client = github_client
         self.langchain_client = langchain_client
         self.e2e_service = e2e_service
+        self.compute_environment = compute_environment
         self.runner_config = runner_config
         self.wandb_config = wandb_config
         self.task_id = task_id
@@ -234,7 +237,7 @@ class HypothesisDrivenResearch:
         result = (
             await GenerateExperimentalDesignSubgraph(
                 langchain_client=self.langchain_client,
-                runner_config=self.runner_config,
+                compute_environment=self.compute_environment,
                 num_models_to_use=self.num_experiment_models,
                 llm_mapping=self.llm_mapping.generate_experimental_design,
                 num_datasets_to_use=self.num_experiment_datasets,
