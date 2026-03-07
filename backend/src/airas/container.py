@@ -28,6 +28,7 @@ from airas.repository.assisted_research_step_repository import (
     AssistedResearchStepRepository,
 )
 from airas.repository.user_api_key_repository import UserApiKeyRepository
+from airas.repository.user_github_token_repository import UserGitHubTokenRepository
 from airas.repository.user_plan_repository import UserPlanRepository
 from airas.usecases.assisted_research.assisted_research_link_service import (
     AssistedResearchLinkService,
@@ -43,6 +44,7 @@ from airas.usecases.autonomous_research.sql_e2e_research_service import (
 )
 from airas.usecases.ee.api_key_resolver import ApiKeyResolver
 from airas.usecases.ee.api_key_service import ApiKeyService
+from airas.usecases.ee.github_oauth_service import GitHubOAuthService
 from airas.usecases.ee.plan_service import PlanService
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
@@ -232,6 +234,14 @@ class Container(containers.DeclarativeContainer):
         ApiKeyResolver,
         plan_repo=user_plan_repository,
         api_key_repo=user_api_key_repository,
+    )
+
+    # --- EE: GitHub OAuth ---
+    user_github_token_repository = providers.Factory(
+        UserGitHubTokenRepository, db=db_session
+    )
+    github_oauth_service = providers.Factory(
+        GitHubOAuthService, repo=user_github_token_repository
     )
 
     ## ---  Autonomous Research Service ---
