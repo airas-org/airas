@@ -556,7 +556,7 @@ export default function App() {
 
       <div
         className={cn(
-          "flex-1 flex flex-col min-w-0 overflow-x-hidden transition-[margin-left] duration-200 ease-in-out",
+          "flex-1 flex flex-col min-w-0 overflow-x-clip transition-[margin-left] duration-200 ease-in-out",
           sidebarOpen ? "ml-52" : "ml-0",
         )}
       >

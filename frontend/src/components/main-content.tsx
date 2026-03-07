@@ -142,8 +142,8 @@ export function MainContent({
   }, [assistedResearchProps, selectedPapers]);
 
   return (
-    <div className="flex-1 flex">
-      <div className={activeNav === "home" ? "flex-1 flex" : "hidden"}>
+    <div className="flex-1 flex min-w-0">
+      <div className={activeNav === "home" ? "flex-1 flex min-w-0" : "hidden"}>
         <VerificationHomePage
           verifications={verifications}
           onSelectVerification={onSelectVerification}

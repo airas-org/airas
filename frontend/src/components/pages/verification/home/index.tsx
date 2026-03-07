@@ -28,7 +28,7 @@ function CategoryColumn({
   onDuplicate,
 }: CategoryColumnProps) {
   return (
-    <div className="min-w-[180px] flex-1 rounded-lg border border-border bg-card p-4">
+    <div className="min-w-[180px] shrink-0 grow rounded-lg border border-border bg-card p-4">
       <div className="flex items-center gap-2 mb-3">
         <h2 className="text-caption-bold font-caption-bold text-subtext-color uppercase tracking-wider whitespace-nowrap">
           {label}
@@ -118,7 +118,7 @@ export function VerificationHomePage({
   }, [filtered]);
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-hidden">
+    <div className="flex-1 overflow-y-auto overflow-x-clip min-w-0">
       <div className="max-w-full mx-auto px-8 py-8">
         <div className="flex items-end justify-between gap-4">
           <div>
