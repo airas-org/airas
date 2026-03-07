@@ -135,6 +135,7 @@ export default function App() {
   });
   const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("profile");
+  const [autonomousListViewKey, setAutonomousListViewKey] = useState(0);
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => {
@@ -543,7 +544,7 @@ export default function App() {
                   }
                   onClick={() => {
                     setAutonomousSubNav("topic-driven");
-                    setAutonomousActiveSectionMap((prev) => ({ ...prev, "topic-driven": null }));
+                    setAutonomousListViewKey((k) => k + 1);
                     handleNavChange("autonomous-research");
                     handleMobileNavClose();
                   }}
@@ -557,10 +558,7 @@ export default function App() {
                   }
                   onClick={() => {
                     setAutonomousSubNav("hypothesis-driven");
-                    setAutonomousActiveSectionMap((prev) => ({
-                      ...prev,
-                      "hypothesis-driven": null,
-                    }));
+                    setAutonomousListViewKey((k) => k + 1);
                     handleNavChange("autonomous-research");
                     handleMobileNavClose();
                   }}
@@ -664,6 +662,7 @@ export default function App() {
             onUpdateVerification={handleUpdateVerification}
             onCreateWithMethod={handleCreateWithMethod}
             settingsTab={settingsTab}
+            autonomousListViewKey={autonomousListViewKey}
           />
         </div>
       </div>

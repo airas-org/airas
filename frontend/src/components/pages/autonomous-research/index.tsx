@@ -15,6 +15,7 @@ interface AutonomousResearchPageProps {
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
   onRefreshSessions: (preferredId?: string) => Promise<void>;
+  listViewKey?: number;
 }
 
 export function AutonomousResearchPage({
@@ -24,15 +25,17 @@ export function AutonomousResearchPage({
   onCreateSection,
   onUpdateSectionTitle,
   onRefreshSessions,
+  listViewKey,
 }: AutonomousResearchPageProps) {
   const [subView, setSubView] = useState<SubView>(section ? "detail" : "list");
 
   // サイドバーからクリック時は常に一覧画面を表示
+  // biome-ignore lint/correctness/useExhaustiveDependencies: listViewKeyの変化でのみリセット
   useEffect(() => {
-    if (!section) {
+    if (listViewKey !== undefined) {
       setSubView("list");
     }
-  }, [section]);
+  }, [listViewKey]);
 
   const handleSelectSession = useCallback(
     (s: ResearchSection) => {

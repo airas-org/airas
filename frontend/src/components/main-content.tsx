@@ -62,6 +62,7 @@ interface MainContentProps {
   onUpdateVerification: (id: string, updates: Partial<Verification>) => void;
   onCreateWithMethod: (sourceVerification: Verification, method: ProposedMethod) => void;
   settingsTab: SettingsTab;
+  autonomousListViewKey: number;
 }
 
 export function MainContent({
@@ -82,6 +83,7 @@ export function MainContent({
   onUpdateVerification,
   onCreateWithMethod,
   settingsTab,
+  autonomousListViewKey,
 }: MainContentProps) {
   const [selectedPapers, setSelectedPapers] = useState<Paper[]>([]);
 
@@ -162,6 +164,7 @@ export function MainContent({
             onCreateSection={onCreateSection}
             onUpdateSectionTitle={onUpdateSectionTitle}
             onRefreshSessions={onRefreshSessions}
+            listViewKey={autonomousListViewKey}
           />
         ) : (
           <HypothesisDrivenResearchPage
@@ -171,6 +174,7 @@ export function MainContent({
             onCreateSection={onCreateSection}
             onUpdateSectionTitle={onUpdateSectionTitle}
             onRefreshSessions={onRefreshSessions}
+            listViewKey={autonomousListViewKey}
           />
         )}
       </div>
