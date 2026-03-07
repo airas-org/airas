@@ -151,6 +151,8 @@ export function PaperWritingSection({
     }
   };
 
+  const isEffectivelyConfirmed = isConfirmed || !!generatedPaper;
+
   const handleManualSave = async () => {
     if (!manualInput.title.trim() || !manualInput.abstract.trim()) return;
     const cleanedSections = manualInput.sections
@@ -215,7 +217,6 @@ export function PaperWritingSection({
     });
   };
 
-  const isEffectivelyConfirmed = isConfirmed || !!generatedPaper;
   const displayPaper = generatedPaper || previewPaper;
 
   return (
