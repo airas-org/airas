@@ -14,7 +14,6 @@ import {
   FeatherPanelLeftClose,
   FeatherPanelLeftOpen,
   FeatherPlus,
-  FeatherSearch,
   FeatherSettings,
   FeatherShield,
   FeatherUser,
@@ -440,14 +439,6 @@ export default function App() {
             </SubframeCore.DropdownMenu.Root>
           }
         >
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 cursor-pointer hover:border-neutral-300 transition-colors"
-            onClick={() => handleNavChange("search")}
-          >
-            <FeatherSearch className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
-            <span className="text-sm text-neutral-400">検索...</span>
-          </button>
           <SidebarWithSections.NavItem
             icon={<FeatherPlus />}
             selected={activeNav === "verification"}
