@@ -450,8 +450,8 @@ export default function App() {
           </button>
           <SidebarWithSections.NavItem
             icon={<FeatherPlus />}
+            selected={activeNav === "verification"}
             onClick={handleCreateVerification}
-            className="bg-brand-50"
           >
             新規検証
           </SidebarWithSections.NavItem>
