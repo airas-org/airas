@@ -32,7 +32,6 @@ import {
   type AutonomousSectionsMap,
   useAutonomousResearchSessions,
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
-import { OnboardingOverlay } from "@/components/pages/onboarding";
 import type { SettingsTab } from "@/components/pages/settings";
 import {
   mockVerifications,
@@ -138,9 +137,6 @@ export default function App() {
   const [autonomousListViewKey, setAutonomousListViewKey] = useState(0);
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    return !localStorage.getItem("airas-onboarding-done");
-  });
 
   useEffect(() => {
     setSidebarOpen(!isMobile);
@@ -669,21 +665,9 @@ export default function App() {
     </div>
   );
 
-  const handleOnboardingComplete = () => {
-    localStorage.setItem("airas-onboarding-done", "true");
-    setShowOnboarding(false);
-  };
-
-  const content = (
-    <>
-      {appContent}
-      {showOnboarding && <OnboardingOverlay onComplete={handleOnboardingComplete} />}
-    </>
-  );
-
   if (eeComponents) {
-    return <eeComponents.AuthGuard>{content}</eeComponents.AuthGuard>;
+    return <eeComponents.AuthGuard>{appContent}</eeComponents.AuthGuard>;
   }
 
-  return content;
+  return appContent;
 }
