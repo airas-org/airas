@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { OpenAPI } from "@/lib/api";
+import { supabase } from "@/ee/auth/lib/supabase";
 
 interface GitHubConnection {
   connected: boolean;
@@ -36,9 +37,21 @@ export function GitHubOAuthCallback({ code }: { code: string }) {
   useEffect(() => {
     const redirectUri = `${window.location.origin}/auth/github/callback`;
     const state = sessionStorage.getItem("github_oauth_state") ?? "";
-    apiFetch("/github/callback", {
-      method: "POST",
-      body: JSON.stringify({ code, state, redirect_uri: redirectUri }),
+
+    // OpenAPI.TOKEN may not be set yet on this page (early return in App.tsx bypasses
+    // the useEEComponents() hook that sets it). Fetch the Supabase token directly instead.
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+      const res = await fetch(`${OpenAPI.BASE}/airas/ee/github/callback`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ code, state, redirect_uri: redirectUri }),
+      });
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      return res.json();
     })
       .then(() => {
         sessionStorage.removeItem("github_oauth_state");
