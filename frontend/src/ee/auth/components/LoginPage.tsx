@@ -23,7 +23,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-neutral-900 items-stretch relative">
+    <div className="flex min-h-screen w-full bg-neutral-900 items-stretch relative">
       <div className="flex flex-col items-center justify-center gap-8 px-12 py-12 grow shrink-0 z-10 mobile:hidden">
         <div className="flex w-full max-w-[448px] flex-col items-start gap-8">
           <div className="flex w-full flex-col items-start gap-4">
