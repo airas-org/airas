@@ -1,7 +1,5 @@
-"use client";
-
 import { BarChart3, Check, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { analyzeResults } from "@/lib/api-mock";
@@ -100,12 +98,14 @@ export function AnalysisSection({
     }
   };
 
+  useEffect(() => {
+    if (analysisText && !isConfirmed) {
+      setIsConfirmed(true);
+    }
+  }, [analysisText, isConfirmed]);
+
   const completedResults = results.filter((r) => r.status === "completed");
   const displayText = analysisText || previewText;
-
-  if (analysisText && !isConfirmed) {
-    setIsConfirmed(true);
-  }
 
   return (
     <Card className="p-6">

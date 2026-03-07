@@ -196,9 +196,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
           <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-neutral-border" />
 
           <div className="flex w-full flex-col items-start gap-2">
-            <span className="text-body font-body text-subtext-color">
-              研究テーマ（任意）
-            </span>
+            <span className="text-body font-body text-subtext-color">研究テーマ（任意）</span>
             <TextField className="h-auto w-full flex-none" variant="outline" label="" helpText="">
               <TextField.Input
                 placeholder="例: Vision-Language Models を用いた Video QA の性能向上手法"
@@ -216,10 +214,17 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
             <div className="flex w-full flex-wrap items-start gap-4">
               <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
                 <div className="flex items-center gap-1">
-                  <span className="text-caption font-caption text-default-font">解決すべき問題</span>
+                  <span className="text-caption font-caption text-default-font">
+                    解決すべき問題
+                  </span>
                   <span className="text-caption font-caption text-error-500">*</span>
                 </div>
-                <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                <TextArea
+                  className="h-auto w-full flex-none"
+                  variant="outline"
+                  label=""
+                  helpText=""
+                >
                   <TextArea.Input
                     placeholder="例: Existing models struggle with temporal reasoning in long videos"
                     value={openProblems}
@@ -232,7 +237,12 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                   <span className="text-caption font-caption text-default-font">提案手法</span>
                   <span className="text-caption font-caption text-error-500">*</span>
                 </div>
-                <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                <TextArea
+                  className="h-auto w-full flex-none"
+                  variant="outline"
+                  label=""
+                  helpText=""
+                >
                   <TextArea.Input
                     placeholder="例: A hierarchical attention mechanism that models temporal dependencies"
                     value={method}
@@ -247,7 +257,12 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                   <span className="text-caption font-caption text-default-font">実験設定</span>
                   <span className="text-caption font-caption text-error-500">*</span>
                 </div>
-                <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                <TextArea
+                  className="h-auto w-full flex-none"
+                  variant="outline"
+                  label=""
+                  helpText=""
+                >
                   <TextArea.Input
                     placeholder="例: Evaluate on ActivityNet-QA and EgoSchema benchmarks"
                     value={experimentalSetup}
@@ -260,7 +275,12 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                   <span className="text-caption font-caption text-default-font">主要評価指標</span>
                   <span className="text-caption font-caption text-error-500">*</span>
                 </div>
-                <TextField className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                <TextField
+                  className="h-auto w-full flex-none"
+                  variant="outline"
+                  label=""
+                  helpText=""
+                >
                   <TextField.Input
                     placeholder="例: Accuracy on ActivityNet-QA"
                     value={primaryMetric}
@@ -275,7 +295,12 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                   <span className="text-caption font-caption text-default-font">実験コード</span>
                   <span className="text-caption font-caption text-error-500">*</span>
                 </div>
-                <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                <TextArea
+                  className="h-auto w-full flex-none"
+                  variant="outline"
+                  label=""
+                  helpText=""
+                >
                   <TextArea.Input
                     placeholder="例: PyTorch implementation using transformers library"
                     value={experimentalCode}
@@ -285,10 +310,17 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
               </div>
               <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
                 <div className="flex items-center gap-1">
-                  <span className="text-caption font-caption text-default-font">期待される結果</span>
+                  <span className="text-caption font-caption text-default-font">
+                    期待される結果
+                  </span>
                   <span className="text-caption font-caption text-error-500">*</span>
                 </div>
-                <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                <TextArea
+                  className="h-auto w-full flex-none"
+                  variant="outline"
+                  label=""
+                  helpText=""
+                >
                   <TextArea.Input
                     placeholder="例: 5% accuracy improvement over baseline on ActivityNet-QA"
                     value={expectedResult}
@@ -324,7 +356,12 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                     <span className="text-caption font-caption text-default-font">オーナー</span>
                     <span className="text-caption font-caption text-error-500">*</span>
                   </div>
-                  <TextField className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                  <TextField
+                    className="h-auto w-full flex-none"
+                    variant="outline"
+                    label=""
+                    helpText=""
+                  >
                     <TextField.Input
                       placeholder="username"
                       value={githubOwner}
@@ -337,7 +374,12 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                     <span className="text-caption font-caption text-default-font">リポジトリ</span>
                     <span className="text-caption font-caption text-error-500">*</span>
                   </div>
-                  <TextField className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                  <TextField
+                    className="h-auto w-full flex-none"
+                    variant="outline"
+                    label=""
+                    helpText=""
+                  >
                     <TextField.Input
                       placeholder="repository-name"
                       value={repoName}
@@ -350,7 +392,12 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                     <span className="text-caption font-caption text-default-font">ブランチ</span>
                     <span className="text-caption font-caption text-error-500">*</span>
                   </div>
-                  <TextField className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                  <TextField
+                    className="h-auto w-full flex-none"
+                    variant="outline"
+                    label=""
+                    helpText=""
+                  >
                     <TextField.Input
                       placeholder="main"
                       value={branch}
@@ -381,7 +428,12 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                       <span className="text-caption font-caption text-default-font">ラベル</span>
                       <span className="text-caption font-caption text-error-500">*</span>
                     </div>
-                    <TextField className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                    <TextField
+                      className="h-auto w-full flex-none"
+                      variant="outline"
+                      label=""
+                      helpText=""
+                    >
                       <TextField.Input
                         placeholder="ubuntu-latest, gpu-runner"
                         value={runnerLabels}
@@ -394,7 +446,12 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                       <span className="text-caption font-caption text-default-font">説明</span>
                       <span className="text-caption font-caption text-error-500">*</span>
                     </div>
-                    <TextField className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                    <TextField
+                      className="h-auto w-full flex-none"
+                      variant="outline"
+                      label=""
+                      helpText=""
+                    >
                       <TextField.Input
                         placeholder="A100 x1, 40GB VRAM"
                         value={runnerDescription}
@@ -418,7 +475,12 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                       <span className="text-caption font-caption text-default-font">Entity</span>
                       <span className="text-caption font-caption text-error-500">*</span>
                     </div>
-                    <TextField className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                    <TextField
+                      className="h-auto w-full flex-none"
+                      variant="outline"
+                      label=""
+                      helpText=""
+                    >
                       <TextField.Input
                         placeholder="team-name"
                         value={wandbEntity}
@@ -431,7 +493,12 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                       <span className="text-caption font-caption text-default-font">Project</span>
                       <span className="text-caption font-caption text-error-500">*</span>
                     </div>
-                    <TextField className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                    <TextField
+                      className="h-auto w-full flex-none"
+                      variant="outline"
+                      label=""
+                      helpText=""
+                    >
                       <TextField.Input
                         placeholder="project-name"
                         value={wandbProject}

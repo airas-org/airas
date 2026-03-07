@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Check,
   Download,
@@ -11,7 +9,7 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -217,11 +215,13 @@ export function PaperWritingSection({
     });
   };
 
-  const displayPaper = generatedPaper || previewPaper;
+  useEffect(() => {
+    if (generatedPaper && !isConfirmed) {
+      setIsConfirmed(true);
+    }
+  }, [generatedPaper, isConfirmed]);
 
-  if (generatedPaper && !isConfirmed) {
-    setIsConfirmed(true);
-  }
+  const displayPaper = generatedPaper || previewPaper;
 
   return (
     <Card className="p-6">
