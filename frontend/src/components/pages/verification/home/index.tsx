@@ -28,7 +28,7 @@ function CategoryColumn({
   onDuplicate,
 }: CategoryColumnProps) {
   return (
-    <div className="w-[150px] shrink-0 rounded-lg border border-border bg-card p-2.5">
+    <div className="w-[200px] shrink-0 rounded-lg border border-border bg-card p-2.5">
       <div className="flex items-center gap-1.5 mb-2">
         <h2 className="text-[10px] font-semibold text-subtext-color uppercase tracking-wider whitespace-nowrap">
           {label}
