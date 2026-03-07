@@ -461,13 +461,6 @@ export default function App() {
           >
             検索
           </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherBell />}
-            selected={activeNav === "notifications"}
-            onClick={() => handleNavChange("notifications")}
-          >
-            通知
-          </SidebarWithSections.NavItem>
           <SidebarWithSections.NavSection
             label={
               <>
@@ -592,6 +585,11 @@ export default function App() {
                 variant="neutral-tertiary"
                 icon={<SiX className="h-4 w-4" />}
                 onClick={() => window.open("https://x.com/fuyu_quant", "_blank")}
+              />
+              <IconButton
+                variant={activeNav === "notifications" ? "neutral-secondary" : "neutral-tertiary"}
+                icon={<FeatherBell className="h-4 w-4" />}
+                onClick={() => handleNavChange("notifications")}
               />
               {eeComponents ? (
                 <eeComponents.UserMenu />
