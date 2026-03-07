@@ -28,16 +28,16 @@ function CategoryColumn({
   onDuplicate,
 }: CategoryColumnProps) {
   return (
-    <div className="w-[200px] shrink-0 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-caption-bold font-caption-bold text-subtext-color uppercase tracking-wider whitespace-nowrap">
+    <div className="w-[150px] shrink-0 rounded-lg border border-border bg-card p-2.5">
+      <div className="flex items-center gap-1.5 mb-2">
+        <h2 className="text-[10px] font-semibold text-subtext-color uppercase tracking-wider whitespace-nowrap">
           {label}
         </h2>
-        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-neutral-200 px-1.5 text-[10px] font-medium text-neutral-600">
+        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-neutral-200 px-1 text-[9px] font-medium text-neutral-600">
           {count}
         </span>
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         {verifications.map((v) => (
           <VerificationCard
             key={v.id}
@@ -119,7 +119,7 @@ export function VerificationHomePage({
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-clip min-w-0">
-      <div className="max-w-full mx-auto px-8 py-8">
+      <div className="max-w-full mx-auto px-6 py-6">
         <div className="flex items-end justify-between gap-4">
           <div>
             <h1 className="text-heading-2 font-heading-2 text-default-font">検証一覧</h1>
@@ -139,7 +139,7 @@ export function VerificationHomePage({
           </div>
         </div>
 
-        <div className="mt-6 flex gap-4 items-start overflow-x-auto">
+        <div className="mt-6 flex gap-2 items-start overflow-x-auto">
           {categories.map((cat) => (
             <CategoryColumn
               key={cat.key}
