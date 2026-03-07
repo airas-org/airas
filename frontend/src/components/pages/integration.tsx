@@ -44,7 +44,7 @@ export function GitHubOAuthCallback({ code }: { code: string }) {
         sessionStorage.removeItem("github_oauth_state");
         setStatus("success");
         setTimeout(() => {
-          window.location.href = "/?nav=integration";
+          window.location.href = "/settings/integration";
         }, 1500);
       })
       .catch(() => {
@@ -66,7 +66,7 @@ export function GitHubOAuthCallback({ code }: { code: string }) {
               type="button"
               className="mt-2 text-sm underline"
               onClick={() => {
-                window.location.href = "/?nav=integration";
+                window.location.href = "/settings/integration";
               }}
             >
               Integrationページに戻る
