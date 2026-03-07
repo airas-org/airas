@@ -15,6 +15,7 @@ interface HypothesisDrivenResearchPageProps {
   onCreateSection: () => void;
   onUpdateSectionTitle: (title: string) => void;
   onRefreshSessions: (preferredId?: string) => Promise<void>;
+  listViewKey?: number;
 }
 
 export function HypothesisDrivenResearchPage({
@@ -24,8 +25,16 @@ export function HypothesisDrivenResearchPage({
   onCreateSection,
   onUpdateSectionTitle,
   onRefreshSessions,
+  listViewKey,
 }: HypothesisDrivenResearchPageProps) {
   const [subView, setSubView] = useState<SubView>(section ? "detail" : "list");
+
+  // サイドバーからクリック時は常に一覧画面を表示
+  useEffect(() => {
+    if (listViewKey !== undefined) {
+      setSubView("list");
+    }
+  }, [listViewKey]);
 
   const handleSelectSession = useCallback(
     (s: ResearchSection) => {
@@ -53,13 +62,15 @@ export function HypothesisDrivenResearchPage({
   const handleResearchStarted = useCallback(
     async (taskId: string) => {
       await onRefreshSessions(taskId);
-      setSubView("detail");
+      setSubView("list");
     },
     [onRefreshSessions],
   );
 
   if (subView === "input") {
-    return <HypothesisDrivenInput onBack={handleBackToList} onResearchStarted={handleResearchStarted} />;
+    return (
+      <HypothesisDrivenInput onBack={handleBackToList} onResearchStarted={handleResearchStarted} />
+    );
   }
 
   if (subView === "detail" && section) {

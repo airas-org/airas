@@ -170,7 +170,7 @@ export function VerificationDetailPage({
   return (
     <div className="flex-1 flex flex-col overflow-y-auto">
       {!hasQuery && (
-        <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex-1 flex items-center justify-center pb-[20vh] p-6">
           <ChatInput onSubmit={handleChatSubmit} />
         </div>
       )}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Avatar, Badge, Button, Progress, TextArea, TextField } from "@/ui";
+import { Avatar, Badge, Button, TextArea, TextField } from "@/ui";
 
 export function ProfilePage() {
   const [name, setName] = useState("田中 太郎");
@@ -14,10 +14,6 @@ export function ProfilePage() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
-
-  const apiUsed = 1234;
-  const apiLimit = 10000;
-  const apiPercent = Math.round((apiUsed / apiLimit) * 100);
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -72,22 +68,6 @@ export function ProfilePage() {
                 <span className="text-caption font-caption text-success-800">保存しました</span>
               )}
             </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-border bg-card p-6">
-          <h2 className="text-body-bold font-body-bold text-default-font mb-4">API利用状況</h2>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-caption font-caption text-subtext-color">今月のAPI利用</span>
-              <span className="text-caption-bold font-caption-bold text-default-font">
-                {apiUsed.toLocaleString()} / {apiLimit.toLocaleString()}
-              </span>
-            </div>
-            <Progress value={apiPercent} />
-            <span className="text-caption font-caption text-subtext-color">
-              {apiPercent}% 使用済み
-            </span>
           </div>
         </div>
       </div>

@@ -1,32 +1,15 @@
-import { Eye, EyeOff, Github, Loader2, Save, Trash2, Unlink } from "lucide-react";
+import { Github, Loader2, Unlink } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OpenAPI } from "@/lib/api";
-
-type ApiProvider = "openai" | "anthropic" | "gemini";
-
-interface ApiKeyEntry {
-  provider: ApiProvider;
-  masked_key: string;
-  created_at: string;
-  updated_at: string;
-}
 
 interface GitHubConnection {
   connected: boolean;
   github_login: string | null;
   connected_at: string | null;
 }
-
-const PROVIDERS: { id: ApiProvider; label: string; placeholder: string }[] = [
-  { id: "openai", label: "OpenAI", placeholder: "sk-..." },
-  { id: "anthropic", label: "Anthropic", placeholder: "sk-ant-..." },
-  { id: "gemini", label: "Gemini", placeholder: "AI..." },
-];
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
@@ -72,13 +55,13 @@ export function GitHubOAuthCallback({ code }: { code: string }) {
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center space-y-2">
-        {status === "loading" && <p className="text-muted-foreground">GitHubと連携中...</p>}
+        {status === "loading" && <p className="text-subtext-color">GitHubと連携中...</p>}
         {status === "success" && (
-          <p className="text-green-600">GitHub連携が完了しました。リダイレクト中...</p>
+          <p className="text-success-800">GitHub連携が完了しました。リダイレクト中...</p>
         )}
         {status === "error" && (
           <div>
-            <p className="text-destructive">GitHub連携に失敗しました。</p>
+            <p className="text-error-700">GitHub連携に失敗しました。</p>
             <button
               type="button"
               className="mt-2 text-sm underline"
@@ -96,23 +79,8 @@ export function GitHubOAuthCallback({ code }: { code: string }) {
 }
 
 export function IntegrationPage() {
-  const [savedKeys, setSavedKeys] = useState<ApiKeyEntry[]>([]);
-  const [drafts, setDrafts] = useState<Record<ApiProvider, string>>({
-    openai: "",
-    anthropic: "",
-    gemini: "",
-  });
-  const [visibleDrafts, setVisibleDrafts] = useState<Record<ApiProvider, boolean>>({
-    openai: false,
-    anthropic: false,
-    gemini: false,
-  });
-  const [saving, setSaving] = useState<ApiProvider | null>(null);
-  const [deleting, setDeleting] = useState<ApiProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [requiresApiKeys, setRequiresApiKeys] = useState(true);
 
-  // GitHub OAuth state
   const [githubStatus, setGithubStatus] = useState<GitHubConnection>({
     connected: false,
     github_login: null,
@@ -121,24 +89,6 @@ export function IntegrationPage() {
   const [githubConnecting, setGithubConnecting] = useState(false);
   const [githubDisconnecting, setGithubDisconnecting] = useState(false);
   const [isRepoPrivate, setIsRepoPrivate] = useState(false);
-
-  const fetchPlan = useCallback(async () => {
-    try {
-      const data = await apiFetch<{ requires_api_keys: boolean }>("/plan");
-      setRequiresApiKeys(data.requires_api_keys);
-    } catch {
-      setRequiresApiKeys(true);
-    }
-  }, []);
-
-  const fetchKeys = useCallback(async () => {
-    try {
-      const data = await apiFetch<{ keys: ApiKeyEntry[] }>("/api-keys");
-      setSavedKeys(data.keys);
-    } catch {
-      setSavedKeys([]);
-    }
-  }, []);
 
   const fetchGithubStatus = useCallback(async () => {
     try {
@@ -150,48 +100,8 @@ export function IntegrationPage() {
   }, []);
 
   useEffect(() => {
-    void fetchPlan();
-    void fetchKeys();
     void fetchGithubStatus();
-  }, [fetchPlan, fetchKeys, fetchGithubStatus]);
-
-  const handleSave = async (provider: ApiProvider) => {
-    const key = drafts[provider].trim();
-    if (!key) return;
-    setSaving(provider);
-    setError(null);
-    try {
-      await apiFetch("/api-keys", {
-        method: "POST",
-        body: JSON.stringify({ provider, api_key: key }),
-      });
-      setDrafts((prev) => ({ ...prev, [provider]: "" }));
-      await fetchKeys();
-    } catch {
-      setError(`Failed to save ${provider} key`);
-    } finally {
-      setSaving(null);
-    }
-  };
-
-  const handleDelete = async (provider: ApiProvider) => {
-    setDeleting(provider);
-    setError(null);
-    try {
-      await apiFetch(`/api-keys/${provider}`, { method: "DELETE" });
-      await fetchKeys();
-    } catch {
-      setError(`Failed to delete ${provider} key`);
-    } finally {
-      setDeleting(null);
-    }
-  };
-
-  const getSavedKey = (provider: ApiProvider) => savedKeys.find((k) => k.provider === provider);
-
-  const toggleVisibility = (provider: ApiProvider) => {
-    setVisibleDrafts((prev) => ({ ...prev, [provider]: !prev[provider] }));
-  };
+  }, [fetchGithubStatus]);
 
   const handleGithubConnect = async () => {
     setGithubConnecting(true);
@@ -223,31 +133,34 @@ export function IntegrationPage() {
   };
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto">
-      <h1 className="text-2xl font-bold text-foreground">Integration</h1>
+    <div className="flex-1 overflow-y-auto">
+      <div className="max-w-2xl mx-auto px-8 py-8">
+        <h1 className="text-heading-2 font-heading-2 text-default-font">接続</h1>
+        <p className="text-caption font-caption text-subtext-color mt-1">
+          外部サービスとの連携を管理します
+        </p>
 
-      {error && (
-        <div className="mt-4 rounded-md border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+        {error && (
+          <div className="mt-4 rounded-md border border-error-200 bg-error-50 px-4 py-3 text-caption font-caption text-error-700">
+            {error}
+          </div>
+        )}
 
-      <div className="mt-6 space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>GitHub Integration</CardTitle>
-            <CardDescription>
-              GitHubアカウントを連携して、リポジトリへのアクセスを有効にします。
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="mt-6 rounded-lg border border-border bg-card p-5">
+          <h2 className="text-body-bold font-body-bold text-default-font">GitHub Integration</h2>
+          <p className="text-caption font-caption text-subtext-color mt-1">
+            GitHubアカウントを連携して、リポジトリへのアクセスを有効にします。
+          </p>
+          <div className="mt-4">
             {githubStatus.connected ? (
               <div className="space-y-4">
-                <div className="flex items-center gap-3 rounded-md bg-muted/40 p-4">
+                <div className="flex items-center gap-3 rounded-md bg-neutral-50 p-4">
                   <Github className="h-5 w-5" />
                   <div className="flex-1">
-                    <p className="text-sm font-semibold">{githubStatus.github_login}</p>
-                    <p className="text-xs text-muted-foreground">連携済み</p>
+                    <p className="text-body-bold font-body-bold text-default-font">
+                      {githubStatus.github_login}
+                    </p>
+                    <p className="text-caption font-caption text-subtext-color">連携済み</p>
                   </div>
                   <Button
                     size="sm"
@@ -264,14 +177,14 @@ export function IntegrationPage() {
                     <span className="ml-1">連携解除</span>
                   </Button>
                 </div>
-                <div className="flex items-center gap-3 rounded-md bg-muted/40 p-4">
+                <div className="flex items-center gap-3 rounded-md bg-neutral-50 p-4">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="repo-private"
                       checked={isRepoPrivate}
                       onCheckedChange={(checked) => setIsRepoPrivate(checked === true)}
                     />
-                    <Label htmlFor="repo-private" className="text-sm">
+                    <Label htmlFor="repo-private" className="text-body font-body text-default-font">
                       リポジトリをプライベートで作成する
                     </Label>
                   </div>
@@ -287,86 +200,8 @@ export function IntegrationPage() {
                 GitHubと連携する
               </Button>
             )}
-          </CardContent>
-        </Card>
-
-        {requiresApiKeys ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>API Keys</CardTitle>
-              <CardDescription>
-                Manage your API keys for LLM providers. Keys are encrypted and stored securely.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {PROVIDERS.map(({ id, label, placeholder }) => {
-                const saved = getSavedKey(id);
-                return (
-                  <div key={id} className="space-y-3 rounded-md bg-muted/40 p-4">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-semibold">{label}</Label>
-                      {saved && (
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {saved.masked_key}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1">
-                        <Input
-                          type={visibleDrafts[id] ? "text" : "password"}
-                          value={drafts[id]}
-                          onChange={(e) =>
-                            setDrafts((prev) => ({ ...prev, [id]: e.target.value }))
-                          }
-                          placeholder={saved ? "Enter new key to update..." : placeholder}
-                          className="pr-10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => toggleVisibility(id)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {visibleDrafts[id] ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => handleSave(id)}
-                        disabled={!drafts[id].trim() || saving === id}
-                      >
-                        {saving === id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
-                      </Button>
-                      {saved && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(id)}
-                          disabled={deleting === id}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          {deleting === id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );

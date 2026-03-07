@@ -1,23 +1,23 @@
 // frontend/src/App.tsx
 
 import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons";
-import * as SubframeCore from "@subframe/core";
 import {
+  FeatherArrowLeft,
+  FeatherBarChart2,
+  FeatherBeaker,
   FeatherBell,
-  FeatherChevronUp,
-  FeatherFileText,
-  FeatherHelpCircle,
-  FeatherHome,
+  FeatherBookOpen,
+  FeatherCreditCard,
+  FeatherExternalLink,
   FeatherKey,
+  FeatherLink,
   FeatherList,
-  FeatherLogOut,
   FeatherMessageSquare,
   FeatherPanelLeftClose,
   FeatherPanelLeftOpen,
   FeatherPlus,
-  FeatherSearch,
+  FeatherReceipt,
   FeatherSettings,
-  FeatherShield,
   FeatherUser,
 } from "@subframe/core";
 import axios from "axios";
@@ -34,7 +34,7 @@ import {
   useAutonomousResearchSessions,
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
 import { GitHubOAuthCallback } from "@/components/pages/integration";
-import { OnboardingOverlay } from "@/components/pages/onboarding";
+import type { SettingsTab } from "@/components/pages/settings";
 import {
   mockVerifications,
   type ProposedMethod,
@@ -46,7 +46,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { OpenAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
-import { Avatar, DropdownMenu, IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
+import { IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
 
 const initialWorkflowTree: WorkflowTree = {
   nodes: {},
@@ -131,15 +131,14 @@ export default function App() {
   const [activeNav, setActiveNav] = useState<NavKey>(() => {
     const params = new URLSearchParams(window.location.search);
     const nav = params.get("nav");
-    if (nav === "user-plan" || nav === "integration") return nav;
-    return "home";
+    if (nav === "user-plan" || nav === "integration") return "settings" as NavKey;
+    return "verification";
   });
   const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("profile");
+  const [autonomousListViewKey, setAutonomousListViewKey] = useState(0);
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    return !localStorage.getItem("airas-onboarding-done");
-  });
 
   useEffect(() => {
     setSidebarOpen(!isMobile);
@@ -149,6 +148,14 @@ export default function App() {
     setAutonomousSectionsMap,
     setAutonomousActiveSectionMap,
   });
+
+  // 初回起動時に新規検証を自動作成
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 初回マウント時のみ実行
+  useEffect(() => {
+    if (activeNav === "verification" && !activeVerificationId) {
+      handleCreateVerification();
+    }
+  }, []);
 
   const handleCreateSection = () => {
     if (activeNav === "autonomous-research") {
@@ -391,13 +398,13 @@ export default function App() {
     <div className="flex min-h-screen bg-default-background">
       <aside
         className={cn(
-          "fixed left-0 top-0 h-screen transition-[width] duration-200 ease-in-out overflow-hidden",
-          sidebarOpen ? "w-60" : "w-0",
+          "fixed left-0 top-0 h-screen bg-default-background transition-[width] duration-200 ease-in-out overflow-hidden",
+          sidebarOpen ? "w-52" : "w-0",
           isMobile ? "z-40" : "z-30",
         )}
       >
         <SidebarWithSections
-          className="min-w-[15rem]"
+          className="min-w-[13rem]"
           header={
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-3">
@@ -413,214 +420,180 @@ export default function App() {
             </div>
           }
           footer={
-            <SubframeCore.DropdownMenu.Root>
-              <SubframeCore.DropdownMenu.Trigger asChild>
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-3 rounded-md px-1 py-1 -mx-1 hover:bg-neutral-100 transition-colors cursor-pointer"
-                >
-                  <Avatar variant="brand" size="small">
-                    Dev
-                  </Avatar>
-                  <span className="flex-1 text-body font-body text-default-font text-left">
-                    開発者
-                  </span>
-                  <FeatherChevronUp className="h-4 w-4 text-subtext-color" />
-                </button>
-              </SubframeCore.DropdownMenu.Trigger>
-              <SubframeCore.DropdownMenu.Portal>
-                <SubframeCore.DropdownMenu.Content side="top" align="start" sideOffset={8}>
-                  <DropdownMenu>
-                    <DropdownMenu.DropdownItem
-                      icon={<FeatherUser />}
-                      onSelect={() => {
-                        handleNavChange("profile");
-                        handleMobileNavClose();
-                      }}
-                    >
-                      プロフィール
-                    </DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem
-                      icon={<FeatherKey />}
-                      onSelect={() => {
-                        handleNavChange("api-token");
-                        handleMobileNavClose();
-                      }}
-                    >
-                      API Token
-                    </DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem
-                      icon={<FeatherSettings />}
-                      onSelect={() => {
-                        handleNavChange("integration");
-                        handleMobileNavClose();
-                      }}
-                    >
-                      インテグレーション
-                    </DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownDivider />
-                    <DropdownMenu.DropdownItem icon={<FeatherLogOut />}>
-                      ログアウト
-                    </DropdownMenu.DropdownItem>
-                  </DropdownMenu>
-                </SubframeCore.DropdownMenu.Content>
-              </SubframeCore.DropdownMenu.Portal>
-            </SubframeCore.DropdownMenu.Root>
+            <button
+              type="button"
+              className={cn(
+                "flex w-full items-center gap-2.5 rounded-md px-1 py-1 -mx-1 transition-colors cursor-pointer",
+                activeNav === "settings"
+                  ? "text-brand-700"
+                  : "text-neutral-600 hover:bg-neutral-100",
+              )}
+              onClick={() => handleNavChange("settings")}
+            >
+              <FeatherSettings className="h-4 w-4" />
+              <span className="text-sm font-medium">設定</span>
+            </button>
           }
         >
-          <SidebarWithSections.NavItem
-            icon={<FeatherHome />}
-            selected={activeNav === "dashboard"}
-            onClick={() => {
-              handleNavChange("dashboard");
-              handleMobileNavClose();
-            }}
-          >
-            ダッシュボード
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherPlus />}
-            onClick={() => {
-              handleCreateVerification();
-              handleMobileNavClose();
-            }}
-            className="bg-brand-50"
-          >
-            新規検証
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherList />}
-            selected={activeNav === "home"}
-            onClick={() => {
-              handleNavChange("home");
-              handleMobileNavClose();
-            }}
-          >
-            検証一覧
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherSearch />}
-            selected={activeNav === "search"}
-            onClick={() => {
-              handleNavChange("search");
-              handleMobileNavClose();
-            }}
-          >
-            検索
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherBell />}
-            selected={activeNav === "notifications"}
-            onClick={() => {
-              handleNavChange("notifications");
-              handleMobileNavClose();
-            }}
-          >
-            通知
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavSection
-            label={
-              <>
-                自動研究{" "}
-                <span className="text-[10px] font-normal text-neutral-400">Experimental</span>
-              </>
-            }
-          >
-            <SidebarWithSections.NavItem
-              icon={<span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
-              selected={activeNav === "autonomous-research" && autonomousSubNav === "topic-driven"}
-              onClick={() => {
-                setAutonomousSubNav("topic-driven");
-                handleNavChange("autonomous-research");
-                handleMobileNavClose();
-              }}
-            >
-              Topic-Driven
-            </SidebarWithSections.NavItem>
-            <SidebarWithSections.NavItem
-              icon={<span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
-              selected={
-                activeNav === "autonomous-research" && autonomousSubNav === "hypothesis-driven"
-              }
-              onClick={() => {
-                setAutonomousSubNav("hypothesis-driven");
-                handleNavChange("autonomous-research");
-                handleMobileNavClose();
-              }}
-            >
-              Hypothesis-Driven
-            </SidebarWithSections.NavItem>
-          </SidebarWithSections.NavSection>
-          <SidebarWithSections.NavSection label="Settings">
-            <SidebarWithSections.NavItem
-              icon={<FeatherSettings />}
-              selected={activeNav === "integration"}
-              onClick={() => {
-                handleNavChange("integration");
-                handleMobileNavClose();
-              }}
-            >
-              Integration
-            </SidebarWithSections.NavItem>
-            <SidebarWithSections.NavItem
-              icon={<FeatherUser />}
-              selected={activeNav === "user-plan"}
-              onClick={() => {
-                handleNavChange("user-plan");
-                handleMobileNavClose();
-              }}
-            >
-              User Plan
-            </SidebarWithSections.NavItem>
-            <SidebarWithSections.NavItem
-              icon={<FeatherUser />}
-              selected={activeNav === "profile"}
-              onClick={() => {
-                handleNavChange("profile");
-                handleMobileNavClose();
-              }}
-            >
-              プロフィール
-            </SidebarWithSections.NavItem>
-          </SidebarWithSections.NavSection>
-          <SidebarWithSections.NavSection label="Support">
-            <SidebarWithSections.NavItem
-              icon={<FeatherMessageSquare />}
-              selected={activeNav === "feedback"}
-              onClick={() => {
-                handleNavChange("feedback");
-                handleMobileNavClose();
-              }}
-            >
-              お問い合わせ
-            </SidebarWithSections.NavItem>
-            <SidebarWithSections.NavItem
-              icon={<FeatherHelpCircle />}
-              selected={activeNav === "help"}
-              onClick={() => {
-                handleNavChange("help");
-                handleMobileNavClose();
-              }}
-            >
-              ヘルプ
-            </SidebarWithSections.NavItem>
-            <SidebarWithSections.NavItem
-              icon={<FeatherFileText />}
-              onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
-            >
-              ドキュメント
-            </SidebarWithSections.NavItem>
-            <SidebarWithSections.NavItem
-              icon={<FeatherShield />}
-              selected={activeNav === "legal"}
-              onClick={() => {
-                handleNavChange("legal");
-                handleMobileNavClose();
-              }}
-            >
-              利用規約
-            </SidebarWithSections.NavItem>
-          </SidebarWithSections.NavSection>
+          {activeNav === "settings" ? (
+            <>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded-md px-1 py-1 -mx-1 text-neutral-600 hover:bg-neutral-100 transition-colors cursor-pointer mb-1"
+                onClick={() => handleNavChange("home")}
+              >
+                <FeatherArrowLeft className="h-4 w-4" />
+                <span className="text-sm font-medium">設定</span>
+              </button>
+              <SidebarWithSections.NavSection
+                label={<span className="text-sm font-medium">アカウント</span>}
+              >
+                <SidebarWithSections.NavItem
+                  icon={<FeatherUser />}
+                  selected={settingsTab === "profile"}
+                  onClick={() => setSettingsTab("profile")}
+                >
+                  プロフィール
+                </SidebarWithSections.NavItem>
+              </SidebarWithSections.NavSection>
+              <SidebarWithSections.NavSection
+                label={<span className="text-sm font-medium">サポート</span>}
+              >
+                <SidebarWithSections.NavItem
+                  icon={<FeatherBookOpen />}
+                  selected={false}
+                  rightSlot={<FeatherExternalLink className="h-3 w-3 text-neutral-400" />}
+                  onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
+                >
+                  ドキュメント
+                </SidebarWithSections.NavItem>
+                <SidebarWithSections.NavItem
+                  icon={<SiDiscord className="h-4 w-4" />}
+                  selected={false}
+                  rightSlot={<FeatherExternalLink className="h-3 w-3 text-neutral-400" />}
+                  onClick={() => window.open("https://discord.gg/KGm5FGY5", "_blank")}
+                >
+                  Discord
+                </SidebarWithSections.NavItem>
+                <SidebarWithSections.NavItem
+                  icon={<FeatherMessageSquare />}
+                  selected={settingsTab === "feedback"}
+                  onClick={() => setSettingsTab("feedback")}
+                >
+                  お問い合わせ
+                </SidebarWithSections.NavItem>
+              </SidebarWithSections.NavSection>
+              <SidebarWithSections.NavSection
+                label={<span className="text-sm font-medium">AIRASのリソース</span>}
+              >
+                <SidebarWithSections.NavItem
+                  icon={<FeatherLink />}
+                  selected={settingsTab === "integration"}
+                  onClick={() => setSettingsTab("integration")}
+                >
+                  接続
+                </SidebarWithSections.NavItem>
+                <SidebarWithSections.NavItem
+                  icon={<FeatherKey />}
+                  selected={settingsTab === "api-token"}
+                  onClick={() => setSettingsTab("api-token")}
+                >
+                  シークレット
+                </SidebarWithSections.NavItem>
+              </SidebarWithSections.NavSection>
+              <SidebarWithSections.NavSection
+                label={<span className="text-sm font-medium">支払い</span>}
+              >
+                <SidebarWithSections.NavItem
+                  icon={<FeatherCreditCard />}
+                  selected={settingsTab === "user-plan"}
+                  onClick={() => setSettingsTab("user-plan")}
+                >
+                  プラン
+                </SidebarWithSections.NavItem>
+                <SidebarWithSections.NavItem
+                  icon={<FeatherReceipt />}
+                  selected={settingsTab === "receipts"}
+                  onClick={() => setSettingsTab("receipts")}
+                >
+                  領収書 / 請求書
+                </SidebarWithSections.NavItem>
+                <SidebarWithSections.NavItem
+                  icon={<FeatherBarChart2 />}
+                  selected={settingsTab === "usage"}
+                  onClick={() => setSettingsTab("usage")}
+                >
+                  利用量
+                </SidebarWithSections.NavItem>
+              </SidebarWithSections.NavSection>
+            </>
+          ) : (
+            <>
+              <SidebarWithSections.NavItem
+                icon={<FeatherPlus />}
+                selected={activeNav === "verification"}
+                onClick={() => {
+                  handleCreateVerification();
+                  handleMobileNavClose();
+                }}
+              >
+                新規検証
+              </SidebarWithSections.NavItem>
+              <SidebarWithSections.NavItem
+                icon={<FeatherList />}
+                selected={activeNav === "home"}
+                onClick={() => {
+                  handleNavChange("home");
+                  handleMobileNavClose();
+                }}
+              >
+                検証一覧
+              </SidebarWithSections.NavItem>
+              <SidebarWithSections.NavItem
+                icon={<FeatherBeaker />}
+                selected={activeNav === "autonomous-research"}
+                className="cursor-default hover:bg-transparent active:bg-transparent"
+              >
+                自動研究
+              </SidebarWithSections.NavItem>
+              <div className="flex flex-col gap-0.5 pl-7">
+                <button
+                  type="button"
+                  className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
+                    activeNav === "autonomous-research" && autonomousSubNav === "topic-driven"
+                      ? "text-brand-700 bg-brand-50"
+                      : "text-neutral-600 hover:bg-neutral-100"
+                  }`}
+                  onClick={() => {
+                    setAutonomousSubNav("topic-driven");
+                    setAutonomousListViewKey((k) => k + 1);
+                    handleNavChange("autonomous-research");
+                    handleMobileNavClose();
+                  }}
+                >
+                  <span className="inline-block h-1 w-1 rounded-full bg-current" />
+                  Topic-Driven
+                </button>
+                <button
+                  type="button"
+                  className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
+                    activeNav === "autonomous-research" && autonomousSubNav === "hypothesis-driven"
+                      ? "text-brand-700 bg-brand-50"
+                      : "text-neutral-600 hover:bg-neutral-100"
+                  }`}
+                  onClick={() => {
+                    setAutonomousSubNav("hypothesis-driven");
+                    setAutonomousListViewKey((k) => k + 1);
+                    handleNavChange("autonomous-research");
+                    handleMobileNavClose();
+                  }}
+                >
+                  <span className="inline-block h-1 w-1 rounded-full bg-current" />
+                  Hypothesis-Driven
+                </button>
+              </div>
+            </>
+          )}
         </SidebarWithSections>
       </aside>
 
@@ -635,8 +608,8 @@ export default function App() {
 
       <div
         className={cn(
-          "flex-1 flex flex-col min-w-0 transition-[margin-left] duration-200 ease-in-out",
-          !isMobile && sidebarOpen ? "ml-60" : "ml-0",
+          "flex-1 flex flex-col min-w-0 overflow-x-clip transition-[margin-left] duration-200 ease-in-out",
+          !isMobile && sidebarOpen ? "ml-52" : "ml-0",
         )}
       >
         <TopbarWithRightNav
@@ -660,20 +633,15 @@ export default function App() {
                 />
                 <IconButton
                   variant="neutral-tertiary"
-                  icon={<FeatherFileText />}
-                  onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
-                />
-                <IconButton
-                  variant="neutral-tertiary"
-                  icon={<SiDiscord className="h-4 w-4" />}
-                  onClick={() => window.open("https://discord.gg/KGm5FGY5", "_blank")}
-                />
-                <IconButton
-                  variant="neutral-tertiary"
                   icon={<SiX className="h-4 w-4" />}
                   onClick={() => window.open("https://x.com/fuyu_quant", "_blank")}
                 />
               </div>
+              <IconButton
+                variant={activeNav === "notifications" ? "neutral-secondary" : "neutral-tertiary"}
+                icon={<FeatherBell className="h-4 w-4" />}
+                onClick={() => handleNavChange("notifications")}
+              />
               {eeComponents ? (
                 <eeComponents.UserMenu />
               ) : (
@@ -719,24 +687,15 @@ export default function App() {
             onDuplicateVerification={handleDuplicateVerification}
             onUpdateVerification={handleUpdateVerification}
             onCreateWithMethod={handleCreateWithMethod}
-            onNavChange={handleNavChange}
+            settingsTab={settingsTab}
+            autonomousListViewKey={autonomousListViewKey}
           />
         </div>
       </div>
     </div>
   );
 
-  const handleOnboardingComplete = () => {
-    localStorage.setItem("airas-onboarding-done", "true");
-    setShowOnboarding(false);
-  };
-
-  const content = (
-    <>
-      {appContent}
-      {showOnboarding && <OnboardingOverlay onComplete={handleOnboardingComplete} />}
-    </>
-  );
+  const content = appContent;
 
   if (eeComponents) {
     return <eeComponents.AuthGuard>{content}</eeComponents.AuthGuard>;

@@ -28,16 +28,16 @@ function CategoryColumn({
   onDuplicate,
 }: CategoryColumnProps) {
   return (
-    <div className="min-w-[180px] flex-1 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-caption-bold font-caption-bold text-subtext-color uppercase tracking-wider whitespace-nowrap">
+    <div className="w-[200px] shrink-0 rounded-lg border border-border bg-card p-2.5">
+      <div className="flex items-center gap-1.5 mb-2">
+        <h2 className="text-[10px] font-semibold text-subtext-color uppercase tracking-wider whitespace-nowrap">
           {label}
         </h2>
-        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-neutral-200 px-1.5 text-[10px] font-medium text-neutral-600">
+        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-neutral-200 px-1 text-[9px] font-medium text-neutral-600">
           {count}
         </span>
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         {verifications.map((v) => (
           <VerificationCard
             key={v.id}
@@ -55,33 +55,35 @@ function CategoryColumn({
   );
 }
 
-type CategoryKey = "methods" | "plan" | "code" | "settings" | "results" | "paper-writing" | "paper";
+type CategoryKey =
+  | "hypothesis"
+  | "plan-decided"
+  | "implementation-done"
+  | "experiments-done"
+  | "paper-done";
 
 const categories: { key: CategoryKey; label: string }[] = [
-  { key: "methods", label: "検証方針" },
-  { key: "plan", label: "検証方法" },
-  { key: "code", label: "実験コード" },
-  { key: "settings", label: "実験設定" },
-  { key: "results", label: "実験結果" },
-  { key: "paper-writing", label: "執筆のための情報収集" },
-  { key: "paper", label: "論文" },
+  { key: "hypothesis", label: "仮説入力済み" },
+  { key: "plan-decided", label: "方針決定済み" },
+  { key: "implementation-done", label: "実装完了" },
+  { key: "experiments-done", label: "実験完了" },
+  { key: "paper-done", label: "論文生成が完了" },
 ];
 
 function getCategoryKey(v: Verification): CategoryKey {
   switch (v.phase) {
     case "initial":
     case "methods-proposed":
-      return "methods";
+      return "hypothesis";
     case "plan-generated":
-      return "plan";
+      return "plan-decided";
     case "code-generating":
-      return "code";
     case "code-generated":
-      return "settings";
+      return "implementation-done";
     case "experiments-done":
-      return "results";
+      return "experiments-done";
     case "paper-writing":
-      return v.paperDraft?.status === "ready" ? "paper" : "paper-writing";
+      return v.paperDraft?.status === "ready" ? "paper-done" : "experiments-done";
   }
 }
 
@@ -103,13 +105,11 @@ export function VerificationHomePage({
 
   const grouped = useMemo(() => {
     const map: Record<CategoryKey, Verification[]> = {
-      methods: [],
-      plan: [],
-      code: [],
-      settings: [],
-      results: [],
-      "paper-writing": [],
-      paper: [],
+      hypothesis: [],
+      "plan-decided": [],
+      "implementation-done": [],
+      "experiments-done": [],
+      "paper-done": [],
     };
     for (const v of filtered) {
       map[getCategoryKey(v)].push(v);
@@ -118,11 +118,11 @@ export function VerificationHomePage({
   }, [filtered]);
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-full mx-auto px-8 py-8">
+    <div className="flex-1 overflow-y-auto overflow-x-clip min-w-0">
+      <div className="max-w-full mx-auto px-6 py-6">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-heading-2 font-heading-2 text-default-font">Verifications</h1>
+            <h1 className="text-heading-2 font-heading-2 text-default-font">検証一覧</h1>
             <p className="text-caption font-caption text-subtext-color mt-1">
               {verifications.length} projects
             </p>
@@ -139,7 +139,7 @@ export function VerificationHomePage({
           </div>
         </div>
 
-        <div className="mt-6 flex gap-4 items-start overflow-x-auto">
+        <div className="mt-6 flex gap-2 items-start overflow-x-auto">
           {categories.map((cat) => (
             <CategoryColumn
               key={cat.key}
