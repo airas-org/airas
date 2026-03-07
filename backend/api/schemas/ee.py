@@ -35,3 +35,20 @@ class CheckoutRequest(BaseModel):
 
 class CheckoutResponse(BaseModel):
     checkout_url: str
+
+
+class GitHubAuthorizeResponse(BaseModel):
+    authorize_url: str
+    state: str
+
+
+class GitHubCallbackRequest(BaseModel):
+    code: str
+    state: str
+    redirect_uri: str
+
+
+class GitHubConnectionStatus(BaseModel):
+    connected: bool
+    github_login: str | None = None
+    connected_at: datetime | None = None
