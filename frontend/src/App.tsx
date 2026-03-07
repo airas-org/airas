@@ -48,6 +48,12 @@ import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
 import { IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
 
+// Attach GitHub session header globally to all generated API calls
+OpenAPI.HEADERS = async () => {
+  const sessionToken = localStorage.getItem("github_session_token");
+  return sessionToken ? { "X-GitHub-Session": sessionToken } : {};
+};
+
 const initialWorkflowTree: WorkflowTree = {
   nodes: {},
   rootId: null,

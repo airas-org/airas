@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { OpenAPI } from "@/lib/api";
-import { supabase } from "@/ee/auth/lib/supabase";
+
+const GITHUB_SESSION_KEY = "github_session_token";
 
 interface GitHubConnection {
   connected: boolean;
@@ -12,17 +13,19 @@ interface GitHubConnection {
   connected_at: string | null;
 }
 
+function getGitHubSessionHeaders(): Record<string, string> {
+  const sessionToken = localStorage.getItem(GITHUB_SESSION_KEY);
+  if (sessionToken) {
+    return { "X-GitHub-Session": sessionToken };
+  }
+  return {};
+}
+
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...getGitHubSessionHeaders(),
   };
-  if (OpenAPI.TOKEN) {
-    const token =
-      typeof OpenAPI.TOKEN === "function"
-        ? await (OpenAPI.TOKEN as (options: unknown) => Promise<string>)({})
-        : OpenAPI.TOKEN;
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
   const res = await fetch(`${OpenAPI.BASE}/airas/ee${path}`, {
     ...init,
     headers: { ...headers, ...(init?.headers as Record<string, string>) },
@@ -38,23 +41,22 @@ export function GitHubOAuthCallback({ code }: { code: string }) {
     const redirectUri = `${window.location.origin}/auth/github/callback`;
     const state = sessionStorage.getItem("github_oauth_state") ?? "";
 
-    // OpenAPI.TOKEN may not be set yet on this page (early return in App.tsx bypasses
-    // the useEEComponents() hook that sets it). Fetch the Supabase token directly instead.
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
-      }
-      const res = await fetch(`${OpenAPI.BASE}/airas/ee/github/callback`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ code, state, redirect_uri: redirectUri }),
-      });
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
-      return res.json();
+    fetch(`${OpenAPI.BASE}/airas/ee/github/callback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, state, redirect_uri: redirectUri }),
     })
-      .then(() => {
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        return res.json() as Promise<{
+          connected: boolean;
+          github_login: string;
+          session_token: string;
+        }>;
+      })
+      .then((data) => {
         sessionStorage.removeItem("github_oauth_state");
+        localStorage.setItem(GITHUB_SESSION_KEY, data.session_token);
         setStatus("success");
         setTimeout(() => {
           window.location.href = "/?nav=integration";
@@ -137,6 +139,7 @@ export function IntegrationPage() {
     setError(null);
     try {
       await apiFetch("/github/disconnect", { method: "DELETE" });
+      localStorage.removeItem(GITHUB_SESSION_KEY);
       await fetchGithubStatus();
     } catch {
       setError("GitHub連携の解除に失敗しました");

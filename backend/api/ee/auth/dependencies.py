@@ -4,7 +4,7 @@ from uuid import UUID
 
 import httpx
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from airas.container import Container
@@ -33,18 +33,23 @@ def get_current_user_id(
 
 @inject
 def get_github_client(
-    user_id: Annotated[UUID, Depends(get_current_user_id)],
     service: Annotated[
         GitHubOAuthService, Depends(Provide[Container.github_oauth_service])
     ],
+    x_github_session: Annotated[str | None, Header()] = None,
 ) -> GithubClient:
     settings = get_ee_settings()
     if settings.enabled:
-        token = service.get_token(user_id)
+        if not x_github_session:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="GitHub account not connected. Please connect your GitHub account.",
+            )
+        token = service.get_token(x_github_session)
         if not token:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="GitHub account not connected. Please sign in with GitHub.",
+                detail="GitHub account not connected. Please connect your GitHub account.",
             )
     else:
         token = os.getenv("GH_PERSONAL_ACCESS_TOKEN", "")

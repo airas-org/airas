@@ -2,7 +2,12 @@
 set -e
 
 echo "Generating OpenAPI schema..."
-cd backend && uv run python scripts/generate_openapi.py
+cd backend
+if PYTHONPATH="$(pwd)/src" .venv/bin/python scripts/generate_openapi.py 2>/dev/null; then
+  :
+else
+  uv run python scripts/generate_openapi.py
+fi
 cd ..
 
 echo "Generating frontend API client..."
