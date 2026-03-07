@@ -1,19 +1,19 @@
 import { ApiTokenPage } from "@/components/pages/api-token";
 import { FeedbackPage } from "@/components/pages/feedback";
-import { HelpPage } from "@/components/pages/help";
 import { IntegrationPage } from "@/components/pages/integration";
-import { LegalPage } from "@/components/pages/legal";
 import { ProfilePage } from "@/components/pages/profile";
+import { ReceiptsPage } from "@/components/pages/receipts";
+import { UsagePage } from "@/components/pages/usage";
 import { UserPlanPage } from "@/components/pages/user-plan";
 
 export type SettingsTab =
-  | "integration"
-  | "user-plan"
   | "profile"
-  | "api-token"
   | "feedback"
-  | "help"
-  | "legal";
+  | "integration"
+  | "api-token"
+  | "user-plan"
+  | "receipts"
+  | "usage";
 
 interface SettingsPageProps {
   activeTab: SettingsTab;
@@ -22,13 +22,13 @@ interface SettingsPageProps {
 export function SettingsPage({ activeTab }: SettingsPageProps) {
   return (
     <div className="flex-1 min-w-0">
-      {activeTab === "integration" && <IntegrationPage />}
-      {activeTab === "user-plan" && <UserPlanPage />}
       {activeTab === "profile" && <ProfilePage />}
-      {activeTab === "api-token" && <ApiTokenPage />}
       {activeTab === "feedback" && <FeedbackPage />}
-      {activeTab === "help" && <HelpPage />}
-      {activeTab === "legal" && <LegalPage />}
+      {activeTab === "integration" && <IntegrationPage />}
+      {activeTab === "api-token" && <ApiTokenPage />}
+      {activeTab === "user-plan" && <UserPlanPage />}
+      {activeTab === "receipts" && <ReceiptsPage />}
+      {activeTab === "usage" && <UsagePage />}
     </div>
   );
 }

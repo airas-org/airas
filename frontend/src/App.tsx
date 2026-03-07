@@ -3,11 +3,11 @@
 import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons";
 import {
   FeatherArrowLeft,
+  FeatherBarChart2,
   FeatherBell,
   FeatherBookOpen,
   FeatherCreditCard,
   FeatherFileText,
-  FeatherHelpCircle,
   FeatherKey,
   FeatherLink,
   FeatherList,
@@ -15,8 +15,8 @@ import {
   FeatherPanelLeftClose,
   FeatherPanelLeftOpen,
   FeatherPlus,
+  FeatherReceipt,
   FeatherSettings,
-  FeatherShield,
   FeatherUser,
 } from "@subframe/core";
 import axios from "axios";
@@ -133,7 +133,7 @@ export default function App() {
     return "verification";
   });
   const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
-  const [settingsTab, setSettingsTab] = useState<SettingsTab>("integration");
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("profile");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return !localStorage.getItem("airas-onboarding-done");
@@ -421,62 +421,70 @@ export default function App() {
                 <FeatherArrowLeft className="h-4 w-4" />
                 <span className="text-sm font-medium">設定</span>
               </button>
-              <SidebarWithSections.NavItem
-                icon={<FeatherLink />}
-                selected={settingsTab === "integration"}
-                onClick={() => setSettingsTab("integration")}
-              >
-                インテグレーション
-              </SidebarWithSections.NavItem>
-              <SidebarWithSections.NavItem
-                icon={<FeatherCreditCard />}
-                selected={settingsTab === "user-plan"}
-                onClick={() => setSettingsTab("user-plan")}
-              >
-                プラン
-              </SidebarWithSections.NavItem>
-              <SidebarWithSections.NavItem
-                icon={<FeatherUser />}
-                selected={settingsTab === "profile"}
-                onClick={() => setSettingsTab("profile")}
-              >
-                プロフィール
-              </SidebarWithSections.NavItem>
-              <SidebarWithSections.NavItem
-                icon={<FeatherKey />}
-                selected={settingsTab === "api-token"}
-                onClick={() => setSettingsTab("api-token")}
-              >
-                API Token
-              </SidebarWithSections.NavItem>
-              <SidebarWithSections.NavItem
-                icon={<FeatherMessageSquare />}
-                selected={settingsTab === "feedback"}
-                onClick={() => setSettingsTab("feedback")}
-              >
-                お問い合わせ
-              </SidebarWithSections.NavItem>
-              <SidebarWithSections.NavItem
-                icon={<FeatherHelpCircle />}
-                selected={settingsTab === "help"}
-                onClick={() => setSettingsTab("help")}
-              >
-                ヘルプ
-              </SidebarWithSections.NavItem>
-              <SidebarWithSections.NavItem
-                icon={<FeatherShield />}
-                selected={settingsTab === "legal"}
-                onClick={() => setSettingsTab("legal")}
-              >
-                利用規約
-              </SidebarWithSections.NavItem>
-              <SidebarWithSections.NavItem
-                icon={<FeatherBookOpen />}
-                selected={false}
-                onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
-              >
-                ドキュメント
-              </SidebarWithSections.NavItem>
+              <SidebarWithSections.NavSection label="アカウント">
+                <SidebarWithSections.NavItem
+                  icon={<FeatherUser />}
+                  selected={settingsTab === "profile"}
+                  onClick={() => setSettingsTab("profile")}
+                >
+                  プロフィール
+                </SidebarWithSections.NavItem>
+              </SidebarWithSections.NavSection>
+              <SidebarWithSections.NavSection label="サポート">
+                <SidebarWithSections.NavItem
+                  icon={<FeatherBookOpen />}
+                  selected={false}
+                  onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
+                >
+                  ドキュメント
+                </SidebarWithSections.NavItem>
+                <SidebarWithSections.NavItem
+                  icon={<FeatherMessageSquare />}
+                  selected={settingsTab === "feedback"}
+                  onClick={() => setSettingsTab("feedback")}
+                >
+                  お問い合わせ
+                </SidebarWithSections.NavItem>
+              </SidebarWithSections.NavSection>
+              <SidebarWithSections.NavSection label="AIRASのリソース">
+                <SidebarWithSections.NavItem
+                  icon={<FeatherLink />}
+                  selected={settingsTab === "integration"}
+                  onClick={() => setSettingsTab("integration")}
+                >
+                  接続
+                </SidebarWithSections.NavItem>
+                <SidebarWithSections.NavItem
+                  icon={<FeatherKey />}
+                  selected={settingsTab === "api-token"}
+                  onClick={() => setSettingsTab("api-token")}
+                >
+                  シークレット
+                </SidebarWithSections.NavItem>
+              </SidebarWithSections.NavSection>
+              <SidebarWithSections.NavSection label="支払い">
+                <SidebarWithSections.NavItem
+                  icon={<FeatherCreditCard />}
+                  selected={settingsTab === "user-plan"}
+                  onClick={() => setSettingsTab("user-plan")}
+                >
+                  プラン
+                </SidebarWithSections.NavItem>
+                <SidebarWithSections.NavItem
+                  icon={<FeatherReceipt />}
+                  selected={settingsTab === "receipts"}
+                  onClick={() => setSettingsTab("receipts")}
+                >
+                  領収書 / 請求書
+                </SidebarWithSections.NavItem>
+                <SidebarWithSections.NavItem
+                  icon={<FeatherBarChart2 />}
+                  selected={settingsTab === "usage"}
+                  onClick={() => setSettingsTab("usage")}
+                >
+                  利用量
+                </SidebarWithSections.NavItem>
+              </SidebarWithSections.NavSection>
             </>
           ) : (
             <>
