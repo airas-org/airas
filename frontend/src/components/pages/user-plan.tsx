@@ -104,7 +104,7 @@ export function UserPlanPage() {
       const data = await apiFetch<{ checkout_url: string }>("/stripe/checkout", {
         method: "POST",
         body: JSON.stringify({
-          success_url: `${window.location.origin}?plan=upgraded&nav=user-plan`,
+          success_url: `${window.location.origin}/settings/user-plan?plan=upgraded`,
           cancel_url: window.location.href,
         }),
       });
