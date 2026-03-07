@@ -46,12 +46,23 @@ paths:
       - papers
       summary: Get Paper Title
       operationId: get_paper_title_airas_v1_papers_retrieval_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/RetrievePaperSubgraphRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -65,8 +76,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/papers/generations:
     post:
       tags:
@@ -208,12 +217,23 @@ paths:
       - experiments
       summary: Fetch Run Ids
       operationId: fetch_run_ids_airas_v1_experiments_run_ids_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/FetchRunIdsRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -227,20 +247,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/experiments/results:
     post:
       tags:
       - experiments
       summary: Fetch Experimental Results
       operationId: fetch_experimental_results_airas_v1_experiments_results_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/FetchExperimentalResultsRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -254,20 +283,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/experiments/sanity-checks/dispatch:
     post:
       tags:
       - experiments
       summary: Dispatch Sanity Check
       operationId: dispatch_sanity_check_airas_v1_experiments_sanity_checks_dispatch_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DispatchSanityCheckRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -281,20 +319,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/experiments/validations/dispatch:
     post:
       tags:
       - experiments
       summary: Dispatch Experiment Validation
       operationId: dispatch_experiment_validation_airas_v1_experiments_validations_dispatch_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DispatchExperimentValidationRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -308,20 +355,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/experiments/main-runs/dispatch:
     post:
       tags:
       - experiments
       summary: Dispatch Main Experiment
       operationId: dispatch_main_experiment_airas_v1_experiments_main_runs_dispatch_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DispatchMainExperimentRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -335,20 +391,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/experiments/visualizations/dispatch:
     post:
       tags:
       - experiments
       summary: Dispatch Visualization
       operationId: dispatch_visualization_airas_v1_experiments_visualizations_dispatch_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DispatchVisualizationRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -362,20 +427,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/experiments/diagrams/dispatch:
     post:
       tags:
       - experiments
       summary: Dispatch Diagram Generation
       operationId: dispatch_diagram_generation_airas_v1_experiments_diagrams_dispatch_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DispatchDiagramGenerationRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -389,8 +463,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/experiments/analyses:
     post:
       tags:
@@ -424,12 +496,23 @@ paths:
       - code
       summary: Dispatch Code Generation
       operationId: dispatch_code_generation_airas_v1_code_generations_dispatch_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DispatchCodeGenerationRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -443,20 +526,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/code/fetch:
     post:
       tags:
       - code
       summary: Fetch Experiment Code
       operationId: fetch_experiment_code_airas_v1_code_fetch_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/FetchExperimentCodeRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -470,20 +562,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/repositories:
     post:
       tags:
       - repositories
       summary: Prepare Repository
       operationId: prepare_repository_airas_v1_repositories_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/PrepareRepositorySubgraphRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -497,8 +598,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/bibfile/generations:
     post:
       tags:
@@ -532,12 +631,23 @@ paths:
       - latex
       summary: Generate Latex
       operationId: generate_latex_airas_v1_latex_generations_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/GenerateLatexSubgraphRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -551,20 +661,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/latex/push:
     post:
       tags:
       - latex
       summary: Push Latex
       operationId: push_latex_airas_v1_latex_push_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/PushLatexSubgraphRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -578,20 +697,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/latex/compile:
     post:
       tags:
       - latex
       summary: Compile Latex
       operationId: compile_latex_airas_v1_latex_compile_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CompileLatexSubgraphRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -605,20 +733,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/research-history/download:
     post:
       tags:
       - research-history
       summary: Download Research History
       operationId: download_research_history_airas_v1_research_history_download_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/GithubDownloadRequest'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -632,20 +769,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/research-history/upload:
     post:
       tags:
       - research-history
       summary: Upload Research History
       operationId: upload_research_history_airas_v1_research_history_upload_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/GithubUploadRequest'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -659,20 +805,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/github-actions/polling:
     post:
       tags:
       - github-actions
       summary: Poll Github Actions
       operationId: poll_github_actions_airas_v1_github_actions_polling_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/PollGithubActionsRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -686,20 +841,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/github-actions/secrets:
     post:
       tags:
       - github-actions
       summary: Set Github Actions Secrets
       operationId: set_github_actions_secrets_airas_v1_github_actions_secrets_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/SetGithubActionsSecretsRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -713,20 +877,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/github-actions/artifacts/download:
     post:
       tags:
       - github-actions
       summary: Download Github Actions Artifacts
       operationId: download_github_actions_artifacts_airas_v1_github_actions_artifacts_download_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DownloadGithubActionsArtifactsRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -740,20 +913,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/github/push:
     post:
       tags:
       - github
       summary: Push Github
       operationId: push_github_airas_v1_github_push_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/PushGitHubRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -767,8 +949,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/assisted_research/session:
     post:
       tags:
@@ -943,12 +1123,23 @@ paths:
       - interactive-repo-agent
       summary: Dispatch Interactive Repo Agent
       operationId: dispatch_interactive_repo_agent_airas_v1_interactive_repo_agent_dispatch_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DispatchInteractiveRepoAgentRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -962,8 +1153,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/interactive-repo-agent/{workflow_run_id}/cancel:
     post:
       tags:
@@ -979,6 +1168,14 @@ paths:
         schema:
           type: integer
           title: Workflow Run Id
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
         required: true
         content:
@@ -1004,12 +1201,23 @@ paths:
       - topic_open_ended_research
       summary: Execute Topic Open Ended Research
       operationId: execute_topic_open_ended_research_airas_v1_topic_open_ended_research_run_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/TopicOpenEndedResearchRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -1023,8 +1231,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/topic_open_ended_research/status/{task_id}:
     get:
       tags:
@@ -1132,12 +1338,23 @@ paths:
       - hypothesis_driven_research
       summary: Execute Hypothesis Driven Research
       operationId: execute_hypothesis_driven_research_airas_v1_hypothesis_driven_research_run_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/HypothesisDrivenResearchRequestBody'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -1151,8 +1368,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/hypothesis_driven_research/status/{task_id}:
     get:
       tags:

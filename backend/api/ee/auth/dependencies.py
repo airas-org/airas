@@ -1,8 +1,15 @@
+import os
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, Request
+import httpx
+from dependency_injector.wiring import Provide, inject
+from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from airas.container import Container
+from airas.infra.github_client import GithubClient
+from airas.usecases.ee.github_oauth_service import GitHubOAuthService
 from api.ee.auth.middleware import extract_user_id_from_request
 from api.ee.settings import get_ee_settings
 
@@ -22,3 +29,33 @@ def get_current_user_id(
     if not settings.enabled:
         return SYSTEM_USER_ID
     return extract_user_id_from_request(request)
+
+
+@inject
+def get_github_client(
+    service: Annotated[
+        GitHubOAuthService, Depends(Provide[Container.github_oauth_service])
+    ],
+    x_github_session: Annotated[str | None, Header()] = None,
+) -> GithubClient:
+    settings = get_ee_settings()
+    if settings.enabled:
+        if not x_github_session:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="GitHub account not connected. Please connect your GitHub account.",
+            )
+        token = service.get_token(x_github_session)
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="GitHub account not connected. Please connect your GitHub account.",
+            )
+    else:
+        token = os.getenv("GH_PERSONAL_ACCESS_TOKEN", "")
+    timeout = httpx.Timeout(connect=10.0, read=60.0, write=120.0, pool=5.0)
+    return GithubClient(
+        github_token=token,
+        sync_session=httpx.Client(follow_redirects=True, timeout=timeout),
+        async_session=httpx.AsyncClient(follow_redirects=True, timeout=timeout),
+    )

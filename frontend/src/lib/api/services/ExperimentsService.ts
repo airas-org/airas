@@ -25,15 +25,20 @@ export class ExperimentsService {
     /**
      * Fetch Run Ids
      * @param requestBody
+     * @param xGithubSession
      * @returns FetchRunIdsResponseBody Successful Response
      * @throws ApiError
      */
     public static fetchRunIdsAirasV1ExperimentsRunIdsPost(
         requestBody: FetchRunIdsRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<FetchRunIdsResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/experiments/run-ids',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -44,15 +49,20 @@ export class ExperimentsService {
     /**
      * Fetch Experimental Results
      * @param requestBody
+     * @param xGithubSession
      * @returns FetchExperimentalResultsResponseBody Successful Response
      * @throws ApiError
      */
     public static fetchExperimentalResultsAirasV1ExperimentsResultsPost(
         requestBody: FetchExperimentalResultsRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<FetchExperimentalResultsResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/experiments/results',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -63,15 +73,20 @@ export class ExperimentsService {
     /**
      * Dispatch Sanity Check
      * @param requestBody
+     * @param xGithubSession
      * @returns DispatchSanityCheckResponseBody Successful Response
      * @throws ApiError
      */
     public static dispatchSanityCheckAirasV1ExperimentsSanityChecksDispatchPost(
         requestBody: DispatchSanityCheckRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<DispatchSanityCheckResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/experiments/sanity-checks/dispatch',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -82,15 +97,20 @@ export class ExperimentsService {
     /**
      * Dispatch Experiment Validation
      * @param requestBody
+     * @param xGithubSession
      * @returns DispatchExperimentValidationResponseBody Successful Response
      * @throws ApiError
      */
     public static dispatchExperimentValidationAirasV1ExperimentsValidationsDispatchPost(
         requestBody: DispatchExperimentValidationRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<DispatchExperimentValidationResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/experiments/validations/dispatch',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -101,15 +121,20 @@ export class ExperimentsService {
     /**
      * Dispatch Main Experiment
      * @param requestBody
+     * @param xGithubSession
      * @returns DispatchMainExperimentResponseBody Successful Response
      * @throws ApiError
      */
     public static dispatchMainExperimentAirasV1ExperimentsMainRunsDispatchPost(
         requestBody: DispatchMainExperimentRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<DispatchMainExperimentResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/experiments/main-runs/dispatch',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -120,15 +145,20 @@ export class ExperimentsService {
     /**
      * Dispatch Visualization
      * @param requestBody
+     * @param xGithubSession
      * @returns DispatchVisualizationResponseBody Successful Response
      * @throws ApiError
      */
     public static dispatchVisualizationAirasV1ExperimentsVisualizationsDispatchPost(
         requestBody: DispatchVisualizationRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<DispatchVisualizationResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/experiments/visualizations/dispatch',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -139,15 +169,20 @@ export class ExperimentsService {
     /**
      * Dispatch Diagram Generation
      * @param requestBody
+     * @param xGithubSession
      * @returns DispatchDiagramGenerationResponseBody Successful Response
      * @throws ApiError
      */
     public static dispatchDiagramGenerationAirasV1ExperimentsDiagramsDispatchPost(
         requestBody: DispatchDiagramGenerationRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<DispatchDiagramGenerationResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/experiments/diagrams/dispatch',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {

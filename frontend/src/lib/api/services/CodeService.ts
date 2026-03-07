@@ -13,15 +13,20 @@ export class CodeService {
     /**
      * Dispatch Code Generation
      * @param requestBody
+     * @param xGithubSession
      * @returns DispatchCodeGenerationResponseBody Successful Response
      * @throws ApiError
      */
     public static dispatchCodeGenerationAirasV1CodeGenerationsDispatchPost(
         requestBody: DispatchCodeGenerationRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<DispatchCodeGenerationResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/code/generations/dispatch',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -32,15 +37,20 @@ export class CodeService {
     /**
      * Fetch Experiment Code
      * @param requestBody
+     * @param xGithubSession
      * @returns FetchExperimentCodeResponseBody Successful Response
      * @throws ApiError
      */
     public static fetchExperimentCodeAirasV1CodeFetchPost(
         requestBody: FetchExperimentCodeRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<FetchExperimentCodeResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/code/fetch',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
