@@ -445,7 +445,9 @@ export default function App() {
                 <FeatherArrowLeft className="h-4 w-4" />
                 <span className="text-sm font-medium">設定</span>
               </button>
-              <SidebarWithSections.NavSection label="アカウント">
+              <SidebarWithSections.NavSection
+                label={<span className="text-sm font-medium">アカウント</span>}
+              >
                 <SidebarWithSections.NavItem
                   icon={<FeatherUser />}
                   selected={settingsTab === "profile"}
@@ -454,7 +456,9 @@ export default function App() {
                   プロフィール
                 </SidebarWithSections.NavItem>
               </SidebarWithSections.NavSection>
-              <SidebarWithSections.NavSection label="サポート">
+              <SidebarWithSections.NavSection
+                label={<span className="text-sm font-medium">サポート</span>}
+              >
                 <SidebarWithSections.NavItem
                   icon={<FeatherBookOpen />}
                   selected={false}
@@ -479,7 +483,9 @@ export default function App() {
                   お問い合わせ
                 </SidebarWithSections.NavItem>
               </SidebarWithSections.NavSection>
-              <SidebarWithSections.NavSection label="AIRASのリソース">
+              <SidebarWithSections.NavSection
+                label={<span className="text-sm font-medium">AIRASのリソース</span>}
+              >
                 <SidebarWithSections.NavItem
                   icon={<FeatherLink />}
                   selected={settingsTab === "integration"}
@@ -495,7 +501,9 @@ export default function App() {
                   シークレット
                 </SidebarWithSections.NavItem>
               </SidebarWithSections.NavSection>
-              <SidebarWithSections.NavSection label="支払い">
+              <SidebarWithSections.NavSection
+                label={<span className="text-sm font-medium">支払い</span>}
+              >
                 <SidebarWithSections.NavItem
                   icon={<FeatherCreditCard />}
                   selected={settingsTab === "user-plan"}
