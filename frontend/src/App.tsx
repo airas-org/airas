@@ -41,6 +41,7 @@ import {
 } from "@/components/pages/verification";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isEnterpriseEnabled } from "@/ee/config";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { OpenAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
@@ -134,10 +135,15 @@ export default function App() {
   });
   const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("profile");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return !localStorage.getItem("airas-onboarding-done");
   });
+
+  useEffect(() => {
+    setSidebarOpen(!isMobile);
+  }, [isMobile]);
 
   const { fetchSections } = useAutonomousResearchSessions({
     setAutonomousSectionsMap,
@@ -359,6 +365,10 @@ export default function App() {
     setActiveNav(key);
   }, []);
 
+  const handleMobileNavClose = useCallback(() => {
+    if (isMobile) setSidebarOpen(false);
+  }, [isMobile]);
+
   // Handle OAuth callback route
   if (isEnterpriseEnabled() && window.location.pathname === "/auth/callback") {
     if (!eeComponents) {
@@ -375,8 +385,9 @@ export default function App() {
     <div className="flex min-h-screen bg-default-background">
       <aside
         className={cn(
-          "fixed left-0 top-0 h-screen z-30 bg-default-background transition-[width] duration-200 ease-in-out overflow-hidden",
+          "fixed left-0 top-0 h-screen bg-default-background transition-[width] duration-200 ease-in-out overflow-hidden",
           sidebarOpen ? "w-52" : "w-0",
+          isMobile ? "z-40" : "z-30",
         )}
       >
         <SidebarWithSections
@@ -500,14 +511,20 @@ export default function App() {
               <SidebarWithSections.NavItem
                 icon={<FeatherPlus />}
                 selected={activeNav === "verification"}
-                onClick={handleCreateVerification}
+                onClick={() => {
+                  handleCreateVerification();
+                  handleMobileNavClose();
+                }}
               >
                 新規検証
               </SidebarWithSections.NavItem>
               <SidebarWithSections.NavItem
                 icon={<FeatherList />}
                 selected={activeNav === "home"}
-                onClick={() => handleNavChange("home")}
+                onClick={() => {
+                  handleNavChange("home");
+                  handleMobileNavClose();
+                }}
               >
                 検証一覧
               </SidebarWithSections.NavItem>
@@ -527,6 +544,7 @@ export default function App() {
                   onClick={() => {
                     setAutonomousSubNav("topic-driven");
                     handleNavChange("autonomous-research");
+                    handleMobileNavClose();
                   }}
                 >
                   Topic-Driven
@@ -539,6 +557,7 @@ export default function App() {
                   onClick={() => {
                     setAutonomousSubNav("hypothesis-driven");
                     handleNavChange("autonomous-research");
+                    handleMobileNavClose();
                   }}
                 >
                   Hypothesis-Driven
@@ -549,15 +568,24 @@ export default function App() {
         </SidebarWithSections>
       </aside>
 
+      {isMobile && sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          className="fixed inset-0 z-20 bg-black/50 transition-opacity cursor-default"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       <div
         className={cn(
           "flex-1 flex flex-col min-w-0 overflow-x-clip transition-[margin-left] duration-200 ease-in-out",
-          sidebarOpen ? "ml-52" : "ml-0",
+          !isMobile && sidebarOpen ? "ml-52" : "ml-0",
         )}
       >
         <TopbarWithRightNav
           leftSlot={
-            !sidebarOpen ? (
+            !sidebarOpen || isMobile ? (
               <IconButton
                 size="small"
                 variant="neutral-tertiary"
@@ -568,16 +596,18 @@ export default function App() {
           }
           rightSlot={
             <>
-              <IconButton
-                variant="neutral-tertiary"
-                icon={<SiGithub className="h-4 w-4" />}
-                onClick={() => window.open("https://github.com/airas-org/airas", "_blank")}
-              />
-              <IconButton
-                variant="neutral-tertiary"
-                icon={<SiX className="h-4 w-4" />}
-                onClick={() => window.open("https://x.com/fuyu_quant", "_blank")}
-              />
+              <div className="hidden md:flex items-center gap-4">
+                <IconButton
+                  variant="neutral-tertiary"
+                  icon={<SiGithub className="h-4 w-4" />}
+                  onClick={() => window.open("https://github.com/airas-org/airas", "_blank")}
+                />
+                <IconButton
+                  variant="neutral-tertiary"
+                  icon={<SiX className="h-4 w-4" />}
+                  onClick={() => window.open("https://x.com/fuyu_quant", "_blank")}
+                />
+              </div>
               <IconButton
                 variant={activeNav === "notifications" ? "neutral-secondary" : "neutral-tertiary"}
                 icon={<FeatherBell className="h-4 w-4" />}
