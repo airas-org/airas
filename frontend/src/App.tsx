@@ -544,11 +544,7 @@ export default function App() {
               <SidebarWithSections.NavItem
                 icon={<FeatherBeaker />}
                 selected={activeNav === "autonomous-research"}
-                onClick={() => {
-                  setAutonomousListViewKey((k) => k + 1);
-                  handleNavChange("autonomous-research");
-                  handleMobileNavClose();
-                }}
+                className="cursor-default hover:bg-transparent active:bg-transparent"
               >
                 自動研究
               </SidebarWithSections.NavItem>
