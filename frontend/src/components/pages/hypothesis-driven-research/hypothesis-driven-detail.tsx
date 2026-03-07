@@ -187,7 +187,7 @@ export function HypothesisDrivenDetail({
 
   return (
     <div className="flex h-full w-full flex-col items-start bg-default-background">
-      <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 py-2 sticky top-0 z-10 gap-1">
+      <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-1 pb-2 sticky top-0 z-10 gap-1">
         <div className="flex w-full items-center justify-between">
           <LinkButton variant="neutral" icon={<FeatherArrowLeft />} onClick={onBack}>
             <span className="text-caption font-caption">結果一覧</span>
