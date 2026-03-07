@@ -122,10 +122,12 @@ _ee_settings = get_ee_settings()
 if _ee_settings.enabled:
     from api.ee.api_keys.routes import router as ee_api_keys_router
     from api.ee.auth.routes import router as ee_auth_router
+    from api.ee.github_token.routes import router as ee_github_token_router
     from api.ee.plan.routes import router as ee_plan_router
     from api.ee.stripe.routes import router as ee_stripe_router
 
     app.include_router(ee_auth_router, prefix="/airas/ee")
     app.include_router(ee_api_keys_router, prefix="/airas/ee")
+    app.include_router(ee_github_token_router, prefix="/airas/ee")
     app.include_router(ee_plan_router, prefix="/airas/ee")
     app.include_router(ee_stripe_router, prefix="/airas/ee")

@@ -354,12 +354,27 @@ export function HypothesisDrivenDetail({
               isOpen={openSections.researchHypothesis}
               onToggle={() => toggleSection("researchHypothesis")}
             >
-              <FieldBlock label="open_problems" value={snapshot.research_hypothesis.open_problems} />
+              <FieldBlock
+                label="open_problems"
+                value={snapshot.research_hypothesis.open_problems}
+              />
               <FieldBlock label="method" value={snapshot.research_hypothesis.method} />
-              <FieldBlock label="primary_metric" value={snapshot.research_hypothesis.primary_metric} />
-              <FieldBlock label="expected_result" value={snapshot.research_hypothesis.expected_result} />
-              <FieldBlock label="experimental_setup" value={snapshot.research_hypothesis.experimental_setup} />
-              <FieldBlock label="expected_conclusion" value={snapshot.research_hypothesis.expected_conclusion} />
+              <FieldBlock
+                label="primary_metric"
+                value={snapshot.research_hypothesis.primary_metric}
+              />
+              <FieldBlock
+                label="expected_result"
+                value={snapshot.research_hypothesis.expected_result}
+              />
+              <FieldBlock
+                label="experimental_setup"
+                value={snapshot.research_hypothesis.experimental_setup}
+              />
+              <FieldBlock
+                label="expected_conclusion"
+                value={snapshot.research_hypothesis.expected_conclusion}
+              />
             </ToggleResultSection>
           )}
 
@@ -370,7 +385,10 @@ export function HypothesisDrivenDetail({
               isOpen={openSections.experimentalDesign}
               onToggle={() => toggleSection("experimentalDesign")}
             >
-              <FieldBlock label="experiment_summary" value={snapshot.experimental_design.experiment_summary} />
+              <FieldBlock
+                label="experiment_summary"
+                value={snapshot.experimental_design.experiment_summary}
+              />
               {snapshot.experimental_design.evaluation_metrics &&
                 snapshot.experimental_design.evaluation_metrics.length > 0 && (
                   <div className="flex w-full flex-col items-start gap-2">
@@ -398,27 +416,37 @@ export function HypothesisDrivenDetail({
                 )}
               {snapshot.experimental_design.models_to_use && (
                 <div className="flex w-full flex-col items-start gap-1">
-                  <span className="text-caption-bold font-caption-bold text-subtext-color">models_to_use</span>
+                  <span className="text-caption-bold font-caption-bold text-subtext-color">
+                    models_to_use
+                  </span>
                   <div className="flex flex-wrap items-center gap-2">
                     {snapshot.experimental_design.models_to_use.map((m) => (
-                      <Badge key={m} variant="neutral">{m}</Badge>
+                      <Badge key={m} variant="neutral">
+                        {m}
+                      </Badge>
                     ))}
                   </div>
                 </div>
               )}
               {snapshot.experimental_design.datasets_to_use && (
                 <div className="flex w-full flex-col items-start gap-1">
-                  <span className="text-caption-bold font-caption-bold text-subtext-color">datasets_to_use</span>
+                  <span className="text-caption-bold font-caption-bold text-subtext-color">
+                    datasets_to_use
+                  </span>
                   <div className="flex flex-wrap items-center gap-2">
                     {snapshot.experimental_design.datasets_to_use.map((d) => (
-                      <Badge key={d} variant="neutral">{d}</Badge>
+                      <Badge key={d} variant="neutral">
+                        {d}
+                      </Badge>
                     ))}
                   </div>
                 </div>
               )}
               {snapshot.experimental_design.proposed_method && (
                 <div className="flex w-full flex-col items-start gap-1">
-                  <span className="text-caption-bold font-caption-bold text-subtext-color">proposed_method</span>
+                  <span className="text-caption-bold font-caption-bold text-subtext-color">
+                    proposed_method
+                  </span>
                   <span className="text-body font-body text-default-font">
                     {snapshot.experimental_design.proposed_method.method_name}:{" "}
                     {snapshot.experimental_design.proposed_method.description}
@@ -428,16 +456,22 @@ export function HypothesisDrivenDetail({
               {snapshot.experimental_design.comparative_methods &&
                 snapshot.experimental_design.comparative_methods.length > 0 && (
                   <div className="flex w-full flex-col items-start gap-2">
-                    <span className="text-caption-bold font-caption-bold text-subtext-color">comparative_methods</span>
+                    <span className="text-caption-bold font-caption-bold text-subtext-color">
+                      comparative_methods
+                    </span>
                     <div className="flex w-full flex-wrap items-start gap-2">
                       {snapshot.experimental_design.comparative_methods.map((m) => (
                         <div
                           key={m.method_name || m.description}
                           className="flex flex-col items-start gap-1 rounded-md border border-solid border-neutral-border bg-default-background px-3 py-2"
                         >
-                          <span className="text-body-bold font-body-bold text-default-font">{m.method_name}</span>
+                          <span className="text-body-bold font-body-bold text-default-font">
+                            {m.method_name}
+                          </span>
                           {m.description && (
-                            <span className="text-caption font-caption text-subtext-color">{m.description}</span>
+                            <span className="text-caption font-caption text-subtext-color">
+                              {m.description}
+                            </span>
                           )}
                         </div>
                       ))}
@@ -473,7 +507,9 @@ export function HypothesisDrivenDetail({
             >
               {snapshot.experimental_results.stdout && (
                 <div className="flex w-full flex-col items-start gap-2">
-                  <span className="text-caption-bold font-caption-bold text-subtext-color">stdout</span>
+                  <span className="text-caption-bold font-caption-bold text-subtext-color">
+                    stdout
+                  </span>
                   <div className="flex w-full flex-col items-start rounded-md bg-neutral-100 px-3 py-2">
                     <span className="text-monospace-body font-monospace-body text-default-font whitespace-pre-wrap">
                       {snapshot.experimental_results.stdout}
@@ -483,7 +519,9 @@ export function HypothesisDrivenDetail({
               )}
               {snapshot.experimental_results.stderr && (
                 <div className="flex w-full flex-col items-start gap-2">
-                  <span className="text-caption-bold font-caption-bold text-subtext-color">stderr</span>
+                  <span className="text-caption-bold font-caption-bold text-subtext-color">
+                    stderr
+                  </span>
                   <div className="flex w-full flex-col items-start rounded-md bg-neutral-100 px-3 py-2">
                     <span className="text-monospace-body font-monospace-body text-subtext-color whitespace-pre-wrap">
                       {snapshot.experimental_results.stderr}
@@ -494,7 +532,9 @@ export function HypothesisDrivenDetail({
               {snapshot.experimental_results.metrics_data &&
                 Object.keys(snapshot.experimental_results.metrics_data).length > 0 && (
                   <div className="flex w-full flex-col items-start gap-2">
-                    <span className="text-caption-bold font-caption-bold text-subtext-color">metrics_data</span>
+                    <span className="text-caption-bold font-caption-bold text-subtext-color">
+                      metrics_data
+                    </span>
                     <div className="flex w-full flex-col items-start rounded-md bg-neutral-100 px-3 py-2">
                       <pre className="text-monospace-body font-monospace-body text-default-font whitespace-pre-wrap max-h-80 overflow-auto w-full">
                         {JSON.stringify(snapshot.experimental_results.metrics_data, null, 2)}
@@ -529,7 +569,10 @@ export function HypothesisDrivenDetail({
               <FieldBlock label="related_work" value={snapshot.paper_content.related_work} />
               <FieldBlock label="background" value={snapshot.paper_content.background} />
               <FieldBlock label="method" value={snapshot.paper_content.method} />
-              <FieldBlock label="experimental_setup" value={snapshot.paper_content.experimental_setup} />
+              <FieldBlock
+                label="experimental_setup"
+                value={snapshot.paper_content.experimental_setup}
+              />
               <FieldBlock label="results" value={snapshot.paper_content.results} />
               <FieldBlock label="conclusion" value={snapshot.paper_content.conclusion} />
             </ToggleResultSection>

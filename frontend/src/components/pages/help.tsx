@@ -66,7 +66,7 @@ const featureGuides = [
       {
         question: "APIキーの設定方法",
         answer:
-          "Settings > Integrationページから各サービスのAPIキーを設定できます。OpenAI、Anthropic、Google等のLLM APIキーと、GitHub Personal Access Tokenが必要です。",
+          "Settings > Integrationページから各サービスのAPIキーを設定できます。OpenAI、Anthropic、Google等のLLM APIキーが必要です。GitHubアカウントはOAuthで自動的に連携されます。",
       },
       {
         question: "LLMモデルのカスタマイズ",

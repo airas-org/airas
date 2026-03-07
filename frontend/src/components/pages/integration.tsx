@@ -56,6 +56,7 @@ export function IntegrationPage() {
   const [deleting, setDeleting] = useState<ApiProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [requiresApiKeys, setRequiresApiKeys] = useState(true);
+  const [githubConnected, setGithubConnected] = useState<boolean | null>(null);
 
   const fetchPlan = useCallback(async () => {
     try {
@@ -77,10 +78,20 @@ export function IntegrationPage() {
     }
   }, []);
 
+  const fetchGithubStatus = useCallback(async () => {
+    try {
+      const data = await apiFetch<{ connected: boolean }>("/github-token/status");
+      setGithubConnected(data.connected);
+    } catch {
+      setGithubConnected(null);
+    }
+  }, []);
+
   useEffect(() => {
     void fetchPlan();
     void fetchKeys();
-  }, [fetchPlan, fetchKeys]);
+    void fetchGithubStatus();
+  }, [fetchPlan, fetchKeys, fetchGithubStatus]);
 
   const handleSave = async (provider: ApiProvider) => {
     const key = drafts[provider].trim();
@@ -131,19 +142,29 @@ export function IntegrationPage() {
       )}
 
       <div className="mt-6 space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>GitHub Integration</CardTitle>
-            <CardDescription>
-              Connect your GitHub account to enable repository access and collaboration features.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <span className="inline-block rounded-md bg-muted px-3 py-1 text-xs text-muted-foreground">
-              Coming soon
-            </span>
-          </CardContent>
-        </Card>
+        {githubConnected !== null && (
+          <Card>
+            <CardHeader>
+              <CardTitle>GitHub Integration</CardTitle>
+              <CardDescription>
+                Connect your GitHub account to enable repository access and collaboration features.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {githubConnected ? (
+                <span className="inline-flex items-center gap-2 rounded-md bg-green-500/10 px-3 py-1 text-xs text-green-600 dark:text-green-400">
+                  <span className="h-2 w-2 rounded-full bg-green-500" />
+                  GitHub アカウントが連携されています
+                </span>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  GitHub
+                  アカウントが連携されていません。GitHubでサインインすることで自動的に連携されます。
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {requiresApiKeys ? (
           <Card>

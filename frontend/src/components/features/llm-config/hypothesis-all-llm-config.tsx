@@ -13,7 +13,11 @@ interface HypothesisAllLLMConfigProps {
   hideToggle?: boolean;
 }
 
-export function HypothesisAllLLMConfig({ llmMapping, onChange, hideToggle }: HypothesisAllLLMConfigProps) {
+export function HypothesisAllLLMConfig({
+  llmMapping,
+  onChange,
+  hideToggle,
+}: HypothesisAllLLMConfigProps) {
   const [showLLMConfig, setShowLLMConfig] = useState(false);
 
   const isOpen = hideToggle || showLLMConfig;
