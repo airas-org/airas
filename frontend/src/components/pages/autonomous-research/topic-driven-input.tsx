@@ -511,7 +511,22 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
             </div>
           </Accordion>
 
-          <AllLLMConfig llmMapping={llmMapping} onChange={setLlmMapping} />
+          <Accordion
+            trigger={
+              <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
+                <FeatherSettings className="text-body font-body text-default-font" />
+                <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
+                  LLM 設定
+                </span>
+                <Accordion.Chevron />
+              </div>
+            }
+            defaultOpen={false}
+          >
+            <div className="flex w-full grow shrink-0 basis-0 flex-col items-start gap-4 px-4 py-4">
+              <AllLLMConfig llmMapping={llmMapping} onChange={setLlmMapping} hideToggle />
+            </div>
+          </Accordion>
 
           {error && (
             <div className="flex w-full items-center rounded-md bg-error-50 px-4 py-3">
