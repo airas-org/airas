@@ -541,7 +541,7 @@ export default function App() {
                 <button
                   type="button"
                   className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
-                    autonomousSubNav === "topic-driven"
+                    activeNav === "autonomous-research" && autonomousSubNav === "topic-driven"
                       ? "text-brand-700 bg-brand-50"
                       : "text-neutral-600 hover:bg-neutral-100"
                   }`}
@@ -558,7 +558,7 @@ export default function App() {
                 <button
                   type="button"
                   className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
-                    autonomousSubNav === "hypothesis-driven"
+                    activeNav === "autonomous-research" && autonomousSubNav === "hypothesis-driven"
                       ? "text-brand-700 bg-brand-50"
                       : "text-neutral-600 hover:bg-neutral-100"
                   }`}
