@@ -584,7 +584,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
               キャンセル
             </Button>
             <Button
-              variant="neutral-primary"
+              variant="brand-primary"
               icon={<FeatherPlay />}
               disabled={isRunning || !isFormValid}
               onClick={handleRun}

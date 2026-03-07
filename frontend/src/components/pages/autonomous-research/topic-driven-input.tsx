@@ -540,7 +540,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
               キャンセル
             </Button>
             <Button
-              variant="neutral-primary"
+              variant="brand-primary"
               icon={<FeatherPlay />}
               disabled={isRunning || !isFormValid}
               onClick={handleRun}
