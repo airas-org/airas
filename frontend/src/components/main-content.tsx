@@ -1,9 +1,10 @@
 import { useCallback, useState } from "react";
+import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
 import { NotificationsPage } from "@/components/pages/notifications";
 import { PapersPage } from "@/components/pages/papers";
-import { SettingsPage, type SettingsTab } from "@/components/pages/settings";
+import { SettingsPage } from "@/components/pages/settings";
 import {
   type ProposedMethod,
   type Verification,
@@ -18,13 +19,6 @@ import type {
   WorkflowTree as WorkflowTreeType,
 } from "@/types/research";
 
-export type NavKey =
-  | "home"
-  | "papers"
-  | "autonomous-research"
-  | "verification"
-  | "notifications"
-  | "settings";
 export const AUTONOMOUS_SUB_NAVS = ["topic-driven", "hypothesis-driven"] as const;
 export type AutonomousSubNav = (typeof AUTONOMOUS_SUB_NAVS)[number];
 
@@ -45,46 +39,91 @@ interface AssistedResearchProps {
 }
 
 interface MainContentProps {
-  autonomousSection: ResearchSection | null;
-  autonomousSessions: ResearchSection[];
-  onSelectAutonomousSession: (section: ResearchSection) => void;
-  activeNav: NavKey;
-  autonomousSubNav: AutonomousSubNav;
+  autonomousSectionMap: Record<AutonomousSubNav, ResearchSection | null>;
+  autonomousSessions: Record<AutonomousSubNav, ResearchSection[]>;
+  onSelectAutonomousSession: (subNav: AutonomousSubNav, section: ResearchSection) => void;
   assistedResearchProps: AssistedResearchProps;
-  onCreateSection: () => void;
-  onUpdateSectionTitle: (title: string) => void;
-  onRefreshSessions: (preferredId?: string) => Promise<void>;
+  onCreateSection: (subNav: AutonomousSubNav) => void;
+  onUpdateSectionTitle: (subNav: AutonomousSubNav, title: string) => void;
+  onRefreshSessions: (subNav: AutonomousSubNav, preferredId?: string) => Promise<void>;
   verifications: Verification[];
-  activeVerification: Verification | null;
-  onSelectVerification: (id: string) => void;
   onDeleteVerification: (id: string) => void;
   onDuplicateVerification: (id: string) => void;
   onUpdateVerification: (id: string, updates: Partial<Verification>) => void;
   onCreateWithMethod: (sourceVerification: Verification, method: ProposedMethod) => void;
-  settingsTab: SettingsTab;
   autonomousListViewKey: number;
 }
 
-export function MainContent({
-  autonomousSection,
+function VerificationDetailRoute({
+  verifications,
+  onUpdateVerification,
+  onCreateWithMethod,
+}: {
+  verifications: Verification[];
+  onUpdateVerification: (id: string, updates: Partial<Verification>) => void;
+  onCreateWithMethod: (sourceVerification: Verification, method: ProposedMethod) => void;
+}) {
+  const { id } = useParams<{ id: string }>();
+  const verification = verifications.find((v) => v.id === id) ?? null;
+  return (
+    <VerificationDetailPage
+      verification={verification}
+      onUpdateVerification={onUpdateVerification}
+      onCreateWithMethod={onCreateWithMethod}
+    />
+  );
+}
+
+function AutonomousResearchRoute({
+  subNav,
+  autonomousSectionMap,
   autonomousSessions,
   onSelectAutonomousSession,
-  activeNav,
-  autonomousSubNav,
+  onCreateSection,
+  onUpdateSectionTitle,
+  onRefreshSessions,
+  listViewKey,
+}: {
+  subNav: AutonomousSubNav;
+  autonomousSectionMap: Record<AutonomousSubNav, ResearchSection | null>;
+  autonomousSessions: Record<AutonomousSubNav, ResearchSection[]>;
+  onSelectAutonomousSession: (subNav: AutonomousSubNav, section: ResearchSection) => void;
+  onCreateSection: (subNav: AutonomousSubNav) => void;
+  onUpdateSectionTitle: (subNav: AutonomousSubNav, title: string) => void;
+  onRefreshSessions: (subNav: AutonomousSubNav, preferredId?: string) => Promise<void>;
+  listViewKey: number;
+}) {
+  const PageComponent =
+    subNav === "topic-driven" ? AutonomousResearchPage : HypothesisDrivenResearchPage;
+  return (
+    <PageComponent
+      section={autonomousSectionMap[subNav]}
+      sessions={autonomousSessions[subNav]}
+      onSelectSession={(section) => onSelectAutonomousSession(subNav, section)}
+      onCreateSection={() => onCreateSection(subNav)}
+      onUpdateSectionTitle={(title) => onUpdateSectionTitle(subNav, title)}
+      onRefreshSessions={(preferredId) => onRefreshSessions(subNav, preferredId)}
+      listViewKey={listViewKey}
+    />
+  );
+}
+
+export function MainContent({
+  autonomousSectionMap,
+  autonomousSessions,
+  onSelectAutonomousSession,
   assistedResearchProps,
   onCreateSection,
   onUpdateSectionTitle,
   onRefreshSessions,
   verifications,
-  activeVerification,
-  onSelectVerification,
   onDeleteVerification,
   onDuplicateVerification,
   onUpdateVerification,
   onCreateWithMethod,
-  settingsTab,
   autonomousListViewKey,
 }: MainContentProps) {
+  const navigate = useNavigate();
   const [selectedPapers, setSelectedPapers] = useState<Paper[]>([]);
 
   const handlePapersStepExecuted = useCallback(
@@ -129,62 +168,96 @@ export function MainContent({
 
   return (
     <div className="flex-1 flex min-w-0">
-      <div className={activeNav === "home" ? "flex-1 flex min-w-0" : "hidden"}>
-        <VerificationHomePage
-          verifications={verifications}
-          onSelectVerification={onSelectVerification}
-          onDeleteVerification={onDeleteVerification}
-          onDuplicateVerification={onDuplicateVerification}
+      <Routes>
+        <Route path="/" element={<Navigate to="/home" replace />} />
+        <Route
+          path="/home"
+          element={
+            <VerificationHomePage
+              verifications={verifications}
+              onSelectVerification={(id) => navigate(`/verification/${id}`)}
+              onDeleteVerification={onDeleteVerification}
+              onDuplicateVerification={onDuplicateVerification}
+            />
+          }
         />
-      </div>
-
-      <div className={activeNav === "verification" ? "flex-1 flex" : "hidden"}>
-        <VerificationDetailPage
-          verification={activeVerification}
-          onUpdateVerification={onUpdateVerification}
-          onCreateWithMethod={onCreateWithMethod}
+        <Route
+          path="/verification/:id"
+          element={
+            <VerificationDetailRoute
+              verifications={verifications}
+              onUpdateVerification={onUpdateVerification}
+              onCreateWithMethod={onCreateWithMethod}
+            />
+          }
         />
-      </div>
-
-      <div className={activeNav === "papers" ? "flex-1 flex" : "hidden"}>
-        <PapersPage
-          selectedPapers={selectedPapers}
-          onPapersChange={setSelectedPapers}
-          onStepExecuted={handlePapersStepExecuted}
-          onSave={handleSavePapersSnapshot}
+        <Route
+          path="/papers"
+          element={
+            <PapersPage
+              selectedPapers={selectedPapers}
+              onPapersChange={setSelectedPapers}
+              onStepExecuted={handlePapersStepExecuted}
+              onSave={handleSavePapersSnapshot}
+            />
+          }
         />
-      </div>
-
-      <div className={activeNav === "autonomous-research" ? "flex-1 flex" : "hidden"}>
-        {autonomousSubNav === "topic-driven" ? (
-          <AutonomousResearchPage
-            section={autonomousSection}
-            sessions={autonomousSessions}
-            onSelectSession={onSelectAutonomousSession}
-            onCreateSection={onCreateSection}
-            onUpdateSectionTitle={onUpdateSectionTitle}
-            onRefreshSessions={onRefreshSessions}
-            listViewKey={autonomousListViewKey}
-          />
-        ) : (
-          <HypothesisDrivenResearchPage
-            section={autonomousSection}
-            sessions={autonomousSessions}
-            onSelectSession={onSelectAutonomousSession}
-            onCreateSection={onCreateSection}
-            onUpdateSectionTitle={onUpdateSectionTitle}
-            onRefreshSessions={onRefreshSessions}
-            listViewKey={autonomousListViewKey}
-          />
-        )}
-      </div>
-
-      <div className={activeNav === "notifications" ? "flex-1 flex" : "hidden"}>
-        <NotificationsPage />
-      </div>
-      <div className={activeNav === "settings" ? "flex-1 flex" : "hidden"}>
-        <SettingsPage activeTab={settingsTab} />
-      </div>
+        <Route
+          path="/autonomous-research/topic-driven"
+          element={
+            <AutonomousResearchRoute
+              subNav="topic-driven"
+              autonomousSectionMap={autonomousSectionMap}
+              autonomousSessions={autonomousSessions}
+              onSelectAutonomousSession={onSelectAutonomousSession}
+              onCreateSection={onCreateSection}
+              onUpdateSectionTitle={onUpdateSectionTitle}
+              onRefreshSessions={onRefreshSessions}
+              listViewKey={autonomousListViewKey}
+            />
+          }
+        />
+        <Route
+          path="/autonomous-research/hypothesis-driven"
+          element={
+            <AutonomousResearchRoute
+              subNav="hypothesis-driven"
+              autonomousSectionMap={autonomousSectionMap}
+              autonomousSessions={autonomousSessions}
+              onSelectAutonomousSession={onSelectAutonomousSession}
+              onCreateSection={onCreateSection}
+              onUpdateSectionTitle={onUpdateSectionTitle}
+              onRefreshSessions={onRefreshSessions}
+              listViewKey={autonomousListViewKey}
+            />
+          }
+        />
+        <Route
+          path="/autonomous-research"
+          element={<Navigate to="/autonomous-research/topic-driven" replace />}
+        />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/settings/:tab" element={<SettingsRoute />} />
+        <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
+        <Route path="*" element={<Navigate to="/home" replace />} />
+      </Routes>
     </div>
   );
+}
+
+function SettingsRoute() {
+  const { tab } = useParams<{ tab: string }>();
+  const VALID_TABS = [
+    "profile",
+    "feedback",
+    "integration",
+    "api-token",
+    "user-plan",
+    "receipts",
+    "usage",
+  ];
+  const activeTab = VALID_TABS.includes(tab ?? "")
+    ? (tab as Parameters<typeof SettingsPage>[0]["activeTab"])
+    : "profile";
+  return <SettingsPage activeTab={activeTab} />;
 }

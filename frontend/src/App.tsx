@@ -22,12 +22,8 @@ import {
 } from "@subframe/core";
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
-import {
-  AUTONOMOUS_SUB_NAVS,
-  type AutonomousSubNav,
-  MainContent,
-  type NavKey,
-} from "@/components/main-content";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { AUTONOMOUS_SUB_NAVS, type AutonomousSubNav, MainContent } from "@/components/main-content";
 import {
   type AutonomousActiveSectionMap,
   type AutonomousSectionsMap,
@@ -108,8 +104,56 @@ function useEEComponents() {
   return eeComponents;
 }
 
+const SETTINGS_TABS: SettingsTab[] = [
+  "profile",
+  "feedback",
+  "integration",
+  "api-token",
+  "user-plan",
+  "receipts",
+  "usage",
+];
+
+function getActiveSection(pathname: string): string {
+  if (pathname.startsWith("/autonomous-research")) return "autonomous-research";
+  if (pathname.startsWith("/settings")) return "settings";
+  if (pathname.startsWith("/verification")) return "verification";
+  if (pathname.startsWith("/notifications")) return "notifications";
+  if (pathname.startsWith("/papers")) return "papers";
+  return "home";
+}
+
+function getAutonomousSubNav(pathname: string): AutonomousSubNav {
+  if (pathname.includes("hypothesis-driven")) return "hypothesis-driven";
+  return "topic-driven";
+}
+
+function getSettingsTab(pathname: string): SettingsTab {
+  const tab = pathname.split("/settings/")[1] as SettingsTab | undefined;
+  if (tab && SETTINGS_TABS.includes(tab)) return tab;
+  return "profile";
+}
+
+function GitHubOAuthCallbackRoute() {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const code = params.get("code");
+  const state = params.get("state");
+  const savedState = sessionStorage.getItem("github_oauth_state");
+
+  if (code && state && state === savedState) {
+    return <GitHubOAuthCallback code={code} />;
+  }
+  return <Navigate to="/" replace />;
+}
+
 export default function App() {
   const eeComponents = useEEComponents();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const activeSection = getActiveSection(location.pathname);
+  const autonomousSubNav = getAutonomousSubNav(location.pathname);
 
   // Autonomous Research
   const [autonomousSectionsMap, setAutonomousSectionsMap] = useState<AutonomousSectionsMap>(
@@ -124,19 +168,11 @@ export default function App() {
 
   // Verification
   const [verifications, setVerifications] = useState<Verification[]>(mockVerifications);
-  const [activeVerificationId, setActiveVerificationId] = useState<string | null>(null);
-  const activeVerification = verifications.find((v) => v.id === activeVerificationId) ?? null;
 
-  // Navigation — check URL params for post-checkout redirect
-  const [activeNav, setActiveNav] = useState<NavKey>(() => {
-    const params = new URLSearchParams(window.location.search);
-    const nav = params.get("nav");
-    if (nav === "user-plan" || nav === "integration") return "settings" as NavKey;
-    return "verification";
-  });
-  const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
-  const [settingsTab, setSettingsTab] = useState<SettingsTab>("profile");
+  // autonomousListViewKey forces list remount when clicking the same sub-nav
   const [autonomousListViewKey, setAutonomousListViewKey] = useState(0);
+
+  // UI state
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -149,22 +185,6 @@ export default function App() {
     setAutonomousActiveSectionMap,
   });
 
-  // 初回起動時に新規検証を自動作成
-  // biome-ignore lint/correctness/useExhaustiveDependencies: 初回マウント時のみ実行
-  useEffect(() => {
-    if (activeNav === "verification" && !activeVerificationId) {
-      handleCreateVerification();
-    }
-  }, []);
-
-  const handleCreateSection = () => {
-    if (activeNav === "autonomous-research") {
-      setAutonomousActiveSectionMap((prev) => ({ ...prev, [autonomousSubNav]: null }));
-    }
-    setWorkflowTree(initialWorkflowTree);
-    setActiveNodeId(null);
-  };
-
   const handleCreateVerification = useCallback(() => {
     const newVerification: Verification = {
       id: `v-${Date.now()}`,
@@ -174,14 +194,8 @@ export default function App() {
       phase: "initial",
     };
     setVerifications((prev) => [newVerification, ...prev]);
-    setActiveVerificationId(newVerification.id);
-    setActiveNav("verification");
-  }, []);
-
-  const handleSelectVerification = useCallback((id: string) => {
-    setActiveVerificationId(id);
-    setActiveNav("verification");
-  }, []);
+    navigate(`/verification/${newVerification.id}`);
+  }, [navigate]);
 
   const handleUpdateVerification = useCallback((id: string, updates: Partial<Verification>) => {
     setVerifications((prev) => prev.map((v) => (v.id === id ? { ...v, ...updates } : v)));
@@ -190,12 +204,11 @@ export default function App() {
   const handleDeleteVerification = useCallback(
     (id: string) => {
       setVerifications((prev) => prev.filter((v) => v.id !== id));
-      if (activeVerificationId === id) {
-        setActiveVerificationId(null);
-        setActiveNav("home");
+      if (location.pathname === `/verification/${id}`) {
+        navigate("/home");
       }
     },
-    [activeVerificationId],
+    [location.pathname, navigate],
   );
 
   const handleDuplicateVerification = useCallback((id: string) => {
@@ -229,21 +242,26 @@ export default function App() {
         },
       };
       setVerifications((prev) => [newVerification, ...prev]);
-      setActiveVerificationId(newId);
-      setActiveNav("verification");
+      navigate(`/verification/${newId}`);
+    },
+    [navigate],
+  );
+
+  const handleSelectAutonomousSession = useCallback(
+    (subNav: AutonomousSubNav, section: ResearchSection) => {
+      setAutonomousActiveSectionMap((prev) => ({
+        ...prev,
+        [subNav]: section,
+      }));
     },
     [],
   );
 
-  const handleSelectAutonomousSession = useCallback(
-    (section: ResearchSection) => {
-      setAutonomousActiveSectionMap((prev) => ({
-        ...prev,
-        [autonomousSubNav]: section,
-      }));
-    },
-    [autonomousSubNav],
-  );
+  const handleCreateSection = useCallback((subNav: AutonomousSubNav) => {
+    setAutonomousActiveSectionMap((prev) => ({ ...prev, [subNav]: null }));
+    setWorkflowTree(initialWorkflowTree);
+    setActiveNodeId(null);
+  }, []);
 
   const handleNavigate = useCallback(
     (nodeId: string) => {
@@ -342,57 +360,27 @@ export default function App() {
   }, []);
 
   const handleUpdateSectionTitle = useCallback(
-    (title: string) => {
-      if (activeNav === "autonomous-research") {
-        setAutonomousSectionsMap((prev) => ({
-          ...prev,
-          [autonomousSubNav]: prev[autonomousSubNav].map((s) =>
-            s.id === autonomousActiveSectionMap[autonomousSubNav]?.id ? { ...s, title } : s,
-          ),
-        }));
-        setAutonomousActiveSectionMap((prev) => {
-          const current = prev[autonomousSubNav];
-          if (!current) return prev;
-          return { ...prev, [autonomousSubNav]: { ...current, title } };
-        });
-      }
+    (subNav: AutonomousSubNav, title: string) => {
+      setAutonomousSectionsMap((prev) => ({
+        ...prev,
+        [subNav]: prev[subNav].map((s) =>
+          s.id === autonomousActiveSectionMap[subNav]?.id ? { ...s, title } : s,
+        ),
+      }));
+      setAutonomousActiveSectionMap((prev) => {
+        const current = prev[subNav];
+        if (!current) return prev;
+        return { ...prev, [subNav]: { ...current, title } };
+      });
     },
-    [activeNav, autonomousSubNav, autonomousActiveSectionMap],
+    [autonomousActiveSectionMap],
   );
-
-  const handleNavChange = useCallback((key: NavKey) => {
-    setActiveNav(key);
-  }, []);
 
   const handleMobileNavClose = useCallback(() => {
     if (isMobile) setSidebarOpen(false);
   }, [isMobile]);
 
-  // Handle GitHub OAuth callback route
-  if (window.location.pathname === "/auth/github/callback") {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    const state = params.get("state");
-    const savedState = sessionStorage.getItem("github_oauth_state");
-
-    if (code && state && state === savedState) {
-      return <GitHubOAuthCallback code={code} />;
-    }
-    window.location.href = "/";
-    return null;
-  }
-
-  // Handle OAuth callback route
-  if (isEnterpriseEnabled() && window.location.pathname === "/auth/callback") {
-    if (!eeComponents) {
-      return (
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-muted-foreground">Loading...</div>
-        </div>
-      );
-    }
-    return <eeComponents.AuthCallback />;
-  }
+  const isSettingsView = activeSection === "settings";
 
   const appContent = (
     <div className="flex min-h-screen bg-default-background">
@@ -424,23 +412,21 @@ export default function App() {
               type="button"
               className={cn(
                 "flex w-full items-center gap-2.5 rounded-md px-1 py-1 -mx-1 transition-colors cursor-pointer",
-                activeNav === "settings"
-                  ? "text-brand-700"
-                  : "text-neutral-600 hover:bg-neutral-100",
+                isSettingsView ? "text-brand-700" : "text-neutral-600 hover:bg-neutral-100",
               )}
-              onClick={() => handleNavChange("settings")}
+              onClick={() => navigate("/settings/profile")}
             >
               <FeatherSettings className="h-4 w-4" />
               <span className="text-sm font-medium">設定</span>
             </button>
           }
         >
-          {activeNav === "settings" ? (
+          {isSettingsView ? (
             <>
               <button
                 type="button"
                 className="flex w-full items-center gap-2 rounded-md px-1 py-1 -mx-1 text-neutral-600 hover:bg-neutral-100 transition-colors cursor-pointer mb-1"
-                onClick={() => handleNavChange("home")}
+                onClick={() => navigate("/home")}
               >
                 <FeatherArrowLeft className="h-4 w-4" />
                 <span className="text-sm font-medium">設定</span>
@@ -450,8 +436,8 @@ export default function App() {
               >
                 <SidebarWithSections.NavItem
                   icon={<FeatherUser />}
-                  selected={settingsTab === "profile"}
-                  onClick={() => setSettingsTab("profile")}
+                  selected={getSettingsTab(location.pathname) === "profile"}
+                  onClick={() => navigate("/settings/profile")}
                 >
                   プロフィール
                 </SidebarWithSections.NavItem>
@@ -477,8 +463,8 @@ export default function App() {
                 </SidebarWithSections.NavItem>
                 <SidebarWithSections.NavItem
                   icon={<FeatherMessageSquare />}
-                  selected={settingsTab === "feedback"}
-                  onClick={() => setSettingsTab("feedback")}
+                  selected={getSettingsTab(location.pathname) === "feedback"}
+                  onClick={() => navigate("/settings/feedback")}
                 >
                   お問い合わせ
                 </SidebarWithSections.NavItem>
@@ -488,15 +474,15 @@ export default function App() {
               >
                 <SidebarWithSections.NavItem
                   icon={<FeatherLink />}
-                  selected={settingsTab === "integration"}
-                  onClick={() => setSettingsTab("integration")}
+                  selected={getSettingsTab(location.pathname) === "integration"}
+                  onClick={() => navigate("/settings/integration")}
                 >
                   接続
                 </SidebarWithSections.NavItem>
                 <SidebarWithSections.NavItem
                   icon={<FeatherKey />}
-                  selected={settingsTab === "api-token"}
-                  onClick={() => setSettingsTab("api-token")}
+                  selected={getSettingsTab(location.pathname) === "api-token"}
+                  onClick={() => navigate("/settings/api-token")}
                 >
                   シークレット
                 </SidebarWithSections.NavItem>
@@ -506,22 +492,22 @@ export default function App() {
               >
                 <SidebarWithSections.NavItem
                   icon={<FeatherCreditCard />}
-                  selected={settingsTab === "user-plan"}
-                  onClick={() => setSettingsTab("user-plan")}
+                  selected={getSettingsTab(location.pathname) === "user-plan"}
+                  onClick={() => navigate("/settings/user-plan")}
                 >
                   プラン
                 </SidebarWithSections.NavItem>
                 <SidebarWithSections.NavItem
                   icon={<FeatherReceipt />}
-                  selected={settingsTab === "receipts"}
-                  onClick={() => setSettingsTab("receipts")}
+                  selected={getSettingsTab(location.pathname) === "receipts"}
+                  onClick={() => navigate("/settings/receipts")}
                 >
                   領収書 / 請求書
                 </SidebarWithSections.NavItem>
                 <SidebarWithSections.NavItem
                   icon={<FeatherBarChart2 />}
-                  selected={settingsTab === "usage"}
-                  onClick={() => setSettingsTab("usage")}
+                  selected={getSettingsTab(location.pathname) === "usage"}
+                  onClick={() => navigate("/settings/usage")}
                 >
                   利用量
                 </SidebarWithSections.NavItem>
@@ -531,7 +517,7 @@ export default function App() {
             <>
               <SidebarWithSections.NavItem
                 icon={<FeatherPlus />}
-                selected={activeNav === "verification"}
+                selected={activeSection === "verification"}
                 onClick={() => {
                   handleCreateVerification();
                   handleMobileNavClose();
@@ -541,9 +527,9 @@ export default function App() {
               </SidebarWithSections.NavItem>
               <SidebarWithSections.NavItem
                 icon={<FeatherList />}
-                selected={activeNav === "home"}
+                selected={activeSection === "home"}
                 onClick={() => {
-                  handleNavChange("home");
+                  navigate("/home");
                   handleMobileNavClose();
                 }}
               >
@@ -551,7 +537,7 @@ export default function App() {
               </SidebarWithSections.NavItem>
               <SidebarWithSections.NavItem
                 icon={<FeatherBeaker />}
-                selected={activeNav === "autonomous-research"}
+                selected={activeSection === "autonomous-research"}
                 className="cursor-default hover:bg-transparent active:bg-transparent"
               >
                 自動研究
@@ -560,14 +546,13 @@ export default function App() {
                 <button
                   type="button"
                   className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
-                    activeNav === "autonomous-research" && autonomousSubNav === "topic-driven"
+                    activeSection === "autonomous-research" && autonomousSubNav === "topic-driven"
                       ? "text-brand-700 bg-brand-50"
                       : "text-neutral-600 hover:bg-neutral-100"
                   }`}
                   onClick={() => {
-                    setAutonomousSubNav("topic-driven");
                     setAutonomousListViewKey((k) => k + 1);
-                    handleNavChange("autonomous-research");
+                    navigate("/autonomous-research/topic-driven");
                     handleMobileNavClose();
                   }}
                 >
@@ -577,14 +562,14 @@ export default function App() {
                 <button
                   type="button"
                   className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
-                    activeNav === "autonomous-research" && autonomousSubNav === "hypothesis-driven"
+                    activeSection === "autonomous-research" &&
+                    autonomousSubNav === "hypothesis-driven"
                       ? "text-brand-700 bg-brand-50"
                       : "text-neutral-600 hover:bg-neutral-100"
                   }`}
                   onClick={() => {
-                    setAutonomousSubNav("hypothesis-driven");
                     setAutonomousListViewKey((k) => k + 1);
-                    handleNavChange("autonomous-research");
+                    navigate("/autonomous-research/hypothesis-driven");
                     handleMobileNavClose();
                   }}
                 >
@@ -638,9 +623,11 @@ export default function App() {
                 />
               </div>
               <IconButton
-                variant={activeNav === "notifications" ? "neutral-secondary" : "neutral-tertiary"}
+                variant={
+                  activeSection === "notifications" ? "neutral-secondary" : "neutral-tertiary"
+                }
                 icon={<FeatherBell className="h-4 w-4" />}
-                onClick={() => handleNavChange("notifications")}
+                onClick={() => navigate("/notifications")}
               />
               {eeComponents ? (
                 <eeComponents.UserMenu />
@@ -663,11 +650,9 @@ export default function App() {
         />
         <div className="flex-1 flex min-h-0">
           <MainContent
-            autonomousSection={autonomousActiveSectionMap[autonomousSubNav]}
-            autonomousSessions={autonomousSectionsMap[autonomousSubNav]}
+            autonomousSectionMap={autonomousActiveSectionMap}
+            autonomousSessions={autonomousSectionsMap}
             onSelectAutonomousSession={handleSelectAutonomousSession}
-            activeNav={activeNav}
-            autonomousSubNav={autonomousSubNav}
             assistedResearchProps={{
               workflowTree,
               activeNodeId,
@@ -679,15 +664,12 @@ export default function App() {
             }}
             onCreateSection={handleCreateSection}
             onUpdateSectionTitle={handleUpdateSectionTitle}
-            onRefreshSessions={(preferredId) => fetchSections(autonomousSubNav, preferredId)}
+            onRefreshSessions={(subNav, preferredId) => fetchSections(subNav, preferredId)}
             verifications={verifications}
-            activeVerification={activeVerification}
-            onSelectVerification={handleSelectVerification}
             onDeleteVerification={handleDeleteVerification}
             onDuplicateVerification={handleDuplicateVerification}
             onUpdateVerification={handleUpdateVerification}
             onCreateWithMethod={handleCreateWithMethod}
-            settingsTab={settingsTab}
             autonomousListViewKey={autonomousListViewKey}
           />
         </div>
@@ -695,11 +677,30 @@ export default function App() {
     </div>
   );
 
-  const content = appContent;
+  const guardedContent = eeComponents ? (
+    <eeComponents.AuthGuard>{appContent}</eeComponents.AuthGuard>
+  ) : (
+    appContent
+  );
 
-  if (eeComponents) {
-    return <eeComponents.AuthGuard>{content}</eeComponents.AuthGuard>;
-  }
-
-  return content;
+  return (
+    <Routes>
+      <Route path="/auth/github/callback" element={<GitHubOAuthCallbackRoute />} />
+      {isEnterpriseEnabled() && (
+        <Route
+          path="/auth/callback"
+          element={
+            eeComponents ? (
+              <eeComponents.AuthCallback />
+            ) : (
+              <div className="flex min-h-screen items-center justify-center">
+                <div className="text-muted-foreground">Loading...</div>
+              </div>
+            )
+          }
+        />
+      )}
+      <Route path="*" element={guardedContent} />
+    </Routes>
+  );
 }
