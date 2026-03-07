@@ -161,7 +161,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
         </div>
       </div>
       <div className="flex w-full grow shrink-0 basis-0 flex-col items-center px-6 py-6 overflow-auto">
-        <div className="flex w-full max-w-[1024px] flex-col items-start gap-6 rounded-xl border border-solid border-neutral-border bg-default-background px-6 py-6 shadow-sm">
+        <div className="flex w-full max-w-[1024px] flex-col items-start gap-6 rounded-xl border border-solid border-neutral-border bg-neutral-800 px-6 py-6 shadow-sm">
           <span className="text-heading-2 font-heading-2 text-default-font">
             新規研究セッション
           </span>
@@ -182,7 +182,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
           </div>
 
           <div className="flex w-full flex-wrap items-start gap-4">
-            <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-neutral-50 px-4 py-4">
+            <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
               <div className="flex w-full items-center gap-2">
                 <FeatherGithub className="text-body font-body text-default-font" />
                 <span className="text-body-bold font-body-bold text-default-font">GitHub 設定</span>
@@ -252,7 +252,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
             </div>
 
             <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4">
-              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-50 px-4 py-4">
+              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
                 <div className="flex w-full items-center gap-2">
                   <FeatherPlay className="text-body font-body text-default-font" />
                   <span className="text-body-bold font-body-bold text-default-font">
@@ -299,7 +299,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 </div>
               </div>
 
-              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-50 px-4 py-4">
+              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
                 <div className="flex w-full items-center gap-2">
                   <FeatherBarChart3 className="text-body font-body text-default-font" />
                   <span className="text-body-bold font-body-bold text-default-font">
@@ -350,7 +350,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
 
           <Accordion
             trigger={
-              <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-50 px-4 py-3">
+              <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
                 <FeatherSettings className="text-body font-body text-default-font" />
                 <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
                   詳細設定
@@ -515,7 +515,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
 
           <Accordion
             trigger={
-              <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-50 px-4 py-3">
+              <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
                 <FeatherCpu className="text-body font-body text-default-font" />
                 <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
                   LLM 設定
@@ -542,7 +542,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
               キャンセル
             </Button>
             <Button
-              variant="brand-primary"
+              variant="neutral-primary"
               icon={<FeatherPlay />}
               disabled={isRunning || !isFormValid}
               onClick={handleRun}
