@@ -131,25 +131,25 @@ export function LoginPage() {
             </button>
           </div>
           <div className="flex w-full flex-col items-center gap-2">
-            <span className="text-caption font-caption text-neutral-500 text-center -tracking-[0.01em]">
+            <span className="text-[10px] leading-[14px] text-neutral-500 text-center -tracking-[0.01em]">
               By signing in, you agree to our Terms of Service and Privacy Policy.
             </span>
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-caption font-caption text-neutral-600 -tracking-[0.01em]">
+          <span className="text-[10px] leading-[14px] text-neutral-600 -tracking-[0.01em]">
             &copy; 2025 AIRAS
           </span>
-          <span className="text-caption font-caption text-neutral-600 -tracking-[0.01em]">
+          <span className="text-[10px] leading-[14px] text-neutral-600 -tracking-[0.01em]">
             &bull;
           </span>
-          <span className="text-caption font-caption text-neutral-500 -tracking-[0.01em]">
+          <span className="text-[10px] leading-[14px] text-neutral-500 -tracking-[0.01em]">
             Privacy
           </span>
-          <span className="text-caption font-caption text-neutral-600 -tracking-[0.01em]">
+          <span className="text-[10px] leading-[14px] text-neutral-600 -tracking-[0.01em]">
             &bull;
           </span>
-          <span className="text-caption font-caption text-neutral-500 -tracking-[0.01em]">
+          <span className="text-[10px] leading-[14px] text-neutral-500 -tracking-[0.01em]">
             Terms
           </span>
         </div>
