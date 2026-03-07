@@ -4,6 +4,7 @@ import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons";
 import {
   FeatherArrowLeft,
   FeatherBarChart2,
+  FeatherBeaker,
   FeatherBell,
   FeatherBookOpen,
   FeatherCreditCard,
@@ -525,43 +526,55 @@ export default function App() {
               >
                 検証一覧
               </SidebarWithSections.NavItem>
-              <SidebarWithSections.NavSection
-                label={
-                  <>
-                    自動研究{" "}
-                    <span className="text-[10px] font-normal text-neutral-400">Experimental</span>
-                  </>
-                }
+              <SidebarWithSections.NavItem
+                icon={<FeatherBeaker />}
+                selected={activeNav === "autonomous-research"}
+                onClick={() => {
+                  setAutonomousListViewKey((k) => k + 1);
+                  handleNavChange("autonomous-research");
+                  handleMobileNavClose();
+                }}
               >
-                <SidebarWithSections.NavItem
-                  icon={<span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
-                  selected={
-                    activeNav === "autonomous-research" && autonomousSubNav === "topic-driven"
-                  }
-                  onClick={() => {
-                    setAutonomousSubNav("topic-driven");
-                    setAutonomousListViewKey((k) => k + 1);
-                    handleNavChange("autonomous-research");
-                    handleMobileNavClose();
-                  }}
-                >
-                  Topic-Driven
-                </SidebarWithSections.NavItem>
-                <SidebarWithSections.NavItem
-                  icon={<span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
-                  selected={
-                    activeNav === "autonomous-research" && autonomousSubNav === "hypothesis-driven"
-                  }
-                  onClick={() => {
-                    setAutonomousSubNav("hypothesis-driven");
-                    setAutonomousListViewKey((k) => k + 1);
-                    handleNavChange("autonomous-research");
-                    handleMobileNavClose();
-                  }}
-                >
-                  Hypothesis-Driven
-                </SidebarWithSections.NavItem>
-              </SidebarWithSections.NavSection>
+                自動研究
+              </SidebarWithSections.NavItem>
+              {activeNav === "autonomous-research" && (
+                <div className="flex flex-col gap-0.5 pl-7">
+                  <button
+                    type="button"
+                    className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
+                      autonomousSubNav === "topic-driven"
+                        ? "text-brand-700 bg-brand-50"
+                        : "text-neutral-600 hover:bg-neutral-100"
+                    }`}
+                    onClick={() => {
+                      setAutonomousSubNav("topic-driven");
+                      setAutonomousListViewKey((k) => k + 1);
+                      handleNavChange("autonomous-research");
+                      handleMobileNavClose();
+                    }}
+                  >
+                    <span className="inline-block h-1 w-1 rounded-full bg-current" />
+                    Topic-Driven
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
+                      autonomousSubNav === "hypothesis-driven"
+                        ? "text-brand-700 bg-brand-50"
+                        : "text-neutral-600 hover:bg-neutral-100"
+                    }`}
+                    onClick={() => {
+                      setAutonomousSubNav("hypothesis-driven");
+                      setAutonomousListViewKey((k) => k + 1);
+                      handleNavChange("autonomous-research");
+                      handleMobileNavClose();
+                    }}
+                  >
+                    <span className="inline-block h-1 w-1 rounded-full bg-current" />
+                    Hypothesis-Driven
+                  </button>
+                </div>
+              )}
             </>
           )}
         </SidebarWithSections>
@@ -665,9 +678,11 @@ export default function App() {
     </div>
   );
 
+  const content = appContent;
+
   if (eeComponents) {
-    return <eeComponents.AuthGuard>{appContent}</eeComponents.AuthGuard>;
+    return <eeComponents.AuthGuard>{content}</eeComponents.AuthGuard>;
   }
 
-  return appContent;
+  return content;
 }
