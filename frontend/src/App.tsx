@@ -7,7 +7,7 @@ import {
   FeatherBell,
   FeatherBookOpen,
   FeatherCreditCard,
-  FeatherFileText,
+  FeatherExternalLink,
   FeatherKey,
   FeatherLink,
   FeatherList,
@@ -434,9 +434,18 @@ export default function App() {
                 <SidebarWithSections.NavItem
                   icon={<FeatherBookOpen />}
                   selected={false}
+                  rightSlot={<FeatherExternalLink className="h-3 w-3 text-neutral-400" />}
                   onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
                 >
                   ドキュメント
+                </SidebarWithSections.NavItem>
+                <SidebarWithSections.NavItem
+                  icon={<SiDiscord className="h-4 w-4" />}
+                  selected={false}
+                  rightSlot={<FeatherExternalLink className="h-3 w-3 text-neutral-400" />}
+                  onClick={() => window.open("https://discord.gg/KGm5FGY5", "_blank")}
+                >
+                  Discord
                 </SidebarWithSections.NavItem>
                 <SidebarWithSections.NavItem
                   icon={<FeatherMessageSquare />}
@@ -563,16 +572,6 @@ export default function App() {
                 variant="neutral-tertiary"
                 icon={<SiGithub className="h-4 w-4" />}
                 onClick={() => window.open("https://github.com/airas-org/airas", "_blank")}
-              />
-              <IconButton
-                variant="neutral-tertiary"
-                icon={<FeatherFileText />}
-                onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
-              />
-              <IconButton
-                variant="neutral-tertiary"
-                icon={<SiDiscord className="h-4 w-4" />}
-                onClick={() => window.open("https://discord.gg/KGm5FGY5", "_blank")}
               />
               <IconButton
                 variant="neutral-tertiary"
