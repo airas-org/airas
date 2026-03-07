@@ -2,13 +2,21 @@
 
 import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons";
 import {
+  FeatherArrowLeft,
   FeatherBell,
+  FeatherBookOpen,
+  FeatherCreditCard,
   FeatherFileText,
+  FeatherHelpCircle,
+  FeatherKey,
+  FeatherLink,
   FeatherList,
+  FeatherMessageSquare,
   FeatherPanelLeftClose,
   FeatherPanelLeftOpen,
   FeatherPlus,
   FeatherSettings,
+  FeatherShield,
   FeatherUser,
 } from "@subframe/core";
 import axios from "axios";
@@ -25,6 +33,7 @@ import {
   useAutonomousResearchSessions,
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
 import { OnboardingOverlay } from "@/components/pages/onboarding";
+import type { SettingsTab } from "@/components/pages/settings";
 import {
   mockVerifications,
   type ProposedMethod,
@@ -124,6 +133,7 @@ export default function App() {
     return "verification";
   });
   const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("integration");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return !localStorage.getItem("airas-onboarding-done");
@@ -401,51 +411,124 @@ export default function App() {
             </button>
           }
         >
-          <SidebarWithSections.NavItem
-            icon={<FeatherPlus />}
-            selected={activeNav === "verification"}
-            onClick={handleCreateVerification}
-          >
-            新規検証
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherList />}
-            selected={activeNav === "home"}
-            onClick={() => handleNavChange("home")}
-          >
-            検証一覧
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavSection
-            label={
-              <>
-                自動研究{" "}
-                <span className="text-[10px] font-normal text-neutral-400">Experimental</span>
-              </>
-            }
-          >
-            <SidebarWithSections.NavItem
-              icon={<span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
-              selected={activeNav === "autonomous-research" && autonomousSubNav === "topic-driven"}
-              onClick={() => {
-                setAutonomousSubNav("topic-driven");
-                handleNavChange("autonomous-research");
-              }}
-            >
-              Topic-Driven
-            </SidebarWithSections.NavItem>
-            <SidebarWithSections.NavItem
-              icon={<span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
-              selected={
-                activeNav === "autonomous-research" && autonomousSubNav === "hypothesis-driven"
-              }
-              onClick={() => {
-                setAutonomousSubNav("hypothesis-driven");
-                handleNavChange("autonomous-research");
-              }}
-            >
-              Hypothesis-Driven
-            </SidebarWithSections.NavItem>
-          </SidebarWithSections.NavSection>
+          {activeNav === "settings" ? (
+            <>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded-md px-1 py-1 -mx-1 text-neutral-600 hover:bg-neutral-100 transition-colors cursor-pointer mb-1"
+                onClick={() => handleNavChange("home")}
+              >
+                <FeatherArrowLeft className="h-4 w-4" />
+                <span className="text-sm font-medium">設定</span>
+              </button>
+              <SidebarWithSections.NavItem
+                icon={<FeatherLink />}
+                selected={settingsTab === "integration"}
+                onClick={() => setSettingsTab("integration")}
+              >
+                インテグレーション
+              </SidebarWithSections.NavItem>
+              <SidebarWithSections.NavItem
+                icon={<FeatherCreditCard />}
+                selected={settingsTab === "user-plan"}
+                onClick={() => setSettingsTab("user-plan")}
+              >
+                プラン
+              </SidebarWithSections.NavItem>
+              <SidebarWithSections.NavItem
+                icon={<FeatherUser />}
+                selected={settingsTab === "profile"}
+                onClick={() => setSettingsTab("profile")}
+              >
+                プロフィール
+              </SidebarWithSections.NavItem>
+              <SidebarWithSections.NavItem
+                icon={<FeatherKey />}
+                selected={settingsTab === "api-token"}
+                onClick={() => setSettingsTab("api-token")}
+              >
+                API Token
+              </SidebarWithSections.NavItem>
+              <SidebarWithSections.NavItem
+                icon={<FeatherMessageSquare />}
+                selected={settingsTab === "feedback"}
+                onClick={() => setSettingsTab("feedback")}
+              >
+                お問い合わせ
+              </SidebarWithSections.NavItem>
+              <SidebarWithSections.NavItem
+                icon={<FeatherHelpCircle />}
+                selected={settingsTab === "help"}
+                onClick={() => setSettingsTab("help")}
+              >
+                ヘルプ
+              </SidebarWithSections.NavItem>
+              <SidebarWithSections.NavItem
+                icon={<FeatherShield />}
+                selected={settingsTab === "legal"}
+                onClick={() => setSettingsTab("legal")}
+              >
+                利用規約
+              </SidebarWithSections.NavItem>
+              <SidebarWithSections.NavItem
+                icon={<FeatherBookOpen />}
+                selected={false}
+                onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
+              >
+                ドキュメント
+              </SidebarWithSections.NavItem>
+            </>
+          ) : (
+            <>
+              <SidebarWithSections.NavItem
+                icon={<FeatherPlus />}
+                selected={activeNav === "verification"}
+                onClick={handleCreateVerification}
+              >
+                新規検証
+              </SidebarWithSections.NavItem>
+              <SidebarWithSections.NavItem
+                icon={<FeatherList />}
+                selected={activeNav === "home"}
+                onClick={() => handleNavChange("home")}
+              >
+                検証一覧
+              </SidebarWithSections.NavItem>
+              <SidebarWithSections.NavSection
+                label={
+                  <>
+                    自動研究{" "}
+                    <span className="text-[10px] font-normal text-neutral-400">Experimental</span>
+                  </>
+                }
+              >
+                <SidebarWithSections.NavItem
+                  icon={<span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
+                  selected={
+                    activeNav === "autonomous-research" && autonomousSubNav === "topic-driven"
+                  }
+                  onClick={() => {
+                    setAutonomousSubNav("topic-driven");
+                    handleNavChange("autonomous-research");
+                  }}
+                >
+                  Topic-Driven
+                </SidebarWithSections.NavItem>
+                <SidebarWithSections.NavItem
+                  icon={<span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
+                  selected={
+                    activeNav === "autonomous-research" && autonomousSubNav === "hypothesis-driven"
+                  }
+                  onClick={() => {
+                    setAutonomousSubNav("hypothesis-driven");
+                    handleNavChange("autonomous-research");
+                  }}
+                >
+                  Hypothesis-Driven
+                </SidebarWithSections.NavItem>
+              </SidebarWithSections.NavSection>
+            </>
+          )}
         </SidebarWithSections>
       </aside>
 
@@ -538,6 +621,7 @@ export default function App() {
             onDuplicateVerification={handleDuplicateVerification}
             onUpdateVerification={handleUpdateVerification}
             onCreateWithMethod={handleCreateWithMethod}
+            settingsTab={settingsTab}
           />
         </div>
       </div>

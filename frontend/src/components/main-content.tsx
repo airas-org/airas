@@ -3,7 +3,7 @@ import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
 import { NotificationsPage } from "@/components/pages/notifications";
 import { PapersPage } from "@/components/pages/papers";
-import { SettingsPage } from "@/components/pages/settings";
+import { SettingsPage, type SettingsTab } from "@/components/pages/settings";
 import {
   type ProposedMethod,
   type Verification,
@@ -61,6 +61,7 @@ interface MainContentProps {
   onDuplicateVerification: (id: string) => void;
   onUpdateVerification: (id: string, updates: Partial<Verification>) => void;
   onCreateWithMethod: (sourceVerification: Verification, method: ProposedMethod) => void;
+  settingsTab: SettingsTab;
 }
 
 export function MainContent({
@@ -80,6 +81,7 @@ export function MainContent({
   onDuplicateVerification,
   onUpdateVerification,
   onCreateWithMethod,
+  settingsTab,
 }: MainContentProps) {
   const [selectedPapers, setSelectedPapers] = useState<Paper[]>([]);
 
@@ -177,7 +179,7 @@ export function MainContent({
         <NotificationsPage />
       </div>
       <div className={activeNav === "settings" ? "flex-1 flex" : "hidden"}>
-        <SettingsPage />
+        <SettingsPage activeTab={settingsTab} />
       </div>
     </div>
   );
