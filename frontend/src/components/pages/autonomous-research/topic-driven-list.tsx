@@ -153,13 +153,13 @@ export function TopicDrivenList({
             <button
               key={session.id}
               type="button"
-              className="flex w-full flex-col items-start gap-3 rounded-lg border border-solid border-neutral-border bg-default-background px-5 py-4 cursor-pointer hover:border-brand-300 hover:shadow-md transition-all text-left"
+              className="flex w-full flex-col items-start gap-2 rounded-lg border border-solid border-neutral-border bg-default-background px-4 py-3 cursor-pointer hover:border-brand-300 hover:shadow-md transition-all text-left"
               onClick={() => onSelectSession(session)}
             >
               <div className="flex w-full items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <FeatherFlaskConical className="text-heading-3 font-heading-3 text-brand-600" />
-                  <span className="text-body-bold font-body-bold text-default-font">
+                  <FeatherFlaskConical className="text-body font-body text-brand-600" />
+                  <span className="text-caption-bold font-caption-bold text-default-font">
                     {session.title}
                   </span>
                 </div>

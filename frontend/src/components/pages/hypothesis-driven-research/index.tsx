@@ -30,7 +30,6 @@ export function HypothesisDrivenResearchPage({
   const [subView, setSubView] = useState<SubView>(section ? "detail" : "list");
 
   // サイドバーからクリック時は常に一覧画面を表示
-  // biome-ignore lint/correctness/useExhaustiveDependencies: listViewKeyの変化でのみリセット
   useEffect(() => {
     if (listViewKey !== undefined) {
       setSubView("list");
@@ -63,7 +62,7 @@ export function HypothesisDrivenResearchPage({
   const handleResearchStarted = useCallback(
     async (taskId: string) => {
       await onRefreshSessions(taskId);
-      setSubView("detail");
+      setSubView("list");
     },
     [onRefreshSessions],
   );
