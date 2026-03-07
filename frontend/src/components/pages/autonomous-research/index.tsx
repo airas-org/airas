@@ -72,7 +72,6 @@ export function AutonomousResearchPage({
       sessions={sessions}
       onSelectSession={handleSelectSession}
       onNavigateToInput={handleNavigateToInput}
-      onRefreshSessions={onRefreshSessions}
     />
   );
 }

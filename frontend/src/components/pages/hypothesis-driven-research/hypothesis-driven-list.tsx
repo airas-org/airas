@@ -26,14 +26,12 @@ interface HypothesisDrivenListProps {
   sessions: ResearchSection[];
   onSelectSession: (section: ResearchSection) => void;
   onNavigateToInput: () => void;
-  onRefreshSessions: (preferredId?: string) => Promise<void>;
 }
 
 export function HypothesisDrivenList({
   sessions,
   onSelectSession,
   onNavigateToInput,
-  onRefreshSessions,
 }: HypothesisDrivenListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("newest");

@@ -72,7 +72,6 @@ export function HypothesisDrivenResearchPage({
       sessions={sessions}
       onSelectSession={handleSelectSession}
       onNavigateToInput={handleNavigateToInput}
-      onRefreshSessions={onRefreshSessions}
     />
   );
 }

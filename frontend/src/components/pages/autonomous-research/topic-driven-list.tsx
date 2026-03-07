@@ -26,14 +26,12 @@ interface TopicDrivenListProps {
   sessions: ResearchSection[];
   onSelectSession: (section: ResearchSection) => void;
   onNavigateToInput: () => void;
-  onRefreshSessions: (preferredId?: string) => Promise<void>;
 }
 
 export function TopicDrivenList({
   sessions,
   onSelectSession,
   onNavigateToInput,
-  onRefreshSessions,
 }: TopicDrivenListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
