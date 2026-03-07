@@ -1,16 +1,9 @@
 import { useCallback, useState } from "react";
-import { ApiTokenPage } from "@/components/pages/api-token";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
-import { FeedbackPage } from "@/components/pages/feedback";
-import { HelpPage } from "@/components/pages/help";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
-import { IntegrationPage } from "@/components/pages/integration";
-import { LegalPage } from "@/components/pages/legal";
 import { NotificationsPage } from "@/components/pages/notifications";
 import { PapersPage } from "@/components/pages/papers";
-import { ProfilePage } from "@/components/pages/profile";
-import { SearchPage } from "@/components/pages/search";
-import { UserPlanPage } from "@/components/pages/user-plan";
+import { SettingsPage } from "@/components/pages/settings";
 import {
   type ProposedMethod,
   type Verification,
@@ -29,16 +22,9 @@ export type NavKey =
   | "home"
   | "papers"
   | "autonomous-research"
-  | "integration"
-  | "user-plan"
   | "verification"
-  | "profile"
   | "notifications"
-  | "search"
-  | "legal"
-  | "feedback"
-  | "help"
-  | "api-token";
+  | "settings";
 export const AUTONOMOUS_SUB_NAVS = ["topic-driven", "hypothesis-driven"] as const;
 export type AutonomousSubNav = (typeof AUTONOMOUS_SUB_NAVS)[number];
 
@@ -75,7 +61,6 @@ interface MainContentProps {
   onDuplicateVerification: (id: string) => void;
   onUpdateVerification: (id: string, updates: Partial<Verification>) => void;
   onCreateWithMethod: (sourceVerification: Verification, method: ProposedMethod) => void;
-  onNavChange: (nav: NavKey) => void;
 }
 
 export function MainContent({
@@ -95,7 +80,6 @@ export function MainContent({
   onDuplicateVerification,
   onUpdateVerification,
   onCreateWithMethod,
-  onNavChange,
 }: MainContentProps) {
   const [selectedPapers, setSelectedPapers] = useState<Paper[]>([]);
 
@@ -189,32 +173,11 @@ export function MainContent({
         )}
       </div>
 
-      <div className={activeNav === "integration" ? "flex-1 flex" : "hidden"}>
-        <IntegrationPage />
-      </div>
-      <div className={activeNav === "user-plan" ? "flex-1 flex" : "hidden"}>
-        <UserPlanPage />
-      </div>
-      <div className={activeNav === "profile" ? "flex-1 flex" : "hidden"}>
-        <ProfilePage />
-      </div>
       <div className={activeNav === "notifications" ? "flex-1 flex" : "hidden"}>
         <NotificationsPage />
       </div>
-      <div className={activeNav === "search" ? "flex-1 flex" : "hidden"}>
-        <SearchPage onNavigate={(nav) => onNavChange(nav as NavKey)} />
-      </div>
-      <div className={activeNav === "legal" ? "flex-1 flex" : "hidden"}>
-        <LegalPage />
-      </div>
-      <div className={activeNav === "feedback" ? "flex-1 flex" : "hidden"}>
-        <FeedbackPage />
-      </div>
-      <div className={activeNav === "help" ? "flex-1 flex" : "hidden"}>
-        <HelpPage />
-      </div>
-      <div className={activeNav === "api-token" ? "flex-1 flex" : "hidden"}>
-        <ApiTokenPage />
+      <div className={activeNav === "settings" ? "flex-1 flex" : "hidden"}>
+        <SettingsPage />
       </div>
     </div>
   );

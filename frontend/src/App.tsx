@@ -1,21 +1,14 @@
 // frontend/src/App.tsx
 
 import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons";
-import * as SubframeCore from "@subframe/core";
 import {
   FeatherBell,
-  FeatherChevronUp,
   FeatherFileText,
-  FeatherHelpCircle,
-  FeatherKey,
   FeatherList,
-  FeatherLogOut,
-  FeatherMessageSquare,
   FeatherPanelLeftClose,
   FeatherPanelLeftOpen,
   FeatherPlus,
   FeatherSettings,
-  FeatherShield,
   FeatherUser,
 } from "@subframe/core";
 import axios from "axios";
@@ -42,7 +35,7 @@ import { isEnterpriseEnabled } from "@/ee/config";
 import { OpenAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
-import { Avatar, DropdownMenu, IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
+import { IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
 
 const initialWorkflowTree: WorkflowTree = {
   nodes: {},
@@ -127,7 +120,7 @@ export default function App() {
   const [activeNav, setActiveNav] = useState<NavKey>(() => {
     const params = new URLSearchParams(window.location.search);
     const nav = params.get("nav");
-    if (nav === "user-plan" || nav === "integration") return nav;
+    if (nav === "user-plan" || nav === "integration") return "settings" as NavKey;
     return "verification";
   });
   const [autonomousSubNav, setAutonomousSubNav] = useState<AutonomousSubNav>("topic-driven");
@@ -393,50 +386,19 @@ export default function App() {
             </div>
           }
           footer={
-            <SubframeCore.DropdownMenu.Root>
-              <SubframeCore.DropdownMenu.Trigger asChild>
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-3 rounded-md px-1 py-1 -mx-1 hover:bg-neutral-100 transition-colors cursor-pointer"
-                >
-                  <Avatar variant="brand" size="small">
-                    Dev
-                  </Avatar>
-                  <span className="flex-1 text-body font-body text-default-font text-left">
-                    開発者
-                  </span>
-                  <FeatherChevronUp className="h-4 w-4 text-subtext-color" />
-                </button>
-              </SubframeCore.DropdownMenu.Trigger>
-              <SubframeCore.DropdownMenu.Portal>
-                <SubframeCore.DropdownMenu.Content side="top" align="start" sideOffset={8}>
-                  <DropdownMenu>
-                    <DropdownMenu.DropdownItem
-                      icon={<FeatherUser />}
-                      onSelect={() => handleNavChange("profile")}
-                    >
-                      プロフィール
-                    </DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem
-                      icon={<FeatherKey />}
-                      onSelect={() => handleNavChange("api-token")}
-                    >
-                      API Token
-                    </DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem
-                      icon={<FeatherSettings />}
-                      onSelect={() => handleNavChange("integration")}
-                    >
-                      インテグレーション
-                    </DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownDivider />
-                    <DropdownMenu.DropdownItem icon={<FeatherLogOut />}>
-                      ログアウト
-                    </DropdownMenu.DropdownItem>
-                  </DropdownMenu>
-                </SubframeCore.DropdownMenu.Content>
-              </SubframeCore.DropdownMenu.Portal>
-            </SubframeCore.DropdownMenu.Root>
+            <button
+              type="button"
+              className={cn(
+                "flex w-full items-center gap-2.5 rounded-md px-1 py-1 -mx-1 transition-colors cursor-pointer",
+                activeNav === "settings"
+                  ? "text-brand-700"
+                  : "text-neutral-600 hover:bg-neutral-100",
+              )}
+              onClick={() => handleNavChange("settings")}
+            >
+              <FeatherSettings className="h-4 w-4" />
+              <span className="text-sm font-medium">設定</span>
+            </button>
           }
         >
           <SidebarWithSections.NavItem
@@ -482,58 +444,6 @@ export default function App() {
               }}
             >
               Hypothesis-Driven
-            </SidebarWithSections.NavItem>
-          </SidebarWithSections.NavSection>
-          <SidebarWithSections.NavSection label="Settings">
-            <SidebarWithSections.NavItem
-              icon={<FeatherSettings />}
-              selected={activeNav === "integration"}
-              onClick={() => handleNavChange("integration")}
-            >
-              Integration
-            </SidebarWithSections.NavItem>
-            <SidebarWithSections.NavItem
-              icon={<FeatherUser />}
-              selected={activeNav === "user-plan"}
-              onClick={() => handleNavChange("user-plan")}
-            >
-              User Plan
-            </SidebarWithSections.NavItem>
-            <SidebarWithSections.NavItem
-              icon={<FeatherUser />}
-              selected={activeNav === "profile"}
-              onClick={() => handleNavChange("profile")}
-            >
-              プロフィール
-            </SidebarWithSections.NavItem>
-          </SidebarWithSections.NavSection>
-          <SidebarWithSections.NavSection label="Support">
-            <SidebarWithSections.NavItem
-              icon={<FeatherMessageSquare />}
-              selected={activeNav === "feedback"}
-              onClick={() => handleNavChange("feedback")}
-            >
-              お問い合わせ
-            </SidebarWithSections.NavItem>
-            <SidebarWithSections.NavItem
-              icon={<FeatherHelpCircle />}
-              selected={activeNav === "help"}
-              onClick={() => handleNavChange("help")}
-            >
-              ヘルプ
-            </SidebarWithSections.NavItem>
-            <SidebarWithSections.NavItem
-              icon={<FeatherFileText />}
-              onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
-            >
-              ドキュメント
-            </SidebarWithSections.NavItem>
-            <SidebarWithSections.NavItem
-              icon={<FeatherShield />}
-              selected={activeNav === "legal"}
-              onClick={() => handleNavChange("legal")}
-            >
-              利用規約
             </SidebarWithSections.NavItem>
           </SidebarWithSections.NavSection>
         </SidebarWithSections>
@@ -628,7 +538,6 @@ export default function App() {
             onDuplicateVerification={handleDuplicateVerification}
             onUpdateVerification={handleUpdateVerification}
             onCreateWithMethod={handleCreateWithMethod}
-            onNavChange={handleNavChange}
           />
         </div>
       </div>
