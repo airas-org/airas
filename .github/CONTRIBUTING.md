@@ -10,6 +10,17 @@ Before submitting a pull request, please ensure that:
 2. Your contribution complies with the project's coding standards.
 3. All tests pass and relevant documentation is updated.
 
+## Contributor License Agreement
+
+This project requires all contributors to agree to the CLA.
+
+By submitting a pull request, you confirm that:
+- You agree to the terms of the CLA.
+- You have the right to contribute the submitted code.
+
+The CLA can be found here:
+- [CLA.md](./CLA.md)
+
 ## Code Style and Static Analysis
 
 This project enforces consistent code style and static analysis using the following tools:
@@ -28,22 +39,31 @@ pre-commit install
 
 Pull requests that do not meet these requirements may be requested for revision or may not be merged.
 
-## Contributor License Agreement
+## For Core Team
 
-This project requires all contributors to agree to the CLA.
+### MCP servers and Plugins
+For core team development, we use the following. If you need access, please contact us and we will invite you to each service.
 
-By submitting a pull request, you confirm that:
-- You agree to the terms of the CLA.
-- You have the right to contribute the submitted code.
+- [Vercel](https://vercel.com/docs/agent-resources/vercel-mcp#claude-code)
 
-The CLA can be found here:
-- [CLA.md](./CLA.md)
+    ```bash
+    claude mcp add --transport http vercel https://mcp.vercel.com
+    ```
 
-## How to Contribute
+- [Railway](https://docs.railway.com/ai/mcp-server#claude-code)
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Submit a pull request
+    ```bash
+    claude mcp add Railway npx @railway/mcp-server
+    ```
 
-A CLA check may be required before your pull request can be merged.
+- [Subframe](https://docs.subframe.com/guides/mcp-server#installation)
+
+    ```bash
+    claude mcp add --transport http supabase "https://mcp.supabase.com/mcp"
+    ```
+
+- [Subframe](https://docs.subframe.com/guides/mcp-server#installation)
+
+    ```bash
+    claude plugin marketplace add https://github.com/SubframeApp/subframe && claude plugin install subframe@subframe
+    ```
