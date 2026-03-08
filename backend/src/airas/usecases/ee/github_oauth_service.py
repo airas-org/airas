@@ -34,16 +34,23 @@ class GitHubOAuthService:
             raise RuntimeError("GITHUB_OAUTH_CLIENT_SECRET is not configured")
         return val
 
+    @staticmethod
+    def _get_redirect_uri(fallback: str) -> str:
+        """Return fixed redirect URI from env var, or fallback to client-provided value."""
+        return os.getenv("GITHUB_OAUTH_REDIRECT_URI", "") or fallback
+
     def get_authorize_url(self, redirect_uri: str) -> tuple[str, str]:
         """Return (authorize_url, state)."""
+        from urllib.parse import urlencode
+
         state = secrets.token_urlsafe(32)
         params = {
             "client_id": self._get_client_id(),
-            "redirect_uri": redirect_uri,
+            "redirect_uri": self._get_redirect_uri(redirect_uri),
             "scope": "repo",
             "state": state,
         }
-        qs = "&".join(f"{k}={v}" for k, v in params.items())
+        qs = urlencode(params)
         return f"{self.AUTHORIZE_URL}?{qs}", state
 
     async def exchange_code(self, *, code: str, redirect_uri: str) -> dict:
@@ -55,7 +62,7 @@ class GitHubOAuthService:
                     "client_id": self._get_client_id(),
                     "client_secret": self._get_client_secret(),
                     "code": code,
-                    "redirect_uri": redirect_uri,
+                    "redirect_uri": self._get_redirect_uri(redirect_uri),
                 },
                 headers={"Accept": "application/json"},
             )
