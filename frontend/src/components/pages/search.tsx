@@ -1,5 +1,6 @@
 import { FeatherSearch } from "@subframe/core";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge, TextField } from "@/ui";
 
 interface SearchPageProps {
@@ -90,6 +91,7 @@ function matchesQuery(text: string, query: string): boolean {
 }
 
 export function SearchPage({ onNavigate }: SearchPageProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
 
   const filteredVerifications = useMemo(
@@ -126,11 +128,13 @@ export function SearchPage({ onNavigate }: SearchPageProps) {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-3xl mx-auto px-8 py-8">
-        <h1 className="text-heading-2 font-heading-2 text-default-font mb-6">検索</h1>
+        <h1 className="text-heading-2 font-heading-2 text-default-font mb-6">
+          {t("search.title")}
+        </h1>
 
         <TextField icon={<FeatherSearch />} className="mb-8">
           <TextField.Input
-            placeholder="検証、論文、実験を検索..."
+            placeholder={t("search.searchPlaceholder")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -138,7 +142,7 @@ export function SearchPage({ onNavigate }: SearchPageProps) {
 
         {!hasResults && query && (
           <p className="py-12 text-center text-body font-body text-subtext-color">
-            検索結果が見つかりませんでした
+            {t("search.noResultsFound")}
           </p>
         )}
 
@@ -147,9 +151,10 @@ export function SearchPage({ onNavigate }: SearchPageProps) {
             {filteredVerifications.length > 0 && (
               <section>
                 <h2 className="text-body-bold font-body-bold text-default-font mb-3">
-                  検証
+                  {t("search.verifications")}
                   <span className="ml-2 text-caption font-caption text-subtext-color">
-                    {filteredVerifications.length}件
+                    {filteredVerifications.length}
+                    {t("search.countSuffix")}
                   </span>
                 </h2>
                 <div className="flex flex-col gap-2">
@@ -178,9 +183,10 @@ export function SearchPage({ onNavigate }: SearchPageProps) {
             {filteredPapers.length > 0 && (
               <section>
                 <h2 className="text-body-bold font-body-bold text-default-font mb-3">
-                  論文
+                  {t("search.papers")}
                   <span className="ml-2 text-caption font-caption text-subtext-color">
-                    {filteredPapers.length}件
+                    {filteredPapers.length}
+                    {t("search.countSuffix")}
                   </span>
                 </h2>
                 <div className="flex flex-col gap-2">
@@ -208,9 +214,10 @@ export function SearchPage({ onNavigate }: SearchPageProps) {
             {filteredExperiments.length > 0 && (
               <section>
                 <h2 className="text-body-bold font-body-bold text-default-font mb-3">
-                  実験
+                  {t("search.experiments")}
                   <span className="ml-2 text-caption font-caption text-subtext-color">
-                    {filteredExperiments.length}件
+                    {filteredExperiments.length}
+                    {t("search.countSuffix")}
                   </span>
                 </h2>
                 <div className="flex flex-col gap-2">

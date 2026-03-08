@@ -9,6 +9,7 @@ import {
   FeatherSettings,
 } from "@subframe/core";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { HypothesisAllLLMConfig } from "@/components/features/llm-config";
 import {
   type HypothesisDrivenResearchLLMMapping,
@@ -29,6 +30,7 @@ interface HypothesisDrivenInputProps {
 }
 
 export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisDrivenInputProps) {
+  const { t } = useTranslation();
   // Research hypothesis fields
   const [openProblems, setOpenProblems] = useState("");
   const [method, setMethod] = useState("");
@@ -143,7 +145,8 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
         );
       onResearchStarted(response.task_id);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "研究の実行に失敗しました";
+      const message =
+        err instanceof Error ? err.message : t("autonomous.hypothesisDriven.runError");
       setError(message);
       setIsRunning(false);
     }
@@ -173,6 +176,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
     latexTemplateName,
     llmMapping,
     onResearchStarted,
+    t,
   ]);
 
   return (
@@ -180,7 +184,9 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
       <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-1 pb-2 sticky top-0 z-10 gap-1">
         <div className="flex w-full items-center">
           <LinkButton variant="neutral" icon={<FeatherArrowLeft />} onClick={onBack}>
-            <span className="text-caption font-caption">結果一覧</span>
+            <span className="text-caption font-caption">
+              {t("autonomous.hypothesisDriven.backToList")}
+            </span>
           </LinkButton>
         </div>
         <span className="text-body-bold font-body-bold text-default-font">
@@ -190,15 +196,17 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
       <div className="flex w-full grow shrink-0 basis-0 flex-col items-center px-6 py-6 overflow-auto">
         <div className="flex w-full max-w-[1024px] flex-col items-start gap-6 rounded-xl border border-solid border-neutral-border bg-neutral-800 px-6 py-6 shadow-sm">
           <span className="text-heading-2 font-heading-2 text-default-font">
-            新規仮説駆動研究セッション
+            {t("autonomous.hypothesisDriven.newSessionTitle")}
           </span>
           <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-neutral-border" />
 
           <div className="flex w-full flex-col items-start gap-2">
-            <span className="text-body font-body text-subtext-color">研究テーマ（任意）</span>
+            <span className="text-body font-body text-subtext-color">
+              {t("autonomous.hypothesisDriven.researchTopic")}
+            </span>
             <TextField className="h-auto w-full flex-none" variant="outline" label="" helpText="">
               <TextField.Input
-                placeholder="例: Vision-Language Models を用いた Video QA の性能向上手法"
+                placeholder={t("autonomous.hypothesisDriven.researchTopicPlaceholder")}
                 value={researchTopic}
                 onChange={(e) => setResearchTopic(e.target.value)}
               />
@@ -208,13 +216,15 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
           <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
             <div className="flex w-full items-center gap-2">
               <FeatherLightbulb className="text-body font-body text-default-font" />
-              <span className="text-body-bold font-body-bold text-default-font">研究仮説</span>
+              <span className="text-body-bold font-body-bold text-default-font">
+                {t("autonomous.hypothesisDriven.hypothesis")}
+              </span>
             </div>
             <div className="flex w-full flex-wrap items-start gap-4">
               <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
                 <div className="flex items-center gap-1">
                   <span className="text-caption font-caption text-default-font">
-                    解決すべき問題
+                    {t("autonomous.hypothesisDriven.openProblems")}
                   </span>
                   <span className="text-caption font-caption text-error-500">*</span>
                 </div>
@@ -233,7 +243,9 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
               </div>
               <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
                 <div className="flex items-center gap-1">
-                  <span className="text-caption font-caption text-default-font">提案手法</span>
+                  <span className="text-caption font-caption text-default-font">
+                    {t("autonomous.hypothesisDriven.proposedMethod")}
+                  </span>
                   <span className="text-caption font-caption text-error-500">*</span>
                 </div>
                 <TextArea
@@ -253,7 +265,9 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
             <div className="flex w-full flex-wrap items-start gap-4">
               <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
                 <div className="flex items-center gap-1">
-                  <span className="text-caption font-caption text-default-font">実験設定</span>
+                  <span className="text-caption font-caption text-default-font">
+                    {t("autonomous.hypothesisDriven.experimentalSetup")}
+                  </span>
                   <span className="text-caption font-caption text-error-500">*</span>
                 </div>
                 <TextArea
@@ -271,7 +285,9 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
               </div>
               <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
                 <div className="flex items-center gap-1">
-                  <span className="text-caption font-caption text-default-font">主要評価指標</span>
+                  <span className="text-caption font-caption text-default-font">
+                    {t("autonomous.hypothesisDriven.primaryMetric")}
+                  </span>
                   <span className="text-caption font-caption text-error-500">*</span>
                 </div>
                 <TextField
@@ -291,7 +307,9 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
             <div className="flex w-full flex-wrap items-start gap-4">
               <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
                 <div className="flex items-center gap-1">
-                  <span className="text-caption font-caption text-default-font">実験コード</span>
+                  <span className="text-caption font-caption text-default-font">
+                    {t("autonomous.hypothesisDriven.experimentalCode")}
+                  </span>
                   <span className="text-caption font-caption text-error-500">*</span>
                 </div>
                 <TextArea
@@ -310,7 +328,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
               <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
                 <div className="flex items-center gap-1">
                   <span className="text-caption font-caption text-default-font">
-                    期待される結果
+                    {t("autonomous.hypothesisDriven.expectedResult")}
                   </span>
                   <span className="text-caption font-caption text-error-500">*</span>
                 </div>
@@ -330,7 +348,9 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
             </div>
             <div className="flex w-full flex-col items-start gap-1">
               <div className="flex items-center gap-1">
-                <span className="text-caption font-caption text-default-font">期待される結論</span>
+                <span className="text-caption font-caption text-default-font">
+                  {t("autonomous.hypothesisDriven.expectedConclusion")}
+                </span>
                 <span className="text-caption font-caption text-error-500">*</span>
               </div>
               <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
@@ -347,12 +367,16 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
             <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
               <div className="flex w-full items-center gap-2">
                 <FeatherGithub className="text-body font-body text-default-font" />
-                <span className="text-body-bold font-body-bold text-default-font">GitHub 設定</span>
+                <span className="text-body-bold font-body-bold text-default-font">
+                  {t("autonomous.hypothesisDriven.githubSettings")}
+                </span>
               </div>
               <div className="flex w-full flex-wrap items-start gap-3">
                 <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
                   <div className="flex items-center gap-1">
-                    <span className="text-caption font-caption text-default-font">オーナー</span>
+                    <span className="text-caption font-caption text-default-font">
+                      {t("autonomous.hypothesisDriven.owner")}
+                    </span>
                     <span className="text-caption font-caption text-error-500">*</span>
                   </div>
                   <TextField
@@ -370,7 +394,9 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                 </div>
                 <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
                   <div className="flex items-center gap-1">
-                    <span className="text-caption font-caption text-default-font">リポジトリ</span>
+                    <span className="text-caption font-caption text-default-font">
+                      {t("autonomous.hypothesisDriven.repository")}
+                    </span>
                     <span className="text-caption font-caption text-error-500">*</span>
                   </div>
                   <TextField
@@ -388,7 +414,9 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                 </div>
                 <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
                   <div className="flex items-center gap-1">
-                    <span className="text-caption font-caption text-default-font">ブランチ</span>
+                    <span className="text-caption font-caption text-default-font">
+                      {t("autonomous.hypothesisDriven.branch")}
+                    </span>
                     <span className="text-caption font-caption text-error-500">*</span>
                   </div>
                   <TextField
@@ -408,7 +436,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
               <div className="flex w-full items-center gap-3">
                 <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
                 <span className="text-body font-body text-default-font">
-                  リポジトリをプライベートにする
+                  {t("autonomous.hypothesisDriven.makePrivate")}
                 </span>
               </div>
             </div>
@@ -424,7 +452,9 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                 <div className="flex w-full flex-wrap items-start gap-3">
                   <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
                     <div className="flex items-center gap-1">
-                      <span className="text-caption font-caption text-default-font">ラベル</span>
+                      <span className="text-caption font-caption text-default-font">
+                        {t("autonomous.hypothesisDriven.runnerLabel")}
+                      </span>
                       <span className="text-caption font-caption text-error-500">*</span>
                     </div>
                     <TextField
@@ -442,7 +472,9 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                   </div>
                   <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
                     <div className="flex items-center gap-1">
-                      <span className="text-caption font-caption text-default-font">説明</span>
+                      <span className="text-caption font-caption text-default-font">
+                        {t("autonomous.hypothesisDriven.runnerDescription")}
+                      </span>
                       <span className="text-caption font-caption text-error-500">*</span>
                     </div>
                     <TextField
@@ -515,7 +547,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
               <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
                 <FeatherSettings className="text-body font-body text-default-font" />
                 <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
-                  詳細設定
+                  {t("autonomous.hypothesisDriven.advancedSettings")}
                 </span>
                 <Accordion.Chevron />
               </div>
@@ -527,8 +559,8 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                 <Select
                   className="h-auto min-w-[176px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="GitHub Actions エージェント"
-                  placeholder="選択してください"
+                  label={t("autonomous.hypothesisDriven.githubActionsAgent")}
+                  placeholder={t("autonomous.hypothesisDriven.selectPlaceholder")}
                   helpText=""
                   value={githubActionsAgent}
                   onValueChange={(val) =>
@@ -551,7 +583,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                 <TextField
                   className="h-auto min-w-[144px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="実験モデル数"
+                  label={t("autonomous.hypothesisDriven.numExperimentModels")}
                   helpText=""
                 >
                   <TextField.Input
@@ -566,7 +598,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                 <TextField
                   className="h-auto min-w-[144px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="データセット数"
+                  label={t("autonomous.hypothesisDriven.numExperimentDatasets")}
                   helpText=""
                 >
                   <TextField.Input
@@ -579,7 +611,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                 <TextField
                   className="h-auto min-w-[144px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="比較手法数"
+                  label={t("autonomous.hypothesisDriven.numComparativeMethods")}
                   helpText=""
                 >
                   <TextField.Input
@@ -594,7 +626,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                 <TextField
                   className="h-auto min-w-[144px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="論文リファインメント回数"
+                  label={t("autonomous.hypothesisDriven.paperRefinementIterations")}
                   helpText=""
                 >
                   <TextField.Input
@@ -607,8 +639,8 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                 <Select
                   className="h-auto min-w-[176px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="LaTeX テンプレート"
-                  placeholder="選択してください"
+                  label={t("autonomous.hypothesisDriven.latexTemplate")}
+                  placeholder={t("autonomous.hypothesisDriven.selectPlaceholder")}
                   helpText=""
                   value={latexTemplateName}
                   onValueChange={setLatexTemplateName}
@@ -626,7 +658,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
               <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
                 <FeatherSettings className="text-body font-body text-default-font" />
                 <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
-                  LLM 設定
+                  {t("autonomous.hypothesisDriven.llmSettings")}
                 </span>
                 <Accordion.Chevron />
               </div>
@@ -647,7 +679,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
           <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-neutral-border" />
           <div className="flex w-full items-center justify-end gap-3">
             <Button variant="neutral-secondary" onClick={onBack}>
-              キャンセル
+              {t("autonomous.hypothesisDriven.cancel")}
             </Button>
             <Button
               className="disabled:bg-neutral-600 disabled:opacity-60 hover:disabled:bg-neutral-600 active:disabled:bg-neutral-600"
@@ -658,7 +690,9 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
               disabled={isRunning || !isFormValid}
               onClick={handleRun}
             >
-              {isRunning ? "実行中..." : "仮説駆動研究を実行"}
+              {isRunning
+                ? t("autonomous.hypothesisDriven.running")
+                : t("autonomous.hypothesisDriven.run")}
             </Button>
           </div>
         </div>

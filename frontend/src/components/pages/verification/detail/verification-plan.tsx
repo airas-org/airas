@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { VerificationPlan } from "../types";
 
 interface VerificationPlanViewProps {
@@ -16,18 +17,25 @@ export function VerificationPlanView({
   onGenerateCode,
   showButton,
 }: VerificationPlanViewProps) {
+  const { t } = useTranslation();
   const steps = splitToSteps(plan.method);
 
   return (
     <div className="rounded-lg border border-border bg-card p-6">
-      <h2 className="text-lg font-semibold text-foreground">検証方法</h2>
+      <h2 className="text-lg font-semibold text-foreground">
+        {t("verification.detail.verificationPlan.title")}
+      </h2>
       <div className="mt-4 space-y-4">
         <div>
-          <p className="text-sm font-medium text-foreground">検証内容</p>
+          <p className="text-sm font-medium text-foreground">
+            {t("verification.detail.verificationPlan.whatToVerify")}
+          </p>
           <p className="text-sm text-muted-foreground mt-1">{plan.whatToVerify}</p>
         </div>
         <div>
-          <p className="text-sm font-medium text-foreground">具体的な手順</p>
+          <p className="text-sm font-medium text-foreground">
+            {t("verification.detail.verificationPlan.steps")}
+          </p>
           <ul className="mt-2 space-y-1.5">
             {steps.map((step) => (
               <li key={step} className="flex gap-2 text-sm text-muted-foreground">

@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type {
   ExperimentalAnalysis,
   ExperimentalDesign_Output,
@@ -148,6 +149,7 @@ const MetricsList = ({
 }: {
   metrics?: ExperimentalDesign_Output["evaluation_metrics"];
 }) => {
+  const { t } = useTranslation();
   if (!metrics?.length) return null;
   return (
     <div className="space-y-2">
@@ -155,7 +157,9 @@ const MetricsList = ({
         const key = metric.name || metric.description || JSON.stringify(metric);
         return (
           <div key={key} className="rounded border border-border/50 bg-background/60 p-2">
-            <p className="text-sm font-semibold text-foreground">評価指標: {metric.name}</p>
+            <p className="text-sm font-semibold text-foreground">
+              {t("autoResearchResult.evaluationMetric")}: {metric.name}
+            </p>
             <Description text={metric.description} />
           </div>
         );
@@ -169,6 +173,7 @@ const ComparativeMethods = ({
 }: {
   methods?: ExperimentalDesign_Output["comparative_methods"];
 }) => {
+  const { t } = useTranslation();
   if (!methods?.length) return null;
   return (
     <div className="space-y-2">
@@ -178,7 +183,7 @@ const ComparativeMethods = ({
           className="rounded border border-border/50 bg-background/60 p-2"
         >
           <p className="text-sm font-semibold text-foreground">
-            ベースライン: {method.method_name}
+            {t("autoResearchResult.baseline")}: {method.method_name}
           </p>
           <Description text={method.description} />
         </div>
@@ -207,6 +212,7 @@ const MetricsData = ({ data }: { data?: Record<string, unknown> | null }) => {
 };
 
 export function AutoResearchResultDisplay({ snapshot }: { snapshot: AutoResearchResultSnapshot }) {
+  const { t } = useTranslation();
   const [openSections, setOpenSections] = useState({
     researchHypothesis: true,
     experimentalDesign: true,
@@ -231,7 +237,7 @@ export function AutoResearchResultDisplay({ snapshot }: { snapshot: AutoResearch
   );
 
   if (!hasAny) {
-    return <p className="text-sm text-muted-foreground">まだ表示できる進捗はありません。</p>;
+    return <p className="text-sm text-muted-foreground">{t("autoResearchResult.noProgress")}</p>;
   }
 
   return (

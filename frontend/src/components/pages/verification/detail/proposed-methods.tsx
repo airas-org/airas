@@ -1,5 +1,6 @@
 import { FeatherChevronDown, FeatherChevronRight } from "@subframe/core";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/ui";
 import type { ProposedMethod } from "../types";
 
@@ -11,6 +12,7 @@ interface MethodCardProps {
 }
 
 function MethodCard({ method, isSelected, showSelectButton, onSelect }: MethodCardProps) {
+  const { t } = useTranslation();
   return (
     <div
       className={`rounded-md border p-4 transition-colors ${
@@ -19,14 +21,20 @@ function MethodCard({ method, isSelected, showSelectButton, onSelect }: MethodCa
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-sm font-semibold text-foreground">{method.title}</h3>
-        {isSelected && <Badge variant="brand">選択済み</Badge>}
+        {isSelected && (
+          <Badge variant="brand">{t("verification.detail.proposedMethods.selected")}</Badge>
+        )}
       </div>
       <div className="mt-2">
-        <p className="text-xs font-semibold text-foreground">検証内容</p>
+        <p className="text-xs font-semibold text-foreground">
+          {t("verification.detail.proposedMethods.whatToVerify")}
+        </p>
         <p className="text-xs text-muted-foreground mt-0.5">{method.whatToVerify}</p>
       </div>
       <div className="mt-2">
-        <p className="text-xs font-semibold text-foreground">手法</p>
+        <p className="text-xs font-semibold text-foreground">
+          {t("verification.detail.proposedMethods.method")}
+        </p>
         <p className="text-xs text-muted-foreground mt-0.5">{method.method}</p>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-4">
@@ -81,6 +89,7 @@ export function ProposedMethodsList({
   onSelectMethod,
   onCreateWithMethod,
 }: ProposedMethodsListProps) {
+  const { t } = useTranslation();
   const [othersExpanded, setOthersExpanded] = useState(false);
 
   const selectedMethod = selectedMethodId ? methods.find((m) => m.id === selectedMethodId) : null;
@@ -90,9 +99,11 @@ export function ProposedMethodsList({
   if (!selectedMethodId) {
     return (
       <div className="rounded-lg border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold text-foreground">検証方針の提案</h2>
+        <h2 className="text-lg font-semibold text-foreground">
+          {t("verification.detail.proposedMethods.title")}
+        </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          AIが{methods.length}つの検証方針を提案しました。1つを選択してください。
+          {t("verification.detail.proposedMethods.subtitle", { count: methods.length })}
         </p>
         <div className="mt-4 space-y-4">
           {methods.map((method) => (
@@ -112,7 +123,9 @@ export function ProposedMethodsList({
   // After selection: show selected + toggle for others
   return (
     <div className="rounded-lg border border-border bg-card p-6">
-      <h2 className="text-lg font-semibold text-foreground">検証方針の提案</h2>
+      <h2 className="text-lg font-semibold text-foreground">
+        {t("verification.detail.proposedMethods.title")}
+      </h2>
       <div className="mt-4 space-y-4">
         {selectedMethod && (
           <MethodCard
@@ -134,7 +147,9 @@ export function ProposedMethodsList({
               ) : (
                 <FeatherChevronRight className="h-3.5 w-3.5" />
               )}
-              その他の検証方法（{otherMethods.length}）
+              {t("verification.detail.proposedMethods.otherMethods", {
+                count: otherMethods.length,
+              })}
             </button>
             {othersExpanded && (
               <div className="mt-3 space-y-3">

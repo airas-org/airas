@@ -2,6 +2,7 @@
 
 import { BarChart3, Code2, FileText, Lightbulb, Play, Search, Settings2 } from "lucide-react";
 import type React from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import type { FeatureType, WorkflowTree as WorkflowTreeType } from "@/types/research";
 
@@ -13,16 +14,6 @@ const featureIcons: Record<FeatureType, React.ComponentType<{ className?: string
   "experiment-run": Play,
   analysis: BarChart3,
   "paper-writing": FileText,
-};
-
-const featureLabels: Record<FeatureType, string> = {
-  papers: "論文取得",
-  method: "新規手法",
-  "experiment-config": "実験設定",
-  "code-generation": "コード生成",
-  "experiment-run": "実験実行",
-  analysis: "結果分析",
-  "paper-writing": "論文作成",
 };
 
 interface WorkflowTreeProps {
@@ -72,6 +63,16 @@ function getMaxBranchIndex(tree: WorkflowTreeType): number {
 }
 
 export function WorkflowTree({ workflowTree, activeNodeId, onNavigate }: WorkflowTreeProps) {
+  const { t } = useTranslation();
+  const featureLabels: Record<FeatureType, string> = {
+    papers: t("workflowTree.featureLabels.papers"),
+    method: t("workflowTree.featureLabels.method"),
+    "experiment-config": t("workflowTree.featureLabels.experimentConfig"),
+    "code-generation": t("workflowTree.featureLabels.codeGeneration"),
+    "experiment-run": t("workflowTree.featureLabels.experimentRun"),
+    analysis: t("workflowTree.featureLabels.analysis"),
+    "paper-writing": t("workflowTree.featureLabels.paperWriting"),
+  };
   const levels = getTreeStructure(workflowTree);
   const maxBranch = getMaxBranchIndex(workflowTree);
   const columnCount = maxBranch + 1;
@@ -91,8 +92,8 @@ export function WorkflowTree({ workflowTree, activeNodeId, onNavigate }: Workflo
     return (
       <div className="py-4 px-6 border-b border-border bg-muted/70">
         <div className="text-center text-muted-foreground text-sm">
-          <p>まだ実行されたステップがありません</p>
-          <p className="mt-1 text-xs">論文取得から始めてください</p>
+          <p>{t("workflowTree.noSteps")}</p>
+          <p className="mt-1 text-xs">{t("workflowTree.startPrompt")}</p>
         </div>
       </div>
     );

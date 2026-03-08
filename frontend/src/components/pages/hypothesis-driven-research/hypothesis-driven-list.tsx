@@ -14,6 +14,7 @@ import {
   FeatherX,
 } from "@subframe/core";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { ResearchSection } from "@/types/research";
 import { Badge } from "@/ui/components/Badge";
 import { Button } from "@/ui/components/Button";
@@ -33,6 +34,7 @@ export function HypothesisDrivenList({
   onSelectSession,
   onNavigateToInput,
 }: HypothesisDrivenListProps) {
+  const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
 
@@ -51,20 +53,20 @@ export function HypothesisDrivenList({
     if (status === "completed") {
       return (
         <Badge className={cls} variant="success" icon={<FeatherCheck className="h-3 w-3" />}>
-          完了
+          {t("autonomous.hypothesisDriven.statusCompleted")}
         </Badge>
       );
     }
     if (status === "failed") {
       return (
         <Badge className={cls} variant="error" icon={<FeatherX className="h-3 w-3" />}>
-          失敗
+          {t("autonomous.hypothesisDriven.statusFailed")}
         </Badge>
       );
     }
     return (
       <Badge className={cls} variant="brand" icon={<FeatherLoader className="h-3 w-3" />}>
-        進行中
+        {t("autonomous.hypothesisDriven.statusRunning")}
       </Badge>
     );
   };
@@ -79,10 +81,10 @@ export function HypothesisDrivenList({
             alt=""
           />
           <span className="text-heading-1 font-heading-1 text-default-font text-center">
-            仮説駆動研究セッション一覧
+            {t("autonomous.hypothesisDriven.listHeading")}
           </span>
           <span className="text-body font-body text-subtext-color text-center">
-            過去に実行した仮説駆動研究セッションの履歴を確認できます
+            {t("autonomous.hypothesisDriven.listSubtitle")}
           </span>
         </div>
         <div className="flex w-full items-center justify-between gap-3">
@@ -94,18 +96,18 @@ export function HypothesisDrivenList({
             icon={<FeatherSearch />}
           >
             <TextField.Input
-              placeholder="セッションを検索..."
+              placeholder={t("autonomous.hypothesisDriven.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </TextField>
           <Button variant="brand-primary" icon={<FeatherPlus />} onClick={onNavigateToInput}>
-            新規研究を開始
+            {t("autonomous.hypothesisDriven.newSession")}
           </Button>
         </div>
         <div className="flex w-full items-center gap-2 border-b border-solid border-neutral-border pb-3">
           <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
-            {filtered.length} 件のセッション
+            {t("autonomous.hypothesisDriven.sessionCount", { count: filtered.length })}
           </span>
           <SubframeCore.DropdownMenu.Root>
             <SubframeCore.DropdownMenu.Trigger asChild>
@@ -115,20 +117,20 @@ export function HypothesisDrivenList({
                 icon={<FeatherArrowDownUp />}
                 iconRight={<FeatherChevronDown />}
               >
-                並び替え
+                {t("autonomous.hypothesisDriven.sort")}
               </Button>
             </SubframeCore.DropdownMenu.Trigger>
             <SubframeCore.DropdownMenu.Portal>
               <SubframeCore.DropdownMenu.Content side="bottom" align="end" sideOffset={4} asChild>
                 <DropdownMenu>
                   <DropdownMenu.DropdownItem icon={null} onSelect={() => setSortKey("newest")}>
-                    作成日時（新しい順）
+                    {t("autonomous.hypothesisDriven.sortNewest")}
                   </DropdownMenu.DropdownItem>
                   <DropdownMenu.DropdownItem icon={null} onSelect={() => setSortKey("oldest")}>
-                    作成日時（古い順）
+                    {t("autonomous.hypothesisDriven.sortOldest")}
                   </DropdownMenu.DropdownItem>
                   <DropdownMenu.DropdownItem icon={null} onSelect={() => setSortKey("title")}>
-                    タイトル順
+                    {t("autonomous.hypothesisDriven.sortTitle")}
                   </DropdownMenu.DropdownItem>
                 </DropdownMenu>
               </SubframeCore.DropdownMenu.Content>
@@ -140,12 +142,12 @@ export function HypothesisDrivenList({
             <div className="flex w-full flex-col items-center gap-4 py-12">
               <span className="text-body font-body text-subtext-color">
                 {searchQuery.trim()
-                  ? "検索結果が見つかりませんでした"
-                  : "まだ研究セッションがありません"}
+                  ? t("autonomous.hypothesisDriven.noSearchResults")
+                  : t("autonomous.hypothesisDriven.noSessions")}
               </span>
               {!searchQuery.trim() && (
                 <Button variant="brand-primary" icon={<FeatherPlus />} onClick={onNavigateToInput}>
-                  最初の研究を開始
+                  {t("autonomous.hypothesisDriven.firstSession")}
                 </Button>
               )}
             </div>
@@ -171,7 +173,7 @@ export function HypothesisDrivenList({
                   <div className="flex items-center gap-1">
                     <FeatherCalendar className="h-3 w-3 text-subtext-color" />
                     <span className="text-[11px] text-subtext-color">
-                      {session.createdAt.toLocaleDateString("ja-JP", {
+                      {session.createdAt.toLocaleDateString(i18n.language, {
                         year: "numeric",
                         month: "long",
                         day: "numeric",

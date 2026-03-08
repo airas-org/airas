@@ -60,7 +60,7 @@ export function GitHubOAuthCallback({ code }: { code: string }) {
         localStorage.setItem(GITHUB_SESSION_KEY, data.session_token);
         setStatus("success");
         setTimeout(() => {
-          window.location.href = "/?nav=integration";
+          window.location.href = "/settings/integration";
         }, 1500);
       })
       .catch(() => {
@@ -82,7 +82,7 @@ export function GitHubOAuthCallback({ code }: { code: string }) {
               type="button"
               className="mt-2 text-sm underline text-neutral-400"
               onClick={() => {
-                window.location.href = "/?nav=integration";
+                window.location.href = "/settings/integration";
               }}
             >
               Integrationページに戻る

@@ -21,6 +21,7 @@ import {
   FeatherX,
 } from "@subframe/core";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   HypothesisDrivenResearchService,
   type HypothesisDrivenResearchStatusResponseBody,
@@ -52,6 +53,7 @@ export function HypothesisDrivenDetail({
   onUpdateSectionTitle,
   onRefreshSessions,
 }: HypothesisDrivenDetailProps) {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<HypothesisDrivenResearchStatusResponseBody | null>(null);
   const [resultSnapshot, setResultSnapshot] = useState<AutoResearchResultSnapshot>({});
   const [error, setError] = useState<string | null>(null);
@@ -109,12 +111,13 @@ export function HypothesisDrivenDetail({
           Boolean(response.error);
         if (finished) stopPolling();
       } catch (err) {
-        const message = err instanceof Error ? err.message : "ステータスの取得に失敗しました";
+        const message =
+          err instanceof Error ? err.message : t("autonomous.hypothesisDriven.statusFetchError");
         setError(message);
         stopPolling();
       }
     },
-    [stopPolling],
+    [stopPolling, t],
   );
 
   useEffect(() => {
@@ -153,7 +156,8 @@ export function HypothesisDrivenDetail({
       setIsEditingTitle(false);
       await onRefreshSessions(updated.id);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "タイトルの更新に失敗しました";
+      const message =
+        err instanceof Error ? err.message : t("autonomous.hypothesisDriven.titleUpdateError");
       setError(message);
     } finally {
       setIsUpdatingTitle(false);
@@ -165,20 +169,20 @@ export function HypothesisDrivenDetail({
     if (status.status === Status.COMPLETED) {
       return (
         <Badge variant="success" icon={<FeatherCheck />}>
-          完了
+          {t("autonomous.hypothesisDriven.statusCompleted")}
         </Badge>
       );
     }
     if (status.error || status.status === Status.FAILED) {
       return (
         <Badge variant="error" icon={<FeatherX />}>
-          失敗
+          {t("autonomous.hypothesisDriven.statusFailed")}
         </Badge>
       );
     }
     return (
       <Badge variant="brand" icon={<FeatherLoader />}>
-        進行中
+        {t("autonomous.hypothesisDriven.statusRunning")}
       </Badge>
     );
   };
@@ -190,7 +194,9 @@ export function HypothesisDrivenDetail({
       <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-1 pb-2 sticky top-0 z-10 gap-1">
         <div className="flex w-full items-center justify-between">
           <LinkButton variant="neutral" icon={<FeatherArrowLeft />} onClick={onBack}>
-            <span className="text-caption font-caption">結果一覧</span>
+            <span className="text-caption font-caption">
+              {t("autonomous.hypothesisDriven.backToResults")}
+            </span>
           </LinkButton>
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-subtext-color">ID: {section.id.slice(0, 16)}...</span>
@@ -198,7 +204,9 @@ export function HypothesisDrivenDetail({
             {isPolling && (
               <div className="flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5">
                 <FeatherRefreshCw className="h-3 w-3 text-success-600" />
-                <span className="text-[11px] text-success-600">自動更新中</span>
+                <span className="text-[11px] text-success-600">
+                  {t("autonomous.hypothesisDriven.autoUpdating")}
+                </span>
               </div>
             )}
           </div>
@@ -219,7 +227,9 @@ export function HypothesisDrivenDetail({
                 disabled={isUpdatingTitle}
                 onClick={handleSaveTitle}
               >
-                {isUpdatingTitle ? "保存中..." : "保存"}
+                {isUpdatingTitle
+                  ? t("autonomous.hypothesisDriven.saving")
+                  : t("autonomous.hypothesisDriven.save")}
               </Button>
               <Button
                 variant="neutral-secondary"
@@ -229,7 +239,7 @@ export function HypothesisDrivenDetail({
                   setTitleDraft(section.title);
                 }}
               >
-                キャンセル
+                {t("autonomous.hypothesisDriven.cancel")}
               </Button>
             </div>
           ) : (
@@ -258,13 +268,16 @@ export function HypothesisDrivenDetail({
 
           {status?.research_history && (
             <div className="flex w-full flex-col items-start gap-2 rounded-lg border border-solid border-neutral-border bg-default-background px-4 py-3 shadow-sm">
-              <span className="text-body-bold font-body-bold text-default-font">研究履歴</span>
+              <span className="text-body-bold font-body-bold text-default-font">
+                {t("autonomous.hypothesisDriven.researchHistory")}
+              </span>
               <span className="text-body font-body text-subtext-color">
-                目的: {status.research_history.research_topic ?? "N/A"}
+                {t("autonomous.hypothesisDriven.purpose")}:{" "}
+                {status.research_history.research_topic ?? "N/A"}
               </span>
               {status.research_history.paper_url && (
                 <span className="text-body font-body text-subtext-color">
-                  論文URL: {status.research_history.paper_url}
+                  {t("autonomous.hypothesisDriven.paperUrl")}: {status.research_history.paper_url}
                 </span>
               )}
             </div>
@@ -281,7 +294,7 @@ export function HypothesisDrivenDetail({
             !snapshot.paper_content && (
               <div className="flex w-full flex-col items-center gap-4 py-12">
                 <span className="text-body font-body text-subtext-color">
-                  まだ表示できる進捗はありません。
+                  {t("autonomous.hypothesisDriven.noProgress")}
                 </span>
               </div>
             )}
@@ -318,10 +331,10 @@ export function HypothesisDrivenDetail({
               icon={<FeatherBookOpen className="text-body font-body text-warning-500" />}
               badge={<Badge variant="neutral">{snapshot.paper_titles.length}件</Badge>}
             >
-              {snapshot.paper_titles.map((t) => (
-                <div key={t} className="flex items-start gap-2">
+              {snapshot.paper_titles.map((title) => (
+                <div key={title} className="flex items-start gap-2">
                   <span className="text-body font-body text-subtext-color">•</span>
-                  <span className="text-body font-body text-default-font">{t}</span>
+                  <span className="text-body font-body text-default-font">{title}</span>
                 </div>
               ))}
             </ResultSection>
