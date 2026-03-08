@@ -28,6 +28,9 @@ RUN apt-get install -y curl ca-certificates gnupg && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
+# Railway CLI
+RUN npm install -g @railway/cli
+
 # ttyd (web terminal)
 RUN DPKG_ARCH=$(dpkg --print-architecture) && \
     if [ "$DPKG_ARCH" = "amd64" ]; then TTYD_ARCH="x86_64"; else TTYD_ARCH="aarch64"; fi && \
