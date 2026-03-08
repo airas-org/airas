@@ -98,7 +98,12 @@
         "settings": "実験設定",
         "results": "実験結果",
         "paperWriting": "執筆のための情報収集",
-        "paper": "論文"
+        "paper": "論文",
+        "hypothesis": "仮説入力済み",
+        "planDecided": "方針決定済み",
+        "implementationDone": "実装完了",
+        "experimentsDone": "実験完了",
+        "paperDone": "論文生成が完了"
       },
       "badgeLabels": {
         "initial": "未開始",
@@ -538,7 +543,11 @@
     "createdAt": "作成",
     "lastUsed": "最終使用",
     "revoke": "取り消し",
-    "usageExample": "使用例"
+    "usageExample": "使用例",
+    "apiKeysSection": "API Keys"
+  },
+  "settings": {
+    "externalServicesSection": "外部サービス"
   },
   "integration": {
     "title": "Integration",

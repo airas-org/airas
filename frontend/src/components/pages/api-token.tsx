@@ -135,7 +135,7 @@ export function ApiTokenPage() {
 
         {requiresApiKeys ? (
           <div className="mt-6 rounded-lg border border-border bg-card p-5">
-            <h2 className="text-body-bold font-body-bold text-default-font">API Keys</h2>
+            <h2 className="text-body-bold font-body-bold text-default-font">{t("apiToken.apiKeysSection")}</h2>
             <p className="text-caption font-caption text-subtext-color mt-1">
               APIキーは暗号化されて安全に保存されます。
             </p>

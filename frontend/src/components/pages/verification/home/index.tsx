@@ -88,11 +88,11 @@ export function VerificationHomePage({
 }: VerificationHomePageProps) {
   const { t } = useTranslation();
   const categories: { key: CategoryKey; label: string }[] = [
-    { key: "hypothesis", label: t("verification.home.categories.methods") },
-    { key: "plan-decided", label: t("verification.home.categories.plan") },
-    { key: "implementation-done", label: t("verification.home.categories.code") },
-    { key: "experiments-done", label: t("verification.home.categories.results") },
-    { key: "paper-done", label: t("verification.home.categories.paper") },
+    { key: "hypothesis", label: t("verification.home.categories.hypothesis") },
+    { key: "plan-decided", label: t("verification.home.categories.planDecided") },
+    { key: "implementation-done", label: t("verification.home.categories.implementationDone") },
+    { key: "experiments-done", label: t("verification.home.categories.experimentsDone") },
+    { key: "paper-done", label: t("verification.home.categories.paperDone") },
   ];
   const [search, setSearch] = useState("");
 

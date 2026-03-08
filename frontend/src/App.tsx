@@ -486,7 +486,7 @@ export default function App() {
                 </SidebarWithSections.NavItem>
               </SidebarWithSections.NavSection>
               <SidebarWithSections.NavSection
-                label={<span className="text-sm font-medium">{t("nav.integration")}</span>}
+                label={<span className="text-sm font-medium">{t("settings.externalServicesSection")}</span>}
               >
                 <SidebarWithSections.NavItem
                   icon={<FeatherLink />}

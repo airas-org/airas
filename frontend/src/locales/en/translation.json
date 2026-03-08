@@ -98,7 +98,12 @@
         "settings": "Experiment Settings",
         "results": "Experiment Results",
         "paperWriting": "Paper Research",
-        "paper": "Paper"
+        "paper": "Paper",
+        "hypothesis": "Hypothesis Input",
+        "planDecided": "Plan Decided",
+        "implementationDone": "Implementation Done",
+        "experimentsDone": "Experiments Done",
+        "paperDone": "Paper Generated"
       },
       "badgeLabels": {
         "initial": "Not Started",
@@ -538,7 +543,11 @@
     "createdAt": "Created",
     "lastUsed": "Last used",
     "revoke": "Revoke",
-    "usageExample": "Usage example"
+    "usageExample": "Usage example",
+    "apiKeysSection": "API Keys"
+  },
+  "settings": {
+    "externalServicesSection": "External Services"
   },
   "integration": {
     "title": "Integration",
