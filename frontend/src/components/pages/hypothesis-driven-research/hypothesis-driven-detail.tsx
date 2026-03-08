@@ -142,12 +142,6 @@ export function HypothesisDrivenDetail({
     return () => clearPollingTimer();
   }, [section.id, fetchStatus, clearPollingTimer]);
 
-  const handleManualRefresh = async () => {
-    clearPollingTimer();
-    setIsPolling(false);
-    await fetchStatus(section.id, { resetError: true });
-  };
-
   const handleSaveTitle = async () => {
     setIsUpdatingTitle(true);
     setError(null);
@@ -197,82 +191,66 @@ export function HypothesisDrivenDetail({
 
   return (
     <div className="flex h-full w-full flex-col items-start bg-default-background">
-      <div className="flex w-full items-center justify-between border-b border-solid border-neutral-border bg-default-background px-6 py-4 sticky top-0 z-10">
-        <div className="flex items-center gap-4">
+      <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-1 pb-2 sticky top-0 z-10 gap-1">
+        <div className="flex w-full items-center justify-between">
           <LinkButton variant="neutral" icon={<FeatherArrowLeft />} onClick={onBack}>
-            {t("autonomous.hypothesisDriven.backToResults")}
+            <span className="text-caption font-caption">{t("autonomous.hypothesisDriven.backToResults")}</span>
           </LinkButton>
-          <div className="flex h-4 w-px flex-none flex-col items-center gap-2 bg-neutral-border" />
           <div className="flex items-center gap-2">
-            <FeatherFlaskConical className="text-heading-2 font-heading-2 text-brand-600" />
-            {isEditingTitle ? (
-              <div className="flex items-center gap-2">
-                <TextField className="h-auto" variant="outline" label="" helpText="">
-                  <TextField.Input
-                    value={titleDraft}
-                    onChange={(e) => setTitleDraft(e.target.value)}
-                  />
-                </TextField>
-                <Button
-                  variant="brand-primary"
-                  size="small"
-                  disabled={isUpdatingTitle}
-                  onClick={handleSaveTitle}
-                >
-                  {isUpdatingTitle
-                    ? t("autonomous.hypothesisDriven.saving")
-                    : t("autonomous.hypothesisDriven.save")}
-                </Button>
-                <Button
-                  variant="neutral-secondary"
-                  size="small"
-                  onClick={() => {
-                    setIsEditingTitle(false);
-                    setTitleDraft(section.title);
-                  }}
-                >
-                  {t("autonomous.hypothesisDriven.cancel")}
-                </Button>
+            <span className="text-[11px] text-subtext-color">ID: {section.id.slice(0, 16)}...</span>
+            {statusBadge()}
+            {isPolling && (
+              <div className="flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5">
+                <FeatherRefreshCw className="h-3 w-3 text-success-600" />
+                <span className="text-[11px] text-success-600">{t("autonomous.hypothesisDriven.autoUpdating")}</span>
               </div>
-            ) : (
-              <>
-                <span className="text-heading-2 font-heading-2 text-default-font">
-                  {section.title}
-                </span>
-                <IconButton
-                  variant="neutral-tertiary"
-                  size="small"
-                  icon={<FeatherEdit2 />}
-                  onClick={() => setIsEditingTitle(true)}
-                />
-              </>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col items-end gap-1">
-            <span className="text-caption font-caption text-subtext-color">
-              {t("autonomous.hypothesisDriven.taskId")}: {section.id.slice(0, 20)}...
-            </span>
+        <div className="flex items-center gap-2">
+          <FeatherFlaskConical className="text-body font-body text-brand-600" />
+          {isEditingTitle ? (
             <div className="flex items-center gap-2">
-              {statusBadge()}
-              {isPolling && (
-                <div className="flex items-center gap-2 rounded-full bg-success-50 px-3 py-1">
-                  <FeatherRefreshCw className="text-caption font-caption text-success-600" />
-                  <span className="text-caption font-caption text-success-600">
-                    {t("autonomous.hypothesisDriven.autoUpdating")}
-                  </span>
-                </div>
-              )}
+              <TextField className="h-auto" variant="outline" label="" helpText="">
+                <TextField.Input
+                  value={titleDraft}
+                  onChange={(e) => setTitleDraft(e.target.value)}
+                />
+              </TextField>
+              <Button
+                variant="brand-primary"
+                size="small"
+                disabled={isUpdatingTitle}
+                onClick={handleSaveTitle}
+              >
+                {isUpdatingTitle
+                  ? t("autonomous.hypothesisDriven.saving")
+                  : t("autonomous.hypothesisDriven.save")}
+              </Button>
+              <Button
+                variant="neutral-secondary"
+                size="small"
+                onClick={() => {
+                  setIsEditingTitle(false);
+                  setTitleDraft(section.title);
+                }}
+              >
+                {t("autonomous.hypothesisDriven.cancel")}
+              </Button>
             </div>
-          </div>
-          <Button
-            variant="neutral-secondary"
-            icon={<FeatherRefreshCw />}
-            onClick={handleManualRefresh}
-          >
-            {t("autonomous.hypothesisDriven.fetchLatest")}
-          </Button>
+          ) : (
+            <>
+              <span className="text-body-bold font-body-bold text-default-font">
+                {section.title}
+              </span>
+              <IconButton
+                variant="neutral-tertiary"
+                size="small"
+                icon={<FeatherEdit2 />}
+                onClick={() => setIsEditingTitle(true)}
+              />
+            </>
+          )}
         </div>
       </div>
 

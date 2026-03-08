@@ -29,16 +29,16 @@ function CategoryColumn({
   onDuplicate,
 }: CategoryColumnProps) {
   return (
-    <div className="min-w-[180px] flex-1 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-caption-bold font-caption-bold text-subtext-color uppercase tracking-wider whitespace-nowrap">
+    <div className="w-[200px] shrink-0 rounded-lg border border-border bg-card p-2.5">
+      <div className="flex items-center gap-1.5 mb-2">
+        <h2 className="text-[10px] font-semibold text-subtext-color uppercase tracking-wider whitespace-nowrap">
           {label}
         </h2>
-        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-neutral-200 px-1.5 text-[10px] font-medium text-neutral-600">
+        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-neutral-200 px-1 text-[9px] font-medium text-neutral-600">
           {count}
         </span>
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         {verifications.map((v) => (
           <VerificationCard
             key={v.id}
@@ -56,23 +56,27 @@ function CategoryColumn({
   );
 }
 
-type CategoryKey = "methods" | "plan" | "code" | "settings" | "results" | "paper-writing" | "paper";
+type CategoryKey =
+  | "hypothesis"
+  | "plan-decided"
+  | "implementation-done"
+  | "experiments-done"
+  | "paper-done";
 
 function getCategoryKey(v: Verification): CategoryKey {
   switch (v.phase) {
     case "initial":
     case "methods-proposed":
-      return "methods";
+      return "hypothesis";
     case "plan-generated":
-      return "plan";
+      return "plan-decided";
     case "code-generating":
-      return "code";
     case "code-generated":
-      return "settings";
+      return "implementation-done";
     case "experiments-done":
-      return "results";
+      return "experiments-done";
     case "paper-writing":
-      return v.paperDraft?.status === "ready" ? "paper" : "paper-writing";
+      return v.paperDraft?.status === "ready" ? "paper-done" : "experiments-done";
   }
 }
 
@@ -84,13 +88,11 @@ export function VerificationHomePage({
 }: VerificationHomePageProps) {
   const { t } = useTranslation();
   const categories: { key: CategoryKey; label: string }[] = [
-    { key: "methods", label: t("verification.home.categories.methods") },
-    { key: "plan", label: t("verification.home.categories.plan") },
-    { key: "code", label: t("verification.home.categories.code") },
-    { key: "settings", label: t("verification.home.categories.settings") },
-    { key: "results", label: t("verification.home.categories.results") },
-    { key: "paper-writing", label: t("verification.home.categories.paperWriting") },
-    { key: "paper", label: t("verification.home.categories.paper") },
+    { key: "hypothesis", label: t("verification.home.categories.methods") },
+    { key: "plan-decided", label: t("verification.home.categories.plan") },
+    { key: "implementation-done", label: t("verification.home.categories.code") },
+    { key: "experiments-done", label: t("verification.home.categories.results") },
+    { key: "paper-done", label: t("verification.home.categories.paper") },
   ];
   const [search, setSearch] = useState("");
 
@@ -104,13 +106,11 @@ export function VerificationHomePage({
 
   const grouped = useMemo(() => {
     const map: Record<CategoryKey, Verification[]> = {
-      methods: [],
-      plan: [],
-      code: [],
-      settings: [],
-      results: [],
-      "paper-writing": [],
-      paper: [],
+      hypothesis: [],
+      "plan-decided": [],
+      "implementation-done": [],
+      "experiments-done": [],
+      "paper-done": [],
     };
     for (const v of filtered) {
       map[getCategoryKey(v)].push(v);
@@ -119,20 +119,22 @@ export function VerificationHomePage({
   }, [filtered]);
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-full mx-auto px-8 py-8">
+    <div className="flex-1 overflow-y-auto overflow-x-clip min-w-0">
+      <div className="max-w-full mx-auto px-6 py-6">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-heading-2 font-heading-2 text-default-font">Verifications</h1>
+            <h1 className="text-heading-2 font-heading-2 text-default-font">
+              {t("verification.home.title")}
+            </h1>
             <p className="text-caption font-caption text-subtext-color mt-1">
-              {verifications.length} projects
+              {verifications.length} {t("verification.home.projects")}
             </p>
           </div>
           <div className="w-56 rounded-lg border border-border bg-card px-3 py-1.5 flex items-center gap-2">
             <FeatherSearch className="h-4 w-4 text-subtext-color shrink-0" />
             <input
               type="text"
-              placeholder="Search..."
+              placeholder={t("verification.home.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-transparent text-body font-body text-default-font outline-none placeholder:text-neutral-400"
@@ -140,7 +142,7 @@ export function VerificationHomePage({
           </div>
         </div>
 
-        <div className="mt-6 flex gap-4 items-start overflow-x-auto">
+        <div className="mt-6 flex gap-2 items-start overflow-x-auto">
           {categories.map((cat) => (
             <CategoryColumn
               key={cat.key}

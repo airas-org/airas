@@ -49,22 +49,23 @@ export function TopicDrivenList({
     });
 
   const statusBadge = (status: ResearchSection["status"]) => {
+    const cls = "text-[11px] py-0 px-1.5";
     if (status === "completed") {
       return (
-        <Badge variant="success" icon={<FeatherCheck />}>
+        <Badge className={cls} variant="success" icon={<FeatherCheck className="h-3 w-3" />}>
           {t("autonomous.topicDriven.statusCompleted")}
         </Badge>
       );
     }
     if (status === "failed") {
       return (
-        <Badge variant="error" icon={<FeatherX />}>
+        <Badge className={cls} variant="error" icon={<FeatherX className="h-3 w-3" />}>
           {t("autonomous.topicDriven.statusFailed")}
         </Badge>
       );
     }
     return (
-      <Badge variant="brand" icon={<FeatherLoader />}>
+      <Badge className={cls} variant="brand" icon={<FeatherLoader className="h-3 w-3" />}>
         {t("autonomous.topicDriven.statusRunning")}
       </Badge>
     );
@@ -155,13 +156,13 @@ export function TopicDrivenList({
             <button
               key={session.id}
               type="button"
-              className="flex w-full flex-col items-start gap-3 rounded-lg border border-solid border-neutral-border bg-default-background px-5 py-4 cursor-pointer hover:border-brand-300 hover:shadow-md transition-all text-left"
+              className="flex w-full flex-col items-start gap-2 rounded-lg border border-solid border-neutral-border bg-default-background px-4 py-3 cursor-pointer hover:border-brand-300 hover:shadow-md transition-all text-left"
               onClick={() => onSelectSession(session)}
             >
               <div className="flex w-full items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <FeatherFlaskConical className="text-heading-3 font-heading-3 text-brand-600" />
-                  <span className="text-body-bold font-body-bold text-default-font">
+                  <FeatherFlaskConical className="text-body font-body text-brand-600" />
+                  <span className="text-caption-bold font-caption-bold text-default-font">
                     {session.title}
                   </span>
                 </div>
@@ -170,8 +171,8 @@ export function TopicDrivenList({
               <div className="flex w-full items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1">
-                    <FeatherCalendar className="text-caption font-caption text-subtext-color" />
-                    <span className="text-caption font-caption text-subtext-color">
+                    <FeatherCalendar className="h-3 w-3 text-subtext-color" />
+                    <span className="text-[11px] text-subtext-color">
                       {session.createdAt.toLocaleDateString(i18n.language, {
                         year: "numeric",
                         month: "long",

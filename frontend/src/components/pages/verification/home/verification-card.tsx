@@ -41,10 +41,10 @@ export function VerificationCard({
     verification.query.length > 60 ? `${verification.query.slice(0, 60)}...` : verification.query;
 
   return (
-    <div className="group/card relative rounded-lg border border-solid border-neutral-200 bg-card px-4 py-3 hover:border-neutral-300 hover:shadow-sm transition-all">
+    <div className="group/card relative rounded-md border border-solid border-neutral-200 bg-card px-2.5 py-2 hover:border-neutral-300 hover:shadow-sm transition-all">
       <button type="button" className="absolute inset-0 cursor-pointer" onClick={onClick} />
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-caption-bold font-caption-bold text-default-font line-clamp-1">
+      <div className="flex items-center justify-between gap-1">
+        <span className="text-[11px] font-semibold text-default-font line-clamp-1">
           {verification.title}
         </span>
         <div className="relative z-10 shrink-0">
@@ -52,9 +52,9 @@ export function VerificationCard({
             <SubframeCore.DropdownMenu.Trigger asChild>
               <button
                 type="button"
-                className="flex h-6 w-6 items-center justify-center rounded-md text-white hover:bg-white/10 transition-colors cursor-pointer"
+                className="flex h-5 w-5 items-center justify-center rounded-md text-white hover:bg-white/10 transition-colors cursor-pointer"
               >
-                <FeatherMoreVertical className="h-3.5 w-3.5" />
+                <FeatherMoreVertical className="h-3 w-3" />
               </button>
             </SubframeCore.DropdownMenu.Trigger>
             <SubframeCore.DropdownMenu.Portal>
@@ -92,15 +92,15 @@ export function VerificationCard({
         </div>
       </div>
       {truncatedQuery && (
-        <p className="text-[11px] leading-[16px] text-neutral-500 mt-1 line-clamp-2">
+        <p className="text-[10px] leading-[14px] text-neutral-500 mt-0.5 line-clamp-2">
           {truncatedQuery}
         </p>
       )}
-      <div className="flex items-center justify-between mt-2.5">
-        <span className="text-[11px] leading-[16px] text-neutral-400">
+      <div className="flex items-center justify-between mt-1.5">
+        <span className="text-[10px] leading-[14px] text-neutral-400">
           {verification.createdAt.toLocaleDateString(i18n.language)}
         </span>
-        <Badge variant={badgeVariantMap[verification.phase]} className="h-5 text-[10px]">
+        <Badge variant={badgeVariantMap[verification.phase]} className="h-4 text-[9px] px-1.5">
           {badgeLabelMap[verification.phase]}
         </Badge>
       </div>

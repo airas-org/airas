@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Avatar, Badge, Button, Progress, TextArea, TextField } from "@/ui";
+import { Avatar, Badge, Button, TextArea, TextField } from "@/ui";
 
 export function ProfilePage() {
   const { t } = useTranslation();
@@ -16,10 +16,6 @@ export function ProfilePage() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
-
-  const apiUsed = 1234;
-  const apiLimit = 10000;
-  const apiPercent = Math.round((apiUsed / apiLimit) * 100);
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -78,26 +74,6 @@ export function ProfilePage() {
                 </span>
               )}
             </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-border bg-card p-6">
-          <h2 className="text-body-bold font-body-bold text-default-font mb-4">
-            {t("profile.apiUsage")}
-          </h2>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-caption font-caption text-subtext-color">
-                {t("profile.monthlyApiUsage")}
-              </span>
-              <span className="text-caption-bold font-caption-bold text-default-font">
-                {apiUsed.toLocaleString()} / {apiLimit.toLocaleString()}
-              </span>
-            </div>
-            <Progress value={apiPercent} />
-            <span className="text-caption font-caption text-subtext-color">
-              {t("profile.usagePercent", { percent: apiPercent })}
-            </span>
           </div>
         </div>
       </div>

@@ -181,16 +181,15 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
 
   return (
     <div className="flex h-full w-full flex-col items-start bg-default-background">
-      <div className="flex w-full items-center justify-between border-b border-solid border-neutral-border bg-default-background px-6 py-4 sticky top-0 z-10">
-        <div className="flex items-center gap-4">
+      <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-1 pb-2 sticky top-0 z-10 gap-1">
+        <div className="flex w-full items-center">
           <LinkButton variant="neutral" icon={<FeatherArrowLeft />} onClick={onBack}>
-            {t("autonomous.hypothesisDriven.backToList")}
+            <span className="text-caption font-caption">{t("autonomous.hypothesisDriven.backToList")}</span>
           </LinkButton>
-          <div className="flex h-4 w-px flex-none flex-col items-center gap-2 bg-neutral-border" />
-          <span className="text-heading-2 font-heading-2 text-default-font">
-            Hypothesis-Driven Research
-          </span>
         </div>
+        <span className="text-body-bold font-body-bold text-default-font">
+          Hypothesis-Driven Research
+        </span>
       </div>
       <div className="flex w-full grow shrink-0 basis-0 flex-col items-center px-6 py-6 overflow-auto">
         <div className="flex w-full max-w-[1024px] flex-col items-start gap-6 rounded-xl border border-solid border-neutral-border bg-neutral-800 px-6 py-6 shadow-sm">
