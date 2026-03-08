@@ -57,7 +57,7 @@ async def propose_policies(
     if not result.get("feasible", True):
         return ProposePoliciesResponseBody(
             feasible=False,
-            infeasible_reason=result.get("feasibility_reason"),
+            infeasible_reason=result.get("infeasible_reason"),
             proposed_methods=[],
         )
 

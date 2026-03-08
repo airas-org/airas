@@ -48,7 +48,7 @@ class ProposeVerificationPolicySubgraphInputState(TypedDict):
 
 class ProposeVerificationPolicySubgraphOutputState(ExecutionTimeState):
     feasible: bool
-    feasibility_reason: str | None
+    infeasible_reason: str | None
     policy_summaries: list[str]
     proposed_methods: list[dict[str, Any]]
 
@@ -107,14 +107,14 @@ class ProposeVerificationPolicySubgraph:
             logger.info(f"Feasibility check failed: {feasibility_result.reason}")
             return {
                 "feasible": False,
-                "feasibility_reason": feasibility_result.reason,
+                "infeasible_reason": feasibility_result.reason,
                 "policy_summaries": [],
             }
 
         logger.info("Feasibility check passed, policy summaries generated")
         return {
             "feasible": True,
-            "feasibility_reason": None,
+            "infeasible_reason": None,
             "policy_summaries": policy_summaries_result.summaries,
         }
 
