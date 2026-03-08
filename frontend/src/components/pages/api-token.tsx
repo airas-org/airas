@@ -40,7 +40,7 @@ export function ApiTokenPage() {
     const entry: TokenEntry = {
       id: `tok-${Date.now()}`,
       name: newTokenName.trim(),
-      token,
+      token: `airas_sk_...${token.slice(-4)}`,
       createdAt: new Date(),
       lastUsed: null,
     };
