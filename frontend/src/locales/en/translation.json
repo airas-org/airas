@@ -122,7 +122,7 @@
       }
     },
     "detail": {
-      "newTitle": "New Verification",
+      "newTitle": "Untitled",
       "copyTitle": "(Copy)",
       "chatInput": {
         "title": "What would you like to verify?",
@@ -143,6 +143,7 @@
         "reproductionExperiment": "I want to reproduce the following paper: ",
         "performanceBenchmark": "I want to run the following performance benchmark: "
       },
+      "proposingPolicies": "Creating verification policies...",
       "proposedMethods": {
         "title": "Proposed Verification Methods",
         "subtitle": "AI proposed {{count}} verification methods. Please select one.",
@@ -151,10 +152,18 @@
         "method": "Method",
         "otherMethods": "Other methods ({{count}})"
       },
+      "userInput": {
+        "cardTitle": "User Input",
+        "titlePlaceholder": "Untitled"
+      },
       "verificationPlan": {
         "title": "Verification Plan",
         "whatToVerify": "What to Verify",
-        "steps": "Steps"
+        "steps": "Steps",
+        "experimentSettings": "Experiment Settings",
+        "experimentLabel": "Experiment {{number}}",
+        "modificationNotes": "Modification Content",
+        "repositoryName": "Repository Name"
       },
       "experimentCode": {
         "title": "Experiment Code"

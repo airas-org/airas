@@ -8,5 +8,6 @@ export type GenerateMethodRequestBody = {
     user_query: string;
     selected_policy: ProposedMethodSchema;
     llm_mapping?: (GenerateVerificationMethodLLMMapping | null);
+    verification_id?: (string | null);
 };
 

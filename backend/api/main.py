@@ -8,13 +8,15 @@ from sqlmodel import SQLModel
 
 import api.routes.v1 as routes_v1
 from airas.container import Container
+from airas.infra.db.models.verification import (
+    VerificationModel as _VerificationModel,  # noqa: F401
+)
 from airas.usecases.autonomous_research.in_memory_e2e_research_service import (
     InMemoryE2EResearchService,
 )
 from api.ee.auth.dependencies import get_current_user_id
 from api.ee.settings import get_ee_settings
 from api.routes.v1 import (
-    assisted_research,
     bibfile,
     code,
     datasets,
@@ -107,7 +109,6 @@ app.include_router(latex.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(research_history.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(github_actions.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(github.router, prefix="/airas/v1", dependencies=auth_deps)
-app.include_router(assisted_research.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(
     interactive_repo_agent.router, prefix="/airas/v1", dependencies=auth_deps
 )

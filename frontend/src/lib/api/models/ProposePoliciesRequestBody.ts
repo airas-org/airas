@@ -6,5 +6,6 @@ import type { ProposeVerificationPolicyLLMMapping } from './ProposeVerificationP
 export type ProposePoliciesRequestBody = {
     user_query: string;
     llm_mapping?: (ProposeVerificationPolicyLLMMapping | null);
+    verification_id?: (string | null);
 };
 

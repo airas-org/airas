@@ -18,27 +18,10 @@ from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.qdrant_client import QdrantClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
-from airas.repository.assisted_research_link_repository import (
-    AssistedResearchLinkRepository,
-)
-from airas.repository.assisted_research_session_repository import (
-    AssistedResearchSessionRepository,
-)
-from airas.repository.assisted_research_step_repository import (
-    AssistedResearchStepRepository,
-)
 from airas.repository.user_api_key_repository import UserApiKeyRepository
 from airas.repository.user_github_token_repository import UserGitHubTokenRepository
 from airas.repository.user_plan_repository import UserPlanRepository
-from airas.usecases.assisted_research.assisted_research_link_service import (
-    AssistedResearchLinkService,
-)
-from airas.usecases.assisted_research.assisted_research_session_service import (
-    AssistedResearchSessionService,
-)
-from airas.usecases.assisted_research.assisted_research_step_service import (
-    AssistedResearchStepService,
-)
+from airas.repository.verification_repository import VerificationRepository
 from airas.usecases.autonomous_research.sql_e2e_research_service import (
     SqlE2EResearchService,
 )
@@ -49,6 +32,7 @@ from airas.usecases.ee.plan_service import PlanService
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
+from airas.usecases.verification.verification_service import VerificationService
 
 T = TypeVar("T")
 
@@ -204,28 +188,6 @@ class Container(containers.DeclarativeContainer):
         session_factory=session_factory,
     )
 
-    ## ---  Assisted Research Service ---
-    assisted_research_session_repository = providers.Factory(
-        AssistedResearchSessionRepository, db=db_session
-    )
-    assisted_research_session_service = providers.Factory(
-        AssistedResearchSessionService, repo=assisted_research_session_repository
-    )
-
-    assisted_research_step_repository = providers.Factory(
-        AssistedResearchStepRepository, db=db_session
-    )
-    assisted_research_step_service = providers.Factory(
-        AssistedResearchStepService, repo=assisted_research_step_repository
-    )
-
-    assisted_research_link_repository = providers.Factory(
-        AssistedResearchLinkRepository, db=db_session
-    )
-    assisted_research_link_service = providers.Factory(
-        AssistedResearchLinkService, repo=assisted_research_link_repository
-    )
-
     # --- EE: API Key & Plan Services ---
     user_api_key_repository = providers.Factory(UserApiKeyRepository, db=db_session)
     api_key_service = providers.Factory(ApiKeyService, repo=user_api_key_repository)
@@ -245,6 +207,12 @@ class Container(containers.DeclarativeContainer):
     )
     github_oauth_service = providers.Factory(
         GitHubOAuthService, repo=user_github_token_repository
+    )
+
+    ## --- Verification Service ---
+    verification_repository = providers.Factory(VerificationRepository, db=db_session)
+    verification_service = providers.Factory(
+        VerificationService, repo=verification_repository
     )
 
     ## ---  Autonomous Research Service ---

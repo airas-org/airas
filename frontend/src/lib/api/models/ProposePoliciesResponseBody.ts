@@ -7,5 +7,6 @@ export type ProposePoliciesResponseBody = {
     feasible: boolean;
     infeasible_reason: (string | null);
     proposed_methods: Array<ProposedMethodSchema>;
+    execution_time: Record<string, Array<number>>;
 };
 

@@ -1,3 +1,4 @@
+import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { OpenAPI } from "@/lib/api/core/OpenAPI";
@@ -11,6 +12,59 @@ import { PaperWritingSection } from "./paper-writing";
 import { ProposedMethodsList } from "./proposed-methods";
 import { TocNav } from "./toc-nav";
 import { VerificationPlanView } from "./verification-plan";
+
+interface UserInputCardProps {
+  query: string;
+  title: string;
+  onTitleChange: (title: string) => void;
+}
+
+function UserInputCard({ query, title, onTitleChange }: UserInputCardProps) {
+  const { t } = useTranslation();
+  const [draft, setDraft] = useState(title);
+
+  useEffect(() => {
+    setDraft(title);
+  }, [title]);
+
+  const handleBlur = () => {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== title) {
+      onTitleChange(trimmed);
+    } else if (!trimmed) {
+      setDraft(title);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.currentTarget.blur();
+    } else if (e.key === "Escape") {
+      setDraft(title);
+      e.currentTarget.blur();
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <input
+        type="text"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        placeholder={t("verification.detail.userInput.titlePlaceholder")}
+        className="w-full text-heading-3 font-heading-3 text-default-font bg-transparent border-none outline-none focus:ring-0 placeholder:text-neutral-400"
+      />
+      <div className="rounded-lg border border-border bg-card p-6">
+        <h2 className="text-lg font-semibold text-foreground">
+          {t("verification.detail.userInput.cardTitle")}
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">{query}</p>
+      </div>
+    </div>
+  );
+}
 
 interface VerificationDetailPageProps {
   verification: Verification | null;
@@ -99,7 +153,7 @@ export function VerificationDetailPage({
       setErrorMessage(null);
       onUpdateVerification(verification.id, {
         query,
-        title: query.slice(0, 30) + (query.length > 30 ? "..." : ""),
+        phase: "proposing-policies",
       });
 
       try {
@@ -111,7 +165,7 @@ export function VerificationDetailPage({
             "Content-Type": "application/json",
             ...authHeaders,
           },
-          body: JSON.stringify({ user_query: query }),
+          body: JSON.stringify({ user_query: query, verification_id: verification.id }),
         });
 
         if (!res.ok) {
@@ -132,15 +186,15 @@ export function VerificationDetailPage({
             title: string;
             what_to_verify: string;
             method: string;
-            pros: string[];
-            cons: string[];
+            pros?: string[];
+            cons?: string[];
           }) => ({
             id: m.id,
             title: m.title,
             whatToVerify: m.what_to_verify,
             method: m.method,
-            pros: m.pros,
-            cons: m.cons,
+            pros: m.pros ?? [],
+            cons: m.cons ?? [],
           }),
         );
 
@@ -182,6 +236,7 @@ export function VerificationDetailPage({
               pros: selected.pros,
               cons: selected.cons,
             },
+            verification_id: verification.id,
           }),
         });
 
@@ -212,7 +267,7 @@ export function VerificationDetailPage({
     async (
       modificationNotes: string,
       repositoryName: string,
-      updatedSettings: Record<string, Record<string, string>>,
+      updatedSettings: Record<string, string>,
     ) => {
       if (!verification?.verificationMethod) return;
 
@@ -249,6 +304,7 @@ export function VerificationDetailPage({
             github_owner: githubOwner,
             branch_name: "main",
             github_actions_agent: "claude_code",
+            verification_id: verification.id,
           }),
         });
 
@@ -407,16 +463,24 @@ export function VerificationDetailPage({
         <div className="flex-1">
           {tocEntries.length > 0 && <TocNav entries={tocEntries} />}
           <div className="flex-1 p-6 xl:pr-44 space-y-6 w-full">
-            <div className="border-b border-solid border-neutral-border pb-4">
-              <h2 className="text-heading-3 font-heading-3 text-default-font">
-                {verification.title}
-              </h2>
-              <p className="text-body font-body text-subtext-color mt-1">{verification.query}</p>
-            </div>
-
             {errorMessage && (
               <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3">
                 <p className="text-sm text-red-700">{errorMessage}</p>
+              </div>
+            )}
+
+            <UserInputCard
+              query={verification.query}
+              title={verification.title}
+              onTitleChange={(title) => onUpdateVerification(verification.id, { title })}
+            />
+
+            {verification.phase === "proposing-policies" && (
+              <div className="flex items-center gap-2 px-3 py-4">
+                <Loader size="small" />
+                <span className="text-xs text-muted-foreground">
+                  {t("verification.detail.proposingPolicies")}
+                </span>
               </div>
             )}
 
