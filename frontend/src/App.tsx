@@ -393,7 +393,9 @@ export default function App() {
   }, [isMobile]);
 
   const toggleLanguage = useCallback(() => {
-    i18n.changeLanguage(i18n.language === "ja" ? "en" : "ja");
+    const currentLanguage = i18n.resolvedLanguage ?? i18n.language;
+    const isJapanese = currentLanguage?.toLowerCase().startsWith("ja");
+    i18n.changeLanguage(isJapanese ? "en" : "ja");
   }, [i18n]);
 
   const isSettingsView = activeSection === "settings";

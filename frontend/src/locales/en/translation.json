@@ -171,6 +171,8 @@
       "paper": {
         "title": "Paper"
       },
+      "githubUrl": "GitHub URL:",
+      "editOnOverleaf": "Edit on Overleaf",
       "tocLabels": {
         "methods": "Methods",
         "plan": "Plan",

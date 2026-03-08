@@ -76,7 +76,7 @@ export function PaperWritingSection({
             {t("verification.detail.paper.title")}
           </h2>
           <div className="mt-3 flex items-center gap-2">
-            <span className="text-sm font-medium text-foreground">GitHub URL:</span>
+            <span className="text-sm font-medium text-foreground">{t("verification.detail.githubUrl")}</span>
             <a
               href={paperDraft.paperUrl}
               target="_blank"
@@ -93,7 +93,7 @@ export function PaperWritingSection({
               rel="noopener noreferrer"
               className="rounded-md bg-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-300 hover:text-neutral-900 transition-colors"
             >
-              Edit on Overleaf
+              {t("verification.detail.editOnOverleaf")}
             </a>
           </div>
         </div>
