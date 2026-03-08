@@ -1,219 +1,164 @@
-import { Eye, EyeOff, Loader2, Save, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { OpenAPI } from "@/lib/api";
+import { Badge, Button, TextField } from "@/ui";
 
-type ApiProvider = "openai" | "anthropic" | "gemini";
-
-interface ApiKeyEntry {
-  provider: ApiProvider;
-  masked_key: string;
-  created_at: string;
-  updated_at: string;
+interface TokenEntry {
+  id: string;
+  name: string;
+  token: string;
+  createdAt: Date;
+  lastUsed: Date | null;
 }
 
-const PROVIDERS: { id: ApiProvider; label: string; placeholder: string }[] = [
-  { id: "openai", label: "OpenAI", placeholder: "sk-..." },
-  { id: "anthropic", label: "Anthropic", placeholder: "sk-ant-..." },
-  { id: "gemini", label: "Gemini", placeholder: "AI..." },
+const mockTokens: TokenEntry[] = [
+  {
+    id: "tok-1",
+    name: "Research Script",
+    token: "airas_sk_...3f8a",
+    createdAt: new Date("2026-02-15"),
+    lastUsed: new Date("2026-03-03"),
+  },
+  {
+    id: "tok-2",
+    name: "CI/CD Pipeline",
+    token: "airas_sk_...9b2c",
+    createdAt: new Date("2026-01-20"),
+    lastUsed: new Date("2026-02-28"),
+  },
 ];
 
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (OpenAPI.TOKEN) {
-    const token =
-      typeof OpenAPI.TOKEN === "function"
-        ? await (OpenAPI.TOKEN as (options: unknown) => Promise<string>)({})
-        : OpenAPI.TOKEN;
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
-  const res = await fetch(`${OpenAPI.BASE}/airas/ee${path}`, {
-    ...init,
-    headers: { ...headers, ...(init?.headers as Record<string, string>) },
-  });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json() as Promise<T>;
-}
-
 export function ApiTokenPage() {
-  const { t } = useTranslation();
-  const [savedKeys, setSavedKeys] = useState<ApiKeyEntry[]>([]);
-  const [drafts, setDrafts] = useState<Record<ApiProvider, string>>({
-    openai: "",
-    anthropic: "",
-    gemini: "",
-  });
-  const [visibleDrafts, setVisibleDrafts] = useState<Record<ApiProvider, boolean>>({
-    openai: false,
-    anthropic: false,
-    gemini: false,
-  });
-  const [saving, setSaving] = useState<ApiProvider | null>(null);
-  const [deleting, setDeleting] = useState<ApiProvider | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [requiresApiKeys, setRequiresApiKeys] = useState(true);
+  const { t, i18n } = useTranslation();
+  const [tokens, setTokens] = useState<TokenEntry[]>(mockTokens);
+  const [newTokenName, setNewTokenName] = useState("");
+  const [generatedToken, setGeneratedToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const fetchPlan = useCallback(async () => {
-    try {
-      const data = await apiFetch<{ requires_api_keys: boolean }>("/plan");
-      setRequiresApiKeys(data.requires_api_keys);
-    } catch {
-      setRequiresApiKeys(true);
-    }
-  }, []);
-
-  const fetchKeys = useCallback(async () => {
-    try {
-      const data = await apiFetch<{ keys: ApiKeyEntry[] }>("/api-keys");
-      setSavedKeys(data.keys);
-    } catch {
-      setSavedKeys([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetchPlan();
-    void fetchKeys();
-  }, [fetchPlan, fetchKeys]);
-
-  const handleSave = async (provider: ApiProvider) => {
-    const key = drafts[provider].trim();
-    if (!key) return;
-    setSaving(provider);
-    setError(null);
-    try {
-      await apiFetch("/api-keys", {
-        method: "POST",
-        body: JSON.stringify({ provider, api_key: key }),
-      });
-      setDrafts((prev) => ({ ...prev, [provider]: "" }));
-      await fetchKeys();
-    } catch {
-      setError(`Failed to save ${provider} key`);
-    } finally {
-      setSaving(null);
-    }
+  const handleGenerate = () => {
+    if (!newTokenName.trim()) return;
+    const token = `airas_sk_${crypto.randomUUID().replace(/-/g, "").slice(0, 32)}`;
+    const entry: TokenEntry = {
+      id: `tok-${Date.now()}`,
+      name: newTokenName.trim(),
+      token,
+      createdAt: new Date(),
+      lastUsed: null,
+    };
+    setTokens((prev) => [entry, ...prev]);
+    setGeneratedToken(token);
+    setNewTokenName("");
   };
 
-  const handleDelete = async (provider: ApiProvider) => {
-    setDeleting(provider);
-    setError(null);
-    try {
-      await apiFetch(`/api-keys/${provider}`, { method: "DELETE" });
-      await fetchKeys();
-    } catch {
-      setError(`Failed to delete ${provider} key`);
-    } finally {
-      setDeleting(null);
-    }
+  const handleCopy = () => {
+    if (!generatedToken) return;
+    void navigator.clipboard.writeText(generatedToken);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  const getSavedKey = (provider: ApiProvider) => savedKeys.find((k) => k.provider === provider);
-
-  const toggleVisibility = (provider: ApiProvider) => {
-    setVisibleDrafts((prev) => ({ ...prev, [provider]: !prev[provider] }));
+  const handleRevoke = (id: string) => {
+    setTokens((prev) => prev.filter((t) => t.id !== id));
   };
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-2xl mx-auto px-8 py-8">
+      <div className="max-w-3xl mx-auto px-8 py-8">
         <h1 className="text-heading-2 font-heading-2 text-default-font">{t("apiToken.title")}</h1>
         <p className="text-caption font-caption text-subtext-color mt-1">
           {t("apiToken.pageSubtitle")}
         </p>
 
-        {error && (
-          <div className="mt-4 rounded-md border border-error-200 bg-error-50 px-4 py-3 text-caption font-caption text-error-700">
-            {error}
-          </div>
-        )}
-
-        {requiresApiKeys ? (
-          <div className="mt-6 rounded-lg border border-border bg-card p-5">
-            <h2 className="text-body-bold font-body-bold text-default-font">{t("apiToken.apiKeysSection")}</h2>
-            <p className="text-caption font-caption text-subtext-color mt-1">
-              APIキーは暗号化されて安全に保存されます。
-            </p>
-            <div className="mt-4 space-y-4">
-              {PROVIDERS.map(({ id, label, placeholder }) => {
-                const saved = getSavedKey(id);
-                return (
-                  <div key={id} className="space-y-3 rounded-md bg-neutral-50 p-4">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-body-bold font-body-bold text-default-font">
-                        {label}
-                      </Label>
-                      {saved && (
-                        <span className="text-caption font-caption text-subtext-color font-mono">
-                          {saved.masked_key}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1">
-                        <Input
-                          type={visibleDrafts[id] ? "text" : "password"}
-                          value={drafts[id]}
-                          onChange={(e) => setDrafts((prev) => ({ ...prev, [id]: e.target.value }))}
-                          placeholder={saved ? "Enter new key to update..." : placeholder}
-                          className="pr-10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => toggleVisibility(id)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-subtext-color hover:text-default-font cursor-pointer"
-                        >
-                          {visibleDrafts[id] ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => handleSave(id)}
-                        disabled={!drafts[id].trim() || saving === id}
-                      >
-                        {saving === id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
-                      </Button>
-                      {saved && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(id)}
-                          disabled={deleting === id}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          {deleting === id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+        {/* Generate new token */}
+        <div className="mt-6 rounded-lg border border-border bg-card p-5">
+          <h2 className="text-body-bold font-body-bold text-default-font">
+            {t("apiToken.generateSection")}
+          </h2>
+          <div className="mt-3 flex items-end gap-3">
+            <div className="flex-1">
+              <TextField label={t("apiToken.tokenName")}>
+                <TextField.Input
+                  placeholder={t("apiToken.tokenNamePlaceholder")}
+                  value={newTokenName}
+                  onChange={(e) => setNewTokenName(e.target.value)}
+                />
+              </TextField>
             </div>
+            <Button onClick={handleGenerate} disabled={!newTokenName.trim()}>
+              {t("apiToken.generateButton")}
+            </Button>
           </div>
-        ) : (
-          <div className="mt-6 rounded-lg border border-border bg-card p-5">
-            <p className="text-body font-body text-subtext-color">
-              現在のプランではAPIキーの設定は不要です。
+
+          {generatedToken && (
+            <div className="mt-4 rounded-md border border-warning-200 bg-warning-50 p-3">
+              <p className="text-xs font-semibold text-warning-800">{t("apiToken.tokenWarning")}</p>
+              <div className="mt-2 flex items-center gap-2">
+                <code className="flex-1 rounded bg-neutral-900 px-3 py-2 text-xs text-neutral-100 font-mono break-all">
+                  {generatedToken}
+                </code>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="rounded-md bg-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-300 hover:text-neutral-900 transition-colors cursor-pointer shrink-0"
+                >
+                  {copied ? t("apiToken.copied") : t("apiToken.copy")}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Existing tokens */}
+        <div className="mt-6 rounded-lg border border-border bg-card p-5">
+          <h2 className="text-body-bold font-body-bold text-default-font">
+            {t("apiToken.issuedTokens")}
+          </h2>
+          {tokens.length === 0 ? (
+            <p className="mt-3 text-caption font-caption text-subtext-color">
+              {t("apiToken.noTokensYet")}
             </p>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {tokens.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="flex items-center justify-between rounded-md border border-border px-4 py-3"
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-default-font">{entry.name}</span>
+                      <Badge variant="neutral" className="text-[10px]">
+                        {entry.token}
+                      </Badge>
+                    </div>
+                    <span className="text-[11px] text-subtext-color">
+                      {t("apiToken.createdAt")}: {entry.createdAt.toLocaleDateString(i18n.language)}
+                      {entry.lastUsed &&
+                        ` / ${t("apiToken.lastUsed")}: ${entry.lastUsed.toLocaleDateString(i18n.language)}`}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRevoke(entry.id)}
+                    className="rounded-md px-3 py-1.5 text-xs font-medium text-error-700 hover:bg-error-50 transition-colors cursor-pointer"
+                  >
+                    {t("apiToken.revoke")}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Usage example */}
+        <div className="mt-6 rounded-lg border border-border bg-card p-5">
+          <h2 className="text-body-bold font-body-bold text-default-font">
+            {t("apiToken.usageExample")}
+          </h2>
+          <div className="mt-3 rounded-md bg-neutral-900 p-4 overflow-x-auto">
+            <pre className="text-xs text-neutral-100 font-mono whitespace-pre">{`curl -H "Authorization: Bearer airas_sk_your_token_here" \\
+  https://api.airas.io/v1/verifications`}</pre>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
