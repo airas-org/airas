@@ -33,7 +33,6 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
   const [researchTopic, setResearchTopic] = useState(
     "Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments",
   );
-  const [githubOwner, setGithubOwner] = useState("auto-res2");
   const [repoName, setRepoName] = useState("");
   const [branch, setBranch] = useState("main");
   const [runnerLabels, setRunnerLabels] = useState("ubuntu-latest");
@@ -61,7 +60,6 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
 
   const isFormValid = [
     researchTopic,
-    githubOwner,
     repoName,
     branch,
     runnerLabels,
@@ -83,7 +81,6 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
 
     const payload: TopicOpenEndedResearchRequestBody = {
       github_config: {
-        github_owner: githubOwner,
         repository_name: repoName,
         branch_name: branch,
       },
@@ -126,7 +123,6 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
   }, [
     isFormValid,
     researchTopic,
-    githubOwner,
     repoName,
     branch,
     runnerLabels,
@@ -194,26 +190,6 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 </span>
               </div>
               <div className="flex w-full flex-wrap items-start gap-3">
-                <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                  <div className="flex items-center gap-1">
-                    <span className="text-caption font-caption text-default-font">
-                      {t("autonomous.topicDriven.owner")}
-                    </span>
-                    <span className="text-caption font-caption text-error-500">*</span>
-                  </div>
-                  <TextField
-                    className="h-auto w-full flex-none"
-                    variant="outline"
-                    label=""
-                    helpText=""
-                  >
-                    <TextField.Input
-                      placeholder="username"
-                      value={githubOwner}
-                      onChange={(e) => setGithubOwner(e.target.value)}
-                    />
-                  </TextField>
-                </div>
                 <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
                   <div className="flex items-center gap-1">
                     <span className="text-caption font-caption text-default-font">

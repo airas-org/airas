@@ -44,7 +44,6 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
   const [researchTopic, setResearchTopic] = useState("");
 
   // GitHub config
-  const [githubOwner, setGithubOwner] = useState("");
   const [repoName, setRepoName] = useState("");
   const [branch, setBranch] = useState("main");
   const [isPrivate, setIsPrivate] = useState(false);
@@ -81,7 +80,6 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
     experimentalCode,
     expectedResult,
     expectedConclusion,
-    githubOwner,
     repoName,
     branch,
     runnerLabels,
@@ -103,7 +101,6 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
 
     const payload = {
       github_config: {
-        github_owner: githubOwner,
         repository_name: repoName,
         branch_name: branch,
       },
@@ -160,7 +157,6 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
     expectedResult,
     expectedConclusion,
     researchTopic,
-    githubOwner,
     repoName,
     branch,
     isPrivate,
@@ -372,26 +368,6 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                 </span>
               </div>
               <div className="flex w-full flex-wrap items-start gap-3">
-                <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                  <div className="flex items-center gap-1">
-                    <span className="text-caption font-caption text-default-font">
-                      {t("autonomous.hypothesisDriven.owner")}
-                    </span>
-                    <span className="text-caption font-caption text-error-500">*</span>
-                  </div>
-                  <TextField
-                    className="h-auto w-full flex-none"
-                    variant="outline"
-                    label=""
-                    helpText=""
-                  >
-                    <TextField.Input
-                      placeholder="username"
-                      value={githubOwner}
-                      onChange={(e) => setGithubOwner(e.target.value)}
-                    />
-                  </TextField>
-                </div>
                 <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
                   <div className="flex items-center gap-1">
                     <span className="text-caption font-caption text-default-font">

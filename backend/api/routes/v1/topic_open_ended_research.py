@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from langfuse import observe
 
 from airas.container import Container
+from airas.core.types.github import GitHubConfig
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.db.models.e2e import Status
 from airas.infra.github_client import GithubClient
@@ -23,7 +24,11 @@ from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_end
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
-from api.ee.auth.dependencies import get_current_user_id, get_github_client
+from api.ee.auth.dependencies import (
+    get_current_user_id,
+    get_github_client,
+    get_github_owner,
+)
 from api.schemas.topic_open_ended_research import (
     TopicOpenEndedResearchListItemResponse,
     TopicOpenEndedResearchListResponseBody,
@@ -53,6 +58,7 @@ async def _execute_topic_open_ended_research(
     task_id: uuid.UUID,
     created_by: uuid.UUID,
     request: TopicOpenEndedResearchRequestBody,
+    github_owner: str,
     search_index: AirasDbPaperSearchIndex | None,
     github_client: GithubClient,
     arxiv_client: ArxivClient,
@@ -102,7 +108,11 @@ async def _execute_topic_open_ended_research(
         async for chunk in graph.astream(
             {
                 "task_id": task_id,
-                "github_config": request.github_config,
+                "github_config": GitHubConfig(
+                    github_owner=github_owner,
+                    repository_name=request.github_config.repository_name,
+                    branch_name=request.github_config.branch_name,
+                ),
                 "research_topic": request.research_topic,
             },
             config=config,
@@ -141,6 +151,7 @@ async def execute_topic_open_ended_research(
     request: TopicOpenEndedResearchRequestBody,
     fastapi_request: Request,
     current_user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
+    github_owner: Annotated[str, Depends(get_github_owner)],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
     arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
     langchain_client: Annotated[
@@ -174,6 +185,7 @@ async def execute_topic_open_ended_research(
             task_id=task_id,
             created_by=current_user_id,
             request=request,
+            github_owner=github_owner,
             search_index=search_index,
             github_client=github_client,
             arxiv_client=arxiv_client,

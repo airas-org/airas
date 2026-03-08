@@ -2,13 +2,13 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { GitHubConfig } from './GitHubConfig';
+import type { GitHubConfigRequest } from './GitHubConfigRequest';
 import type { HypothesisDrivenResearchLLMMapping } from './HypothesisDrivenResearchLLMMapping';
 import type { ResearchHypothesis } from './ResearchHypothesis';
 import type { RunnerConfig } from './RunnerConfig';
 import type { WandbConfig } from './WandbConfig';
 export type HypothesisDrivenResearchRequestBody = {
-    github_config: GitHubConfig;
+    github_config: GitHubConfigRequest;
     research_hypothesis: ResearchHypothesis;
     research_topic?: string;
     runner_config: RunnerConfig;

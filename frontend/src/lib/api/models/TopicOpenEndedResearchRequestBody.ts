@@ -2,12 +2,12 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { GitHubConfig } from './GitHubConfig';
+import type { GitHubConfigRequest } from './GitHubConfigRequest';
 import type { RunnerConfig } from './RunnerConfig';
 import type { TopicOpenEndedResearchLLMMapping } from './TopicOpenEndedResearchLLMMapping';
 import type { WandbConfig } from './WandbConfig';
 export type TopicOpenEndedResearchRequestBody = {
-    github_config: GitHubConfig;
+    github_config: GitHubConfigRequest;
     research_topic: string;
     runner_config: RunnerConfig;
     wandb_config: WandbConfig;

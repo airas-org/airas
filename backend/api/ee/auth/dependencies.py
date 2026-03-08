@@ -32,6 +32,38 @@ def get_current_user_id(
 
 
 @inject
+def get_github_owner(
+    service: Annotated[
+        GitHubOAuthService, Depends(Provide[Container.github_oauth_service])
+    ],
+    x_github_session: Annotated[str | None, Header()] = None,
+) -> str:
+    """Return the GitHub login of the connected account."""
+    settings = get_ee_settings()
+    if settings.enabled:
+        if not x_github_session:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="GitHub account not connected. Please connect your GitHub account.",
+            )
+        github_status = service.get_status(x_github_session)
+        if not github_status or not github_status.get("github_login"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="GitHub account not connected. Please connect your GitHub account.",
+            )
+        return github_status["github_login"]
+    else:
+        owner = os.getenv("GITHUB_OWNER", "")
+        if not owner:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="GITHUB_OWNER environment variable is not set.",
+            )
+        return owner
+
+
+@inject
 def get_github_client(
     service: Annotated[
         GitHubOAuthService, Depends(Provide[Container.github_oauth_service])

@@ -2697,6 +2697,22 @@ components:
       - repository_name
       - branch_name
       title: GitHubConfig
+    GitHubConfigRequest:
+      properties:
+        repository_name:
+          type: string
+          title: Repository Name
+          description: Name of the repository
+        branch_name:
+          type: string
+          title: Branch Name
+          description: Branch name
+      type: object
+      required:
+      - repository_name
+      - branch_name
+      title: GitHubConfigRequest
+      description: Request body schema for GitHub config (owner is resolved server-side).
     GithubDownloadRequest:
       properties:
         github_config:
@@ -2866,7 +2882,7 @@ components:
     HypothesisDrivenResearchRequestBody:
       properties:
         github_config:
-          $ref: '#/components/schemas/GitHubConfig'
+          $ref: '#/components/schemas/GitHubConfigRequest'
         research_hypothesis:
           $ref: '#/components/schemas/ResearchHypothesis'
         research_topic:
@@ -4325,7 +4341,7 @@ components:
     TopicOpenEndedResearchRequestBody:
       properties:
         github_config:
-          $ref: '#/components/schemas/GitHubConfig'
+          $ref: '#/components/schemas/GitHubConfigRequest'
         research_topic:
           type: string
           title: Research Topic
