@@ -14,6 +14,7 @@ import {
   FeatherX,
 } from "@subframe/core";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { ResearchSection } from "@/types/research";
 import { Badge } from "@/ui/components/Badge";
 import { Button } from "@/ui/components/Button";
@@ -33,6 +34,7 @@ export function TopicDrivenList({
   onSelectSession,
   onNavigateToInput,
 }: TopicDrivenListProps) {
+  const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
 
@@ -50,20 +52,20 @@ export function TopicDrivenList({
     if (status === "completed") {
       return (
         <Badge variant="success" icon={<FeatherCheck />}>
-          完了
+          {t("autonomous.topicDriven.statusCompleted")}
         </Badge>
       );
     }
     if (status === "failed") {
       return (
         <Badge variant="error" icon={<FeatherX />}>
-          失敗
+          {t("autonomous.topicDriven.statusFailed")}
         </Badge>
       );
     }
     return (
       <Badge variant="brand" icon={<FeatherLoader />}>
-        進行中
+        {t("autonomous.topicDriven.statusRunning")}
       </Badge>
     );
   };
@@ -78,10 +80,10 @@ export function TopicDrivenList({
             alt=""
           />
           <span className="text-heading-1 font-heading-1 text-default-font text-center">
-            研究セッション一覧
+            {t("autonomous.topicDriven.listTitle")}
           </span>
           <span className="text-body font-body text-subtext-color text-center">
-            過去に実行した自動研究セッションの履歴を確認できます
+            {t("autonomous.topicDriven.listSubtitle")}
           </span>
         </div>
         <div className="flex w-full items-center justify-between gap-3">
@@ -93,18 +95,18 @@ export function TopicDrivenList({
             icon={<FeatherSearch />}
           >
             <TextField.Input
-              placeholder="セッションを検索..."
+              placeholder={t("autonomous.topicDriven.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </TextField>
           <Button variant="brand-primary" icon={<FeatherPlus />} onClick={onNavigateToInput}>
-            新規研究を開始
+            {t("autonomous.topicDriven.newSession")}
           </Button>
         </div>
         <div className="flex w-full items-center gap-2 border-b border-solid border-neutral-border pb-3">
           <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
-            {filtered.length} 件のセッション
+            {t("autonomous.topicDriven.sessionCount", { count: filtered.length })}
           </span>
           <SubframeCore.DropdownMenu.Root>
             <SubframeCore.DropdownMenu.Trigger asChild>
@@ -114,20 +116,20 @@ export function TopicDrivenList({
                 icon={<FeatherArrowDownUp />}
                 iconRight={<FeatherChevronDown />}
               >
-                並び替え
+                {t("autonomous.topicDriven.sort")}
               </Button>
             </SubframeCore.DropdownMenu.Trigger>
             <SubframeCore.DropdownMenu.Portal>
               <SubframeCore.DropdownMenu.Content side="bottom" align="end" sideOffset={4} asChild>
                 <DropdownMenu>
                   <DropdownMenu.DropdownItem icon={null} onSelect={() => setSortKey("newest")}>
-                    作成日時（新しい順）
+                    {t("autonomous.topicDriven.sortNewest")}
                   </DropdownMenu.DropdownItem>
                   <DropdownMenu.DropdownItem icon={null} onSelect={() => setSortKey("oldest")}>
-                    作成日時（古い順）
+                    {t("autonomous.topicDriven.sortOldest")}
                   </DropdownMenu.DropdownItem>
                   <DropdownMenu.DropdownItem icon={null} onSelect={() => setSortKey("title")}>
-                    タイトル順
+                    {t("autonomous.topicDriven.sortTitle")}
                   </DropdownMenu.DropdownItem>
                 </DropdownMenu>
               </SubframeCore.DropdownMenu.Content>
@@ -139,12 +141,12 @@ export function TopicDrivenList({
             <div className="flex w-full flex-col items-center gap-4 py-12">
               <span className="text-body font-body text-subtext-color">
                 {searchQuery.trim()
-                  ? "検索結果が見つかりませんでした"
-                  : "まだ研究セッションがありません"}
+                  ? t("autonomous.topicDriven.noSearchResults")
+                  : t("autonomous.topicDriven.noSessions")}
               </span>
               {!searchQuery.trim() && (
                 <Button variant="brand-primary" icon={<FeatherPlus />} onClick={onNavigateToInput}>
-                  最初の研究を開始
+                  {t("autonomous.topicDriven.firstSession")}
                 </Button>
               )}
             </div>
@@ -170,7 +172,7 @@ export function TopicDrivenList({
                   <div className="flex items-center gap-1">
                     <FeatherCalendar className="text-caption font-caption text-subtext-color" />
                     <span className="text-caption font-caption text-subtext-color">
-                      {session.createdAt.toLocaleDateString("ja-JP", {
+                      {session.createdAt.toLocaleDateString(i18n.language, {
                         year: "numeric",
                         month: "long",
                         day: "numeric",

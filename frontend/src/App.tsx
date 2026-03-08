@@ -22,6 +22,7 @@ import {
 } from "@subframe/core";
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AUTONOMOUS_SUB_NAVS,
   type AutonomousSubNav,
@@ -109,6 +110,7 @@ function useEEComponents() {
 
 export default function App() {
   const eeComponents = useEEComponents();
+  const { t, i18n } = useTranslation();
 
   // Autonomous Research
   const [autonomousSectionsMap, setAutonomousSectionsMap] = useState<AutonomousSectionsMap>(
@@ -160,7 +162,7 @@ export default function App() {
   const handleCreateVerification = useCallback(() => {
     const newVerification: Verification = {
       id: `v-${Date.now()}`,
-      title: "新規検証",
+      title: t("verification.detail.newTitle"),
       query: "",
       createdAt: new Date(),
       phase: "initial",
@@ -168,7 +170,7 @@ export default function App() {
     setVerifications((prev) => [newVerification, ...prev]);
     setActiveVerificationId(newVerification.id);
     setActiveNav("verification");
-  }, []);
+  }, [t]);
 
   const handleSelectVerification = useCallback((id: string) => {
     setActiveVerificationId(id);
@@ -190,19 +192,22 @@ export default function App() {
     [activeVerificationId],
   );
 
-  const handleDuplicateVerification = useCallback((id: string) => {
-    setVerifications((prev) => {
-      const source = prev.find((v) => v.id === id);
-      if (!source) return prev;
-      const copy: Verification = {
-        ...source,
-        id: `v-${Date.now()}`,
-        title: `${source.title} (コピー)`,
-        createdAt: new Date(),
-      };
-      return [copy, ...prev];
-    });
-  }, []);
+  const handleDuplicateVerification = useCallback(
+    (id: string) => {
+      setVerifications((prev) => {
+        const source = prev.find((v) => v.id === id);
+        if (!source) return prev;
+        const copy: Verification = {
+          ...source,
+          id: `v-${Date.now()}`,
+          title: `${source.title} ${t("verification.detail.copyTitle")}`,
+          createdAt: new Date(),
+        };
+        return [copy, ...prev];
+      });
+    },
+    [t],
+  );
 
   const handleCreateWithMethod = useCallback(
     (sourceVerification: Verification, method: ProposedMethod) => {
@@ -360,12 +365,16 @@ export default function App() {
     if (isMobile) setSidebarOpen(false);
   }, [isMobile]);
 
+  const toggleLanguage = useCallback(() => {
+    i18n.changeLanguage(i18n.language === "ja" ? "en" : "ja");
+  }, [i18n]);
+
   // Handle OAuth callback route
   if (isEnterpriseEnabled() && window.location.pathname === "/auth/callback") {
     if (!eeComponents) {
       return (
         <div className="flex min-h-screen items-center justify-center">
-          <div className="text-muted-foreground">Loading...</div>
+          <div className="text-muted-foreground">{t("common.loading")}</div>
         </div>
       );
     }
@@ -408,7 +417,7 @@ export default function App() {
                     Dev
                   </Avatar>
                   <span className="flex-1 text-body font-body text-default-font text-left">
-                    開発者
+                    {t("userMenu.developer")}
                   </span>
                   <FeatherChevronUp className="h-4 w-4 text-subtext-color" />
                 </button>
@@ -423,7 +432,7 @@ export default function App() {
                         handleMobileNavClose();
                       }}
                     >
-                      プロフィール
+                      {t("userMenu.profile")}
                     </DropdownMenu.DropdownItem>
                     <DropdownMenu.DropdownItem
                       icon={<FeatherKey />}
@@ -432,7 +441,7 @@ export default function App() {
                         handleMobileNavClose();
                       }}
                     >
-                      API Token
+                      {t("userMenu.apiToken")}
                     </DropdownMenu.DropdownItem>
                     <DropdownMenu.DropdownItem
                       icon={<FeatherSettings />}
@@ -441,11 +450,11 @@ export default function App() {
                         handleMobileNavClose();
                       }}
                     >
-                      インテグレーション
+                      {t("userMenu.integration")}
                     </DropdownMenu.DropdownItem>
                     <DropdownMenu.DropdownDivider />
                     <DropdownMenu.DropdownItem icon={<FeatherLogOut />}>
-                      ログアウト
+                      {t("userMenu.logout")}
                     </DropdownMenu.DropdownItem>
                   </DropdownMenu>
                 </SubframeCore.DropdownMenu.Content>
@@ -461,7 +470,7 @@ export default function App() {
               handleMobileNavClose();
             }}
           >
-            ダッシュボード
+            {t("nav.dashboard")}
           </SidebarWithSections.NavItem>
           <SidebarWithSections.NavItem
             icon={<FeatherPlus />}
@@ -471,7 +480,7 @@ export default function App() {
             }}
             className="bg-brand-50"
           >
-            新規検証
+            {t("nav.newVerification")}
           </SidebarWithSections.NavItem>
           <SidebarWithSections.NavItem
             icon={<FeatherList />}
@@ -481,7 +490,7 @@ export default function App() {
               handleMobileNavClose();
             }}
           >
-            検証一覧
+            {t("nav.verificationList")}
           </SidebarWithSections.NavItem>
           <SidebarWithSections.NavItem
             icon={<FeatherSearch />}
@@ -491,7 +500,7 @@ export default function App() {
               handleMobileNavClose();
             }}
           >
-            検索
+            {t("nav.search")}
           </SidebarWithSections.NavItem>
           <SidebarWithSections.NavItem
             icon={<FeatherBell />}
@@ -501,13 +510,15 @@ export default function App() {
               handleMobileNavClose();
             }}
           >
-            通知
+            {t("nav.notifications")}
           </SidebarWithSections.NavItem>
           <SidebarWithSections.NavSection
             label={
               <>
-                自動研究{" "}
-                <span className="text-[10px] font-normal text-neutral-400">Experimental</span>
+                {t("nav.autonomousResearch")}{" "}
+                <span className="text-[10px] font-normal text-neutral-400">
+                  {t("nav.experimental")}
+                </span>
               </>
             }
           >
@@ -520,7 +531,7 @@ export default function App() {
                 handleMobileNavClose();
               }}
             >
-              Topic-Driven
+              {t("nav.topicDriven")}
             </SidebarWithSections.NavItem>
             <SidebarWithSections.NavItem
               icon={<span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
@@ -533,10 +544,10 @@ export default function App() {
                 handleMobileNavClose();
               }}
             >
-              Hypothesis-Driven
+              {t("nav.hypothesisDriven")}
             </SidebarWithSections.NavItem>
           </SidebarWithSections.NavSection>
-          <SidebarWithSections.NavSection label="Settings">
+          <SidebarWithSections.NavSection label={t("nav.settings")}>
             <SidebarWithSections.NavItem
               icon={<FeatherSettings />}
               selected={activeNav === "integration"}
@@ -545,7 +556,7 @@ export default function App() {
                 handleMobileNavClose();
               }}
             >
-              Integration
+              {t("nav.integration")}
             </SidebarWithSections.NavItem>
             <SidebarWithSections.NavItem
               icon={<FeatherUser />}
@@ -555,7 +566,7 @@ export default function App() {
                 handleMobileNavClose();
               }}
             >
-              User Plan
+              {t("nav.userPlan")}
             </SidebarWithSections.NavItem>
             <SidebarWithSections.NavItem
               icon={<FeatherUser />}
@@ -565,10 +576,10 @@ export default function App() {
                 handleMobileNavClose();
               }}
             >
-              プロフィール
+              {t("nav.profile")}
             </SidebarWithSections.NavItem>
           </SidebarWithSections.NavSection>
-          <SidebarWithSections.NavSection label="Support">
+          <SidebarWithSections.NavSection label={t("nav.support")}>
             <SidebarWithSections.NavItem
               icon={<FeatherMessageSquare />}
               selected={activeNav === "feedback"}
@@ -577,7 +588,7 @@ export default function App() {
                 handleMobileNavClose();
               }}
             >
-              お問い合わせ
+              {t("nav.feedback")}
             </SidebarWithSections.NavItem>
             <SidebarWithSections.NavItem
               icon={<FeatherHelpCircle />}
@@ -587,13 +598,13 @@ export default function App() {
                 handleMobileNavClose();
               }}
             >
-              ヘルプ
+              {t("nav.help")}
             </SidebarWithSections.NavItem>
             <SidebarWithSections.NavItem
               icon={<FeatherFileText />}
               onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
             >
-              ドキュメント
+              {t("nav.docs")}
             </SidebarWithSections.NavItem>
             <SidebarWithSections.NavItem
               icon={<FeatherShield />}
@@ -603,7 +614,7 @@ export default function App() {
                 handleMobileNavClose();
               }}
             >
-              利用規約
+              {t("nav.legal")}
             </SidebarWithSections.NavItem>
           </SidebarWithSections.NavSection>
         </SidebarWithSections>
@@ -638,6 +649,13 @@ export default function App() {
           rightSlot={
             <>
               <div className="hidden md:flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={toggleLanguage}
+                  className="text-caption font-caption text-subtext-color hover:text-default-font px-2 py-1 rounded border border-neutral-border hover:bg-neutral-100 transition-colors"
+                >
+                  {t("languageToggle.switchTo")}
+                </button>
                 <IconButton
                   variant="neutral-tertiary"
                   icon={<SiGithub className="h-4 w-4" />}

@@ -8,6 +8,7 @@ import {
   FeatherSettings,
 } from "@subframe/core";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AllLLMConfig } from "@/components/features/llm-config";
 import {
   type TopicOpenEndedResearchLLMMapping,
@@ -28,6 +29,7 @@ interface TopicDrivenInputProps {
 }
 
 export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInputProps) {
+  const { t } = useTranslation();
   const [researchTopic, setResearchTopic] = useState(
     "Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments",
   );
@@ -117,7 +119,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
         );
       onResearchStarted(response.task_id);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "自動研究の実行に失敗しました";
+      const message = err instanceof Error ? err.message : t("autonomous.topicDriven.runError");
       setError(message);
       setIsRunning(false);
     }
@@ -143,6 +145,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
     latexTemplateName,
     llmMapping,
     onResearchStarted,
+    t,
   ]);
 
   return (
@@ -150,7 +153,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
       <div className="flex w-full items-center justify-between border-b border-solid border-neutral-border bg-default-background px-6 py-4 sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <LinkButton variant="neutral" icon={<FeatherArrowLeft />} onClick={onBack}>
-            一覧に戻る
+            {t("autonomous.topicDriven.backToList")}
           </LinkButton>
           <div className="flex h-4 w-px flex-none flex-col items-center gap-2 bg-neutral-border" />
           <span className="text-heading-2 font-heading-2 text-default-font">
@@ -161,18 +164,20 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
       <div className="flex w-full grow shrink-0 basis-0 flex-col items-center px-6 py-6 overflow-auto">
         <div className="flex w-full max-w-[1024px] flex-col items-start gap-6 rounded-xl border border-solid border-neutral-border bg-neutral-800 px-6 py-6 shadow-sm">
           <span className="text-heading-2 font-heading-2 text-default-font">
-            新規研究セッション
+            {t("autonomous.topicDriven.newSessionTitle")}
           </span>
           <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-neutral-border" />
 
           <div className="flex w-full flex-col items-start gap-2">
             <div className="flex items-center gap-1">
-              <span className="text-body-bold font-body-bold text-default-font">研究テーマ</span>
+              <span className="text-body-bold font-body-bold text-default-font">
+                {t("autonomous.topicDriven.researchTopic")}
+              </span>
               <span className="text-body font-body text-error-500">*</span>
             </div>
             <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
               <TextArea.Input
-                placeholder="例: Vision-Language Models を用いた Video QA の性能向上手法"
+                placeholder={t("autonomous.topicDriven.researchTopicPlaceholder")}
                 value={researchTopic}
                 onChange={(e) => setResearchTopic(e.target.value)}
               />
@@ -183,12 +188,16 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
             <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
               <div className="flex w-full items-center gap-2">
                 <FeatherGithub className="text-body font-body text-default-font" />
-                <span className="text-body-bold font-body-bold text-default-font">GitHub 設定</span>
+                <span className="text-body-bold font-body-bold text-default-font">
+                  {t("autonomous.topicDriven.githubSettings")}
+                </span>
               </div>
               <div className="flex w-full flex-wrap items-start gap-3">
                 <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
                   <div className="flex items-center gap-1">
-                    <span className="text-caption font-caption text-default-font">オーナー</span>
+                    <span className="text-caption font-caption text-default-font">
+                      {t("autonomous.topicDriven.owner")}
+                    </span>
                     <span className="text-caption font-caption text-error-500">*</span>
                   </div>
                   <TextField
@@ -206,7 +215,9 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 </div>
                 <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
                   <div className="flex items-center gap-1">
-                    <span className="text-caption font-caption text-default-font">リポジトリ</span>
+                    <span className="text-caption font-caption text-default-font">
+                      {t("autonomous.topicDriven.repository")}
+                    </span>
                     <span className="text-caption font-caption text-error-500">*</span>
                   </div>
                   <TextField
@@ -224,7 +235,9 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 </div>
                 <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
                   <div className="flex items-center gap-1">
-                    <span className="text-caption font-caption text-default-font">ブランチ</span>
+                    <span className="text-caption font-caption text-default-font">
+                      {t("autonomous.topicDriven.branch")}
+                    </span>
                     <span className="text-caption font-caption text-error-500">*</span>
                   </div>
                   <TextField
@@ -244,7 +257,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
               <div className="flex w-full items-center gap-3">
                 <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
                 <span className="text-body font-body text-default-font">
-                  リポジトリをプライベートにする
+                  {t("autonomous.topicDriven.makePrivate")}
                 </span>
               </div>
             </div>
@@ -260,7 +273,9 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 <div className="flex w-full flex-wrap items-start gap-3">
                   <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
                     <div className="flex items-center gap-1">
-                      <span className="text-caption font-caption text-default-font">ラベル</span>
+                      <span className="text-caption font-caption text-default-font">
+                        {t("autonomous.topicDriven.runnerLabel")}
+                      </span>
                       <span className="text-caption font-caption text-error-500">*</span>
                     </div>
                     <TextField
@@ -278,7 +293,9 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                   </div>
                   <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
                     <div className="flex items-center gap-1">
-                      <span className="text-caption font-caption text-default-font">説明</span>
+                      <span className="text-caption font-caption text-default-font">
+                        {t("autonomous.topicDriven.runnerDescription")}
+                      </span>
                       <span className="text-caption font-caption text-error-500">*</span>
                     </div>
                     <TextField
@@ -351,7 +368,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
               <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
                 <FeatherSettings className="text-body font-body text-default-font" />
                 <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
-                  詳細設定
+                  {t("autonomous.topicDriven.advancedSettings")}
                 </span>
                 <Accordion.Chevron />
               </div>
@@ -363,7 +380,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 <TextField
                   className="h-auto min-w-[144px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="論文検索クエリ数"
+                  label={t("autonomous.topicDriven.numPaperSearchQueries")}
                   helpText=""
                 >
                   <TextField.Input
@@ -376,7 +393,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 <TextField
                   className="h-auto min-w-[144px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="1クエリあたりの取得論文数"
+                  label={t("autonomous.topicDriven.papersPerQuery")}
                   helpText=""
                 >
                   <TextField.Input
@@ -389,7 +406,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 <TextField
                   className="h-auto min-w-[144px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="仮説リファインメント回数"
+                  label={t("autonomous.topicDriven.hypothesisRefinementIterations")}
                   helpText=""
                 >
                   <TextField.Input
@@ -404,7 +421,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 <TextField
                   className="h-auto min-w-[144px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="実験モデル数"
+                  label={t("autonomous.topicDriven.numExperimentModels")}
                   helpText=""
                 >
                   <TextField.Input
@@ -417,7 +434,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 <TextField
                   className="h-auto min-w-[144px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="データセット数"
+                  label={t("autonomous.topicDriven.numExperimentDatasets")}
                   helpText=""
                 >
                   <TextField.Input
@@ -430,7 +447,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 <TextField
                   className="h-auto min-w-[144px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="比較手法数"
+                  label={t("autonomous.topicDriven.numComparativeMethods")}
                   helpText=""
                 >
                   <TextField.Input
@@ -445,7 +462,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 <TextField
                   className="h-auto min-w-[144px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="コードバリデーション回数"
+                  label={t("autonomous.topicDriven.codeValidationIterations")}
                   helpText=""
                 >
                   <TextField.Input
@@ -458,7 +475,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 <TextField
                   className="h-auto min-w-[144px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="論文リファインメント回数"
+                  label={t("autonomous.topicDriven.paperRefinementIterations")}
                   helpText=""
                 >
                   <TextField.Input
@@ -473,8 +490,8 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 <Select
                   className="h-auto min-w-[176px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="GitHub Actions エージェント"
-                  placeholder="選択してください"
+                  label={t("autonomous.topicDriven.githubActionsAgent")}
+                  placeholder={t("autonomous.topicDriven.selectPlaceholder")}
                   helpText=""
                   value={githubActionsAgent}
                   onValueChange={(val) =>
@@ -497,8 +514,8 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                 <Select
                   className="h-auto min-w-[176px] grow shrink-0 basis-0"
                   variant="outline"
-                  label="LaTeX テンプレート"
-                  placeholder="選択してください"
+                  label={t("autonomous.topicDriven.latexTemplate")}
+                  placeholder={t("autonomous.topicDriven.selectPlaceholder")}
                   helpText=""
                   value={latexTemplateName}
                   onValueChange={setLatexTemplateName}
@@ -516,7 +533,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
               <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
                 <FeatherSettings className="text-body font-body text-default-font" />
                 <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
-                  LLM 設定
+                  {t("autonomous.topicDriven.llmSettings")}
                 </span>
                 <Accordion.Chevron />
               </div>
@@ -537,7 +554,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
           <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-neutral-border" />
           <div className="flex w-full items-center justify-end gap-3">
             <Button variant="neutral-secondary" onClick={onBack}>
-              キャンセル
+              {t("autonomous.topicDriven.cancel")}
             </Button>
             <Button
               className="disabled:bg-neutral-600 disabled:opacity-60 hover:disabled:bg-neutral-600 active:disabled:bg-neutral-600"
@@ -548,7 +565,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
               disabled={isRunning || !isFormValid}
               onClick={handleRun}
             >
-              {isRunning ? "実行中..." : "自動研究を実行"}
+              {isRunning ? t("autonomous.topicDriven.running") : t("autonomous.topicDriven.run")}
             </Button>
           </div>
         </div>

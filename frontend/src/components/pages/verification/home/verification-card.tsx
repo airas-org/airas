@@ -1,5 +1,6 @@
 import * as SubframeCore from "@subframe/core";
 import { FeatherCopy, FeatherMoreVertical, FeatherTrash2 } from "@subframe/core";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/ui";
 import type { Verification, VerificationPhase } from "../types";
 
@@ -11,16 +12,6 @@ const badgeVariantMap: Record<VerificationPhase, "neutral" | "brand" | "warning"
   "code-generated": "warning",
   "experiments-done": "success",
   "paper-writing": "success",
-};
-
-const badgeLabelMap: Record<VerificationPhase, string> = {
-  initial: "未開始",
-  "methods-proposed": "方針提案済み",
-  "plan-generated": "計画済み",
-  "code-generating": "生成中",
-  "code-generated": "実装済み",
-  "experiments-done": "実験完了",
-  "paper-writing": "情報収集中",
 };
 
 interface VerificationCardProps {
@@ -36,6 +27,16 @@ export function VerificationCard({
   onDelete,
   onDuplicate,
 }: VerificationCardProps) {
+  const { t, i18n } = useTranslation();
+  const badgeLabelMap: Record<VerificationPhase, string> = {
+    initial: t("verification.home.badgeLabels.initial"),
+    "methods-proposed": t("verification.home.badgeLabels.methodsProposed"),
+    "plan-generated": t("verification.home.badgeLabels.planGenerated"),
+    "code-generating": t("verification.home.badgeLabels.codeGenerating"),
+    "code-generated": t("verification.home.badgeLabels.codeGenerated"),
+    "experiments-done": t("verification.home.badgeLabels.experimentsDone"),
+    "paper-writing": t("verification.home.badgeLabels.paperWriting"),
+  };
   const truncatedQuery =
     verification.query.length > 60 ? `${verification.query.slice(0, 60)}...` : verification.query;
 
@@ -97,7 +98,7 @@ export function VerificationCard({
       )}
       <div className="flex items-center justify-between mt-2.5">
         <span className="text-[11px] leading-[16px] text-neutral-400">
-          {verification.createdAt.toLocaleDateString("ja-JP")}
+          {verification.createdAt.toLocaleDateString(i18n.language)}
         </span>
         <Badge variant={badgeVariantMap[verification.phase]} className="h-5 text-[10px]">
           {badgeLabelMap[verification.phase]}

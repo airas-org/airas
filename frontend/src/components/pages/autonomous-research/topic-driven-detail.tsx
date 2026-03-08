@@ -21,6 +21,7 @@ import {
   FeatherX,
 } from "@subframe/core";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Status,
   TopicOpenEndedResearchService,
@@ -52,6 +53,7 @@ export function TopicDrivenDetail({
   onUpdateSectionTitle,
   onRefreshSessions,
 }: TopicDrivenDetailProps) {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<TopicOpenEndedResearchStatusResponseBody | null>(null);
   const [resultSnapshot, setResultSnapshot] = useState<AutoResearchResultSnapshot>({});
   const [error, setError] = useState<string | null>(null);
@@ -106,12 +108,13 @@ export function TopicDrivenDetail({
         const finished = response.status === Status.COMPLETED || Boolean(response.error);
         if (finished) stopPolling();
       } catch (err) {
-        const message = err instanceof Error ? err.message : "ステータスの取得に失敗しました";
+        const message =
+          err instanceof Error ? err.message : t("autonomous.topicDriven.statusFetchError");
         setError(message);
         stopPolling();
       }
     },
-    [stopPolling],
+    [stopPolling, t],
   );
 
   useEffect(() => {
@@ -157,7 +160,8 @@ export function TopicDrivenDetail({
       setIsEditingTitle(false);
       await onRefreshSessions(updated.id);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "タイトルの更新に失敗しました";
+      const message =
+        err instanceof Error ? err.message : t("autonomous.topicDriven.titleUpdateError");
       setError(message);
     } finally {
       setIsUpdatingTitle(false);
@@ -169,20 +173,20 @@ export function TopicDrivenDetail({
     if (status.status === Status.COMPLETED) {
       return (
         <Badge variant="success" icon={<FeatherCheck />}>
-          完了
+          {t("autonomous.topicDriven.statusCompleted")}
         </Badge>
       );
     }
     if (status.error) {
       return (
         <Badge variant="error" icon={<FeatherX />}>
-          失敗
+          {t("autonomous.topicDriven.statusFailed")}
         </Badge>
       );
     }
     return (
       <Badge variant="brand" icon={<FeatherLoader />}>
-        進行中
+        {t("autonomous.topicDriven.statusRunning")}
       </Badge>
     );
   };
@@ -194,7 +198,7 @@ export function TopicDrivenDetail({
       <div className="flex w-full items-center justify-between border-b border-solid border-neutral-border bg-default-background px-6 py-4 sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <LinkButton variant="neutral" icon={<FeatherArrowLeft />} onClick={onBack}>
-            結果一覧に戻る
+            {t("autonomous.topicDriven.backToResults")}
           </LinkButton>
           <div className="flex h-4 w-px flex-none flex-col items-center gap-2 bg-neutral-border" />
           <div className="flex items-center gap-2">
@@ -213,7 +217,9 @@ export function TopicDrivenDetail({
                   disabled={isUpdatingTitle}
                   onClick={handleSaveTitle}
                 >
-                  {isUpdatingTitle ? "保存中..." : "保存"}
+                  {isUpdatingTitle
+                    ? t("autonomous.topicDriven.saving")
+                    : t("autonomous.topicDriven.save")}
                 </Button>
                 <Button
                   variant="neutral-secondary"
@@ -223,7 +229,7 @@ export function TopicDrivenDetail({
                     setTitleDraft(section.title);
                   }}
                 >
-                  キャンセル
+                  {t("autonomous.topicDriven.cancel")}
                 </Button>
               </div>
             ) : (
@@ -244,14 +250,16 @@ export function TopicDrivenDetail({
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-end gap-1">
             <span className="text-caption font-caption text-subtext-color">
-              タスクID: {section.id.slice(0, 20)}...
+              {t("autonomous.topicDriven.taskId")}: {section.id.slice(0, 20)}...
             </span>
             <div className="flex items-center gap-2">
               {statusBadge()}
               {isPolling && (
                 <div className="flex items-center gap-2 rounded-full bg-success-50 px-3 py-1">
                   <FeatherRefreshCw className="text-caption font-caption text-success-600" />
-                  <span className="text-caption font-caption text-success-600">自動更新中</span>
+                  <span className="text-caption font-caption text-success-600">
+                    {t("autonomous.topicDriven.autoUpdating")}
+                  </span>
                 </div>
               )}
             </div>
@@ -261,7 +269,7 @@ export function TopicDrivenDetail({
             icon={<FeatherRefreshCw />}
             onClick={handleManualRefresh}
           >
-            最新を取得
+            {t("autonomous.topicDriven.fetchLatest")}
           </Button>
         </div>
       </div>
@@ -276,13 +284,16 @@ export function TopicDrivenDetail({
 
           {status?.research_history && (
             <div className="flex w-full flex-col items-start gap-2 rounded-lg border border-solid border-neutral-border bg-default-background px-4 py-3 shadow-sm">
-              <span className="text-body-bold font-body-bold text-default-font">研究履歴</span>
+              <span className="text-body-bold font-body-bold text-default-font">
+                {t("autonomous.topicDriven.researchHistory")}
+              </span>
               <span className="text-body font-body text-subtext-color">
-                目的: {status.research_history.research_topic ?? "N/A"}
+                {t("autonomous.topicDriven.purpose")}:{" "}
+                {status.research_history.research_topic ?? "N/A"}
               </span>
               {status.research_history.paper_url && (
                 <span className="text-body font-body text-subtext-color">
-                  論文URL: {status.research_history.paper_url}
+                  {t("autonomous.topicDriven.paperUrl")}: {status.research_history.paper_url}
                 </span>
               )}
             </div>
@@ -299,7 +310,7 @@ export function TopicDrivenDetail({
             !snapshot.paper_content && (
               <div className="flex w-full flex-col items-center gap-4 py-12">
                 <span className="text-body font-body text-subtext-color">
-                  まだ表示できる進捗はありません。
+                  {t("autonomous.topicDriven.noProgress")}
                 </span>
               </div>
             )}

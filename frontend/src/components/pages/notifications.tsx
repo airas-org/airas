@@ -5,6 +5,7 @@ import {
   FeatherMessageSquare,
 } from "@subframe/core";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge, Button, IconWithBackground } from "@/ui";
 
 type NotificationType = "experiment-done" | "paper-done" | "comment" | "system-alert";
@@ -116,15 +117,16 @@ function getNotificationVariant(type: NotificationType): "success" | "brand" | "
   }
 }
 
-const filters: { key: FilterKey; label: string }[] = [
-  { key: "all", label: "すべて" },
-  { key: "unread", label: "未読" },
-  { key: "read", label: "既読" },
-];
-
 export function NotificationsPage() {
+  const { t } = useTranslation();
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const [filter, setFilter] = useState<FilterKey>("all");
+
+  const filters: { key: FilterKey; label: string }[] = [
+    { key: "all", label: t("notifications.filters.all") },
+    { key: "unread", label: t("notifications.filters.unread") },
+    { key: "read", label: t("notifications.filters.read") },
+  ];
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -147,12 +149,14 @@ export function NotificationsPage() {
       <div className="max-w-3xl mx-auto px-8 py-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <h1 className="text-heading-2 font-heading-2 text-default-font">通知</h1>
+            <h1 className="text-heading-2 font-heading-2 text-default-font">
+              {t("notifications.title")}
+            </h1>
             {unreadCount > 0 && <Badge variant="brand">{unreadCount}</Badge>}
           </div>
           {unreadCount > 0 && (
             <Button variant="neutral-secondary" size="small" onClick={markAllAsRead}>
-              すべて既読にする
+              {t("notifications.markAllRead")}
             </Button>
           )}
         </div>
@@ -199,7 +203,7 @@ export function NotificationsPage() {
           ))}
           {filtered.length === 0 && (
             <p className="py-12 text-center text-body font-body text-subtext-color">
-              通知はありません
+              {t("notifications.noNotifications")}
             </p>
           )}
         </div>

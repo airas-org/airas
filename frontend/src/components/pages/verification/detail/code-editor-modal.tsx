@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Drawer } from "@/ui";
 
 const mockPythonCode = `import torch
@@ -51,20 +52,23 @@ interface CodeEditorModalProps {
 }
 
 export function CodeEditorModal({ open, onClose, githubUrl }: CodeEditorModalProps) {
+  const { t } = useTranslation();
   return (
     <Drawer open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <Drawer.Content>
         <div className="flex flex-col h-full w-[640px]">
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
             <div>
-              <h2 className="text-base font-semibold text-foreground">コードプレビュー</h2>
+              <h2 className="text-base font-semibold text-foreground">
+                {t("codeEditorModal.title")}
+              </h2>
               <a
                 href={githubUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-brand-600 hover:underline"
               >
-                GitHubで開く
+                {t("codeEditorModal.openOnGitHub")}
               </a>
             </div>
             <button
@@ -72,7 +76,7 @@ export function CodeEditorModal({ open, onClose, githubUrl }: CodeEditorModalPro
               onClick={onClose}
               className="text-sm text-muted-foreground hover:text-foreground"
             >
-              閉じる
+              {t("codeEditorModal.close")}
             </button>
           </div>
           <div className="flex-1 overflow-auto p-6">

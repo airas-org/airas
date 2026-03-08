@@ -8,55 +8,54 @@ import {
   FeatherZap,
 } from "@subframe/core";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button, IconWithBackground, Stepper } from "@/ui";
 
 interface OnboardingOverlayProps {
   onComplete: () => void;
 }
 
-const steps = [
-  {
-    title: "ようこそ AIRASへ",
-    description:
-      "AIRASは研究者のための自動研究支援プラットフォームです。仮説の立案から実験の実行、論文の執筆まで、研究プロセス全体をAIが支援します。",
-    icon: <FeatherZap />,
-  },
-  {
-    title: "検証ワークフロー",
-    description:
-      "検証方針の立案から実験実行、論文執筆までを一貫して支援します。各フェーズをステップバイステップで進めることができます。",
-    icons: [
-      { icon: <FeatherSearch />, label: "方針立案" },
-      { icon: <FeatherCode />, label: "実験実行" },
-      { icon: <FeatherFileText />, label: "論文執筆" },
-    ],
-  },
-  {
-    title: "自動研究",
-    description:
-      "AIが自動的に研究を進めるモードも利用可能です。Topic-DrivenとHypothesis-Drivenの2つのモードがあります。",
-    modes: [
-      {
-        icon: <FeatherSearch />,
-        name: "Topic-Driven",
-        desc: "トピックからAIが仮説を生成",
-      },
-      {
-        icon: <FeatherZap />,
-        name: "Hypothesis-Driven",
-        desc: "仮説を元にAIが検証を実行",
-      },
-    ],
-  },
-  {
-    title: "準備完了",
-    description: "さっそく始めましょう！",
-    icon: <FeatherRocket />,
-  },
-] as const;
-
 export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
+
+  const steps = [
+    {
+      title: t("onboarding.steps.welcome.title"),
+      description: t("onboarding.steps.welcome.description"),
+      icon: <FeatherZap />,
+    },
+    {
+      title: t("onboarding.steps.workflow.title"),
+      description: t("onboarding.steps.workflow.description"),
+      icons: [
+        { icon: <FeatherSearch />, label: t("onboarding.steps.workflow.planLabel") },
+        { icon: <FeatherCode />, label: t("onboarding.steps.workflow.experimentLabel") },
+        { icon: <FeatherFileText />, label: t("onboarding.steps.workflow.paperLabel") },
+      ],
+    },
+    {
+      title: t("onboarding.steps.autonomous.title"),
+      description: t("onboarding.steps.autonomous.description"),
+      modes: [
+        {
+          icon: <FeatherSearch />,
+          name: "Topic-Driven",
+          desc: t("onboarding.steps.autonomous.topicDrivenDesc"),
+        },
+        {
+          icon: <FeatherZap />,
+          name: "Hypothesis-Driven",
+          desc: t("onboarding.steps.autonomous.hypothesisDrivenDesc"),
+        },
+      ],
+    },
+    {
+      title: t("onboarding.steps.ready.title"),
+      description: t("onboarding.steps.ready.description"),
+      icon: <FeatherRocket />,
+    },
+  ];
 
   const isLastStep = currentStep === steps.length - 1;
 
@@ -68,7 +67,7 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
           onClick={onComplete}
           className="absolute top-4 right-4 cursor-pointer border-none bg-transparent text-body font-body text-subtext-color hover:text-default-font"
         >
-          スキップ
+          {t("onboarding.skip")}
         </button>
 
         <Stepper>
@@ -85,7 +84,7 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
         </Stepper>
 
         <div className="flex min-h-[200px] flex-col items-center justify-center gap-6 text-center">
-          <StepContent step={currentStep} />
+          <StepContent step={currentStep} steps={steps} />
         </div>
 
         <div className="flex items-center justify-between">
@@ -96,7 +95,7 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
                 icon={<FeatherArrowLeft />}
                 onClick={() => setCurrentStep((s) => s - 1)}
               >
-                戻る
+                {t("onboarding.back")}
               </Button>
             )}
           </div>
@@ -111,7 +110,7 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
               }
             }}
           >
-            {isLastStep ? "始める" : "次へ"}
+            {isLastStep ? t("onboarding.start") : t("onboarding.next")}
           </Button>
         </div>
       </div>
@@ -119,10 +118,18 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
   );
 }
 
-function StepContent({ step }: { step: number }) {
+type Step = {
+  title: string;
+  description: string;
+  icon?: React.ReactNode;
+  icons?: { icon: React.ReactNode; label: string }[];
+  modes?: { icon: React.ReactNode; name: string; desc: string }[];
+};
+
+function StepContent({ step, steps }: { step: number; steps: Step[] }) {
   const data = steps[step];
 
-  if ("icons" in data) {
+  if (data.icons) {
     return (
       <>
         <h2 className="text-heading-2 font-heading-2 text-default-font">{data.title}</h2>
@@ -141,7 +148,7 @@ function StepContent({ step }: { step: number }) {
     );
   }
 
-  if ("modes" in data) {
+  if (data.modes) {
     return (
       <>
         <h2 className="text-heading-2 font-heading-2 text-default-font">{data.title}</h2>

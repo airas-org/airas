@@ -1,5 +1,6 @@
 import { FeatherSearch } from "@subframe/core";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Verification } from "../types";
 import { VerificationCard } from "./verification-card";
 
@@ -57,16 +58,6 @@ function CategoryColumn({
 
 type CategoryKey = "methods" | "plan" | "code" | "settings" | "results" | "paper-writing" | "paper";
 
-const categories: { key: CategoryKey; label: string }[] = [
-  { key: "methods", label: "検証方針" },
-  { key: "plan", label: "検証方法" },
-  { key: "code", label: "実験コード" },
-  { key: "settings", label: "実験設定" },
-  { key: "results", label: "実験結果" },
-  { key: "paper-writing", label: "執筆のための情報収集" },
-  { key: "paper", label: "論文" },
-];
-
 function getCategoryKey(v: Verification): CategoryKey {
   switch (v.phase) {
     case "initial":
@@ -91,6 +82,16 @@ export function VerificationHomePage({
   onDeleteVerification,
   onDuplicateVerification,
 }: VerificationHomePageProps) {
+  const { t } = useTranslation();
+  const categories: { key: CategoryKey; label: string }[] = [
+    { key: "methods", label: t("verification.home.categories.methods") },
+    { key: "plan", label: t("verification.home.categories.plan") },
+    { key: "code", label: t("verification.home.categories.code") },
+    { key: "settings", label: t("verification.home.categories.settings") },
+    { key: "results", label: t("verification.home.categories.results") },
+    { key: "paper-writing", label: t("verification.home.categories.paperWriting") },
+    { key: "paper", label: t("verification.home.categories.paper") },
+  ];
   const [search, setSearch] = useState("");
 
   const filtered = search

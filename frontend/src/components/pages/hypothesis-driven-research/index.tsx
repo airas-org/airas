@@ -59,7 +59,9 @@ export function HypothesisDrivenResearchPage({
   );
 
   if (subView === "input") {
-    return <HypothesisDrivenInput onBack={handleBackToList} onResearchStarted={handleResearchStarted} />;
+    return (
+      <HypothesisDrivenInput onBack={handleBackToList} onResearchStarted={handleResearchStarted} />
+    );
   }
 
   if (subView === "detail" && section) {
