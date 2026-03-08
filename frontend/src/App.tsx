@@ -7,8 +7,10 @@ import {
   FeatherBeaker,
   FeatherBell,
   FeatherBookOpen,
+  FeatherCheck,
   FeatherCreditCard,
   FeatherExternalLink,
+  FeatherGlobe,
   FeatherKey,
   FeatherLink,
   FeatherList,
@@ -20,6 +22,7 @@ import {
   FeatherSettings,
   FeatherUser,
 } from "@subframe/core";
+import * as SubframeCore from "@subframe/core";
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -43,7 +46,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { OpenAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
-import { IconButton, SidebarWithSections, ToggleGroup, TopbarWithRightNav } from "@/ui";
+import { DropdownMenu, IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
 
 const initialWorkflowTree: WorkflowTree = {
   nodes: {},
@@ -627,13 +630,38 @@ export default function App() {
           rightSlot={
             <>
               <div className="hidden md:flex items-center gap-4">
-                <ToggleGroup
-                  value={currentLanguage}
-                  onValueChange={(lang) => { if (lang) i18n.changeLanguage(lang); }}
-                >
-                  <ToggleGroup.Item value="ja">JA</ToggleGroup.Item>
-                  <ToggleGroup.Item value="en">EN</ToggleGroup.Item>
-                </ToggleGroup>
+                <SubframeCore.DropdownMenu.Root>
+                  <SubframeCore.DropdownMenu.Trigger asChild={true}>
+                    <IconButton
+                      variant="neutral-tertiary"
+                      size="medium"
+                      icon={<FeatherGlobe />}
+                    />
+                  </SubframeCore.DropdownMenu.Trigger>
+                  <SubframeCore.DropdownMenu.Portal>
+                    <SubframeCore.DropdownMenu.Content
+                      side="bottom"
+                      align="end"
+                      sideOffset={4}
+                      asChild={true}
+                    >
+                      <DropdownMenu>
+                        <DropdownMenu.DropdownItem
+                          icon={currentLanguage === "ja" ? <FeatherCheck /> : null}
+                          onClick={() => i18n.changeLanguage("ja")}
+                        >
+                          🇯🇵 日本語
+                        </DropdownMenu.DropdownItem>
+                        <DropdownMenu.DropdownItem
+                          icon={currentLanguage === "en" ? <FeatherCheck /> : null}
+                          onClick={() => i18n.changeLanguage("en")}
+                        >
+                          🇺🇸 English
+                        </DropdownMenu.DropdownItem>
+                      </DropdownMenu>
+                    </SubframeCore.DropdownMenu.Content>
+                  </SubframeCore.DropdownMenu.Portal>
+                </SubframeCore.DropdownMenu.Root>
                 <IconButton
                   variant="neutral-tertiary"
                   icon={<SiGithub className="h-4 w-4" />}
