@@ -451,7 +451,7 @@ export default function App() {
                 <span className="text-sm font-medium">{t("nav.settings")}</span>
               </button>
               <SidebarWithSections.NavSection
-                label={<span className="text-sm font-medium">{t("userMenu.profile")}</span>}
+                label={<span className="text-sm font-medium">{t("settings.accountSection")}</span>}
               >
                 <SidebarWithSections.NavItem
                   icon={<FeatherUser />}
@@ -648,13 +648,13 @@ export default function App() {
                     <DropdownMenu>
                       <DropdownMenu.DropdownItem
                         icon={currentLanguage === "ja" ? <FeatherCheck /> : null}
-                        onClick={() => i18n.changeLanguage("ja")}
+                        onSelect={() => i18n.changeLanguage("ja")}
                       >
                         🇯🇵 日本語
                       </DropdownMenu.DropdownItem>
                       <DropdownMenu.DropdownItem
                         icon={currentLanguage === "en" ? <FeatherCheck /> : null}
-                        onClick={() => i18n.changeLanguage("en")}
+                        onSelect={() => i18n.changeLanguage("en")}
                       >
                         🇺🇸 English
                       </DropdownMenu.DropdownItem>
