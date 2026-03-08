@@ -158,9 +158,7 @@ export function IntegrationPage() {
         <div className="flex w-full max-w-[768px] flex-col items-start gap-8">
           <div className="flex w-full flex-col items-start gap-2">
             <span className="text-heading-1 font-heading-1 text-white">接続</span>
-            <span className="text-body font-body text-neutral-400">
-              外部サービスとの連携を管理し、ワークフローを自動化します。
-            </span>
+            <span className="text-body font-body text-neutral-400">外部サービスと連携します。</span>
           </div>
 
           {error && (
@@ -179,9 +177,11 @@ export function IntegrationPage() {
                       <div className="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-neutral-800">
                         <FeatherGithub className="text-heading-2 font-heading-2 text-white" />
                       </div>
-                      <span className="text-heading-2 font-heading-2 text-white">GitHub</span>
+                      <span className="text-heading-2 font-heading-2 text-white">
+                        GitHub<span className="text-error-400 ml-1">*</span>
+                      </span>
                     </div>
-                    {githubStatus.connected && (
+                    {githubStatus.connected ? (
                       <Button
                         className="bg-error-900/10 text-error-400 hover:bg-error-900/20 border-error-400"
                         variant="destructive-secondary"
@@ -191,6 +191,17 @@ export function IntegrationPage() {
                       >
                         {githubDisconnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                         連携解除
+                      </Button>
+                    ) : (
+                      <Button
+                        className="bg-brand-900/10 text-brand-600 hover:bg-brand-900/20 border-brand-600"
+                        variant="brand-secondary"
+                        size="large"
+                        onClick={handleGithubConnect}
+                        disabled={githubConnecting}
+                      >
+                        {githubConnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        連携
                       </Button>
                     )}
                   </div>
@@ -246,21 +257,7 @@ export function IntegrationPage() {
                       </div>
                     </div>
                   </>
-                ) : (
-                  <Button
-                    variant="brand-primary"
-                    size="large"
-                    onClick={handleGithubConnect}
-                    disabled={githubConnecting}
-                  >
-                    {githubConnecting ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <FeatherGithub className="h-4 w-4 mr-2" />
-                    )}
-                    GitHubと連携する
-                  </Button>
-                )}
+                ) : null}
               </div>
             </div>
 
