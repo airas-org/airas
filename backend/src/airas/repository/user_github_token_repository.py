@@ -14,6 +14,12 @@ class UserGitHubTokenRepository(BaseRepository[UserGitHubTokenModel]):
         )
         return self.db.exec(stmt).first()
 
+    def get_by_github_login(self, github_login: str) -> UserGitHubTokenModel | None:
+        stmt = select(UserGitHubTokenModel).where(
+            UserGitHubTokenModel.github_login == github_login
+        )
+        return self.db.exec(stmt).first()
+
     def delete_by_session_token(self, session_token: str) -> bool:
         obj = self.get_by_session_token(session_token)
         if obj is None:

@@ -87,10 +87,12 @@ class GitHubOAuthService:
     def save_token(
         self, *, session_token: str, access_token: str, github_login: str
     ) -> UserGitHubTokenModel:
-        existing = self.repo.get_by_session_token(session_token)
+        # Upsert by github_login so reconnecting the same account updates the
+        # existing record instead of orphaning it.
+        existing = self.repo.get_by_github_login(github_login)
         if existing:
+            existing.session_token = session_token
             existing.encrypted_token = encrypt(access_token)
-            existing.github_login = github_login
             existing.updated_at = datetime.now(timezone.utc)
             self.repo.db.add(existing)
             self.repo.db.commit()

@@ -64,7 +64,7 @@ def get_github_owner(
 
 
 @inject
-def get_github_client(
+async def get_github_client(
     service: Annotated[
         GitHubOAuthService, Depends(Provide[Container.github_oauth_service])
     ],
@@ -85,9 +85,20 @@ def get_github_client(
             )
     else:
         token = os.getenv("GH_PERSONAL_ACCESS_TOKEN", "")
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="GH_PERSONAL_ACCESS_TOKEN is not configured.",
+            )
     timeout = httpx.Timeout(connect=10.0, read=60.0, write=120.0, pool=5.0)
-    return GithubClient(
-        github_token=token,
-        sync_session=httpx.Client(follow_redirects=True, timeout=timeout),
-        async_session=httpx.AsyncClient(follow_redirects=True, timeout=timeout),
-    )
+    sync_session = httpx.Client(follow_redirects=True, timeout=timeout)
+    async_session = httpx.AsyncClient(follow_redirects=True, timeout=timeout)
+    try:
+        yield GithubClient(
+            github_token=token,
+            sync_session=sync_session,
+            async_session=async_session,
+        )
+    finally:
+        sync_session.close()
+        await async_session.aclose()

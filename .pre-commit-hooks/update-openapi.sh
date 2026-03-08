@@ -3,9 +3,10 @@ set -e
 
 echo "Generating OpenAPI schema..."
 cd backend
-if PYTHONPATH="$(pwd)/src" .venv/bin/python scripts/generate_openapi.py 2>/dev/null; then
+if PYTHONPATH="$(pwd)/src" .venv/bin/python scripts/generate_openapi.py; then
   :
 else
+  echo "Warning: .venv/bin/python failed, falling back to 'uv run python scripts/generate_openapi.py'." >&2
   uv run python scripts/generate_openapi.py
 fi
 cd ..
