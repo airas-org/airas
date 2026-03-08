@@ -635,6 +635,7 @@ export default function App() {
                     variant="neutral-tertiary"
                     size="medium"
                     icon={<FeatherGlobe />}
+                    aria-label={t("app.languageSwitcher.ariaLabel")}
                   />
                 </SubframeCore.DropdownMenu.Trigger>
                 <SubframeCore.DropdownMenu.Portal>
