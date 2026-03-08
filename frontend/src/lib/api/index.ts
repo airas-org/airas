@@ -69,6 +69,7 @@ export { GenerateLatexSubgraphRequestBody } from './models/GenerateLatexSubgraph
 export type { GenerateLatexSubgraphResponseBody } from './models/GenerateLatexSubgraphResponseBody';
 export type { GenerateQueriesLLMMapping } from './models/GenerateQueriesLLMMapping';
 export type { GitHubConfig } from './models/GitHubConfig';
+export type { GitHubConfigRequest } from './models/GitHubConfigRequest';
 export type { GithubDownloadRequest } from './models/GithubDownloadRequest';
 export type { GithubDownloadResponse } from './models/GithubDownloadResponse';
 export type { GithubUploadRequest } from './models/GithubUploadRequest';

@@ -15,15 +15,20 @@ export class LatexService {
     /**
      * Generate Latex
      * @param requestBody
+     * @param xGithubSession
      * @returns GenerateLatexSubgraphResponseBody Successful Response
      * @throws ApiError
      */
     public static generateLatexAirasV1LatexGenerationsPost(
         requestBody: GenerateLatexSubgraphRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<GenerateLatexSubgraphResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/latex/generations',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -34,15 +39,20 @@ export class LatexService {
     /**
      * Push Latex
      * @param requestBody
+     * @param xGithubSession
      * @returns PushLatexSubgraphResponseBody Successful Response
      * @throws ApiError
      */
     public static pushLatexAirasV1LatexPushPost(
         requestBody: PushLatexSubgraphRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<PushLatexSubgraphResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/latex/push',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -53,15 +63,20 @@ export class LatexService {
     /**
      * Compile Latex
      * @param requestBody
+     * @param xGithubSession
      * @returns CompileLatexSubgraphResponseBody Successful Response
      * @throws ApiError
      */
     public static compileLatexAirasV1LatexCompilePost(
         requestBody: CompileLatexSubgraphRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<CompileLatexSubgraphResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/latex/compile',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {

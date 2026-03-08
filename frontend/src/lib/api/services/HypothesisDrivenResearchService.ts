@@ -14,15 +14,20 @@ export class HypothesisDrivenResearchService {
     /**
      * Execute Hypothesis Driven Research
      * @param requestBody
+     * @param xGithubSession
      * @returns HypothesisDrivenResearchResponseBody Successful Response
      * @throws ApiError
      */
     public static executeHypothesisDrivenResearchAirasV1HypothesisDrivenResearchRunPost(
         requestBody: HypothesisDrivenResearchRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<HypothesisDrivenResearchResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/hypothesis_driven_research/run',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {

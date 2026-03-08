@@ -1,12 +1,11 @@
+import secrets
 from typing import Annotated
-from uuid import UUID
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 
 from airas.container import Container
 from airas.usecases.ee.github_oauth_service import GitHubOAuthService
-from api.ee.auth.dependencies import get_current_user_id
 from api.schemas.ee import (
     GitHubAuthorizeResponse,
     GitHubCallbackRequest,
@@ -20,7 +19,6 @@ router = APIRouter(prefix="/github", tags=["ee-github-oauth"])
 @inject
 def authorize(
     redirect_uri: Annotated[str, Query()],
-    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     service: Annotated[
         GitHubOAuthService, Depends(Provide[Container.github_oauth_service])
     ],
@@ -33,7 +31,6 @@ def authorize(
 @inject
 async def callback(
     request: GitHubCallbackRequest,
-    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     service: Annotated[
         GitHubOAuthService, Depends(Provide[Container.github_oauth_service])
     ],
@@ -45,23 +42,30 @@ async def callback(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+    session_token = secrets.token_urlsafe(32)
     service.save_token(
-        user_id=current_user_id,
+        session_token=session_token,
         access_token=result["access_token"],
         github_login=result["github_login"],
     )
-    return {"connected": True, "github_login": result["github_login"]}
+    return {
+        "connected": True,
+        "github_login": result["github_login"],
+        "session_token": session_token,
+    }
 
 
 @router.get("/status", response_model=GitHubConnectionStatus)
 @inject
 def status(
-    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     service: Annotated[
         GitHubOAuthService, Depends(Provide[Container.github_oauth_service])
     ],
+    x_github_session: Annotated[str | None, Header()] = None,
 ) -> GitHubConnectionStatus:
-    info = service.get_status(current_user_id)
+    if not x_github_session:
+        return GitHubConnectionStatus(connected=False)
+    info = service.get_status(x_github_session)
     if info is None:
         return GitHubConnectionStatus(connected=False)
     return GitHubConnectionStatus(connected=True, **info)
@@ -70,12 +74,14 @@ def status(
 @router.delete("/disconnect")
 @inject
 def disconnect(
-    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     service: Annotated[
         GitHubOAuthService, Depends(Provide[Container.github_oauth_service])
     ],
+    x_github_session: Annotated[str | None, Header()] = None,
 ):
-    deleted = service.disconnect(current_user_id)
+    if not x_github_session:
+        raise HTTPException(status_code=400, detail="X-GitHub-Session header required")
+    deleted = service.disconnect(x_github_session)
     if not deleted:
         raise HTTPException(status_code=404, detail="GitHub connection not found")
     return {"disconnected": True}

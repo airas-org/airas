@@ -1,7 +1,6 @@
 import asyncio
 import base64
 import logging
-import os
 from datetime import datetime, timezone
 from typing import Any, Literal, Protocol, runtime_checkable
 
@@ -58,6 +57,7 @@ GITHUB_RETRY = retry(
 class GithubClient(BaseHTTPClient):
     def __init__(
         self,
+        github_token: str,
         base_url: str = "https://api.github.com",
         default_headers: dict[str, str] | None = None,
         parser: ResponseParserProtocol | None = None,
@@ -66,7 +66,7 @@ class GithubClient(BaseHTTPClient):
     ) -> None:
         auth_headers = {
             "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {os.getenv('GH_PERSONAL_ACCESS_TOKEN')}",
+            "Authorization": f"Bearer {github_token}",
             "X-GitHub-Api-Version": "2022-11-28",
         }
         super().__init__(

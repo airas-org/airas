@@ -192,7 +192,9 @@ export function TopicDrivenDetail({
       <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-1 pb-2 sticky top-0 z-10 gap-1">
         <div className="flex w-full items-center justify-between">
           <LinkButton variant="neutral" icon={<FeatherArrowLeft />} onClick={onBack}>
-            <span className="text-caption font-caption">{t("autonomous.topicDriven.backToResults")}</span>
+            <span className="text-caption font-caption">
+              {t("autonomous.topicDriven.backToResults")}
+            </span>
           </LinkButton>
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-subtext-color">ID: {section.id.slice(0, 16)}...</span>
@@ -200,7 +202,9 @@ export function TopicDrivenDetail({
             {isPolling && (
               <div className="flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5">
                 <FeatherRefreshCw className="h-3 w-3 text-success-600" />
-                <span className="text-[11px] text-success-600">{t("autonomous.topicDriven.autoUpdating")}</span>
+                <span className="text-[11px] text-success-600">
+                  {t("autonomous.topicDriven.autoUpdating")}
+                </span>
               </div>
             )}
           </div>
@@ -221,7 +225,9 @@ export function TopicDrivenDetail({
                 disabled={isUpdatingTitle}
                 onClick={handleSaveTitle}
               >
-                {isUpdatingTitle ? t("autonomous.topicDriven.saving") : t("autonomous.topicDriven.save")}
+                {isUpdatingTitle
+                  ? t("autonomous.topicDriven.saving")
+                  : t("autonomous.topicDriven.save")}
               </Button>
               <Button
                 variant="neutral-secondary"

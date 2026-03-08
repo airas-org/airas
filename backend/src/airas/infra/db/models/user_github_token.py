@@ -8,12 +8,12 @@ from sqlmodel import Field, SQLModel
 class UserGitHubTokenModel(SQLModel, table=True):
     __tablename__ = "user_github_tokens"
     __table_args__ = (
-        UniqueConstraint("user_id", name="uq_user_github_token_user_id"),
-        Index("ix_user_github_tokens_user_id", "user_id"),
+        UniqueConstraint("session_token", name="uq_user_github_token_session_token"),
+        Index("ix_user_github_tokens_session_token", "session_token"),
     )
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    user_id: UUID = Field(nullable=False)
+    session_token: str = Field(nullable=False)
     encrypted_token: str = Field(nullable=False)
     github_login: str = Field(sa_column=Column(String, nullable=False))
     created_at: datetime = Field(

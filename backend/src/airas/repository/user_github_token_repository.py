@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from sqlmodel import Session, select
 
 from airas.infra.db.models.user_github_token import UserGitHubTokenModel
@@ -10,14 +8,20 @@ class UserGitHubTokenRepository(BaseRepository[UserGitHubTokenModel]):
     def __init__(self, db: Session):
         super().__init__(db, UserGitHubTokenModel)
 
-    def get_by_user(self, user_id: UUID) -> UserGitHubTokenModel | None:
+    def get_by_session_token(self, session_token: str) -> UserGitHubTokenModel | None:
         stmt = select(UserGitHubTokenModel).where(
-            UserGitHubTokenModel.user_id == user_id
+            UserGitHubTokenModel.session_token == session_token
         )
         return self.db.exec(stmt).first()
 
-    def delete_by_user(self, user_id: UUID) -> bool:
-        obj = self.get_by_user(user_id)
+    def get_by_github_login(self, github_login: str) -> UserGitHubTokenModel | None:
+        stmt = select(UserGitHubTokenModel).where(
+            UserGitHubTokenModel.github_login == github_login
+        )
+        return self.db.exec(stmt).first()
+
+    def delete_by_session_token(self, session_token: str) -> bool:
+        obj = self.get_by_session_token(session_token)
         if obj is None:
             return False
         self.db.delete(obj)

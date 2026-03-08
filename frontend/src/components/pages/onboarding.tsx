@@ -7,8 +7,8 @@ import {
   FeatherSearch,
   FeatherZap,
 } from "@subframe/core";
-import { useState } from "react";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, IconWithBackground, Stepper } from "@/ui";
 

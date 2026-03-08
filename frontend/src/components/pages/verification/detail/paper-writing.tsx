@@ -76,7 +76,9 @@ export function PaperWritingSection({
             {t("verification.detail.paper.title")}
           </h2>
           <div className="mt-3 flex items-center gap-2">
-            <span className="text-sm font-medium text-foreground">{t("verification.detail.githubUrl")}</span>
+            <span className="text-sm font-medium text-foreground">
+              {t("verification.detail.githubUrl")}
+            </span>
             <a
               href={paperDraft.paperUrl}
               target="_blank"

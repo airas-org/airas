@@ -2,7 +2,6 @@ import logging
 import os
 import secrets
 from datetime import datetime, timezone
-from uuid import UUID
 
 import httpx
 
@@ -86,26 +85,28 @@ class GitHubOAuthService:
         }
 
     def save_token(
-        self, *, user_id: UUID, access_token: str, github_login: str
+        self, *, session_token: str, access_token: str, github_login: str
     ) -> UserGitHubTokenModel:
-        existing = self.repo.get_by_user(user_id)
+        # Upsert by github_login so reconnecting the same account updates the
+        # existing record instead of orphaning it.
+        existing = self.repo.get_by_github_login(github_login)
         if existing:
+            existing.session_token = session_token
             existing.encrypted_token = encrypt(access_token)
-            existing.github_login = github_login
             existing.updated_at = datetime.now(timezone.utc)
             self.repo.db.add(existing)
             self.repo.db.commit()
             self.repo.db.refresh(existing)
             return existing
         model = UserGitHubTokenModel(
-            user_id=user_id,
+            session_token=session_token,
             encrypted_token=encrypt(access_token),
             github_login=github_login,
         )
         return self.repo.create(model)
 
-    def get_status(self, user_id: UUID) -> dict | None:
-        token_model = self.repo.get_by_user(user_id)
+    def get_status(self, session_token: str) -> dict | None:
+        token_model = self.repo.get_by_session_token(session_token)
         if token_model is None:
             return None
         return {
@@ -113,12 +114,12 @@ class GitHubOAuthService:
             "connected_at": token_model.created_at,
         }
 
-    def disconnect(self, user_id: UUID) -> bool:
-        return self.repo.delete_by_user(user_id)
+    def disconnect(self, session_token: str) -> bool:
+        return self.repo.delete_by_session_token(session_token)
 
-    def get_token(self, user_id: UUID) -> str | None:
-        """Return decrypted access token for the user, or None."""
-        token_model = self.repo.get_by_user(user_id)
+    def get_token(self, session_token: str) -> str | None:
+        """Return decrypted access token for the session, or None."""
+        token_model = self.repo.get_by_session_token(session_token)
         if token_model is None:
             return None
         return decrypt(token_model.encrypted_token)

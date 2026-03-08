@@ -1,6 +1,7 @@
 // frontend/src/App.tsx
 
 import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons";
+import * as SubframeCore from "@subframe/core";
 import {
   FeatherArrowLeft,
   FeatherBarChart2,
@@ -22,7 +23,6 @@ import {
   FeatherSettings,
   FeatherUser,
 } from "@subframe/core";
-import * as SubframeCore from "@subframe/core";
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -47,6 +47,20 @@ import { OpenAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
 import { DropdownMenu, IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
+
+// Attach GitHub session header only to GitHub-related generated API calls
+OpenAPI.HEADERS = async (options) => {
+  const sessionToken = localStorage.getItem("github_session_token");
+  const headers: Record<string, string> = {};
+  if (
+    sessionToken &&
+    typeof options?.url === "string" &&
+    options.url.toLowerCase().includes("github")
+  ) {
+    headers["X-GitHub-Session"] = sessionToken;
+  }
+  return headers;
+};
 
 const initialWorkflowTree: WorkflowTree = {
   nodes: {},
@@ -476,7 +490,7 @@ export default function App() {
                   icon={<SiDiscord className="h-4 w-4" />}
                   selected={false}
                   rightSlot={<FeatherExternalLink className="h-3 w-3 text-neutral-400" />}
-                  onClick={() => window.open("https://discord.gg/KGm5FGY5", "_blank")}
+                  onClick={() => window.open("https://discord.gg/uDmkgKfkes", "_blank")}
                 >
                   Discord
                 </SidebarWithSections.NavItem>
@@ -489,7 +503,11 @@ export default function App() {
                 </SidebarWithSections.NavItem>
               </SidebarWithSections.NavSection>
               <SidebarWithSections.NavSection
-                label={<span className="text-sm font-medium">{t("settings.externalServicesSection")}</span>}
+                label={
+                  <span className="text-sm font-medium">
+                    {t("settings.externalServicesSection")}
+                  </span>
+                }
               >
                 <SidebarWithSections.NavItem
                   icon={<FeatherLink />}

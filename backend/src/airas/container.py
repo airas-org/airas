@@ -137,8 +137,11 @@ class Container(containers.DeclarativeContainer):
     )
 
     # --- Code & Experiment Platforms ---
+    # NOTE: github_client in the container uses GH_PERSONAL_ACCESS_TOKEN as fallback.
+    # In EE mode, use get_github_client() FastAPI dependency instead (per-user OAuth token).
     github_client: providers.Factory[GithubClient] = providers.Factory(
         GithubClient,
+        github_token=os.getenv("GH_PERSONAL_ACCESS_TOKEN", ""),
         sync_session=github_sync_session,  # Use non-cached session
         async_session=github_async_session,  # Use non-cached session
     )

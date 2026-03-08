@@ -11,15 +11,20 @@ export class RepositoriesService {
     /**
      * Prepare Repository
      * @param requestBody
+     * @param xGithubSession
      * @returns PrepareRepositorySubgraphResponseBody Successful Response
      * @throws ApiError
      */
     public static prepareRepositoryAirasV1RepositoriesPost(
         requestBody: PrepareRepositorySubgraphRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<PrepareRepositorySubgraphResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/repositories',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
