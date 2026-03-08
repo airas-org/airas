@@ -49,11 +49,20 @@ export function ApiTokenPage() {
     setNewTokenName("");
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!generatedToken) return;
-    void navigator.clipboard.writeText(generatedToken);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (typeof navigator === "undefined" || !navigator.clipboard) {
+      alert(t("apiToken.copyError"));
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(generatedToken);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy API token to clipboard", error);
+      alert(t("apiToken.copyError"));
+    }
   };
 
   const handleRevoke = (id: string) => {
@@ -97,7 +106,7 @@ export function ApiTokenPage() {
                 </code>
                 <button
                   type="button"
-                  onClick={handleCopy}
+                  onClick={() => void handleCopy()}
                   className="rounded-md bg-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-300 hover:text-neutral-900 transition-colors cursor-pointer shrink-0"
                 >
                   {copied ? t("apiToken.copied") : t("apiToken.copy")}

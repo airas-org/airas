@@ -544,7 +544,8 @@
     "lastUsed": "最終使用",
     "revoke": "取り消し",
     "usageExample": "使用例",
-    "apiKeysSection": "API Keys"
+    "apiKeysSection": "API Keys",
+    "copyError": "クリップボードへのコピーに失敗しました"
   },
   "settings": {
     "externalServicesSection": "外部サービス"

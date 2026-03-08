@@ -544,7 +544,8 @@
     "lastUsed": "Last used",
     "revoke": "Revoke",
     "usageExample": "Usage example",
-    "apiKeysSection": "API Keys"
+    "apiKeysSection": "API Keys",
+    "copyError": "Failed to copy to clipboard"
   },
   "settings": {
     "externalServicesSection": "External Services"

@@ -8,6 +8,7 @@ import {
   FeatherZap,
 } from "@subframe/core";
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, IconWithBackground, Stepper } from "@/ui";
 
@@ -121,9 +122,9 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
 type Step = {
   title: string;
   description: string;
-  icon?: React.ReactNode;
-  icons?: { icon: React.ReactNode; label: string }[];
-  modes?: { icon: React.ReactNode; name: string; desc: string }[];
+  icon?: ReactNode;
+  icons?: { icon: ReactNode; label: string }[];
+  modes?: { icon: ReactNode; name: string; desc: string }[];
 };
 
 function StepContent({ step, steps }: { step: number; steps: Step[] }) {
