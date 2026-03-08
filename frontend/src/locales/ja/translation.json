@@ -1,4 +1,9 @@
 {
+  "app": {
+    "languageSwitcher": {
+      "ariaLabel": "言語を切り替え"
+    }
+  },
   "nav": {
     "dashboard": "ダッシュボード",
     "newVerification": "新規検証",
@@ -89,7 +94,7 @@
       "newVerification": "新規検証",
       "noVerifications": "検証がありません",
       "noVerificationsDesc": "新規検証ボタンから最初の検証を作成してください",
-      "projects": "件",
+      "projects": "{{count}} 件",
       "searchPlaceholder": "検索...",
       "categories": {
         "methods": "検証方針",

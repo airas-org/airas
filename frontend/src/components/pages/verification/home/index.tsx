@@ -127,7 +127,7 @@ export function VerificationHomePage({
               {t("verification.home.title")}
             </h1>
             <p className="text-caption font-caption text-subtext-color mt-1">
-              {verifications.length} {t("verification.home.projects")}
+              {t("verification.home.projects", { count: verifications.length })}
             </p>
           </div>
           <div className="w-56 rounded-lg border border-border bg-card px-3 py-1.5 flex items-center gap-2">

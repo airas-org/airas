@@ -1,4 +1,9 @@
 {
+  "app": {
+    "languageSwitcher": {
+      "ariaLabel": "Switch language"
+    }
+  },
   "nav": {
     "dashboard": "Dashboard",
     "newVerification": "New Verification",
@@ -89,7 +94,8 @@
       "newVerification": "New Verification",
       "noVerifications": "No verifications found",
       "noVerificationsDesc": "Create your first verification using the New Verification button",
-      "projects": "projects",
+      "projects_one": "{{count}} project",
+      "projects_other": "{{count}} projects",
       "searchPlaceholder": "Search...",
       "categories": {
         "methods": "Methods",
