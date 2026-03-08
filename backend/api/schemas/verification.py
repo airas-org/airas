@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel
 
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig  # noqa: F401
@@ -24,7 +26,7 @@ class ProposedMethodSchema(BaseModel):
 class ProposePoliciesRequestBody(BaseModel):
     user_query: str
     llm_mapping: ProposeVerificationPolicyLLMMapping | None = None
-    verification_id: str | None = None
+    verification_id: UUID | None = None
 
 
 class ProposePoliciesResponseBody(BaseModel):
@@ -38,7 +40,7 @@ class GenerateMethodRequestBody(BaseModel):
     user_query: str
     selected_policy: ProposedMethodSchema
     llm_mapping: GenerateVerificationMethodLLMMapping | None = None
-    verification_id: str | None = None
+    verification_id: UUID | None = None
 
 
 class GenerateMethodResponseBody(BaseModel):
@@ -59,7 +61,7 @@ class GenerateExperimentCodeRequestBody(BaseModel):
     branch_name: str
     github_actions_agent: GitHubActionsAgent
     llm_mapping: GenerateExperimentCodeLLMMapping | None = None
-    verification_id: str | None = None
+    verification_id: UUID | None = None
 
 
 class GenerateExperimentCodeResponseBody(BaseModel):

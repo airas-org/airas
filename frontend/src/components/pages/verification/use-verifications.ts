@@ -283,10 +283,17 @@ export function useVerifications(navigate: (path: string) => void) {
     [navigate],
   );
 
+  const handleAddVerification = useCallback((session: VerificationSessionResponse) => {
+    setVerifications((prev) => [sessionToVerification(session), ...prev]);
+  }, []);
+
   const handleDuplicateVerification = useCallback(
     async (id: string) => {
       const source = verifications.find((v) => v.id === id);
       if (!source) return;
+
+      const copyLabel = navigator.language.startsWith("ja") ? "(コピー)" : "(copy)";
+      const copyTitle = `${source.title} ${copyLabel}`;
 
       try {
         const apiBase = OpenAPI.BASE;
@@ -299,14 +306,14 @@ export function useVerifications(navigate: (path: string) => void) {
             "Content-Type": "application/json",
             ...authHeaders,
           },
-          body: JSON.stringify({ title: `${source.title} (copy)` }),
+          body: JSON.stringify({ title: copyTitle }),
         });
         if (!createRes.ok) return;
         const newSession: VerificationSessionResponse = await createRes.json();
 
         // Copy relevant fields to the new session
         const copyUpdates: Partial<Verification> = {
-          title: `${source.title} (copy)`,
+          title: copyTitle,
           query: source.query,
           phase: source.phase,
           proposedMethods: source.proposedMethods,
@@ -336,7 +343,7 @@ export function useVerifications(navigate: (path: string) => void) {
         const copy: Verification = {
           ...source,
           id: newSession.id,
-          title: `${source.title} (copy)`,
+          title: copyTitle,
           createdAt: new Date(newSession.created_at),
         };
         setVerifications((prev) => [copy, ...prev]);
@@ -354,5 +361,6 @@ export function useVerifications(navigate: (path: string) => void) {
     handleUpdateVerification,
     handleDeleteVerification,
     handleDuplicateVerification,
+    handleAddVerification,
   };
 }

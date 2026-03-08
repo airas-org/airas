@@ -103,13 +103,14 @@ def list_sessions(
 @inject
 def get_session(
     verification_id: UUID,
+    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     verification_service: Annotated[
         VerificationService,
         Depends(Closing[Provide[Container.verification_service]]),
     ],
 ) -> VerificationSessionResponse:
     verification = verification_service.get(verification_id)
-    if verification is None:
+    if verification is None or verification.created_by != current_user_id:
         raise HTTPException(status_code=404, detail="Verification not found")
     return _model_to_response(verification)
 
@@ -119,12 +120,16 @@ def get_session(
 def update_session(
     verification_id: UUID,
     request: VerificationSessionUpdateRequest,
+    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     verification_service: Annotated[
         VerificationService,
         Depends(Closing[Provide[Container.verification_service]]),
     ],
 ) -> VerificationSessionResponse:
-    update_data = {k: v for k, v in request.model_dump().items() if v is not None}
+    existing = verification_service.get(verification_id)
+    if existing is None or existing.created_by != current_user_id:
+        raise HTTPException(status_code=404, detail="Verification not found")
+    update_data = request.model_dump(exclude_unset=True)
     verification = verification_service.update(verification_id, **update_data)
     if verification is None:
         raise HTTPException(status_code=404, detail="Verification not found")
@@ -135,14 +140,16 @@ def update_session(
 @inject
 def delete_session(
     verification_id: UUID,
+    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     verification_service: Annotated[
         VerificationService,
         Depends(Closing[Provide[Container.verification_service]]),
     ],
 ) -> None:
-    deleted = verification_service.delete(verification_id)
-    if not deleted:
+    verification = verification_service.get(verification_id)
+    if verification is None or verification.created_by != current_user_id:
         raise HTTPException(status_code=404, detail="Verification not found")
+    verification_service.delete(verification_id)
 
 
 # --- Existing AI endpoints ---
@@ -196,11 +203,10 @@ async def propose_policies(
     ]
 
     if request.verification_id is not None:
-        verification_uuid = UUID(request.verification_id)
         verification_service.update(
-            verification_uuid,
+            request.verification_id,
             query=request.user_query,
-            phase="proposed",
+            phase="methods-proposed",
             proposed_methods=[m.model_dump() for m in proposed_methods],
         )
 
@@ -248,11 +254,10 @@ async def generate_method(
     )
 
     if request.verification_id is not None:
-        verification_uuid = UUID(request.verification_id)
         verification_service.update(
-            verification_uuid,
+            request.verification_id,
             selected_method_id=request.selected_policy.id,
-            phase="method_generated",
+            phase="method-generated",
             verification_method={
                 "what_to_verify": result["what_to_verify"],
                 "experiment_settings": result["experiment_settings"],
@@ -320,9 +325,8 @@ async def generate_experiment_code(
     )
 
     if request.verification_id is not None:
-        verification_uuid = UUID(request.verification_id)
         update_kwargs: dict[str, object] = {
-            "phase": "code_generated",
+            "phase": "code-generated",
             "repository_name": request.repository_name,
             "github_owner": request.github_owner,
             "modification_notes": request.modification_notes,
@@ -331,7 +335,7 @@ async def generate_experiment_code(
             update_kwargs["github_url"] = github_url
             update_kwargs["workflow_run_id"] = result.get("workflow_run_id")
             update_kwargs["code_generation_status"] = "pending"
-        verification_service.update(verification_uuid, **update_kwargs)
+        verification_service.update(request.verification_id, **update_kwargs)
 
     return GenerateExperimentCodeResponseBody(
         dispatched=result.get("dispatched", False),

@@ -192,6 +192,7 @@ export default function App() {
     handleUpdateVerification,
     handleDeleteVerification,
     handleDuplicateVerification,
+    handleAddVerification,
   } = useVerifications(navigate);
 
   // autonomousListViewKey forces list remount when clicking the same sub-nav
@@ -229,6 +230,9 @@ export default function App() {
         const session = await createRes.json();
         const newId: string = session.id;
 
+        // Add to local state so detail page can find it
+        handleAddVerification(session);
+
         // 2. PATCH with initial data
         await handleUpdateVerification(newId, {
           title: method.title,
@@ -248,7 +252,7 @@ export default function App() {
         // ignore
       }
     },
-    [navigate, handleUpdateVerification],
+    [navigate, handleUpdateVerification, handleAddVerification],
   );
 
   const handleSelectAutonomousSession = useCallback(

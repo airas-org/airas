@@ -69,18 +69,14 @@ Content-Type: application/json
     "user_query": "Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments",
     "what_to_verify": "Whether the proposed human-aligned CoT template achieves higher accuracy than standard CoT on GSM8K and ARC-Challenge benchmarks.",
     "experiment_settings": {
-        "experiment_1": {
-            "model": "gpt-4o",
-            "temperature": "0",
-            "benchmark": "GSM8K",
-            "prompt_method": "human_aligned_cot"
-        },
-        "experiment_2": {
-            "model": "gpt-4o",
-            "temperature": "0",
-            "benchmark": "ARC-Challenge",
-            "prompt_method": "standard_cot"
-        }
+        "experiment_1_model": "gpt-4o",
+        "experiment_1_temperature": "0",
+        "experiment_1_benchmark": "GSM8K",
+        "experiment_1_prompt_method": "human_aligned_cot",
+        "experiment_2_model": "gpt-4o",
+        "experiment_2_temperature": "0",
+        "experiment_2_benchmark": "ARC-Challenge",
+        "experiment_2_prompt_method": "standard_cot"
     },
     "steps": [
         "Prepare GSM8K and ARC-Challenge test sets",
@@ -105,18 +101,14 @@ Content-Type: application/json
     "user_query": "Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments",
     "what_to_verify": "Whether the proposed human-aligned CoT template achieves higher accuracy than standard CoT on GSM8K and ARC-Challenge benchmarks.",
     "experiment_settings": {
-        "experiment_1": {
-            "model": "gpt-4o",
-            "temperature": "0",
-            "benchmark": "GSM8K",
-            "prompt_method": "human_aligned_cot"
-        },
-        "experiment_2": {
-            "model": "gpt-4o",
-            "temperature": "0",
-            "benchmark": "ARC-Challenge",
-            "prompt_method": "standard_cot"
-        }
+        "experiment_1_model": "gpt-4o",
+        "experiment_1_temperature": "0",
+        "experiment_1_benchmark": "GSM8K",
+        "experiment_1_prompt_method": "human_aligned_cot",
+        "experiment_2_model": "gpt-4o",
+        "experiment_2_temperature": "0",
+        "experiment_2_benchmark": "ARC-Challenge",
+        "experiment_2_prompt_method": "standard_cot"
     },
     "steps": [
         "Prepare GSM8K and ARC-Challenge test sets",

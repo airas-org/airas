@@ -2521,6 +2521,7 @@ components:
         verification_id:
           anyOf:
           - type: string
+            format: uuid
           - type: 'null'
           title: Verification Id
       type: object
@@ -2733,6 +2734,7 @@ components:
         verification_id:
           anyOf:
           - type: string
+            format: uuid
           - type: 'null'
           title: Verification Id
       type: object
@@ -2782,7 +2784,7 @@ components:
         generate_verification_method:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: anthropic/claude-sonnet-4-6
+            llm_name: gpt-5.4-2026-03-05
       type: object
       title: GenerateVerificationMethodLLMMapping
     GitHubConfig:
@@ -3738,6 +3740,7 @@ components:
         verification_id:
           anyOf:
           - type: string
+            format: uuid
           - type: 'null'
           title: Verification Id
       type: object
@@ -3778,7 +3781,7 @@ components:
         propose_verification_policy:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: anthropic/claude-sonnet-4-6
+            llm_name: gpt-5.4-2026-03-05
       type: object
       title: ProposeVerificationPolicyLLMMapping
     ProposedMethodSchema:
