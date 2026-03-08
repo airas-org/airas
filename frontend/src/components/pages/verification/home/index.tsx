@@ -1,5 +1,6 @@
 import { FeatherSearch } from "@subframe/core";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Verification } from "../types";
 import { VerificationCard } from "./verification-card";
 
@@ -62,14 +63,6 @@ type CategoryKey =
   | "experiments-done"
   | "paper-done";
 
-const categories: { key: CategoryKey; label: string }[] = [
-  { key: "hypothesis", label: "仮説入力済み" },
-  { key: "plan-decided", label: "方針決定済み" },
-  { key: "implementation-done", label: "実装完了" },
-  { key: "experiments-done", label: "実験完了" },
-  { key: "paper-done", label: "論文生成が完了" },
-];
-
 function getCategoryKey(v: Verification): CategoryKey {
   switch (v.phase) {
     case "initial":
@@ -93,6 +86,14 @@ export function VerificationHomePage({
   onDeleteVerification,
   onDuplicateVerification,
 }: VerificationHomePageProps) {
+  const { t } = useTranslation();
+  const categories: { key: CategoryKey; label: string }[] = [
+    { key: "hypothesis", label: t("verification.home.categories.hypothesis") },
+    { key: "plan-decided", label: t("verification.home.categories.planDecided") },
+    { key: "implementation-done", label: t("verification.home.categories.implementationDone") },
+    { key: "experiments-done", label: t("verification.home.categories.experimentsDone") },
+    { key: "paper-done", label: t("verification.home.categories.paperDone") },
+  ];
   const [search, setSearch] = useState("");
 
   const filtered = search
@@ -122,16 +123,18 @@ export function VerificationHomePage({
       <div className="max-w-full mx-auto px-6 py-6">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-heading-2 font-heading-2 text-default-font">検証一覧</h1>
+            <h1 className="text-heading-2 font-heading-2 text-default-font">
+              {t("verification.home.title")}
+            </h1>
             <p className="text-caption font-caption text-subtext-color mt-1">
-              {verifications.length} projects
+              {t("verification.home.projects", { count: verifications.length })}
             </p>
           </div>
           <div className="w-56 rounded-lg border border-border bg-card px-3 py-1.5 flex items-center gap-2">
             <FeatherSearch className="h-4 w-4 text-subtext-color shrink-0" />
             <input
               type="text"
-              placeholder="Search..."
+              placeholder={t("verification.home.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-transparent text-body font-body text-default-font outline-none placeholder:text-neutral-400"

@@ -93,7 +93,7 @@ export function NodeLLMSelector({ nodeKey, label, value, onChange }: NodeLLMSele
       <Label className="text-xs font-semibold text-muted-foreground">{label}</Label>
       <Select value={currentModelName} onValueChange={handleModelChange}>
         <SelectTrigger className="w-full">
-          <SelectValue placeholder={`デフォルト (${defaultModelName})`} />
+          <SelectValue placeholder={defaultModelName} />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="__default__" className="text-blue-600 font-medium">

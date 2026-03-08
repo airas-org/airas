@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader } from "@/ui";
 import {
   mockExperimentResultResponse,
@@ -107,6 +108,7 @@ export function VerificationDetailPage({
     [verification, onUpdateVerification],
   );
 
+  const { t } = useTranslation();
   const [isPaperGenerating, setIsPaperGenerating] = useState(false);
 
   const handleGeneratePaper = useCallback(
@@ -140,23 +142,25 @@ export function VerificationDetailPage({
       (exp) => exp.status === "completed",
     );
     const entries: { id: string; label: string }[] = [];
-    if (hasProposedMethods) entries.push({ id: "sec-methods", label: "検証方針" });
-    if (verification.plan) entries.push({ id: "sec-plan", label: "検証方法" });
+    if (hasProposedMethods)
+      entries.push({ id: "sec-methods", label: t("verification.detail.tocLabels.methods") });
+    if (verification.plan)
+      entries.push({ id: "sec-plan", label: t("verification.detail.tocLabels.plan") });
     if (verification.implementation) {
-      entries.push({ id: "sec-code", label: "実験コード" });
-      entries.push({ id: "sec-settings", label: "実験設定" });
+      entries.push({ id: "sec-code", label: t("verification.detail.tocLabels.code") });
+      entries.push({ id: "sec-settings", label: t("verification.detail.tocLabels.settings") });
     }
     if (anyCompleted) {
-      entries.push({ id: "sec-dashboard", label: "実験結果" });
+      entries.push({ id: "sec-dashboard", label: t("verification.detail.tocLabels.results") });
     }
     if (anyCompleted) {
-      entries.push({ id: "sec-paper", label: "執筆のための情報収集" });
+      entries.push({ id: "sec-paper", label: t("verification.detail.tocLabels.paperWriting") });
     }
     if (verification.paperDraft) {
-      entries.push({ id: "sec-generated-paper", label: "論文" });
+      entries.push({ id: "sec-generated-paper", label: t("verification.detail.tocLabels.paper") });
     }
     return entries;
-  }, [verification]);
+  }, [verification, t]);
 
   if (!verification) return null;
 
@@ -246,7 +250,9 @@ export function VerificationDetailPage({
             {isPaperGenerating && !verification.paperDraft && (
               <div className="flex items-center gap-2 px-3 py-4">
                 <Loader size="small" />
-                <span className="text-xs text-muted-foreground">論文を生成中...</span>
+                <span className="text-xs text-muted-foreground">
+                  {t("verification.detail.paperWriting.generatingPaper")}
+                </span>
               </div>
             )}
           </div>

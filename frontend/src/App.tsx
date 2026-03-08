@@ -7,8 +7,10 @@ import {
   FeatherBeaker,
   FeatherBell,
   FeatherBookOpen,
+  FeatherCheck,
   FeatherCreditCard,
   FeatherExternalLink,
+  FeatherGlobe,
   FeatherKey,
   FeatherLink,
   FeatherList,
@@ -20,8 +22,10 @@ import {
   FeatherSettings,
   FeatherUser,
 } from "@subframe/core";
+import * as SubframeCore from "@subframe/core";
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AUTONOMOUS_SUB_NAVS, type AutonomousSubNav, MainContent } from "@/components/main-content";
 import {
@@ -42,7 +46,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { OpenAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
-import { IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
+import { DropdownMenu, IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
 
 const initialWorkflowTree: WorkflowTree = {
   nodes: {},
@@ -149,6 +153,7 @@ function GitHubOAuthCallbackRoute() {
 
 export default function App() {
   const eeComponents = useEEComponents();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -188,14 +193,14 @@ export default function App() {
   const handleCreateVerification = useCallback(() => {
     const newVerification: Verification = {
       id: `v-${Date.now()}`,
-      title: "新規検証",
+      title: t("verification.detail.newTitle"),
       query: "",
       createdAt: new Date(),
       phase: "initial",
     };
     setVerifications((prev) => [newVerification, ...prev]);
     navigate(`/verification/${newVerification.id}`);
-  }, [navigate]);
+  }, [navigate, t]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: 初回マウント時のみ実行
   useEffect(() => {
@@ -218,19 +223,22 @@ export default function App() {
     [location.pathname, navigate],
   );
 
-  const handleDuplicateVerification = useCallback((id: string) => {
-    setVerifications((prev) => {
-      const source = prev.find((v) => v.id === id);
-      if (!source) return prev;
-      const copy: Verification = {
-        ...source,
-        id: `v-${Date.now()}`,
-        title: `${source.title} (コピー)`,
-        createdAt: new Date(),
-      };
-      return [copy, ...prev];
-    });
-  }, []);
+  const handleDuplicateVerification = useCallback(
+    (id: string) => {
+      setVerifications((prev) => {
+        const source = prev.find((v) => v.id === id);
+        if (!source) return prev;
+        const copy: Verification = {
+          ...source,
+          id: `v-${Date.now()}`,
+          title: `${source.title} ${t("verification.detail.copyTitle")}`,
+          createdAt: new Date(),
+        };
+        return [copy, ...prev];
+      });
+    },
+    [t],
+  );
 
   const handleCreateWithMethod = useCallback(
     (sourceVerification: Verification, method: ProposedMethod) => {
@@ -387,6 +395,10 @@ export default function App() {
     if (isMobile) setSidebarOpen(false);
   }, [isMobile]);
 
+  const currentLanguage = (i18n.resolvedLanguage ?? i18n.language)?.toLowerCase().startsWith("ja")
+    ? "ja"
+    : "en";
+
   const isSettingsView = activeSection === "settings";
 
   const appContent = (
@@ -424,7 +436,7 @@ export default function App() {
               onClick={() => navigate("/settings/profile")}
             >
               <FeatherSettings className="h-4 w-4" />
-              <span className="text-sm font-medium">設定</span>
+              <span className="text-sm font-medium">{t("nav.settings")}</span>
             </button>
           }
         >
@@ -436,21 +448,21 @@ export default function App() {
                 onClick={() => navigate("/home")}
               >
                 <FeatherArrowLeft className="h-4 w-4" />
-                <span className="text-sm font-medium">設定</span>
+                <span className="text-sm font-medium">{t("nav.settings")}</span>
               </button>
               <SidebarWithSections.NavSection
-                label={<span className="text-sm font-medium">アカウント</span>}
+                label={<span className="text-sm font-medium">{t("settings.accountSection")}</span>}
               >
                 <SidebarWithSections.NavItem
                   icon={<FeatherUser />}
                   selected={getSettingsTab(location.pathname) === "profile"}
                   onClick={() => navigate("/settings/profile")}
                 >
-                  プロフィール
+                  {t("nav.profile")}
                 </SidebarWithSections.NavItem>
               </SidebarWithSections.NavSection>
               <SidebarWithSections.NavSection
-                label={<span className="text-sm font-medium">サポート</span>}
+                label={<span className="text-sm font-medium">{t("nav.support")}</span>}
               >
                 <SidebarWithSections.NavItem
                   icon={<FeatherBookOpen />}
@@ -458,7 +470,7 @@ export default function App() {
                   rightSlot={<FeatherExternalLink className="h-3 w-3 text-neutral-400" />}
                   onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
                 >
-                  ドキュメント
+                  {t("nav.docs")}
                 </SidebarWithSections.NavItem>
                 <SidebarWithSections.NavItem
                   icon={<SiDiscord className="h-4 w-4" />}
@@ -473,36 +485,36 @@ export default function App() {
                   selected={getSettingsTab(location.pathname) === "feedback"}
                   onClick={() => navigate("/settings/feedback")}
                 >
-                  お問い合わせ
+                  {t("nav.feedback")}
                 </SidebarWithSections.NavItem>
               </SidebarWithSections.NavSection>
               <SidebarWithSections.NavSection
-                label={<span className="text-sm font-medium">AIRASのリソース</span>}
+                label={<span className="text-sm font-medium">{t("settings.externalServicesSection")}</span>}
               >
                 <SidebarWithSections.NavItem
                   icon={<FeatherLink />}
                   selected={getSettingsTab(location.pathname) === "integration"}
                   onClick={() => navigate("/settings/integration")}
                 >
-                  接続
+                  {t("nav.integration")}
                 </SidebarWithSections.NavItem>
                 <SidebarWithSections.NavItem
                   icon={<FeatherKey />}
                   selected={getSettingsTab(location.pathname) === "api-token"}
                   onClick={() => navigate("/settings/api-token")}
                 >
-                  シークレット
+                  {t("userMenu.apiToken")}
                 </SidebarWithSections.NavItem>
               </SidebarWithSections.NavSection>
               <SidebarWithSections.NavSection
-                label={<span className="text-sm font-medium">支払い</span>}
+                label={<span className="text-sm font-medium">{t("nav.userPlan")}</span>}
               >
                 <SidebarWithSections.NavItem
                   icon={<FeatherCreditCard />}
                   selected={getSettingsTab(location.pathname) === "user-plan"}
                   onClick={() => navigate("/settings/user-plan")}
                 >
-                  プラン
+                  {t("nav.userPlan")}
                 </SidebarWithSections.NavItem>
                 <SidebarWithSections.NavItem
                   icon={<FeatherReceipt />}
@@ -530,7 +542,7 @@ export default function App() {
                   handleMobileNavClose();
                 }}
               >
-                新規検証
+                {t("nav.newVerification")}
               </SidebarWithSections.NavItem>
               <SidebarWithSections.NavItem
                 icon={<FeatherList />}
@@ -540,14 +552,14 @@ export default function App() {
                   handleMobileNavClose();
                 }}
               >
-                検証一覧
+                {t("nav.verificationList")}
               </SidebarWithSections.NavItem>
               <SidebarWithSections.NavItem
                 icon={<FeatherBeaker />}
                 selected={activeSection === "autonomous-research"}
                 className="cursor-default hover:bg-transparent active:bg-transparent"
               >
-                自動研究
+                {t("nav.autonomousResearch")}
               </SidebarWithSections.NavItem>
               <div className="flex flex-col gap-0.5 pl-7">
                 <button
@@ -564,7 +576,7 @@ export default function App() {
                   }}
                 >
                   <span className="inline-block h-1 w-1 rounded-full bg-current" />
-                  Topic-Driven
+                  {t("nav.topicDriven")}
                 </button>
                 <button
                   type="button"
@@ -581,7 +593,7 @@ export default function App() {
                   }}
                 >
                   <span className="inline-block h-1 w-1 rounded-full bg-current" />
-                  Hypothesis-Driven
+                  {t("nav.hypothesisDriven")}
                 </button>
               </div>
             </>
@@ -617,6 +629,39 @@ export default function App() {
           }
           rightSlot={
             <>
+              <SubframeCore.DropdownMenu.Root>
+                <SubframeCore.DropdownMenu.Trigger asChild={true}>
+                  <IconButton
+                    variant="neutral-tertiary"
+                    size="medium"
+                    icon={<FeatherGlobe />}
+                    aria-label={t("app.languageSwitcher.ariaLabel")}
+                  />
+                </SubframeCore.DropdownMenu.Trigger>
+                <SubframeCore.DropdownMenu.Portal>
+                  <SubframeCore.DropdownMenu.Content
+                    side="bottom"
+                    align="end"
+                    sideOffset={4}
+                    asChild={true}
+                  >
+                    <DropdownMenu>
+                      <DropdownMenu.DropdownItem
+                        icon={currentLanguage === "ja" ? <FeatherCheck /> : null}
+                        onSelect={() => i18n.changeLanguage("ja")}
+                      >
+                        🇯🇵 日本語
+                      </DropdownMenu.DropdownItem>
+                      <DropdownMenu.DropdownItem
+                        icon={currentLanguage === "en" ? <FeatherCheck /> : null}
+                        onSelect={() => i18n.changeLanguage("en")}
+                      >
+                        🇺🇸 English
+                      </DropdownMenu.DropdownItem>
+                    </DropdownMenu>
+                  </SubframeCore.DropdownMenu.Content>
+                </SubframeCore.DropdownMenu.Portal>
+              </SubframeCore.DropdownMenu.Root>
               <div className="hidden md:flex items-center gap-4">
                 <IconButton
                   variant="neutral-tertiary"
@@ -701,7 +746,7 @@ export default function App() {
               <eeComponents.AuthCallback />
             ) : (
               <div className="flex min-h-screen items-center justify-center">
-                <div className="text-muted-foreground">Loading...</div>
+                <div className="text-muted-foreground">{t("common.loading")}</div>
               </div>
             )
           }

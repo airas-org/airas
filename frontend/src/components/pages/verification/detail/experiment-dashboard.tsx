@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { BarChart } from "@/ui";
 import type { ExperimentSetting } from "../types";
 
@@ -6,6 +7,7 @@ interface ExperimentDashboardProps {
 }
 
 export function ExperimentDashboard({ experiments }: ExperimentDashboardProps) {
+  const { t } = useTranslation();
   const completedExperiments = experiments.filter(
     (exp): exp is ExperimentSetting & { result: NonNullable<ExperimentSetting["result"]> } =>
       exp.status === "completed" && exp.result != null,
@@ -22,9 +24,13 @@ export function ExperimentDashboard({ experiments }: ExperimentDashboardProps) {
 
   return (
     <div className="rounded-lg border border-border bg-card p-6">
-      <h2 className="text-lg font-semibold text-foreground">実験結果の比較</h2>
+      <h2 className="text-lg font-semibold text-foreground">
+        {t("verification.detail.experimentDashboard.title")}
+      </h2>
       <p className="text-sm text-muted-foreground mt-1">
-        完了した{completedExperiments.length}件の実験メトリクスを比較
+        {t("verification.detail.experimentDashboard.subtitle", {
+          count: completedExperiments.length,
+        })}
       </p>
       <div className="mt-4">
         <BarChart data={chartData} categories={metricKeys} index="name" />
