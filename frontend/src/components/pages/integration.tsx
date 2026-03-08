@@ -194,13 +194,13 @@ export function IntegrationPage() {
                       </Button>
                     ) : (
                       <Button
-                        className="bg-brand-900/10 text-brand-600 hover:bg-brand-900/20 border-brand-600"
-                        variant="brand-secondary"
-                        size="large"
+                        className="bg-neutral-800 text-neutral-300 hover:bg-neutral-700 border-neutral-700 text-caption font-caption"
+                        variant="neutral-secondary"
+                        size="medium"
                         onClick={handleGithubConnect}
                         disabled={githubConnecting}
                       >
-                        {githubConnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        {githubConnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
                         連携
                       </Button>
                     )}
@@ -275,9 +275,9 @@ export function IntegrationPage() {
                       </span>
                     </div>
                     <Button
-                      className="bg-brand-900/10 text-brand-600 hover:bg-brand-900/20 border-brand-600"
-                      variant="brand-secondary"
-                      size="large"
+                      className="bg-neutral-800 text-neutral-300 border-neutral-700 text-caption font-caption"
+                      variant="neutral-secondary"
+                      size="medium"
                       disabled
                     >
                       連携
