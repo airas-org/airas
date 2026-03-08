@@ -3,6 +3,15 @@ from typing import Any
 from pydantic import BaseModel
 
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig  # noqa: F401
+from airas.usecases.assisted_research.generate_experiment_code_subgraph.generate_experiment_code_subgraph import (
+    GenerateExperimentCodeLLMMapping,
+)
+from airas.usecases.assisted_research.generate_verification_method_subgraph.generate_verification_method_subgraph import (
+    GenerateVerificationMethodLLMMapping,
+)
+from airas.usecases.assisted_research.propose_verification_policy_subgraph.propose_verification_policy_subgraph import (
+    ProposeVerificationPolicyLLMMapping,
+)
 
 
 class ProposedMethodSchema(BaseModel):
@@ -16,6 +25,7 @@ class ProposedMethodSchema(BaseModel):
 
 class ProposePoliciesRequestBody(BaseModel):
     user_query: str
+    llm_mapping: ProposeVerificationPolicyLLMMapping | None = None
 
 
 class ProposePoliciesResponseBody(BaseModel):
@@ -27,6 +37,7 @@ class ProposePoliciesResponseBody(BaseModel):
 class GenerateMethodRequestBody(BaseModel):
     user_query: str
     selected_policy: ProposedMethodSchema
+    llm_mapping: GenerateVerificationMethodLLMMapping | None = None
 
 
 class GenerateMethodResponseBody(BaseModel):
@@ -45,6 +56,7 @@ class GenerateExperimentCodeRequestBody(BaseModel):
     github_owner: str
     branch_name: str
     github_actions_agent: GitHubActionsAgent
+    llm_mapping: GenerateExperimentCodeLLMMapping | None = None
 
 
 class GenerateExperimentCodeResponseBody(BaseModel):

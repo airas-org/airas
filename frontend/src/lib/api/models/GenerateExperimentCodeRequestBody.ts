@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { GenerateExperimentCodeLLMMapping } from './GenerateExperimentCodeLLMMapping';
 export type GenerateExperimentCodeRequestBody = {
     user_query: string;
     what_to_verify: string;
@@ -12,6 +13,7 @@ export type GenerateExperimentCodeRequestBody = {
     github_owner: string;
     branch_name: string;
     github_actions_agent: GenerateExperimentCodeRequestBody.github_actions_agent;
+    llm_mapping?: (GenerateExperimentCodeLLMMapping | null);
 };
 export namespace GenerateExperimentCodeRequestBody {
     export enum github_actions_agent {

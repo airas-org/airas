@@ -49,7 +49,9 @@ async def propose_policies(
     config = {"callbacks": [handler]} if handler else {}
 
     result = await (
-        ProposeVerificationPolicySubgraph(litellm_client=litellm_client)
+        ProposeVerificationPolicySubgraph(
+            litellm_client=litellm_client, llm_mapping=request.llm_mapping
+        )
         .build_graph()
         .ainvoke({"user_query": request.user_query}, config=config)
     )
@@ -95,7 +97,9 @@ async def generate_method(
     config = {"callbacks": [handler]} if handler else {}
 
     result = await (
-        GenerateVerificationMethodSubgraph(litellm_client=litellm_client)
+        GenerateVerificationMethodSubgraph(
+            litellm_client=litellm_client, llm_mapping=request.llm_mapping
+        )
         .build_graph()
         .ainvoke(
             {
@@ -137,7 +141,9 @@ async def generate_experiment_code(
     )
 
     result = await (
-        GenerateExperimentCodeSubgraph(github_client=github_client)
+        GenerateExperimentCodeSubgraph(
+            github_client=github_client, llm_mapping=request.llm_mapping
+        )
         .build_graph()
         .ainvoke(
             {

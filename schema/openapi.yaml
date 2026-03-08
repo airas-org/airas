@@ -2984,6 +2984,14 @@ components:
       - references_bib
       - execution_time
       title: GenerateBibfileSubgraphResponseBody
+    GenerateExperimentCodeLLMMapping:
+      properties:
+        dispatch_experiment_code_generation:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: anthropic/claude-sonnet-4-6
+      type: object
+      title: GenerateExperimentCodeLLMMapping
     GenerateExperimentCodeRequestBody:
       properties:
         user_query:
@@ -3021,6 +3029,10 @@ components:
           - claude_code
           - open_code
           title: Github Actions Agent
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateExperimentCodeLLMMapping'
+          - type: 'null'
       type: object
       required:
       - user_query
@@ -3224,6 +3236,10 @@ components:
           title: User Query
         selected_policy:
           $ref: '#/components/schemas/ProposedMethodSchema'
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateVerificationMethodLLMMapping'
+          - type: 'null'
       type: object
       required:
       - user_query
@@ -3259,6 +3275,14 @@ components:
             llm_name: gpt-5.2
       type: object
       title: GenerateQueriesLLMMapping
+    GenerateVerificationMethodLLMMapping:
+      properties:
+        generate_verification_method:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: anthropic/claude-sonnet-4-6
+      type: object
+      title: GenerateVerificationMethodLLMMapping
     GitHubAuthorizeResponse:
       properties:
         authorize_url:
@@ -4255,6 +4279,10 @@ components:
         user_query:
           type: string
           title: User Query
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/ProposeVerificationPolicyLLMMapping'
+          - type: 'null'
       type: object
       required:
       - user_query
@@ -4280,6 +4308,14 @@ components:
       - infeasible_reason
       - proposed_methods
       title: ProposePoliciesResponseBody
+    ProposeVerificationPolicyLLMMapping:
+      properties:
+        propose_verification_policy:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: anthropic/claude-sonnet-4-6
+      type: object
+      title: ProposeVerificationPolicyLLMMapping
     ProposedMethodSchema:
       properties:
         id:

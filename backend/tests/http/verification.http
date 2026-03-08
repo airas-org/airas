@@ -1,0 +1,142 @@
+### Verification - Propose Policies (default llm_mapping)
+
+POST http://localhost:8000/airas/v1/verification/propose-policies
+Content-Type: application/json
+
+{
+    "user_query": "Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments"
+}
+
+### Verification - Propose Policies (custom llm_mapping)
+
+POST http://localhost:8000/airas/v1/verification/propose-policies
+Content-Type: application/json
+
+{
+    "user_query": "Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments",
+    "llm_mapping": {
+        "propose_verification_policy": {
+            "llm_name": "anthropic/claude-sonnet-4-6"
+        }
+    }
+}
+
+### Verification - Generate Method (default llm_mapping)
+
+POST http://localhost:8000/airas/v1/verification/generate-method
+Content-Type: application/json
+
+{
+    "user_query": "Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments",
+    "selected_policy": {
+        "id": "0",
+        "title": "Benchmark Comparison",
+        "what_to_verify": "Whether the proposed human-aligned CoT template achieves higher accuracy than standard CoT on established benchmarks.",
+        "method": "Evaluate on GSM8K and ARC-Challenge benchmarks using GPT-4o with the proposed template vs. standard CoT baseline.",
+        "pros": ["Objective metric", "Reproducible"],
+        "cons": ["Benchmark-specific", "May not generalize"]
+    }
+}
+
+### Verification - Generate Method (custom llm_mapping)
+
+POST http://localhost:8000/airas/v1/verification/generate-method
+Content-Type: application/json
+
+{
+    "user_query": "Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments",
+    "selected_policy": {
+        "id": "0",
+        "title": "Benchmark Comparison",
+        "what_to_verify": "Whether the proposed human-aligned CoT template achieves higher accuracy than standard CoT on established benchmarks.",
+        "method": "Evaluate on GSM8K and ARC-Challenge benchmarks using GPT-4o with the proposed template vs. standard CoT baseline.",
+        "pros": ["Objective metric", "Reproducible"],
+        "cons": ["Benchmark-specific", "May not generalize"]
+    },
+    "llm_mapping": {
+        "generate_verification_method": {
+            "llm_name": "anthropic/claude-sonnet-4-6"
+        }
+    }
+}
+
+### Verification - Generate Experiment Code (default llm_mapping)
+
+POST http://localhost:8000/airas/v1/verification/generate-experiment-code
+Content-Type: application/json
+
+{
+    "user_query": "Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments",
+    "what_to_verify": "Whether the proposed human-aligned CoT template achieves higher accuracy than standard CoT on GSM8K and ARC-Challenge benchmarks.",
+    "experiment_settings": {
+        "experiment_1": {
+            "model": "gpt-4o",
+            "temperature": "0",
+            "benchmark": "GSM8K",
+            "prompt_method": "human_aligned_cot"
+        },
+        "experiment_2": {
+            "model": "gpt-4o",
+            "temperature": "0",
+            "benchmark": "ARC-Challenge",
+            "prompt_method": "standard_cot"
+        }
+    },
+    "steps": [
+        "Prepare GSM8K and ARC-Challenge test sets",
+        "Implement the human-aligned CoT prompt template",
+        "Run inference with GPT-4o using both prompt methods",
+        "Compute accuracy for each method and benchmark",
+        "Compare results and analyze differences"
+    ],
+    "modification_notes": "",
+    "repository_name": "my-experiment-repo",
+    "github_owner": "auto-res2",
+    "branch_name": "main",
+    "github_actions_agent": "open_code"
+}
+
+### Verification - Generate Experiment Code (custom llm_mapping)
+
+POST http://localhost:8000/airas/v1/verification/generate-experiment-code
+Content-Type: application/json
+
+{
+    "user_query": "Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments",
+    "what_to_verify": "Whether the proposed human-aligned CoT template achieves higher accuracy than standard CoT on GSM8K and ARC-Challenge benchmarks.",
+    "experiment_settings": {
+        "experiment_1": {
+            "model": "gpt-4o",
+            "temperature": "0",
+            "benchmark": "GSM8K",
+            "prompt_method": "human_aligned_cot"
+        },
+        "experiment_2": {
+            "model": "gpt-4o",
+            "temperature": "0",
+            "benchmark": "ARC-Challenge",
+            "prompt_method": "standard_cot"
+        }
+    },
+    "steps": [
+        "Prepare GSM8K and ARC-Challenge test sets",
+        "Implement the human-aligned CoT prompt template",
+        "Run inference with GPT-4o using both prompt methods",
+        "Compute accuracy for each method and benchmark",
+        "Compare results and analyze differences"
+    ],
+    "modification_notes": "Use temperature=0 for reproducibility",
+    "repository_name": "my-experiment-repo",
+    "github_owner": "auto-res2",
+    "branch_name": "main",
+    "github_actions_agent": "open_code",
+    "llm_mapping": {
+        "dispatch_experiment_code_generation": {
+            "llm_name": "anthropic/claude-sonnet-4-6"
+        }
+    }
+}
+
+### Verification - Get Experiment Code Status
+
+GET http://localhost:8000/airas/v1/verification/experiment-code-status/auto-res2/my-experiment-repo/123456789

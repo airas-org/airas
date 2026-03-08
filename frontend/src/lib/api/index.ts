@@ -67,6 +67,7 @@ export type { GenerateBibfileSubgraphResponseBody } from './models/GenerateBibfi
 export type { GenerateExperimentalDesignLLMMapping } from './models/GenerateExperimentalDesignLLMMapping';
 export type { GenerateExperimentalDesignSubgraphRequestBody } from './models/GenerateExperimentalDesignSubgraphRequestBody';
 export type { GenerateExperimentalDesignSubgraphResponseBody } from './models/GenerateExperimentalDesignSubgraphResponseBody';
+export type { GenerateExperimentCodeLLMMapping } from './models/GenerateExperimentCodeLLMMapping';
 export { GenerateExperimentCodeRequestBody } from './models/GenerateExperimentCodeRequestBody';
 export type { GenerateExperimentCodeResponseBody } from './models/GenerateExperimentCodeResponseBody';
 export type { GenerateHypothesisSubgraphV0LLMMapping } from './models/GenerateHypothesisSubgraphV0LLMMapping';
@@ -78,6 +79,7 @@ export type { GenerateLatexSubgraphResponseBody } from './models/GenerateLatexSu
 export type { GenerateMethodRequestBody } from './models/GenerateMethodRequestBody';
 export type { GenerateMethodResponseBody } from './models/GenerateMethodResponseBody';
 export type { GenerateQueriesLLMMapping } from './models/GenerateQueriesLLMMapping';
+export type { GenerateVerificationMethodLLMMapping } from './models/GenerateVerificationMethodLLMMapping';
 export type { GitHubAuthorizeResponse } from './models/GitHubAuthorizeResponse';
 export type { GitHubCallbackRequest } from './models/GitHubCallbackRequest';
 export type { GitHubConfig } from './models/GitHubConfig';
@@ -115,6 +117,7 @@ export type { PrepareRepositorySubgraphResponseBody } from './models/PrepareRepo
 export type { ProposedMethodSchema } from './models/ProposedMethodSchema';
 export type { ProposePoliciesRequestBody } from './models/ProposePoliciesRequestBody';
 export type { ProposePoliciesResponseBody } from './models/ProposePoliciesResponseBody';
+export type { ProposeVerificationPolicyLLMMapping } from './models/ProposeVerificationPolicyLLMMapping';
 export type { PushGitHubRequestBody } from './models/PushGitHubRequestBody';
 export type { PushGitHubResponseBody } from './models/PushGitHubResponseBody';
 export { PushLatexSubgraphRequestBody } from './models/PushLatexSubgraphRequestBody';
