@@ -80,4 +80,17 @@ DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
     "dispatch_interactive_repo_agent": NodeLLMConfig(
         llm_name="anthropic/claude-sonnet-4-5"
     ),
+    # verification/
+    # ProposeVerificationPolicySubgraph
+    "propose_verification_policy": NodeLLMConfig(
+        llm_name="anthropic/claude-sonnet-4-6"
+    ),
+    # GenerateVerificationMethodSubgraph
+    "generate_verification_method": NodeLLMConfig(
+        llm_name="anthropic/claude-sonnet-4-6"
+    ),
+    # GenerateExperimentCodeSubgraph
+    "dispatch_experiment_code_generation": NodeLLMConfig(
+        llm_name="anthropic/claude-sonnet-4-6"
+    ),
 }

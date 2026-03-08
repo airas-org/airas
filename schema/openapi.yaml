@@ -1469,6 +1469,399 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/verification/propose-policies:
+    post:
+      tags:
+      - verification
+      summary: Propose Policies
+      operationId: propose_policies_airas_v1_verification_propose_policies_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposePoliciesRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposePoliciesResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /airas/v1/verification/generate-method:
+    post:
+      tags:
+      - verification
+      summary: Generate Method
+      operationId: generate_method_airas_v1_verification_generate_method_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateMethodRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateMethodResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /airas/v1/verification/generate-experiment-code:
+    post:
+      tags:
+      - verification
+      summary: Generate Experiment Code
+      operationId: generate_experiment_code_airas_v1_verification_generate_experiment_code_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateExperimentCodeRequestBody'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateExperimentCodeResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/verification/experiment-code-status/{github_owner}/{repository_name}/{workflow_run_id}:
+    get:
+      tags:
+      - verification
+      summary: Get Experiment Code Status
+      operationId: get_experiment_code_status_airas_v1_verification_experiment_code_status__github_owner___repository_name___workflow_run_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: github_owner
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Github Owner
+      - name: repository_name
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Repository Name
+      - name: workflow_run_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Run Id
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentCodeStatusResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/auth/me:
+    get:
+      tags:
+      - ee-auth
+      summary: Get Me
+      description: Return the current authenticated user's ID.
+      operationId: get_me_airas_ee_auth_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - HTTPBearer: []
+  /airas/ee/api-keys:
+    get:
+      tags:
+      - ee-api-keys
+      summary: List Api Keys
+      operationId: list_api_keys_airas_ee_api_keys_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyListResponse'
+      security:
+      - HTTPBearer: []
+    post:
+      tags:
+      - ee-api-keys
+      summary: Save Api Key
+      operationId: save_api_key_airas_ee_api_keys_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveApiKeyRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /airas/ee/api-keys/{provider}:
+    delete:
+      tags:
+      - ee-api-keys
+      summary: Delete Api Key
+      operationId: delete_api_key_airas_ee_api_keys__provider__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: provider
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ApiProvider'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/plan:
+    get:
+      tags:
+      - ee-plan
+      summary: Get Plan
+      operationId: get_plan_airas_ee_plan_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPlanResponse'
+      security:
+      - HTTPBearer: []
+  /airas/ee/stripe/checkout:
+    post:
+      tags:
+      - ee-stripe
+      summary: Create Checkout
+      operationId: create_checkout_airas_ee_stripe_checkout_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /airas/ee/stripe/cancel:
+    post:
+      tags:
+      - ee-stripe
+      summary: Cancel Subscription
+      operationId: cancel_subscription_airas_ee_stripe_cancel_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - HTTPBearer: []
+  /airas/ee/stripe/webhook:
+    post:
+      tags:
+      - ee-stripe
+      summary: Stripe Webhook
+      operationId: stripe_webhook_airas_ee_stripe_webhook_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /airas/ee/github/authorize:
+    get:
+      tags:
+      - ee-github-oauth
+      summary: Authorize
+      operationId: authorize_airas_ee_github_authorize_get
+      parameters:
+      - name: redirect_uri
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Redirect Uri
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitHubAuthorizeResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/callback:
+    post:
+      tags:
+      - ee-github-oauth
+      summary: Callback
+      operationId: callback_airas_ee_github_callback_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GitHubCallbackRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/status:
+    get:
+      tags:
+      - ee-github-oauth
+      summary: Status
+      operationId: status_airas_ee_github_status_get
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitHubConnectionStatus'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/disconnect:
+    delete:
+      tags:
+      - ee-github-oauth
+      summary: Disconnect
+      operationId: disconnect_airas_ee_github_disconnect_delete
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AnalyzeExperimentLLMMapping:
@@ -1525,6 +1918,46 @@ components:
           default: anthropic
       type: object
       title: AnthropicParams
+    ApiKeyListResponse:
+      properties:
+        keys:
+          items:
+            $ref: '#/components/schemas/ApiKeyResponse'
+          type: array
+          title: Keys
+      type: object
+      required:
+      - keys
+      title: ApiKeyListResponse
+    ApiKeyResponse:
+      properties:
+        provider:
+          $ref: '#/components/schemas/ApiProvider'
+        masked_key:
+          type: string
+          title: Masked Key
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - provider
+      - masked_key
+      - created_at
+      - updated_at
+      title: ApiKeyResponse
+    ApiProvider:
+      type: string
+      enum:
+      - openai
+      - anthropic
+      - gemini
+      title: ApiProvider
     AssistedResearchLinkCreateRequest:
       properties:
         from_step_id:
@@ -1707,6 +2140,28 @@ components:
       - cancelled
       - execution_time
       title: CancelInteractiveRepoAgentResponseBody
+    CheckoutRequest:
+      properties:
+        success_url:
+          type: string
+          title: Success Url
+        cancel_url:
+          type: string
+          title: Cancel Url
+      type: object
+      required:
+      - success_url
+      - cancel_url
+      title: CheckoutRequest
+    CheckoutResponse:
+      properties:
+        checkout_url:
+          type: string
+          title: Checkout Url
+      type: object
+      required:
+      - checkout_url
+      title: CheckoutResponse
     CodeGenerationGraphLLMMapping:
       properties:
         dispatch_code_generation:
@@ -2264,6 +2719,21 @@ components:
             'config/run/run1.yaml')
       type: object
       title: ExperimentCode
+    ExperimentCodeStatusResponseBody:
+      properties:
+        status:
+          type: string
+          title: Status
+        conclusion:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Conclusion
+      type: object
+      required:
+      - status
+      - conclusion
+      title: ExperimentCodeStatusResponseBody
     ExperimentalAnalysis:
       properties:
         analysis_report:
@@ -2514,6 +2984,84 @@ components:
       - references_bib
       - execution_time
       title: GenerateBibfileSubgraphResponseBody
+    GenerateExperimentCodeRequestBody:
+      properties:
+        user_query:
+          type: string
+          title: User Query
+        what_to_verify:
+          type: string
+          title: What To Verify
+        experiment_settings:
+          additionalProperties:
+            additionalProperties: true
+            type: object
+          type: object
+          title: Experiment Settings
+        steps:
+          items:
+            type: string
+          type: array
+          title: Steps
+        modification_notes:
+          type: string
+          title: Modification Notes
+        repository_name:
+          type: string
+          title: Repository Name
+        github_owner:
+          type: string
+          title: Github Owner
+        branch_name:
+          type: string
+          title: Branch Name
+        github_actions_agent:
+          type: string
+          enum:
+          - claude_code
+          - open_code
+          title: Github Actions Agent
+      type: object
+      required:
+      - user_query
+      - what_to_verify
+      - experiment_settings
+      - steps
+      - modification_notes
+      - repository_name
+      - github_owner
+      - branch_name
+      - github_actions_agent
+      title: GenerateExperimentCodeRequestBody
+    GenerateExperimentCodeResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        workflow_run_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Workflow Run Id
+        github_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Url
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - workflow_run_id
+      - github_url
+      - execution_time
+      title: GenerateExperimentCodeResponseBody
     GenerateExperimentalDesignLLMMapping:
       properties:
         generate_experimental_design:
@@ -2669,6 +3217,40 @@ components:
       - latex_text
       - execution_time
       title: GenerateLatexSubgraphResponseBody
+    GenerateMethodRequestBody:
+      properties:
+        user_query:
+          type: string
+          title: User Query
+        selected_policy:
+          $ref: '#/components/schemas/ProposedMethodSchema'
+      type: object
+      required:
+      - user_query
+      - selected_policy
+      title: GenerateMethodRequestBody
+    GenerateMethodResponseBody:
+      properties:
+        what_to_verify:
+          type: string
+          title: What To Verify
+        experiment_settings:
+          additionalProperties:
+            additionalProperties: true
+            type: object
+          type: object
+          title: Experiment Settings
+        steps:
+          items:
+            type: string
+          type: array
+          title: Steps
+      type: object
+      required:
+      - what_to_verify
+      - experiment_settings
+      - steps
+      title: GenerateMethodResponseBody
     GenerateQueriesLLMMapping:
       properties:
         generate_queries:
@@ -2677,6 +3259,36 @@ components:
             llm_name: gpt-5.2
       type: object
       title: GenerateQueriesLLMMapping
+    GitHubAuthorizeResponse:
+      properties:
+        authorize_url:
+          type: string
+          title: Authorize Url
+        state:
+          type: string
+          title: State
+      type: object
+      required:
+      - authorize_url
+      - state
+      title: GitHubAuthorizeResponse
+    GitHubCallbackRequest:
+      properties:
+        code:
+          type: string
+          title: Code
+        state:
+          type: string
+          title: State
+        redirect_uri:
+          type: string
+          title: Redirect Uri
+      type: object
+      required:
+      - code
+      - state
+      - redirect_uri
+      title: GitHubCallbackRequest
     GitHubConfig:
       properties:
         github_owner:
@@ -2713,6 +3325,26 @@ components:
       - branch_name
       title: GitHubConfigRequest
       description: Request body schema for GitHub config (owner is resolved server-side).
+    GitHubConnectionStatus:
+      properties:
+        connected:
+          type: boolean
+          title: Connected
+        github_login:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Login
+        connected_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Connected At
+      type: object
+      required:
+      - connected
+      title: GitHubConnectionStatus
     GithubDownloadRequest:
       properties:
         github_config:
@@ -3618,6 +4250,69 @@ components:
       - is_branch_ready
       - execution_time
       title: PrepareRepositorySubgraphResponseBody
+    ProposePoliciesRequestBody:
+      properties:
+        user_query:
+          type: string
+          title: User Query
+      type: object
+      required:
+      - user_query
+      title: ProposePoliciesRequestBody
+    ProposePoliciesResponseBody:
+      properties:
+        feasible:
+          type: boolean
+          title: Feasible
+        infeasible_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Infeasible Reason
+        proposed_methods:
+          items:
+            $ref: '#/components/schemas/ProposedMethodSchema'
+          type: array
+          title: Proposed Methods
+      type: object
+      required:
+      - feasible
+      - infeasible_reason
+      - proposed_methods
+      title: ProposePoliciesResponseBody
+    ProposedMethodSchema:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        what_to_verify:
+          type: string
+          title: What To Verify
+        method:
+          type: string
+          title: Method
+        pros:
+          items:
+            type: string
+          type: array
+          title: Pros
+        cons:
+          items:
+            type: string
+          type: array
+          title: Cons
+      type: object
+      required:
+      - id
+      - title
+      - what_to_verify
+      - method
+      - pros
+      - cons
+      title: ProposedMethodSchema
     PushGitHubRequestBody:
       properties:
         github_config:
@@ -4090,6 +4785,18 @@ components:
       - runner_label
       - description
       title: RunnerConfig
+    SaveApiKeyRequest:
+      properties:
+        provider:
+          $ref: '#/components/schemas/ApiProvider'
+        api_key:
+          type: string
+          title: Api Key
+      type: object
+      required:
+      - provider
+      - api_key
+      title: SaveApiKeyRequest
     SearchPaperTitlesFromQdrantLLMMapping:
       properties:
         search_paper_titles_from_qdrant:
@@ -4590,6 +5297,28 @@ components:
           description: Additional experiment-specific parameters
       type: object
       title: TrainingConfig
+    UserPlanResponse:
+      properties:
+        plan_type:
+          type: string
+          title: Plan Type
+        status:
+          type: string
+          title: Status
+        stripe_customer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Stripe Customer Id
+        requires_api_keys:
+          type: boolean
+          title: Requires Api Keys
+          default: true
+      type: object
+      required:
+      - plan_type
+      - status
+      title: UserPlanResponse
     ValidationError:
       properties:
         loc:

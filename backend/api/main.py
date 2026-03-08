@@ -31,6 +31,7 @@ from api.routes.v1 import (
     repositories,
     research_history,
     topic_open_ended_research,
+    verification,
 )
 
 
@@ -116,6 +117,7 @@ app.include_router(
 app.include_router(
     hypothesis_driven_research.router, prefix="/airas/v1", dependencies=auth_deps
 )
+app.include_router(verification.router, prefix="/airas/v1", dependencies=auth_deps)
 
 # Register EE routes if enterprise is enabled
 _ee_settings = get_ee_settings()
