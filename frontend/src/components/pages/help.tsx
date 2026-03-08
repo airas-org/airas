@@ -184,7 +184,7 @@ export function HelpPage() {
               </p>
             </a>
             <a
-              href="https://discord.gg/KGm5FGY5"
+              href="https://discord.gg/uDmkgKfkes"
               target="_blank"
               rel="noreferrer"
               className="flex-1 rounded-lg border border-border bg-card p-4 hover:bg-neutral-50 transition-colors"

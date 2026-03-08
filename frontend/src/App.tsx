@@ -486,7 +486,7 @@ export default function App() {
                   icon={<SiDiscord className="h-4 w-4" />}
                   selected={false}
                   rightSlot={<FeatherExternalLink className="h-3 w-3 text-neutral-400" />}
-                  onClick={() => window.open("https://discord.gg/KGm5FGY5", "_blank")}
+                  onClick={() => window.open("https://discord.gg/uDmkgKfkes", "_blank")}
                 >
                   Discord
                 </SidebarWithSections.NavItem>
