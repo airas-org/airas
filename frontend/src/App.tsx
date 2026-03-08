@@ -43,7 +43,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { OpenAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
-import { IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
+import { IconButton, SidebarWithSections, ToggleGroup, TopbarWithRightNav } from "@/ui";
 
 const initialWorkflowTree: WorkflowTree = {
   nodes: {},
@@ -392,11 +392,9 @@ export default function App() {
     if (isMobile) setSidebarOpen(false);
   }, [isMobile]);
 
-  const toggleLanguage = useCallback(() => {
-    const currentLanguage = i18n.resolvedLanguage ?? i18n.language;
-    const isJapanese = currentLanguage?.toLowerCase().startsWith("ja");
-    i18n.changeLanguage(isJapanese ? "en" : "ja");
-  }, [i18n]);
+  const currentLanguage = (i18n.resolvedLanguage ?? i18n.language)?.toLowerCase().startsWith("ja")
+    ? "ja"
+    : "en";
 
   const isSettingsView = activeSection === "settings";
 
@@ -629,13 +627,13 @@ export default function App() {
           rightSlot={
             <>
               <div className="hidden md:flex items-center gap-4">
-                <button
-                  type="button"
-                  onClick={toggleLanguage}
-                  className="text-caption font-caption text-subtext-color hover:text-default-font px-2 py-1 rounded border border-neutral-border hover:bg-neutral-100 transition-colors"
+                <ToggleGroup
+                  value={currentLanguage}
+                  onValueChange={(lang) => { if (lang) i18n.changeLanguage(lang); }}
                 >
-                  {t("languageToggle.switchTo")}
-                </button>
+                  <ToggleGroup.Item value="ja">JA</ToggleGroup.Item>
+                  <ToggleGroup.Item value="en">EN</ToggleGroup.Item>
+                </ToggleGroup>
                 <IconButton
                   variant="neutral-tertiary"
                   icon={<SiGithub className="h-4 w-4" />}
