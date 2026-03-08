@@ -82,13 +82,9 @@ DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
     ),
     # verification/
     # ProposeVerificationPolicySubgraph
-    "propose_verification_policy": NodeLLMConfig(
-        llm_name="anthropic/claude-sonnet-4-6"
-    ),
+    "propose_verification_policy": NodeLLMConfig(llm_name="gpt-5.4-2026-03-05"),
     # GenerateVerificationMethodSubgraph
-    "generate_verification_method": NodeLLMConfig(
-        llm_name="anthropic/claude-sonnet-4-6"
-    ),
+    "generate_verification_method": NodeLLMConfig(llm_name="gpt-5.4-2026-03-05"),
     # GenerateExperimentCodeSubgraph
     "dispatch_experiment_code_generation": NodeLLMConfig(
         llm_name="anthropic/claude-sonnet-4-6"
