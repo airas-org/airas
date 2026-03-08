@@ -553,6 +553,7 @@
     "copyError": "クリップボードへのコピーに失敗しました"
   },
   "settings": {
+    "accountSection": "アカウント",
     "externalServicesSection": "外部サービス"
   },
   "integration": {
