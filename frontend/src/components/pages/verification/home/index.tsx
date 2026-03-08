@@ -66,6 +66,7 @@ type CategoryKey =
 function getCategoryKey(v: Verification): CategoryKey {
   switch (v.phase) {
     case "initial":
+    case "proposing-policies":
     case "methods-proposed":
       return "hypothesis";
     case "plan-generated":

@@ -6,6 +6,7 @@ import type { Verification, VerificationPhase } from "../types";
 
 const badgeVariantMap: Record<VerificationPhase, "neutral" | "brand" | "warning" | "success"> = {
   initial: "neutral",
+  "proposing-policies": "neutral",
   "methods-proposed": "brand",
   "plan-generated": "brand",
   "code-generating": "brand",
@@ -30,6 +31,7 @@ export function VerificationCard({
   const { t, i18n } = useTranslation();
   const badgeLabelMap: Record<VerificationPhase, string> = {
     initial: t("verification.home.badgeLabels.initial"),
+    "proposing-policies": t("verification.home.badgeLabels.initial"),
     "methods-proposed": t("verification.home.badgeLabels.methodsProposed"),
     "plan-generated": t("verification.home.badgeLabels.planGenerated"),
     "code-generating": t("verification.home.badgeLabels.codeGenerating"),
