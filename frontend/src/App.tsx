@@ -51,7 +51,11 @@ import { IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
 // Attach GitHub session header globally to all generated API calls
 OpenAPI.HEADERS = async () => {
   const sessionToken = localStorage.getItem("github_session_token");
-  return sessionToken ? { "X-GitHub-Session": sessionToken } : {};
+  const headers: Record<string, string> = {};
+  if (sessionToken) {
+    headers["X-GitHub-Session"] = sessionToken;
+  }
+  return headers;
 };
 
 const initialWorkflowTree: WorkflowTree = {
