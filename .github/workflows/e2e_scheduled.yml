@@ -178,6 +178,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql+psycopg://airas:airas@localhost:5432/airas
+      GITHUB_OWNER: ${{ github.event.inputs.github_owner || vars.GH_OWNER || 'auto-res2' }}
       GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
 
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -255,7 +256,6 @@ jobs:
         id: request
         run: |
           # === General parameters ===
-          GITHUB_OWNER="${{ github.event.inputs.github_owner || 'auto-res2' }}"
           RESEARCH_TOPIC="${{ github.event.inputs.research_topic || 'Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments' }}"
           BRANCH_NAME="${{ github.event.inputs.branch_name || 'main' }}"
           REPO_NAME="${{ steps.params.outputs.repo_name }}"
@@ -327,7 +327,6 @@ jobs:
           echo "$LLM_MAPPING" | head -30
 
           REQUEST_BODY=$(jq -n \
-            --arg github_owner "$GITHUB_OWNER" \
             --arg repository_name "$REPO_NAME" \
             --arg branch_name "$BRANCH_NAME" \
             --arg research_topic "$RESEARCH_TOPIC" \
@@ -349,7 +348,6 @@ jobs:
             --argjson llm_mapping "$LLM_MAPPING" \
             '{
               github_config: {
-                github_owner: $github_owner,
                 repository_name: $repository_name,
                 branch_name: $branch_name
               },

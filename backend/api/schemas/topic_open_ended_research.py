@@ -5,10 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from airas.core.types.experimental_design import RunnerConfig
-from airas.core.types.github import (
-    GitHubActionsAgent,
-    GitHubConfigRequest,
-)
+from airas.core.types.github import GitHubActionsAgent
 from airas.core.types.paper import SearchMethod
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.wandb import WandbConfig
@@ -16,6 +13,7 @@ from airas.infra.db.models.e2e import Status, StepType
 from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research import (
     TopicOpenEndedResearchLLMMapping,
 )
+from api.schemas.github import GitHubConfigRequest
 
 
 class TopicOpenEndedResearchStatusResponseBody(BaseModel):

@@ -137,6 +137,7 @@ jobs:
     timeout-minutes: 360  # 6 hours
 
     env:
+      GITHUB_OWNER: ${{ github.event.inputs.github_owner || github.actor }}
       GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
 
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -220,9 +221,6 @@ jobs:
         id: request
         run: |
           # === General parameters ===
-          # Use provided github_owner, or fall back to the actor running the workflow
-          INPUT_OWNER="${{ github.event.inputs.github_owner }}"
-          GITHUB_OWNER="${INPUT_OWNER:-${{ github.actor }}}"
           RESEARCH_TOPIC="${{ github.event.inputs.research_topic }}"
           BRANCH_NAME="${{ github.event.inputs.branch_name || 'main' }}"
           REPO_NAME="${{ steps.params.outputs.repo_name }}"
@@ -290,7 +288,6 @@ jobs:
           echo "$LLM_MAPPING" | head -30
 
           REQUEST_BODY=$(jq -n \
-            --arg github_owner "$GITHUB_OWNER" \
             --arg repository_name "$REPO_NAME" \
             --arg branch_name "$BRANCH_NAME" \
             --arg research_topic "$RESEARCH_TOPIC" \
@@ -312,7 +309,6 @@ jobs:
             --argjson llm_mapping "$LLM_MAPPING" \
             '{
               github_config: {
-                github_owner: $github_owner,
                 repository_name: $repository_name,
                 branch_name: $branch_name
               },
