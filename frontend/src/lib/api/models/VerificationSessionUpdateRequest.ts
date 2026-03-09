@@ -2,11 +2,12 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ProposedMethodSchema } from './ProposedMethodSchema';
 export type VerificationSessionUpdateRequest = {
     title?: (string | null);
     query?: (string | null);
     phase?: (string | null);
-    proposed_methods?: null;
+    proposed_methods?: (Array<ProposedMethodSchema> | null);
     selected_method_id?: (string | null);
     verification_method?: (Record<string, any> | null);
     plan?: (Record<string, any> | null);

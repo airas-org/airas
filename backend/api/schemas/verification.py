@@ -84,7 +84,7 @@ class VerificationSessionResponse(BaseModel):
     created_at: str
     updated_at: str
     phase: str
-    proposed_methods: list[dict] | None = None
+    proposed_methods: list[ProposedMethodSchema] | None = None
     selected_method_id: str | None = None
     verification_method: dict | None = None
     plan: dict | None = None
@@ -107,7 +107,7 @@ class VerificationSessionUpdateRequest(BaseModel):
     title: str | None = None
     query: str | None = None
     phase: str | None = None
-    proposed_methods: list[dict] | None = None
+    proposed_methods: list[ProposedMethodSchema] | None = None
     selected_method_id: str | None = None
     verification_method: dict | None = None
     plan: dict | None = None

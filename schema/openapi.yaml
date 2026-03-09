@@ -4855,8 +4855,7 @@ components:
         proposed_methods:
           anyOf:
           - items:
-              additionalProperties: true
-              type: object
+              $ref: '#/components/schemas/ProposedMethodSchema'
             type: array
           - type: 'null'
           title: Proposed Methods
@@ -4954,8 +4953,7 @@ components:
         proposed_methods:
           anyOf:
           - items:
-              additionalProperties: true
-              type: object
+              $ref: '#/components/schemas/ProposedMethodSchema'
             type: array
           - type: 'null'
           title: Proposed Methods

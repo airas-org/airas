@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ProposedMethodSchema } from './ProposedMethodSchema';
 export type VerificationSessionResponse = {
     id: string;
     title: string;
@@ -10,7 +11,7 @@ export type VerificationSessionResponse = {
     created_at: string;
     updated_at: string;
     phase: string;
-    proposed_methods?: null;
+    proposed_methods?: (Array<ProposedMethodSchema> | null);
     selected_method_id?: (string | null);
     verification_method?: (Record<string, any> | null);
     plan?: (Record<string, any> | null);
