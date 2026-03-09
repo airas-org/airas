@@ -7,7 +7,7 @@ interface VerificationPlanViewProps {
   onGenerateCode: (
     modificationNotes: string,
     repositoryName: string,
-    updatedSettings: Record<string, Record<string, string>>,
+    updatedSettings: Record<string, string>,
   ) => void;
   showButton: boolean;
 }
@@ -18,7 +18,7 @@ export function VerificationPlanView({
   showButton,
 }: VerificationPlanViewProps) {
   const { t } = useTranslation();
-  const [editingSettings, setEditingSettings] = useState<Record<string, Record<string, string>>>(
+  const [editingSettings, setEditingSettings] = useState<Record<string, string>>(
     verificationMethod.experimentSettings,
   );
   const [isEditMode, setIsEditMode] = useState(false);
@@ -33,13 +33,10 @@ export function VerificationPlanView({
     setIsEditMode((prev) => !prev);
   };
 
-  const handleSettingChange = (experimentKey: string, settingKey: string, value: string) => {
+  const handleSettingChange = (experimentKey: string, value: string) => {
     setEditingSettings((prev) => ({
       ...prev,
-      [experimentKey]: {
-        ...prev[experimentKey],
-        [settingKey]: value,
-      },
+      [experimentKey]: value,
     }));
   };
 
@@ -79,7 +76,9 @@ export function VerificationPlanView({
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-foreground">Experiment Settings</p>
+            <p className="text-sm font-medium text-foreground">
+              {t("verification.detail.verificationPlan.experimentSettings")}
+            </p>
             <button
               type="button"
               onClick={handleToggleEdit}
@@ -88,47 +87,39 @@ export function VerificationPlanView({
               {isEditMode ? "Save" : "Edit"}
             </button>
           </div>
-          <div className="space-y-3">
-            {Object.entries(editingSettings).map(([experimentKey, settings]) => (
-              <div
-                key={experimentKey}
-                className="rounded-md border border-neutral-200 overflow-hidden"
-              >
-                <div className="bg-neutral-50 px-3 py-2 border-b border-neutral-200">
-                  <span className="text-xs font-semibold text-foreground">{experimentKey}</span>
-                </div>
-                <table className="w-full">
-                  <tbody>
-                    {Object.entries(settings).map(([key, value]) => (
-                      <tr key={key} className="border-b border-neutral-100 last:border-0">
-                        <td className="px-3 py-2 text-xs font-medium text-foreground w-1/3">
-                          {key}
-                        </td>
-                        <td className="px-3 py-2 text-xs text-muted-foreground">
-                          {isEditMode ? (
-                            <input
-                              type="text"
-                              value={value}
-                              onChange={(e) =>
-                                handleSettingChange(experimentKey, key, e.target.value)
-                              }
-                              className="w-full rounded border border-neutral-300 px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-brand-500"
-                            />
-                          ) : (
-                            value
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ))}
+          <div className="rounded-md border border-neutral-200 overflow-hidden">
+            <table className="w-full">
+              <tbody>
+                {Object.entries(editingSettings).map(([experimentKey, description]) => (
+                  <tr key={experimentKey} className="border-b border-neutral-100 last:border-0">
+                    <td className="px-3 py-2 text-xs font-medium text-foreground whitespace-nowrap">
+                      {t("verification.detail.verificationPlan.experimentLabel", {
+                        number: experimentKey,
+                      })}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                      {isEditMode ? (
+                        <input
+                          type="text"
+                          value={description}
+                          onChange={(e) => handleSettingChange(experimentKey, e.target.value)}
+                          className="w-full rounded border border-neutral-300 px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        />
+                      ) : (
+                        description
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
         <div>
-          <p className="text-sm font-medium text-foreground mb-1">Modification Notes</p>
+          <p className="text-sm font-medium text-foreground mb-1">
+            {t("verification.detail.verificationPlan.modificationNotes")}
+          </p>
           <textarea
             value={modificationNotes}
             onChange={(e) => setModificationNotes(e.target.value)}
@@ -139,7 +130,9 @@ export function VerificationPlanView({
         </div>
 
         <div>
-          <p className="text-sm font-medium text-foreground mb-1">Repository Name</p>
+          <p className="text-sm font-medium text-foreground mb-1">
+            {t("verification.detail.verificationPlan.repositoryName")}
+          </p>
           <input
             type="text"
             value={repositoryName}

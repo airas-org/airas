@@ -4,7 +4,8 @@
 /* eslint-disable */
 export type GenerateMethodResponseBody = {
     what_to_verify: string;
-    experiment_settings: Record<string, Record<string, any>>;
+    experiment_settings: Record<string, string>;
     steps: Array<string>;
+    execution_time: Record<string, Array<number>>;
 };
 

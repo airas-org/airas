@@ -7,7 +7,7 @@ export type ProposedMethodSchema = {
     title: string;
     what_to_verify: string;
     method: string;
-    pros: Array<string>;
-    cons: Array<string>;
+    pros?: Array<string>;
+    cons?: Array<string>;
 };
 

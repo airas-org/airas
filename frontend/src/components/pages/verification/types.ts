@@ -1,5 +1,6 @@
 export type VerificationPhase =
   | "initial"
+  | "proposing-policies"
   | "methods-proposed"
   | "plan-generated"
   | "code-generating"
@@ -26,7 +27,7 @@ export interface PaperDraft {
 
 export interface VerificationMethod {
   whatToVerify: string;
-  experimentSettings: Record<string, Record<string, string>>;
+  experimentSettings: Record<string, string>;
   steps: string[];
 }
 

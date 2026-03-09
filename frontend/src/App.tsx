@@ -35,11 +35,11 @@ import {
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
 import { GitHubOAuthCallback } from "@/components/pages/integration";
 import type { SettingsTab } from "@/components/pages/settings";
+import type { ProposedMethod, Verification } from "@/components/pages/verification";
 import {
-  mockVerifications,
-  type ProposedMethod,
-  type Verification,
-} from "@/components/pages/verification";
+  getAuthHeaders,
+  useVerifications,
+} from "@/components/pages/verification/use-verifications";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isEnterpriseEnabled } from "@/ee/config";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -186,7 +186,14 @@ export default function App() {
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
 
   // Verification
-  const [verifications, setVerifications] = useState<Verification[]>(mockVerifications);
+  const {
+    verifications,
+    handleCreateVerification,
+    handleUpdateVerification,
+    handleDeleteVerification,
+    handleDuplicateVerification,
+    handleAddVerification,
+  } = useVerifications(navigate);
 
   // autonomousListViewKey forces list remount when clicking the same sub-nav
   const [autonomousListViewKey, setAutonomousListViewKey] = useState(0);
@@ -204,76 +211,48 @@ export default function App() {
     setAutonomousActiveSectionMap,
   });
 
-  const handleCreateVerification = useCallback(() => {
-    const newVerification: Verification = {
-      id: `v-${Date.now()}`,
-      title: t("verification.detail.newTitle"),
-      query: "",
-      createdAt: new Date(),
-      phase: "initial",
-    };
-    setVerifications((prev) => [newVerification, ...prev]);
-    navigate(`/verification/${newVerification.id}`);
-  }, [navigate, t]);
+  const handleCreateWithMethod = useCallback(
+    async (sourceVerification: Verification, method: ProposedMethod) => {
+      const apiBase = OpenAPI.BASE;
+      const authHeaders = await getAuthHeaders();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: 初回マウント時のみ実行
-  useEffect(() => {
-    if (location.pathname === "/") {
-      handleCreateVerification();
-    }
-  }, []);
+      try {
+        // 1. POST /sessions to create a new session on the server
+        const createRes = await fetch(`${apiBase}/airas/v1/verification/sessions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders,
+          },
+          body: JSON.stringify({ title: method.title }),
+        });
+        if (!createRes.ok) return;
+        const session = await createRes.json();
+        const newId: string = session.id;
 
-  const handleUpdateVerification = useCallback((id: string, updates: Partial<Verification>) => {
-    setVerifications((prev) => prev.map((v) => (v.id === id ? { ...v, ...updates } : v)));
-  }, []);
+        // Add to local state so detail page can find it
+        handleAddVerification(session);
 
-  const handleDeleteVerification = useCallback(
-    (id: string) => {
-      setVerifications((prev) => prev.filter((v) => v.id !== id));
-      if (location.pathname === `/verification/${id}`) {
-        navigate("/home");
+        // 2. PATCH with initial data
+        await handleUpdateVerification(newId, {
+          title: method.title,
+          query: sourceVerification.query,
+          phase: "plan-generated",
+          proposedMethods: [method],
+          selectedMethodId: method.id,
+          plan: {
+            whatToVerify: method.whatToVerify,
+            method: method.method,
+          },
+        });
+
+        // 3. Navigate
+        navigate(`/verification/${newId}`);
+      } catch {
+        // ignore
       }
     },
-    [location.pathname, navigate],
-  );
-
-  const handleDuplicateVerification = useCallback(
-    (id: string) => {
-      setVerifications((prev) => {
-        const source = prev.find((v) => v.id === id);
-        if (!source) return prev;
-        const copy: Verification = {
-          ...source,
-          id: `v-${Date.now()}`,
-          title: `${source.title} ${t("verification.detail.copyTitle")}`,
-          createdAt: new Date(),
-        };
-        return [copy, ...prev];
-      });
-    },
-    [t],
-  );
-
-  const handleCreateWithMethod = useCallback(
-    (sourceVerification: Verification, method: ProposedMethod) => {
-      const newId = `v-${Date.now()}`;
-      const newVerification: Verification = {
-        id: newId,
-        title: method.title,
-        query: sourceVerification.query,
-        createdAt: new Date(),
-        phase: "plan-generated",
-        proposedMethods: [method],
-        selectedMethodId: method.id,
-        plan: {
-          whatToVerify: method.whatToVerify,
-          method: method.method,
-        },
-      };
-      setVerifications((prev) => [newVerification, ...prev]);
-      navigate(`/verification/${newId}`);
-    },
-    [navigate],
+    [navigate, handleUpdateVerification, handleAddVerification],
   );
 
   const handleSelectAutonomousSession = useCallback(
@@ -663,18 +642,20 @@ export default function App() {
                     sideOffset={4}
                     asChild={true}
                   >
-                    <DropdownMenu>
+                    <DropdownMenu className="bg-neutral-900 min-w-[120px] border-neutral-700">
                       <DropdownMenu.DropdownItem
                         icon={currentLanguage === "ja" ? <FeatherCheck /> : null}
                         onSelect={() => i18n.changeLanguage("ja")}
+                        className="[&_span]:text-xs [&_span]:text-white hover:bg-neutral-700 data-[highlighted]:bg-neutral-700 [&_.text-default-font]:text-white"
                       >
-                        🇯🇵 日本語
+                        日本語
                       </DropdownMenu.DropdownItem>
                       <DropdownMenu.DropdownItem
                         icon={currentLanguage === "en" ? <FeatherCheck /> : null}
                         onSelect={() => i18n.changeLanguage("en")}
+                        className="[&_span]:text-xs [&_span]:text-white hover:bg-neutral-700 data-[highlighted]:bg-neutral-700 [&_.text-default-font]:text-white"
                       >
-                        🇺🇸 English
+                        English
                       </DropdownMenu.DropdownItem>
                     </DropdownMenu>
                   </SubframeCore.DropdownMenu.Content>

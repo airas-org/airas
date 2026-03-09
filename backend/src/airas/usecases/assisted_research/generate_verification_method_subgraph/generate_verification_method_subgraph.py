@@ -1,8 +1,7 @@
 import logging
-from typing import Any
 
 from langgraph.graph import END, START, StateGraph
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
@@ -18,9 +17,18 @@ def record_execution_time(f):
     return time_node("generate_verification_method_subgraph")(f)  # noqa: E731
 
 
+class ExperimentSetting(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    experiment_id: str
+    description: str
+
+
 class VerificationMethodOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     what_to_verify: str
-    experiment_settings: dict[str, dict[str, Any]]
+    experiment_settings: list[ExperimentSetting]
     steps: list[str]
 
 
@@ -39,7 +47,7 @@ class GenerateVerificationMethodSubgraphInputState(TypedDict):
 
 class GenerateVerificationMethodSubgraphOutputState(ExecutionTimeState):
     what_to_verify: str
-    experiment_settings: dict[str, dict[str, Any]]
+    experiment_settings: dict[str, str]
     steps: list[str]
 
 
@@ -79,7 +87,7 @@ class GenerateVerificationMethodSubgraph:
             f"手法: {method}\n\n"
             "出力:\n"
             "- 検証内容(4,5文): what_to_verify\n"
-            "- 実験設定(dict[実験番号, dict[設定項目, 設定内容]]): experiment_settings\n"
+            "- 実験設定(実験番号をexperiment_id, 設定内容をdescriptionとしたリスト): experiment_settings\n"
             "- 手順(実験工程を順番にリスト): steps"
         )
 
@@ -94,7 +102,9 @@ class GenerateVerificationMethodSubgraph:
         logger.info("Verification method generated successfully")
         return {
             "what_to_verify": result.what_to_verify,
-            "experiment_settings": result.experiment_settings,
+            "experiment_settings": {
+                s.experiment_id: s.description for s in result.experiment_settings
+            },
             "steps": result.steps,
         }
 
