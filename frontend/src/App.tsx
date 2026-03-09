@@ -584,13 +584,9 @@ export default function App() {
             <>
               <SidebarWithSections.NavItem
                 icon={<FeatherPlus />}
-                selected={
-                  activeSection === "verification" ||
-                  (activeSection === "home" &&
-                    new URLSearchParams(location.search).get("new") === "1")
-                }
+                selected={activeSection === "verification"}
                 onClick={() => {
-                  navigate("/home?new=1");
+                  navigate("/verification");
                   handleMobileNavClose();
                 }}
               >
@@ -598,10 +594,7 @@ export default function App() {
               </SidebarWithSections.NavItem>
               <SidebarWithSections.NavItem
                 icon={<FeatherList />}
-                selected={
-                  activeSection === "home" &&
-                  new URLSearchParams(location.search).get("new") !== "1"
-                }
+                selected={activeSection === "home"}
                 onClick={() => {
                   navigate("/home");
                   handleMobileNavClose();

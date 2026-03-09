@@ -1,8 +1,6 @@
-import { FeatherPlus, FeatherSearch } from "@subframe/core";
-import { useEffect, useMemo, useState } from "react";
+import { FeatherSearch } from "@subframe/core";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
-import { ChatInput } from "../detail/chat-input";
 import type { Verification } from "../types";
 import { VerificationCard } from "./verification-card";
 
@@ -11,7 +9,6 @@ interface VerificationHomePageProps {
   onSelectVerification: (id: string) => void;
   onDeleteVerification: (id: string) => void;
   onDuplicateVerification: (id: string) => void;
-  onCreateWithQuery: (query: string) => void;
 }
 
 interface CategoryColumnProps {
@@ -89,20 +86,8 @@ export function VerificationHomePage({
   onSelectVerification,
   onDeleteVerification,
   onDuplicateVerification,
-  onCreateWithQuery,
 }: VerificationHomePageProps) {
   const { t } = useTranslation();
-  const location = useLocation();
-  const isNewRequested = new URLSearchParams(location.search).get("new") === "1";
-  const [showInput, setShowInput] = useState(isNewRequested || verifications.length === 0);
-
-  useEffect(() => {
-    if (isNewRequested) {
-      setShowInput(true);
-    } else if (verifications.length > 0) {
-      setShowInput(false);
-    }
-  }, [isNewRequested, verifications.length]);
   const categories: { key: CategoryKey; label: string }[] = [
     { key: "hypothesis", label: t("verification.home.categories.hypothesis") },
     { key: "plan-decided", label: t("verification.home.categories.planDecided") },
@@ -134,19 +119,6 @@ export function VerificationHomePage({
     return map;
   }, [filtered]);
 
-  if (showInput || verifications.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center pb-[20vh] p-6">
-        <ChatInput
-          onSubmit={(query) => {
-            setShowInput(false);
-            onCreateWithQuery(query);
-          }}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="flex-1 overflow-y-auto overflow-x-clip min-w-0">
       <div className="max-w-full mx-auto px-6 py-6">
@@ -160,14 +132,6 @@ export function VerificationHomePage({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowInput(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
-            >
-              <FeatherPlus className="h-4 w-4" />
-              {t("verification.home.newVerification")}
-            </button>
             <div className="w-56 rounded-lg border border-border bg-card px-3 py-1.5 flex items-center gap-2">
               <FeatherSearch className="h-4 w-4 text-subtext-color shrink-0" />
               <input

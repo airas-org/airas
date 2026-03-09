@@ -11,6 +11,7 @@ import {
   VerificationDetailPage,
   VerificationHomePage,
 } from "@/components/pages/verification";
+import { ChatInput } from "@/components/pages/verification/detail/chat-input";
 import type {
   FeatureType,
   Paper,
@@ -180,8 +181,15 @@ export function MainContent({
               onSelectVerification={(id) => navigate(`/verification/${id}`)}
               onDeleteVerification={onDeleteVerification}
               onDuplicateVerification={onDuplicateVerification}
-              onCreateWithQuery={onCreateWithQuery}
             />
+          }
+        />
+        <Route
+          path="/verification"
+          element={
+            <div className="flex-1 flex items-center justify-center pb-[20vh] p-6">
+              <ChatInput onSubmit={onCreateWithQuery} />
+            </div>
           }
         />
         <Route
