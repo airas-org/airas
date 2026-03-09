@@ -145,7 +145,7 @@ export function NodeLLMSelector({ nodeKey, label, value, onChange }: NodeLLMSele
               <TextField.Input
                 type="number"
                 placeholder="None"
-                value={(value?.params as GoogleGenAIParams)?.thinking_budget ?? ""}
+                value={String((value?.params as GoogleGenAIParams)?.thinking_budget ?? "")}
                 onChange={(e) => handleThinkingBudgetChange(e.target.value)}
               />
             </TextField>
