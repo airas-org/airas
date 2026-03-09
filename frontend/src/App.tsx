@@ -35,7 +35,7 @@ import {
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
 import { GitHubOAuthCallback } from "@/components/pages/integration";
 import type { SettingsTab } from "@/components/pages/settings";
-import type { ProposedMethod, Verification } from "@/components/pages/verification";
+import type { ProposedMethod } from "@/components/pages/verification";
 import {
   getAuthHeaders,
   useVerifications,
@@ -209,50 +209,6 @@ export default function App() {
     setAutonomousSectionsMap,
     setAutonomousActiveSectionMap,
   });
-
-  const handleCreateWithMethod = useCallback(
-    async (sourceVerification: Verification, method: ProposedMethod) => {
-      const apiBase = OpenAPI.BASE;
-      const authHeaders = await getAuthHeaders();
-
-      try {
-        // 1. POST /sessions to create a new session on the server
-        const createRes = await fetch(`${apiBase}/airas/v1/verification/sessions`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...authHeaders,
-          },
-          body: JSON.stringify({ title: method.title }),
-        });
-        if (!createRes.ok) return;
-        const session = await createRes.json();
-        const newId: string = session.id;
-
-        // Add to local state so detail page can find it
-        handleAddVerification(session);
-
-        // 2. PATCH with initial data
-        await handleUpdateVerification(newId, {
-          title: method.title,
-          query: sourceVerification.query,
-          phase: "plan-generated",
-          proposedMethods: [method],
-          selectedMethodId: method.id,
-          plan: {
-            whatToVerify: method.whatToVerify,
-            method: method.method,
-          },
-        });
-
-        // 3. Navigate
-        navigate(`/verification/${newId}`);
-      } catch {
-        // ignore
-      }
-    },
-    [navigate, handleUpdateVerification, handleAddVerification],
-  );
 
   const handleCreateWithQuery = useCallback(
     async (query: string) => {
@@ -771,7 +727,6 @@ export default function App() {
             onDeleteVerification={handleDeleteVerification}
             onDuplicateVerification={handleDuplicateVerification}
             onUpdateVerification={handleUpdateVerification}
-            onCreateWithMethod={handleCreateWithMethod}
             onCreateWithQuery={handleCreateWithQuery}
             autonomousListViewKey={autonomousListViewKey}
           />
