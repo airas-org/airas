@@ -1,6 +1,7 @@
 import { FeatherPlus, FeatherSearch } from "@subframe/core";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom";
 import { ChatInput } from "../detail/chat-input";
 import type { Verification } from "../types";
 import { VerificationCard } from "./verification-card";
@@ -91,7 +92,15 @@ export function VerificationHomePage({
   onCreateWithQuery,
 }: VerificationHomePageProps) {
   const { t } = useTranslation();
-  const [showInput, setShowInput] = useState(false);
+  const location = useLocation();
+  const isNewRequested = new URLSearchParams(location.search).get("new") === "1";
+  const [showInput, setShowInput] = useState(isNewRequested || verifications.length === 0);
+
+  useEffect(() => {
+    if (isNewRequested) {
+      setShowInput(true);
+    }
+  }, [isNewRequested]);
   const categories: { key: CategoryKey; label: string }[] = [
     { key: "hypothesis", label: t("verification.home.categories.hypothesis") },
     { key: "plan-decided", label: t("verification.home.categories.planDecided") },

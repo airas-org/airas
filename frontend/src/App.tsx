@@ -586,7 +586,7 @@ export default function App() {
                 icon={<FeatherPlus />}
                 selected={activeSection === "verification"}
                 onClick={() => {
-                  navigate("/home");
+                  navigate("/home?new=1");
                   handleMobileNavClose();
                 }}
               >
