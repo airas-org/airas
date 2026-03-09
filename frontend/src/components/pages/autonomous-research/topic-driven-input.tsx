@@ -85,6 +85,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
         branch_name: branch,
       },
       research_topic: researchTopic,
+      compute_environment: {},
       runner_config: {
         runner_label: runnerLabels
           .split(",")

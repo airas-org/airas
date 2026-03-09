@@ -114,6 +114,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
         expected_conclusion: expectedConclusion,
       },
       research_topic: researchTopic.trim() || undefined,
+      compute_environment: {},
       runner_config: {
         runner_label: runnerLabels
           .split(",")
