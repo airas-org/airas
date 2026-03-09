@@ -35,7 +35,7 @@ import {
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
 import { GitHubOAuthCallback } from "@/components/pages/integration";
 import type { SettingsTab } from "@/components/pages/settings";
-import type { ProposedMethod } from "@/components/pages/verification";
+import type { ProposedMethod, Verification } from "@/components/pages/verification";
 import {
   getAuthHeaders,
   useVerifications,
@@ -209,6 +209,69 @@ export default function App() {
     setAutonomousSectionsMap,
     setAutonomousActiveSectionMap,
   });
+
+  const handleCreateWithMethod = useCallback(
+    async (sourceVerification: Verification, method: ProposedMethod) => {
+      const apiBase = OpenAPI.BASE;
+      const authHeaders = await getAuthHeaders();
+      try {
+        // 1. 新しいセッションを作成
+        const createRes = await fetch(`${apiBase}/airas/v1/verification/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({ title: method.title }),
+        });
+        if (!createRes.ok) return;
+        const session = await createRes.json();
+        const newId: string = session.id;
+
+        // 2. ローカル状態に追加し、初期データをセット（クエリ引き継ぎ、選択済みメソッドをセット）
+        handleAddVerification(session);
+        handleUpdateVerification(newId, {
+          title: method.title,
+          query: sourceVerification.query,
+          proposedMethods: [method],
+          selectedMethodId: method.id,
+        });
+
+        // 3. 新セッションに遷移（"Generating verification plan..." ローディングが表示される）
+        navigate(`/verification/${newId}`);
+
+        // 4. generate-method API を呼び出す
+        const res = await fetch(`${apiBase}/airas/v1/verification/generate-method`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({
+            user_query: sourceVerification.query,
+            selected_policy: {
+              id: method.id,
+              title: method.title,
+              what_to_verify: method.whatToVerify,
+              method: method.method,
+              pros: method.pros,
+              cons: method.cons,
+            },
+            verification_id: newId,
+          }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // 5. 生成された検証方法でセッションを更新
+        handleUpdateVerification(newId, {
+          phase: "plan-generated",
+          verificationMethod: {
+            whatToVerify: data.what_to_verify,
+            experimentSettings: data.experiment_settings,
+            steps: data.steps,
+          },
+        });
+      } catch {
+        // ignore
+      }
+    },
+    [navigate, handleAddVerification, handleUpdateVerification],
+  );
 
   const handleCreateWithQuery = useCallback(
     async (query: string) => {
@@ -728,6 +791,7 @@ export default function App() {
             onDuplicateVerification={handleDuplicateVerification}
             onUpdateVerification={handleUpdateVerification}
             onCreateWithQuery={handleCreateWithQuery}
+            onCreateWithMethod={handleCreateWithMethod}
             autonomousListViewKey={autonomousListViewKey}
           />
         </div>
