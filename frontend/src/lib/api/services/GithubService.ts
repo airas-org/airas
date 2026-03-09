@@ -11,15 +11,20 @@ export class GithubService {
     /**
      * Push Github
      * @param requestBody
+     * @param xGithubSession
      * @returns PushGitHubResponseBody Successful Response
      * @throws ApiError
      */
     public static pushGithubAirasV1GithubPushPost(
         requestBody: PushGitHubRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<PushGitHubResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/github/push',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {

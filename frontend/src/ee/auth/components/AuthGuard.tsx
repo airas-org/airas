@@ -8,7 +8,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="flex min-h-screen items-center justify-center bg-neutral-950">
         <div className="flex flex-col items-center gap-4">
           <img src="/airas_logo.png" alt="AIRAS" className="h-12 w-auto" />
           <LoadingSpinner className="h-6 w-6 text-slate-400" />

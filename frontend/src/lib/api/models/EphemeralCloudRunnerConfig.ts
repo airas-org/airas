@@ -3,7 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export type EphemeralCloudRunnerConfig = {
-    type: string;
+    type?: string;
     /**
      * Cloud provider ('aws' or 'gcp')
      */

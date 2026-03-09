@@ -8,13 +8,15 @@ from sqlmodel import SQLModel
 
 import api.routes.v1 as routes_v1
 from airas.container import Container
+from airas.infra.db.models.verification import (
+    VerificationModel as _VerificationModel,  # noqa: F401
+)
 from airas.usecases.autonomous_research.in_memory_e2e_research_service import (
     InMemoryE2EResearchService,
 )
 from api.ee.auth.dependencies import get_current_user_id
 from api.ee.settings import get_ee_settings
 from api.routes.v1 import (
-    assisted_research,
     bibfile,
     code,
     datasets,
@@ -31,6 +33,7 @@ from api.routes.v1 import (
     repositories,
     research_history,
     topic_open_ended_research,
+    verification,
 )
 
 
@@ -106,7 +109,6 @@ app.include_router(latex.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(research_history.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(github_actions.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(github.router, prefix="/airas/v1", dependencies=auth_deps)
-app.include_router(assisted_research.router, prefix="/airas/v1", dependencies=auth_deps)
 app.include_router(
     interactive_repo_agent.router, prefix="/airas/v1", dependencies=auth_deps
 )
@@ -116,12 +118,14 @@ app.include_router(
 app.include_router(
     hypothesis_driven_research.router, prefix="/airas/v1", dependencies=auth_deps
 )
+app.include_router(verification.router, prefix="/airas/v1", dependencies=auth_deps)
 
 # Register EE routes if enterprise is enabled
 _ee_settings = get_ee_settings()
 if _ee_settings.enabled:
     from api.ee.api_keys.routes import router as ee_api_keys_router
     from api.ee.auth.routes import router as ee_auth_router
+    from api.ee.github_oauth.routes import router as ee_github_oauth_router
     from api.ee.plan.routes import router as ee_plan_router
     from api.ee.stripe.routes import router as ee_stripe_router
 
@@ -129,3 +133,4 @@ if _ee_settings.enabled:
     app.include_router(ee_api_keys_router, prefix="/airas/ee")
     app.include_router(ee_plan_router, prefix="/airas/ee")
     app.include_router(ee_stripe_router, prefix="/airas/ee")
+    app.include_router(ee_github_oauth_router, prefix="/airas/ee")

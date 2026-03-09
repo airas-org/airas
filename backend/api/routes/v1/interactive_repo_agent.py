@@ -13,6 +13,7 @@ from airas.usecases.assisted_research.cancel_interactive_repo_agent_subgraph.can
 from airas.usecases.assisted_research.dispatch_interactive_repo_agent_subgraph.dispatch_interactive_repo_agent_subgraph import (
     DispatchInteractiveRepoAgentSubgraph,
 )
+from api.ee.auth.dependencies import get_github_client
 from api.schemas.interactive_repo_agent import (
     CancelInteractiveRepoAgentRequestBody,
     CancelInteractiveRepoAgentResponseBody,
@@ -28,7 +29,7 @@ router = APIRouter(prefix="/interactive-repo-agent", tags=["interactive-repo-age
 @observe(capture_input=False)
 async def dispatch_interactive_repo_agent(
     request: DispatchInteractiveRepoAgentRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -68,7 +69,7 @@ async def dispatch_interactive_repo_agent(
 async def cancel_interactive_repo_agent(
     workflow_run_id: int,
     request: CancelInteractiveRepoAgentRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

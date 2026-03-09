@@ -1,7 +1,6 @@
 import { Check, ExternalLink, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OpenAPI } from "@/lib/api";
 
 interface PlanInfo {
@@ -56,7 +55,6 @@ export function UserPlanPage() {
       const data = await apiFetch<PlanInfo>("/plan");
       setPlan(data);
     } catch {
-      // API not available - fallback to free plan
       setPlan({ plan_type: "free", status: "active", stripe_customer_id: null });
     } finally {
       setLoading(false);
@@ -66,7 +64,6 @@ export function UserPlanPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.has("plan")) {
-      // Redirected from Stripe checkout - poll for plan update
       params.delete("plan");
       const cleanUrl = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
       window.history.replaceState({}, "", cleanUrl);
@@ -94,7 +91,7 @@ export function UserPlanPage() {
       await apiFetch("/stripe/cancel", { method: "POST" });
       window.location.reload();
     } catch {
-      setError("Failed to cancel subscription. Please try again.");
+      setError("ダウングレードに失敗しました。もう一度お試しください。");
     } finally {
       setDowngrading(false);
     }
@@ -107,7 +104,7 @@ export function UserPlanPage() {
       const data = await apiFetch<{ checkout_url: string }>("/stripe/checkout", {
         method: "POST",
         body: JSON.stringify({
-          success_url: `${window.location.origin}?plan=upgraded&nav=user-plan`,
+          success_url: `${window.location.origin}/settings/user-plan?plan=upgraded`,
           cancel_url: window.location.href,
         }),
       });
@@ -115,7 +112,7 @@ export function UserPlanPage() {
         window.location.href = data.checkout_url;
       }
     } catch {
-      setError("Failed to start checkout. Please try again.");
+      setError("チェックアウトの開始に失敗しました。もう一度お試しください。");
     } finally {
       setUpgrading(false);
     }
@@ -126,55 +123,56 @@ export function UserPlanPage() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <Loader2 className="h-6 w-6 animate-spin text-subtext-color" />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto">
-      <h1 className="text-2xl font-bold text-foreground">User Plan</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Manage your subscription plan.</p>
+    <div className="flex-1 overflow-y-auto">
+      <div className="max-w-3xl mx-auto px-8 py-8">
+        <h1 className="text-heading-2 font-heading-2 text-default-font">プラン</h1>
+        <p className="text-caption font-caption text-subtext-color mt-1">
+          サブスクリプションプランを管理します
+        </p>
 
-      {error && (
-        <div className="mt-4 rounded-md border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+        {error && (
+          <div className="mt-4 rounded-md border border-error-200 bg-error-50 px-4 py-3 text-caption font-caption text-error-700">
+            {error}
+          </div>
+        )}
 
-      <div className="mt-8 grid gap-6 md:grid-cols-2 max-w-3xl">
-        {/* Free Plan */}
-        <Card
-          className={
-            currentPlan === "free"
-              ? "border-2 border-blue-500 relative"
-              : "border border-border relative"
-          }
-        >
-          {currentPlan === "free" && (
-            <div className="absolute -top-3 left-4">
-              <span className="inline-block rounded-full bg-blue-500 px-3 py-0.5 text-xs font-semibold text-white">
-                Current Plan
-              </span>
-            </div>
-          )}
-          <CardHeader>
-            <CardTitle className="text-lg">Free</CardTitle>
-            <p className="text-3xl font-bold text-foreground">
-              $0<span className="text-sm font-normal text-muted-foreground">/month</span>
+        <div className="mt-6 grid gap-6 md:grid-cols-2">
+          {/* Free Plan */}
+          <div
+            className={`rounded-lg border p-5 relative ${
+              currentPlan === "free" ? "border-2 border-brand-600" : "border-border bg-card"
+            }`}
+          >
+            {currentPlan === "free" && (
+              <div className="absolute -top-3 left-4">
+                <span className="inline-block rounded-full bg-brand-600 px-3 py-0.5 text-caption font-caption text-white">
+                  現在のプラン
+                </span>
+              </div>
+            )}
+            <h2 className="text-body-bold font-body-bold text-default-font mt-1">Free</h2>
+            <p className="text-heading-2 font-heading-2 text-default-font mt-2">
+              $0<span className="text-caption font-caption text-subtext-color">/month</span>
             </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="space-y-2">
+            <ul className="mt-4 space-y-2">
               {FREE_FEATURES.map((feature) => (
-                <li key={feature} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <Check className="h-4 w-4 mt-0.5 text-green-500 shrink-0" />
+                <li
+                  key={feature}
+                  className="flex items-start gap-2 text-caption font-caption text-subtext-color"
+                >
+                  <Check className="h-4 w-4 mt-0.5 text-success-700 shrink-0" />
                   {feature}
                 </li>
               ))}
             </ul>
             {currentPlan !== "free" && (
-              <div className="flex gap-2">
+              <div className="mt-4 flex gap-2">
                 <Button
                   variant="outline"
                   className={`flex-1 ${confirmDowngrade ? "border-destructive text-destructive hover:bg-destructive/10" : ""}`}
@@ -184,12 +182,12 @@ export function UserPlanPage() {
                   {downgrading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Processing...
+                      処理中...
                     </>
                   ) : confirmDowngrade ? (
-                    "Are you sure?"
+                    "本当にダウングレードしますか？"
                   ) : (
-                    "Downgrade"
+                    "ダウングレード"
                   )}
                 </Button>
                 {confirmDowngrade && (
@@ -198,61 +196,58 @@ export function UserPlanPage() {
                     className="shrink-0"
                     onClick={() => setConfirmDowngrade(false)}
                   >
-                    Cancel
+                    キャンセル
                   </Button>
                 )}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Pro Plan */}
-        <Card
-          className={
-            currentPlan === "pro"
-              ? "border-2 border-blue-500 relative"
-              : "border border-border relative"
-          }
-        >
-          {currentPlan === "pro" && (
-            <div className="absolute -top-3 left-4">
-              <span className="inline-block rounded-full bg-blue-500 px-3 py-0.5 text-xs font-semibold text-white">
-                Current Plan
-              </span>
-            </div>
-          )}
-          <CardHeader>
-            <CardTitle className="text-lg">Pro</CardTitle>
-            <p className="text-3xl font-bold text-foreground">
-              $29<span className="text-sm font-normal text-muted-foreground">/month</span>
+          {/* Pro Plan */}
+          <div
+            className={`rounded-lg border p-5 relative ${
+              currentPlan === "pro" ? "border-2 border-brand-600" : "border-border bg-card"
+            }`}
+          >
+            {currentPlan === "pro" && (
+              <div className="absolute -top-3 left-4">
+                <span className="inline-block rounded-full bg-brand-600 px-3 py-0.5 text-caption font-caption text-white">
+                  現在のプラン
+                </span>
+              </div>
+            )}
+            <h2 className="text-body-bold font-body-bold text-default-font mt-1">Pro</h2>
+            <p className="text-heading-2 font-heading-2 text-default-font mt-2">
+              $29<span className="text-caption font-caption text-subtext-color">/month</span>
             </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="space-y-2">
+            <ul className="mt-4 space-y-2">
               {PRO_FEATURES.map((feature) => (
-                <li key={feature} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <Check className="h-4 w-4 mt-0.5 text-green-500 shrink-0" />
+                <li
+                  key={feature}
+                  className="flex items-start gap-2 text-caption font-caption text-subtext-color"
+                >
+                  <Check className="h-4 w-4 mt-0.5 text-success-700 shrink-0" />
                   {feature}
                 </li>
               ))}
             </ul>
             {currentPlan !== "pro" && (
-              <Button className="w-full" onClick={handleUpgrade} disabled={upgrading}>
+              <Button className="w-full mt-4" onClick={handleUpgrade} disabled={upgrading}>
                 {upgrading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processing...
+                    処理中...
                   </>
                 ) : (
                   <>
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Upgrade to Pro
+                    Pro にアップグレード
                   </>
                 )}
               </Button>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

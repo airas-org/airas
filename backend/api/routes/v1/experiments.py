@@ -33,6 +33,7 @@ from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph impo
 from airas.usecases.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
     DispatchDiagramGenerationSubgraph,
 )
+from api.ee.auth.dependencies import get_github_client
 from api.schemas.experiments import (
     AnalyzeExperimentRequestBody,
     AnalyzeExperimentResponseBody,
@@ -60,7 +61,7 @@ router = APIRouter(prefix="/experiments", tags=["experiments"])
 @observe()
 async def fetch_run_ids(
     request: FetchRunIdsRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -84,7 +85,7 @@ async def fetch_run_ids(
 @observe()
 async def fetch_experimental_results(
     request: FetchExperimentalResultsRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -108,7 +109,7 @@ async def fetch_experimental_results(
 @observe()
 async def dispatch_sanity_check(
     request: DispatchSanityCheckRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -152,7 +153,7 @@ async def dispatch_sanity_check(
 @observe()
 async def dispatch_experiment_validation(
     request: DispatchExperimentValidationRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -179,7 +180,7 @@ async def dispatch_experiment_validation(
 @observe()
 async def dispatch_main_experiment(
     request: DispatchMainExperimentRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -223,7 +224,7 @@ async def dispatch_main_experiment(
 @observe()
 async def dispatch_visualization(
     request: DispatchVisualizationRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -250,7 +251,7 @@ async def dispatch_visualization(
 @observe()
 async def dispatch_diagram_generation(
     request: DispatchDiagramGenerationRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

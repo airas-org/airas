@@ -5,7 +5,10 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from airas.core.types.experimental_design import ComputeEnvironment
-from airas.core.types.github import GitHubActionsAgent, GitHubConfig
+from airas.core.types.github import (
+    GitHubActionsAgent,
+    GitHubConfigRequest,
+)
 from airas.core.types.paper import SearchMethod
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.runner import ExperimentRunnerConfig
@@ -80,7 +83,7 @@ class TopicOpenEndedResearchUpdateRequestBody(BaseModel):
 
 
 class TopicOpenEndedResearchRequestBody(BaseModel):
-    github_config: GitHubConfig
+    github_config: GitHubConfigRequest
     research_topic: str
     compute_environment: ComputeEnvironment
     runner_config: ExperimentRunnerConfig

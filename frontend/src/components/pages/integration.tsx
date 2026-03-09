@@ -1,37 +1,32 @@
-import { Eye, EyeOff, Loader2, Save, Trash2 } from "lucide-react";
+import { FeatherGithub, FeatherSlack } from "@subframe/core";
+import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { OpenAPI } from "@/lib/api";
+import { Avatar } from "@/ui/components/Avatar";
+import { Button } from "@/ui/components/Button";
+import { Switch } from "@/ui/components/Switch";
 
-type ApiProvider = "openai" | "anthropic" | "gemini";
+const GITHUB_SESSION_KEY = "github_session_token";
 
-interface ApiKeyEntry {
-  provider: ApiProvider;
-  masked_key: string;
-  created_at: string;
-  updated_at: string;
+interface GitHubConnection {
+  connected: boolean;
+  github_login: string | null;
+  connected_at: string | null;
 }
 
-const PROVIDERS: { id: ApiProvider; label: string; placeholder: string }[] = [
-  { id: "openai", label: "OpenAI", placeholder: "sk-..." },
-  { id: "anthropic", label: "Anthropic", placeholder: "sk-ant-..." },
-  { id: "gemini", label: "Gemini", placeholder: "AI..." },
-];
+function getGitHubSessionHeaders(): Record<string, string> {
+  const sessionToken = localStorage.getItem(GITHUB_SESSION_KEY);
+  if (sessionToken) {
+    return { "X-GitHub-Session": sessionToken };
+  }
+  return {};
+}
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...getGitHubSessionHeaders(),
   };
-  if (OpenAPI.TOKEN) {
-    const token =
-      typeof OpenAPI.TOKEN === "function"
-        ? await (OpenAPI.TOKEN as (options: unknown) => Promise<string>)({})
-        : OpenAPI.TOKEN;
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
   const res = await fetch(`${OpenAPI.BASE}/airas/ee${path}`, {
     ...init,
     headers: { ...headers, ...(init?.headers as Record<string, string>) },
@@ -40,186 +35,262 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export function GitHubOAuthCallback({ code }: { code: string }) {
+  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+
+  useEffect(() => {
+    const redirectUri = `${window.location.origin}/auth/github/callback`;
+    const state = sessionStorage.getItem("github_oauth_state") ?? "";
+
+    fetch(`${OpenAPI.BASE}/airas/ee/github/callback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, state, redirect_uri: redirectUri }),
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        return res.json() as Promise<{
+          connected: boolean;
+          github_login: string;
+          session_token: string;
+        }>;
+      })
+      .then((data) => {
+        sessionStorage.removeItem("github_oauth_state");
+        localStorage.setItem(GITHUB_SESSION_KEY, data.session_token);
+        setStatus("success");
+        setTimeout(() => {
+          window.location.href = "/settings/integration";
+        }, 1500);
+      })
+      .catch(() => {
+        setStatus("error");
+      });
+  }, [code]);
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-neutral-950">
+      <div className="text-center space-y-2">
+        {status === "loading" && <p className="text-neutral-400">GitHubと連携中...</p>}
+        {status === "success" && (
+          <p className="text-success-400">GitHub連携が完了しました。リダイレクト中...</p>
+        )}
+        {status === "error" && (
+          <div>
+            <p className="text-error-400">GitHub連携に失敗しました。</p>
+            <button
+              type="button"
+              className="mt-2 text-sm underline text-neutral-400"
+              onClick={() => {
+                window.location.href = "/settings/integration";
+              }}
+            >
+              Integrationページに戻る
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function IntegrationPage() {
-  const [savedKeys, setSavedKeys] = useState<ApiKeyEntry[]>([]);
-  const [drafts, setDrafts] = useState<Record<ApiProvider, string>>({
-    openai: "",
-    anthropic: "",
-    gemini: "",
-  });
-  const [visibleDrafts, setVisibleDrafts] = useState<Record<ApiProvider, boolean>>({
-    openai: false,
-    anthropic: false,
-    gemini: false,
-  });
-  const [saving, setSaving] = useState<ApiProvider | null>(null);
-  const [deleting, setDeleting] = useState<ApiProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [requiresApiKeys, setRequiresApiKeys] = useState(true);
+  const [githubStatus, setGithubStatus] = useState<GitHubConnection>({
+    connected: false,
+    github_login: null,
+    connected_at: null,
+  });
+  const [githubConnecting, setGithubConnecting] = useState(false);
+  const [githubDisconnecting, setGithubDisconnecting] = useState(false);
+  const [isRepoPrivate, setIsRepoPrivate] = useState(false);
 
-  const fetchPlan = useCallback(async () => {
+  const fetchGithubStatus = useCallback(async () => {
     try {
-      const data = await apiFetch<{ requires_api_keys: boolean }>("/plan");
-      setRequiresApiKeys(data.requires_api_keys);
+      const data = await apiFetch<GitHubConnection>("/github/status");
+      setGithubStatus(data);
     } catch {
-      // Fallback: show API keys section
-      setRequiresApiKeys(true);
-    }
-  }, []);
-
-  const fetchKeys = useCallback(async () => {
-    try {
-      const data = await apiFetch<{ keys: ApiKeyEntry[] }>("/api-keys");
-      setSavedKeys(data.keys);
-    } catch {
-      // API not available yet - use empty list as fallback
-      setSavedKeys([]);
+      setGithubStatus({ connected: false, github_login: null, connected_at: null });
     }
   }, []);
 
   useEffect(() => {
-    void fetchPlan();
-    void fetchKeys();
-  }, [fetchPlan, fetchKeys]);
+    void fetchGithubStatus();
+  }, [fetchGithubStatus]);
 
-  const handleSave = async (provider: ApiProvider) => {
-    const key = drafts[provider].trim();
-    if (!key) return;
-    setSaving(provider);
+  const handleGithubConnect = async () => {
+    setGithubConnecting(true);
     setError(null);
     try {
-      await apiFetch("/api-keys", {
-        method: "POST",
-        body: JSON.stringify({ provider, api_key: key }),
-      });
-      setDrafts((prev) => ({ ...prev, [provider]: "" }));
-      await fetchKeys();
+      const redirectUri = `${window.location.origin}/auth/github/callback`;
+      const data = await apiFetch<{ authorize_url: string; state: string }>(
+        `/github/authorize?redirect_uri=${encodeURIComponent(redirectUri)}`,
+      );
+      sessionStorage.setItem("github_oauth_state", data.state);
+      window.location.href = data.authorize_url;
     } catch {
-      setError(`Failed to save ${provider} key`);
-    } finally {
-      setSaving(null);
+      setError("GitHub連携の開始に失敗しました");
+      setGithubConnecting(false);
     }
   };
 
-  const handleDelete = async (provider: ApiProvider) => {
-    setDeleting(provider);
+  const handleGithubDisconnect = async () => {
+    setGithubDisconnecting(true);
     setError(null);
     try {
-      await apiFetch(`/api-keys/${provider}`, { method: "DELETE" });
-      await fetchKeys();
+      await apiFetch("/github/disconnect", { method: "DELETE" });
+      localStorage.removeItem(GITHUB_SESSION_KEY);
+      await fetchGithubStatus();
     } catch {
-      setError(`Failed to delete ${provider} key`);
+      setError("GitHub連携の解除に失敗しました");
     } finally {
-      setDeleting(null);
+      setGithubDisconnecting(false);
     }
   };
 
-  const getSavedKey = (provider: ApiProvider) => savedKeys.find((k) => k.provider === provider);
-
-  const toggleVisibility = (provider: ApiProvider) => {
-    setVisibleDrafts((prev) => ({ ...prev, [provider]: !prev[provider] }));
-  };
+  const connectedAt = githubStatus.connected_at
+    ? new Date(githubStatus.connected_at).toLocaleDateString("ja-JP")
+    : null;
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto">
-      <h1 className="text-2xl font-bold text-foreground">Integration</h1>
+    <div className="flex w-full items-start h-full font-body text-white">
+      <div className="flex flex-col items-center px-8 py-12 flex-1 overflow-y-auto">
+        <div className="flex w-full max-w-[768px] flex-col items-start gap-8">
+          <div className="flex w-full flex-col items-start gap-2">
+            <span className="text-heading-1 font-heading-1 text-white">接続</span>
+            <span className="text-body font-body text-neutral-400">外部サービスと連携します。</span>
+          </div>
 
-      {error && (
-        <div className="mt-4 rounded-md border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+          {error && (
+            <div className="w-full rounded-lg border border-error-800 bg-error-900/20 px-4 py-3 text-caption font-caption text-error-400">
+              {error}
+            </div>
+          )}
 
-      <div className="mt-6 space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>GitHub Integration</CardTitle>
-            <CardDescription>
-              Connect your GitHub account to enable repository access and collaboration features.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <span className="inline-block rounded-md bg-muted px-3 py-1 text-xs text-muted-foreground">
-              Coming soon
-            </span>
-          </CardContent>
-        </Card>
-
-        {requiresApiKeys ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>API Keys</CardTitle>
-              <CardDescription>
-                Manage your API keys for LLM providers. Keys are encrypted and stored securely.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {PROVIDERS.map(({ id, label, placeholder }) => {
-                const saved = getSavedKey(id);
-                return (
-                  <div key={id} className="space-y-3 rounded-md bg-muted/40 p-4">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-semibold">{label}</Label>
-                      {saved && (
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {saved.masked_key}
-                        </span>
-                      )}
+          <div className="flex w-full flex-col items-start gap-6">
+            {/* GitHub Integration Card */}
+            <div className="flex w-full flex-col items-start overflow-hidden rounded-xl border border-solid border-neutral-800 bg-neutral-900 shadow-sm">
+              <div className="flex w-full flex-col items-start gap-6 px-6 py-6">
+                <div className="flex w-full flex-col items-start gap-2">
+                  <div className="flex w-full items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-neutral-800">
+                        <FeatherGithub className="text-heading-2 font-heading-2 text-white" />
+                      </div>
+                      <span className="text-heading-2 font-heading-2 text-white">
+                        GitHub<span className="text-error-400 ml-1">*</span>
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1">
-                        <Input
-                          type={visibleDrafts[id] ? "text" : "password"}
-                          value={drafts[id]}
-                          onChange={(e) => setDrafts((prev) => ({ ...prev, [id]: e.target.value }))}
-                          placeholder={saved ? "Enter new key to update..." : placeholder}
-                          className="pr-10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => toggleVisibility(id)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {visibleDrafts[id] ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
+                    {githubStatus.connected ? (
+                      <Button
+                        className="bg-error-900/10 text-error-400 hover:bg-error-900/20 border-error-400"
+                        variant="destructive-secondary"
+                        size="large"
+                        onClick={handleGithubDisconnect}
+                        disabled={githubDisconnecting}
+                      >
+                        {githubDisconnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        連携解除
+                      </Button>
+                    ) : (
+                      <Button
+                        className="bg-neutral-800 text-neutral-300 hover:bg-neutral-700 border-neutral-700 text-caption font-caption"
+                        variant="neutral-secondary"
+                        size="medium"
+                        onClick={handleGithubConnect}
+                        disabled={githubConnecting}
+                      >
+                        {githubConnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                        連携
+                      </Button>
+                    )}
+                  </div>
+                  <span className="text-body font-body text-neutral-400">
+                    実装はGitHubのリポジトリに保存されます。アカウントを連携してください。
+                  </span>
+                </div>
+
+                {githubStatus.connected ? (
+                  <>
+                    <div className="flex w-full items-center justify-between rounded-lg px-5 py-4 border border-solid border-neutral-800/60 bg-neutral-950/50">
+                      <div className="flex items-center gap-4">
+                        <Avatar size="large">
+                          {githubStatus.github_login?.charAt(0).toUpperCase() ?? "G"}
+                        </Avatar>
+                        <div className="flex flex-col items-start">
+                          <span className="text-body-bold font-body-bold text-white">
+                            {githubStatus.github_login}
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex h-2 w-2 flex-none items-start rounded-full bg-success-500" />
+                            <span className="text-caption font-caption text-neutral-400">
+                              連携済み{connectedAt ? ` (${connectedAt})` : ""}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                       <Button
-                        size="sm"
-                        onClick={() => handleSave(id)}
-                        disabled={!drafts[id].trim() || saving === id}
+                        className="border-neutral-700 bg-neutral-800 text-white hover:bg-neutral-700"
+                        variant="neutral-secondary"
+                        size="large"
+                        onClick={handleGithubConnect}
+                        disabled={githubConnecting}
                       >
-                        {saving === id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
+                        {githubConnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        アカウントを変更
                       </Button>
-                      {saved && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(id)}
-                          disabled={deleting === id}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          {deleting === id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      )}
                     </div>
+                    <div className="flex w-full flex-col items-start gap-4 pt-6 border-t border-solid border-neutral-800/60">
+                      <div className="flex w-full items-center justify-between">
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="text-body-bold font-body-bold text-white">
+                            リポジトリをプライベートで作成する
+                          </span>
+                          <span className="text-caption font-caption text-neutral-400">
+                            新しく作成されるリポジトリはデフォルトでプライベートに設定されます。
+                          </span>
+                        </div>
+                        <Switch
+                          checked={isRepoPrivate}
+                          onCheckedChange={(checked: boolean) => setIsRepoPrivate(checked)}
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Slack Card (coming soon) */}
+            <div className="flex w-full flex-col items-start overflow-hidden rounded-xl border border-solid border-neutral-800 bg-neutral-900 shadow-sm">
+              <div className="flex w-full flex-col items-start gap-6 px-6 py-6">
+                <div className="flex w-full flex-col items-start gap-2">
+                  <div className="flex w-full items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-neutral-800">
+                        <FeatherSlack className="text-heading-2 font-heading-2 text-white" />
+                      </div>
+                      <span className="text-heading-2 font-heading-2 text-white">
+                        Slack（coming soon）
+                      </span>
+                    </div>
+                    <Button
+                      className="bg-neutral-800 text-neutral-300 border-neutral-700 text-caption font-caption"
+                      variant="neutral-secondary"
+                      size="medium"
+                      disabled
+                    >
+                      連携
+                    </Button>
                   </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        ) : null}
+                  <span className="text-body font-body text-neutral-400">
+                    Slackアカウントを連携して、実行完了の通知が届く様に設定できます。
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

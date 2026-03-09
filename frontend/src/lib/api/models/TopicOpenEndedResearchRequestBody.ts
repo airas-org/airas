@@ -4,12 +4,12 @@
 /* eslint-disable */
 import type { ComputeEnvironment } from './ComputeEnvironment';
 import type { EphemeralCloudRunnerConfig } from './EphemeralCloudRunnerConfig';
-import type { GitHubConfig } from './GitHubConfig';
+import type { GitHubConfigRequest } from './GitHubConfigRequest';
 import type { StaticRunnerConfig } from './StaticRunnerConfig';
 import type { TopicOpenEndedResearchLLMMapping } from './TopicOpenEndedResearchLLMMapping';
 import type { WandbConfig } from './WandbConfig';
 export type TopicOpenEndedResearchRequestBody = {
-    github_config: GitHubConfig;
+    github_config: GitHubConfigRequest;
     research_topic: string;
     compute_environment: ComputeEnvironment;
     runner_config: (StaticRunnerConfig | EphemeralCloudRunnerConfig);

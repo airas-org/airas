@@ -1,0 +1,746 @@
+{
+  "app": {
+    "languageSwitcher": {
+      "ariaLabel": "言語を切り替え"
+    }
+  },
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "newVerification": "新規検証",
+    "verificationList": "検証一覧",
+    "search": "検索",
+    "notifications": "通知",
+    "autonomousResearch": "自動研究",
+    "topicDriven": "Topic-Driven",
+    "hypothesisDriven": "Hypothesis-Driven",
+    "settings": "設定",
+    "integration": "連携設定",
+    "userPlan": "ユーザープラン",
+    "profile": "プロフィール",
+    "support": "サポート",
+    "feedback": "お問い合わせ",
+    "help": "ヘルプ",
+    "docs": "ドキュメント",
+    "legal": "利用規約",
+    "experimental": "実験的機能"
+  },
+  "userMenu": {
+    "developer": "開発者",
+    "profile": "プロフィール",
+    "apiToken": "API Token",
+    "integration": "インテグレーション",
+    "logout": "ログアウト"
+  },
+  "languageToggle": {
+    "switchTo": "EN"
+  },
+  "dashboard": {
+    "title": "ダッシュボード",
+    "subtitle": "検証プロジェクトの概要と最近のアクティビティ",
+    "stats": {
+      "total": "全検証数",
+      "running": "実行中",
+      "completed": "完了",
+      "paperGenerated": "論文生成済み"
+    },
+    "recentActivity": "最近のアクティビティ",
+    "table": {
+      "datetime": "日時",
+      "content": "内容",
+      "status": "ステータス"
+    },
+    "newVerification": "新規検証",
+    "viewList": "検証一覧を見る",
+    "status": {
+      "completed": "完了",
+      "running": "実行中",
+      "paperGenerated": "論文生成",
+      "proposed": "方針提案",
+      "new": "新規"
+    }
+  },
+  "onboarding": {
+    "skip": "スキップ",
+    "back": "戻る",
+    "next": "次へ",
+    "start": "始める",
+    "steps": {
+      "welcome": {
+        "title": "ようこそ AIRASへ",
+        "description": "AIRASは研究者のための自動研究支援プラットフォームです。仮説の立案から実験の実行、論文の執筆まで、研究プロセス全体をAIが支援します。"
+      },
+      "workflow": {
+        "title": "検証ワークフロー",
+        "description": "検証方針の立案から実験実行、論文執筆までを一貫して支援します。各フェーズをステップバイステップで進めることができます。",
+        "planLabel": "方針立案",
+        "experimentLabel": "実験実行",
+        "paperLabel": "論文執筆"
+      },
+      "autonomous": {
+        "title": "自動研究",
+        "description": "AIが自動的に研究を進めるモードも利用可能です。Topic-DrivenとHypothesis-Drivenの2つのモードがあります。",
+        "topicDrivenDesc": "トピックからAIが仮説を生成",
+        "hypothesisDrivenDesc": "仮説を元にAIが検証を実行"
+      },
+      "ready": {
+        "title": "準備完了",
+        "description": "さっそく始めましょう！"
+      }
+    }
+  },
+  "verification": {
+    "home": {
+      "title": "検証一覧",
+      "newVerification": "新規検証",
+      "noVerifications": "検証がありません",
+      "noVerificationsDesc": "新規検証ボタンから最初の検証を作成してください",
+      "projects": "{{count}} 件",
+      "searchPlaceholder": "検索...",
+      "categories": {
+        "methods": "検証方針",
+        "plan": "検証方法",
+        "code": "実験コード",
+        "settings": "実験設定",
+        "results": "実験結果",
+        "paperWriting": "執筆のための情報収集",
+        "paper": "論文",
+        "hypothesis": "仮説入力",
+        "planDecided": "方針決定",
+        "implementationDone": "実装完了",
+        "experimentsDone": "実験完了",
+        "paperDone": "論文生成"
+      },
+      "badgeLabels": {
+        "initial": "未開始",
+        "methodsProposed": "方針提案済み",
+        "planGenerated": "計画済み",
+        "codeGenerating": "生成中",
+        "codeGenerated": "実装済み",
+        "experimentsDone": "実験完了",
+        "paperWriting": "情報収集中"
+      }
+    },
+    "detail": {
+      "newTitle": "名称未設定",
+      "copyTitle": "(コピー)",
+      "chatInput": {
+        "title": "何を検証しますか？",
+        "subtitle": "検証したい仮説や研究テーマを入力してください。AIが検証方針の提案および実行を行います。",
+        "placeholder": "例: Sparse Attentionは推論速度を改善するか？精度への影響は？"
+      },
+      "quickTags": {
+        "hypothesisVerification": "仮説検証",
+        "modelComparison": "モデル比較",
+        "ablationStudy": "アブレーション実験",
+        "reproductionExperiment": "再現実験",
+        "performanceBenchmark": "性能ベンチマーク"
+      },
+      "quickTagTemplates": {
+        "hypothesisVerification": "以下の仮説を検証したい: ",
+        "modelComparison": "以下のモデルを比較検証したい: ",
+        "ablationStudy": "以下のアブレーション実験を行いたい: ",
+        "reproductionExperiment": "以下の論文の再現実験を行いたい: ",
+        "performanceBenchmark": "以下の性能ベンチマークを実施したい: "
+      },
+      "proposingPolicies": "検証方針を作成中です...",
+      "proposedMethods": {
+        "title": "検証方針の提案",
+        "subtitle": "AIが{{count}}つの検証方針を提案しました。1つを選択してください。",
+        "selected": "選択済み",
+        "whatToVerify": "検証内容",
+        "method": "手法",
+        "otherMethods": "その他の検証方法（{{count}}）"
+      },
+      "userInput": {
+        "cardTitle": "ユーザー入力",
+        "titlePlaceholder": "名称未設定"
+      },
+      "verificationPlan": {
+        "title": "検証方法",
+        "whatToVerify": "検証内容",
+        "steps": "手順",
+        "experimentSettings": "実験設定",
+        "experimentLabel": "実験{{number}}",
+        "modificationNotes": "修正内容",
+        "repositoryName": "リポジトリ名"
+      },
+      "experimentCode": {
+        "title": "実験コード"
+      },
+      "experimentSettings": {
+        "title": "実験設定",
+        "mainParams": "主要パラメータ",
+        "paramName": "名称",
+        "paramDescription": "説明",
+        "otherParams": "その他のパラメータ（{{count}}）",
+        "experimentList": "実験設定一覧",
+        "experimentResults": "実験結果"
+      },
+      "experimentDashboard": {
+        "title": "実験結果の比較",
+        "subtitle": "完了した{{count}}件の実験メトリクスを比較"
+      },
+      "paperWriting": {
+        "title": "執筆のための情報収集",
+        "subtitle": "実験結果を基に論文ドラフトを生成します",
+        "selectExperiments": "含める実験を選択",
+        "generatePaper": "論文を生成",
+        "generatingPaper": "論文を生成中..."
+      },
+      "paper": {
+        "title": "論文"
+      },
+      "githubUrl": "GitHub URL:",
+      "editOnOverleaf": "Overleafで編集",
+      "tocLabels": {
+        "methods": "検証方針",
+        "plan": "検証方法",
+        "code": "実験コード",
+        "settings": "実験設定",
+        "results": "実験結果",
+        "paperWriting": "執筆のための情報収集",
+        "paper": "論文"
+      }
+    }
+  },
+  "autonomous": {
+    "newSession": "新規セッション",
+    "noSession": "セッションを選択してください",
+    "topicDriven": {
+      "title": "Topic-Driven Research",
+      "listTitle": "研究セッション一覧",
+      "listSubtitle": "過去に実行した自動研究セッションの履歴を確認できます",
+      "inputPlaceholder": "研究トピックを入力してください",
+      "start": "研究を開始",
+      "newSession": "新規研究を開始",
+      "firstSession": "最初の研究を開始",
+      "noSessions": "まだ研究セッションがありません",
+      "searchPlaceholder": "セッションを検索...",
+      "sessionCount": "{{count}} 件のセッション",
+      "sort": "並び替え",
+      "sortNewest": "作成日時（新しい順）",
+      "sortOldest": "作成日時（古い順）",
+      "sortTitle": "タイトル順",
+      "noSearchResults": "検索結果が見つかりませんでした",
+      "newSessionTitle": "新規研究セッション",
+      "researchTopic": "研究テーマ",
+      "researchTopicPlaceholder": "例: Vision-Language Models を用いた Video QA の性能向上手法",
+      "backToList": "一覧に戻る",
+      "cancel": "キャンセル",
+      "running": "実行中...",
+      "run": "自動研究を実行",
+      "advancedSettings": "詳細設定",
+      "llmSettings": "LLM 設定",
+      "githubSettings": "GitHub 設定",
+      "owner": "オーナー",
+      "repository": "リポジトリ",
+      "branch": "ブランチ",
+      "makePrivate": "リポジトリをプライベートにする",
+      "runnerLabel": "ラベル",
+      "runnerDescription": "説明",
+      "numPaperSearchQueries": "論文検索クエリ数",
+      "papersPerQuery": "1クエリあたりの取得論文数",
+      "hypothesisRefinementIterations": "仮説リファインメント回数",
+      "numExperimentModels": "実験モデル数",
+      "numExperimentDatasets": "データセット数",
+      "numComparativeMethods": "比較手法数",
+      "codeValidationIterations": "コードバリデーション回数",
+      "paperRefinementIterations": "論文リファインメント回数",
+      "githubActionsAgent": "GitHub Actions エージェント",
+      "latexTemplate": "LaTeX テンプレート",
+      "selectPlaceholder": "選択してください",
+      "backToResults": "結果一覧に戻る",
+      "taskId": "タスクID",
+      "autoUpdating": "自動更新中",
+      "fetchLatest": "最新を取得",
+      "saving": "保存中...",
+      "save": "保存",
+      "noProgress": "まだ表示できる進捗はありません。",
+      "researchHistory": "研究履歴",
+      "purpose": "目的",
+      "paperUrl": "論文URL",
+      "statusCompleted": "完了",
+      "statusFailed": "失敗",
+      "statusRunning": "進行中",
+      "statusFetchError": "ステータスの取得に失敗しました",
+      "titleUpdateError": "タイトルの更新に失敗しました",
+      "runError": "自動研究の実行に失敗しました"
+    },
+    "hypothesisDriven": {
+      "title": "Hypothesis-Driven Research",
+      "listTitle": "研究セッション一覧",
+      "listSubtitle": "過去に実行した仮説駆動研究セッションの履歴を確認できます",
+      "listHeading": "仮説駆動研究セッション一覧",
+      "inputPlaceholder": "検証したい仮説を入力してください",
+      "start": "検証を開始",
+      "newSession": "新規研究を開始",
+      "firstSession": "最初の研究を開始",
+      "noSessions": "まだ研究セッションがありません",
+      "searchPlaceholder": "セッションを検索...",
+      "sessionCount": "{{count}} 件のセッション",
+      "sort": "並び替え",
+      "sortNewest": "作成日時（新しい順）",
+      "sortOldest": "作成日時（古い順）",
+      "sortTitle": "タイトル順",
+      "noSearchResults": "検索結果が見つかりませんでした",
+      "newSessionTitle": "新規仮説駆動研究セッション",
+      "researchTopic": "研究テーマ（任意）",
+      "researchTopicPlaceholder": "例: Vision-Language Models を用いた Video QA の性能向上手法",
+      "hypothesis": "研究仮説",
+      "openProblems": "解決すべき問題",
+      "proposedMethod": "提案手法",
+      "experimentalSetup": "実験設定",
+      "primaryMetric": "主要評価指標",
+      "experimentalCode": "実験コード",
+      "expectedResult": "期待される結果",
+      "expectedConclusion": "期待される結論",
+      "backToList": "一覧に戻る",
+      "cancel": "キャンセル",
+      "running": "実行中...",
+      "run": "仮説駆動研究を実行",
+      "advancedSettings": "詳細設定",
+      "llmSettings": "LLM 設定",
+      "githubSettings": "GitHub 設定",
+      "owner": "オーナー",
+      "repository": "リポジトリ",
+      "branch": "ブランチ",
+      "makePrivate": "リポジトリをプライベートにする",
+      "runnerLabel": "ラベル",
+      "runnerDescription": "説明",
+      "numExperimentModels": "実験モデル数",
+      "numExperimentDatasets": "データセット数",
+      "numComparativeMethods": "比較手法数",
+      "paperRefinementIterations": "論文リファインメント回数",
+      "githubActionsAgent": "GitHub Actions エージェント",
+      "latexTemplate": "LaTeX テンプレート",
+      "selectPlaceholder": "選択してください",
+      "backToResults": "結果一覧に戻る",
+      "taskId": "タスクID",
+      "autoUpdating": "自動更新中",
+      "fetchLatest": "最新を取得",
+      "saving": "保存中...",
+      "save": "保存",
+      "noProgress": "まだ表示できる進捗はありません。",
+      "researchHistory": "研究履歴",
+      "purpose": "目的",
+      "paperUrl": "論文URL",
+      "statusCompleted": "完了",
+      "statusFailed": "失敗",
+      "statusRunning": "進行中",
+      "statusFetchError": "ステータスの取得に失敗しました",
+      "titleUpdateError": "タイトルの更新に失敗しました",
+      "runError": "研究の実行に失敗しました"
+    }
+  },
+  "help": {
+    "title": "ヘルプ",
+    "subtitle": "AIRASの使い方や各機能について",
+    "gettingStarted": "はじめに — 基本的な使い方",
+    "faq": "よくある質問",
+    "links": {
+      "docs": "ドキュメント",
+      "docsDesc": "詳しい技術ドキュメントはこちら",
+      "discord": "Discordコミュニティ",
+      "discordDesc": "コミュニティで質問や議論ができます",
+      "github": "GitHub",
+      "githubDesc": "ソースコードとIssue管理"
+    },
+    "gettingStartedSteps": {
+      "step1": {
+        "title": "1. 検証を作成する",
+        "description": "サイドバーの「新規検証」ボタンから検証を作成します。検証したい仮説や研究テーマを入力すると、AIが関連論文の検索と検証方針の提案を行います。"
+      },
+      "step2": {
+        "title": "2. 検証方針を選択する",
+        "description": "AIが複数の検証方針を提示します。各方針のPros/Consを比較して、最適な方針を選択してください。"
+      },
+      "step3": {
+        "title": "3. 実験を実行する",
+        "description": "選択した検証方針に基づいて実験コードが生成されます。パラメータを設定して実験を実行し、結果を確認します。"
+      },
+      "step4": {
+        "title": "4. 論文を執筆する",
+        "description": "実験結果をもとに、AIが論文ドラフトを生成します。Overleafと連携して編集を続けることもできます。"
+      }
+    },
+    "featureGuides": {
+      "verificationWorkflow": {
+        "title": "検証ワークフロー",
+        "q1": "検証の各フェーズについて",
+        "a1": "検証は「検証方針 → 検証方法 → 実験コード → 実験設定 → 実験結果 → 情報収集 → 論文」の順に進みます。各フェーズは検証一覧ページでカテゴリ別に確認できます。",
+        "q2": "検証を途中から再開できますか？",
+        "a2": "はい、検証一覧ページから検証を選択すると、前回の状態から再開できます。各フェーズの結果は自動的に保存されています。"
+      },
+      "autonomousResearch": {
+        "title": "自動研究（Topic-Driven / Hypothesis-Driven）",
+        "q1": "Topic-Driven と Hypothesis-Driven の違い",
+        "a1": "Topic-Drivenは研究テーマを入力すると、AIが自動的に仮説生成から論文執筆まで一貫して行います。Hypothesis-Drivenは既に検証したい仮説がある場合に、その仮説に基づいて実験と論文執筆を行います。",
+        "q2": "GitHub / W&B の設定は必須ですか？",
+        "a2": "はい、実験コードの管理にGitHubリポジトリ、実験メトリクスの記録にWeights & Biasesが必要です。それぞれのアカウントを事前にご用意ください。"
+      },
+      "integration": {
+        "title": "インテグレーション設定",
+        "q1": "APIキーの設定方法",
+        "a1": "Settings > Integrationページから各サービスのAPIキーを設定できます。OpenAI、Anthropic、Google等のLLM APIキーと、GitHub Personal Access Tokenが必要です。",
+        "q2": "LLMモデルのカスタマイズ",
+        "a2": "自動研究の詳細設定で、各プロセス（論文検索、仮説生成、コード生成等）に使用するLLMモデルを個別に指定できます。"
+      },
+      "paper": {
+        "title": "論文関連",
+        "q1": "対応しているLaTeXテンプレート",
+        "a1": "現在、MDPI、ICLR 2024、Agents4Science 2025のテンプレートに対応しています。詳細設定から選択できます。",
+        "q2": "生成された論文の編集方法",
+        "a2": "論文はGitHubリポジトリに保存されます。PDFリンクから確認でき、「Edit on Overleaf」ボタンからOverleafで直接編集することもできます。"
+      }
+    },
+    "faqItems": {
+      "q1": "AIRASは無料で利用できますか？",
+      "a1": "基本的な機能は無料でご利用いただけます。月間の検証回数やAIモデルの選択に制限がありますが、有料プランにアップグレードすることで制限を解除できます。",
+      "q2": "データのプライバシーは保護されていますか？",
+      "a2": "すべてのデータは暗号化された通信で転送され、セキュアなクラウドインフラストラクチャに保管されます。ユーザーの研究データは他のユーザーと共有されることはありません。",
+      "q3": "バグや問題を見つけた場合はどうすればいいですか？",
+      "a3": "サイドバーの「お問い合わせ」ページからバグ報告を送信していただくか、GitHubのIssuesページで報告してください。"
+    }
+  },
+  "feedback": {
+    "title": "お問い合わせ",
+    "subtitle": "フィードバックやバグ報告をお送りください",
+    "type": "種類",
+    "typeBug": "バグ報告",
+    "typeFeature": "機能リクエスト",
+    "typeOther": "その他",
+    "description": "詳細",
+    "descriptionPlaceholder": "詳細を入力してください",
+    "submit": "送信",
+    "pageTitle": "お問い合わせ・フィードバック",
+    "pageSubtitle": "ご意見・ご要望をお聞かせください",
+    "successTitle": "フィードバックを送信しました。ありがとうございます！",
+    "successDescription": "内容を確認し、必要に応じてご連絡いたします。",
+    "category": "カテゴリ",
+    "categoryPlaceholder": "カテゴリを選択",
+    "categoryBug": "バグ報告",
+    "categoryFeature": "機能リクエスト",
+    "categoryGeneral": "一般的な質問",
+    "categoryOther": "その他",
+    "subject": "件名",
+    "subjectPlaceholder": "件名を入力してください",
+    "detail": "詳細",
+    "detailPlaceholder": "詳細な内容を入力してください",
+    "email": "メールアドレス（任意）",
+    "emailHelpText": "返信が必要な場合はご記入ください",
+    "faq": "よくある質問",
+    "faqItems": {
+      "q1": "AIRASで生成された研究成果の著作権はどうなりますか？",
+      "a1": "AIRASを通じて生成された研究成果の著作権は、原則としてユーザーに帰属します。ただし、AIが生成したコンテンツに関する法的な取り扱いは各国の法律により異なるため、詳細は利用規約をご確認ください。",
+      "q2": "無料プランと有料プランの違いは何ですか？",
+      "a2": "無料プランでは月間の検証回数と利用可能なAIモデルに制限があります。有料プランでは無制限の検証、高性能なAIモデルへのアクセス、優先サポートなどの追加機能をご利用いただけます。",
+      "q3": "データのセキュリティはどのように保護されていますか？",
+      "a3": "すべてのデータは暗号化された通信で転送され、セキュアなクラウドインフラストラクチャに保管されます。定期的なセキュリティ監査を実施し、業界標準のセキュリティプラクティスに従っています。"
+    }
+  },
+  "legal": {
+    "title": "利用規約",
+    "subtitle": "AIRASをご利用いただく前にお読みください",
+    "pageTitle": "法的情報",
+    "pageSubtitle": "サービスのご利用に関する規約とポリシー",
+    "tabs": {
+      "terms": "利用規約",
+      "privacy": "プライバシーポリシー"
+    },
+    "terms": {
+      "lastUpdated": "最終更新日: 2026年3月1日",
+      "overview": {
+        "title": "サービスの概要",
+        "content": "AIRASは、AIを活用した研究支援プラットフォームです。本サービスは、仮説の生成、検証計画の立案、実験コードの自動生成、および論文執筆の支援を提供します。本規約は、サービスのご利用に際して適用される条件を定めるものです。"
+      },
+      "usage": {
+        "title": "利用条件",
+        "content": "本サービスをご利用いただくには、18歳以上であること、または法定代理人の同意を得ていることが必要です。ユーザーは、本サービスを学術研究および正当な目的にのみ使用するものとします。不正な利用が確認された場合、アカウントを停止する場合があります。"
+      },
+      "account": {
+        "title": "アカウント",
+        "content": "ユーザーは、正確かつ最新の情報を提供してアカウントを作成する必要があります。アカウントの認証情報は厳重に管理し、第三者と共有しないでください。アカウントにおけるすべての活動について、ユーザーが責任を負うものとします。"
+      },
+      "ip": {
+        "title": "知的財産権",
+        "content": "本サービスを通じて生成されたコンテンツの知的財産権は、適用される法律に従って取り扱われます。ユーザーが入力したデータおよび研究成果に関する権利は、原則としてユーザーに帰属します。ただし、サービスの改善のために匿名化されたデータを利用する場合があります。"
+      },
+      "disclaimer": {
+        "title": "免責事項",
+        "content": "本サービスは「現状有姿」で提供され、AIが生成する結果の正確性を保証するものではありません。研究成果の最終的な検証はユーザーの責任において行ってください。サービスの中断または停止により生じた損害について、当社は責任を負いかねます。"
+      },
+      "law": {
+        "title": "準拠法",
+        "content": "本規約は日本法に準拠し、解釈されるものとします。本規約に関連する紛争については、東京地方裁判所を第一審の専属的合意管轄裁判所とします。"
+      }
+    },
+    "privacy": {
+      "lastUpdated": "最終更新日: 2026年3月1日",
+      "collection": {
+        "title": "収集する情報",
+        "content": "当社は、アカウント作成時にお名前、メールアドレス、所属機関などの情報を収集します。また、サービスの利用状況に関するログデータ（アクセス日時、使用機能、エラー情報等）を自動的に収集します。研究データについては、ユーザーが明示的にアップロードしたもののみを取り扱います。"
+      },
+      "usage": {
+        "title": "情報の利用目的",
+        "content": "収集した情報は、サービスの提供・運営・改善、ユーザーサポートの提供、およびセキュリティの維持のために利用します。匿名化されたデータは、AIモデルの精度向上および研究目的に使用する場合があります。ユーザーの同意なくマーケティング目的で個人情報を使用することはありません。"
+      },
+      "sharing": {
+        "title": "情報の共有",
+        "content": "当社は、法律上の義務がある場合を除き、ユーザーの個人情報を第三者と共有することはありません。サービスの提供に必要な範囲で、信頼できるパートナー企業にデータ処理を委託する場合があります。その際、適切な契約およびセキュリティ対策を講じます。"
+      },
+      "storage": {
+        "title": "データの保管",
+        "content": "ユーザーのデータは、適切なセキュリティ対策が施されたサーバーに保管されます。データの保管期間は、アカウントが有効な間およびその後の法律で定められた期間とします。アカウントの削除を要請された場合、合理的な期間内にデータを削除します。"
+      },
+      "contact": {
+        "title": "お問い合わせ",
+        "content": "プライバシーポリシーに関するご質問やご要望は、サポートページのお問い合わせフォームよりご連絡ください。データの開示、訂正、削除等のご要請にも対応いたします。"
+      }
+    }
+  },
+  "profile": {
+    "title": "プロフィール",
+    "subtitle": "アカウント情報の確認・編集",
+    "name": "名前",
+    "email": "メールアドレス",
+    "save": "保存",
+    "displayName": "表示名",
+    "displayNamePlaceholder": "名前を入力",
+    "emailPlaceholder": "メールアドレスを入力",
+    "affiliation": "所属",
+    "affiliationPlaceholder": "所属機関を入力",
+    "bio": "自己紹介",
+    "bioPlaceholder": "自己紹介を入力",
+    "saved": "保存しました",
+    "apiUsage": "API利用状況",
+    "monthlyApiUsage": "今月のAPI利用",
+    "usagePercent": "{{percent}}% 使用済み"
+  },
+  "notifications": {
+    "title": "通知",
+    "subtitle": "最新のアクティビティと通知",
+    "noNotifications": "通知はありません",
+    "markAllRead": "すべて既読にする",
+    "filters": {
+      "all": "すべて",
+      "unread": "未読",
+      "read": "既読"
+    }
+  },
+  "search": {
+    "title": "検索",
+    "subtitle": "検証・論文・セッションを検索",
+    "placeholder": "キーワードを入力...",
+    "noResults": "結果が見つかりません",
+    "searchPlaceholder": "検証、論文、実験を検索...",
+    "noResultsFound": "検索結果が見つかりませんでした",
+    "verifications": "検証",
+    "papers": "論文",
+    "experiments": "実験",
+    "countSuffix": "件"
+  },
+  "apiToken": {
+    "title": "API Token",
+    "subtitle": "APIトークンの管理",
+    "generate": "トークンを生成",
+    "copy": "コピー",
+    "noTokens": "トークンがありません",
+    "pageSubtitle": "AIRAS APIにアクセスするためのトークンを管理します",
+    "generateSection": "新しいトークンを生成",
+    "tokenName": "トークン名",
+    "tokenNamePlaceholder": "例: 研究用スクリプト",
+    "generateButton": "生成",
+    "tokenWarning": "このトークンは一度だけ表示されます。安全な場所に保存してください。",
+    "copied": "コピー済み",
+    "issuedTokens": "発行済みトークン",
+    "noTokensYet": "トークンはまだ発行されていません",
+    "createdAt": "作成",
+    "lastUsed": "最終使用",
+    "revoke": "取り消し",
+    "usageExample": "使用例",
+    "apiKeysSection": "API Keys",
+    "copyError": "クリップボードへのコピーに失敗しました"
+  },
+  "settings": {
+    "accountSection": "アカウント",
+    "externalServicesSection": "外部サービス"
+  },
+  "integration": {
+    "title": "Integration",
+    "subtitle": "外部サービスとの連携設定",
+    "save": "保存",
+    "saved": "保存しました"
+  },
+  "userPlan": {
+    "title": "User Plan",
+    "subtitle": "プランの確認・変更",
+    "current": "現在のプラン",
+    "upgrade": "アップグレード"
+  },
+  "papers": {
+    "title": "論文",
+    "subtitle": "論文の検索と管理",
+    "search": "論文を検索",
+    "searchPlaceholder": "タイトル・著者・キーワードで検索",
+    "noResults": "論文が見つかりません",
+    "select": "選択",
+    "selected": "選択済み",
+    "execute": "実行",
+    "acquisitionTitle": "論文取得",
+    "acquisitionSubtitle": "論文検索を実行します"
+  },
+  "assistedResearch": {
+    "paperSearch": "論文検索",
+    "methodGeneration": "手法生成",
+    "codeGeneration": "コード生成",
+    "experimentConfig": "実験設定",
+    "experimentRun": "実験実行",
+    "analysis": "分析",
+    "paperWriting": "論文執筆"
+  },
+  "features": {
+    "llmConfig": {
+      "title": "LLM設定",
+      "description": "各サブグラフで使用するLLMモデルをカスタマイズできます。指定しない場合はデフォルト設定が適用されます。"
+    },
+    "paperSearch": {
+      "title": "論文取得",
+      "subtitle": "関連する研究論文を検索・選択",
+      "searchPlaceholder": "検索キーワードを入力...",
+      "searching": "検索中...",
+      "search": "検索",
+      "errorMessage": "論文の検索に失敗しました。時間をおいて再度お試しください。",
+      "selectedCount": "{{count}} 件の論文を選択中",
+      "confirmSelection": "選択を確定",
+      "confirmedCount": "確定済み: {{count}} 件の論文"
+    },
+    "methodGeneration": {
+      "title": "新規手法の生成",
+      "subtitle": "選択した論文から新しい研究手法を生成",
+      "generateFromPapers": "論文から生成",
+      "manualInput": "手動で入力",
+      "methodName": "手法名",
+      "methodDescription": "手法の説明",
+      "descriptionPlaceholder": "手法の詳細な説明を入力してください...",
+      "noPapersMessage": "先に論文を選択するか、手動入力モードを使用してください",
+      "paperCountMessage": "{{count}} 件の論文を基に新規手法を生成します:",
+      "generating": "生成中...",
+      "generate": "新規手法を生成",
+      "generatedPreview": "生成された手法（プレビュー）",
+      "editableDescription": "手法の説明（編集可能）",
+      "confirmMethod": "この手法を確定"
+    },
+    "experimentConfig": {
+      "title": "実験設定の作成",
+      "subtitle": "生成された手法に対する実験設定を作成",
+      "generateFromMethod": "手法から生成",
+      "manualInput": "手動で入力",
+      "targetMethodDescription": "対象手法の説明",
+      "targetMethodPlaceholder": "実験対象の手法について説明してください...",
+      "inputExperimentConfig": "実験設定を入力",
+      "configNumber": "実験設定 {{number}}",
+      "modelName": "モデル名",
+      "dataset": "データセット",
+      "description": "説明",
+      "descriptionPlaceholder": "実験の説明...",
+      "addConfig": "実験設定を追加",
+      "noMethodMessage": "先に新規手法を生成するか、手動入力モードを使用してください",
+      "targetMethod": "対象手法:",
+      "generating": "生成中...",
+      "generate": "実験設定を生成",
+      "configList": "実験設定一覧",
+      "generatedPreview": "生成された実験設定（プレビュー）",
+      "confirmConfig": "この設定を確定"
+    },
+    "experimentRun": {
+      "title": "実験の実行",
+      "subtitle": "GitHub Actionsで実験を実行",
+      "noConfigMessage": "先に実験コードを生成してください",
+      "runAll": "全ての実験を実行",
+      "running": "実行中...",
+      "run": "実行",
+      "runningProgress": "実験を実行中...",
+      "confirmResults": "この結果を確定",
+      "confirmed": "確定済み"
+    },
+    "analysis": {
+      "title": "実験結果の分析",
+      "subtitle": "実験結果を分析し洞察を導出",
+      "noResultsMessage": "先に実験を実行してください",
+      "resultCountMessage": "{{count}} 件の実験結果を分析します",
+      "analyzing": "分析中...",
+      "analyze": "結果を分析",
+      "confirmAnalysis": "この分析を確定",
+      "confirmed": "確定済み"
+    },
+    "codeGeneration": {
+      "title": "実験コードの生成",
+      "subtitle": "実験設定からコードを生成しGitHubへ送信",
+      "noConfigMessage": "先に実験設定を作成してください",
+      "generating": "生成中...",
+      "generate": "実験コードを生成",
+      "pushing": "送信中...",
+      "pushToGitHub": "GitHubへ送信",
+      "pushSuccess": "GitHubに送信完了",
+      "confirmCode": "このコードを確定",
+      "confirmed": "確定済み"
+    },
+    "paperWriting": {
+      "title": "論文の作成",
+      "subtitle": "研究成果をまとめた論文を自動生成",
+      "generateFromResults": "実験結果から生成",
+      "manualInput": "手動で入力",
+      "paperTitle": "論文タイトル",
+      "abstract": "アブストラクト",
+      "abstractPlaceholder": "研究の概要を入力...",
+      "sections": "セクション",
+      "sectionNamePlaceholder": "セクション名",
+      "sectionContentPlaceholder": "セクション内容...",
+      "addSection": "セクションを追加",
+      "noPrerequisitesMessage": "全ての前工程を完了するか、手動入力モードを使用してください",
+      "generating": "生成中...",
+      "generate": "論文を生成",
+      "preview": "プレビュー",
+      "confirmPaper": "この論文を確定",
+      "downloadLatex": "LaTeXをダウンロード",
+      "downloadPdf": "PDFをダウンロード"
+    }
+  },
+  "workflowTree": {
+    "noSteps": "まだ実行されたステップがありません",
+    "startPrompt": "論文取得から始めてください",
+    "featureLabels": {
+      "papers": "論文取得",
+      "method": "新規手法",
+      "experimentConfig": "実験設定",
+      "codeGeneration": "コード生成",
+      "experimentRun": "実験実行",
+      "analysis": "結果分析",
+      "paperWriting": "論文作成"
+    }
+  },
+  "codeEditorModal": {
+    "title": "コードプレビュー",
+    "openOnGitHub": "GitHubで開く",
+    "close": "閉じる"
+  },
+  "autoResearchResult": {
+    "noProgress": "まだ表示できる進捗はありません。",
+    "evaluationMetric": "評価指標",
+    "baseline": "ベースライン"
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "error": "エラーが発生しました",
+    "retry": "再試行",
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "delete": "削除",
+    "edit": "編集",
+    "close": "閉じる",
+    "back": "戻る",
+    "next": "次へ",
+    "save": "保存",
+    "noData": "データがありません"
+  }
+}

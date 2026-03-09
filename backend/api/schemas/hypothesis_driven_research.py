@@ -5,7 +5,10 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from airas.core.types.experimental_design import ComputeEnvironment
-from airas.core.types.github import GitHubActionsAgent, GitHubConfig
+from airas.core.types.github import (
+    GitHubActionsAgent,
+    GitHubConfigRequest,
+)
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.runner import ExperimentRunnerConfig
@@ -78,7 +81,7 @@ class HypothesisDrivenResearchUpdateRequestBody(BaseModel):
 
 
 class HypothesisDrivenResearchRequestBody(BaseModel):
-    github_config: GitHubConfig
+    github_config: GitHubConfigRequest
     research_hypothesis: ResearchHypothesis
     research_topic: str = ""
     compute_environment: ComputeEnvironment

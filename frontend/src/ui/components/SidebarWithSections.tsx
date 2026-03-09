@@ -113,7 +113,7 @@ const SidebarWithSectionsRoot = React.forwardRef<HTMLElement, SidebarWithSection
     return (
       <nav
         className={SubframeUtils.twClassNames(
-          "flex h-full w-60 flex-col items-start border-r border-solid border-neutral-border bg-default-background",
+          "flex h-full w-52 flex-col items-start border-r border-solid border-neutral-border bg-default-background",
           className,
         )}
         ref={ref}
@@ -128,7 +128,7 @@ const SidebarWithSectionsRoot = React.forwardRef<HTMLElement, SidebarWithSection
           </div>
         ) : null}
         {footer ? (
-          <div className="flex w-full items-center gap-4 border-t border-solid border-neutral-border px-6 py-6">
+          <div className="flex w-full items-center gap-4 px-6 py-6">
             {footer}
           </div>
         ) : null}
