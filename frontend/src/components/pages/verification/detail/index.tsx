@@ -69,7 +69,6 @@ function UserInputCard({ query, title, onTitleChange }: UserInputCardProps) {
 interface VerificationDetailPageProps {
   verification: Verification | null;
   onUpdateVerification: (id: string, updates: Partial<Verification>) => void;
-  onCreateWithMethod?: (sourceVerification: Verification, method: ProposedMethod) => void;
 }
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
@@ -92,7 +91,6 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 export function VerificationDetailPage({
   verification,
   onUpdateVerification,
-  onCreateWithMethod,
 }: VerificationDetailPageProps) {
   const { t } = useTranslation();
   const [isPaperGenerating, setIsPaperGenerating] = useState(false);
@@ -490,11 +488,6 @@ export function VerificationDetailPage({
                   methods={verification.proposedMethods}
                   selectedMethodId={verification.selectedMethodId}
                   onSelectMethod={handleSelectMethod}
-                  onCreateWithMethod={
-                    onCreateWithMethod
-                      ? (method) => onCreateWithMethod(verification, method)
-                      : undefined
-                  }
                 />
               </div>
             )}

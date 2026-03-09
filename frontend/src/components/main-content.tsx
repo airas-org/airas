@@ -6,7 +6,6 @@ import { NotificationsPage } from "@/components/pages/notifications";
 import { PapersPage } from "@/components/pages/papers";
 import { SettingsPage } from "@/components/pages/settings";
 import {
-  type ProposedMethod,
   type Verification,
   VerificationDetailPage,
   VerificationHomePage,
@@ -52,18 +51,15 @@ interface MainContentProps {
   onDuplicateVerification: (id: string) => void;
   onUpdateVerification: (id: string, updates: Partial<Verification>) => void;
   onCreateWithQuery: (query: string) => void;
-  onCreateWithMethod: (sourceVerification: Verification, method: ProposedMethod) => void;
   autonomousListViewKey: number;
 }
 
 function VerificationDetailRoute({
   verifications,
   onUpdateVerification,
-  onCreateWithMethod,
 }: {
   verifications: Verification[];
   onUpdateVerification: (id: string, updates: Partial<Verification>) => void;
-  onCreateWithMethod: (sourceVerification: Verification, method: ProposedMethod) => void;
 }) {
   const { id } = useParams<{ id: string }>();
   const verification = verifications.find((v) => v.id === id) ?? null;
@@ -71,7 +67,6 @@ function VerificationDetailRoute({
     <VerificationDetailPage
       verification={verification}
       onUpdateVerification={onUpdateVerification}
-      onCreateWithMethod={onCreateWithMethod}
     />
   );
 }
@@ -123,7 +118,6 @@ export function MainContent({
   onDuplicateVerification,
   onUpdateVerification,
   onCreateWithQuery,
-  onCreateWithMethod,
   autonomousListViewKey,
 }: MainContentProps) {
   const navigate = useNavigate();
@@ -198,7 +192,6 @@ export function MainContent({
             <VerificationDetailRoute
               verifications={verifications}
               onUpdateVerification={onUpdateVerification}
-              onCreateWithMethod={onCreateWithMethod}
             />
           }
         />
