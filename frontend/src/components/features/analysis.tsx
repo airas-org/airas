@@ -1,12 +1,9 @@
-"use client";
-
 import { BarChart3, Check, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { analyzeResults } from "@/lib/api-mock";
 import type { ExperimentResult } from "@/types/research";
+import { Button, Card } from "@/ui";
 
 interface AnalysisSectionProps {
   results: ExperimentResult[];

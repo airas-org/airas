@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Check,
   Download,
@@ -13,13 +11,9 @@ import {
 } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { generateLaTeX, generatePaperText } from "@/lib/api-mock";
 import type { ExperimentConfig, ExperimentResult, GeneratedPaper, Method } from "@/types/research";
+import { Button, Card, Tabs, TextArea, TextField } from "@/ui";
 
 interface PaperWritingSectionProps {
   method: Method | null;
@@ -113,6 +107,7 @@ export function PaperWritingSection({
   const [isManualMode, setIsManualMode] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [previewPaper, setPreviewPaper] = useState<GeneratedPaper | null>(null);
+  const [activeTab, setActiveTab] = useState<"preview" | "latex">("preview");
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [manualInput, setManualInput] = useState<ManualPaperInput>({
     title: "",
@@ -242,8 +237,8 @@ export function PaperWritingSection({
       {!displayPaper && !isEditing && (
         <div className="flex gap-2 mb-6">
           <Button
-            variant={!isManualMode ? "default" : "outline"}
-            size="sm"
+            variant={!isManualMode ? "brand-primary" : "neutral-secondary"}
+            size="small"
             onClick={() => setIsManualMode(false)}
             className={
               !isManualMode ? "bg-blue-700 hover:bg-blue-800 text-white" : "bg-transparent"
@@ -252,8 +247,8 @@ export function PaperWritingSection({
             {t("features.paperWriting.generateFromResults")}
           </Button>
           <Button
-            variant={isManualMode ? "default" : "outline"}
-            size="sm"
+            variant={isManualMode ? "brand-primary" : "neutral-secondary"}
+            size="small"
             onClick={handleStartManualInput}
             className={isManualMode ? "bg-blue-700 hover:bg-blue-800 text-white" : "bg-transparent"}
           >
@@ -271,13 +266,14 @@ export function PaperWritingSection({
             >
               {t("features.paperWriting.paperTitle")}
             </label>
-            <Input
-              id={manualTitleId}
-              value={manualInput.title}
-              onChange={(e) => setManualInput({ ...manualInput, title: e.target.value })}
-              placeholder="例: A Novel Approach to Graph Neural Networks"
-              className="bg-background"
-            />
+            <TextField>
+              <TextField.Input
+                id={manualTitleId}
+                value={manualInput.title}
+                onChange={(e) => setManualInput({ ...manualInput, title: e.target.value })}
+                placeholder="例: A Novel Approach to Graph Neural Networks"
+              />
+            </TextField>
           </div>
           <div>
             <label
@@ -286,13 +282,15 @@ export function PaperWritingSection({
             >
               {t("features.paperWriting.abstract")}
             </label>
-            <Textarea
-              id={manualAbstractId}
-              value={manualInput.abstract}
-              onChange={(e) => setManualInput({ ...manualInput, abstract: e.target.value })}
-              placeholder={t("features.paperWriting.abstractPlaceholder")}
-              className="min-h-[120px] bg-background"
-            />
+            <TextArea>
+              <TextArea.Input
+                id={manualAbstractId}
+                value={manualInput.abstract}
+                onChange={(e) => setManualInput({ ...manualInput, abstract: e.target.value })}
+                placeholder={t("features.paperWriting.abstractPlaceholder")}
+                className="min-h-[120px]"
+              />
+            </TextArea>
           </div>
           <div className="space-y-4">
             <p className="text-sm font-medium text-foreground">
@@ -304,35 +302,46 @@ export function PaperWritingSection({
               return (
                 <div key={section.id} className="p-4 border border-border rounded-lg space-y-3">
                   <div className="flex items-center gap-2">
-                    <Input
-                      id={sectionNameId}
-                      value={section.name}
-                      onChange={(e) => handleSectionChange(index, "name", e.target.value)}
-                      placeholder={t("features.paperWriting.sectionNamePlaceholder")}
-                      className="flex-1 bg-background"
-                    />
-                    <Button variant="ghost" size="sm" onClick={() => handleRemoveSection(index)}>
+                    <TextField className="flex-1">
+                      <TextField.Input
+                        id={sectionNameId}
+                        value={section.name}
+                        onChange={(e) => handleSectionChange(index, "name", e.target.value)}
+                        placeholder={t("features.paperWriting.sectionNamePlaceholder")}
+                      />
+                    </TextField>
+                    <Button
+                      variant="neutral-tertiary"
+                      size="small"
+                      onClick={() => handleRemoveSection(index)}
+                    >
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
                   </div>
-                  <Textarea
-                    id={sectionContentId}
-                    value={section.content}
-                    onChange={(e) => handleSectionChange(index, "content", e.target.value)}
-                    placeholder={t("features.paperWriting.sectionContentPlaceholder")}
-                    className="min-h-[100px] bg-background"
-                  />
+                  <TextArea>
+                    <TextArea.Input
+                      id={sectionContentId}
+                      value={section.content}
+                      onChange={(e) => handleSectionChange(index, "content", e.target.value)}
+                      placeholder={t("features.paperWriting.sectionContentPlaceholder")}
+                      className="min-h-[100px]"
+                    />
+                  </TextArea>
                 </div>
               );
             })}
-            <Button variant="outline" onClick={handleAddSection} className="w-full bg-transparent">
+            <Button
+              variant="neutral-secondary"
+              onClick={handleAddSection}
+              className="w-full bg-transparent"
+            >
               <Plus className="w-4 h-4 mr-2" />
               {t("features.paperWriting.addSection")}
             </Button>
           </div>
           <div className="flex gap-2 justify-end">
             <Button
-              variant="outline"
+              variant="neutral-secondary"
               onClick={() => setIsEditing(false)}
               className="bg-transparent"
             >
@@ -374,57 +383,65 @@ export function PaperWritingSection({
       {displayPaper && !isEditing && (
         <div className="space-y-6">
           <div className="flex justify-end">
-            <Button variant="ghost" size="sm" onClick={handleEdit}>
+            <Button variant="neutral-tertiary" size="small" onClick={handleEdit}>
               <Edit3 className="w-4 h-4 mr-1" />
               {t("common.edit")}
             </Button>
           </div>
-          <Tabs defaultValue="preview" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="preview">{t("features.paperWriting.preview")}</TabsTrigger>
-              <TabsTrigger value="latex">LaTeX</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="preview" className="mt-4">
-              <div className="bg-card border border-border rounded-lg p-8 shadow-sm">
-                <h1 className="text-2xl font-bold text-foreground text-center mb-4">
-                  {displayPaper.title}
-                </h1>
-                <div className="text-center text-sm text-muted-foreground mb-6">Research Team</div>
-                <div className="mb-8">
-                  <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                    Abstract
-                  </h2>
-                  <p className="text-muted-foreground text-sm leading-relaxed italic">
-                    {displayPaper.abstract}
-                  </p>
-                </div>
-                <div className="space-y-6">
-                  {displayPaper.sections.map((section, index) => {
-                    const sectionKey = `${section.name}-${section.content.slice(0, 16)}`;
-                    return (
-                      <div key={sectionKey}>
-                        <h2 className="text-lg font-semibold text-foreground mb-2">
-                          {index + 1}. {section.name}
-                        </h2>
-                        <SimpleMarkdown content={section.content} />
-                      </div>
-                    );
-                  })}
+          <div className="w-full">
+            <Tabs>
+              <Tabs.Item active={activeTab === "preview"} onClick={() => setActiveTab("preview")}>
+                {t("features.paperWriting.preview")}
+              </Tabs.Item>
+              <Tabs.Item active={activeTab === "latex"} onClick={() => setActiveTab("latex")}>
+                LaTeX
+              </Tabs.Item>
+            </Tabs>
+            {activeTab === "preview" && (
+              <div className="mt-4">
+                <div className="bg-card border border-border rounded-lg p-8 shadow-sm">
+                  <h1 className="text-2xl font-bold text-foreground text-center mb-4">
+                    {displayPaper.title}
+                  </h1>
+                  <div className="text-center text-sm text-muted-foreground mb-6">
+                    Research Team
+                  </div>
+                  <div className="mb-8">
+                    <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                      Abstract
+                    </h2>
+                    <p className="text-muted-foreground text-sm leading-relaxed italic">
+                      {displayPaper.abstract}
+                    </p>
+                  </div>
+                  <div className="space-y-6">
+                    {displayPaper.sections.map((section, index) => {
+                      const sectionKey = `${section.name}-${section.content.slice(0, 16)}`;
+                      return (
+                        <div key={sectionKey}>
+                          <h2 className="text-lg font-semibold text-foreground mb-2">
+                            {index + 1}. {section.name}
+                          </h2>
+                          <SimpleMarkdown content={section.content} />
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </TabsContent>
-
-            <TabsContent value="latex" className="mt-4">
-              {latex && (
-                <div className="bg-secondary rounded-lg p-4 overflow-x-auto">
-                  <pre className="text-sm text-secondary-foreground font-mono whitespace-pre-wrap">
-                    {latex}
-                  </pre>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+            )}
+            {activeTab === "latex" && (
+              <div className="mt-4">
+                {latex && (
+                  <div className="bg-secondary rounded-lg p-4 overflow-x-auto">
+                    <pre className="text-sm text-secondary-foreground font-mono whitespace-pre-wrap">
+                      {latex}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {!isConfirmed && previewPaper && (
             <Button
@@ -446,7 +463,7 @@ export function PaperWritingSection({
           )}
 
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1 bg-transparent">
+            <Button variant="neutral-secondary" className="flex-1 bg-transparent">
               <FileCode className="w-4 h-4 mr-2" />
               {t("features.paperWriting.downloadLatex")}
             </Button>
