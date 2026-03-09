@@ -99,8 +99,10 @@ export function VerificationHomePage({
   useEffect(() => {
     if (isNewRequested) {
       setShowInput(true);
+    } else if (verifications.length > 0) {
+      setShowInput(false);
     }
-  }, [isNewRequested]);
+  }, [isNewRequested, verifications.length]);
   const categories: { key: CategoryKey; label: string }[] = [
     { key: "hypothesis", label: t("verification.home.categories.hypothesis") },
     { key: "plan-decided", label: t("verification.home.categories.planDecided") },
