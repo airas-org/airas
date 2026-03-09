@@ -1,12 +1,11 @@
 "use client";
-
 /*
  * Documentation:
  * Vertical Stepper — https://app.subframe.com/32f8a386b602/library?component=Vertical+Stepper_bdc0291d-b5be-40c5-ae2f-527a868488b2
  */
 
-import { FeatherCheck } from "@subframe/core";
 import React from "react";
+import { FeatherCheck } from "@subframe/core";
 import * as SubframeUtils from "../utils";
 
 interface StepProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -30,32 +29,33 @@ const Step = React.forwardRef<HTMLDivElement, StepProps>(function Step(
     className,
     ...otherProps
   }: StepProps,
-  ref,
+  ref
 ) {
   return (
     <div
       className={SubframeUtils.twClassNames(
         "group/b094efab flex h-full w-full items-start gap-3",
-        className,
+        className
       )}
       ref={ref}
       {...otherProps}
     >
       <div
-        className={SubframeUtils.twClassNames("flex flex-col items-center gap-1 self-stretch", {
-          "h-auto w-auto flex-none": lastStep,
-        })}
+        className={SubframeUtils.twClassNames(
+          "flex flex-col items-center gap-1 self-stretch",
+          { "h-auto w-auto flex-none": lastStep }
+        )}
       >
         <div
           className={SubframeUtils.twClassNames(
             "flex h-2 w-0.5 flex-none flex-col items-center gap-2 bg-neutral-border",
-            { hidden: firstStep },
+            { hidden: firstStep }
           )}
         />
         <div
           className={SubframeUtils.twClassNames(
             "flex h-7 w-7 flex-none items-center justify-center overflow-hidden rounded-full bg-neutral-100",
-            { "bg-brand-100": variant === "active" || variant === "completed" },
+            { "bg-brand-100": variant === "active" || variant === "completed" }
           )}
         >
           {stepNumber ? (
@@ -65,7 +65,7 @@ const Step = React.forwardRef<HTMLDivElement, StepProps>(function Step(
                 {
                   "text-brand-700": variant === "active",
                   hidden: variant === "completed",
-                },
+                }
               )}
             >
               {stepNumber}
@@ -74,21 +74,21 @@ const Step = React.forwardRef<HTMLDivElement, StepProps>(function Step(
           <FeatherCheck
             className={SubframeUtils.twClassNames(
               "hidden text-heading-3 font-heading-3 text-brand-700",
-              { "inline-flex": variant === "completed" },
+              { "inline-flex": variant === "completed" }
             )}
           />
         </div>
         <div
           className={SubframeUtils.twClassNames(
             "flex min-h-[8px] w-0.5 grow shrink-0 basis-0 flex-col items-center gap-2 bg-neutral-border",
-            { hidden: lastStep },
+            { hidden: lastStep }
           )}
         />
       </div>
       <div
         className={SubframeUtils.twClassNames(
           "flex grow shrink-0 basis-0 flex-col items-center gap-1 py-4",
-          { "px-0 pt-4 pb-1": lastStep, "px-0 pt-1 pb-4": firstStep },
+          { "px-0 pt-4 pb-1": lastStep, "px-0 pt-1 pb-4": firstStep }
         )}
       >
         {label ? (
@@ -96,41 +96,51 @@ const Step = React.forwardRef<HTMLDivElement, StepProps>(function Step(
             className={SubframeUtils.twClassNames(
               "line-clamp-2 w-full text-body font-body text-subtext-color",
               {
-                "text-body-bold font-body-bold text-default-font": variant === "active",
+                "text-body-bold font-body-bold text-default-font":
+                  variant === "active",
                 "text-default-font": variant === "completed",
-              },
+              }
             )}
           >
             {label}
           </span>
         ) : null}
-        {children ? <div className="flex w-full flex-col items-start gap-2">{children}</div> : null}
+        {children ? (
+          <div className="flex w-full flex-col items-start gap-2">
+            {children}
+          </div>
+        ) : null}
       </div>
     </div>
   );
 });
 
-interface VerticalStepperRootProps extends React.HTMLAttributes<HTMLDivElement> {
+interface VerticalStepperRootProps
+  extends React.HTMLAttributes<HTMLDivElement> {
   children?: React.ReactNode;
   className?: string;
 }
 
-const VerticalStepperRoot = React.forwardRef<HTMLDivElement, VerticalStepperRootProps>(
-  function VerticalStepperRoot(
-    { children, className, ...otherProps }: VerticalStepperRootProps,
-    ref,
-  ) {
-    return children ? (
-      <div
-        className={SubframeUtils.twClassNames("flex flex-col items-start", className)}
-        ref={ref}
-        {...otherProps}
-      >
-        {children}
-      </div>
-    ) : null;
-  },
-);
+const VerticalStepperRoot = React.forwardRef<
+  HTMLDivElement,
+  VerticalStepperRootProps
+>(function VerticalStepperRoot(
+  { children, className, ...otherProps }: VerticalStepperRootProps,
+  ref
+) {
+  return children ? (
+    <div
+      className={SubframeUtils.twClassNames(
+        "flex flex-col items-start",
+        className
+      )}
+      ref={ref}
+      {...otherProps}
+    >
+      {children}
+    </div>
+  ) : null;
+});
 
 export const VerticalStepper = Object.assign(VerticalStepperRoot, {
   Step,

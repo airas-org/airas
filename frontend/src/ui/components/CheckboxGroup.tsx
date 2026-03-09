@@ -16,52 +16,57 @@ interface CheckboxGroupRootProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
 }
 
-const CheckboxGroupRoot = React.forwardRef<HTMLDivElement, CheckboxGroupRootProps>(
-  function CheckboxGroupRoot(
-    {
-      label,
-      helpText,
-      error = false,
-      horizontal = false,
-      children,
-      className,
-      ...otherProps
-    }: CheckboxGroupRootProps,
-    ref,
-  ) {
-    return (
-      <div
-        className={SubframeUtils.twClassNames(
-          "group/f9f1b596 flex flex-col items-start gap-2",
-          className,
-        )}
-        ref={ref}
-        {...otherProps}
-      >
-        {label ? (
-          <span className="text-body-bold font-body-bold text-default-font">{label}</span>
-        ) : null}
-        {children ? (
-          <div
-            className={SubframeUtils.twClassNames("flex flex-col items-start gap-2", {
-              "flex-row flex-nowrap gap-6": horizontal,
-            })}
-          >
-            {children}
-          </div>
-        ) : null}
-        {helpText ? (
-          <span
-            className={SubframeUtils.twClassNames("text-caption font-caption text-subtext-color", {
-              "text-error-700": error,
-            })}
-          >
-            {helpText}
-          </span>
-        ) : null}
-      </div>
-    );
-  },
-);
+const CheckboxGroupRoot = React.forwardRef<
+  HTMLDivElement,
+  CheckboxGroupRootProps
+>(function CheckboxGroupRoot(
+  {
+    label,
+    helpText,
+    error = false,
+    horizontal = false,
+    children,
+    className,
+    ...otherProps
+  }: CheckboxGroupRootProps,
+  ref
+) {
+  return (
+    <div
+      className={SubframeUtils.twClassNames(
+        "group/f9f1b596 flex flex-col items-start gap-2",
+        className
+      )}
+      ref={ref}
+      {...otherProps}
+    >
+      {label ? (
+        <span className="text-body-bold font-body-bold text-default-font">
+          {label}
+        </span>
+      ) : null}
+      {children ? (
+        <div
+          className={SubframeUtils.twClassNames(
+            "flex flex-col items-start gap-2",
+            { "flex-row flex-nowrap gap-6": horizontal }
+          )}
+        >
+          {children}
+        </div>
+      ) : null}
+      {helpText ? (
+        <span
+          className={SubframeUtils.twClassNames(
+            "text-caption font-caption text-subtext-color",
+            { "text-error-700": error }
+          )}
+        >
+          {helpText}
+        </span>
+      ) : null}
+    </div>
+  );
+});
 
 export const CheckboxGroup = CheckboxGroupRoot;

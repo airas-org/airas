@@ -1,15 +1,15 @@
 "use client";
-
 /*
  * Documentation:
  * Radio Card Group — https://app.subframe.com/32f8a386b602/library?component=Radio+Card+Group_6d5193b8-6043-4dc1-aad5-7f902ef872df
  */
 
-import * as SubframeCore from "@subframe/core";
 import React from "react";
+import * as SubframeCore from "@subframe/core";
 import * as SubframeUtils from "../utils";
 
-interface RadioCardProps extends React.ComponentProps<typeof SubframeCore.RadioGroup.Item> {
+interface RadioCardProps
+  extends React.ComponentProps<typeof SubframeCore.RadioGroup.Item> {
   disabled?: boolean;
   checked?: boolean;
   hideRadio?: boolean;
@@ -17,47 +17,52 @@ interface RadioCardProps extends React.ComponentProps<typeof SubframeCore.RadioG
   className?: string;
 }
 
-const RadioCard = React.forwardRef<HTMLButtonElement, RadioCardProps>(function RadioCard(
-  {
-    disabled = false,
-    checked = false,
-    hideRadio = false,
-    children,
-    className,
-    ...otherProps
-  }: RadioCardProps,
-  ref,
-) {
-  return (
-    <SubframeCore.RadioGroup.Item
-      checked={checked}
-      disabled={disabled}
-      asChild={true}
-      {...otherProps}
-    >
-      <button
-        className={SubframeUtils.twClassNames(
-          "group/502d4919 flex w-full cursor-pointer items-center gap-4 rounded-md border border-solid border-neutral-200 bg-default-background px-4 py-3 text-left hover:bg-neutral-50 aria-[checked=true]:border aria-[checked=true]:border-solid aria-[checked=true]:border-brand-200 aria-[checked=true]:bg-brand-50 hover:aria-[checked=true]:bg-brand-50 disabled:cursor-default disabled:border disabled:border-solid disabled:border-neutral-100 disabled:bg-neutral-50",
-          className,
-        )}
-        ref={ref}
+const RadioCard = React.forwardRef<HTMLButtonElement, RadioCardProps>(
+  function RadioCard(
+    {
+      disabled = false,
+      checked = false,
+      hideRadio = false,
+      children,
+      className,
+      ...otherProps
+    }: RadioCardProps,
+    ref
+  ) {
+    return (
+      <SubframeCore.RadioGroup.Item
+        checked={checked}
+        disabled={disabled}
+        asChild={true}
+        {...otherProps}
       >
-        <div
-          className={SubframeUtils.twClassNames("flex items-start gap-2 rounded-full pt-0.5", {
-            hidden: hideRadio,
-          })}
+        <button
+          className={SubframeUtils.twClassNames(
+            "group/502d4919 flex w-full cursor-pointer items-center gap-4 rounded-md border border-solid border-neutral-200 bg-default-background px-4 py-3 text-left hover:bg-neutral-50 aria-[checked=true]:border aria-[checked=true]:border-solid aria-[checked=true]:border-brand-200 aria-[checked=true]:bg-brand-50 hover:aria-[checked=true]:bg-brand-50 disabled:cursor-default disabled:border disabled:border-solid disabled:border-neutral-100 disabled:bg-neutral-50",
+            className
+          )}
+          ref={ref}
         >
-          <div className="flex h-4 w-4 flex-none flex-col items-center justify-center gap-2 rounded-full border-2 border-solid border-neutral-300 group-aria-[checked=true]/502d4919:border-2 group-aria-[checked=true]/502d4919:border-solid group-aria-[checked=true]/502d4919:border-brand-600 group-disabled/502d4919:bg-neutral-100">
-            <div className="hidden h-2 w-2 flex-none flex-col items-start gap-2 rounded-full bg-brand-600 group-aria-[checked=true]/502d4919:flex group-disabled/502d4919:bg-neutral-300" />
+          <div
+            className={SubframeUtils.twClassNames(
+              "flex items-start gap-2 rounded-full pt-0.5",
+              { hidden: hideRadio }
+            )}
+          >
+            <div className="flex h-4 w-4 flex-none flex-col items-center justify-center gap-2 rounded-full border-2 border-solid border-neutral-300 group-aria-[checked=true]/502d4919:border-2 group-aria-[checked=true]/502d4919:border-solid group-aria-[checked=true]/502d4919:border-brand-600 group-disabled/502d4919:bg-neutral-100">
+              <div className="hidden h-2 w-2 flex-none flex-col items-start gap-2 rounded-full bg-brand-600 group-aria-[checked=true]/502d4919:flex group-disabled/502d4919:bg-neutral-300" />
+            </div>
           </div>
-        </div>
-        {children ? (
-          <div className="flex grow shrink-0 basis-0 flex-col items-start gap-2">{children}</div>
-        ) : null}
-      </button>
-    </SubframeCore.RadioGroup.Item>
-  );
-});
+          {children ? (
+            <div className="flex grow shrink-0 basis-0 flex-col items-start gap-2">
+              {children}
+            </div>
+          ) : null}
+        </button>
+      </SubframeCore.RadioGroup.Item>
+    );
+  }
+);
 
 interface RadioCardGroupRootProps
   extends React.ComponentProps<typeof SubframeCore.RadioGroup.Root> {
@@ -67,20 +72,27 @@ interface RadioCardGroupRootProps
   className?: string;
 }
 
-const RadioCardGroupRoot = React.forwardRef<HTMLDivElement, RadioCardGroupRootProps>(
-  function RadioCardGroupRoot(
-    { children, className, ...otherProps }: RadioCardGroupRootProps,
-    ref,
-  ) {
-    return children ? (
-      <SubframeCore.RadioGroup.Root asChild={true} {...otherProps}>
-        <div className={SubframeUtils.twClassNames("flex items-start gap-2", className)} ref={ref}>
-          {children}
-        </div>
-      </SubframeCore.RadioGroup.Root>
-    ) : null;
-  },
-);
+const RadioCardGroupRoot = React.forwardRef<
+  HTMLDivElement,
+  RadioCardGroupRootProps
+>(function RadioCardGroupRoot(
+  { children, className, ...otherProps }: RadioCardGroupRootProps,
+  ref
+) {
+  return children ? (
+    <SubframeCore.RadioGroup.Root asChild={true} {...otherProps}>
+      <div
+        className={SubframeUtils.twClassNames(
+          "flex items-start gap-2",
+          className
+        )}
+        ref={ref}
+      >
+        {children}
+      </div>
+    </SubframeCore.RadioGroup.Root>
+  ) : null;
+});
 
 export const RadioCardGroup = Object.assign(RadioCardGroupRoot, {
   RadioCard,
