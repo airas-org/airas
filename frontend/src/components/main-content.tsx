@@ -51,6 +51,7 @@ interface MainContentProps {
   onDuplicateVerification: (id: string) => void;
   onUpdateVerification: (id: string, updates: Partial<Verification>) => void;
   onCreateWithMethod: (sourceVerification: Verification, method: ProposedMethod) => void;
+  onCreateWithQuery: (query: string) => void;
   autonomousListViewKey: number;
 }
 
@@ -121,6 +122,7 @@ export function MainContent({
   onDuplicateVerification,
   onUpdateVerification,
   onCreateWithMethod,
+  onCreateWithQuery,
   autonomousListViewKey,
 }: MainContentProps) {
   const navigate = useNavigate();
@@ -169,7 +171,7 @@ export function MainContent({
   return (
     <div className="flex-1 flex min-w-0">
       <Routes>
-        <Route path="/" element={null} />
+        <Route path="/" element={<Navigate to="/home" replace />} />
         <Route
           path="/home"
           element={
@@ -178,6 +180,7 @@ export function MainContent({
               onSelectVerification={(id) => navigate(`/verification/${id}`)}
               onDeleteVerification={onDeleteVerification}
               onDuplicateVerification={onDuplicateVerification}
+              onCreateWithQuery={onCreateWithQuery}
             />
           }
         />

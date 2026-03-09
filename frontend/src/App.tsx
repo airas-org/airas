@@ -188,7 +188,6 @@ export default function App() {
   // Verification
   const {
     verifications,
-    handleCreateVerification,
     handleUpdateVerification,
     handleDeleteVerification,
     handleDuplicateVerification,
@@ -253,6 +252,58 @@ export default function App() {
       }
     },
     [navigate, handleUpdateVerification, handleAddVerification],
+  );
+
+  const handleCreateWithQuery = useCallback(
+    async (query: string) => {
+      const apiBase = OpenAPI.BASE;
+      const authHeaders = await getAuthHeaders();
+      try {
+        const createRes = await fetch(`${apiBase}/airas/v1/verification/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({}),
+        });
+        if (!createRes.ok) return;
+        const session = await createRes.json();
+        const newId: string = session.id;
+
+        handleAddVerification(session);
+        handleUpdateVerification(newId, { query, phase: "proposing-policies" });
+        navigate(`/verification/${newId}`);
+
+        const res = await fetch(`${apiBase}/airas/v1/verification/propose-policies`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({ user_query: query, verification_id: newId }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.feasible) return;
+
+        const methods: ProposedMethod[] = data.proposed_methods.map(
+          (m: {
+            id: string;
+            title: string;
+            what_to_verify: string;
+            method: string;
+            pros?: string[];
+            cons?: string[];
+          }) => ({
+            id: m.id,
+            title: m.title,
+            whatToVerify: m.what_to_verify,
+            method: m.method,
+            pros: m.pros ?? [],
+            cons: m.cons ?? [],
+          }),
+        );
+        handleUpdateVerification(newId, { phase: "methods-proposed", proposedMethods: methods });
+      } catch {
+        // ignore
+      }
+    },
+    [navigate, handleAddVerification, handleUpdateVerification],
   );
 
   const handleSelectAutonomousSession = useCallback(
@@ -535,7 +586,7 @@ export default function App() {
                 icon={<FeatherPlus />}
                 selected={activeSection === "verification"}
                 onClick={() => {
-                  handleCreateVerification();
+                  navigate("/home");
                   handleMobileNavClose();
                 }}
               >
@@ -721,6 +772,7 @@ export default function App() {
             onDuplicateVerification={handleDuplicateVerification}
             onUpdateVerification={handleUpdateVerification}
             onCreateWithMethod={handleCreateWithMethod}
+            onCreateWithQuery={handleCreateWithQuery}
             autonomousListViewKey={autonomousListViewKey}
           />
         </div>
