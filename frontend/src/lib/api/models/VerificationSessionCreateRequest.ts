@@ -2,8 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type AssistedResearchLinkResponse = {
-    from_step_id: string;
-    to_step_id: string;
+export type VerificationSessionCreateRequest = {
+    title?: string;
 };
 

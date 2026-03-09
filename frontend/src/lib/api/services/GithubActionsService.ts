@@ -15,15 +15,20 @@ export class GithubActionsService {
     /**
      * Poll Github Actions
      * @param requestBody
+     * @param xGithubSession
      * @returns PollGithubActionsResponseBody Successful Response
      * @throws ApiError
      */
     public static pollGithubActionsAirasV1GithubActionsPollingPost(
         requestBody: PollGithubActionsRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<PollGithubActionsResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/github-actions/polling',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -34,15 +39,20 @@ export class GithubActionsService {
     /**
      * Set Github Actions Secrets
      * @param requestBody
+     * @param xGithubSession
      * @returns SetGithubActionsSecretsResponseBody Successful Response
      * @throws ApiError
      */
     public static setGithubActionsSecretsAirasV1GithubActionsSecretsPost(
         requestBody: SetGithubActionsSecretsRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<SetGithubActionsSecretsResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/github-actions/secrets',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -53,15 +63,20 @@ export class GithubActionsService {
     /**
      * Download Github Actions Artifacts
      * @param requestBody
+     * @param xGithubSession
      * @returns DownloadGithubActionsArtifactsResponseBody Successful Response
      * @throws ApiError
      */
     public static downloadGithubActionsArtifactsAirasV1GithubActionsArtifactsDownloadPost(
         requestBody: DownloadGithubActionsArtifactsRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<DownloadGithubActionsArtifactsResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/github-actions/artifacts/download',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {

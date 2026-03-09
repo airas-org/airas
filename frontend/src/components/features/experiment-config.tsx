@@ -2,6 +2,7 @@
 
 import { Cpu, Database, Edit3, Plus, Save, Settings2, Sliders, Trash2 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ export function ExperimentConfigSection({
   onBranchCreated,
   onSave,
 }: ExperimentConfigSectionProps) {
+  const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isManualMode, setIsManualMode] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -142,7 +144,9 @@ export function ExperimentConfigSection({
   const renderTempConfigPreview = () => (
     <div className="space-y-4">
       <div className="p-4 bg-muted/50 border border-border rounded-lg">
-        <p className="text-sm text-muted-foreground mb-4">生成された実験設定（プレビュー）</p>
+        <p className="text-sm text-muted-foreground mb-4">
+          {t("features.experimentConfig.generatedPreview")}
+        </p>
         {tempConfigs.map((config) => (
           <div key={config.id} className="p-4 border border-border rounded-lg mb-4 last:mb-0">
             <div className="flex items-center gap-2 mb-3">
@@ -170,7 +174,7 @@ export function ExperimentConfigSection({
         className="w-full bg-blue-700 hover:bg-blue-800 text-white"
       >
         <Save className="w-4 h-4 mr-2" />
-        この設定を確定
+        {t("features.experimentConfig.confirmConfig")}
       </Button>
     </div>
   );
@@ -182,8 +186,10 @@ export function ExperimentConfigSection({
           <Settings2 className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-foreground">実験設定の作成</h3>
-          <p className="text-sm text-muted-foreground">生成された手法に対する実験設定を作成</p>
+          <h3 className="text-lg font-semibold text-foreground">
+            {t("features.experimentConfig.title")}
+          </h3>
+          <p className="text-sm text-muted-foreground">{t("features.experimentConfig.subtitle")}</p>
         </div>
       </div>
 
@@ -197,7 +203,7 @@ export function ExperimentConfigSection({
               !isManualMode ? "bg-blue-700 hover:bg-blue-800 text-white" : "bg-transparent"
             }
           >
-            手法から生成
+            {t("features.experimentConfig.generateFromMethod")}
           </Button>
           <Button
             variant={isManualMode ? "default" : "outline"}
@@ -205,7 +211,7 @@ export function ExperimentConfigSection({
             onClick={handleStartManualInput}
             className={isManualMode ? "bg-blue-700 hover:bg-blue-800 text-white" : "bg-transparent"}
           >
-            手動で入力
+            {t("features.experimentConfig.manualInput")}
           </Button>
         </div>
       )}
@@ -216,20 +222,20 @@ export function ExperimentConfigSection({
             className="text-sm font-medium text-foreground mb-2 block"
             htmlFor={manualMethodDescriptionId}
           >
-            対象手法の説明
+            {t("features.experimentConfig.targetMethodDescription")}
           </label>
           <Textarea
             id={manualMethodDescriptionId}
             value={manualMethodInput}
             onChange={(e) => setManualMethodInput(e.target.value)}
-            placeholder="実験対象の手法について説明してください..."
+            placeholder={t("features.experimentConfig.targetMethodPlaceholder")}
             className="min-h-[100px] mb-4 bg-background"
           />
           <Button
             onClick={handleStartManualInput}
             className="w-full bg-blue-700 hover:bg-blue-800 text-white"
           >
-            実験設定を入力
+            {t("features.experimentConfig.inputExperimentConfig")}
           </Button>
         </div>
       )}
@@ -248,7 +254,9 @@ export function ExperimentConfigSection({
             return (
               <div key={config.id} className="p-4 border border-border rounded-lg space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground">実験設定 {index + 1}</span>
+                  <span className="text-sm font-medium text-foreground">
+                    {t("features.experimentConfig.configNumber", { number: index + 1 })}
+                  </span>
                   {editingConfigs.length > 1 && (
                     <Button variant="ghost" size="sm" onClick={() => handleRemoveConfig(index)}>
                       <Trash2 className="w-4 h-4 text-destructive" />
@@ -258,7 +266,7 @@ export function ExperimentConfigSection({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block" htmlFor={modelId}>
-                      モデル名
+                      {t("features.experimentConfig.modelName")}
                     </label>
                     <Input
                       id={modelId}
@@ -270,7 +278,7 @@ export function ExperimentConfigSection({
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block" htmlFor={datasetId}>
-                      データセット
+                      {t("features.experimentConfig.dataset")}
                     </label>
                     <Input
                       id={datasetId}
@@ -370,13 +378,13 @@ export function ExperimentConfigSection({
                     className="text-xs text-muted-foreground mb-1 block"
                     htmlFor={descriptionId}
                   >
-                    説明
+                    {t("features.experimentConfig.description")}
                   </label>
                   <Textarea
                     id={descriptionId}
                     value={config.description}
                     onChange={(e) => handleConfigChange(index, "description", e.target.value)}
-                    placeholder="実験の説明..."
+                    placeholder={t("features.experimentConfig.descriptionPlaceholder")}
                     className="min-h-[60px] bg-background"
                   />
                 </div>
@@ -385,7 +393,7 @@ export function ExperimentConfigSection({
           })}
           <Button variant="outline" onClick={handleAddConfig} className="w-full bg-transparent">
             <Plus className="w-4 h-4 mr-2" />
-            実験設定を追加
+            {t("features.experimentConfig.addConfig")}
           </Button>
           <div className="flex gap-2 justify-end">
             <Button
@@ -393,14 +401,14 @@ export function ExperimentConfigSection({
               onClick={() => setIsEditing(false)}
               className="bg-transparent"
             >
-              キャンセル
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleSaveConfigs}
               className="bg-blue-700 hover:bg-blue-800 text-white"
             >
               <Save className="w-4 h-4 mr-2" />
-              保存
+              {t("common.save")}
             </Button>
           </div>
         </div>
@@ -415,12 +423,14 @@ export function ExperimentConfigSection({
         (!method ? (
           <div className="text-center py-8 text-muted-foreground">
             <Settings2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>先に新規手法を生成するか、手動入力モードを使用してください</p>
+            <p>{t("features.experimentConfig.noMethodMessage")}</p>
           </div>
         ) : (
           <>
             <div className="mb-6 p-4 bg-muted rounded-lg">
-              <p className="text-sm font-medium text-muted-foreground mb-1">対象手法:</p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">
+                {t("features.experimentConfig.targetMethod")}
+              </p>
               <p className="text-foreground">{method.name}</p>
             </div>
             <Button
@@ -428,7 +438,9 @@ export function ExperimentConfigSection({
               disabled={isGenerating}
               className="w-full bg-blue-700 hover:bg-blue-800 text-white"
             >
-              {isGenerating ? "生成中..." : "実験設定を生成"}
+              {isGenerating
+                ? t("features.experimentConfig.generating")
+                : t("features.experimentConfig.generate")}
             </Button>
           </>
         ))}
@@ -436,10 +448,12 @@ export function ExperimentConfigSection({
       {configs.length > 0 && !isEditing && (
         <div className="space-y-4">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-foreground">実験設定一覧</span>
+            <span className="text-sm font-medium text-foreground">
+              {t("features.experimentConfig.configList")}
+            </span>
             <Button variant="ghost" size="sm" onClick={handleEdit}>
               <Edit3 className="w-4 h-4 mr-1" />
-              編集
+              {t("common.edit")}
             </Button>
           </div>
           {configs.map((config) => (

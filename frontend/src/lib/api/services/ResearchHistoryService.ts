@@ -13,15 +13,20 @@ export class ResearchHistoryService {
     /**
      * Download Research History
      * @param requestBody
+     * @param xGithubSession
      * @returns GithubDownloadResponse Successful Response
      * @throws ApiError
      */
     public static downloadResearchHistoryAirasV1ResearchHistoryDownloadPost(
         requestBody: GithubDownloadRequest,
+        xGithubSession?: (string | null),
     ): CancelablePromise<GithubDownloadResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/research-history/download',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -32,15 +37,20 @@ export class ResearchHistoryService {
     /**
      * Upload Research History
      * @param requestBody
+     * @param xGithubSession
      * @returns GithubUploadResponse Successful Response
      * @throws ApiError
      */
     public static uploadResearchHistoryAirasV1ResearchHistoryUploadPost(
         requestBody: GithubUploadRequest,
+        xGithubSession?: (string | null),
     ): CancelablePromise<GithubUploadResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/research-history/upload',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {

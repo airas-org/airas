@@ -1,5 +1,6 @@
 import { FeatherChevronDown, FeatherChevronRight } from "@subframe/core";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader, Table } from "@/ui";
 import type { ExperimentSetting } from "../types";
 
@@ -9,6 +10,7 @@ interface ExperimentCardProps {
 }
 
 export function ExperimentCard({ experiment, onRun }: ExperimentCardProps) {
+  const { t } = useTranslation();
   const [resultExpanded, setResultExpanded] = useState(false);
 
   return (
@@ -51,7 +53,7 @@ export function ExperimentCard({ experiment, onRun }: ExperimentCardProps) {
               ) : (
                 <FeatherChevronRight className="h-3.5 w-3.5" />
               )}
-              実験結果
+              {t("verification.detail.experimentSettings.experimentResults")}
             </button>
             {resultExpanded && (
               <div className="mt-2 space-y-3">

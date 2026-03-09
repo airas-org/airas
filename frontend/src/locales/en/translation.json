@@ -1,0 +1,747 @@
+{
+  "app": {
+    "languageSwitcher": {
+      "ariaLabel": "Switch language"
+    }
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "newVerification": "New Verification",
+    "verificationList": "Verifications",
+    "search": "Search",
+    "notifications": "Notifications",
+    "autonomousResearch": "Autonomous Research",
+    "topicDriven": "Topic-Driven",
+    "hypothesisDriven": "Hypothesis-Driven",
+    "settings": "Settings",
+    "integration": "Integration",
+    "userPlan": "User Plan",
+    "profile": "Profile",
+    "support": "Support",
+    "feedback": "Contact",
+    "help": "Help",
+    "docs": "Documentation",
+    "legal": "Terms of Use",
+    "experimental": "Experimental"
+  },
+  "userMenu": {
+    "developer": "Developer",
+    "profile": "Profile",
+    "apiToken": "API Token",
+    "integration": "Integration",
+    "logout": "Log out"
+  },
+  "languageToggle": {
+    "switchTo": "JA"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Overview of your verification projects and recent activity",
+    "stats": {
+      "total": "Total Verifications",
+      "running": "Running",
+      "completed": "Completed",
+      "paperGenerated": "Papers Generated"
+    },
+    "recentActivity": "Recent Activity",
+    "table": {
+      "datetime": "Date & Time",
+      "content": "Description",
+      "status": "Status"
+    },
+    "newVerification": "New Verification",
+    "viewList": "View All Verifications",
+    "status": {
+      "completed": "Completed",
+      "running": "Running",
+      "paperGenerated": "Paper Generated",
+      "proposed": "Plan Proposed",
+      "new": "New"
+    }
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next",
+    "start": "Get Started",
+    "steps": {
+      "welcome": {
+        "title": "Welcome to AIRAS",
+        "description": "AIRAS is an AI-powered research automation platform for researchers. From hypothesis formulation to experiment execution and paper writing, AI supports your entire research process."
+      },
+      "workflow": {
+        "title": "Verification Workflow",
+        "description": "We support you from verification planning to experiment execution and paper writing. You can proceed step by step through each phase.",
+        "planLabel": "Plan",
+        "experimentLabel": "Experiment",
+        "paperLabel": "Paper"
+      },
+      "autonomous": {
+        "title": "Autonomous Research",
+        "description": "An autonomous research mode is also available where AI automatically conducts research. There are two modes: Topic-Driven and Hypothesis-Driven.",
+        "topicDrivenDesc": "AI generates hypotheses from your topic",
+        "hypothesisDrivenDesc": "AI runs experiments based on your hypothesis"
+      },
+      "ready": {
+        "title": "You're all set!",
+        "description": "Let's get started!"
+      }
+    }
+  },
+  "verification": {
+    "home": {
+      "title": "Verifications",
+      "newVerification": "New Verification",
+      "noVerifications": "No verifications found",
+      "noVerificationsDesc": "Create your first verification using the New Verification button",
+      "projects_one": "{{count}} project",
+      "projects_other": "{{count}} projects",
+      "searchPlaceholder": "Search...",
+      "categories": {
+        "methods": "Methods",
+        "plan": "Plan",
+        "code": "Experiment Code",
+        "settings": "Experiment Settings",
+        "results": "Experiment Results",
+        "paperWriting": "Paper Research",
+        "paper": "Paper",
+        "hypothesis": "Hypothesis Input",
+        "planDecided": "Plan Decided",
+        "implementationDone": "Implementation Done",
+        "experimentsDone": "Experiments Done",
+        "paperDone": "Paper Generated"
+      },
+      "badgeLabels": {
+        "initial": "Not Started",
+        "methodsProposed": "Methods Proposed",
+        "planGenerated": "Planned",
+        "codeGenerating": "Generating",
+        "codeGenerated": "Implemented",
+        "experimentsDone": "Experiments Done",
+        "paperWriting": "Gathering Info"
+      }
+    },
+    "detail": {
+      "newTitle": "Untitled",
+      "copyTitle": "(Copy)",
+      "chatInput": {
+        "title": "What would you like to verify?",
+        "subtitle": "Enter the hypothesis or research topic you want to verify. AI will propose and execute a verification plan.",
+        "placeholder": "e.g., Does Sparse Attention improve inference speed? What is the effect on accuracy?"
+      },
+      "quickTags": {
+        "hypothesisVerification": "Hypothesis Verification",
+        "modelComparison": "Model Comparison",
+        "ablationStudy": "Ablation Study",
+        "reproductionExperiment": "Reproduction Experiment",
+        "performanceBenchmark": "Performance Benchmark"
+      },
+      "quickTagTemplates": {
+        "hypothesisVerification": "I want to verify the following hypothesis: ",
+        "modelComparison": "I want to compare the following models: ",
+        "ablationStudy": "I want to run the following ablation study: ",
+        "reproductionExperiment": "I want to reproduce the following paper: ",
+        "performanceBenchmark": "I want to run the following performance benchmark: "
+      },
+      "proposingPolicies": "Creating verification policies...",
+      "proposedMethods": {
+        "title": "Proposed Verification Methods",
+        "subtitle": "AI proposed {{count}} verification methods. Please select one.",
+        "selected": "Selected",
+        "whatToVerify": "What to Verify",
+        "method": "Method",
+        "otherMethods": "Other methods ({{count}})"
+      },
+      "userInput": {
+        "cardTitle": "User Input",
+        "titlePlaceholder": "Untitled"
+      },
+      "verificationPlan": {
+        "title": "Verification Plan",
+        "whatToVerify": "What to Verify",
+        "steps": "Steps",
+        "experimentSettings": "Experiment Settings",
+        "experimentLabel": "Experiment {{number}}",
+        "modificationNotes": "Modification Content",
+        "repositoryName": "Repository Name"
+      },
+      "experimentCode": {
+        "title": "Experiment Code"
+      },
+      "experimentSettings": {
+        "title": "Experiment Settings",
+        "mainParams": "Main Parameters",
+        "paramName": "Name",
+        "paramDescription": "Description",
+        "otherParams": "Other parameters ({{count}})",
+        "experimentList": "Experiment List",
+        "experimentResults": "Experiment Results"
+      },
+      "experimentDashboard": {
+        "title": "Experiment Results Comparison",
+        "subtitle": "Comparing metrics for {{count}} completed experiments"
+      },
+      "paperWriting": {
+        "title": "Paper Research",
+        "subtitle": "Generate a paper draft based on experiment results",
+        "selectExperiments": "Select experiments to include",
+        "generatePaper": "Generate Paper",
+        "generatingPaper": "Generating paper..."
+      },
+      "paper": {
+        "title": "Paper"
+      },
+      "githubUrl": "GitHub URL:",
+      "editOnOverleaf": "Edit on Overleaf",
+      "tocLabels": {
+        "methods": "Methods",
+        "plan": "Plan",
+        "code": "Experiment Code",
+        "settings": "Experiment Settings",
+        "results": "Experiment Results",
+        "paperWriting": "Paper Research",
+        "paper": "Paper"
+      }
+    }
+  },
+  "autonomous": {
+    "newSession": "New Session",
+    "noSession": "Select a session",
+    "topicDriven": {
+      "title": "Topic-Driven Research",
+      "listTitle": "Research Sessions",
+      "listSubtitle": "View the history of your past autonomous research sessions",
+      "inputPlaceholder": "Enter your research topic",
+      "start": "Start Research",
+      "newSession": "Start New Research",
+      "firstSession": "Start First Research",
+      "noSessions": "No research sessions yet",
+      "searchPlaceholder": "Search sessions...",
+      "sessionCount": "{{count}} sessions",
+      "sort": "Sort",
+      "sortNewest": "Newest first",
+      "sortOldest": "Oldest first",
+      "sortTitle": "By title",
+      "noSearchResults": "No results found",
+      "newSessionTitle": "New Research Session",
+      "researchTopic": "Research Topic",
+      "researchTopicPlaceholder": "e.g., Improving Video QA performance using Vision-Language Models",
+      "backToList": "Back to list",
+      "cancel": "Cancel",
+      "running": "Running...",
+      "run": "Run Autonomous Research",
+      "advancedSettings": "Advanced Settings",
+      "llmSettings": "LLM Settings",
+      "githubSettings": "GitHub Settings",
+      "owner": "Owner",
+      "repository": "Repository",
+      "branch": "Branch",
+      "makePrivate": "Make repository private",
+      "runnerLabel": "Label",
+      "runnerDescription": "Description",
+      "numPaperSearchQueries": "Paper search queries",
+      "papersPerQuery": "Papers per query",
+      "hypothesisRefinementIterations": "Hypothesis refinement iterations",
+      "numExperimentModels": "Experiment models",
+      "numExperimentDatasets": "Datasets",
+      "numComparativeMethods": "Comparative methods",
+      "codeValidationIterations": "Code validation iterations",
+      "paperRefinementIterations": "Paper refinement iterations",
+      "githubActionsAgent": "GitHub Actions Agent",
+      "latexTemplate": "LaTeX Template",
+      "selectPlaceholder": "Select...",
+      "backToResults": "Back to results",
+      "taskId": "Task ID",
+      "autoUpdating": "Auto-updating",
+      "fetchLatest": "Fetch latest",
+      "saving": "Saving...",
+      "save": "Save",
+      "noProgress": "No progress to display yet.",
+      "researchHistory": "Research History",
+      "purpose": "Purpose",
+      "paperUrl": "Paper URL",
+      "statusCompleted": "Completed",
+      "statusFailed": "Failed",
+      "statusRunning": "Running",
+      "statusFetchError": "Failed to fetch status",
+      "titleUpdateError": "Failed to update title",
+      "runError": "Failed to run autonomous research"
+    },
+    "hypothesisDriven": {
+      "title": "Hypothesis-Driven Research",
+      "listTitle": "Research Sessions",
+      "listSubtitle": "View the history of your past hypothesis-driven research sessions",
+      "listHeading": "Hypothesis-Driven Research Sessions",
+      "inputPlaceholder": "Enter your hypothesis to verify",
+      "start": "Start Verification",
+      "newSession": "Start New Research",
+      "firstSession": "Start First Research",
+      "noSessions": "No research sessions yet",
+      "searchPlaceholder": "Search sessions...",
+      "sessionCount": "{{count}} sessions",
+      "sort": "Sort",
+      "sortNewest": "Newest first",
+      "sortOldest": "Oldest first",
+      "sortTitle": "By title",
+      "noSearchResults": "No results found",
+      "newSessionTitle": "New Hypothesis-Driven Research Session",
+      "researchTopic": "Research Topic (Optional)",
+      "researchTopicPlaceholder": "e.g., Improving Video QA performance using Vision-Language Models",
+      "hypothesis": "Research Hypothesis",
+      "openProblems": "Open Problems",
+      "proposedMethod": "Proposed Method",
+      "experimentalSetup": "Experimental Setup",
+      "primaryMetric": "Primary Metric",
+      "experimentalCode": "Experimental Code",
+      "expectedResult": "Expected Result",
+      "expectedConclusion": "Expected Conclusion",
+      "backToList": "Back to list",
+      "cancel": "Cancel",
+      "running": "Running...",
+      "run": "Run Hypothesis-Driven Research",
+      "advancedSettings": "Advanced Settings",
+      "llmSettings": "LLM Settings",
+      "githubSettings": "GitHub Settings",
+      "owner": "Owner",
+      "repository": "Repository",
+      "branch": "Branch",
+      "makePrivate": "Make repository private",
+      "runnerLabel": "Label",
+      "runnerDescription": "Description",
+      "numExperimentModels": "Experiment models",
+      "numExperimentDatasets": "Datasets",
+      "numComparativeMethods": "Comparative methods",
+      "paperRefinementIterations": "Paper refinement iterations",
+      "githubActionsAgent": "GitHub Actions Agent",
+      "latexTemplate": "LaTeX Template",
+      "selectPlaceholder": "Select...",
+      "backToResults": "Back to results",
+      "taskId": "Task ID",
+      "autoUpdating": "Auto-updating",
+      "fetchLatest": "Fetch latest",
+      "saving": "Saving...",
+      "save": "Save",
+      "noProgress": "No progress to display yet.",
+      "researchHistory": "Research History",
+      "purpose": "Purpose",
+      "paperUrl": "Paper URL",
+      "statusCompleted": "Completed",
+      "statusFailed": "Failed",
+      "statusRunning": "Running",
+      "statusFetchError": "Failed to fetch status",
+      "titleUpdateError": "Failed to update title",
+      "runError": "Failed to run research"
+    }
+  },
+  "help": {
+    "title": "Help",
+    "subtitle": "How to use AIRAS and its features",
+    "gettingStarted": "Getting Started",
+    "faq": "FAQ",
+    "links": {
+      "docs": "Documentation",
+      "docsDesc": "Detailed technical documentation",
+      "discord": "Discord Community",
+      "discordDesc": "Ask questions and discuss with the community",
+      "github": "GitHub",
+      "githubDesc": "Source code and issue tracking"
+    },
+    "gettingStartedSteps": {
+      "step1": {
+        "title": "1. Create a Verification",
+        "description": "Click the \"New Verification\" button in the sidebar. Enter your hypothesis or research topic and AI will search for related papers and propose a verification plan."
+      },
+      "step2": {
+        "title": "2. Select a Verification Plan",
+        "description": "AI will present multiple verification plans. Compare the pros and cons of each plan and select the most appropriate one."
+      },
+      "step3": {
+        "title": "3. Run the Experiment",
+        "description": "Experiment code is generated based on your selected plan. Configure the parameters, run the experiment, and review the results."
+      },
+      "step4": {
+        "title": "4. Write the Paper",
+        "description": "AI generates a paper draft based on the experiment results. You can also continue editing using Overleaf integration."
+      }
+    },
+    "featureGuides": {
+      "verificationWorkflow": {
+        "title": "Verification Workflow",
+        "q1": "About each verification phase",
+        "a1": "Verification proceeds in the order: Verification Plan → Method → Experiment Code → Experiment Setup → Results → Information Gathering → Paper. Each phase can be viewed by category on the verification list page.",
+        "q2": "Can I resume a verification midway?",
+        "a2": "Yes, selecting a verification from the verification list page allows you to resume from where you left off. The results of each phase are automatically saved."
+      },
+      "autonomousResearch": {
+        "title": "Autonomous Research (Topic-Driven / Hypothesis-Driven)",
+        "q1": "Difference between Topic-Driven and Hypothesis-Driven",
+        "a1": "Topic-Driven takes a research topic as input and AI automatically handles everything from hypothesis generation to paper writing. Hypothesis-Driven is for when you already have a hypothesis to verify, and AI performs experiments and paper writing based on that hypothesis.",
+        "q2": "Is GitHub / W&B configuration required?",
+        "a2": "Yes, a GitHub repository is required for experiment code management, and Weights & Biases is needed for logging experiment metrics. Please prepare accounts for each service in advance."
+      },
+      "integration": {
+        "title": "Integration Settings",
+        "q1": "How to configure API keys",
+        "a1": "You can configure API keys for each service from the Settings > Integration page. LLM API keys for OpenAI, Anthropic, Google, etc., and a GitHub Personal Access Token are required.",
+        "q2": "Customizing LLM models",
+        "a2": "In the autonomous research advanced settings, you can individually specify the LLM model used for each process (paper search, hypothesis generation, code generation, etc.)."
+      },
+      "paper": {
+        "title": "Paper-related",
+        "q1": "Supported LaTeX templates",
+        "a1": "Currently, MDPI, ICLR 2024, and Agents4Science 2025 templates are supported. You can select from the advanced settings.",
+        "q2": "How to edit the generated paper",
+        "a2": "Papers are saved in a GitHub repository. You can view them via a PDF link, and also edit them directly in Overleaf using the \"Edit on Overleaf\" button."
+      }
+    },
+    "faqItems": {
+      "q1": "Is AIRAS free to use?",
+      "a1": "Basic features are available for free. There are limits on the number of monthly verifications and AI model selection, but you can upgrade to a paid plan to remove these limits.",
+      "q2": "Is my data privacy protected?",
+      "a2": "All data is transmitted via encrypted communication and stored in a secure cloud infrastructure. Users' research data is never shared with other users.",
+      "q3": "What should I do if I find a bug or issue?",
+      "a3": "Please send a bug report from the \"Contact\" page in the sidebar, or report it on the GitHub Issues page."
+    }
+  },
+  "feedback": {
+    "title": "Contact",
+    "subtitle": "Send us your feedback or bug reports",
+    "type": "Type",
+    "typeBug": "Bug Report",
+    "typeFeature": "Feature Request",
+    "typeOther": "Other",
+    "description": "Description",
+    "descriptionPlaceholder": "Please enter the details",
+    "submit": "Submit",
+    "pageTitle": "Contact & Feedback",
+    "pageSubtitle": "Share your feedback and suggestions",
+    "successTitle": "Feedback submitted. Thank you!",
+    "successDescription": "We will review your feedback and contact you if needed.",
+    "category": "Category",
+    "categoryPlaceholder": "Select a category",
+    "categoryBug": "Bug Report",
+    "categoryFeature": "Feature Request",
+    "categoryGeneral": "General Question",
+    "categoryOther": "Other",
+    "subject": "Subject",
+    "subjectPlaceholder": "Enter the subject",
+    "detail": "Details",
+    "detailPlaceholder": "Please enter the details",
+    "email": "Email (Optional)",
+    "emailHelpText": "Enter your email if you need a reply",
+    "faq": "FAQ",
+    "faqItems": {
+      "q1": "Who owns the copyright of research output generated by AIRAS?",
+      "a1": "The copyright of research output generated through AIRAS belongs to the user in principle. However, legal treatment of AI-generated content varies by country, so please refer to the Terms of Use for details.",
+      "q2": "What is the difference between the free and paid plans?",
+      "a2": "The free plan has limits on the number of monthly verifications and available AI models. The paid plan includes unlimited verifications, access to high-performance AI models, priority support, and other additional features.",
+      "q3": "How is data security protected?",
+      "a3": "All data is transmitted via encrypted communication and stored in a secure cloud infrastructure. We conduct regular security audits and follow industry-standard security practices."
+    }
+  },
+  "legal": {
+    "title": "Terms of Use",
+    "subtitle": "Please read before using AIRAS",
+    "pageTitle": "Legal Information",
+    "pageSubtitle": "Terms and policies for using our service",
+    "tabs": {
+      "terms": "Terms of Use",
+      "privacy": "Privacy Policy"
+    },
+    "terms": {
+      "lastUpdated": "Last updated: March 1, 2026",
+      "overview": {
+        "title": "Service Overview",
+        "content": "AIRAS is an AI-powered research support platform. This service provides hypothesis generation, verification planning, automatic experiment code generation, and paper writing support. These terms define the conditions applicable to your use of the service."
+      },
+      "usage": {
+        "title": "Terms of Use",
+        "content": "To use this service, you must be 18 years of age or older, or have obtained the consent of a legal guardian. Users shall use this service only for academic research and legitimate purposes. We may suspend accounts if unauthorized use is confirmed."
+      },
+      "account": {
+        "title": "Account",
+        "content": "Users must create an account by providing accurate and up-to-date information. Please keep your account credentials secure and do not share them with third parties. Users are responsible for all activities on their account."
+      },
+      "ip": {
+        "title": "Intellectual Property",
+        "content": "Intellectual property rights in content generated through this service are handled in accordance with applicable law. Rights to data entered by users and research output belong to the user in principle. However, anonymized data may be used to improve the service."
+      },
+      "disclaimer": {
+        "title": "Disclaimer",
+        "content": "This service is provided \"as is\" and we do not guarantee the accuracy of AI-generated results. Final verification of research output is the responsibility of the user. We are not responsible for any damage caused by service interruption or termination."
+      },
+      "law": {
+        "title": "Governing Law",
+        "content": "These terms shall be governed by and construed in accordance with the laws of Japan. Any disputes related to these terms shall be subject to the exclusive jurisdiction of the Tokyo District Court as the court of first instance."
+      }
+    },
+    "privacy": {
+      "lastUpdated": "Last updated: March 1, 2026",
+      "collection": {
+        "title": "Information We Collect",
+        "content": "We collect information such as your name, email address, and institutional affiliation when you create an account. We also automatically collect log data related to service usage (access date and time, features used, error information, etc.). For research data, we only handle data explicitly uploaded by users."
+      },
+      "usage": {
+        "title": "How We Use Information",
+        "content": "We use the information collected for providing, operating, and improving the service, providing user support, and maintaining security. Anonymized data may be used to improve AI model accuracy and for research purposes. We will not use personal information for marketing purposes without user consent."
+      },
+      "sharing": {
+        "title": "Information Sharing",
+        "content": "We do not share users' personal information with third parties except when required by law. We may entrust data processing to trusted partner companies to the extent necessary to provide the service. In such cases, appropriate contracts and security measures are implemented."
+      },
+      "storage": {
+        "title": "Data Storage",
+        "content": "User data is stored on servers with appropriate security measures. The data retention period is while the account is active and for the period required by law thereafter. If you request account deletion, we will delete your data within a reasonable period."
+      },
+      "contact": {
+        "title": "Contact",
+        "content": "For questions or requests regarding the privacy policy, please contact us via the contact form on the support page. We also handle requests for data disclosure, correction, deletion, etc."
+      }
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "View and edit your account information",
+    "name": "Name",
+    "email": "Email",
+    "save": "Save",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Enter your name",
+    "emailPlaceholder": "Enter your email",
+    "affiliation": "Affiliation",
+    "affiliationPlaceholder": "Enter your institution",
+    "bio": "Bio",
+    "bioPlaceholder": "Enter your bio",
+    "saved": "Saved",
+    "apiUsage": "API Usage",
+    "monthlyApiUsage": "This month's API usage",
+    "usagePercent": "{{percent}}% used"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Latest activity and notifications",
+    "noNotifications": "No notifications",
+    "markAllRead": "Mark all as read",
+    "filters": {
+      "all": "All",
+      "unread": "Unread",
+      "read": "Read"
+    }
+  },
+  "search": {
+    "title": "Search",
+    "subtitle": "Search verifications, papers, and sessions",
+    "placeholder": "Enter keywords...",
+    "noResults": "No results found",
+    "searchPlaceholder": "Search verifications, papers, experiments...",
+    "noResultsFound": "No results found",
+    "verifications": "Verifications",
+    "papers": "Papers",
+    "experiments": "Experiments",
+    "countSuffix": ""
+  },
+  "apiToken": {
+    "title": "API Token",
+    "subtitle": "Manage your API tokens",
+    "generate": "Generate Token",
+    "copy": "Copy",
+    "noTokens": "No tokens",
+    "pageSubtitle": "Manage tokens for accessing the AIRAS API",
+    "generateSection": "Generate new token",
+    "tokenName": "Token name",
+    "tokenNamePlaceholder": "e.g., Research script",
+    "generateButton": "Generate",
+    "tokenWarning": "This token will only be shown once. Please save it in a safe place.",
+    "copied": "Copied",
+    "issuedTokens": "Issued tokens",
+    "noTokensYet": "No tokens have been issued yet",
+    "createdAt": "Created",
+    "lastUsed": "Last used",
+    "revoke": "Revoke",
+    "usageExample": "Usage example",
+    "apiKeysSection": "API Keys",
+    "copyError": "Failed to copy to clipboard"
+  },
+  "settings": {
+    "accountSection": "Account",
+    "externalServicesSection": "External Services"
+  },
+  "integration": {
+    "title": "Integration",
+    "subtitle": "External service integration settings",
+    "save": "Save",
+    "saved": "Saved"
+  },
+  "userPlan": {
+    "title": "User Plan",
+    "subtitle": "View and change your plan",
+    "current": "Current Plan",
+    "upgrade": "Upgrade"
+  },
+  "papers": {
+    "title": "Papers",
+    "subtitle": "Search and manage papers",
+    "search": "Search Papers",
+    "searchPlaceholder": "Search by title, author, or keyword",
+    "noResults": "No papers found",
+    "select": "Select",
+    "selected": "Selected",
+    "execute": "Execute",
+    "acquisitionTitle": "Paper Acquisition",
+    "acquisitionSubtitle": "Run a paper search"
+  },
+  "assistedResearch": {
+    "paperSearch": "Paper Search",
+    "methodGeneration": "Method Generation",
+    "codeGeneration": "Code Generation",
+    "experimentConfig": "Experiment Config",
+    "experimentRun": "Experiment Run",
+    "analysis": "Analysis",
+    "paperWriting": "Paper Writing"
+  },
+  "features": {
+    "llmConfig": {
+      "title": "LLM Settings",
+      "description": "Customize the LLM model used in each subgraph. Default settings will be applied if not specified."
+    },
+    "paperSearch": {
+      "title": "Paper Acquisition",
+      "subtitle": "Search and select relevant research papers",
+      "searchPlaceholder": "Enter search keywords...",
+      "searching": "Searching...",
+      "search": "Search",
+      "errorMessage": "Failed to search papers. Please try again later.",
+      "selectedCount": "{{count}} paper(s) selected",
+      "confirmSelection": "Confirm Selection",
+      "confirmedCount": "Confirmed: {{count}} paper(s)"
+    },
+    "methodGeneration": {
+      "title": "Method Generation",
+      "subtitle": "Generate a new research method from selected papers",
+      "generateFromPapers": "Generate from Papers",
+      "manualInput": "Manual Input",
+      "methodName": "Method Name",
+      "methodDescription": "Method Description",
+      "descriptionPlaceholder": "Enter a detailed description of the method...",
+      "noPapersMessage": "Please select papers first or use manual input mode",
+      "paperCountMessage": "Generating a new method from {{count}} paper(s):",
+      "generating": "Generating...",
+      "generate": "Generate Method",
+      "generatedPreview": "Generated Method (Preview)",
+      "editableDescription": "Method Description (Editable)",
+      "confirmMethod": "Confirm This Method"
+    },
+    "experimentConfig": {
+      "title": "Experiment Configuration",
+      "subtitle": "Create experiment configurations for the generated method",
+      "generateFromMethod": "Generate from Method",
+      "manualInput": "Manual Input",
+      "targetMethodDescription": "Target Method Description",
+      "targetMethodPlaceholder": "Describe the method to experiment on...",
+      "inputExperimentConfig": "Input Experiment Config",
+      "configNumber": "Experiment Config {{number}}",
+      "modelName": "Model Name",
+      "dataset": "Dataset",
+      "description": "Description",
+      "descriptionPlaceholder": "Experiment description...",
+      "addConfig": "Add Experiment Config",
+      "noMethodMessage": "Please generate a method first or use manual input mode",
+      "targetMethod": "Target Method:",
+      "generating": "Generating...",
+      "generate": "Generate Experiment Config",
+      "configList": "Experiment Config List",
+      "generatedPreview": "Generated Experiment Config (Preview)",
+      "confirmConfig": "Confirm This Config"
+    },
+    "experimentRun": {
+      "title": "Experiment Execution",
+      "subtitle": "Run experiments using GitHub Actions",
+      "noConfigMessage": "Please generate experiment code first",
+      "runAll": "Run All Experiments",
+      "running": "Running...",
+      "run": "Run",
+      "runningProgress": "Running experiment...",
+      "confirmResults": "Confirm These Results",
+      "confirmed": "Confirmed"
+    },
+    "analysis": {
+      "title": "Experiment Analysis",
+      "subtitle": "Analyze experiment results and derive insights",
+      "noResultsMessage": "Please run experiments first",
+      "resultCountMessage": "Analyzing {{count}} experiment result(s)",
+      "analyzing": "Analyzing...",
+      "analyze": "Analyze Results",
+      "confirmAnalysis": "Confirm This Analysis",
+      "confirmed": "Confirmed"
+    },
+    "codeGeneration": {
+      "title": "Code Generation",
+      "subtitle": "Generate code from experiment config and push to GitHub",
+      "noConfigMessage": "Please create experiment config first",
+      "generating": "Generating...",
+      "generate": "Generate Code",
+      "pushing": "Pushing...",
+      "pushToGitHub": "Push to GitHub",
+      "pushSuccess": "Successfully Pushed to GitHub",
+      "confirmCode": "Confirm This Code",
+      "confirmed": "Confirmed"
+    },
+    "paperWriting": {
+      "title": "Paper Writing",
+      "subtitle": "Auto-generate a paper summarizing your research results",
+      "generateFromResults": "Generate from Results",
+      "manualInput": "Manual Input",
+      "paperTitle": "Paper Title",
+      "abstract": "Abstract",
+      "abstractPlaceholder": "Enter a summary of the research...",
+      "sections": "Sections",
+      "sectionNamePlaceholder": "Section name",
+      "sectionContentPlaceholder": "Section content...",
+      "addSection": "Add Section",
+      "noPrerequisitesMessage": "Complete all prerequisite steps or use manual input mode",
+      "generating": "Generating...",
+      "generate": "Generate Paper",
+      "preview": "Preview",
+      "confirmPaper": "Confirm This Paper",
+      "downloadLatex": "Download LaTeX",
+      "downloadPdf": "Download PDF"
+    }
+  },
+  "workflowTree": {
+    "noSteps": "No steps executed yet",
+    "startPrompt": "Start with Paper Acquisition",
+    "featureLabels": {
+      "papers": "Papers",
+      "method": "Method",
+      "experimentConfig": "Exp. Config",
+      "codeGeneration": "Code Gen.",
+      "experimentRun": "Exp. Run",
+      "analysis": "Analysis",
+      "paperWriting": "Paper Writing"
+    }
+  },
+  "codeEditorModal": {
+    "title": "Code Preview",
+    "openOnGitHub": "Open on GitHub",
+    "close": "Close"
+  },
+  "autoResearchResult": {
+    "noProgress": "No progress to display yet.",
+    "evaluationMetric": "Metric",
+    "baseline": "Baseline"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "save": "Save",
+    "noData": "No data"
+  }
+}

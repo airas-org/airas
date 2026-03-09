@@ -2,11 +2,12 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type AssistedResearchSessionResponse = {
+export type ProposedMethodSchema = {
     id: string;
     title: string;
-    created_at: string;
-    created_by: string;
-    active_head_step_id: (string | null);
+    what_to_verify: string;
+    method: string;
+    pros?: Array<string>;
+    cons?: Array<string>;
 };
 

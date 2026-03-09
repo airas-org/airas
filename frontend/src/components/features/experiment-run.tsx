@@ -2,6 +2,7 @@
 
 import { Check, CheckCircle2, Clock, Loader2, Play, XCircle } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -24,6 +25,7 @@ export function ExperimentRunSection({
   onStepExecuted,
   onSave,
 }: ExperimentRunSectionProps) {
+  const { t } = useTranslation();
   const [runningExperiments, setRunningExperiments] = useState<Set<string>>(new Set());
   const [isConfirmed, setIsConfirmed] = useState(false);
 
@@ -78,15 +80,17 @@ export function ExperimentRunSection({
           <Play className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-foreground">実験の実行</h3>
-          <p className="text-sm text-muted-foreground">GitHub Actionsで実験を実行</p>
+          <h3 className="text-lg font-semibold text-foreground">
+            {t("features.experimentRun.title")}
+          </h3>
+          <p className="text-sm text-muted-foreground">{t("features.experimentRun.subtitle")}</p>
         </div>
       </div>
 
       {configs.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <Play className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>先に実験コードを生成してください</p>
+          <p>{t("features.experimentRun.noConfigMessage")}</p>
         </div>
       ) : (
         <>
@@ -96,7 +100,9 @@ export function ExperimentRunSection({
               disabled={runningExperiments.size > 0}
               className="w-full bg-blue-700 hover:bg-blue-800 text-white"
             >
-              {runningExperiments.size > 0 ? "実行中..." : "全ての実験を実行"}
+              {runningExperiments.size > 0
+                ? t("features.experimentRun.running")
+                : t("features.experimentRun.runAll")}
             </Button>
           </div>
 
@@ -123,7 +129,7 @@ export function ExperimentRunSection({
                     {!result && !isRunning && (
                       <Button size="sm" variant="outline" onClick={() => runExperiment(config.id)}>
                         <Play className="w-3 h-3 mr-1" />
-                        実行
+                        {t("features.experimentRun.run")}
                       </Button>
                     )}
                   </div>
@@ -131,7 +137,9 @@ export function ExperimentRunSection({
                   {isRunning && (
                     <div className="space-y-2">
                       <Progress value={45} className="h-2" />
-                      <p className="text-xs text-muted-foreground">実験を実行中...</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("features.experimentRun.runningProgress")}
+                      </p>
                     </div>
                   )}
 
@@ -158,14 +166,16 @@ export function ExperimentRunSection({
               className="w-full mt-4 bg-blue-700 hover:bg-blue-800 text-white"
             >
               <Check className="w-4 h-4 mr-2" />
-              この結果を確定
+              {t("features.experimentRun.confirmResults")}
             </Button>
           )}
 
           {isConfirmed && (
             <div className="flex items-center justify-center gap-2 p-3 mt-4 bg-muted rounded-lg">
               <Check className="w-5 h-5 text-blue-700" />
-              <span className="text-sm text-muted-foreground">確定済み</span>
+              <span className="text-sm text-muted-foreground">
+                {t("features.experimentRun.confirmed")}
+              </span>
             </div>
           )}
         </>

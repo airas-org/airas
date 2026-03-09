@@ -1,5 +1,6 @@
 import { BarChart3, Check, Sparkles } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { analyzeResults } from "@/lib/api-mock";
@@ -71,6 +72,7 @@ export function AnalysisSection({
   onStepExecuted,
   onSave,
 }: AnalysisSectionProps) {
+  const { t } = useTranslation();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [previewText, setPreviewText] = useState<string | null>(null);
   const [isConfirmed, setIsConfirmed] = useState(false);
@@ -109,15 +111,15 @@ export function AnalysisSection({
           <BarChart3 className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-foreground">実験結果の分析</h3>
-          <p className="text-sm text-muted-foreground">実験結果を分析し洞察を導出</p>
+          <h3 className="text-lg font-semibold text-foreground">{t("features.analysis.title")}</h3>
+          <p className="text-sm text-muted-foreground">{t("features.analysis.subtitle")}</p>
         </div>
       </div>
 
       {completedResults.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>先に実験を実行してください</p>
+          <p>{t("features.analysis.noResultsMessage")}</p>
         </div>
       ) : (
         <>
@@ -125,7 +127,7 @@ export function AnalysisSection({
             <div className="space-y-4">
               <div className="p-4 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">
-                  {completedResults.length} 件の実験結果を分析します
+                  {t("features.analysis.resultCountMessage", { count: completedResults.length })}
                 </p>
               </div>
               <Button
@@ -134,7 +136,7 @@ export function AnalysisSection({
                 className="w-full bg-blue-700 hover:bg-blue-800 text-white"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
-                {isAnalyzing ? "分析中..." : "結果を分析"}
+                {isAnalyzing ? t("features.analysis.analyzing") : t("features.analysis.analyze")}
               </Button>
             </div>
           )}
@@ -151,14 +153,16 @@ export function AnalysisSection({
                   className="w-full bg-blue-700 hover:bg-blue-800 text-white"
                 >
                   <Check className="w-4 h-4 mr-2" />
-                  この分析を確定
+                  {t("features.analysis.confirmAnalysis")}
                 </Button>
               )}
 
               {isEffectivelyConfirmed && (
                 <div className="flex items-center justify-center gap-2 p-3 bg-muted rounded-lg">
                   <Check className="w-5 h-5 text-blue-700" />
-                  <span className="text-sm text-muted-foreground">確定済み</span>
+                  <span className="text-sm text-muted-foreground">
+                    {t("features.analysis.confirmed")}
+                  </span>
                 </div>
               )}
             </div>

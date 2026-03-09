@@ -1,5 +1,6 @@
 import { FeatherChevronDown, FeatherChevronRight, FeatherPlus } from "@subframe/core";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Table } from "@/ui";
 import type { ImplementationInfo } from "../types";
 import { CodeEditorModal } from "./code-editor-modal";
@@ -14,6 +15,7 @@ export function ImplementationResult({
   implementation,
   onRunExperiment,
 }: ImplementationResultProps) {
+  const { t } = useTranslation();
   const [othersExpanded, setOthersExpanded] = useState(false);
   const [codeModalOpen, setCodeModalOpen] = useState(false);
 
@@ -24,7 +26,9 @@ export function ImplementationResult({
     <>
       <div id="sec-code" className="rounded-lg border border-border bg-card p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">実験コード</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            {t("verification.detail.experimentCode.title")}
+          </h2>
           <button
             type="button"
             onClick={() => setCodeModalOpen(true)}
@@ -47,16 +51,24 @@ export function ImplementationResult({
       </div>
 
       <div id="sec-settings" className="rounded-lg border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold text-foreground">実験設定</h2>
+        <h2 className="text-lg font-semibold text-foreground">
+          {t("verification.detail.experimentSettings.title")}
+        </h2>
 
         <div className="mt-4">
-          <p className="text-xs font-medium text-foreground">主要パラメータ</p>
+          <p className="text-xs font-medium text-foreground">
+            {t("verification.detail.experimentSettings.mainParams")}
+          </p>
           <div className="mt-1.5 rounded-md border border-solid border-neutral-border overflow-hidden">
             <Table
               header={
                 <Table.HeaderRow>
-                  <Table.HeaderCell className="text-[11px]">名称</Table.HeaderCell>
-                  <Table.HeaderCell className="text-[11px]">説明</Table.HeaderCell>
+                  <Table.HeaderCell className="text-[11px]">
+                    {t("verification.detail.experimentSettings.paramName")}
+                  </Table.HeaderCell>
+                  <Table.HeaderCell className="text-[11px]">
+                    {t("verification.detail.experimentSettings.paramDescription")}
+                  </Table.HeaderCell>
                 </Table.HeaderRow>
               }
             >
@@ -86,15 +98,21 @@ export function ImplementationResult({
               ) : (
                 <FeatherChevronRight className="h-3.5 w-3.5" />
               )}
-              その他のパラメータ（{otherParams.length}）
+              {t("verification.detail.experimentSettings.otherParams", {
+                count: otherParams.length,
+              })}
             </button>
             {othersExpanded && (
               <div className="mt-1.5 rounded-md border border-solid border-neutral-border overflow-hidden">
                 <Table
                   header={
                     <Table.HeaderRow>
-                      <Table.HeaderCell className="text-[11px]">名称</Table.HeaderCell>
-                      <Table.HeaderCell className="text-[11px]">説明</Table.HeaderCell>
+                      <Table.HeaderCell className="text-[11px]">
+                        {t("verification.detail.experimentSettings.paramName")}
+                      </Table.HeaderCell>
+                      <Table.HeaderCell className="text-[11px]">
+                        {t("verification.detail.experimentSettings.paramDescription")}
+                      </Table.HeaderCell>
                     </Table.HeaderRow>
                   }
                 >
@@ -114,7 +132,9 @@ export function ImplementationResult({
           </div>
         )}
 
-        <h3 className="text-base font-semibold mt-6">実験設定一覧</h3>
+        <h3 className="text-base font-semibold mt-6">
+          {t("verification.detail.experimentSettings.experimentList")}
+        </h3>
         <div className="flex flex-col gap-3 mt-2">
           {implementation.experimentSettings.map((experiment) => (
             <ExperimentCard key={experiment.id} experiment={experiment} onRun={onRunExperiment} />

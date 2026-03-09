@@ -2,7 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type AssistedResearchSessionCreateRequest = {
-    title: string;
+export type ExperimentCodeStatusResponseBody = {
+    status: string;
+    conclusion: (string | null);
 };
 
