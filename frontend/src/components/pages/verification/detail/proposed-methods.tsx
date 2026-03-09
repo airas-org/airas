@@ -80,12 +80,14 @@ interface ProposedMethodsListProps {
   methods: ProposedMethod[];
   selectedMethodId?: string;
   onSelectMethod: (methodId: string) => void;
+  onCreateWithMethod?: (method: ProposedMethod) => void;
 }
 
 export function ProposedMethodsList({
   methods,
   selectedMethodId,
   onSelectMethod,
+  onCreateWithMethod,
 }: ProposedMethodsListProps) {
   const { t } = useTranslation();
   const [othersExpanded, setOthersExpanded] = useState(false);
@@ -156,8 +158,8 @@ export function ProposedMethodsList({
                     key={method.id}
                     method={method}
                     isSelected={false}
-                    showSelectButton={true}
-                    onSelect={() => onSelectMethod(method.id)}
+                    showSelectButton={!!onCreateWithMethod}
+                    onSelect={() => onCreateWithMethod?.(method)}
                   />
                 ))}
               </div>
