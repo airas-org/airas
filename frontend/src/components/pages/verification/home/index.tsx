@@ -116,14 +116,9 @@ export function VerificationHomePage({
     <div className="flex-1 overflow-y-auto overflow-x-clip min-w-0">
       <div className="max-w-full mx-auto px-6 py-6">
         <div className="flex items-end justify-between gap-4">
-          <div>
-            <h1 className="text-heading-2 font-heading-2 text-default-font">
-              {t("verification.home.title")}
-            </h1>
-            <p className="text-caption font-caption text-subtext-color mt-1">
-              {t("verification.home.projects", { count: verifications.length })}
-            </p>
-          </div>
+          <p className="text-caption font-caption text-subtext-color">
+            {t("verification.home.projects", { count: verifications.length })}
+          </p>
           <button
             type="button"
             onClick={onCreateNew}
