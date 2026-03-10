@@ -344,7 +344,7 @@ jobs:
             --arg research_topic "$RESEARCH_TOPIC" \
             --arg cloud_provider "$CLOUD_PROVIDER" \
             --arg gpu_instance_type "$GPU_INSTANCE_TYPE" \
-            --arg max_instance_hours "$MAX_INSTANCE_HOURS" \
+            --argjson max_instance_hours "$MAX_INSTANCE_HOURS" \
             --arg runner_description "$RUNNER_DESC" \
             --arg wandb_entity "$WANDB_ENTITY" \
             --arg wandb_project "$WANDB_PROJECT" \

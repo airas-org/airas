@@ -1,5 +1,3 @@
-"use client";
-
 import {
   FeatherArrowLeft,
   FeatherBarChart3,
@@ -11,8 +9,15 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AllLLMConfig } from "@/components/features/llm-config";
 import {
+  defaultRunnerConfigFormState,
+  isRunnerConfigFormValid,
+  RunnerConfigForm,
+  type RunnerConfigFormLabels,
+  type RunnerConfigFormState,
+  toRunnerConfigPayload,
+} from "@/components/features/runner-config-form";
+import {
   type ComputeEnvironment,
-  type EphemeralCloudRunnerConfig,
   type TopicOpenEndedResearchLLMMapping,
   TopicOpenEndedResearchRequestBody,
   TopicOpenEndedResearchService,
@@ -24,8 +29,6 @@ import { Select } from "@/ui/components/Select";
 import { Switch } from "@/ui/components/Switch";
 import { TextArea } from "@/ui/components/TextArea";
 import { TextField } from "@/ui/components/TextField";
-
-type RunnerType = "static" | "ephemeral_cloud";
 
 interface TopicDrivenInputProps {
   onBack: () => void;
@@ -41,11 +44,9 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
   const [branch, setBranch] = useState("main");
 
   // Runner config
-  const [runnerType, setRunnerType] = useState<RunnerType>("static");
-  const [runnerLabels, setRunnerLabels] = useState("ubuntu-latest");
-  const [cloudProvider, setCloudProvider] = useState<"aws" | "gcp">("aws");
-  const [gpuInstanceType, setGpuInstanceType] = useState("g4dn.xlarge");
-  const [maxInstanceHours, setMaxInstanceHours] = useState("120");
+  const [runnerConfig, setRunnerConfig] = useState<RunnerConfigFormState>(
+    defaultRunnerConfigFormState,
+  );
 
   // Compute environment
   const [ceOs, setCeOs] = useState("");
@@ -84,48 +85,34 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
   const isFormValid =
     [researchTopic, repoName, branch, wandbEntity, wandbProject].every(
       (value) => value.trim().length > 0,
-    ) && (runnerType === "static" ? runnerLabels.trim().length > 0 : true);
+    ) && isRunnerConfigFormValid(runnerConfig);
 
   const handleRun = useCallback(async () => {
     if (!isFormValid) return;
     setError(null);
     setIsRunning(true);
 
-    const toNumber = (value: string): number | undefined => {
+    const toInteger = (value: string): number | undefined => {
       if (value.trim() === "") return undefined;
       const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : undefined;
+      return Number.isInteger(parsed) ? parsed : undefined;
     };
 
     const computeEnvironment: ComputeEnvironment = {
       os: ceOs || undefined,
-      cpu_cores: toNumber(ceCpuCores),
-      ram_gb: toNumber(ceRamGb),
+      cpu_cores: toInteger(ceCpuCores),
+      ram_gb: toInteger(ceRamGb),
       gpu_type: ceGpuType || undefined,
-      gpu_count: toNumber(ceGpuCount),
-      gpu_memory_gb: toNumber(ceGpuMemoryGb),
+      gpu_count: toInteger(ceGpuCount),
+      gpu_memory_gb: toInteger(ceGpuMemoryGb),
       cuda_version: ceCudaVersion || undefined,
       python_version: cePythonVersion || undefined,
       storage_type: (ceStorageType as "nvme" | "ssd" | "hdd") || undefined,
-      storage_gb: toNumber(ceStorageGb),
+      storage_gb: toInteger(ceStorageGb),
       description: ceDescription || undefined,
     };
 
-    const runnerConfig =
-      runnerType === "static"
-        ? {
-            type: "static" as const,
-            runner_label: runnerLabels
-              .split(",")
-              .map((l) => l.trim())
-              .filter((l) => l.length > 0),
-          }
-        : {
-            type: "ephemeral_cloud" as const,
-            cloud_provider: cloudProvider as EphemeralCloudRunnerConfig.cloud_provider,
-            gpu_instance_type: gpuInstanceType || undefined,
-            max_instance_hours: toNumber(maxInstanceHours),
-          };
+    const runnerConfigPayload = toRunnerConfigPayload(runnerConfig);
 
     const payload: TopicOpenEndedResearchRequestBody = {
       github_config: {
@@ -134,19 +121,19 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
       },
       research_topic: researchTopic,
       compute_environment: computeEnvironment,
-      runner_config: runnerConfig,
+      runner_config: runnerConfigPayload,
       wandb_config: {
         entity: wandbEntity,
         project: wandbProject,
       },
       is_github_repo_private: isPrivate,
-      num_paper_search_queries: toNumber(numPaperSearchQueries),
-      papers_per_query: toNumber(papersPerQuery),
-      hypothesis_refinement_iterations: toNumber(hypothesisRefinementIterations),
-      num_experiment_models: toNumber(numExperimentModels),
-      num_experiment_datasets: toNumber(numExperimentDatasets),
-      num_comparison_methods: toNumber(numComparativeMethods),
-      paper_content_refinement_iterations: toNumber(paperContentRefinementIterations),
+      num_paper_search_queries: toInteger(numPaperSearchQueries),
+      papers_per_query: toInteger(papersPerQuery),
+      hypothesis_refinement_iterations: toInteger(hypothesisRefinementIterations),
+      num_experiment_models: toInteger(numExperimentModels),
+      num_experiment_datasets: toInteger(numExperimentDatasets),
+      num_comparison_methods: toInteger(numComparativeMethods),
+      paper_content_refinement_iterations: toInteger(paperContentRefinementIterations),
       github_actions_agent: githubActionsAgent || undefined,
       latex_template_name: latexTemplateName.trim() || undefined,
       llm_mapping: llmMapping,
@@ -168,11 +155,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
     researchTopic,
     repoName,
     branch,
-    runnerType,
-    runnerLabels,
-    cloudProvider,
-    gpuInstanceType,
-    maxInstanceHours,
+    runnerConfig,
     ceOs,
     ceCpuCores,
     ceRamGb,
@@ -305,85 +288,19 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                     GitHub Actions Runner
                   </span>
                 </div>
-                <div className="flex w-full flex-col items-start gap-3">
-                  <Select
-                    className="h-auto w-full flex-none"
-                    variant="outline"
-                    label={t("autonomous.topicDriven.runnerType")}
-                    helpText=""
-                    value={runnerType}
-                    onValueChange={(val) => setRunnerType(val as RunnerType)}
-                  >
-                    <Select.Item value="static">
-                      {t("autonomous.topicDriven.runnerTypeStatic")}
-                    </Select.Item>
-                    <Select.Item value="ephemeral_cloud">
-                      {t("autonomous.topicDriven.runnerTypeCloud")}
-                    </Select.Item>
-                  </Select>
-                  {runnerType === "static" && (
-                    <div className="flex w-full flex-col items-start gap-1">
-                      <div className="flex items-center gap-1">
-                        <span className="text-caption font-caption text-default-font">
-                          {t("autonomous.topicDriven.runnerLabel")}
-                        </span>
-                        <span className="text-caption font-caption text-error-500">*</span>
-                      </div>
-                      <TextField
-                        className="h-auto w-full flex-none"
-                        variant="outline"
-                        label=""
-                        helpText=""
-                      >
-                        <TextField.Input
-                          placeholder="ubuntu-latest, gpu-runner"
-                          value={runnerLabels}
-                          onChange={(e) => setRunnerLabels(e.target.value)}
-                        />
-                      </TextField>
-                    </div>
-                  )}
-                  {runnerType === "ephemeral_cloud" && (
-                    <div className="flex w-full flex-wrap items-start gap-3">
-                      <Select
-                        className="h-auto min-w-[120px] grow shrink-0 basis-0"
-                        variant="outline"
-                        label={t("autonomous.topicDriven.cloudProvider")}
-                        helpText=""
-                        value={cloudProvider}
-                        onValueChange={(val) => setCloudProvider(val as "aws" | "gcp")}
-                      >
-                        <Select.Item value="aws">AWS</Select.Item>
-                        <Select.Item value="gcp">GCP</Select.Item>
-                      </Select>
-                      <TextField
-                        className="h-auto min-w-[120px] grow shrink-0 basis-0"
-                        variant="outline"
-                        label={t("autonomous.topicDriven.gpuInstanceType")}
-                        helpText=""
-                      >
-                        <TextField.Input
-                          placeholder="g4dn.xlarge"
-                          value={gpuInstanceType}
-                          onChange={(e) => setGpuInstanceType(e.target.value)}
-                        />
-                      </TextField>
-                      <TextField
-                        className="h-auto min-w-[120px] grow shrink-0 basis-0"
-                        variant="outline"
-                        label={t("autonomous.topicDriven.maxInstanceHours")}
-                        helpText=""
-                      >
-                        <TextField.Input
-                          type="number"
-                          placeholder="120"
-                          value={maxInstanceHours}
-                          onChange={(e) => setMaxInstanceHours(e.target.value)}
-                        />
-                      </TextField>
-                    </div>
-                  )}
-                </div>
+                <RunnerConfigForm
+                  value={runnerConfig}
+                  onChange={setRunnerConfig}
+                  labels={{
+                    runnerType: t("autonomous.topicDriven.runnerType"),
+                    runnerTypeStatic: t("autonomous.topicDriven.runnerTypeStatic"),
+                    runnerTypeCloud: t("autonomous.topicDriven.runnerTypeCloud"),
+                    runnerLabel: t("autonomous.topicDriven.runnerLabel"),
+                    cloudProvider: t("autonomous.topicDriven.cloudProvider"),
+                    gpuInstanceType: t("autonomous.topicDriven.gpuInstanceType"),
+                    maxInstanceHours: t("autonomous.topicDriven.maxInstanceHours"),
+                  }}
+                />
               </div>
 
               {/* Compute Environment */}

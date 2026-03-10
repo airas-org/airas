@@ -40,7 +40,9 @@ class FetchExperimentalResultsResponseBody(BaseModel):
 class DispatchSanityCheckRequestBody(BaseModel):
     github_config: GitHubConfig
     run_id: str
-    runner_config: ExperimentRunnerConfig = Field(default_factory=StaticRunnerConfig)
+    runner_config: ExperimentRunnerConfig = Field(
+        default_factory=lambda: StaticRunnerConfig(type="static")
+    )
 
 
 class DispatchSanityCheckResponseBody(BaseModel):
@@ -51,7 +53,9 @@ class DispatchSanityCheckResponseBody(BaseModel):
 class DispatchMainExperimentRequestBody(BaseModel):
     github_config: GitHubConfig
     run_id: str
-    runner_config: ExperimentRunnerConfig = Field(default_factory=StaticRunnerConfig)
+    runner_config: ExperimentRunnerConfig = Field(
+        default_factory=lambda: StaticRunnerConfig(type="static")
+    )
 
 
 class DispatchMainExperimentResponseBody(BaseModel):
