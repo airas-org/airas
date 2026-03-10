@@ -2,14 +2,17 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ComputeEnvironment } from './ComputeEnvironment';
+import type { EphemeralCloudRunnerConfig } from './EphemeralCloudRunnerConfig';
 import type { GitHubConfigRequest } from './GitHubConfigRequest';
-import type { RunnerConfig } from './RunnerConfig';
+import type { StaticRunnerConfig } from './StaticRunnerConfig';
 import type { TopicOpenEndedResearchLLMMapping } from './TopicOpenEndedResearchLLMMapping';
 import type { WandbConfig } from './WandbConfig';
 export type TopicOpenEndedResearchRequestBody = {
     github_config: GitHubConfigRequest;
     research_topic: string;
-    runner_config: RunnerConfig;
+    compute_environment: ComputeEnvironment;
+    runner_config: (StaticRunnerConfig | EphemeralCloudRunnerConfig);
     wandb_config: WandbConfig;
     is_github_repo_private?: boolean;
     search_method?: TopicOpenEndedResearchRequestBody.search_method;

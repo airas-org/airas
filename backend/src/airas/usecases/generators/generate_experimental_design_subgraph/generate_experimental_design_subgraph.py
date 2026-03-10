@@ -7,7 +7,7 @@ from typing_extensions import TypedDict
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
-from airas.core.types.experimental_design import ExperimentalDesign, RunnerConfig
+from airas.core.types.experimental_design import ComputeEnvironment, ExperimentalDesign
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.infra.langchain_client import LangChainClient
 from airas.usecases.generators.generate_experimental_design_subgraph.nodes.generate_experimental_design import (
@@ -45,7 +45,7 @@ class GenerateExperimentalDesignSubgraph:
     def __init__(
         self,
         langchain_client: LangChainClient,
-        runner_config: RunnerConfig,
+        compute_environment: ComputeEnvironment,
         llm_mapping: GenerateExperimentalDesignLLMMapping | None = None,
         num_models_to_use: int = 2,
         num_datasets_to_use: int = 2,
@@ -53,7 +53,7 @@ class GenerateExperimentalDesignSubgraph:
     ):
         self.langchain_client = langchain_client
         self.llm_mapping = llm_mapping or GenerateExperimentalDesignLLMMapping()
-        self.runner_config = runner_config
+        self.compute_environment = compute_environment
         self.num_models_to_use = num_models_to_use
         self.num_datasets_to_use = num_datasets_to_use
         self.num_comparative_methods = num_comparative_methods
@@ -66,7 +66,7 @@ class GenerateExperimentalDesignSubgraph:
             llm_config=self.llm_mapping.generate_experimental_design,
             llm_client=self.langchain_client,
             research_hypothesis=state["research_hypothesis"],
-            runner_config=self.runner_config,
+            compute_environment=self.compute_environment,
             num_models_to_use=self.num_models_to_use,
             num_datasets_to_use=self.num_datasets_to_use,
             num_comparative_methods=self.num_comparative_methods,
