@@ -3,7 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export type StaticRunnerConfig = {
-    type?: string;
+    type: string;
     /**
      * Runner labels used by GitHub Actions (e.g., ['ubuntu-latest'] or ['self-hosted', 'gpu-runner'])
      */

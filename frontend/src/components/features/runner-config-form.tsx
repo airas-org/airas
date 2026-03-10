@@ -1,17 +1,6 @@
-"use client";
-
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import type { EphemeralCloudRunnerConfig, StaticRunnerConfig } from "@/lib/api";
-
-const RequiredMark = () => <span className="text-rose-400 ml-0.5">*</span>;
+import type { EphemeralCloudRunnerConfig } from "@/lib/api";
+import { Select } from "@/ui/components/Select";
+import { TextField } from "@/ui/components/TextField";
 
 export type RunnerConfigFormState =
   | { type: "static"; runnerLabels: string }
@@ -35,12 +24,10 @@ export function isRunnerConfigFormValid(state: RunnerConfigFormState): boolean {
   return Number.isInteger(hours) && hours >= 1;
 }
 
-export function toRunnerConfigPayload(
-  state: RunnerConfigFormState,
-): StaticRunnerConfig | EphemeralCloudRunnerConfig {
+export function toRunnerConfigPayload(state: RunnerConfigFormState) {
   if (state.type === "static") {
     return {
-      type: "static",
+      type: "static" as const,
       runner_label: state.runnerLabels
         .split(",")
         .map((l) => l.trim())
@@ -48,21 +35,31 @@ export function toRunnerConfigPayload(
     };
   }
   return {
-    type: "ephemeral_cloud",
+    type: "ephemeral_cloud" as const,
     cloud_provider: state.cloudProvider as EphemeralCloudRunnerConfig.cloud_provider,
     gpu_instance_type: state.gpuInstanceType || undefined,
     max_instance_hours: state.maxInstanceHours ? Number(state.maxInstanceHours) : undefined,
   };
 }
 
-interface RunnerConfigFormProps {
-  idPrefix: string;
-  value: RunnerConfigFormState;
-  onChange: (value: RunnerConfigFormState) => void;
+export interface RunnerConfigFormLabels {
+  runnerType: string;
+  runnerTypeStatic: string;
+  runnerTypeCloud: string;
+  runnerLabel: string;
+  cloudProvider: string;
+  gpuInstanceType: string;
+  maxInstanceHours: string;
 }
 
-export function RunnerConfigForm({ idPrefix, value, onChange }: RunnerConfigFormProps) {
-  const handleTypeChange = (type: "static" | "ephemeral_cloud") => {
+interface RunnerConfigFormProps {
+  value: RunnerConfigFormState;
+  onChange: (value: RunnerConfigFormState) => void;
+  labels: RunnerConfigFormLabels;
+}
+
+export function RunnerConfigForm({ value, onChange, labels }: RunnerConfigFormProps) {
+  const handleTypeChange = (type: string) => {
     if (type === "static") {
       onChange({ type: "static", runnerLabels: "ubuntu-latest" });
     } else {
@@ -76,81 +73,73 @@ export function RunnerConfigForm({ idPrefix, value, onChange }: RunnerConfigForm
   };
 
   return (
-    <div className="space-y-3 rounded-md bg-muted/40 p-4">
-      <p className="text-sm font-semibold text-foreground">GitHub Actions Runners</p>
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-runner-type`}>タイプ</Label>
-        <Select
-          value={value.type}
-          onValueChange={(val) => handleTypeChange(val as "static" | "ephemeral_cloud")}
-        >
-          <SelectTrigger id={`${idPrefix}-runner-type`} className="w-full md:w-72">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="static">セルフホスト / GitHub ホスト</SelectItem>
-            <SelectItem value="ephemeral_cloud">クラウド（オンデマンド）</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
+    <div className="flex w-full flex-col items-start gap-3">
+      <Select
+        className="h-auto w-full flex-none"
+        variant="outline"
+        label={labels.runnerType}
+        helpText=""
+        value={value.type}
+        onValueChange={handleTypeChange}
+      >
+        <Select.Item value="static">{labels.runnerTypeStatic}</Select.Item>
+        <Select.Item value="ephemeral_cloud">{labels.runnerTypeCloud}</Select.Item>
+      </Select>
       {value.type === "static" && (
-        <div className="space-y-2 mt-6">
-          <Label htmlFor={`${idPrefix}-runner-labels`}>
-            ラベル
-            <RequiredMark />
-          </Label>
-          <Input
-            id={`${idPrefix}-runner-labels`}
-            value={value.runnerLabels}
-            onChange={(e) => onChange({ ...value, runnerLabels: e.target.value })}
-            placeholder="ubuntu-latest,gpu-runner"
-          />
+        <div className="flex w-full flex-col items-start gap-1">
+          <div className="flex items-center gap-1">
+            <span className="text-caption font-caption text-default-font">
+              {labels.runnerLabel}
+            </span>
+            <span className="text-caption font-caption text-error-500">*</span>
+          </div>
+          <TextField className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+            <TextField.Input
+              placeholder="ubuntu-latest, gpu-runner"
+              value={value.runnerLabels}
+              onChange={(e) => onChange({ ...value, runnerLabels: e.target.value })}
+            />
+          </TextField>
         </div>
       )}
-
       {value.type === "ephemeral_cloud" && (
-        <div className="grid gap-4 md:grid-cols-3 mt-6">
-          <div className="space-y-2">
-            <Label htmlFor={`${idPrefix}-cloud-provider`}>クラウドプロバイダー</Label>
-            <Select
-              value={value.cloudProvider}
-              onValueChange={(val) => onChange({ ...value, cloudProvider: val as "aws" | "gcp" })}
-            >
-              <SelectTrigger id={`${idPrefix}-cloud-provider`} className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="aws">AWS</SelectItem>
-                <SelectItem value="gcp">GCP</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={`${idPrefix}-gpu-instance-type`}>インスタンスタイプ</Label>
-            <Input
-              id={`${idPrefix}-gpu-instance-type`}
+        <div className="flex w-full flex-wrap items-start gap-3">
+          <Select
+            className="h-auto min-w-[120px] grow shrink-0 basis-0"
+            variant="outline"
+            label={labels.cloudProvider}
+            helpText=""
+            value={value.cloudProvider}
+            onValueChange={(val) => onChange({ ...value, cloudProvider: val as "aws" | "gcp" })}
+          >
+            <Select.Item value="aws">AWS</Select.Item>
+            <Select.Item value="gcp">GCP</Select.Item>
+          </Select>
+          <TextField
+            className="h-auto min-w-[120px] grow shrink-0 basis-0"
+            variant="outline"
+            label={labels.gpuInstanceType}
+            helpText=""
+          >
+            <TextField.Input
+              placeholder="g4dn.xlarge"
               value={value.gpuInstanceType}
               onChange={(e) => onChange({ ...value, gpuInstanceType: e.target.value })}
-              placeholder="g4dn.xlarge"
             />
-            <p className="text-xs text-muted-foreground">
-              ※指定したインスタンスタイプが利用できない場合は、別のタイプで実行されます。
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={`${idPrefix}-max-instance-hours`}>最大稼働時間 (h)</Label>
-            <Input
-              id={`${idPrefix}-max-instance-hours`}
+          </TextField>
+          <TextField
+            className="h-auto min-w-[120px] grow shrink-0 basis-0"
+            variant="outline"
+            label={labels.maxInstanceHours}
+            helpText=""
+          >
+            <TextField.Input
               type="number"
-              inputMode="numeric"
-              min={1}
-              step={1}
+              placeholder="120"
               value={value.maxInstanceHours}
               onChange={(e) => onChange({ ...value, maxInstanceHours: e.target.value })}
-              placeholder="120"
             />
-          </div>
+          </TextField>
         </div>
       )}
     </div>
