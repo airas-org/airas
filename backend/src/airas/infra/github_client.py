@@ -970,6 +970,63 @@ class GithubClient(BaseHTTPClient):
                 return False
 
     # --------------------------------------------------
+    # Async Repository Methods
+    # --------------------------------------------------
+
+    async def aget_repository(self, github_owner: str, repository_name: str) -> dict:
+        # https://docs.github.com/ja/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
+        # For public repositories, no access token is required.
+        path = f"/repos/{github_owner}/{repository_name}"
+        response = await self.aget(path=path)
+        match response.status_code:
+            case 200:
+                logger.info("A research repository exists (200).")
+                return self._parser.parse(response, as_="json")
+            case 404:
+                logger.warning(f"Repository not found: {path} (404).")
+                raise GithubClientFatalError(f"Resource not found (404): {path}")
+            case _:
+                self._raise_for_status(response, path)
+                raise GithubClientFatalError(
+                    f"Unexpected response: {response.status_code}"
+                )
+
+    async def acreate_repository_from_template(
+        self,
+        github_owner: str,
+        repository_name: str,
+        template_owner: str,
+        template_repo: str,
+        include_all_branches: bool = True,
+        private: bool = False,
+    ) -> dict | None:
+        # https://docs.github.com/ja/rest/repos/repos?apiVersion=2022-11-28#create-a-repository-using-a-template
+        path = f"/repos/{template_owner}/{template_repo}/generate"
+        payload: dict[str, Any] = {
+            "owner": github_owner,
+            "name": repository_name,
+            "include_all_branches": include_all_branches,
+            "private": private,
+        }
+
+        response = await self.apost(path=path, json=payload)
+        match response.status_code:
+            case 201:
+                logger.info(
+                    f"Repository created from template (201): {template_owner}/{template_repo} → {repository_name}"
+                )
+                return self._parser.parse(response, as_="json")
+            case 404:
+                raise GithubClientFatalError(f"Template not found (404): {path}")
+            case 422:
+                raise GithubClientFatalError(
+                    f"Validation failed or repository already exists (422): {response.text}"
+                )
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
+    # --------------------------------------------------
     # Async Branch Methods
     # --------------------------------------------------
 

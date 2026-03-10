@@ -1,5 +1,5 @@
+import asyncio
 import logging
-import time
 from typing import Literal
 
 from langgraph.graph import END, START, StateGraph
@@ -63,10 +63,10 @@ class PrepareRepositorySubgraph:
         self.is_github_repo_private = is_github_repo_private
 
     @record_execution_time
-    def _check_repository_from_template(
+    async def _check_repository_from_template(
         self, state: PrepareRepositoryState
     ) -> Command[Literal["create_repository_from_template", "check_branch_existence"]]:
-        is_repository_from_template = check_repository_from_template(
+        is_repository_from_template = await check_repository_from_template(
             github_config=state["github_config"],
             github_client=self.github_client,
             template_owner=self.template_owner,
@@ -85,10 +85,10 @@ class PrepareRepositorySubgraph:
         )
 
     @record_execution_time
-    def _create_repository_from_template(
+    async def _create_repository_from_template(
         self, state: PrepareRepositoryState
     ) -> dict[str, Literal[True]]:
-        is_repository_from_template = create_repository_from_template(
+        is_repository_from_template = await create_repository_from_template(
             github_config=state["github_config"],
             github_client=self.github_client,
             template_owner=self.template_owner,
@@ -98,11 +98,11 @@ class PrepareRepositorySubgraph:
         return {"is_repository_from_template": is_repository_from_template}
 
     @record_execution_time
-    def _check_branch_existence(
+    async def _check_branch_existence(
         self, state: PrepareRepositoryState
     ) -> Command[Literal["retrieve_main_branch_sha", "finalize_state"]]:
-        time.sleep(5)
-        target_branch_sha = check_branch_existence(
+        await asyncio.sleep(5)
+        target_branch_sha = await check_branch_existence(
             github_config=state["github_config"],
             github_client=self.github_client,
         )
@@ -123,10 +123,10 @@ class PrepareRepositorySubgraph:
         )
 
     @record_execution_time
-    def _retrieve_main_branch_sha(
+    async def _retrieve_main_branch_sha(
         self, state: PrepareRepositoryState
     ) -> dict[str, str]:
-        main_branch_sha = retrieve_main_branch_sha(
+        main_branch_sha = await retrieve_main_branch_sha(
             github_config=state["github_config"],
             github_client=self.github_client,
         )

@@ -6,14 +6,14 @@ from airas.infra.github_client import GithubClient, GithubClientError
 logger = getLogger(__name__)
 
 
-def check_repository_from_template(
+async def check_repository_from_template(
     github_config: GitHubConfig,
     github_client: GithubClient,
     template_owner: str,
     template_repo: str,
 ) -> bool:
     try:
-        response = github_client.get_repository(
+        response = await github_client.aget_repository(
             github_owner=github_config.github_owner,
             repository_name=github_config.repository_name,
         )

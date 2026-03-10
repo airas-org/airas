@@ -6,11 +6,11 @@ from airas.infra.github_client import GithubClient
 logger = getLogger(__name__)
 
 
-def check_branch_existence(
+async def check_branch_existence(
     github_config: GitHubConfig,
     github_client: GithubClient,
 ) -> str | None:
-    response = github_client.get_branch(
+    response = await github_client.aget_branch(
         github_owner=github_config.github_owner,
         repository_name=github_config.repository_name,
         branch_name=github_config.branch_name,

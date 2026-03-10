@@ -7,7 +7,7 @@ from airas.infra.github_client import GithubClient
 logger = getLogger(__name__)
 
 
-def create_repository_from_template(
+async def create_repository_from_template(
     github_config: GitHubConfig,
     github_client: GithubClient,
     template_owner: str,
@@ -16,7 +16,7 @@ def create_repository_from_template(
     is_github_repo_private: bool = False,
 ) -> Literal[True]:
     try:
-        result = github_client.create_repository_from_template(
+        result = await github_client.acreate_repository_from_template(
             github_owner=github_config.github_owner,
             repository_name=github_config.repository_name,
             template_owner=template_owner,
