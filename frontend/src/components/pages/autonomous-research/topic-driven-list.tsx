@@ -71,6 +71,23 @@ export function TopicDrivenList({
     );
   };
 
+  if (sessions.length === 0) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-default-background">
+        <div className="flex flex-col items-center gap-6 text-center">
+          <FeatherFlaskConical className="h-12 w-12 text-neutral-300" />
+          <button
+            type="button"
+            onClick={onNavigateToInput}
+            className="text-xl font-semibold text-brand-600 hover:text-brand-700 transition-colors cursor-pointer hover:underline underline-offset-4"
+          >
+            {t("autonomous.topicDriven.emptyStateTitle")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full w-full flex-col items-center bg-default-background px-6 py-6 overflow-auto">
       <div className="flex w-full max-w-[768px] flex-col items-start gap-6">
