@@ -2253,7 +2253,6 @@ components:
           type: string
           const: ephemeral_cloud
           title: Type
-          default: ephemeral_cloud
         cloud_provider:
           type: string
           enum:
@@ -2274,6 +2273,8 @@ components:
           title: Max Instance Hours
           description: Max instance lifetime in hours (safety net for orphaned instances)
           default: 120
+      required:
+      - type
       type: object
       title: EphemeralCloudRunnerConfig
     EvaluationMetric:
@@ -4503,7 +4504,6 @@ components:
           type: string
           const: static
           title: Type
-          default: static
         runner_label:
           items:
             type: string
@@ -4511,6 +4511,8 @@ components:
           title: Runner Label
           description: Runner labels used by GitHub Actions (e.g., ['ubuntu-latest']
             or ['self-hosted', 'gpu-runner'])
+      required:
+      - type
       type: object
       title: StaticRunnerConfig
     Status:

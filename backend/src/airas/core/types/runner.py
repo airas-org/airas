@@ -6,7 +6,7 @@ CloudProvider = Literal["aws", "gcp"]
 
 
 class StaticRunnerConfig(BaseModel):
-    type: Literal["static"] = "static"
+    type: Literal["static"]
     runner_label: list[str] = Field(
         default_factory=lambda: ["ubuntu-latest"],
         description="Runner labels used by GitHub Actions (e.g., ['ubuntu-latest'] or ['self-hosted', 'gpu-runner'])",
@@ -22,7 +22,7 @@ class StaticRunnerConfig(BaseModel):
 
 
 class EphemeralCloudRunnerConfig(BaseModel):
-    type: Literal["ephemeral_cloud"] = "ephemeral_cloud"
+    type: Literal["ephemeral_cloud"]
     cloud_provider: CloudProvider = Field(
         default="aws",
         description="Cloud provider ('aws' or 'gcp')",
