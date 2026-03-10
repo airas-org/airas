@@ -1,4 +1,3 @@
-import { FeatherArrowLeft } from "@subframe/core";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -460,9 +459,8 @@ export function VerificationDetailPage({
         <button
           type="button"
           onClick={() => navigate("/verification")}
-          className="flex items-center gap-1.5 text-xs text-subtext-color hover:text-default-font transition-colors cursor-pointer"
+          className="text-xs text-subtext-color hover:text-default-font transition-colors cursor-pointer"
         >
-          <FeatherArrowLeft className="h-3.5 w-3.5" />
           {t("verification.home.title")}
         </button>
       </div>

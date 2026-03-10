@@ -1,4 +1,3 @@
-import { FeatherArrowLeft } from "@subframe/core";
 import { useCallback, useState } from "react";
 import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
@@ -183,9 +182,8 @@ export function MainContent({
                 <button
                   type="button"
                   onClick={() => navigate("/verification")}
-                  className="flex items-center gap-1.5 text-sm text-subtext-color hover:text-default-font transition-colors cursor-pointer"
+                  className="text-sm text-subtext-color hover:text-default-font transition-colors cursor-pointer"
                 >
-                  <FeatherArrowLeft className="h-4 w-4" />
                   検証一覧
                 </button>
               </div>

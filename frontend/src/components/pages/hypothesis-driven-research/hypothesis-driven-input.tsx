@@ -1,5 +1,4 @@
 import {
-  FeatherArrowLeft,
   FeatherBarChart3,
   FeatherGithub,
   FeatherLightbulb,
@@ -195,7 +194,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
     <div className="flex h-full w-full flex-col items-start bg-default-background">
       <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-4 pb-2 sticky top-0 z-10 gap-1">
         <div className="flex w-full items-center">
-          <LinkButton variant="neutral" icon={<FeatherArrowLeft />} onClick={onBack}>
+          <LinkButton variant="neutral" onClick={onBack}>
             <span className="text-sm font-medium">
               {t("autonomous.hypothesisDriven.backToList")}
             </span>

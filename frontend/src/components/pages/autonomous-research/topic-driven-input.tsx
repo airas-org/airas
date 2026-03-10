@@ -1,10 +1,4 @@
-import {
-  FeatherArrowLeft,
-  FeatherBarChart3,
-  FeatherGithub,
-  FeatherPlay,
-  FeatherSettings,
-} from "@subframe/core";
+import { FeatherBarChart3, FeatherGithub, FeatherPlay, FeatherSettings } from "@subframe/core";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -163,7 +157,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
     <div className="flex h-full w-full flex-col items-start bg-default-background">
       <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-4 pb-2 sticky top-0 z-10 gap-1">
         <div className="flex w-full items-center">
-          <LinkButton variant="neutral" icon={<FeatherArrowLeft />} onClick={onBack}>
+          <LinkButton variant="neutral" onClick={onBack}>
             <span className="text-sm font-medium">{t("autonomous.topicDriven.backToList")}</span>
           </LinkButton>
         </div>
