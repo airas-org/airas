@@ -22,7 +22,8 @@
     "help": "Help",
     "docs": "Documentation",
     "legal": "Terms of Use",
-    "experimental": "Experimental"
+    "experimental": "Experimental",
+    "reproduction": "Reproduction"
   },
   "userMenu": {
     "developer": "Developer",
@@ -729,6 +730,10 @@
     "noProgress": "No progress to display yet.",
     "evaluationMetric": "Metric",
     "baseline": "Baseline"
+  },
+  "reproduction": {
+    "title": "Reproduction",
+    "comingSoon": "Coming soon"
   },
   "common": {
     "loading": "Loading...",

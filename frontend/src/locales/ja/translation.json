@@ -22,7 +22,8 @@
     "help": "ヘルプ",
     "docs": "ドキュメント",
     "legal": "利用規約",
-    "experimental": "実験的機能"
+    "experimental": "実験的機能",
+    "reproduction": "再現実装"
   },
   "userMenu": {
     "developer": "開発者",
@@ -728,6 +729,10 @@
     "noProgress": "まだ表示できる進捗はありません。",
     "evaluationMetric": "評価指標",
     "baseline": "ベースライン"
+  },
+  "reproduction": {
+    "title": "再現実装",
+    "comingSoon": "近日公開予定です"
   },
   "common": {
     "loading": "読み込み中...",

@@ -4,6 +4,7 @@ import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
 import { NotificationsPage } from "@/components/pages/notifications";
 import { PapersPage } from "@/components/pages/papers";
+import { ReproductionPage } from "@/components/pages/reproduction";
 import { SettingsPage } from "@/components/pages/settings";
 import {
   type ProposedMethod,
@@ -249,6 +250,7 @@ export function MainContent({
           element={<Navigate to="/autonomous-research/topic-driven" replace />}
         />
         <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/reproduction" element={<ReproductionPage />} />
         <Route path="/settings/:tab" element={<SettingsRoute />} />
         <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
         <Route path="*" element={<Navigate to="/home" replace />} />

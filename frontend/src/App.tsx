@@ -9,6 +9,7 @@ import {
   FeatherBell,
   FeatherBookOpen,
   FeatherCheck,
+  FeatherCode,
   FeatherCreditCard,
   FeatherExternalLink,
   FeatherGlobe,
@@ -136,6 +137,7 @@ function getActiveSection(pathname: string): string {
   if (pathname.startsWith("/settings")) return "settings";
   if (pathname.startsWith("/verification")) return "verification";
   if (pathname.startsWith("/notifications")) return "notifications";
+  if (pathname.startsWith("/reproduction")) return "reproduction";
   if (pathname.startsWith("/papers")) return "papers";
   return "home";
 }
@@ -652,6 +654,16 @@ export default function App() {
                   {t("nav.hypothesisDriven")}
                 </button>
               </div>
+              <SidebarWithSections.NavItem
+                icon={<FeatherCode />}
+                selected={activeSection === "reproduction"}
+                onClick={() => {
+                  navigate("/reproduction");
+                  handleMobileNavClose();
+                }}
+              >
+                {t("nav.reproduction")}
+              </SidebarWithSections.NavItem>
             </>
           )}
         </SidebarWithSections>
