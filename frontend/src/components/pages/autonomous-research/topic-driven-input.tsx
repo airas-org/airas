@@ -153,403 +153,401 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
   ]);
 
   return (
-    <div className="flex h-full w-full flex-col items-start bg-default-background">
-      <div className="relative flex w-full items-center bg-default-background px-6 py-3 sticky top-0 z-10">
-        <button
-          type="button"
-          onClick={onBack}
-          className="rounded-md px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
-        >
-          {t("autonomous.topicDriven.backToList")}
-        </button>
-        <span className="absolute left-1/2 -translate-x-1/2 text-body-bold font-body-bold text-default-font">
-          Topic-Driven Research
-        </span>
-      </div>
-      <div className="flex w-full grow shrink-0 basis-0 flex-col items-center px-6 py-6 overflow-auto">
-        <div className="flex w-full max-w-[1024px] flex-col items-start gap-6">
-          <div className="flex w-full flex-col items-start gap-2 rounded-lg bg-card border border-border px-4 py-4">
-            <div className="flex items-center gap-1">
+    <div className="flex h-full w-full flex-col items-center bg-default-background px-6 py-6 overflow-auto">
+      <div className="flex w-full max-w-[1024px] flex-col items-start gap-6">
+        <div className="flex w-full items-center justify-between">
+          <button
+            type="button"
+            onClick={onBack}
+            className="rounded-md px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+          >
+            {t("autonomous.topicDriven.backToList")}
+          </button>
+          <span className="text-body-bold font-body-bold text-default-font">
+            Topic-Driven Research
+          </span>
+        </div>
+        <div className="flex w-full flex-col items-start gap-2 rounded-lg bg-card border border-border px-4 py-4">
+          <div className="flex items-center gap-1">
+            <span className="text-body-bold font-body-bold text-default-font">
+              {t("autonomous.topicDriven.researchTopic")}
+            </span>
+            <span className="text-body font-body text-error-500">*</span>
+          </div>
+          <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+            <TextArea.Input
+              placeholder={t("autonomous.topicDriven.researchTopicPlaceholder")}
+              value={researchTopic}
+              onChange={(e) => setResearchTopic(e.target.value)}
+            />
+          </TextArea>
+        </div>
+
+        <div className="flex w-full flex-wrap items-start gap-4">
+          <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
+            <div className="flex w-full items-center gap-2">
+              <FeatherGithub className="text-body font-body text-default-font" />
               <span className="text-body-bold font-body-bold text-default-font">
-                {t("autonomous.topicDriven.researchTopic")}
+                {t("autonomous.topicDriven.githubSettings")}
               </span>
-              <span className="text-body font-body text-error-500">*</span>
             </div>
-            <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
-              <TextArea.Input
-                placeholder={t("autonomous.topicDriven.researchTopicPlaceholder")}
-                value={researchTopic}
-                onChange={(e) => setResearchTopic(e.target.value)}
-              />
-            </TextArea>
+            <div className="flex w-full flex-wrap items-start gap-3">
+              <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
+                <div className="flex items-center gap-1">
+                  <span className="text-caption font-caption text-default-font">
+                    {t("autonomous.topicDriven.repository")}
+                  </span>
+                  <span className="text-caption font-caption text-error-500">*</span>
+                </div>
+                <TextField
+                  className="h-auto w-full flex-none"
+                  variant="outline"
+                  label=""
+                  helpText=""
+                >
+                  <TextField.Input
+                    placeholder="repository-name"
+                    value={repoName}
+                    onChange={(e) => setRepoName(e.target.value)}
+                  />
+                </TextField>
+              </div>
+              <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
+                <div className="flex items-center gap-1">
+                  <span className="text-caption font-caption text-default-font">
+                    {t("autonomous.topicDriven.branch")}
+                  </span>
+                  <span className="text-caption font-caption text-error-500">*</span>
+                </div>
+                <TextField
+                  className="h-auto w-full flex-none"
+                  variant="outline"
+                  label=""
+                  helpText=""
+                >
+                  <TextField.Input
+                    placeholder="main"
+                    value={branch}
+                    onChange={(e) => setBranch(e.target.value)}
+                  />
+                </TextField>
+              </div>
+            </div>
+            <div className="flex w-full items-center gap-3">
+              <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
+              <span className="text-body font-body text-default-font">
+                {t("autonomous.topicDriven.makePrivate")}
+              </span>
+            </div>
           </div>
 
-          <div className="flex w-full flex-wrap items-start gap-4">
-            <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
+          <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4">
+            {/* Runner Config */}
+            <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
               <div className="flex w-full items-center gap-2">
-                <FeatherGithub className="text-body font-body text-default-font" />
+                <FeatherPlay className="text-body font-body text-default-font" />
                 <span className="text-body-bold font-body-bold text-default-font">
-                  {t("autonomous.topicDriven.githubSettings")}
+                  GitHub Actions Runner
                 </span>
               </div>
-              <div className="flex w-full flex-wrap items-start gap-3">
-                <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                  <div className="flex items-center gap-1">
-                    <span className="text-caption font-caption text-default-font">
-                      {t("autonomous.topicDriven.repository")}
-                    </span>
-                    <span className="text-caption font-caption text-error-500">*</span>
-                  </div>
-                  <TextField
-                    className="h-auto w-full flex-none"
-                    variant="outline"
-                    label=""
-                    helpText=""
-                  >
-                    <TextField.Input
-                      placeholder="repository-name"
-                      value={repoName}
-                      onChange={(e) => setRepoName(e.target.value)}
-                    />
-                  </TextField>
-                </div>
-                <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                  <div className="flex items-center gap-1">
-                    <span className="text-caption font-caption text-default-font">
-                      {t("autonomous.topicDriven.branch")}
-                    </span>
-                    <span className="text-caption font-caption text-error-500">*</span>
-                  </div>
-                  <TextField
-                    className="h-auto w-full flex-none"
-                    variant="outline"
-                    label=""
-                    helpText=""
-                  >
-                    <TextField.Input
-                      placeholder="main"
-                      value={branch}
-                      onChange={(e) => setBranch(e.target.value)}
-                    />
-                  </TextField>
-                </div>
-              </div>
-              <div className="flex w-full items-center gap-3">
-                <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
-                <span className="text-body font-body text-default-font">
-                  {t("autonomous.topicDriven.makePrivate")}
-                </span>
-              </div>
+              <RunnerConfigForm
+                value={runnerConfig}
+                onChange={setRunnerConfig}
+                labels={{
+                  runnerType: t("autonomous.topicDriven.runnerType"),
+                  runnerTypeStatic: t("autonomous.topicDriven.runnerTypeStatic"),
+                  runnerTypeCloud: t("autonomous.topicDriven.runnerTypeCloud"),
+                  runnerLabel: t("autonomous.topicDriven.runnerLabel"),
+                  cloudProvider: t("autonomous.topicDriven.cloudProvider"),
+                  gpuInstanceType: t("autonomous.topicDriven.gpuInstanceType"),
+                  maxInstanceHours: t("autonomous.topicDriven.maxInstanceHours"),
+                }}
+              />
             </div>
 
-            <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4">
-              {/* Runner Config */}
-              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
-                <div className="flex w-full items-center gap-2">
-                  <FeatherPlay className="text-body font-body text-default-font" />
-                  <span className="text-body-bold font-body-bold text-default-font">
-                    GitHub Actions Runner
+            {/* Compute Environment */}
+            <Accordion
+              trigger={
+                <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
+                  <FeatherSettings className="text-body font-body text-default-font" />
+                  <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
+                    {t("autonomous.topicDriven.computeEnvironment")}
                   </span>
+                  <Accordion.Chevron />
                 </div>
-                <RunnerConfigForm
-                  value={runnerConfig}
-                  onChange={setRunnerConfig}
+              }
+              defaultOpen={false}
+            >
+              <div className="px-4 py-4">
+                <ComputeEnvironmentForm
+                  value={computeEnv}
+                  onChange={setComputeEnv}
                   labels={{
-                    runnerType: t("autonomous.topicDriven.runnerType"),
-                    runnerTypeStatic: t("autonomous.topicDriven.runnerTypeStatic"),
-                    runnerTypeCloud: t("autonomous.topicDriven.runnerTypeCloud"),
-                    runnerLabel: t("autonomous.topicDriven.runnerLabel"),
-                    cloudProvider: t("autonomous.topicDriven.cloudProvider"),
-                    gpuInstanceType: t("autonomous.topicDriven.gpuInstanceType"),
-                    maxInstanceHours: t("autonomous.topicDriven.maxInstanceHours"),
+                    cpuCores: t("autonomous.topicDriven.ceCpuCores"),
+                    gpuType: t("autonomous.topicDriven.ceGpuType"),
+                    gpuCount: t("autonomous.topicDriven.ceGpuCount"),
+                    storageType: t("autonomous.topicDriven.ceStorageType"),
+                    storageGb: t("autonomous.topicDriven.ceStorageGb"),
+                    description: t("autonomous.topicDriven.ceDescription"),
+                    descriptionPlaceholder: t("autonomous.topicDriven.ceDescriptionPlaceholder"),
                   }}
                 />
               </div>
+            </Accordion>
 
-              {/* Compute Environment */}
-              <Accordion
-                trigger={
-                  <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
-                    <FeatherSettings className="text-body font-body text-default-font" />
-                    <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
-                      {t("autonomous.topicDriven.computeEnvironment")}
-                    </span>
-                    <Accordion.Chevron />
+            {/* W&B */}
+            <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
+              <div className="flex w-full items-center gap-2">
+                <FeatherBarChart3 className="text-body font-body text-default-font" />
+                <span className="text-body-bold font-body-bold text-default-font">
+                  Weights &amp; Biases
+                </span>
+              </div>
+              <div className="flex w-full flex-wrap items-start gap-3">
+                <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-caption font-caption text-default-font">Entity</span>
+                    <span className="text-caption font-caption text-error-500">*</span>
                   </div>
-                }
-                defaultOpen={false}
+                  <TextField
+                    className="h-auto w-full flex-none"
+                    variant="outline"
+                    label=""
+                    helpText=""
+                  >
+                    <TextField.Input
+                      placeholder="team-name"
+                      value={wandbEntity}
+                      onChange={(e) => setWandbEntity(e.target.value)}
+                    />
+                  </TextField>
+                </div>
+                <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-caption font-caption text-default-font">Project</span>
+                    <span className="text-caption font-caption text-error-500">*</span>
+                  </div>
+                  <TextField
+                    className="h-auto w-full flex-none"
+                    variant="outline"
+                    label=""
+                    helpText=""
+                  >
+                    <TextField.Input
+                      placeholder="project-name"
+                      value={wandbProject}
+                      onChange={(e) => setWandbProject(e.target.value)}
+                    />
+                  </TextField>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Accordion
+          trigger={
+            <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
+              <FeatherSettings className="text-body font-body text-default-font" />
+              <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
+                {t("autonomous.topicDriven.advancedSettings")}
+              </span>
+              <Accordion.Chevron />
+            </div>
+          }
+          defaultOpen={false}
+        >
+          <div className="flex w-full grow shrink-0 basis-0 flex-col items-start gap-4 px-4 py-4">
+            <div className="flex w-full flex-wrap items-start gap-4">
+              <TextField
+                className="h-auto min-w-[144px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.topicDriven.numPaperSearchQueries")}
+                helpText=""
               >
-                <div className="px-4 py-4">
-                  <ComputeEnvironmentForm
-                    value={computeEnv}
-                    onChange={setComputeEnv}
-                    labels={{
-                      cpuCores: t("autonomous.topicDriven.ceCpuCores"),
-                      gpuType: t("autonomous.topicDriven.ceGpuType"),
-                      gpuCount: t("autonomous.topicDriven.ceGpuCount"),
-                      storageType: t("autonomous.topicDriven.ceStorageType"),
-                      storageGb: t("autonomous.topicDriven.ceStorageGb"),
-                      description: t("autonomous.topicDriven.ceDescription"),
-                      descriptionPlaceholder: t("autonomous.topicDriven.ceDescriptionPlaceholder"),
-                    }}
-                  />
-                </div>
-              </Accordion>
-
-              {/* W&B */}
-              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
-                <div className="flex w-full items-center gap-2">
-                  <FeatherBarChart3 className="text-body font-body text-default-font" />
-                  <span className="text-body-bold font-body-bold text-default-font">
-                    Weights &amp; Biases
-                  </span>
-                </div>
-                <div className="flex w-full flex-wrap items-start gap-3">
-                  <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                    <div className="flex items-center gap-1">
-                      <span className="text-caption font-caption text-default-font">Entity</span>
-                      <span className="text-caption font-caption text-error-500">*</span>
-                    </div>
-                    <TextField
-                      className="h-auto w-full flex-none"
-                      variant="outline"
-                      label=""
-                      helpText=""
-                    >
-                      <TextField.Input
-                        placeholder="team-name"
-                        value={wandbEntity}
-                        onChange={(e) => setWandbEntity(e.target.value)}
-                      />
-                    </TextField>
-                  </div>
-                  <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                    <div className="flex items-center gap-1">
-                      <span className="text-caption font-caption text-default-font">Project</span>
-                      <span className="text-caption font-caption text-error-500">*</span>
-                    </div>
-                    <TextField
-                      className="h-auto w-full flex-none"
-                      variant="outline"
-                      label=""
-                      helpText=""
-                    >
-                      <TextField.Input
-                        placeholder="project-name"
-                        value={wandbProject}
-                        onChange={(e) => setWandbProject(e.target.value)}
-                      />
-                    </TextField>
-                  </div>
-                </div>
-              </div>
+                <TextField.Input
+                  type="number"
+                  placeholder="2"
+                  value={numPaperSearchQueries}
+                  onChange={(e) => setNumPaperSearchQueries(e.target.value)}
+                />
+              </TextField>
+              <TextField
+                className="h-auto min-w-[144px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.topicDriven.papersPerQuery")}
+                helpText=""
+              >
+                <TextField.Input
+                  type="number"
+                  placeholder="2"
+                  value={papersPerQuery}
+                  onChange={(e) => setPapersPerQuery(e.target.value)}
+                />
+              </TextField>
+              <TextField
+                className="h-auto min-w-[144px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.topicDriven.hypothesisRefinementIterations")}
+                helpText=""
+              >
+                <TextField.Input
+                  type="number"
+                  placeholder="1"
+                  value={hypothesisRefinementIterations}
+                  onChange={(e) => setHypothesisRefinementIterations(e.target.value)}
+                />
+              </TextField>
+            </div>
+            <div className="flex w-full flex-wrap items-start gap-4">
+              <TextField
+                className="h-auto min-w-[144px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.topicDriven.numExperimentModels")}
+                helpText=""
+              >
+                <TextField.Input
+                  type="number"
+                  placeholder="1"
+                  value={numExperimentModels}
+                  onChange={(e) => setNumExperimentModels(e.target.value)}
+                />
+              </TextField>
+              <TextField
+                className="h-auto min-w-[144px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.topicDriven.numExperimentDatasets")}
+                helpText=""
+              >
+                <TextField.Input
+                  type="number"
+                  placeholder="1"
+                  value={numExperimentDatasets}
+                  onChange={(e) => setNumExperimentDatasets(e.target.value)}
+                />
+              </TextField>
+              <TextField
+                className="h-auto min-w-[144px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.topicDriven.numComparativeMethods")}
+                helpText=""
+              >
+                <TextField.Input
+                  type="number"
+                  placeholder="1"
+                  value={numComparativeMethods}
+                  onChange={(e) => setNumComparativeMethods(e.target.value)}
+                />
+              </TextField>
+            </div>
+            <div className="flex w-full flex-wrap items-start gap-4">
+              <TextField
+                className="h-auto min-w-[144px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.topicDriven.codeValidationIterations")}
+                helpText=""
+              >
+                <TextField.Input
+                  type="number"
+                  placeholder="4"
+                  value={experimentCodeValidationIterations}
+                  onChange={(e) => setExperimentCodeValidationIterations(e.target.value)}
+                />
+              </TextField>
+              <TextField
+                className="h-auto min-w-[144px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.topicDriven.paperRefinementIterations")}
+                helpText=""
+              >
+                <TextField.Input
+                  type="number"
+                  placeholder="2"
+                  value={paperContentRefinementIterations}
+                  onChange={(e) => setPaperContentRefinementIterations(e.target.value)}
+                />
+              </TextField>
+            </div>
+            <div className="flex w-full flex-wrap items-start gap-4">
+              <Select
+                className="h-auto min-w-[176px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.topicDriven.githubActionsAgent")}
+                placeholder={t("autonomous.topicDriven.selectPlaceholder")}
+                helpText=""
+                value={githubActionsAgent}
+                onValueChange={(val) =>
+                  setGithubActionsAgent(
+                    val as TopicOpenEndedResearchRequestBody.github_actions_agent | "",
+                  )
+                }
+              >
+                <Select.Item
+                  value={TopicOpenEndedResearchRequestBody.github_actions_agent.CLAUDE_CODE}
+                >
+                  Claude Code
+                </Select.Item>
+                <Select.Item
+                  value={TopicOpenEndedResearchRequestBody.github_actions_agent.OPEN_CODE}
+                >
+                  Open Code
+                </Select.Item>
+              </Select>
+              <Select
+                className="h-auto min-w-[176px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.topicDriven.latexTemplate")}
+                placeholder={t("autonomous.topicDriven.selectPlaceholder")}
+                helpText=""
+                value={latexTemplateName}
+                onValueChange={setLatexTemplateName}
+              >
+                <Select.Item value="mdpi">mdpi</Select.Item>
+                <Select.Item value="iclr2024">iclr2024</Select.Item>
+                <Select.Item value="agents4science_2025">agents4science_2025</Select.Item>
+              </Select>
             </div>
           </div>
+        </Accordion>
 
-          <Accordion
-            trigger={
-              <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
-                <FeatherSettings className="text-body font-body text-default-font" />
-                <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
-                  {t("autonomous.topicDriven.advancedSettings")}
-                </span>
-                <Accordion.Chevron />
-              </div>
-            }
-            defaultOpen={false}
-          >
-            <div className="flex w-full grow shrink-0 basis-0 flex-col items-start gap-4 px-4 py-4">
-              <div className="flex w-full flex-wrap items-start gap-4">
-                <TextField
-                  className="h-auto min-w-[144px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.topicDriven.numPaperSearchQueries")}
-                  helpText=""
-                >
-                  <TextField.Input
-                    type="number"
-                    placeholder="2"
-                    value={numPaperSearchQueries}
-                    onChange={(e) => setNumPaperSearchQueries(e.target.value)}
-                  />
-                </TextField>
-                <TextField
-                  className="h-auto min-w-[144px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.topicDriven.papersPerQuery")}
-                  helpText=""
-                >
-                  <TextField.Input
-                    type="number"
-                    placeholder="2"
-                    value={papersPerQuery}
-                    onChange={(e) => setPapersPerQuery(e.target.value)}
-                  />
-                </TextField>
-                <TextField
-                  className="h-auto min-w-[144px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.topicDriven.hypothesisRefinementIterations")}
-                  helpText=""
-                >
-                  <TextField.Input
-                    type="number"
-                    placeholder="1"
-                    value={hypothesisRefinementIterations}
-                    onChange={(e) => setHypothesisRefinementIterations(e.target.value)}
-                  />
-                </TextField>
-              </div>
-              <div className="flex w-full flex-wrap items-start gap-4">
-                <TextField
-                  className="h-auto min-w-[144px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.topicDriven.numExperimentModels")}
-                  helpText=""
-                >
-                  <TextField.Input
-                    type="number"
-                    placeholder="1"
-                    value={numExperimentModels}
-                    onChange={(e) => setNumExperimentModels(e.target.value)}
-                  />
-                </TextField>
-                <TextField
-                  className="h-auto min-w-[144px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.topicDriven.numExperimentDatasets")}
-                  helpText=""
-                >
-                  <TextField.Input
-                    type="number"
-                    placeholder="1"
-                    value={numExperimentDatasets}
-                    onChange={(e) => setNumExperimentDatasets(e.target.value)}
-                  />
-                </TextField>
-                <TextField
-                  className="h-auto min-w-[144px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.topicDriven.numComparativeMethods")}
-                  helpText=""
-                >
-                  <TextField.Input
-                    type="number"
-                    placeholder="1"
-                    value={numComparativeMethods}
-                    onChange={(e) => setNumComparativeMethods(e.target.value)}
-                  />
-                </TextField>
-              </div>
-              <div className="flex w-full flex-wrap items-start gap-4">
-                <TextField
-                  className="h-auto min-w-[144px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.topicDriven.codeValidationIterations")}
-                  helpText=""
-                >
-                  <TextField.Input
-                    type="number"
-                    placeholder="4"
-                    value={experimentCodeValidationIterations}
-                    onChange={(e) => setExperimentCodeValidationIterations(e.target.value)}
-                  />
-                </TextField>
-                <TextField
-                  className="h-auto min-w-[144px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.topicDriven.paperRefinementIterations")}
-                  helpText=""
-                >
-                  <TextField.Input
-                    type="number"
-                    placeholder="2"
-                    value={paperContentRefinementIterations}
-                    onChange={(e) => setPaperContentRefinementIterations(e.target.value)}
-                  />
-                </TextField>
-              </div>
-              <div className="flex w-full flex-wrap items-start gap-4">
-                <Select
-                  className="h-auto min-w-[176px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.topicDriven.githubActionsAgent")}
-                  placeholder={t("autonomous.topicDriven.selectPlaceholder")}
-                  helpText=""
-                  value={githubActionsAgent}
-                  onValueChange={(val) =>
-                    setGithubActionsAgent(
-                      val as TopicOpenEndedResearchRequestBody.github_actions_agent | "",
-                    )
-                  }
-                >
-                  <Select.Item
-                    value={TopicOpenEndedResearchRequestBody.github_actions_agent.CLAUDE_CODE}
-                  >
-                    Claude Code
-                  </Select.Item>
-                  <Select.Item
-                    value={TopicOpenEndedResearchRequestBody.github_actions_agent.OPEN_CODE}
-                  >
-                    Open Code
-                  </Select.Item>
-                </Select>
-                <Select
-                  className="h-auto min-w-[176px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.topicDriven.latexTemplate")}
-                  placeholder={t("autonomous.topicDriven.selectPlaceholder")}
-                  helpText=""
-                  value={latexTemplateName}
-                  onValueChange={setLatexTemplateName}
-                >
-                  <Select.Item value="mdpi">mdpi</Select.Item>
-                  <Select.Item value="iclr2024">iclr2024</Select.Item>
-                  <Select.Item value="agents4science_2025">agents4science_2025</Select.Item>
-                </Select>
-              </div>
+        <Accordion
+          trigger={
+            <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
+              <FeatherSettings className="text-body font-body text-default-font" />
+              <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
+                {t("autonomous.topicDriven.llmSettings")}
+              </span>
+              <Accordion.Chevron />
             </div>
-          </Accordion>
-
-          <Accordion
-            trigger={
-              <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
-                <FeatherSettings className="text-body font-body text-default-font" />
-                <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
-                  {t("autonomous.topicDriven.llmSettings")}
-                </span>
-                <Accordion.Chevron />
-              </div>
-            }
-            defaultOpen={false}
-          >
-            <div className="flex w-full grow shrink-0 basis-0 flex-col items-start gap-4 px-4 py-4">
-              <AllLLMConfig llmMapping={llmMapping} onChange={setLlmMapping} hideToggle />
-            </div>
-          </Accordion>
-
-          {error && (
-            <div className="flex w-full items-center rounded-md bg-error-50 px-4 py-3">
-              <span className="text-body font-body text-error-600">{error}</span>
-            </div>
-          )}
-
-          <div className="flex w-full items-center justify-end gap-3">
-            <Button variant="neutral-secondary" onClick={onBack}>
-              {t("autonomous.topicDriven.cancel")}
-            </Button>
-            <Button
-              className="disabled:bg-neutral-600 disabled:opacity-60 hover:disabled:bg-neutral-600 active:disabled:bg-neutral-600"
-              variant="brand-primary"
-              size="large"
-              icon={isRunning ? undefined : <FeatherPlay />}
-              loading={isRunning}
-              disabled={isRunning || !isFormValid}
-              onClick={handleRun}
-            >
-              {isRunning ? t("autonomous.topicDriven.running") : t("autonomous.topicDriven.run")}
-            </Button>
+          }
+          defaultOpen={false}
+        >
+          <div className="flex w-full grow shrink-0 basis-0 flex-col items-start gap-4 px-4 py-4">
+            <AllLLMConfig llmMapping={llmMapping} onChange={setLlmMapping} hideToggle />
           </div>
+        </Accordion>
+
+        {error && (
+          <div className="flex w-full items-center rounded-md bg-error-50 px-4 py-3">
+            <span className="text-body font-body text-error-600">{error}</span>
+          </div>
+        )}
+
+        <div className="flex w-full items-center justify-end gap-3">
+          <Button variant="neutral-secondary" onClick={onBack}>
+            {t("autonomous.topicDriven.cancel")}
+          </Button>
+          <Button
+            className="disabled:bg-neutral-600 disabled:opacity-60 hover:disabled:bg-neutral-600 active:disabled:bg-neutral-600"
+            variant="brand-primary"
+            size="large"
+            icon={isRunning ? undefined : <FeatherPlay />}
+            loading={isRunning}
+            disabled={isRunning || !isFormValid}
+            onClick={handleRun}
+          >
+            {isRunning ? t("autonomous.topicDriven.running") : t("autonomous.topicDriven.run")}
+          </Button>
         </div>
       </div>
     </div>

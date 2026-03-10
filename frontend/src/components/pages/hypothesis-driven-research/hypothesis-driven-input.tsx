@@ -190,500 +190,468 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
   ]);
 
   return (
-    <div className="flex h-full w-full flex-col items-start bg-default-background">
-      <div className="relative flex w-full items-center bg-default-background px-6 py-3 sticky top-0 z-10">
-        <button
-          type="button"
-          onClick={onBack}
-          className="rounded-md px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
-        >
-          {t("autonomous.hypothesisDriven.backToList")}
-        </button>
-        <span className="absolute left-1/2 -translate-x-1/2 text-body-bold font-body-bold text-default-font">
-          Hypothesis-Driven Research
-        </span>
-      </div>
-      <div className="flex w-full grow shrink-0 basis-0 flex-col items-center px-6 py-6 overflow-auto">
-        <div className="flex w-full max-w-[1024px] flex-col items-start gap-6">
-          <div className="flex w-full flex-col items-start gap-2 rounded-lg bg-card border border-border px-4 py-4">
-            <span className="text-body font-body text-subtext-color">
-              {t("autonomous.hypothesisDriven.researchTopic")}
-            </span>
-            <TextField className="h-auto w-full flex-none" variant="outline" label="" helpText="">
-              <TextField.Input
-                placeholder={t("autonomous.hypothesisDriven.researchTopicPlaceholder")}
-                value={researchTopic}
-                onChange={(e) => setResearchTopic(e.target.value)}
-              />
-            </TextField>
-          </div>
+    <div className="flex h-full w-full flex-col items-center bg-default-background px-6 py-6 overflow-auto">
+      <div className="flex w-full max-w-[1024px] flex-col items-start gap-6">
+        <div className="flex w-full items-center justify-between">
+          <button
+            type="button"
+            onClick={onBack}
+            className="rounded-md px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+          >
+            {t("autonomous.hypothesisDriven.backToList")}
+          </button>
+          <span className="text-body-bold font-body-bold text-default-font">
+            Hypothesis-Driven Research
+          </span>
+        </div>
+        <div className="flex w-full flex-col items-start gap-2 rounded-lg bg-card border border-border px-4 py-4">
+          <span className="text-body font-body text-subtext-color">
+            {t("autonomous.hypothesisDriven.researchTopic")}
+          </span>
+          <TextField className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+            <TextField.Input
+              placeholder={t("autonomous.hypothesisDriven.researchTopicPlaceholder")}
+              value={researchTopic}
+              onChange={(e) => setResearchTopic(e.target.value)}
+            />
+          </TextField>
+        </div>
 
-          <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
-            <div className="flex w-full items-center gap-2">
-              <FeatherLightbulb className="text-body font-body text-default-font" />
-              <span className="text-body-bold font-body-bold text-default-font">
-                {t("autonomous.hypothesisDriven.hypothesis")}
-              </span>
-            </div>
-            <div className="flex w-full flex-wrap items-start gap-4">
-              <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-caption font-caption text-default-font">
-                    {t("autonomous.hypothesisDriven.openProblems")}
-                  </span>
-                  <span className="text-caption font-caption text-error-500">*</span>
-                </div>
-                <TextArea
-                  className="h-auto w-full flex-none"
-                  variant="outline"
-                  label=""
-                  helpText=""
-                >
-                  <TextArea.Input
-                    placeholder="例: Existing models struggle with temporal reasoning in long videos"
-                    value={openProblems}
-                    onChange={(e) => setOpenProblems(e.target.value)}
-                  />
-                </TextArea>
-              </div>
-              <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-caption font-caption text-default-font">
-                    {t("autonomous.hypothesisDriven.proposedMethod")}
-                  </span>
-                  <span className="text-caption font-caption text-error-500">*</span>
-                </div>
-                <TextArea
-                  className="h-auto w-full flex-none"
-                  variant="outline"
-                  label=""
-                  helpText=""
-                >
-                  <TextArea.Input
-                    placeholder="例: A hierarchical attention mechanism that models temporal dependencies"
-                    value={method}
-                    onChange={(e) => setMethod(e.target.value)}
-                  />
-                </TextArea>
-              </div>
-            </div>
-            <div className="flex w-full flex-wrap items-start gap-4">
-              <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-caption font-caption text-default-font">
-                    {t("autonomous.hypothesisDriven.experimentalSetup")}
-                  </span>
-                  <span className="text-caption font-caption text-error-500">*</span>
-                </div>
-                <TextArea
-                  className="h-auto w-full flex-none"
-                  variant="outline"
-                  label=""
-                  helpText=""
-                >
-                  <TextArea.Input
-                    placeholder="例: Evaluate on ActivityNet-QA and EgoSchema benchmarks"
-                    value={experimentalSetup}
-                    onChange={(e) => setExperimentalSetup(e.target.value)}
-                  />
-                </TextArea>
-              </div>
-              <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-caption font-caption text-default-font">
-                    {t("autonomous.hypothesisDriven.primaryMetric")}
-                  </span>
-                  <span className="text-caption font-caption text-error-500">*</span>
-                </div>
-                <TextField
-                  className="h-auto w-full flex-none"
-                  variant="outline"
-                  label=""
-                  helpText=""
-                >
-                  <TextField.Input
-                    placeholder="例: Accuracy on ActivityNet-QA"
-                    value={primaryMetric}
-                    onChange={(e) => setPrimaryMetric(e.target.value)}
-                  />
-                </TextField>
-              </div>
-            </div>
-            <div className="flex w-full flex-wrap items-start gap-4">
-              <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-caption font-caption text-default-font">
-                    {t("autonomous.hypothesisDriven.experimentalCode")}
-                  </span>
-                  <span className="text-caption font-caption text-error-500">*</span>
-                </div>
-                <TextArea
-                  className="h-auto w-full flex-none"
-                  variant="outline"
-                  label=""
-                  helpText=""
-                >
-                  <TextArea.Input
-                    placeholder="例: PyTorch implementation using transformers library"
-                    value={experimentalCode}
-                    onChange={(e) => setExperimentalCode(e.target.value)}
-                  />
-                </TextArea>
-              </div>
-              <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-caption font-caption text-default-font">
-                    {t("autonomous.hypothesisDriven.expectedResult")}
-                  </span>
-                  <span className="text-caption font-caption text-error-500">*</span>
-                </div>
-                <TextArea
-                  className="h-auto w-full flex-none"
-                  variant="outline"
-                  label=""
-                  helpText=""
-                >
-                  <TextArea.Input
-                    placeholder="例: 5% accuracy improvement over baseline on ActivityNet-QA"
-                    value={expectedResult}
-                    onChange={(e) => setExpectedResult(e.target.value)}
-                  />
-                </TextArea>
-              </div>
-            </div>
-            <div className="flex w-full flex-col items-start gap-1">
+        <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
+          <div className="flex w-full items-center gap-2">
+            <FeatherLightbulb className="text-body font-body text-default-font" />
+            <span className="text-body-bold font-body-bold text-default-font">
+              {t("autonomous.hypothesisDriven.hypothesis")}
+            </span>
+          </div>
+          <div className="flex w-full flex-wrap items-start gap-4">
+            <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
               <div className="flex items-center gap-1">
                 <span className="text-caption font-caption text-default-font">
-                  {t("autonomous.hypothesisDriven.expectedConclusion")}
+                  {t("autonomous.hypothesisDriven.openProblems")}
                 </span>
                 <span className="text-caption font-caption text-error-500">*</span>
               </div>
               <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
                 <TextArea.Input
-                  placeholder="例: Hierarchical temporal attention significantly improves video QA"
-                  value={expectedConclusion}
-                  onChange={(e) => setExpectedConclusion(e.target.value)}
+                  placeholder="例: Existing models struggle with temporal reasoning in long videos"
+                  value={openProblems}
+                  onChange={(e) => setOpenProblems(e.target.value)}
+                />
+              </TextArea>
+            </div>
+            <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
+              <div className="flex items-center gap-1">
+                <span className="text-caption font-caption text-default-font">
+                  {t("autonomous.hypothesisDriven.proposedMethod")}
+                </span>
+                <span className="text-caption font-caption text-error-500">*</span>
+              </div>
+              <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                <TextArea.Input
+                  placeholder="例: A hierarchical attention mechanism that models temporal dependencies"
+                  value={method}
+                  onChange={(e) => setMethod(e.target.value)}
                 />
               </TextArea>
             </div>
           </div>
-
           <div className="flex w-full flex-wrap items-start gap-4">
-            <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
-              <div className="flex w-full items-center gap-2">
-                <FeatherGithub className="text-body font-body text-default-font" />
-                <span className="text-body-bold font-body-bold text-default-font">
-                  {t("autonomous.hypothesisDriven.githubSettings")}
+            <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
+              <div className="flex items-center gap-1">
+                <span className="text-caption font-caption text-default-font">
+                  {t("autonomous.hypothesisDriven.experimentalSetup")}
                 </span>
+                <span className="text-caption font-caption text-error-500">*</span>
               </div>
-              <div className="flex w-full flex-wrap items-start gap-3">
-                <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                  <div className="flex items-center gap-1">
-                    <span className="text-caption font-caption text-default-font">
-                      {t("autonomous.hypothesisDriven.repository")}
-                    </span>
-                    <span className="text-caption font-caption text-error-500">*</span>
-                  </div>
-                  <TextField
-                    className="h-auto w-full flex-none"
-                    variant="outline"
-                    label=""
-                    helpText=""
-                  >
-                    <TextField.Input
-                      placeholder="repository-name"
-                      value={repoName}
-                      onChange={(e) => setRepoName(e.target.value)}
-                    />
-                  </TextField>
-                </div>
-                <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                  <div className="flex items-center gap-1">
-                    <span className="text-caption font-caption text-default-font">
-                      {t("autonomous.hypothesisDriven.branch")}
-                    </span>
-                    <span className="text-caption font-caption text-error-500">*</span>
-                  </div>
-                  <TextField
-                    className="h-auto w-full flex-none"
-                    variant="outline"
-                    label=""
-                    helpText=""
-                  >
-                    <TextField.Input
-                      placeholder="main"
-                      value={branch}
-                      onChange={(e) => setBranch(e.target.value)}
-                    />
-                  </TextField>
-                </div>
-              </div>
-              <div className="flex w-full items-center gap-3">
-                <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
-                <span className="text-body font-body text-default-font">
-                  {t("autonomous.hypothesisDriven.makePrivate")}
+              <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                <TextArea.Input
+                  placeholder="例: Evaluate on ActivityNet-QA and EgoSchema benchmarks"
+                  value={experimentalSetup}
+                  onChange={(e) => setExperimentalSetup(e.target.value)}
+                />
+              </TextArea>
+            </div>
+            <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
+              <div className="flex items-center gap-1">
+                <span className="text-caption font-caption text-default-font">
+                  {t("autonomous.hypothesisDriven.primaryMetric")}
                 </span>
+                <span className="text-caption font-caption text-error-500">*</span>
+              </div>
+              <TextField className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                <TextField.Input
+                  placeholder="例: Accuracy on ActivityNet-QA"
+                  value={primaryMetric}
+                  onChange={(e) => setPrimaryMetric(e.target.value)}
+                />
+              </TextField>
+            </div>
+          </div>
+          <div className="flex w-full flex-wrap items-start gap-4">
+            <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
+              <div className="flex items-center gap-1">
+                <span className="text-caption font-caption text-default-font">
+                  {t("autonomous.hypothesisDriven.experimentalCode")}
+                </span>
+                <span className="text-caption font-caption text-error-500">*</span>
+              </div>
+              <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                <TextArea.Input
+                  placeholder="例: PyTorch implementation using transformers library"
+                  value={experimentalCode}
+                  onChange={(e) => setExperimentalCode(e.target.value)}
+                />
+              </TextArea>
+            </div>
+            <div className="flex min-w-[280px] grow shrink-0 basis-0 flex-col items-start gap-1">
+              <div className="flex items-center gap-1">
+                <span className="text-caption font-caption text-default-font">
+                  {t("autonomous.hypothesisDriven.expectedResult")}
+                </span>
+                <span className="text-caption font-caption text-error-500">*</span>
+              </div>
+              <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+                <TextArea.Input
+                  placeholder="例: 5% accuracy improvement over baseline on ActivityNet-QA"
+                  value={expectedResult}
+                  onChange={(e) => setExpectedResult(e.target.value)}
+                />
+              </TextArea>
+            </div>
+          </div>
+          <div className="flex w-full flex-col items-start gap-1">
+            <div className="flex items-center gap-1">
+              <span className="text-caption font-caption text-default-font">
+                {t("autonomous.hypothesisDriven.expectedConclusion")}
+              </span>
+              <span className="text-caption font-caption text-error-500">*</span>
+            </div>
+            <TextArea className="h-auto w-full flex-none" variant="outline" label="" helpText="">
+              <TextArea.Input
+                placeholder="例: Hierarchical temporal attention significantly improves video QA"
+                value={expectedConclusion}
+                onChange={(e) => setExpectedConclusion(e.target.value)}
+              />
+            </TextArea>
+          </div>
+        </div>
+
+        <div className="flex w-full flex-wrap items-start gap-4">
+          <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
+            <div className="flex w-full items-center gap-2">
+              <FeatherGithub className="text-body font-body text-default-font" />
+              <span className="text-body-bold font-body-bold text-default-font">
+                {t("autonomous.hypothesisDriven.githubSettings")}
+              </span>
+            </div>
+            <div className="flex w-full flex-wrap items-start gap-3">
+              <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
+                <div className="flex items-center gap-1">
+                  <span className="text-caption font-caption text-default-font">
+                    {t("autonomous.hypothesisDriven.repository")}
+                  </span>
+                  <span className="text-caption font-caption text-error-500">*</span>
+                </div>
+                <TextField
+                  className="h-auto w-full flex-none"
+                  variant="outline"
+                  label=""
+                  helpText=""
+                >
+                  <TextField.Input
+                    placeholder="repository-name"
+                    value={repoName}
+                    onChange={(e) => setRepoName(e.target.value)}
+                  />
+                </TextField>
+              </div>
+              <div className="flex min-w-[112px] grow shrink-0 basis-0 flex-col items-start gap-1">
+                <div className="flex items-center gap-1">
+                  <span className="text-caption font-caption text-default-font">
+                    {t("autonomous.hypothesisDriven.branch")}
+                  </span>
+                  <span className="text-caption font-caption text-error-500">*</span>
+                </div>
+                <TextField
+                  className="h-auto w-full flex-none"
+                  variant="outline"
+                  label=""
+                  helpText=""
+                >
+                  <TextField.Input
+                    placeholder="main"
+                    value={branch}
+                    onChange={(e) => setBranch(e.target.value)}
+                  />
+                </TextField>
               </div>
             </div>
+            <div className="flex w-full items-center gap-3">
+              <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
+              <span className="text-body font-body text-default-font">
+                {t("autonomous.hypothesisDriven.makePrivate")}
+              </span>
+            </div>
+          </div>
 
-            <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4">
-              {/* Runner Config */}
-              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
-                <div className="flex w-full items-center gap-2">
-                  <FeatherPlay className="text-body font-body text-default-font" />
-                  <span className="text-body-bold font-body-bold text-default-font">
-                    GitHub Actions Runner
+          <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4">
+            {/* Runner Config */}
+            <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
+              <div className="flex w-full items-center gap-2">
+                <FeatherPlay className="text-body font-body text-default-font" />
+                <span className="text-body-bold font-body-bold text-default-font">
+                  GitHub Actions Runner
+                </span>
+              </div>
+              <RunnerConfigForm
+                value={runnerConfig}
+                onChange={setRunnerConfig}
+                labels={{
+                  runnerType: t("autonomous.hypothesisDriven.runnerType"),
+                  runnerTypeStatic: t("autonomous.hypothesisDriven.runnerTypeStatic"),
+                  runnerTypeCloud: t("autonomous.hypothesisDriven.runnerTypeCloud"),
+                  runnerLabel: t("autonomous.hypothesisDriven.runnerLabel"),
+                  cloudProvider: t("autonomous.hypothesisDriven.cloudProvider"),
+                  gpuInstanceType: t("autonomous.hypothesisDriven.gpuInstanceType"),
+                  maxInstanceHours: t("autonomous.hypothesisDriven.maxInstanceHours"),
+                }}
+              />
+            </div>
+
+            {/* Compute Environment */}
+            <Accordion
+              trigger={
+                <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
+                  <FeatherSettings className="text-body font-body text-default-font" />
+                  <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
+                    {t("autonomous.hypothesisDriven.computeEnvironment")}
                   </span>
+                  <Accordion.Chevron />
                 </div>
-                <RunnerConfigForm
-                  value={runnerConfig}
-                  onChange={setRunnerConfig}
+              }
+              defaultOpen={false}
+            >
+              <div className="px-4 py-4">
+                <ComputeEnvironmentForm
+                  value={computeEnv}
+                  onChange={setComputeEnv}
                   labels={{
-                    runnerType: t("autonomous.hypothesisDriven.runnerType"),
-                    runnerTypeStatic: t("autonomous.hypothesisDriven.runnerTypeStatic"),
-                    runnerTypeCloud: t("autonomous.hypothesisDriven.runnerTypeCloud"),
-                    runnerLabel: t("autonomous.hypothesisDriven.runnerLabel"),
-                    cloudProvider: t("autonomous.hypothesisDriven.cloudProvider"),
-                    gpuInstanceType: t("autonomous.hypothesisDriven.gpuInstanceType"),
-                    maxInstanceHours: t("autonomous.hypothesisDriven.maxInstanceHours"),
+                    cpuCores: t("autonomous.hypothesisDriven.ceCpuCores"),
+                    gpuType: t("autonomous.hypothesisDriven.ceGpuType"),
+                    gpuCount: t("autonomous.hypothesisDriven.ceGpuCount"),
+                    storageType: t("autonomous.hypothesisDriven.ceStorageType"),
+                    storageGb: t("autonomous.hypothesisDriven.ceStorageGb"),
+                    description: t("autonomous.hypothesisDriven.ceDescription"),
+                    descriptionPlaceholder: t(
+                      "autonomous.hypothesisDriven.ceDescriptionPlaceholder",
+                    ),
                   }}
                 />
               </div>
+            </Accordion>
 
-              {/* Compute Environment */}
-              <Accordion
-                trigger={
-                  <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
-                    <FeatherSettings className="text-body font-body text-default-font" />
-                    <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
-                      {t("autonomous.hypothesisDriven.computeEnvironment")}
-                    </span>
-                    <Accordion.Chevron />
+            {/* W&B */}
+            <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
+              <div className="flex w-full items-center gap-2">
+                <FeatherBarChart3 className="text-body font-body text-default-font" />
+                <span className="text-body-bold font-body-bold text-default-font">
+                  Weights &amp; Biases
+                </span>
+              </div>
+              <div className="flex w-full flex-wrap items-start gap-3">
+                <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-caption font-caption text-default-font">Entity</span>
+                    <span className="text-caption font-caption text-error-500">*</span>
                   </div>
+                  <TextField
+                    className="h-auto w-full flex-none"
+                    variant="outline"
+                    label=""
+                    helpText=""
+                  >
+                    <TextField.Input
+                      placeholder="team-name"
+                      value={wandbEntity}
+                      onChange={(e) => setWandbEntity(e.target.value)}
+                    />
+                  </TextField>
+                </div>
+                <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-caption font-caption text-default-font">Project</span>
+                    <span className="text-caption font-caption text-error-500">*</span>
+                  </div>
+                  <TextField
+                    className="h-auto w-full flex-none"
+                    variant="outline"
+                    label=""
+                    helpText=""
+                  >
+                    <TextField.Input
+                      placeholder="project-name"
+                      value={wandbProject}
+                      onChange={(e) => setWandbProject(e.target.value)}
+                    />
+                  </TextField>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Accordion
+          trigger={
+            <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
+              <FeatherSettings className="text-body font-body text-default-font" />
+              <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
+                {t("autonomous.hypothesisDriven.advancedSettings")}
+              </span>
+              <Accordion.Chevron />
+            </div>
+          }
+          defaultOpen={false}
+        >
+          <div className="flex w-full grow shrink-0 basis-0 flex-col items-start gap-4 px-4 py-4">
+            <div className="flex w-full flex-wrap items-start gap-4">
+              <Select
+                className="h-auto min-w-[176px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.hypothesisDriven.githubActionsAgent")}
+                placeholder={t("autonomous.hypothesisDriven.selectPlaceholder")}
+                helpText=""
+                value={githubActionsAgent}
+                onValueChange={(val) =>
+                  setGithubActionsAgent(
+                    val as HypothesisDrivenResearchRequestBody.github_actions_agent | "",
+                  )
                 }
-                defaultOpen={false}
               >
-                <div className="px-4 py-4">
-                  <ComputeEnvironmentForm
-                    value={computeEnv}
-                    onChange={setComputeEnv}
-                    labels={{
-                      cpuCores: t("autonomous.hypothesisDriven.ceCpuCores"),
-                      gpuType: t("autonomous.hypothesisDriven.ceGpuType"),
-                      gpuCount: t("autonomous.hypothesisDriven.ceGpuCount"),
-                      storageType: t("autonomous.hypothesisDriven.ceStorageType"),
-                      storageGb: t("autonomous.hypothesisDriven.ceStorageGb"),
-                      description: t("autonomous.hypothesisDriven.ceDescription"),
-                      descriptionPlaceholder: t(
-                        "autonomous.hypothesisDriven.ceDescriptionPlaceholder",
-                      ),
-                    }}
-                  />
-                </div>
-              </Accordion>
-
-              {/* W&B */}
-              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
-                <div className="flex w-full items-center gap-2">
-                  <FeatherBarChart3 className="text-body font-body text-default-font" />
-                  <span className="text-body-bold font-body-bold text-default-font">
-                    Weights &amp; Biases
-                  </span>
-                </div>
-                <div className="flex w-full flex-wrap items-start gap-3">
-                  <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                    <div className="flex items-center gap-1">
-                      <span className="text-caption font-caption text-default-font">Entity</span>
-                      <span className="text-caption font-caption text-error-500">*</span>
-                    </div>
-                    <TextField
-                      className="h-auto w-full flex-none"
-                      variant="outline"
-                      label=""
-                      helpText=""
-                    >
-                      <TextField.Input
-                        placeholder="team-name"
-                        value={wandbEntity}
-                        onChange={(e) => setWandbEntity(e.target.value)}
-                      />
-                    </TextField>
-                  </div>
-                  <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                    <div className="flex items-center gap-1">
-                      <span className="text-caption font-caption text-default-font">Project</span>
-                      <span className="text-caption font-caption text-error-500">*</span>
-                    </div>
-                    <TextField
-                      className="h-auto w-full flex-none"
-                      variant="outline"
-                      label=""
-                      helpText=""
-                    >
-                      <TextField.Input
-                        placeholder="project-name"
-                        value={wandbProject}
-                        onChange={(e) => setWandbProject(e.target.value)}
-                      />
-                    </TextField>
-                  </div>
-                </div>
-              </div>
+                <Select.Item
+                  value={HypothesisDrivenResearchRequestBody.github_actions_agent.CLAUDE_CODE}
+                >
+                  Claude Code
+                </Select.Item>
+                <Select.Item
+                  value={HypothesisDrivenResearchRequestBody.github_actions_agent.OPEN_CODE}
+                >
+                  Open Code
+                </Select.Item>
+              </Select>
+              <TextField
+                className="h-auto min-w-[144px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.hypothesisDriven.numExperimentModels")}
+                helpText=""
+              >
+                <TextField.Input
+                  type="number"
+                  placeholder="1"
+                  value={numExperimentModels}
+                  onChange={(e) => setNumExperimentModels(e.target.value)}
+                />
+              </TextField>
+            </div>
+            <div className="flex w-full flex-wrap items-start gap-4">
+              <TextField
+                className="h-auto min-w-[144px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.hypothesisDriven.numExperimentDatasets")}
+                helpText=""
+              >
+                <TextField.Input
+                  type="number"
+                  placeholder="1"
+                  value={numExperimentDatasets}
+                  onChange={(e) => setNumExperimentDatasets(e.target.value)}
+                />
+              </TextField>
+              <TextField
+                className="h-auto min-w-[144px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.hypothesisDriven.numComparativeMethods")}
+                helpText=""
+              >
+                <TextField.Input
+                  type="number"
+                  placeholder="1"
+                  value={numComparativeMethods}
+                  onChange={(e) => setNumComparativeMethods(e.target.value)}
+                />
+              </TextField>
+            </div>
+            <div className="flex w-full flex-wrap items-start gap-4">
+              <TextField
+                className="h-auto min-w-[144px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.hypothesisDriven.paperRefinementIterations")}
+                helpText=""
+              >
+                <TextField.Input
+                  type="number"
+                  placeholder="2"
+                  value={paperContentRefinementIterations}
+                  onChange={(e) => setPaperContentRefinementIterations(e.target.value)}
+                />
+              </TextField>
+              <Select
+                className="h-auto min-w-[176px] grow shrink-0 basis-0"
+                variant="outline"
+                label={t("autonomous.hypothesisDriven.latexTemplate")}
+                placeholder={t("autonomous.hypothesisDriven.selectPlaceholder")}
+                helpText=""
+                value={latexTemplateName}
+                onValueChange={setLatexTemplateName}
+              >
+                <Select.Item value="mdpi">mdpi</Select.Item>
+                <Select.Item value="iclr2024">iclr2024</Select.Item>
+                <Select.Item value="agents4science_2025">agents4science_2025</Select.Item>
+              </Select>
             </div>
           </div>
+        </Accordion>
 
-          <Accordion
-            trigger={
-              <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
-                <FeatherSettings className="text-body font-body text-default-font" />
-                <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
-                  {t("autonomous.hypothesisDriven.advancedSettings")}
-                </span>
-                <Accordion.Chevron />
-              </div>
-            }
-            defaultOpen={false}
-          >
-            <div className="flex w-full grow shrink-0 basis-0 flex-col items-start gap-4 px-4 py-4">
-              <div className="flex w-full flex-wrap items-start gap-4">
-                <Select
-                  className="h-auto min-w-[176px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.hypothesisDriven.githubActionsAgent")}
-                  placeholder={t("autonomous.hypothesisDriven.selectPlaceholder")}
-                  helpText=""
-                  value={githubActionsAgent}
-                  onValueChange={(val) =>
-                    setGithubActionsAgent(
-                      val as HypothesisDrivenResearchRequestBody.github_actions_agent | "",
-                    )
-                  }
-                >
-                  <Select.Item
-                    value={HypothesisDrivenResearchRequestBody.github_actions_agent.CLAUDE_CODE}
-                  >
-                    Claude Code
-                  </Select.Item>
-                  <Select.Item
-                    value={HypothesisDrivenResearchRequestBody.github_actions_agent.OPEN_CODE}
-                  >
-                    Open Code
-                  </Select.Item>
-                </Select>
-                <TextField
-                  className="h-auto min-w-[144px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.hypothesisDriven.numExperimentModels")}
-                  helpText=""
-                >
-                  <TextField.Input
-                    type="number"
-                    placeholder="1"
-                    value={numExperimentModels}
-                    onChange={(e) => setNumExperimentModels(e.target.value)}
-                  />
-                </TextField>
-              </div>
-              <div className="flex w-full flex-wrap items-start gap-4">
-                <TextField
-                  className="h-auto min-w-[144px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.hypothesisDriven.numExperimentDatasets")}
-                  helpText=""
-                >
-                  <TextField.Input
-                    type="number"
-                    placeholder="1"
-                    value={numExperimentDatasets}
-                    onChange={(e) => setNumExperimentDatasets(e.target.value)}
-                  />
-                </TextField>
-                <TextField
-                  className="h-auto min-w-[144px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.hypothesisDriven.numComparativeMethods")}
-                  helpText=""
-                >
-                  <TextField.Input
-                    type="number"
-                    placeholder="1"
-                    value={numComparativeMethods}
-                    onChange={(e) => setNumComparativeMethods(e.target.value)}
-                  />
-                </TextField>
-              </div>
-              <div className="flex w-full flex-wrap items-start gap-4">
-                <TextField
-                  className="h-auto min-w-[144px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.hypothesisDriven.paperRefinementIterations")}
-                  helpText=""
-                >
-                  <TextField.Input
-                    type="number"
-                    placeholder="2"
-                    value={paperContentRefinementIterations}
-                    onChange={(e) => setPaperContentRefinementIterations(e.target.value)}
-                  />
-                </TextField>
-                <Select
-                  className="h-auto min-w-[176px] grow shrink-0 basis-0"
-                  variant="outline"
-                  label={t("autonomous.hypothesisDriven.latexTemplate")}
-                  placeholder={t("autonomous.hypothesisDriven.selectPlaceholder")}
-                  helpText=""
-                  value={latexTemplateName}
-                  onValueChange={setLatexTemplateName}
-                >
-                  <Select.Item value="mdpi">mdpi</Select.Item>
-                  <Select.Item value="iclr2024">iclr2024</Select.Item>
-                  <Select.Item value="agents4science_2025">agents4science_2025</Select.Item>
-                </Select>
-              </div>
+        <Accordion
+          trigger={
+            <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
+              <FeatherSettings className="text-body font-body text-default-font" />
+              <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
+                {t("autonomous.hypothesisDriven.llmSettings")}
+              </span>
+              <Accordion.Chevron />
             </div>
-          </Accordion>
-
-          <Accordion
-            trigger={
-              <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
-                <FeatherSettings className="text-body font-body text-default-font" />
-                <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
-                  {t("autonomous.hypothesisDriven.llmSettings")}
-                </span>
-                <Accordion.Chevron />
-              </div>
-            }
-            defaultOpen={false}
-          >
-            <div className="flex w-full grow shrink-0 basis-0 flex-col items-start gap-4 px-4 py-4">
-              <HypothesisAllLLMConfig llmMapping={llmMapping} onChange={setLlmMapping} hideToggle />
-            </div>
-          </Accordion>
-
-          {error && (
-            <div className="flex w-full items-center rounded-md bg-error-50 px-4 py-3">
-              <span className="text-body font-body text-error-600">{error}</span>
-            </div>
-          )}
-
-          <div className="flex w-full items-center justify-end gap-3">
-            <Button variant="neutral-secondary" onClick={onBack}>
-              {t("autonomous.hypothesisDriven.cancel")}
-            </Button>
-            <Button
-              className="disabled:bg-neutral-600 disabled:opacity-60 hover:disabled:bg-neutral-600 active:disabled:bg-neutral-600"
-              variant="brand-primary"
-              size="large"
-              icon={isRunning ? undefined : <FeatherPlay />}
-              loading={isRunning}
-              disabled={isRunning || !isFormValid}
-              onClick={handleRun}
-            >
-              {isRunning
-                ? t("autonomous.hypothesisDriven.running")
-                : t("autonomous.hypothesisDriven.run")}
-            </Button>
+          }
+          defaultOpen={false}
+        >
+          <div className="flex w-full grow shrink-0 basis-0 flex-col items-start gap-4 px-4 py-4">
+            <HypothesisAllLLMConfig llmMapping={llmMapping} onChange={setLlmMapping} hideToggle />
           </div>
+        </Accordion>
+
+        {error && (
+          <div className="flex w-full items-center rounded-md bg-error-50 px-4 py-3">
+            <span className="text-body font-body text-error-600">{error}</span>
+          </div>
+        )}
+
+        <div className="flex w-full items-center justify-end gap-3">
+          <Button variant="neutral-secondary" onClick={onBack}>
+            {t("autonomous.hypothesisDriven.cancel")}
+          </Button>
+          <Button
+            className="disabled:bg-neutral-600 disabled:opacity-60 hover:disabled:bg-neutral-600 active:disabled:bg-neutral-600"
+            variant="brand-primary"
+            size="large"
+            icon={isRunning ? undefined : <FeatherPlay />}
+            loading={isRunning}
+            disabled={isRunning || !isFormValid}
+            onClick={handleRun}
+          >
+            {isRunning
+              ? t("autonomous.hypothesisDriven.running")
+              : t("autonomous.hypothesisDriven.run")}
+          </Button>
         </div>
       </div>
     </div>
