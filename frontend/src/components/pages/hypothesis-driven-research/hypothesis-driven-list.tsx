@@ -88,9 +88,14 @@ export function HypothesisDrivenList({
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </TextField>
-          <Button variant="brand-primary" icon={<FeatherPlus />} onClick={onNavigateToInput}>
+          <button
+            type="button"
+            onClick={onNavigateToInput}
+            className="flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors cursor-pointer"
+          >
+            <FeatherPlus className="h-4 w-4" />
             {t("autonomous.hypothesisDriven.newSession")}
-          </Button>
+          </button>
         </div>
         <div className="flex w-full items-center gap-2 border-b border-solid border-neutral-border pb-3">
           <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
@@ -133,9 +138,14 @@ export function HypothesisDrivenList({
                   : t("autonomous.hypothesisDriven.noSessions")}
               </span>
               {!searchQuery.trim() && (
-                <Button variant="brand-primary" icon={<FeatherPlus />} onClick={onNavigateToInput}>
+                <button
+                  type="button"
+                  onClick={onNavigateToInput}
+                  className="flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors cursor-pointer"
+                >
+                  <FeatherPlus className="h-4 w-4" />
                   {t("autonomous.hypothesisDriven.firstSession")}
-                </Button>
+                </button>
               )}
             </div>
           )}
