@@ -10,7 +10,6 @@ import {
   FeatherFlaskConical,
   FeatherLoader,
   FeatherPlus,
-  FeatherSearch,
   FeatherX,
 } from "@subframe/core";
 import { useState } from "react";
@@ -19,7 +18,6 @@ import type { ResearchSection } from "@/types/research";
 import { Badge } from "@/ui/components/Badge";
 import { Button } from "@/ui/components/Button";
 import { DropdownMenu } from "@/ui/components/DropdownMenu";
-import { TextField } from "@/ui/components/TextField";
 
 type SortKey = "newest" | "oldest" | "title";
 
@@ -35,18 +33,13 @@ export function HypothesisDrivenList({
   onNavigateToInput,
 }: HypothesisDrivenListProps) {
   const { t, i18n } = useTranslation();
-  const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
 
-  const filtered = sessions
-    .filter((s) =>
-      searchQuery.trim() ? s.title.toLowerCase().includes(searchQuery.toLowerCase()) : true,
-    )
-    .sort((a, b) => {
-      if (sortKey === "newest") return b.createdAt.getTime() - a.createdAt.getTime();
-      if (sortKey === "oldest") return a.createdAt.getTime() - b.createdAt.getTime();
-      return a.title.localeCompare(b.title);
-    });
+  const filtered = sessions.sort((a, b) => {
+    if (sortKey === "newest") return b.createdAt.getTime() - a.createdAt.getTime();
+    if (sortKey === "oldest") return a.createdAt.getTime() - b.createdAt.getTime();
+    return a.title.localeCompare(b.title);
+  });
 
   const statusBadge = (status: ResearchSection["status"]) => {
     const cls = "text-[11px] py-0 px-1.5";
@@ -92,19 +85,6 @@ export function HypothesisDrivenList({
     <div className="flex h-full w-full flex-col items-center bg-default-background px-6 py-6 overflow-auto">
       <div className="flex w-full max-w-[768px] flex-col items-start gap-6">
         <div className="flex w-full items-center justify-between gap-3">
-          <TextField
-            className="h-auto grow shrink-0 basis-0"
-            variant="outline"
-            label=""
-            helpText=""
-            icon={<FeatherSearch />}
-          >
-            <TextField.Input
-              placeholder={t("autonomous.hypothesisDriven.searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </TextField>
           <button
             type="button"
             onClick={onNavigateToInput}
@@ -150,20 +130,16 @@ export function HypothesisDrivenList({
           {filtered.length === 0 && (
             <div className="flex w-full flex-col items-center gap-4 py-12">
               <span className="text-body font-body text-subtext-color">
-                {searchQuery.trim()
-                  ? t("autonomous.hypothesisDriven.noSearchResults")
-                  : t("autonomous.hypothesisDriven.noSessions")}
+                {t("autonomous.hypothesisDriven.noSessions")}
               </span>
-              {!searchQuery.trim() && (
-                <button
-                  type="button"
-                  onClick={onNavigateToInput}
-                  className="flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors cursor-pointer"
-                >
-                  <FeatherPlus className="h-4 w-4" />
-                  {t("autonomous.hypothesisDriven.firstSession")}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={onNavigateToInput}
+                className="flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors cursor-pointer"
+              >
+                <FeatherPlus className="h-4 w-4" />
+                {t("autonomous.hypothesisDriven.firstSession")}
+              </button>
             </div>
           )}
           {filtered.map((session) => (
