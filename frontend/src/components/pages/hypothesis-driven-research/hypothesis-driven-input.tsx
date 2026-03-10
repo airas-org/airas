@@ -205,7 +205,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
       </div>
       <div className="flex w-full grow shrink-0 basis-0 flex-col items-center px-6 py-6 overflow-auto">
         <div className="flex w-full max-w-[1024px] flex-col items-start gap-6">
-          <div className="flex w-full flex-col items-start gap-2">
+          <div className="flex w-full flex-col items-start gap-2 rounded-lg bg-neutral-900 px-4 py-4">
             <span className="text-body font-body text-subtext-color">
               {t("autonomous.hypothesisDriven.researchTopic")}
             </span>
