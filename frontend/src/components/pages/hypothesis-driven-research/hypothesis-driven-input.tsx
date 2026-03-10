@@ -1,6 +1,7 @@
 import {
   FeatherBarChart3,
   FeatherGithub,
+  FeatherLayoutList,
   FeatherLightbulb,
   FeatherPlay,
   FeatherSettings,
@@ -195,8 +196,9 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
         <button
           type="button"
           onClick={onBack}
-          className="rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
         >
+          <FeatherLayoutList className="h-4 w-4" />
           {t("autonomous.hypothesisDriven.backToList")}
         </button>
       </div>

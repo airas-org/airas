@@ -1,3 +1,4 @@
+import { FeatherLayoutList } from "@subframe/core";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
@@ -184,8 +185,9 @@ export function MainContent({
                 <button
                   type="button"
                   onClick={() => navigate("/verification")}
-                  className="rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
                 >
+                  <FeatherLayoutList className="h-4 w-4" />
                   {t("nav.verificationList")}
                 </button>
               </div>

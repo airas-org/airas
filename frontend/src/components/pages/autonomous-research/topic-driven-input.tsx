@@ -1,4 +1,10 @@
-import { FeatherBarChart3, FeatherGithub, FeatherPlay, FeatherSettings } from "@subframe/core";
+import {
+  FeatherBarChart3,
+  FeatherGithub,
+  FeatherLayoutList,
+  FeatherPlay,
+  FeatherSettings,
+} from "@subframe/core";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -158,8 +164,9 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
         <button
           type="button"
           onClick={onBack}
-          className="rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
         >
+          <FeatherLayoutList className="h-4 w-4" />
           {t("autonomous.topicDriven.backToList")}
         </button>
       </div>
