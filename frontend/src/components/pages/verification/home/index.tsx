@@ -115,18 +115,18 @@ export function VerificationHomePage({
   return (
     <div className="flex-1 overflow-y-auto overflow-x-clip min-w-0">
       <div className="max-w-full mx-auto px-6 py-6">
-        <div className="flex items-end justify-between gap-4">
-          <p className="text-caption font-caption text-subtext-color">
-            {t("verification.home.projects", { count: verifications.length })}
-          </p>
+        <div className="flex items-center justify-between gap-4">
           <button
             type="button"
             onClick={onCreateNew}
-            className="flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
           >
             <FeatherPlus className="h-4 w-4" />
             {t("verification.home.newVerification")}
           </button>
+          <p className="text-caption font-caption text-subtext-color">
+            {t("verification.home.projects", { count: verifications.length })}
+          </p>
         </div>
 
         <div className="mt-6 flex gap-2 items-start overflow-x-auto">
