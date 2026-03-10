@@ -205,7 +205,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
       </div>
       <div className="flex w-full grow shrink-0 basis-0 flex-col items-center px-6 py-6 overflow-auto">
         <div className="flex w-full max-w-[1024px] flex-col items-start gap-6">
-          <div className="flex w-full flex-col items-start gap-2 rounded-lg bg-neutral-100 border border-neutral-200 px-4 py-4">
+          <div className="flex w-full flex-col items-start gap-2 rounded-lg bg-card border border-border px-4 py-4">
             <span className="text-body font-body text-subtext-color">
               {t("autonomous.hypothesisDriven.researchTopic")}
             </span>
@@ -218,7 +218,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
             </TextField>
           </div>
 
-          <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-100 border border-neutral-200 px-4 py-4">
+          <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
             <div className="flex w-full items-center gap-2">
               <FeatherLightbulb className="text-body font-body text-default-font" />
               <span className="text-body-bold font-body-bold text-default-font">
@@ -369,7 +369,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
           </div>
 
           <div className="flex w-full flex-wrap items-start gap-4">
-            <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-neutral-100 border border-neutral-200 px-4 py-4">
+            <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
               <div className="flex w-full items-center gap-2">
                 <FeatherGithub className="text-body font-body text-default-font" />
                 <span className="text-body-bold font-body-bold text-default-font">
@@ -428,7 +428,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
 
             <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4">
               {/* Runner Config */}
-              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-100 border border-neutral-200 px-4 py-4">
+              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
                 <div className="flex w-full items-center gap-2">
                   <FeatherPlay className="text-body font-body text-default-font" />
                   <span className="text-body-bold font-body-bold text-default-font">
@@ -453,7 +453,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
               {/* Compute Environment */}
               <Accordion
                 trigger={
-                  <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-100 border border-neutral-200 px-4 py-3">
+                  <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
                     <FeatherSettings className="text-body font-body text-default-font" />
                     <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
                       {t("autonomous.hypothesisDriven.computeEnvironment")}
@@ -483,7 +483,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
               </Accordion>
 
               {/* W&B */}
-              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-100 border border-neutral-200 px-4 py-4">
+              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
                 <div className="flex w-full items-center gap-2">
                   <FeatherBarChart3 className="text-body font-body text-default-font" />
                   <span className="text-body-bold font-body-bold text-default-font">
@@ -534,7 +534,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
 
           <Accordion
             trigger={
-              <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-100 border border-neutral-200 px-4 py-3">
+              <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
                 <FeatherSettings className="text-body font-body text-default-font" />
                 <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
                   {t("autonomous.hypothesisDriven.advancedSettings")}
@@ -645,7 +645,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
 
           <Accordion
             trigger={
-              <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-100 border border-neutral-200 px-4 py-3">
+              <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
                 <FeatherSettings className="text-body font-body text-default-font" />
                 <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
                   {t("autonomous.hypothesisDriven.llmSettings")}
