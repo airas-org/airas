@@ -613,6 +613,16 @@ export default function App() {
                 {t("nav.newVerification")}
               </SidebarWithSections.NavItem>
               <SidebarWithSections.NavItem
+                icon={<FeatherCode />}
+                selected={activeSection === "reproduction"}
+                onClick={() => {
+                  navigate("/reproduction");
+                  handleMobileNavClose();
+                }}
+              >
+                {t("nav.reproduction")}
+              </SidebarWithSections.NavItem>
+              <SidebarWithSections.NavItem
                 icon={<FeatherBeaker />}
                 selected={activeSection === "autonomous-research"}
                 className="cursor-default hover:bg-transparent active:bg-transparent"
@@ -654,16 +664,6 @@ export default function App() {
                   {t("nav.hypothesisDriven")}
                 </button>
               </div>
-              <SidebarWithSections.NavItem
-                icon={<FeatherCode />}
-                selected={activeSection === "reproduction"}
-                onClick={() => {
-                  navigate("/reproduction");
-                  handleMobileNavClose();
-                }}
-              >
-                {t("nav.reproduction")}
-              </SidebarWithSections.NavItem>
             </>
           )}
         </SidebarWithSections>
