@@ -1,4 +1,4 @@
-import { FeatherSearch } from "@subframe/core";
+import { FeatherPlus, FeatherSearch } from "@subframe/core";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Verification } from "../types";
@@ -9,6 +9,7 @@ interface VerificationHomePageProps {
   onSelectVerification: (id: string) => void;
   onDeleteVerification: (id: string) => void;
   onDuplicateVerification: (id: string) => void;
+  onCreateNew: () => void;
 }
 
 interface CategoryColumnProps {
@@ -86,6 +87,7 @@ export function VerificationHomePage({
   onSelectVerification,
   onDeleteVerification,
   onDuplicateVerification,
+  onCreateNew,
 }: VerificationHomePageProps) {
   const { t } = useTranslation();
   const categories: { key: CategoryKey; label: string }[] = [
@@ -142,6 +144,14 @@ export function VerificationHomePage({
                 className="w-full bg-transparent text-body font-body text-default-font outline-none placeholder:text-neutral-400"
               />
             </div>
+            <button
+              type="button"
+              onClick={onCreateNew}
+              className="flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors cursor-pointer"
+            >
+              <FeatherPlus className="h-4 w-4" />
+              {t("verification.home.newVerification")}
+            </button>
           </div>
         </div>
 

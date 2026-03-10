@@ -14,7 +14,6 @@ import {
   FeatherGlobe,
   FeatherKey,
   FeatherLink,
-  FeatherList,
   FeatherMessageSquare,
   FeatherPanelLeftClose,
   FeatherPanelLeftOpen,
@@ -603,23 +602,13 @@ export default function App() {
             <>
               <SidebarWithSections.NavItem
                 icon={<FeatherPlus />}
-                selected={activeSection === "verification"}
-                onClick={() => {
-                  navigate("/verification");
-                  handleMobileNavClose();
-                }}
-              >
-                {t("nav.newVerification")}
-              </SidebarWithSections.NavItem>
-              <SidebarWithSections.NavItem
-                icon={<FeatherList />}
-                selected={activeSection === "home"}
+                selected={activeSection === "home" || activeSection === "verification"}
                 onClick={() => {
                   navigate("/home");
                   handleMobileNavClose();
                 }}
               >
-                {t("nav.verificationList")}
+                {t("nav.newVerification")}
               </SidebarWithSections.NavItem>
               <SidebarWithSections.NavItem
                 icon={<FeatherBeaker />}

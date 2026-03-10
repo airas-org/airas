@@ -181,6 +181,7 @@ export function MainContent({
               onSelectVerification={(id) => navigate(`/verification/${id}`)}
               onDeleteVerification={onDeleteVerification}
               onDuplicateVerification={onDuplicateVerification}
+              onCreateNew={() => navigate("/verification")}
             />
           }
         />
