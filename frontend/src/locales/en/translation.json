@@ -175,7 +175,7 @@
         "paramName": "Name",
         "paramDescription": "Description",
         "otherParams": "Other parameters ({{count}})",
-        "experimentList": "Experiment List",
+        "experimentList": "Research List",
         "experimentResults": "Experiment Results"
       },
       "experimentDashboard": {
@@ -228,7 +228,7 @@
       "newSessionTitle": "New Research Session",
       "researchTopic": "Research Topic",
       "researchTopicPlaceholder": "e.g., Improving Video QA performance using Vision-Language Models",
-      "backToList": "Experiment List",
+      "backToList": "Research List",
       "cancel": "Cancel",
       "running": "Running...",
       "run": "Run Autonomous Research",
@@ -311,7 +311,7 @@
       "experimentalCode": "Experimental Code",
       "expectedResult": "Expected Result",
       "expectedConclusion": "Expected Conclusion",
-      "backToList": "Experiment List",
+      "backToList": "Research List",
       "cancel": "Cancel",
       "running": "Running...",
       "run": "Run Hypothesis-Driven Research",
