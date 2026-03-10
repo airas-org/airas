@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Check,
   Download,
@@ -155,6 +153,8 @@ export function PaperWritingSection({
     }
   };
 
+  const isEffectivelyConfirmed = isConfirmed || !!generatedPaper;
+
   const handleManualSave = async () => {
     if (!manualInput.title.trim() || !manualInput.abstract.trim()) return;
     const cleanedSections = manualInput.sections
@@ -169,10 +169,10 @@ export function PaperWritingSection({
     const generatedLatex = await generateLaTeX(paper);
     setLatex(generatedLatex);
     setIsEditing(false);
-    if (!isConfirmed && onStepExecuted) {
+    if (!isEffectivelyConfirmed && onStepExecuted) {
       onStepExecuted(paper);
       setIsConfirmed(true);
-    } else if (isConfirmed && onBranchCreated) {
+    } else if (isEffectivelyConfirmed && onBranchCreated) {
       onBranchCreated(paper);
     }
     if (onSave) {
@@ -220,10 +220,6 @@ export function PaperWritingSection({
   };
 
   const displayPaper = generatedPaper || previewPaper;
-
-  if (generatedPaper && !isConfirmed) {
-    setIsConfirmed(true);
-  }
 
   return (
     <Card className="p-6">
@@ -426,7 +422,7 @@ export function PaperWritingSection({
             </TabsContent>
           </Tabs>
 
-          {!isConfirmed && previewPaper && (
+          {!isEffectivelyConfirmed && previewPaper && (
             <Button
               onClick={handleConfirm}
               className="w-full bg-blue-700 hover:bg-blue-800 text-white"
@@ -436,7 +432,7 @@ export function PaperWritingSection({
             </Button>
           )}
 
-          {isConfirmed && (
+          {isEffectivelyConfirmed && (
             <div className="flex items-center justify-center gap-2 p-3 bg-muted rounded-lg">
               <Check className="w-5 h-5 text-blue-700" />
               <span className="text-sm text-muted-foreground">

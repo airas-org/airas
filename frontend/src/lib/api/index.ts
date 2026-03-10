@@ -17,6 +17,7 @@ export type { CodeGenerationGraphLLMMapping } from './models/CodeGenerationGraph
 export type { CompileLatexLLMMapping } from './models/CompileLatexLLMMapping';
 export { CompileLatexSubgraphRequestBody } from './models/CompileLatexSubgraphRequestBody';
 export type { CompileLatexSubgraphResponseBody } from './models/CompileLatexSubgraphResponseBody';
+export type { ComputeEnvironment } from './models/ComputeEnvironment';
 export type { DatasetConfig } from './models/DatasetConfig';
 export type { DispatchCodeGenerationLLMMapping } from './models/DispatchCodeGenerationLLMMapping';
 export { DispatchCodeGenerationRequestBody } from './models/DispatchCodeGenerationRequestBody';
@@ -37,6 +38,7 @@ export type { DispatchVisualizationRequestBody } from './models/DispatchVisualiz
 export type { DispatchVisualizationResponseBody } from './models/DispatchVisualizationResponseBody';
 export type { DownloadGithubActionsArtifactsRequestBody } from './models/DownloadGithubActionsArtifactsRequestBody';
 export type { DownloadGithubActionsArtifactsResponseBody } from './models/DownloadGithubActionsArtifactsResponseBody';
+export { EphemeralCloudRunnerConfig } from './models/EphemeralCloudRunnerConfig';
 export type { EvaluationMetric } from './models/EvaluationMetric';
 export type { ExperimentalAnalysis } from './models/ExperimentalAnalysis';
 export type { ExperimentalDesign_Input } from './models/ExperimentalDesign_Input';
@@ -118,13 +120,13 @@ export type { RetrieveModelsSubgraphResponseBody } from './models/RetrieveModels
 export type { RetrievePaperSubgraphLLMMapping } from './models/RetrievePaperSubgraphLLMMapping';
 export type { RetrievePaperSubgraphRequestBody } from './models/RetrievePaperSubgraphRequestBody';
 export type { RetrievePaperSubgraphResponseBody } from './models/RetrievePaperSubgraphResponseBody';
-export type { RunnerConfig } from './models/RunnerConfig';
 export type { SearchPaperTitlesFromQdrantLLMMapping } from './models/SearchPaperTitlesFromQdrantLLMMapping';
 export { SearchPaperTitlesRequestBody } from './models/SearchPaperTitlesRequestBody';
 export type { SearchPaperTitlesResponseBody } from './models/SearchPaperTitlesResponseBody';
 export type { SearchSpace } from './models/SearchSpace';
 export type { SetGithubActionsSecretsRequestBody } from './models/SetGithubActionsSecretsRequestBody';
 export type { SetGithubActionsSecretsResponseBody } from './models/SetGithubActionsSecretsResponseBody';
+export type { StaticRunnerConfig } from './models/StaticRunnerConfig';
 export { Status } from './models/Status';
 export { StepType } from './models/StepType';
 export type { TopicOpenEndedResearchListItemResponse } from './models/TopicOpenEndedResearchListItemResponse';

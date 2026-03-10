@@ -26,9 +26,7 @@ Content-Type: application/json
     }
 }
 
-###
-
-### Dispatch sanity check
+### Dispatch sanity check (static runner / self-hosted GPU)
 POST http://127.0.0.1:8000/airas/v1/experiments/sanity-checks/dispatch
 Content-Type: application/json
 
@@ -38,7 +36,32 @@ Content-Type: application/json
         "repository_name": "matsuzawa-2026-02-10",
         "branch_name": "main"
     },
-    "run_id": "proposed"
+    "run_id": "proposed",
+    "runner_config": {
+        "type": "static",
+        "runner_label": ["self-hosted", "gpu"]
+    }
+}
+
+###
+
+### Dispatch sanity check (ephemeral cloud runner / AWS)
+POST http://127.0.0.1:8000/airas/v1/experiments/sanity-checks/dispatch
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "matsuzawa-2026-02-10",
+        "branch_name": "main"
+    },
+    "run_id": "proposed",
+    "runner_config": {
+        "type": "ephemeral_cloud",
+        "cloud_provider": "aws",
+        "gpu_instance_type": "g4dn.xlarge",
+        "max_instance_hours": 120
+    }
 }
 
 ###
@@ -101,7 +124,7 @@ Content-Type: application/json
 
 ###
 
-### Dispatch main experiment
+### Dispatch main experiment (default: static runner / ubuntu-latest)
 POST http://127.0.0.1:8000/airas/v1/experiments/main-runs/dispatch
 Content-Type: application/json
 
@@ -112,6 +135,46 @@ Content-Type: application/json
         "branch_name": "main"
     },
     "run_id": "proposed"
+}
+
+###
+
+### Dispatch main experiment (static runner / self-hosted GPU)
+POST http://127.0.0.1:8000/airas/v1/experiments/main-runs/dispatch
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "matsuzawa-2026-02-10",
+        "branch_name": "main"
+    },
+    "run_id": "proposed",
+    "runner_config": {
+        "type": "static",
+        "runner_label": ["self-hosted", "gpu"]
+    }
+}
+
+###
+
+### Dispatch main experiment (ephemeral cloud runner / AWS)
+POST http://127.0.0.1:8000/airas/v1/experiments/main-runs/dispatch
+Content-Type: application/json
+
+{
+    "github_config": {
+        "github_owner": "auto-res2",
+        "repository_name": "matsuzawa-2026-02-10",
+        "branch_name": "main"
+    },
+    "run_id": "proposed",
+    "runner_config": {
+        "type": "ephemeral_cloud",
+        "cloud_provider": "aws",
+        "gpu_instance_type": "g4dn.xlarge",
+        "max_instance_hours": 120
+    }
 }
 
 ###

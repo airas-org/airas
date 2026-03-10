@@ -13,46 +13,49 @@ from airas.usecases.github.nodes.dispatch_workflow import dispatch_workflow
 setup_logging()
 logger = logging.getLogger(__name__)
 
-record_execution_time = lambda f: time_node("dispatch_main_experiment_subgraph")(f)  # noqa: E731
+
+def record_execution_time(f):
+    return time_node("dispatch_experiment_on_static_runner_subgraph")(f)  # noqa: E731
 
 
-class DispatchMainExperimentSubgraphInputState(TypedDict):
+class DispatchExperimentOnStaticRunnerSubgraphInputState(TypedDict):
     github_config: GitHubConfig
     run_id: str
 
 
-class DispatchMainExperimentSubgraphOutputState(ExecutionTimeState):
+class DispatchExperimentOnStaticRunnerSubgraphOutputState(ExecutionTimeState):
     dispatched: bool
 
 
-class DispatchMainExperimentSubgraphState(
-    DispatchMainExperimentSubgraphInputState,
-    DispatchMainExperimentSubgraphOutputState,
+class DispatchExperimentOnStaticRunnerSubgraphState(
+    DispatchExperimentOnStaticRunnerSubgraphInputState,
+    DispatchExperimentOnStaticRunnerSubgraphOutputState,
     total=False,
 ):
     pass
 
 
-class DispatchMainExperimentSubgraph:
+class DispatchExperimentOnStaticRunnerSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
+        workflow_file: str,
         runner_label: list[str] | None = None,
-        workflow_file: str = "run_main_experiment.yml",
     ):
         self.github_client = github_client
-        self.runner_label = runner_label or ["ubuntu-latest"]
         self.workflow_file = workflow_file
+        self.runner_label = runner_label or ["ubuntu-latest"]
 
     @record_execution_time
-    async def _dispatch_main_experiment(
-        self, state: DispatchMainExperimentSubgraphState
+    async def _dispatch_experiment_on_static_runner(
+        self, state: DispatchExperimentOnStaticRunnerSubgraphState
     ) -> dict[str, bool]:
         github_config = state["github_config"]
         run_id = state["run_id"]
 
         logger.info(
-            f"Dispatching main experiment for run_id={run_id} on branch '{github_config.branch_name}'"
+            f"Dispatching {self.workflow_file} for run_id={run_id} on branch '{github_config.branch_name}' "
+            f"with runner_label={self.runner_label}"
         )
 
         inputs = {
@@ -71,24 +74,27 @@ class DispatchMainExperimentSubgraph:
         )
 
         if success:
-            logger.info(f"Main experiment dispatch successful for run_id={run_id}")
+            logger.info(
+                f"Dispatch successful: {self.workflow_file} for run_id={run_id}"
+            )
         else:
-            logger.error(f"Main experiment dispatch failed for run_id={run_id}")
+            logger.error(f"Dispatch failed: {self.workflow_file} for run_id={run_id}")
 
         return {"dispatched": success}
 
     def build_graph(self):
         graph_builder = StateGraph(
-            DispatchMainExperimentSubgraphState,
-            input_schema=DispatchMainExperimentSubgraphInputState,
-            output_schema=DispatchMainExperimentSubgraphOutputState,
+            DispatchExperimentOnStaticRunnerSubgraphState,
+            input_schema=DispatchExperimentOnStaticRunnerSubgraphInputState,
+            output_schema=DispatchExperimentOnStaticRunnerSubgraphOutputState,
         )
 
         graph_builder.add_node(
-            "dispatch_main_experiment", self._dispatch_main_experiment
+            "dispatch_experiment_on_static_runner",
+            self._dispatch_experiment_on_static_runner,
         )
 
-        graph_builder.add_edge(START, "dispatch_main_experiment")
-        graph_builder.add_edge("dispatch_main_experiment", END)
+        graph_builder.add_edge(START, "dispatch_experiment_on_static_runner")
+        graph_builder.add_edge("dispatch_experiment_on_static_runner", END)
 
         return graph_builder.compile()
