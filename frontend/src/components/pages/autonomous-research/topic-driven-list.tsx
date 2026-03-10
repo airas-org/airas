@@ -93,7 +93,7 @@ export function TopicDrivenList({
           {t("autonomous.topicDriven.newSession")}
         </button>
       </div>
-      <div className="flex-1 overflow-auto flex flex-col items-center px-6 pb-6">
+      <div className="flex-1 overflow-auto px-6 pb-6">
         <div className="flex w-full max-w-[768px] flex-col items-start gap-6">
           <div className="flex w-full items-center gap-2 border-b border-solid border-neutral-border pb-3">
             <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">

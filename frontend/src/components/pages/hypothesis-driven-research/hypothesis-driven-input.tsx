@@ -200,7 +200,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
           {t("autonomous.hypothesisDriven.backToList")}
         </button>
       </div>
-      <div className="flex-1 overflow-auto flex flex-col items-center px-6 pb-6">
+      <div className="flex-1 overflow-auto px-6 pb-6">
         <div className="flex w-full max-w-[768px] flex-col items-start gap-6">
           <div className="flex w-full flex-col items-start gap-2 rounded-lg bg-card border border-border px-4 py-4">
             <span className="text-body font-body text-subtext-color">

@@ -163,7 +163,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
           {t("autonomous.topicDriven.backToList")}
         </button>
       </div>
-      <div className="flex-1 overflow-auto flex flex-col items-center px-6 pb-6">
+      <div className="flex-1 overflow-auto px-6 pb-6">
         <div className="flex w-full max-w-[768px] flex-col items-start gap-6">
           <div className="flex w-full flex-col items-start gap-2 rounded-lg bg-card border border-border px-4 py-4">
             <div className="flex items-center gap-1">
