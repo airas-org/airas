@@ -158,7 +158,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
         <button
           type="button"
           onClick={onBack}
-          className="rounded-md px-2 py-1 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+          className="rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
         >
           {t("autonomous.topicDriven.backToList")}
         </button>
