@@ -753,11 +753,6 @@
     "openOnGitHub": "GitHubで開く",
     "close": "閉じる"
   },
-  "autoResearchResult": {
-    "noProgress": "まだ表示できる進捗はありません。",
-    "evaluationMetric": "評価指標",
-    "baseline": "ベースライン"
-  },
   "reproduction": {
     "title": "再現実装",
     "comingSoon": "近日公開予定です"

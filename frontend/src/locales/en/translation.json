@@ -754,11 +754,6 @@
     "openOnGitHub": "Open on GitHub",
     "close": "Close"
   },
-  "autoResearchResult": {
-    "noProgress": "No progress to display yet.",
-    "evaluationMetric": "Metric",
-    "baseline": "Baseline"
-  },
   "reproduction": {
     "title": "Reproduction",
     "comingSoon": "Coming soon"
