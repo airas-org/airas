@@ -72,21 +72,8 @@ export function TopicDrivenList({
   };
 
   return (
-    <div className="flex h-full w-full flex-col items-center bg-default-background px-6 py-12 overflow-auto">
+    <div className="flex h-full w-full flex-col items-center bg-default-background px-6 py-6 overflow-auto">
       <div className="flex w-full max-w-[768px] flex-col items-start gap-6">
-        <div className="flex w-full flex-col items-center gap-4">
-          <img
-            className="h-12 flex-none object-contain"
-            src="https://res.cloudinary.com/subframe/image/upload/v1772095364/uploads/36719/yglokiomst2au6hj5g8o.png"
-            alt=""
-          />
-          <span className="text-heading-1 font-heading-1 text-default-font text-center">
-            {t("autonomous.topicDriven.listTitle")}
-          </span>
-          <span className="text-body font-body text-subtext-color text-center">
-            {t("autonomous.topicDriven.listSubtitle")}
-          </span>
-        </div>
         <div className="flex w-full items-center justify-between gap-3">
           <TextField
             className="h-auto grow shrink-0 basis-0"

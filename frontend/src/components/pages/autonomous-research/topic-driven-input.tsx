@@ -159,12 +159,10 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
 
   return (
     <div className="flex h-full w-full flex-col items-start bg-default-background">
-      <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-1 pb-2 sticky top-0 z-10 gap-1">
+      <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-4 pb-2 sticky top-0 z-10 gap-1">
         <div className="flex w-full items-center">
           <LinkButton variant="neutral" icon={<FeatherArrowLeft />} onClick={onBack}>
-            <span className="text-caption font-caption">
-              {t("autonomous.topicDriven.backToList")}
-            </span>
+            <span className="text-sm font-medium">{t("autonomous.topicDriven.backToList")}</span>
           </LinkButton>
         </div>
         <span className="text-body-bold font-body-bold text-default-font">
