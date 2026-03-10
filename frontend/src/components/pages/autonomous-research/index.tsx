@@ -30,6 +30,8 @@ export function AutonomousResearchPage({
   const [subView, setSubView] = useState<SubView>(section ? "detail" : "list");
   const onCreateSectionRef = useRef(onCreateSection);
   onCreateSectionRef.current = onCreateSection;
+  const onRefreshSessionsRef = useRef(onRefreshSessions);
+  onRefreshSessionsRef.current = onRefreshSessions;
 
   // サイドバーからクリック時は入力画面を表示
   useEffect(() => {
@@ -58,17 +60,14 @@ export function AutonomousResearchPage({
 
   useEffect(() => {
     if (subView === "list") {
-      void onRefreshSessions();
+      void onRefreshSessionsRef.current();
     }
-  }, [subView, onRefreshSessions]);
+  }, [subView]);
 
-  const handleResearchStarted = useCallback(
-    async (taskId: string) => {
-      await onRefreshSessions(taskId);
-      setSubView("list");
-    },
-    [onRefreshSessions],
-  );
+  const handleResearchStarted = useCallback(async (taskId: string) => {
+    await onRefreshSessionsRef.current(taskId);
+    setSubView("list");
+  }, []);
 
   if (subView === "input") {
     return <TopicDrivenInput onBack={handleBackToList} onResearchStarted={handleResearchStarted} />;
