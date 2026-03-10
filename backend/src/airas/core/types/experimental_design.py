@@ -79,12 +79,26 @@ class DatasetConfig(BaseModel):
     sample_data: Optional[dict] = None
 
 
+class ComputeEnvironment(BaseModel):
+    os: str | None = None
+    cpu_cores: int | None = None
+    ram_gb: int | None = None
+    gpu_type: str | None = None
+    gpu_count: int | None = None
+    gpu_memory_gb: int | None = None  # per GPU VRAM
+    storage_type: Literal["nvme", "ssd", "hdd"] | None = None
+    storage_gb: int | None = None
+    python_version: str | None = None
+    cuda_version: str | None = None
+    description: str | None = None
+
+
 class ExperimentalDesign(BaseModel):
     experiment_summary: Optional[str] = Field(
         None,
         description="Overall experimental design including task definition, data handling approach, and implementation details",
     )
-    runner_config: Optional[RunnerConfig] = Field(
+    compute_environment: Optional[ComputeEnvironment] = Field(
         None, description="Computational environment specification"
     )
     evaluation_metrics: Optional[list[EvaluationMetric]] = Field(
@@ -102,20 +116,6 @@ class ExperimentalDesign(BaseModel):
     )
     comparative_methods: Optional[list[MethodConfig]] = Field(
         None, description="Configurations for baseline/comparative methods"
-    )
-
-
-class RunnerConfig(BaseModel):
-    # TODO: Split RunnerConfig into two separate concerns:
-    # 1. Machine specs (description: str) for ExperimentalDesign generation
-    # 2. GitHub Actions runner labels (list[str]) passed directly to trial/full execution
-    runner_label: list[str] = Field(
-        ...,
-        description="Runner labels used by GitHub Actions (e.g., ['ubuntu-latest'] or ['self-hosted', 'gpu-runner'])",
-    )
-    description: str = Field(
-        ...,
-        description="Machine specifications and environment details for LLM to design appropriate experiments",
     )
 
 

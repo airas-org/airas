@@ -22,7 +22,8 @@
     "help": "Help",
     "docs": "Documentation",
     "legal": "Terms of Use",
-    "experimental": "Experimental"
+    "experimental": "Experimental",
+    "reproduction": "Reproduction"
   },
   "userMenu": {
     "developer": "Developer",
@@ -88,10 +89,27 @@
       }
     }
   },
+  "receipts": {
+    "title": "Receipts / Invoices",
+    "subtitle": "View past receipts and invoices.",
+    "empty": "No receipts or invoices yet."
+  },
+  "usage": {
+    "title": "Usage",
+    "apiStatus": "API Usage Status",
+    "monthlyUsage": "This month's API usage",
+    "percentUsed": "{{percent}}% used"
+  },
+  "sessionDropdown": {
+    "pastSessions": "Past Sessions",
+    "noSessions": "No past sessions"
+  },
   "verification": {
     "home": {
       "title": "Verifications",
       "newVerification": "New Verification",
+      "duplicate": "Duplicate",
+      "delete": "Delete",
       "noVerifications": "No verifications found",
       "noVerificationsDesc": "Create your first verification using the New Verification button",
       "projects_one": "{{count}} project",
@@ -174,7 +192,7 @@
         "paramName": "Name",
         "paramDescription": "Description",
         "otherParams": "Other parameters ({{count}})",
-        "experimentList": "Experiment List",
+        "experimentList": "Research List",
         "experimentResults": "Experiment Results"
       },
       "experimentDashboard": {
@@ -213,9 +231,10 @@
       "listSubtitle": "View the history of your past autonomous research sessions",
       "inputPlaceholder": "Enter your research topic",
       "start": "Start Research",
-      "newSession": "Start New Research",
-      "firstSession": "Start First Research",
+      "newSession": "New Research",
+      "firstSession": "New Research",
       "noSessions": "No research sessions yet",
+      "emptyStateTitle": "Start New Research",
       "searchPlaceholder": "Search sessions...",
       "sessionCount": "{{count}} sessions",
       "sort": "Sort",
@@ -226,7 +245,7 @@
       "newSessionTitle": "New Research Session",
       "researchTopic": "Research Topic",
       "researchTopicPlaceholder": "e.g., Improving Video QA performance using Vision-Language Models",
-      "backToList": "Back to list",
+      "backToList": "Research List",
       "cancel": "Cancel",
       "running": "Running...",
       "run": "Run Autonomous Research",
@@ -237,8 +256,21 @@
       "repository": "Repository",
       "branch": "Branch",
       "makePrivate": "Make repository private",
+      "runnerType": "Type",
+      "runnerTypeStatic": "Self-hosted / GitHub-hosted",
+      "runnerTypeCloud": "Cloud (On-demand)",
       "runnerLabel": "Label",
-      "runnerDescription": "Description",
+      "cloudProvider": "Cloud Provider",
+      "gpuInstanceType": "Instance Type",
+      "maxInstanceHours": "Max Hours",
+      "computeEnvironment": "Compute Environment",
+      "ceCpuCores": "CPU Cores",
+      "ceGpuType": "GPU Type",
+      "ceGpuCount": "GPU Count",
+      "ceStorageType": "Storage Type",
+      "ceStorageGb": "Storage (GB)",
+      "ceDescription": "Notes",
+      "ceDescriptionPlaceholder": "Additional environment info (network bandwidth, special dependencies, etc.)",
       "numPaperSearchQueries": "Paper search queries",
       "papersPerQuery": "Papers per query",
       "hypothesisRefinementIterations": "Hypothesis refinement iterations",
@@ -256,7 +288,7 @@
       "fetchLatest": "Fetch latest",
       "saving": "Saving...",
       "save": "Save",
-      "noProgress": "No progress to display yet.",
+      "noProgress": "Loading research results...",
       "researchHistory": "Research History",
       "purpose": "Purpose",
       "paperUrl": "Paper URL",
@@ -274,9 +306,10 @@
       "listHeading": "Hypothesis-Driven Research Sessions",
       "inputPlaceholder": "Enter your hypothesis to verify",
       "start": "Start Verification",
-      "newSession": "Start New Research",
-      "firstSession": "Start First Research",
+      "newSession": "New Research",
+      "firstSession": "New Research",
       "noSessions": "No research sessions yet",
+      "emptyStateTitle": "Start New Research",
       "searchPlaceholder": "Search sessions...",
       "sessionCount": "{{count}} sessions",
       "sort": "Sort",
@@ -295,7 +328,7 @@
       "experimentalCode": "Experimental Code",
       "expectedResult": "Expected Result",
       "expectedConclusion": "Expected Conclusion",
-      "backToList": "Back to list",
+      "backToList": "Research List",
       "cancel": "Cancel",
       "running": "Running...",
       "run": "Run Hypothesis-Driven Research",
@@ -306,8 +339,21 @@
       "repository": "Repository",
       "branch": "Branch",
       "makePrivate": "Make repository private",
+      "runnerType": "Type",
+      "runnerTypeStatic": "Self-hosted / GitHub-hosted",
+      "runnerTypeCloud": "Cloud (On-demand)",
       "runnerLabel": "Label",
-      "runnerDescription": "Description",
+      "cloudProvider": "Cloud Provider",
+      "gpuInstanceType": "Instance Type",
+      "maxInstanceHours": "Max Hours",
+      "computeEnvironment": "Compute Environment",
+      "ceCpuCores": "CPU Cores",
+      "ceGpuType": "GPU Type",
+      "ceGpuCount": "GPU Count",
+      "ceStorageType": "Storage Type",
+      "ceStorageGb": "Storage (GB)",
+      "ceDescription": "Notes",
+      "ceDescriptionPlaceholder": "Additional environment info (network bandwidth, special dependencies, etc.)",
       "numExperimentModels": "Experiment models",
       "numExperimentDatasets": "Datasets",
       "numComparativeMethods": "Comparative methods",
@@ -321,7 +367,7 @@
       "fetchLatest": "Fetch latest",
       "saving": "Saving...",
       "save": "Save",
-      "noProgress": "No progress to display yet.",
+      "noProgress": "Loading research results...",
       "researchHistory": "Research History",
       "purpose": "Purpose",
       "paperUrl": "Paper URL",
@@ -513,6 +559,7 @@
     "bio": "Bio",
     "bioPlaceholder": "Enter your bio",
     "saved": "Saved",
+    "researcher": "Researcher",
     "apiUsage": "API Usage",
     "monthlyApiUsage": "This month's API usage",
     "usagePercent": "{{percent}}% used"
@@ -570,13 +617,53 @@
     "title": "Integration",
     "subtitle": "External service integration settings",
     "save": "Save",
-    "saved": "Saved"
+    "saved": "Saved",
+    "connectionTitle": "Connections",
+    "connectionSubtitle": "Connect with external services.",
+    "github": {
+      "connecting": "Connecting to GitHub...",
+      "success": "GitHub integration completed. Redirecting...",
+      "error": "GitHub integration failed.",
+      "backToPage": "Back to Integration page",
+      "connectError": "Failed to start GitHub connection",
+      "disconnectError": "Failed to disconnect GitHub",
+      "disconnect": "Disconnect",
+      "connect": "Connect",
+      "description": "Implementations are saved to a GitHub repository. Please connect your account.",
+      "connected": "Connected",
+      "changeAccount": "Change Account",
+      "privateRepo": "Create repositories as private",
+      "privateRepoDesc": "Newly created repositories will be set to private by default."
+    },
+    "slack": {
+      "name": "Slack (coming soon)",
+      "connect": "Connect",
+      "description": "Connect your Slack account to receive completion notifications."
+    }
   },
   "userPlan": {
     "title": "User Plan",
     "subtitle": "View and change your plan",
     "current": "Current Plan",
-    "upgrade": "Upgrade"
+    "upgrade": "Upgrade",
+    "planTitle": "Plan",
+    "planSubtitle": "Manage your subscription plans",
+    "currentPlan": "Current Plan",
+    "perMonth": "/month",
+    "processing": "Processing...",
+    "confirmDowngrade": "Are you sure you want to downgrade?",
+    "downgrade": "Downgrade",
+    "upgradeToPro": "Upgrade to Pro",
+    "downgradeFailed": "Downgrade failed. Please try again.",
+    "checkoutFailed": "Failed to start checkout. Please try again.",
+    "freeFeatures": ["Basic autonomous research", "Community support", "Standard LLM access"],
+    "proFeatures": [
+      "Everything in Free",
+      "Priority research execution",
+      "Advanced LLM models",
+      "Priority support",
+      "Custom integrations"
+    ]
   },
   "papers": {
     "title": "Papers",
@@ -725,10 +812,9 @@
     "openOnGitHub": "Open on GitHub",
     "close": "Close"
   },
-  "autoResearchResult": {
-    "noProgress": "No progress to display yet.",
-    "evaluationMetric": "Metric",
-    "baseline": "Baseline"
+  "reproduction": {
+    "title": "Reproduction",
+    "comingSoon": "Coming soon"
   },
   "common": {
     "loading": "Loading...",

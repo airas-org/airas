@@ -1,9 +1,12 @@
+import { FeatherLayoutList } from "@subframe/core";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
 import { NotificationsPage } from "@/components/pages/notifications";
 import { PapersPage } from "@/components/pages/papers";
+import { ReproductionPage } from "@/components/pages/reproduction";
 import { SettingsPage } from "@/components/pages/settings";
 import {
   type ProposedMethod,
@@ -11,6 +14,7 @@ import {
   VerificationDetailPage,
   VerificationHomePage,
 } from "@/components/pages/verification";
+import { ChatInput } from "@/components/pages/verification/detail/chat-input";
 import type {
   FeatureType,
   Paper,
@@ -50,6 +54,7 @@ interface MainContentProps {
   onDeleteVerification: (id: string) => void;
   onDuplicateVerification: (id: string) => void;
   onUpdateVerification: (id: string, updates: Partial<Verification>) => void;
+  onCreateWithQuery: (query: string) => void;
   onCreateWithMethod: (sourceVerification: Verification, method: ProposedMethod) => void;
   autonomousListViewKey: number;
 }
@@ -120,9 +125,11 @@ export function MainContent({
   onDeleteVerification,
   onDuplicateVerification,
   onUpdateVerification,
+  onCreateWithQuery,
   onCreateWithMethod,
   autonomousListViewKey,
 }: MainContentProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [selectedPapers, setSelectedPapers] = useState<Paper[]>([]);
 
@@ -169,15 +176,36 @@ export function MainContent({
   return (
     <div className="flex-1 flex min-w-0">
       <Routes>
-        <Route path="/" element={null} />
+        <Route path="/" element={<Navigate to="/home" replace />} />
         <Route
           path="/home"
+          element={
+            <div className="flex-1 flex flex-col">
+              <div className="flex-shrink-0 px-6 py-6">
+                <button
+                  type="button"
+                  onClick={() => navigate("/verification")}
+                  className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+                >
+                  <FeatherLayoutList className="h-4 w-4" />
+                  {t("nav.verificationList")}
+                </button>
+              </div>
+              <div className="flex-1 flex items-center justify-center pb-[20vh] p-6">
+                <ChatInput onSubmit={onCreateWithQuery} />
+              </div>
+            </div>
+          }
+        />
+        <Route
+          path="/verification"
           element={
             <VerificationHomePage
               verifications={verifications}
               onSelectVerification={(id) => navigate(`/verification/${id}`)}
               onDeleteVerification={onDeleteVerification}
               onDuplicateVerification={onDuplicateVerification}
+              onCreateNew={() => navigate("/home")}
             />
           }
         />
@@ -237,6 +265,7 @@ export function MainContent({
           element={<Navigate to="/autonomous-research/topic-driven" replace />}
         />
         <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/reproduction" element={<ReproductionPage />} />
         <Route path="/settings/:tab" element={<SettingsRoute />} />
         <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
         <Route path="*" element={<Navigate to="/home" replace />} />

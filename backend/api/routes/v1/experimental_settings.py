@@ -38,7 +38,7 @@ async def generate_experimental_design(
     result = (
         await GenerateExperimentalDesignSubgraph(
             langchain_client=langchain_client,
-            runner_config=request.runner_config,
+            compute_environment=request.compute_environment,
             num_models_to_use=request.num_models_to_use,
             num_datasets_to_use=request.num_datasets_to_use,
             num_comparative_methods=request.num_comparative_methods,

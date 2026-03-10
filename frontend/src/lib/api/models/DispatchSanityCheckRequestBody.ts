@@ -2,10 +2,12 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { EphemeralCloudRunnerConfig } from './EphemeralCloudRunnerConfig';
 import type { GitHubConfig } from './GitHubConfig';
+import type { StaticRunnerConfig } from './StaticRunnerConfig';
 export type DispatchSanityCheckRequestBody = {
     github_config: GitHubConfig;
     run_id: string;
-    runner_label?: (Array<string> | null);
+    runner_config?: (StaticRunnerConfig | EphemeralCloudRunnerConfig);
 };
 

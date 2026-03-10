@@ -1,16 +1,27 @@
-"use client";
-
 import {
-  FeatherArrowLeft,
   FeatherBarChart3,
   FeatherGithub,
+  FeatherLayoutList,
   FeatherLightbulb,
   FeatherPlay,
   FeatherSettings,
 } from "@subframe/core";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  ComputeEnvironmentForm,
+  type ComputeEnvironmentFormState,
+  defaultComputeEnvironmentFormState,
+  toComputeEnvironmentPayload,
+} from "@/components/features/compute-environment-form";
 import { HypothesisAllLLMConfig } from "@/components/features/llm-config";
+import {
+  defaultRunnerConfigFormState,
+  isRunnerConfigFormValid,
+  RunnerConfigForm,
+  type RunnerConfigFormState,
+  toRunnerConfigPayload,
+} from "@/components/features/runner-config-form";
 import {
   type HypothesisDrivenResearchLLMMapping,
   HypothesisDrivenResearchRequestBody,
@@ -18,7 +29,6 @@ import {
 } from "@/lib/api";
 import { Accordion } from "@/ui/components/Accordion";
 import { Button } from "@/ui/components/Button";
-import { LinkButton } from "@/ui/components/LinkButton";
 import { Select } from "@/ui/components/Select";
 import { Switch } from "@/ui/components/Switch";
 import { TextArea } from "@/ui/components/TextArea";
@@ -49,8 +59,14 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
   const [isPrivate, setIsPrivate] = useState(false);
 
   // Runner config
-  const [runnerLabels, setRunnerLabels] = useState("ubuntu-latest");
-  const [runnerDescription, setRunnerDescription] = useState("");
+  const [runnerConfig, setRunnerConfig] = useState<RunnerConfigFormState>(
+    defaultRunnerConfigFormState,
+  );
+
+  // Compute environment
+  const [computeEnv, setComputeEnv] = useState<ComputeEnvironmentFormState>(
+    defaultComputeEnvironmentFormState,
+  );
 
   // W&B config
   const [wandbEntity, setWandbEntity] = useState("");
@@ -72,32 +88,34 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isFormValid = [
-    openProblems,
-    method,
-    experimentalSetup,
-    primaryMetric,
-    experimentalCode,
-    expectedResult,
-    expectedConclusion,
-    repoName,
-    branch,
-    runnerLabels,
-    runnerDescription,
-    wandbEntity,
-    wandbProject,
-  ].every((v) => v.trim().length > 0);
+  const isFormValid =
+    [
+      openProblems,
+      method,
+      experimentalSetup,
+      primaryMetric,
+      experimentalCode,
+      expectedResult,
+      expectedConclusion,
+      repoName,
+      branch,
+      wandbEntity,
+      wandbProject,
+    ].every((v) => v.trim().length > 0) && isRunnerConfigFormValid(runnerConfig);
 
   const handleRun = useCallback(async () => {
     if (!isFormValid) return;
     setError(null);
     setIsRunning(true);
 
-    const toNumber = (value: string): number | undefined => {
+    const toInteger = (value: string): number | undefined => {
       if (value.trim() === "") return undefined;
       const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : undefined;
+      return Number.isInteger(parsed) ? parsed : undefined;
     };
+
+    const computeEnvironment = toComputeEnvironmentPayload(computeEnv);
+    const runnerConfigPayload = toRunnerConfigPayload(runnerConfig);
 
     const payload = {
       github_config: {
@@ -114,31 +132,28 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
         expected_conclusion: expectedConclusion,
       },
       research_topic: researchTopic.trim() || undefined,
-      runner_config: {
-        runner_label: runnerLabels
-          .split(",")
-          .map((l) => l.trim())
-          .filter((l) => l.length > 0),
-        description: runnerDescription,
-      },
+      compute_environment: computeEnvironment,
+      runner_config: runnerConfigPayload,
       wandb_config: {
         entity: wandbEntity,
         project: wandbProject,
       },
       is_github_repo_private: isPrivate,
       github_actions_agent: githubActionsAgent || undefined,
-      num_experiment_models: toNumber(numExperimentModels),
-      num_experiment_datasets: toNumber(numExperimentDatasets),
-      num_comparison_methods: toNumber(numComparativeMethods),
-      paper_content_refinement_iterations: toNumber(paperContentRefinementIterations),
+      num_experiment_models: toInteger(numExperimentModels),
+      num_experiment_datasets: toInteger(numExperimentDatasets),
+      num_comparison_methods: toInteger(numComparativeMethods),
+      paper_content_refinement_iterations: toInteger(paperContentRefinementIterations),
       latex_template_name: latexTemplateName.trim() || undefined,
       llm_mapping: llmMapping,
     };
 
     try {
+      const githubSession = localStorage.getItem("github_session_token");
       const response =
         await HypothesisDrivenResearchService.executeHypothesisDrivenResearchAirasV1HypothesisDrivenResearchRunPost(
           payload,
+          githubSession,
         );
       onResearchStarted(response.task_id);
     } catch (err) {
@@ -160,8 +175,8 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
     repoName,
     branch,
     isPrivate,
-    runnerLabels,
-    runnerDescription,
+    runnerConfig,
+    computeEnv,
     wandbEntity,
     wandbProject,
     githubActionsAgent,
@@ -176,27 +191,20 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
   ]);
 
   return (
-    <div className="flex h-full w-full flex-col items-start bg-default-background">
-      <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-1 pb-2 sticky top-0 z-10 gap-1">
-        <div className="flex w-full items-center">
-          <LinkButton variant="neutral" icon={<FeatherArrowLeft />} onClick={onBack}>
-            <span className="text-caption font-caption">
-              {t("autonomous.hypothesisDriven.backToList")}
-            </span>
-          </LinkButton>
-        </div>
-        <span className="text-body-bold font-body-bold text-default-font">
-          Hypothesis-Driven Research
-        </span>
+    <div className="flex h-full w-full flex-col bg-default-background">
+      <div className="flex-shrink-0 px-6 py-6">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+        >
+          <FeatherLayoutList className="h-4 w-4" />
+          {t("autonomous.hypothesisDriven.backToList")}
+        </button>
       </div>
-      <div className="flex w-full grow shrink-0 basis-0 flex-col items-center px-6 py-6 overflow-auto">
-        <div className="flex w-full max-w-[1024px] flex-col items-start gap-6 rounded-xl border border-solid border-neutral-border bg-neutral-800 px-6 py-6 shadow-sm">
-          <span className="text-heading-2 font-heading-2 text-default-font">
-            {t("autonomous.hypothesisDriven.newSessionTitle")}
-          </span>
-          <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-neutral-border" />
-
-          <div className="flex w-full flex-col items-start gap-2">
+      <div className="flex-1 overflow-auto px-6 pb-6">
+        <div className="flex w-full max-w-[768px] flex-col items-start gap-6">
+          <div className="flex w-full flex-col items-start gap-2 rounded-lg bg-card border border-border px-4 py-4">
             <span className="text-body font-body text-subtext-color">
               {t("autonomous.hypothesisDriven.researchTopic")}
             </span>
@@ -209,7 +217,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
             </TextField>
           </div>
 
-          <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
+          <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
             <div className="flex w-full items-center gap-2">
               <FeatherLightbulb className="text-body font-body text-default-font" />
               <span className="text-body-bold font-body-bold text-default-font">
@@ -360,7 +368,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
           </div>
 
           <div className="flex w-full flex-wrap items-start gap-4">
-            <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
+            <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
               <div className="flex w-full items-center gap-2">
                 <FeatherGithub className="text-body font-body text-default-font" />
                 <span className="text-body-bold font-body-bold text-default-font">
@@ -418,58 +426,63 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
             </div>
 
             <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4">
-              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
+              {/* Runner Config */}
+              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
                 <div className="flex w-full items-center gap-2">
                   <FeatherPlay className="text-body font-body text-default-font" />
                   <span className="text-body-bold font-body-bold text-default-font">
                     GitHub Actions Runner
                   </span>
                 </div>
-                <div className="flex w-full flex-wrap items-start gap-3">
-                  <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                    <div className="flex items-center gap-1">
-                      <span className="text-caption font-caption text-default-font">
-                        {t("autonomous.hypothesisDriven.runnerLabel")}
-                      </span>
-                      <span className="text-caption font-caption text-error-500">*</span>
-                    </div>
-                    <TextField
-                      className="h-auto w-full flex-none"
-                      variant="outline"
-                      label=""
-                      helpText=""
-                    >
-                      <TextField.Input
-                        placeholder="ubuntu-latest, gpu-runner"
-                        value={runnerLabels}
-                        onChange={(e) => setRunnerLabels(e.target.value)}
-                      />
-                    </TextField>
-                  </div>
-                  <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                    <div className="flex items-center gap-1">
-                      <span className="text-caption font-caption text-default-font">
-                        {t("autonomous.hypothesisDriven.runnerDescription")}
-                      </span>
-                      <span className="text-caption font-caption text-error-500">*</span>
-                    </div>
-                    <TextField
-                      className="h-auto w-full flex-none"
-                      variant="outline"
-                      label=""
-                      helpText=""
-                    >
-                      <TextField.Input
-                        placeholder="A100 x1, 40GB VRAM"
-                        value={runnerDescription}
-                        onChange={(e) => setRunnerDescription(e.target.value)}
-                      />
-                    </TextField>
-                  </div>
-                </div>
+                <RunnerConfigForm
+                  value={runnerConfig}
+                  onChange={setRunnerConfig}
+                  labels={{
+                    runnerType: t("autonomous.hypothesisDriven.runnerType"),
+                    runnerTypeStatic: t("autonomous.hypothesisDriven.runnerTypeStatic"),
+                    runnerTypeCloud: t("autonomous.hypothesisDriven.runnerTypeCloud"),
+                    runnerLabel: t("autonomous.hypothesisDriven.runnerLabel"),
+                    cloudProvider: t("autonomous.hypothesisDriven.cloudProvider"),
+                    gpuInstanceType: t("autonomous.hypothesisDriven.gpuInstanceType"),
+                    maxInstanceHours: t("autonomous.hypothesisDriven.maxInstanceHours"),
+                  }}
+                />
               </div>
 
-              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
+              {/* Compute Environment */}
+              <Accordion
+                trigger={
+                  <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
+                    <FeatherSettings className="text-body font-body text-default-font" />
+                    <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
+                      {t("autonomous.hypothesisDriven.computeEnvironment")}
+                    </span>
+                    <Accordion.Chevron />
+                  </div>
+                }
+                defaultOpen={false}
+              >
+                <div className="px-4 py-4">
+                  <ComputeEnvironmentForm
+                    value={computeEnv}
+                    onChange={setComputeEnv}
+                    labels={{
+                      cpuCores: t("autonomous.hypothesisDriven.ceCpuCores"),
+                      gpuType: t("autonomous.hypothesisDriven.ceGpuType"),
+                      gpuCount: t("autonomous.hypothesisDriven.ceGpuCount"),
+                      storageType: t("autonomous.hypothesisDriven.ceStorageType"),
+                      storageGb: t("autonomous.hypothesisDriven.ceStorageGb"),
+                      description: t("autonomous.hypothesisDriven.ceDescription"),
+                      descriptionPlaceholder: t(
+                        "autonomous.hypothesisDriven.ceDescriptionPlaceholder",
+                      ),
+                    }}
+                  />
+                </div>
+              </Accordion>
+
+              {/* W&B */}
+              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
                 <div className="flex w-full items-center gap-2">
                   <FeatherBarChart3 className="text-body font-body text-default-font" />
                   <span className="text-body-bold font-body-bold text-default-font">
@@ -520,7 +533,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
 
           <Accordion
             trigger={
-              <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
+              <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
                 <FeatherSettings className="text-body font-body text-default-font" />
                 <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
                   {t("autonomous.hypothesisDriven.advancedSettings")}
@@ -631,7 +644,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
 
           <Accordion
             trigger={
-              <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
+              <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
                 <FeatherSettings className="text-body font-body text-default-font" />
                 <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
                   {t("autonomous.hypothesisDriven.llmSettings")}
@@ -652,7 +665,6 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
             </div>
           )}
 
-          <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-neutral-border" />
           <div className="flex w-full items-center justify-end gap-3">
             <Button variant="neutral-secondary" onClick={onBack}>
               {t("autonomous.hypothesisDriven.cancel")}

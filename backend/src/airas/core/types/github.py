@@ -4,13 +4,6 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-class GitHubConfigRequest(BaseModel):
-    """Request body schema for GitHub config (owner is resolved server-side)."""
-
-    repository_name: str = Field(..., description="Name of the repository")
-    branch_name: str = Field(..., description="Branch name")
-
-
 class GitHubConfig(BaseModel):
     github_owner: str = Field(..., description="GitHub owner of the repository")
     repository_name: str = Field(..., description="Name of the repository")

@@ -5,22 +5,22 @@ import * as SubframeCore from "@subframe/core";
 import {
   FeatherArrowLeft,
   FeatherBarChart2,
-  FeatherBeaker,
   FeatherBell,
   FeatherBookOpen,
+  FeatherBrainCircuit,
   FeatherCheck,
   FeatherCreditCard,
   FeatherExternalLink,
   FeatherGlobe,
   FeatherKey,
   FeatherLink,
-  FeatherList,
   FeatherMessageSquare,
   FeatherPanelLeftClose,
   FeatherPanelLeftOpen,
-  FeatherPlus,
   FeatherReceipt,
+  FeatherRefreshCw,
   FeatherSettings,
+  FeatherTarget,
   FeatherUser,
 } from "@subframe/core";
 import axios from "axios";
@@ -40,7 +40,6 @@ import {
   getAuthHeaders,
   useVerifications,
 } from "@/components/pages/verification/use-verifications";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isEnterpriseEnabled } from "@/ee/config";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { OpenAPI } from "@/lib/api";
@@ -137,6 +136,7 @@ function getActiveSection(pathname: string): string {
   if (pathname.startsWith("/settings")) return "settings";
   if (pathname.startsWith("/verification")) return "verification";
   if (pathname.startsWith("/notifications")) return "notifications";
+  if (pathname.startsWith("/reproduction")) return "reproduction";
   if (pathname.startsWith("/papers")) return "papers";
   return "home";
 }
@@ -188,7 +188,6 @@ export default function App() {
   // Verification
   const {
     verifications,
-    handleCreateVerification,
     handleUpdateVerification,
     handleDeleteVerification,
     handleDuplicateVerification,
@@ -214,45 +213,137 @@ export default function App() {
   const handleCreateWithMethod = useCallback(
     async (sourceVerification: Verification, method: ProposedMethod) => {
       const apiBase = OpenAPI.BASE;
-      const authHeaders = await getAuthHeaders();
-
       try {
-        // 1. POST /sessions to create a new session on the server
+        const authHeaders = await getAuthHeaders();
+
+        // 1. 新しいセッションを作成
         const createRes = await fetch(`${apiBase}/airas/v1/verification/sessions`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...authHeaders,
-          },
+          headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify({ title: method.title }),
         });
         if (!createRes.ok) return;
         const session = await createRes.json();
         const newId: string = session.id;
 
-        // Add to local state so detail page can find it
+        // 2. ローカル状態に追加し、初期データをセット（クエリ引き継ぎ、選択済みメソッドをセット）
+        // phase を "methods-proposed" にセットして hasQuery=true にし、ローディング画面を表示
         handleAddVerification(session);
-
-        // 2. PATCH with initial data
-        await handleUpdateVerification(newId, {
+        handleUpdateVerification(newId, {
           title: method.title,
           query: sourceVerification.query,
-          phase: "plan-generated",
           proposedMethods: [method],
           selectedMethodId: method.id,
-          plan: {
-            whatToVerify: method.whatToVerify,
-            method: method.method,
-          },
+          phase: "methods-proposed",
         });
 
-        // 3. Navigate
+        // 3. 新セッションに遷移（"Generating verification plan..." ローディングが表示される）
         navigate(`/verification/${newId}`);
+
+        // 4. generate-method API を呼び出す
+        const res = await fetch(`${apiBase}/airas/v1/verification/generate-method`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({
+            user_query: sourceVerification.query,
+            selected_policy: {
+              id: method.id,
+              title: method.title,
+              what_to_verify: method.whatToVerify,
+              method: method.method,
+              pros: method.pros,
+              cons: method.cons,
+            },
+            verification_id: newId,
+          }),
+        });
+        if (!res.ok) {
+          // 失敗時は selectedMethodId をクリアして再選択できる状態に戻す
+          handleUpdateVerification(newId, {
+            selectedMethodId: undefined,
+            phase: "methods-proposed",
+          });
+          return;
+        }
+        const data = await res.json();
+
+        // 5. 生成された検証方法でセッションを更新
+        handleUpdateVerification(newId, {
+          phase: "plan-generated",
+          verificationMethod: {
+            whatToVerify: data.what_to_verify,
+            experimentSettings: data.experiment_settings,
+            steps: data.steps,
+          },
+        });
       } catch {
         // ignore
       }
     },
-    [navigate, handleUpdateVerification, handleAddVerification],
+    [navigate, handleAddVerification, handleUpdateVerification],
+  );
+
+  const handleCreateWithQuery = useCallback(
+    async (query: string) => {
+      const apiBase = OpenAPI.BASE;
+      try {
+        const authHeaders = await getAuthHeaders();
+
+        const createRes = await fetch(`${apiBase}/airas/v1/verification/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({}),
+        });
+        if (!createRes.ok) return;
+        const session = await createRes.json();
+        const newId: string = session.id;
+
+        handleAddVerification(session);
+        handleUpdateVerification(newId, { query, phase: "proposing-policies" });
+        navigate(`/verification/${newId}`);
+
+        const res = await fetch(`${apiBase}/airas/v1/verification/propose-policies`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({ user_query: query, verification_id: newId }),
+        });
+        if (!res.ok) {
+          // 失敗時は phase を initial に戻してクエリ入力に復帰できる状態にする
+          handleUpdateVerification(newId, { phase: "initial" });
+          return;
+        }
+        const data = await res.json();
+        if (!data.feasible) {
+          // 非feasibleの場合も phase を initial に戻す
+          handleUpdateVerification(newId, { phase: "initial" });
+          return;
+        }
+
+        // propose-policies レスポンスを ProposedMethod[] に変換
+        // (VerificationDetailPage.handleChatSubmit と同じ変換ロジック)
+        const methods: ProposedMethod[] = data.proposed_methods.map(
+          (m: {
+            id: string;
+            title: string;
+            what_to_verify: string;
+            method: string;
+            pros?: string[];
+            cons?: string[];
+          }) => ({
+            id: m.id,
+            title: m.title,
+            whatToVerify: m.what_to_verify,
+            method: m.method,
+            pros: m.pros ?? [],
+            cons: m.cons ?? [],
+          }),
+        );
+        handleUpdateVerification(newId, { phase: "methods-proposed", proposedMethods: methods });
+      } catch {
+        // ignore
+      }
+    },
+    [navigate, handleAddVerification, handleUpdateVerification],
   );
 
   const handleSelectAutonomousSession = useCallback(
@@ -399,12 +490,11 @@ export default function App() {
       <aside
         className={cn(
           "fixed left-0 top-0 h-screen bg-default-background transition-[width] duration-200 ease-in-out overflow-hidden",
-          sidebarOpen ? "w-52" : "w-0",
+          sidebarOpen ? "w-60" : "w-0",
           isMobile ? "z-40" : "z-30",
         )}
       >
         <SidebarWithSections
-          className="min-w-[13rem]"
           header={
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-3">
@@ -420,17 +510,16 @@ export default function App() {
             </div>
           }
           footer={
-            <button
-              type="button"
-              className={cn(
-                "flex w-full items-center gap-2.5 rounded-md px-1 py-1 -mx-1 transition-colors cursor-pointer",
-                isSettingsView ? "text-brand-700" : "text-neutral-600 hover:bg-neutral-100",
-              )}
-              onClick={() => navigate("/settings/profile")}
-            >
-              <FeatherSettings className="h-4 w-4" />
-              <span className="text-sm font-medium">{t("nav.settings")}</span>
-            </button>
+            !isSettingsView ? (
+              <button
+                type="button"
+                className="flex w-full items-center gap-2.5 rounded-md px-1 py-1 -mx-1 transition-colors cursor-pointer text-neutral-600 hover:bg-neutral-100"
+                onClick={() => navigate("/settings/profile")}
+              >
+                <FeatherSettings className="h-4 w-4" />
+                <span className="text-sm font-medium">{t("nav.settings")}</span>
+              </button>
+            ) : undefined
           }
         >
           {isSettingsView ? (
@@ -532,27 +621,27 @@ export default function App() {
           ) : (
             <>
               <SidebarWithSections.NavItem
-                icon={<FeatherPlus />}
-                selected={activeSection === "verification"}
+                icon={<FeatherTarget />}
+                selected={activeSection === "home" || activeSection === "verification"}
                 onClick={() => {
-                  handleCreateVerification();
+                  navigate("/home");
                   handleMobileNavClose();
                 }}
               >
                 {t("nav.newVerification")}
               </SidebarWithSections.NavItem>
               <SidebarWithSections.NavItem
-                icon={<FeatherList />}
-                selected={activeSection === "home"}
+                icon={<FeatherRefreshCw />}
+                selected={activeSection === "reproduction"}
                 onClick={() => {
-                  navigate("/home");
+                  navigate("/reproduction");
                   handleMobileNavClose();
                 }}
               >
-                {t("nav.verificationList")}
+                {t("nav.reproduction")}
               </SidebarWithSections.NavItem>
               <SidebarWithSections.NavItem
-                icon={<FeatherBeaker />}
+                icon={<FeatherBrainCircuit />}
                 selected={activeSection === "autonomous-research"}
                 className="cursor-default hover:bg-transparent active:bg-transparent"
               >
@@ -610,7 +699,7 @@ export default function App() {
       <div
         className={cn(
           "flex-1 flex flex-col min-w-0 overflow-x-clip transition-[margin-left] duration-200 ease-in-out",
-          !isMobile && sidebarOpen ? "ml-52" : "ml-0",
+          !isMobile && sidebarOpen ? "ml-60" : "ml-0",
         )}
       >
         <TopbarWithRightNav
@@ -683,18 +772,9 @@ export default function App() {
               {eeComponents ? (
                 <eeComponents.UserMenu />
               ) : (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span>
-                        <IconButton disabled variant="neutral-secondary" icon={<FeatherUser />} />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Enterprise Edition is not enabled</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <span title="Enterprise Edition is not enabled">
+                  <IconButton disabled variant="neutral-secondary" icon={<FeatherUser />} />
+                </span>
               )}
             </>
           }
@@ -720,6 +800,7 @@ export default function App() {
             onDeleteVerification={handleDeleteVerification}
             onDuplicateVerification={handleDuplicateVerification}
             onUpdateVerification={handleUpdateVerification}
+            onCreateWithQuery={handleCreateWithQuery}
             onCreateWithMethod={handleCreateWithMethod}
             autonomousListViewKey={autonomousListViewKey}
           />
