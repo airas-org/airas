@@ -4,13 +4,14 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, computed_field
 
-from airas.core.types.experimental_design import RunnerConfig
+from airas.core.types.experimental_design import ComputeEnvironment
 from airas.core.types.github import (
     GitHubActionsAgent,
     GitHubConfigRequest,
 )
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.core.types.runner import ExperimentRunnerConfig
 from airas.core.types.wandb import WandbConfig
 from airas.infra.db.models.e2e import Status, StepType
 from airas.usecases.autonomous_research.hypothesis_driven_research.hypothesis_driven_research import (
@@ -83,7 +84,8 @@ class HypothesisDrivenResearchRequestBody(BaseModel):
     github_config: GitHubConfigRequest
     research_hypothesis: ResearchHypothesis
     research_topic: str = ""
-    runner_config: RunnerConfig
+    compute_environment: ComputeEnvironment
+    runner_config: ExperimentRunnerConfig
     wandb_config: WandbConfig
     is_github_repo_private: bool = False
     num_experiment_models: int = 1

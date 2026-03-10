@@ -57,6 +57,7 @@ async def _execute_hypothesis_driven_research(
             github_client=github_client,
             langchain_client=langchain_client,
             e2e_service=e2e_service,
+            compute_environment=request.compute_environment,
             runner_config=request.runner_config,
             wandb_config=request.wandb_config,
             task_id=task_id,

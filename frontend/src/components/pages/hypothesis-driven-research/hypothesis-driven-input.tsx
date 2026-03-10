@@ -12,6 +12,8 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HypothesisAllLLMConfig } from "@/components/features/llm-config";
 import {
+  type ComputeEnvironment,
+  type EphemeralCloudRunnerConfig,
   type HypothesisDrivenResearchLLMMapping,
   HypothesisDrivenResearchRequestBody,
   HypothesisDrivenResearchService,
@@ -23,6 +25,8 @@ import { Select } from "@/ui/components/Select";
 import { Switch } from "@/ui/components/Switch";
 import { TextArea } from "@/ui/components/TextArea";
 import { TextField } from "@/ui/components/TextField";
+
+type RunnerType = "static" | "ephemeral_cloud";
 
 interface HypothesisDrivenInputProps {
   onBack: () => void;
@@ -49,8 +53,24 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
   const [isPrivate, setIsPrivate] = useState(false);
 
   // Runner config
+  const [runnerType, setRunnerType] = useState<RunnerType>("static");
   const [runnerLabels, setRunnerLabels] = useState("ubuntu-latest");
-  const [runnerDescription, setRunnerDescription] = useState("");
+  const [cloudProvider, setCloudProvider] = useState<"aws" | "gcp">("aws");
+  const [gpuInstanceType, setGpuInstanceType] = useState("g4dn.xlarge");
+  const [maxInstanceHours, setMaxInstanceHours] = useState("120");
+
+  // Compute environment
+  const [ceOs, setCeOs] = useState("");
+  const [ceCpuCores, setCeCpuCores] = useState("");
+  const [ceRamGb, setCeRamGb] = useState("");
+  const [ceGpuType, setCeGpuType] = useState("");
+  const [ceGpuCount, setCeGpuCount] = useState("");
+  const [ceGpuMemoryGb, setCeGpuMemoryGb] = useState("");
+  const [ceCudaVersion, setCeCudaVersion] = useState("");
+  const [cePythonVersion, setCePythonVersion] = useState("");
+  const [ceStorageType, setCeStorageType] = useState<"nvme" | "ssd" | "hdd" | "">("");
+  const [ceStorageGb, setCeStorageGb] = useState("");
+  const [ceDescription, setCeDescription] = useState("");
 
   // W&B config
   const [wandbEntity, setWandbEntity] = useState("");
@@ -72,21 +92,21 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isFormValid = [
-    openProblems,
-    method,
-    experimentalSetup,
-    primaryMetric,
-    experimentalCode,
-    expectedResult,
-    expectedConclusion,
-    repoName,
-    branch,
-    runnerLabels,
-    runnerDescription,
-    wandbEntity,
-    wandbProject,
-  ].every((v) => v.trim().length > 0);
+  const isFormValid =
+    [
+      openProblems,
+      method,
+      experimentalSetup,
+      primaryMetric,
+      experimentalCode,
+      expectedResult,
+      expectedConclusion,
+      repoName,
+      branch,
+      wandbEntity,
+      wandbProject,
+    ].every((v) => v.trim().length > 0) &&
+    (runnerType === "static" ? runnerLabels.trim().length > 0 : true);
 
   const handleRun = useCallback(async () => {
     if (!isFormValid) return;
@@ -98,6 +118,36 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
       const parsed = Number(value);
       return Number.isFinite(parsed) ? parsed : undefined;
     };
+
+    const computeEnvironment: ComputeEnvironment = {
+      os: ceOs || undefined,
+      cpu_cores: toNumber(ceCpuCores),
+      ram_gb: toNumber(ceRamGb),
+      gpu_type: ceGpuType || undefined,
+      gpu_count: toNumber(ceGpuCount),
+      gpu_memory_gb: toNumber(ceGpuMemoryGb),
+      cuda_version: ceCudaVersion || undefined,
+      python_version: cePythonVersion || undefined,
+      storage_type: (ceStorageType as "nvme" | "ssd" | "hdd") || undefined,
+      storage_gb: toNumber(ceStorageGb),
+      description: ceDescription || undefined,
+    };
+
+    const runnerConfig =
+      runnerType === "static"
+        ? {
+            type: "static" as const,
+            runner_label: runnerLabels
+              .split(",")
+              .map((l) => l.trim())
+              .filter((l) => l.length > 0),
+          }
+        : {
+            type: "ephemeral_cloud" as const,
+            cloud_provider: cloudProvider as EphemeralCloudRunnerConfig.cloud_provider,
+            gpu_instance_type: gpuInstanceType || undefined,
+            max_instance_hours: toNumber(maxInstanceHours),
+          };
 
     const payload = {
       github_config: {
@@ -114,13 +164,8 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
         expected_conclusion: expectedConclusion,
       },
       research_topic: researchTopic.trim() || undefined,
-      runner_config: {
-        runner_label: runnerLabels
-          .split(",")
-          .map((l) => l.trim())
-          .filter((l) => l.length > 0),
-        description: runnerDescription,
-      },
+      compute_environment: computeEnvironment,
+      runner_config: runnerConfig,
       wandb_config: {
         entity: wandbEntity,
         project: wandbProject,
@@ -160,8 +205,22 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
     repoName,
     branch,
     isPrivate,
+    runnerType,
     runnerLabels,
-    runnerDescription,
+    cloudProvider,
+    gpuInstanceType,
+    maxInstanceHours,
+    ceOs,
+    ceCpuCores,
+    ceRamGb,
+    ceGpuType,
+    ceGpuCount,
+    ceGpuMemoryGb,
+    ceCudaVersion,
+    cePythonVersion,
+    ceStorageType,
+    ceStorageGb,
+    ceDescription,
     wandbEntity,
     wandbProject,
     githubActionsAgent,
@@ -418,6 +477,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
             </div>
 
             <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4">
+              {/* Runner Config */}
               <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
                 <div className="flex w-full items-center gap-2">
                   <FeatherPlay className="text-body font-body text-default-font" />
@@ -425,50 +485,249 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
                     GitHub Actions Runner
                   </span>
                 </div>
-                <div className="flex w-full flex-wrap items-start gap-3">
-                  <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                    <div className="flex items-center gap-1">
-                      <span className="text-caption font-caption text-default-font">
-                        {t("autonomous.hypothesisDriven.runnerLabel")}
-                      </span>
-                      <span className="text-caption font-caption text-error-500">*</span>
+                <div className="flex w-full flex-col items-start gap-3">
+                  <Select
+                    className="h-auto w-full flex-none"
+                    variant="outline"
+                    label={t("autonomous.hypothesisDriven.runnerType")}
+                    helpText=""
+                    value={runnerType}
+                    onValueChange={(val) => setRunnerType(val as RunnerType)}
+                  >
+                    <Select.Item value="static">
+                      {t("autonomous.hypothesisDriven.runnerTypeStatic")}
+                    </Select.Item>
+                    <Select.Item value="ephemeral_cloud">
+                      {t("autonomous.hypothesisDriven.runnerTypeCloud")}
+                    </Select.Item>
+                  </Select>
+                  {runnerType === "static" && (
+                    <div className="flex w-full flex-col items-start gap-1">
+                      <div className="flex items-center gap-1">
+                        <span className="text-caption font-caption text-default-font">
+                          {t("autonomous.hypothesisDriven.runnerLabel")}
+                        </span>
+                        <span className="text-caption font-caption text-error-500">*</span>
+                      </div>
+                      <TextField
+                        className="h-auto w-full flex-none"
+                        variant="outline"
+                        label=""
+                        helpText=""
+                      >
+                        <TextField.Input
+                          placeholder="ubuntu-latest, gpu-runner"
+                          value={runnerLabels}
+                          onChange={(e) => setRunnerLabels(e.target.value)}
+                        />
+                      </TextField>
                     </div>
-                    <TextField
-                      className="h-auto w-full flex-none"
-                      variant="outline"
-                      label=""
-                      helpText=""
-                    >
-                      <TextField.Input
-                        placeholder="ubuntu-latest, gpu-runner"
-                        value={runnerLabels}
-                        onChange={(e) => setRunnerLabels(e.target.value)}
-                      />
-                    </TextField>
-                  </div>
-                  <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                    <div className="flex items-center gap-1">
-                      <span className="text-caption font-caption text-default-font">
-                        {t("autonomous.hypothesisDriven.runnerDescription")}
-                      </span>
-                      <span className="text-caption font-caption text-error-500">*</span>
+                  )}
+                  {runnerType === "ephemeral_cloud" && (
+                    <div className="flex w-full flex-wrap items-start gap-3">
+                      <Select
+                        className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                        variant="outline"
+                        label={t("autonomous.hypothesisDriven.cloudProvider")}
+                        helpText=""
+                        value={cloudProvider}
+                        onValueChange={(val) => setCloudProvider(val as "aws" | "gcp")}
+                      >
+                        <Select.Item value="aws">AWS</Select.Item>
+                        <Select.Item value="gcp">GCP</Select.Item>
+                      </Select>
+                      <TextField
+                        className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                        variant="outline"
+                        label={t("autonomous.hypothesisDriven.gpuInstanceType")}
+                        helpText=""
+                      >
+                        <TextField.Input
+                          placeholder="g4dn.xlarge"
+                          value={gpuInstanceType}
+                          onChange={(e) => setGpuInstanceType(e.target.value)}
+                        />
+                      </TextField>
+                      <TextField
+                        className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                        variant="outline"
+                        label={t("autonomous.hypothesisDriven.maxInstanceHours")}
+                        helpText=""
+                      >
+                        <TextField.Input
+                          type="number"
+                          placeholder="120"
+                          value={maxInstanceHours}
+                          onChange={(e) => setMaxInstanceHours(e.target.value)}
+                        />
+                      </TextField>
                     </div>
-                    <TextField
-                      className="h-auto w-full flex-none"
-                      variant="outline"
-                      label=""
-                      helpText=""
-                    >
-                      <TextField.Input
-                        placeholder="A100 x1, 40GB VRAM"
-                        value={runnerDescription}
-                        onChange={(e) => setRunnerDescription(e.target.value)}
-                      />
-                    </TextField>
-                  </div>
+                  )}
                 </div>
               </div>
 
+              {/* Compute Environment */}
+              <Accordion
+                trigger={
+                  <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
+                    <FeatherSettings className="text-body font-body text-default-font" />
+                    <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
+                      {t("autonomous.hypothesisDriven.computeEnvironment")}
+                    </span>
+                    <Accordion.Chevron />
+                  </div>
+                }
+                defaultOpen={false}
+              >
+                <div className="flex w-full flex-col items-start gap-3 px-4 py-4">
+                  <div className="flex w-full flex-wrap items-start gap-3">
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label="OS"
+                      helpText=""
+                    >
+                      <TextField.Input
+                        placeholder="Ubuntu 22.04"
+                        value={ceOs}
+                        onChange={(e) => setCeOs(e.target.value)}
+                      />
+                    </TextField>
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label={t("autonomous.hypothesisDriven.ceCpuCores")}
+                      helpText=""
+                    >
+                      <TextField.Input
+                        type="number"
+                        placeholder="8"
+                        value={ceCpuCores}
+                        onChange={(e) => setCeCpuCores(e.target.value)}
+                      />
+                    </TextField>
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label="RAM (GB)"
+                      helpText=""
+                    >
+                      <TextField.Input
+                        type="number"
+                        placeholder="64"
+                        value={ceRamGb}
+                        onChange={(e) => setCeRamGb(e.target.value)}
+                      />
+                    </TextField>
+                  </div>
+                  <div className="flex w-full flex-wrap items-start gap-3">
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label={t("autonomous.hypothesisDriven.ceGpuType")}
+                      helpText=""
+                    >
+                      <TextField.Input
+                        placeholder="NVIDIA A100"
+                        value={ceGpuType}
+                        onChange={(e) => setCeGpuType(e.target.value)}
+                      />
+                    </TextField>
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label={t("autonomous.hypothesisDriven.ceGpuCount")}
+                      helpText=""
+                    >
+                      <TextField.Input
+                        type="number"
+                        placeholder="1"
+                        value={ceGpuCount}
+                        onChange={(e) => setCeGpuCount(e.target.value)}
+                      />
+                    </TextField>
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label="GPU VRAM (GB)"
+                      helpText=""
+                    >
+                      <TextField.Input
+                        type="number"
+                        placeholder="40"
+                        value={ceGpuMemoryGb}
+                        onChange={(e) => setCeGpuMemoryGb(e.target.value)}
+                      />
+                    </TextField>
+                  </div>
+                  <div className="flex w-full flex-wrap items-start gap-3">
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label="CUDA"
+                      helpText=""
+                    >
+                      <TextField.Input
+                        placeholder="12.1"
+                        value={ceCudaVersion}
+                        onChange={(e) => setCeCudaVersion(e.target.value)}
+                      />
+                    </TextField>
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label="Python"
+                      helpText=""
+                    >
+                      <TextField.Input
+                        placeholder="3.11"
+                        value={cePythonVersion}
+                        onChange={(e) => setCePythonVersion(e.target.value)}
+                      />
+                    </TextField>
+                    <Select
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label={t("autonomous.hypothesisDriven.ceStorageType")}
+                      placeholder="--"
+                      helpText=""
+                      value={ceStorageType}
+                      onValueChange={(val) => setCeStorageType(val as "nvme" | "ssd" | "hdd" | "")}
+                    >
+                      <Select.Item value="nvme">NVMe</Select.Item>
+                      <Select.Item value="ssd">SSD</Select.Item>
+                      <Select.Item value="hdd">HDD</Select.Item>
+                    </Select>
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label={t("autonomous.hypothesisDriven.ceStorageGb")}
+                      helpText=""
+                    >
+                      <TextField.Input
+                        type="number"
+                        placeholder="500"
+                        value={ceStorageGb}
+                        onChange={(e) => setCeStorageGb(e.target.value)}
+                      />
+                    </TextField>
+                  </div>
+                  <TextArea
+                    className="h-auto w-full flex-none"
+                    variant="outline"
+                    label={t("autonomous.hypothesisDriven.ceDescription")}
+                    helpText=""
+                  >
+                    <TextArea.Input
+                      placeholder={t("autonomous.hypothesisDriven.ceDescriptionPlaceholder")}
+                      value={ceDescription}
+                      onChange={(e) => setCeDescription(e.target.value)}
+                    />
+                  </TextArea>
+                </div>
+              </Accordion>
+
+              {/* W&B */}
               <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
                 <div className="flex w-full items-center gap-2">
                   <FeatherBarChart3 className="text-body font-body text-default-font" />
