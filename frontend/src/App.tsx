@@ -490,12 +490,11 @@ export default function App() {
       <aside
         className={cn(
           "fixed left-0 top-0 h-screen bg-default-background transition-[width] duration-200 ease-in-out overflow-hidden",
-          sidebarOpen ? "w-52" : "w-0",
+          sidebarOpen ? "w-60" : "w-0",
           isMobile ? "z-40" : "z-30",
         )}
       >
         <SidebarWithSections
-          className="min-w-[13rem]"
           header={
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-3">
@@ -700,7 +699,7 @@ export default function App() {
       <div
         className={cn(
           "flex-1 flex flex-col min-w-0 overflow-x-clip transition-[margin-left] duration-200 ease-in-out",
-          !isMobile && sidebarOpen ? "ml-52" : "ml-0",
+          !isMobile && sidebarOpen ? "ml-60" : "ml-0",
         )}
       >
         <TopbarWithRightNav
