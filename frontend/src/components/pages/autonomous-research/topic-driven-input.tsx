@@ -12,7 +12,6 @@ import {
   defaultRunnerConfigFormState,
   isRunnerConfigFormValid,
   RunnerConfigForm,
-  type RunnerConfigFormLabels,
   type RunnerConfigFormState,
   toRunnerConfigPayload,
 } from "@/components/features/runner-config-form";
