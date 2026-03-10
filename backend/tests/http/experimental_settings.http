@@ -12,9 +12,12 @@ Content-Type: application/json
         "expected_result": "We expect RUA-BBPS to deliver consistent improvements in held-out top-1 accuracy and robustness relative to (a) the original raw-accuracy hill-climb and (b) the static RBBPS described earlier. Specific expectations (averaged across selected datasets and folds):\n- Absolute held-out accuracy gain: +1.0 to +3.0 percentage points over raw-accuracy baseline (larger gains in very-low-shot k=1 settings where instability is pronounced).\n- Stability: reduced standard deviation across restarts (fewer runs stuck in poor local optima) by ~20–40% thanks to the uncertainty penalty discouraging brittle prompts.\n- Prompt cost: average prompt length reduced by ~15–30% (compact templates), lowering per-call token costs.\n- Diversity: semantic diversity of top-15 (MinHash-Jaccard mean) improved relative to raw baseline and lexical Jaccard variant (less stagnation on trivial variants).\n- Hyperparameter robustness: adaptive coefficient updater reduces the need for manual grid sweeps; adaptive runs should match or beat the best static-tuned runs while using fewer validation evaluations.\n- API cost: modest net reduction in LLM calls per effective improvement because fewer trivial proposals are retained and fewer restarts are needed to find good prompts.\n\nThese improvements are conservative, achievable with the budgeted bootstrap and MinHash approaches described, and are measurable with a Python evaluation harness.",
         "expected_conclusion": "Incorporating semantic novelty (MinHash-based), bootstrapped uncertainty, and adaptive regularization into the black-box LLM-in-the-loop prompt search objective materially improves generalization, search efficiency, and robustness compared to raw-accuracy ranking and to simple static regularization. The proposed approach preserves the core advantages of the original conversational hill-climb pipeline (no access to model internals, interpretable natural-language prompts, easy deployment) while addressing its main practical failure modes: overfitting, verbosity-driven token costs, and stagnation on trivial variants. Importantly, the adaptive component reduces manual tuning and makes the method broadly applicable across datasets and few-shot regimes. Because the design is lightweight and fully implementable in Python with local CLIP inference and budgeted validation, the hypothesis is empirically testable and practically relevant for researchers and practitioners seeking lower-cost, more reliable black-box prompt optimization."
     },
-    "runner_config": {
-        "runner_label": ["H200 144GM×1"],
-        "description": "NVIDIA H200×1\n VRAM: 144GB×1\n RAM： 2048 GB or more"
+    "compute_environment": {
+        "gpu_type": "NVIDIA H200",
+        "gpu_count": 1,
+        "gpu_memory_gb": 144,
+        "ram_gb": 2048,
+        "description": "NVIDIA H200×1 / VRAM: 144GB / RAM: 2048GB"
     },
     "num_models_to_use": 2,
     "num_datasets_to_use": 2,

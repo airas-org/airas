@@ -1,5 +1,3 @@
-"use client";
-
 import { BarChart3, Check, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -102,12 +100,9 @@ export function AnalysisSection({
     }
   };
 
+  const isEffectivelyConfirmed = isConfirmed || !!analysisText;
   const completedResults = results.filter((r) => r.status === "completed");
   const displayText = analysisText || previewText;
-
-  if (analysisText && !isConfirmed) {
-    setIsConfirmed(true);
-  }
 
   return (
     <Card className="p-6">
@@ -152,7 +147,7 @@ export function AnalysisSection({
                 <SimpleMarkdown content={displayText} />
               </div>
 
-              {!isConfirmed && previewText && (
+              {!isEffectivelyConfirmed && previewText && (
                 <Button
                   onClick={handleConfirm}
                   className="w-full bg-blue-700 hover:bg-blue-800 text-white"
@@ -162,7 +157,7 @@ export function AnalysisSection({
                 </Button>
               )}
 
-              {isConfirmed && (
+              {isEffectivelyConfirmed && (
                 <div className="flex items-center justify-center gap-2 p-3 bg-muted rounded-lg">
                   <Check className="w-5 h-5 text-blue-700" />
                   <span className="text-sm text-muted-foreground">

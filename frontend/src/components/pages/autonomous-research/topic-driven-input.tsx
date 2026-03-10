@@ -1,5 +1,3 @@
-"use client";
-
 import {
   FeatherArrowLeft,
   FeatherBarChart3,
@@ -11,6 +9,14 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AllLLMConfig } from "@/components/features/llm-config";
 import {
+  defaultRunnerConfigFormState,
+  isRunnerConfigFormValid,
+  RunnerConfigForm,
+  type RunnerConfigFormState,
+  toRunnerConfigPayload,
+} from "@/components/features/runner-config-form";
+import {
+  type ComputeEnvironment,
   type TopicOpenEndedResearchLLMMapping,
   TopicOpenEndedResearchRequestBody,
   TopicOpenEndedResearchService,
@@ -35,8 +41,25 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
   );
   const [repoName, setRepoName] = useState("");
   const [branch, setBranch] = useState("main");
-  const [runnerLabels, setRunnerLabels] = useState("ubuntu-latest");
-  const [runnerDescription, setRunnerDescription] = useState("CPU: 4 vCPU, RAM: 16 GB");
+
+  // Runner config
+  const [runnerConfig, setRunnerConfig] = useState<RunnerConfigFormState>(
+    defaultRunnerConfigFormState,
+  );
+
+  // Compute environment
+  const [ceOs, setCeOs] = useState("");
+  const [ceCpuCores, setCeCpuCores] = useState("");
+  const [ceRamGb, setCeRamGb] = useState("");
+  const [ceGpuType, setCeGpuType] = useState("");
+  const [ceGpuCount, setCeGpuCount] = useState("");
+  const [ceGpuMemoryGb, setCeGpuMemoryGb] = useState("");
+  const [ceCudaVersion, setCeCudaVersion] = useState("");
+  const [cePythonVersion, setCePythonVersion] = useState("");
+  const [ceStorageType, setCeStorageType] = useState<"nvme" | "ssd" | "hdd" | "">("");
+  const [ceStorageGb, setCeStorageGb] = useState("");
+  const [ceDescription, setCeDescription] = useState("");
+
   const [wandbEntity, setWandbEntity] = useState("airas");
   const [wandbProject, setWandbProject] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
@@ -58,26 +81,37 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isFormValid = [
-    researchTopic,
-    repoName,
-    branch,
-    runnerLabels,
-    runnerDescription,
-    wandbEntity,
-    wandbProject,
-  ].every((value) => value.trim().length > 0);
+  const isFormValid =
+    [researchTopic, repoName, branch, wandbEntity, wandbProject].every(
+      (value) => value.trim().length > 0,
+    ) && isRunnerConfigFormValid(runnerConfig);
 
   const handleRun = useCallback(async () => {
     if (!isFormValid) return;
     setError(null);
     setIsRunning(true);
 
-    const toNumber = (value: string): number | undefined => {
+    const toInteger = (value: string): number | undefined => {
       if (value.trim() === "") return undefined;
       const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : undefined;
+      return Number.isInteger(parsed) ? parsed : undefined;
     };
+
+    const computeEnvironment: ComputeEnvironment = {
+      os: ceOs || undefined,
+      cpu_cores: toInteger(ceCpuCores),
+      ram_gb: toInteger(ceRamGb),
+      gpu_type: ceGpuType || undefined,
+      gpu_count: toInteger(ceGpuCount),
+      gpu_memory_gb: toInteger(ceGpuMemoryGb),
+      cuda_version: ceCudaVersion || undefined,
+      python_version: cePythonVersion || undefined,
+      storage_type: (ceStorageType as "nvme" | "ssd" | "hdd") || undefined,
+      storage_gb: toInteger(ceStorageGb),
+      description: ceDescription || undefined,
+    };
+
+    const runnerConfigPayload = toRunnerConfigPayload(runnerConfig);
 
     const payload: TopicOpenEndedResearchRequestBody = {
       github_config: {
@@ -85,25 +119,20 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
         branch_name: branch,
       },
       research_topic: researchTopic,
-      runner_config: {
-        runner_label: runnerLabels
-          .split(",")
-          .map((l) => l.trim())
-          .filter((l) => l.length > 0),
-        description: runnerDescription,
-      },
+      compute_environment: computeEnvironment,
+      runner_config: runnerConfigPayload,
       wandb_config: {
         entity: wandbEntity,
         project: wandbProject,
       },
       is_github_repo_private: isPrivate,
-      num_paper_search_queries: toNumber(numPaperSearchQueries),
-      papers_per_query: toNumber(papersPerQuery),
-      hypothesis_refinement_iterations: toNumber(hypothesisRefinementIterations),
-      num_experiment_models: toNumber(numExperimentModels),
-      num_experiment_datasets: toNumber(numExperimentDatasets),
-      num_comparison_methods: toNumber(numComparativeMethods),
-      paper_content_refinement_iterations: toNumber(paperContentRefinementIterations),
+      num_paper_search_queries: toInteger(numPaperSearchQueries),
+      papers_per_query: toInteger(papersPerQuery),
+      hypothesis_refinement_iterations: toInteger(hypothesisRefinementIterations),
+      num_experiment_models: toInteger(numExperimentModels),
+      num_experiment_datasets: toInteger(numExperimentDatasets),
+      num_comparison_methods: toInteger(numComparativeMethods),
+      paper_content_refinement_iterations: toInteger(paperContentRefinementIterations),
       github_actions_agent: githubActionsAgent || undefined,
       latex_template_name: latexTemplateName.trim() || undefined,
       llm_mapping: llmMapping,
@@ -125,8 +154,18 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
     researchTopic,
     repoName,
     branch,
-    runnerLabels,
-    runnerDescription,
+    runnerConfig,
+    ceOs,
+    ceCpuCores,
+    ceRamGb,
+    ceGpuType,
+    ceGpuCount,
+    ceGpuMemoryGb,
+    ceCudaVersion,
+    cePythonVersion,
+    ceStorageType,
+    ceStorageGb,
+    ceDescription,
     wandbEntity,
     wandbProject,
     isPrivate,
@@ -240,6 +279,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
             </div>
 
             <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4">
+              {/* Runner Config */}
               <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
                 <div className="flex w-full items-center gap-2">
                   <FeatherPlay className="text-body font-body text-default-font" />
@@ -247,50 +287,183 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
                     GitHub Actions Runner
                   </span>
                 </div>
-                <div className="flex w-full flex-wrap items-start gap-3">
-                  <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                    <div className="flex items-center gap-1">
-                      <span className="text-caption font-caption text-default-font">
-                        {t("autonomous.topicDriven.runnerLabel")}
-                      </span>
-                      <span className="text-caption font-caption text-error-500">*</span>
-                    </div>
-                    <TextField
-                      className="h-auto w-full flex-none"
-                      variant="outline"
-                      label=""
-                      helpText=""
-                    >
-                      <TextField.Input
-                        placeholder="ubuntu-latest, gpu-runner"
-                        value={runnerLabels}
-                        onChange={(e) => setRunnerLabels(e.target.value)}
-                      />
-                    </TextField>
-                  </div>
-                  <div className="flex min-w-[144px] grow shrink-0 basis-0 flex-col items-start gap-1">
-                    <div className="flex items-center gap-1">
-                      <span className="text-caption font-caption text-default-font">
-                        {t("autonomous.topicDriven.runnerDescription")}
-                      </span>
-                      <span className="text-caption font-caption text-error-500">*</span>
-                    </div>
-                    <TextField
-                      className="h-auto w-full flex-none"
-                      variant="outline"
-                      label=""
-                      helpText=""
-                    >
-                      <TextField.Input
-                        placeholder="A100 x1, 40GB VRAM"
-                        value={runnerDescription}
-                        onChange={(e) => setRunnerDescription(e.target.value)}
-                      />
-                    </TextField>
-                  </div>
-                </div>
+                <RunnerConfigForm
+                  value={runnerConfig}
+                  onChange={setRunnerConfig}
+                  labels={{
+                    runnerType: t("autonomous.topicDriven.runnerType"),
+                    runnerTypeStatic: t("autonomous.topicDriven.runnerTypeStatic"),
+                    runnerTypeCloud: t("autonomous.topicDriven.runnerTypeCloud"),
+                    runnerLabel: t("autonomous.topicDriven.runnerLabel"),
+                    cloudProvider: t("autonomous.topicDriven.cloudProvider"),
+                    gpuInstanceType: t("autonomous.topicDriven.gpuInstanceType"),
+                    maxInstanceHours: t("autonomous.topicDriven.maxInstanceHours"),
+                  }}
+                />
               </div>
 
+              {/* Compute Environment */}
+              <Accordion
+                trigger={
+                  <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
+                    <FeatherSettings className="text-body font-body text-default-font" />
+                    <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
+                      {t("autonomous.topicDriven.computeEnvironment")}
+                    </span>
+                    <Accordion.Chevron />
+                  </div>
+                }
+                defaultOpen={false}
+              >
+                <div className="flex w-full flex-col items-start gap-3 px-4 py-4">
+                  <div className="flex w-full flex-wrap items-start gap-3">
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label="OS"
+                      helpText=""
+                    >
+                      <TextField.Input
+                        placeholder="Ubuntu 22.04"
+                        value={ceOs}
+                        onChange={(e) => setCeOs(e.target.value)}
+                      />
+                    </TextField>
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label={t("autonomous.topicDriven.ceCpuCores")}
+                      helpText=""
+                    >
+                      <TextField.Input
+                        type="number"
+                        placeholder="8"
+                        value={ceCpuCores}
+                        onChange={(e) => setCeCpuCores(e.target.value)}
+                      />
+                    </TextField>
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label="RAM (GB)"
+                      helpText=""
+                    >
+                      <TextField.Input
+                        type="number"
+                        placeholder="64"
+                        value={ceRamGb}
+                        onChange={(e) => setCeRamGb(e.target.value)}
+                      />
+                    </TextField>
+                  </div>
+                  <div className="flex w-full flex-wrap items-start gap-3">
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label={t("autonomous.topicDriven.ceGpuType")}
+                      helpText=""
+                    >
+                      <TextField.Input
+                        placeholder="NVIDIA A100"
+                        value={ceGpuType}
+                        onChange={(e) => setCeGpuType(e.target.value)}
+                      />
+                    </TextField>
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label={t("autonomous.topicDriven.ceGpuCount")}
+                      helpText=""
+                    >
+                      <TextField.Input
+                        type="number"
+                        placeholder="1"
+                        value={ceGpuCount}
+                        onChange={(e) => setCeGpuCount(e.target.value)}
+                      />
+                    </TextField>
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label="GPU VRAM (GB)"
+                      helpText=""
+                    >
+                      <TextField.Input
+                        type="number"
+                        placeholder="40"
+                        value={ceGpuMemoryGb}
+                        onChange={(e) => setCeGpuMemoryGb(e.target.value)}
+                      />
+                    </TextField>
+                  </div>
+                  <div className="flex w-full flex-wrap items-start gap-3">
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label="CUDA"
+                      helpText=""
+                    >
+                      <TextField.Input
+                        placeholder="12.1"
+                        value={ceCudaVersion}
+                        onChange={(e) => setCeCudaVersion(e.target.value)}
+                      />
+                    </TextField>
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label="Python"
+                      helpText=""
+                    >
+                      <TextField.Input
+                        placeholder="3.11"
+                        value={cePythonVersion}
+                        onChange={(e) => setCePythonVersion(e.target.value)}
+                      />
+                    </TextField>
+                    <Select
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label={t("autonomous.topicDriven.ceStorageType")}
+                      placeholder="--"
+                      helpText=""
+                      value={ceStorageType}
+                      onValueChange={(val) => setCeStorageType(val as "nvme" | "ssd" | "hdd" | "")}
+                    >
+                      <Select.Item value="nvme">NVMe</Select.Item>
+                      <Select.Item value="ssd">SSD</Select.Item>
+                      <Select.Item value="hdd">HDD</Select.Item>
+                    </Select>
+                    <TextField
+                      className="h-auto min-w-[120px] grow shrink-0 basis-0"
+                      variant="outline"
+                      label={t("autonomous.topicDriven.ceStorageGb")}
+                      helpText=""
+                    >
+                      <TextField.Input
+                        type="number"
+                        placeholder="500"
+                        value={ceStorageGb}
+                        onChange={(e) => setCeStorageGb(e.target.value)}
+                      />
+                    </TextField>
+                  </div>
+                  <TextArea
+                    className="h-auto w-full flex-none"
+                    variant="outline"
+                    label={t("autonomous.topicDriven.ceDescription")}
+                    helpText=""
+                  >
+                    <TextArea.Input
+                      placeholder={t("autonomous.topicDriven.ceDescriptionPlaceholder")}
+                      value={ceDescription}
+                      onChange={(e) => setCeDescription(e.target.value)}
+                    />
+                  </TextArea>
+                </div>
+              </Accordion>
+
+              {/* W&B */}
               <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
                 <div className="flex w-full items-center gap-2">
                   <FeatherBarChart3 className="text-body font-body text-default-font" />

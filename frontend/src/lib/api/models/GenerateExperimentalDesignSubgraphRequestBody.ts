@@ -2,12 +2,12 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ComputeEnvironment } from './ComputeEnvironment';
 import type { GenerateExperimentalDesignLLMMapping } from './GenerateExperimentalDesignLLMMapping';
 import type { ResearchHypothesis } from './ResearchHypothesis';
-import type { RunnerConfig } from './RunnerConfig';
 export type GenerateExperimentalDesignSubgraphRequestBody = {
     research_hypothesis: ResearchHypothesis;
-    runner_config: RunnerConfig;
+    compute_environment: ComputeEnvironment;
     num_models_to_use: number;
     num_datasets_to_use: number;
     num_comparative_methods: number;
