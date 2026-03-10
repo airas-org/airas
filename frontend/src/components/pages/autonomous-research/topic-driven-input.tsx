@@ -153,20 +153,20 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
   ]);
 
   return (
-    <div className="flex h-full w-full flex-col items-center bg-default-background px-6 py-6 overflow-auto">
+    <div className="flex h-full w-full flex-col items-center bg-default-background px-6 py-6 overflow-auto gap-6">
+      <div className="flex w-full max-w-[768px] items-center justify-between">
+        <button
+          type="button"
+          onClick={onBack}
+          className="rounded-md px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+        >
+          {t("autonomous.topicDriven.backToList")}
+        </button>
+        <span className="text-body-bold font-body-bold text-default-font">
+          Topic-Driven Research
+        </span>
+      </div>
       <div className="flex w-full max-w-[1024px] flex-col items-start gap-6">
-        <div className="flex w-full items-center justify-between">
-          <button
-            type="button"
-            onClick={onBack}
-            className="rounded-md px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
-          >
-            {t("autonomous.topicDriven.backToList")}
-          </button>
-          <span className="text-body-bold font-body-bold text-default-font">
-            Topic-Driven Research
-          </span>
-        </div>
         <div className="flex w-full flex-col items-start gap-2 rounded-lg bg-card border border-border px-4 py-4">
           <div className="flex items-center gap-1">
             <span className="text-body-bold font-body-bold text-default-font">
