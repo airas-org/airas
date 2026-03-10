@@ -28,7 +28,6 @@ import {
 } from "@/lib/api";
 import { Accordion } from "@/ui/components/Accordion";
 import { Button } from "@/ui/components/Button";
-import { LinkButton } from "@/ui/components/LinkButton";
 import { Select } from "@/ui/components/Select";
 import { Switch } from "@/ui/components/Switch";
 import { TextArea } from "@/ui/components/TextArea";
@@ -194,11 +193,13 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
     <div className="flex h-full w-full flex-col items-start bg-default-background">
       <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-4 pb-2 sticky top-0 z-10 gap-1">
         <div className="flex w-full items-center">
-          <LinkButton variant="neutral" onClick={onBack}>
-            <span className="text-sm font-medium">
-              {t("autonomous.hypothesisDriven.backToList")}
-            </span>
-          </LinkButton>
+          <button
+            type="button"
+            onClick={onBack}
+            className="rounded-md px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+          >
+            {t("autonomous.hypothesisDriven.backToList")}
+          </button>
         </div>
         <span className="text-body-bold font-body-bold text-default-font">
           Hypothesis-Driven Research

@@ -182,7 +182,7 @@ export function MainContent({
                 <button
                   type="button"
                   onClick={() => navigate("/verification")}
-                  className="text-sm text-subtext-color hover:text-default-font transition-colors cursor-pointer"
+                  className="rounded-md px-2 py-1 text-sm text-subtext-color hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
                 >
                   検証一覧
                 </button>
