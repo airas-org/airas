@@ -1,3 +1,4 @@
+import { FeatherArrowLeft } from "@subframe/core";
 import { useCallback, useState } from "react";
 import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
@@ -189,8 +190,20 @@ export function MainContent({
         <Route
           path="/verification"
           element={
-            <div className="flex-1 flex items-center justify-center pb-[20vh] p-6">
-              <ChatInput onSubmit={onCreateWithQuery} />
+            <div className="flex-1 flex flex-col">
+              <div className="flex-shrink-0 px-4 pt-3">
+                <button
+                  type="button"
+                  onClick={() => navigate("/home")}
+                  className="flex items-center gap-1.5 text-xs text-subtext-color hover:text-default-font transition-colors cursor-pointer"
+                >
+                  <FeatherArrowLeft className="h-3.5 w-3.5" />
+                  検証一覧
+                </button>
+              </div>
+              <div className="flex-1 flex items-center justify-center pb-[20vh] p-6">
+                <ChatInput onSubmit={onCreateWithQuery} />
+              </div>
             </div>
           }
         />

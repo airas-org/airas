@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ResearchSection } from "@/types/research";
 import { TopicDrivenDetail } from "./topic-driven-detail";
 import { TopicDrivenInput } from "./topic-driven-input";
@@ -28,11 +28,14 @@ export function AutonomousResearchPage({
   listViewKey,
 }: AutonomousResearchPageProps) {
   const [subView, setSubView] = useState<SubView>(section ? "detail" : "list");
+  const onCreateSectionRef = useRef(onCreateSection);
+  onCreateSectionRef.current = onCreateSection;
 
-  // サイドバーからクリック時は常に一覧画面を表示
+  // サイドバーからクリック時は入力画面を表示
   useEffect(() => {
     if (listViewKey !== undefined) {
-      setSubView("list");
+      onCreateSectionRef.current();
+      setSubView("input");
     }
   }, [listViewKey]);
 

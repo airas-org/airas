@@ -624,7 +624,7 @@ export default function App() {
                 icon={<FeatherTarget />}
                 selected={activeSection === "home" || activeSection === "verification"}
                 onClick={() => {
-                  navigate("/home");
+                  navigate("/verification");
                   handleMobileNavClose();
                 }}
               >
