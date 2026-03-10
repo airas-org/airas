@@ -5,11 +5,10 @@ import * as SubframeCore from "@subframe/core";
 import {
   FeatherArrowLeft,
   FeatherBarChart2,
-  FeatherBeaker,
   FeatherBell,
   FeatherBookOpen,
+  FeatherBrainCircuit,
   FeatherCheck,
-  FeatherCode,
   FeatherCreditCard,
   FeatherExternalLink,
   FeatherGlobe,
@@ -18,9 +17,10 @@ import {
   FeatherMessageSquare,
   FeatherPanelLeftClose,
   FeatherPanelLeftOpen,
-  FeatherPlus,
   FeatherReceipt,
+  FeatherRefreshCw,
   FeatherSettings,
+  FeatherTarget,
   FeatherUser,
 } from "@subframe/core";
 import axios from "axios";
@@ -602,7 +602,7 @@ export default function App() {
           ) : (
             <>
               <SidebarWithSections.NavItem
-                icon={<FeatherPlus />}
+                icon={<FeatherTarget />}
                 selected={activeSection === "home" || activeSection === "verification"}
                 onClick={() => {
                   navigate("/home");
@@ -612,7 +612,7 @@ export default function App() {
                 {t("nav.newVerification")}
               </SidebarWithSections.NavItem>
               <SidebarWithSections.NavItem
-                icon={<FeatherCode />}
+                icon={<FeatherRefreshCw />}
                 selected={activeSection === "reproduction"}
                 onClick={() => {
                   navigate("/reproduction");
@@ -622,7 +622,7 @@ export default function App() {
                 {t("nav.reproduction")}
               </SidebarWithSections.NavItem>
               <SidebarWithSections.NavItem
-                icon={<FeatherBeaker />}
+                icon={<FeatherBrainCircuit />}
                 selected={activeSection === "autonomous-research"}
                 className="cursor-default hover:bg-transparent active:bg-transparent"
               >
