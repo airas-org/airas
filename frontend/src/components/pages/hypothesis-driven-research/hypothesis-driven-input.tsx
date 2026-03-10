@@ -191,27 +191,20 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
 
   return (
     <div className="flex h-full w-full flex-col items-start bg-default-background">
-      <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-4 pb-2 sticky top-0 z-10 gap-1">
-        <div className="flex w-full items-center">
-          <button
-            type="button"
-            onClick={onBack}
-            className="rounded-md px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
-          >
-            {t("autonomous.hypothesisDriven.backToList")}
-          </button>
-        </div>
-        <span className="text-body-bold font-body-bold text-default-font">
+      <div className="relative flex w-full items-center border-b border-solid border-neutral-border bg-default-background px-6 py-3 sticky top-0 z-10">
+        <button
+          type="button"
+          onClick={onBack}
+          className="rounded-md px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+        >
+          {t("autonomous.hypothesisDriven.backToList")}
+        </button>
+        <span className="absolute left-1/2 -translate-x-1/2 text-body-bold font-body-bold text-default-font">
           Hypothesis-Driven Research
         </span>
       </div>
       <div className="flex w-full grow shrink-0 basis-0 flex-col items-center px-6 py-6 overflow-auto">
-        <div className="flex w-full max-w-[1024px] flex-col items-start gap-6 rounded-xl border border-solid border-neutral-border bg-neutral-800 px-6 py-6 shadow-sm">
-          <span className="text-heading-2 font-heading-2 text-default-font">
-            {t("autonomous.hypothesisDriven.newSessionTitle")}
-          </span>
-          <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-neutral-border" />
-
+        <div className="flex w-full max-w-[1024px] flex-col items-start gap-6">
           <div className="flex w-full flex-col items-start gap-2">
             <span className="text-body font-body text-subtext-color">
               {t("autonomous.hypothesisDriven.researchTopic")}
@@ -673,7 +666,6 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
             </div>
           )}
 
-          <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-neutral-border" />
           <div className="flex w-full items-center justify-end gap-3">
             <Button variant="neutral-secondary" onClick={onBack}>
               {t("autonomous.hypothesisDriven.cancel")}
