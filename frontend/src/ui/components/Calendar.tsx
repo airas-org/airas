@@ -1,12 +1,12 @@
 "use client";
-
 /*
  * Documentation:
  * Calendar — https://app.subframe.com/32f8a386b602/library?component=Calendar_5a87e517-ace2-49af-adcf-076c97ec3921
  */
 
-import * as SubframeCore from "@subframe/core";
 import React from "react";
+import * as SubframeCore from "@subframe/core";
+import * as SubframeUtils from "../utils";
 
 type CalendarRootProps = React.ComponentProps<typeof SubframeCore.Calendar> & {
   className?: string;

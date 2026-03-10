@@ -40,7 +40,6 @@ import {
   getAuthHeaders,
   useVerifications,
 } from "@/components/pages/verification/use-verifications";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isEnterpriseEnabled } from "@/ee/config";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { OpenAPI } from "@/lib/api";
@@ -683,18 +682,9 @@ export default function App() {
               {eeComponents ? (
                 <eeComponents.UserMenu />
               ) : (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span>
-                        <IconButton disabled variant="neutral-secondary" icon={<FeatherUser />} />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Enterprise Edition is not enabled</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <span title="Enterprise Edition is not enabled">
+                  <IconButton disabled variant="neutral-secondary" icon={<FeatherUser />} />
+                </span>
               )}
             </>
           }

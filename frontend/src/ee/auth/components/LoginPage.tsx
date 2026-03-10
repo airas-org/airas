@@ -138,7 +138,7 @@ export function LoginPage() {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-[10px] leading-[14px] text-neutral-600 -tracking-[0.01em]">
-            &copy; 2025 AIRAS
+            &copy; 2026 AIRAS
           </span>
           <span className="text-[10px] leading-[14px] text-neutral-600 -tracking-[0.01em]">
             &bull;
