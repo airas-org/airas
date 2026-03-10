@@ -1,5 +1,5 @@
-import { FeatherPlus, FeatherSearch } from "@subframe/core";
-import { useMemo, useState } from "react";
+import { FeatherPlus } from "@subframe/core";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { Verification } from "../types";
 import { VerificationCard } from "./verification-card";
@@ -97,15 +97,6 @@ export function VerificationHomePage({
     { key: "experiments-done", label: t("verification.home.categories.experimentsDone") },
     { key: "paper-done", label: t("verification.home.categories.paperDone") },
   ];
-  const [search, setSearch] = useState("");
-
-  const filtered = search
-    ? verifications.filter(
-        (v) =>
-          v.title.toLowerCase().includes(search.toLowerCase()) ||
-          v.query.toLowerCase().includes(search.toLowerCase()),
-      )
-    : verifications;
 
   const grouped = useMemo(() => {
     const map: Record<CategoryKey, Verification[]> = {
@@ -115,11 +106,11 @@ export function VerificationHomePage({
       "experiments-done": [],
       "paper-done": [],
     };
-    for (const v of filtered) {
+    for (const v of verifications) {
       map[getCategoryKey(v)].push(v);
     }
     return map;
-  }, [filtered]);
+  }, [verifications]);
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-clip min-w-0">
@@ -133,26 +124,14 @@ export function VerificationHomePage({
               {t("verification.home.projects", { count: verifications.length })}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-56 rounded-lg border border-border bg-card px-3 py-1.5 flex items-center gap-2">
-              <FeatherSearch className="h-4 w-4 text-subtext-color shrink-0" />
-              <input
-                type="text"
-                placeholder={t("verification.home.searchPlaceholder")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-transparent text-body font-body text-default-font outline-none placeholder:text-neutral-400"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={onCreateNew}
-              className="flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors cursor-pointer"
-            >
-              <FeatherPlus className="h-4 w-4" />
-              {t("verification.home.newVerification")}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onCreateNew}
+            className="flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors cursor-pointer"
+          >
+            <FeatherPlus className="h-4 w-4" />
+            {t("verification.home.newVerification")}
+          </button>
         </div>
 
         <div className="mt-6 flex gap-2 items-start overflow-x-auto">
