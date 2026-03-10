@@ -88,7 +88,7 @@ export function HypothesisDrivenList({
           <button
             type="button"
             onClick={onNavigateToInput}
-            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
           >
             <FeatherPlus className="h-4 w-4" />
             {t("autonomous.hypothesisDriven.newSession")}

@@ -195,7 +195,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
         <button
           type="button"
           onClick={onBack}
-          className="rounded-md px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+          className="rounded-md px-2 py-1 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
         >
           {t("autonomous.hypothesisDriven.backToList")}
         </button>
