@@ -1,7 +1,7 @@
 import { Check, ExternalLink, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { OpenAPI } from "@/lib/api";
+import { Button } from "@/ui";
 
 interface PlanInfo {
   plan_type: string;
@@ -174,7 +174,7 @@ export function UserPlanPage() {
             {currentPlan !== "free" && (
               <div className="mt-4 flex gap-2">
                 <Button
-                  variant="outline"
+                  variant="neutral-secondary"
                   className={`flex-1 ${confirmDowngrade ? "border-destructive text-destructive hover:bg-destructive/10" : ""}`}
                   onClick={handleDowngrade}
                   disabled={downgrading}
@@ -192,7 +192,7 @@ export function UserPlanPage() {
                 </Button>
                 {confirmDowngrade && (
                   <Button
-                    variant="outline"
+                    variant="neutral-secondary"
                     className="shrink-0"
                     onClick={() => setConfirmDowngrade(false)}
                   >

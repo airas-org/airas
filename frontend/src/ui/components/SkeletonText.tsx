@@ -1,15 +1,15 @@
 "use client";
-
 /*
  * Documentation:
  * Skeleton Text — https://app.subframe.com/32f8a386b602/library?component=Skeleton+Text_a9aae3f0-955e-4607-a272-374f1dc18f4b
  */
 
-import * as SubframeCore from "@subframe/core";
 import React from "react";
+import * as SubframeCore from "@subframe/core";
 import * as SubframeUtils from "../utils";
 
-interface SkeletonTextRootProps extends React.ComponentProps<typeof SubframeCore.Skeleton> {
+interface SkeletonTextRootProps
+  extends React.ComponentProps<typeof SubframeCore.Skeleton> {
   size?: "default" | "label" | "subheader" | "section-header" | "header";
   className?: string;
 }
@@ -19,7 +19,7 @@ const SkeletonTextRoot = React.forwardRef<
   SkeletonTextRootProps
 >(function SkeletonTextRoot(
   { size = "default", className, ...otherProps }: SkeletonTextRootProps,
-  ref,
+  ref
 ) {
   return (
     <SubframeCore.Skeleton
@@ -31,7 +31,7 @@ const SkeletonTextRoot = React.forwardRef<
           "h-7 w-full": size === "subheader",
           "h-4 w-full": size === "label",
         },
-        className,
+        className
       )}
       ref={ref}
       {...otherProps}

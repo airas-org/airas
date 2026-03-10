@@ -1,14 +1,10 @@
-"use client";
-
 import { Check, CheckCircle2, Clock, Loader2, Play, XCircle } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { getExperimentResults, runGitHubActions } from "@/lib/api-mock";
 import { cn } from "@/lib/utils";
 import type { ExperimentConfig, ExperimentResult } from "@/types/research";
+import { Button, Card, Progress } from "@/ui";
 
 interface ExperimentRunSectionProps {
   configs: ExperimentConfig[];
@@ -127,7 +123,11 @@ export function ExperimentRunSection({
                       <h4 className="font-medium text-foreground">{config.model}</h4>
                     </div>
                     {!result && !isRunning && (
-                      <Button size="sm" variant="outline" onClick={() => runExperiment(config.id)}>
+                      <Button
+                        size="small"
+                        variant="neutral-secondary"
+                        onClick={() => runExperiment(config.id)}
+                      >
                         <Play className="w-3 h-3 mr-1" />
                         {t("features.experimentRun.run")}
                       </Button>

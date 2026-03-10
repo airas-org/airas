@@ -1,15 +1,10 @@
-"use client";
-
 import { Calendar, Check, Quote, Save, Search, Users } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { searchPapers } from "@/lib/api/paper-search";
 import { cn } from "@/lib/utils";
 import type { Paper } from "@/types/research";
+import { Badge, Button, Card, TextField } from "@/ui";
 
 interface PaperSearchSectionProps {
   selectedPapers: Paper[];
@@ -84,13 +79,14 @@ export function PaperSearchSection({
       </div>
 
       <div className="flex gap-3 mb-6">
-        <Input
-          placeholder={t("features.paperSearch.searchPlaceholder")}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          className="flex-1"
-        />
+        <TextField className="flex-1">
+          <TextField.Input
+            placeholder={t("features.paperSearch.searchPlaceholder")}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          />
+        </TextField>
         <Button onClick={handleSearch} disabled={isSearching}>
           {isSearching ? t("features.paperSearch.searching") : t("features.paperSearch.search")}
         </Button>
@@ -143,7 +139,7 @@ export function PaperSearchSection({
                       </span>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="shrink-0">
+                  <Badge variant="neutral" className="shrink-0">
                     {Math.round(paper.relevanceScore * 100)}% match
                   </Badge>
                 </div>

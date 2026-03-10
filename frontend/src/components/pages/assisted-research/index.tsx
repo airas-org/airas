@@ -1,5 +1,3 @@
-"use client";
-
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AnalysisSection } from "@/components/features/analysis";
@@ -9,9 +7,6 @@ import { ExperimentRunSection } from "@/components/features/experiment-run";
 import { MethodGenerationSection } from "@/components/features/method-generation";
 import { PaperWritingSection } from "@/components/features/paper-writing";
 import { WorkflowTree } from "@/components/pages/assisted-research/workflow-tree";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type {
   ExperimentConfig,
@@ -24,6 +19,7 @@ import type {
   WorkflowNode,
   WorkflowTree as WorkflowTreeType,
 } from "@/types/research";
+import { Button, Card, TextField } from "@/ui";
 
 const DEFAULT_RESEARCH_TITLE = "Untitled Research";
 
@@ -393,23 +389,24 @@ export function AssistedResearchPage({
 
       <div className="p-6 space-y-8">
         <Card>
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Card.CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {isEditingResearchTitle ? (
-              <Input
-                id="research-section-title"
-                value={researchTitleDraft}
-                onChange={(e) => setResearchTitleDraft(e.target.value)}
-                className="bg-muted/40 border-border/70 text-lg"
-                placeholder=""
-              />
+              <TextField>
+                <TextField.Input
+                  id="research-section-title"
+                  value={researchTitleDraft}
+                  onChange={(e) => setResearchTitleDraft(e.target.value)}
+                  placeholder=""
+                />
+              </TextField>
             ) : (
               <p className="text-xl font-semibold leading-tight text-foreground">
                 {section?.title ?? DEFAULT_RESEARCH_TITLE}
               </p>
             )}
             <Button
-              variant="outline"
-              size="sm"
+              variant="neutral-secondary"
+              size="small"
               onClick={
                 isEditingResearchTitle
                   ? handleSaveResearchTitle
@@ -418,7 +415,7 @@ export function AssistedResearchPage({
             >
               {isEditingResearchTitle ? "save" : "edit"}
             </Button>
-          </CardHeader>
+          </Card.CardHeader>
         </Card>
 
         <div

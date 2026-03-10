@@ -1,16 +1,7 @@
-"use client";
-
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import type { ComputeEnvironment } from "@/lib/api";
+import { Select } from "@/ui/components/Select";
+import { TextArea } from "@/ui/components/TextArea";
+import { TextField } from "@/ui/components/TextField";
 
 export type ComputeEnvironmentFormState = {
   os: string;
@@ -40,10 +31,10 @@ export const defaultComputeEnvironmentFormState: ComputeEnvironmentFormState = {
   description: "",
 };
 
-const toNumber = (value: string): number | undefined => {
+const toInteger = (value: string): number | undefined => {
   if (value.trim() === "") return undefined;
   const parsed = Number(value);
-  return Number.isFinite(parsed) && Number.isInteger(parsed) ? parsed : undefined;
+  return Number.isInteger(parsed) ? parsed : undefined;
 };
 
 export function toComputeEnvironmentPayload(
@@ -51,152 +42,187 @@ export function toComputeEnvironmentPayload(
 ): ComputeEnvironment {
   return {
     os: state.os || undefined,
-    cpu_cores: toNumber(state.cpuCores),
-    ram_gb: toNumber(state.ramGb),
+    cpu_cores: toInteger(state.cpuCores),
+    ram_gb: toInteger(state.ramGb),
     gpu_type: state.gpuType || undefined,
-    gpu_count: toNumber(state.gpuCount),
-    gpu_memory_gb: toNumber(state.gpuMemoryGb),
+    gpu_count: toInteger(state.gpuCount),
+    gpu_memory_gb: toInteger(state.gpuMemoryGb),
     cuda_version: state.cudaVersion || undefined,
     python_version: state.pythonVersion || undefined,
     storage_type: (state.storageType as "nvme" | "ssd" | "hdd") || undefined,
-    storage_gb: toNumber(state.storageGb),
+    storage_gb: toInteger(state.storageGb),
     description: state.description || undefined,
   };
 }
 
-interface ComputeEnvironmentFormProps {
-  idPrefix: string;
-  value: ComputeEnvironmentFormState;
-  onChange: (value: ComputeEnvironmentFormState) => void;
+export interface ComputeEnvironmentFormLabels {
+  cpuCores: string;
+  gpuType: string;
+  gpuCount: string;
+  storageType: string;
+  storageGb: string;
+  description: string;
+  descriptionPlaceholder: string;
 }
 
-export function ComputeEnvironmentForm({ idPrefix, value, onChange }: ComputeEnvironmentFormProps) {
+interface ComputeEnvironmentFormProps {
+  value: ComputeEnvironmentFormState;
+  onChange: (value: ComputeEnvironmentFormState) => void;
+  labels: ComputeEnvironmentFormLabels;
+}
+
+export function ComputeEnvironmentForm({ value, onChange, labels }: ComputeEnvironmentFormProps) {
   const set =
     <K extends keyof ComputeEnvironmentFormState>(key: K) =>
     (next: ComputeEnvironmentFormState[K]) =>
       onChange({ ...value, [key]: next });
 
   return (
-    <div className="space-y-3 rounded-md bg-muted/40 p-4">
-      <p className="text-sm font-semibold text-foreground">計算環境</p>
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-os`}>OS</Label>
-          <Input
-            id={`${idPrefix}-os`}
+    <div className="flex w-full flex-col items-start gap-3">
+      <div className="flex w-full flex-wrap items-start gap-3">
+        <TextField
+          className="h-auto min-w-[120px] grow shrink-0 basis-0"
+          variant="outline"
+          label="OS"
+          helpText=""
+        >
+          <TextField.Input
+            placeholder="Ubuntu 22.04"
             value={value.os}
             onChange={(e) => set("os")(e.target.value)}
-            placeholder="Ubuntu 22.04"
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-cpu-cores`}>CPU コア数</Label>
-          <Input
-            id={`${idPrefix}-cpu-cores`}
+        </TextField>
+        <TextField
+          className="h-auto min-w-[120px] grow shrink-0 basis-0"
+          variant="outline"
+          label={labels.cpuCores}
+          helpText=""
+        >
+          <TextField.Input
             type="number"
-            inputMode="numeric"
+            placeholder="8"
             value={value.cpuCores}
             onChange={(e) => set("cpuCores")(e.target.value)}
-            placeholder="8"
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-ram`}>RAM (GB)</Label>
-          <Input
-            id={`${idPrefix}-ram`}
+        </TextField>
+        <TextField
+          className="h-auto min-w-[120px] grow shrink-0 basis-0"
+          variant="outline"
+          label="RAM (GB)"
+          helpText=""
+        >
+          <TextField.Input
             type="number"
-            inputMode="numeric"
+            placeholder="64"
             value={value.ramGb}
             onChange={(e) => set("ramGb")(e.target.value)}
-            placeholder="64"
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-gpu-type`}>GPU 種類</Label>
-          <Input
-            id={`${idPrefix}-gpu-type`}
+        </TextField>
+      </div>
+      <div className="flex w-full flex-wrap items-start gap-3">
+        <TextField
+          className="h-auto min-w-[120px] grow shrink-0 basis-0"
+          variant="outline"
+          label={labels.gpuType}
+          helpText=""
+        >
+          <TextField.Input
+            placeholder="NVIDIA A100"
             value={value.gpuType}
             onChange={(e) => set("gpuType")(e.target.value)}
-            placeholder="NVIDIA A100"
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-gpu-count`}>GPU 数</Label>
-          <Input
-            id={`${idPrefix}-gpu-count`}
+        </TextField>
+        <TextField
+          className="h-auto min-w-[120px] grow shrink-0 basis-0"
+          variant="outline"
+          label={labels.gpuCount}
+          helpText=""
+        >
+          <TextField.Input
             type="number"
-            inputMode="numeric"
+            placeholder="1"
             value={value.gpuCount}
             onChange={(e) => set("gpuCount")(e.target.value)}
-            placeholder="1"
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-gpu-memory`}>GPU VRAM (GB)</Label>
-          <Input
-            id={`${idPrefix}-gpu-memory`}
+        </TextField>
+        <TextField
+          className="h-auto min-w-[120px] grow shrink-0 basis-0"
+          variant="outline"
+          label="GPU VRAM (GB)"
+          helpText=""
+        >
+          <TextField.Input
             type="number"
-            inputMode="numeric"
+            placeholder="40"
             value={value.gpuMemoryGb}
             onChange={(e) => set("gpuMemoryGb")(e.target.value)}
-            placeholder="40"
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-cuda-version`}>CUDA バージョン</Label>
-          <Input
-            id={`${idPrefix}-cuda-version`}
+        </TextField>
+      </div>
+      <div className="flex w-full flex-wrap items-start gap-3">
+        <TextField
+          className="h-auto min-w-[120px] grow shrink-0 basis-0"
+          variant="outline"
+          label="CUDA"
+          helpText=""
+        >
+          <TextField.Input
+            placeholder="12.1"
             value={value.cudaVersion}
             onChange={(e) => set("cudaVersion")(e.target.value)}
-            placeholder="12.1"
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-python-version`}>Python バージョン</Label>
-          <Input
-            id={`${idPrefix}-python-version`}
+        </TextField>
+        <TextField
+          className="h-auto min-w-[120px] grow shrink-0 basis-0"
+          variant="outline"
+          label="Python"
+          helpText=""
+        >
+          <TextField.Input
+            placeholder="3.11"
             value={value.pythonVersion}
             onChange={(e) => set("pythonVersion")(e.target.value)}
-            placeholder="3.11"
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-storage-type`}>ストレージ種類</Label>
-          <Select
-            value={value.storageType}
-            onValueChange={(val) => set("storageType")(val as "nvme" | "ssd" | "hdd" | "")}
-          >
-            <SelectTrigger id={`${idPrefix}-storage-type`} className="w-full">
-              <SelectValue placeholder="選択..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="nvme">NVMe</SelectItem>
-              <SelectItem value="ssd">SSD</SelectItem>
-              <SelectItem value="hdd">HDD</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-storage-gb`}>ストレージ容量 (GB)</Label>
-          <Input
-            id={`${idPrefix}-storage-gb`}
+        </TextField>
+        <Select
+          className="h-auto min-w-[120px] grow shrink-0 basis-0"
+          variant="outline"
+          label={labels.storageType}
+          placeholder="--"
+          helpText=""
+          value={value.storageType}
+          onValueChange={(val) => set("storageType")(val as "nvme" | "ssd" | "hdd" | "")}
+        >
+          <Select.Item value="nvme">NVMe</Select.Item>
+          <Select.Item value="ssd">SSD</Select.Item>
+          <Select.Item value="hdd">HDD</Select.Item>
+        </Select>
+        <TextField
+          className="h-auto min-w-[120px] grow shrink-0 basis-0"
+          variant="outline"
+          label={labels.storageGb}
+          helpText=""
+        >
+          <TextField.Input
             type="number"
-            inputMode="numeric"
+            placeholder="500"
             value={value.storageGb}
             onChange={(e) => set("storageGb")(e.target.value)}
-            placeholder="500"
           />
-        </div>
+        </TextField>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-compute-env-desc`}>補足情報</Label>
-        <Textarea
-          id={`${idPrefix}-compute-env-desc`}
+      <TextArea
+        className="h-auto w-full flex-none"
+        variant="outline"
+        label={labels.description}
+        helpText=""
+      >
+        <TextArea.Input
+          placeholder={labels.descriptionPlaceholder}
           value={value.description}
           onChange={(e) => set("description")(e.target.value)}
-          placeholder="上記フィールドに収まらない環境情報（ネットワーク帯域、特殊な依存関係など）"
         />
-      </div>
+      </TextArea>
     </div>
   );
 }

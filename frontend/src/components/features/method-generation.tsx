@@ -1,14 +1,9 @@
-"use client";
-
 import { Edit3, FileText, Lightbulb, Save, Sparkles } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { generateMethod } from "@/lib/api-mock";
 import type { Method, Paper } from "@/types/research";
+import { Button, Card, TextArea, TextField } from "@/ui";
 
 interface MethodGenerationSectionProps {
   selectedPapers: Paper[];
@@ -140,8 +135,8 @@ export function MethodGenerationSection({
       {!generatedMethod && !tempMethod && (
         <div className="flex gap-2 mb-6">
           <Button
-            variant={!isManualMode ? "default" : "outline"}
-            size="sm"
+            variant={!isManualMode ? "brand-primary" : "neutral-secondary"}
+            size="small"
             onClick={() => setIsManualMode(false)}
             className={
               !isManualMode ? "bg-blue-700 hover:bg-blue-800 text-white" : "bg-transparent"
@@ -150,8 +145,8 @@ export function MethodGenerationSection({
             {t("features.methodGeneration.generateFromPapers")}
           </Button>
           <Button
-            variant={isManualMode ? "default" : "outline"}
-            size="sm"
+            variant={isManualMode ? "brand-primary" : "neutral-secondary"}
+            size="small"
             onClick={() => setIsManualMode(true)}
             className={isManualMode ? "bg-blue-700 hover:bg-blue-800 text-white" : "bg-transparent"}
           >
@@ -169,13 +164,14 @@ export function MethodGenerationSection({
             >
               {t("features.methodGeneration.methodName")}
             </label>
-            <Input
-              id={manualMethodNameId}
-              value={manualMethodName}
-              onChange={(e) => setManualMethodName(e.target.value)}
-              placeholder="例: Attention-based Graph Neural Network"
-              className="bg-background"
-            />
+            <TextField>
+              <TextField.Input
+                id={manualMethodNameId}
+                value={manualMethodName}
+                onChange={(e) => setManualMethodName(e.target.value)}
+                placeholder="例: Attention-based Graph Neural Network"
+              />
+            </TextField>
           </div>
           <div>
             <label
@@ -184,13 +180,15 @@ export function MethodGenerationSection({
             >
               {t("features.methodGeneration.methodDescription")}
             </label>
-            <Textarea
-              id={manualMethodDescriptionId}
-              value={manualMethodDescription}
-              onChange={(e) => setManualMethodDescription(e.target.value)}
-              placeholder={t("features.methodGeneration.descriptionPlaceholder")}
-              className="min-h-[200px] font-mono text-sm bg-background"
-            />
+            <TextArea>
+              <TextArea.Input
+                id={manualMethodDescriptionId}
+                value={manualMethodDescription}
+                onChange={(e) => setManualMethodDescription(e.target.value)}
+                placeholder={t("features.methodGeneration.descriptionPlaceholder")}
+                className="min-h-[200px] font-mono text-sm"
+              />
+            </TextArea>
           </div>
           <Button
             onClick={handleManualSave}
@@ -255,12 +253,14 @@ export function MethodGenerationSection({
               >
                 {t("features.methodGeneration.editableDescription")}
               </label>
-              <Textarea
-                id={previewDescriptionId}
-                value={editedDescription}
-                onChange={(e) => handleDescriptionChange(e.target.value)}
-                className="min-h-[200px] font-mono text-sm bg-background"
-              />
+              <TextArea>
+                <TextArea.Input
+                  id={previewDescriptionId}
+                  value={editedDescription}
+                  onChange={(e) => handleDescriptionChange(e.target.value)}
+                  className="min-h-[200px] font-mono text-sm"
+                />
+              </TextArea>
             </div>
           </div>
           <Button
@@ -284,12 +284,13 @@ export function MethodGenerationSection({
                 >
                   {t("features.methodGeneration.methodName")}
                 </label>
-                <Input
-                  id={editMethodNameId}
-                  value={manualMethodName}
-                  onChange={(e) => setManualMethodName(e.target.value)}
-                  className="bg-background"
-                />
+                <TextField>
+                  <TextField.Input
+                    id={editMethodNameId}
+                    value={manualMethodName}
+                    onChange={(e) => setManualMethodName(e.target.value)}
+                  />
+                </TextField>
               </div>
               <div>
                 <label
@@ -298,16 +299,18 @@ export function MethodGenerationSection({
                 >
                   {t("features.methodGeneration.methodDescription")}
                 </label>
-                <Textarea
-                  id={editMethodDescriptionId}
-                  value={manualMethodDescription}
-                  onChange={(e) => setManualMethodDescription(e.target.value)}
-                  className="min-h-[300px] font-mono text-sm bg-background"
-                />
+                <TextArea>
+                  <TextArea.Input
+                    id={editMethodDescriptionId}
+                    value={manualMethodDescription}
+                    onChange={(e) => setManualMethodDescription(e.target.value)}
+                    className="min-h-[300px] font-mono text-sm"
+                  />
+                </TextArea>
               </div>
               <div className="flex gap-2 justify-end">
                 <Button
-                  variant="outline"
+                  variant="neutral-secondary"
                   onClick={() => setIsEditing(false)}
                   className="bg-transparent"
                 >
@@ -328,7 +331,7 @@ export function MethodGenerationSection({
                 <p className="text-sm font-medium text-foreground">
                   {t("features.methodGeneration.methodName")}
                 </p>
-                <Button variant="ghost" size="sm" onClick={handleEdit}>
+                <Button variant="neutral-tertiary" size="small" onClick={handleEdit}>
                   <Edit3 className="w-4 h-4 mr-1" />
                   {t("common.edit")}
                 </Button>
