@@ -154,7 +154,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
 
   return (
     <div className="flex h-full w-full flex-col items-start bg-default-background">
-      <div className="relative flex w-full items-center border-b border-solid border-neutral-border bg-default-background px-6 py-3 sticky top-0 z-10">
+      <div className="relative flex w-full items-center bg-default-background px-6 py-3 sticky top-0 z-10">
         <button
           type="button"
           onClick={onBack}
