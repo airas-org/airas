@@ -213,8 +213,9 @@ export default function App() {
   const handleCreateWithMethod = useCallback(
     async (sourceVerification: Verification, method: ProposedMethod) => {
       const apiBase = OpenAPI.BASE;
-      const authHeaders = await getAuthHeaders();
       try {
+        const authHeaders = await getAuthHeaders();
+
         // 1. 新しいセッションを作成
         const createRes = await fetch(`${apiBase}/airas/v1/verification/sessions`, {
           method: "POST",
@@ -226,12 +227,14 @@ export default function App() {
         const newId: string = session.id;
 
         // 2. ローカル状態に追加し、初期データをセット（クエリ引き継ぎ、選択済みメソッドをセット）
+        // phase を "methods-proposed" にセットして hasQuery=true にし、ローディング画面を表示
         handleAddVerification(session);
         handleUpdateVerification(newId, {
           title: method.title,
           query: sourceVerification.query,
           proposedMethods: [method],
           selectedMethodId: method.id,
+          phase: "methods-proposed",
         });
 
         // 3. 新セッションに遷移（"Generating verification plan..." ローディングが表示される）
@@ -254,7 +257,14 @@ export default function App() {
             verification_id: newId,
           }),
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+          // 失敗時は selectedMethodId をクリアして再選択できる状態に戻す
+          handleUpdateVerification(newId, {
+            selectedMethodId: undefined,
+            phase: "methods-proposed",
+          });
+          return;
+        }
         const data = await res.json();
 
         // 5. 生成された検証方法でセッションを更新
@@ -276,8 +286,9 @@ export default function App() {
   const handleCreateWithQuery = useCallback(
     async (query: string) => {
       const apiBase = OpenAPI.BASE;
-      const authHeaders = await getAuthHeaders();
       try {
+        const authHeaders = await getAuthHeaders();
+
         const createRes = await fetch(`${apiBase}/airas/v1/verification/sessions`, {
           method: "POST",
           headers: { "Content-Type": "application/json", ...authHeaders },
@@ -296,10 +307,20 @@ export default function App() {
           headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify({ user_query: query, verification_id: newId }),
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+          // 失敗時は phase を initial に戻してクエリ入力に復帰できる状態にする
+          handleUpdateVerification(newId, { phase: "initial" });
+          return;
+        }
         const data = await res.json();
-        if (!data.feasible) return;
+        if (!data.feasible) {
+          // 非feasibleの場合も phase を initial に戻す
+          handleUpdateVerification(newId, { phase: "initial" });
+          return;
+        }
 
+        // propose-policies レスポンスを ProposedMethod[] に変換
+        // (VerificationDetailPage.handleChatSubmit と同じ変換ロジック)
         const methods: ProposedMethod[] = data.proposed_methods.map(
           (m: {
             id: string;
