@@ -89,10 +89,27 @@
       }
     }
   },
+  "receipts": {
+    "title": "領収書 / 請求書",
+    "subtitle": "過去の領収書や請求書を確認できます。",
+    "empty": "領収書・請求書はまだありません。"
+  },
+  "usage": {
+    "title": "利用量",
+    "apiStatus": "API利用状況",
+    "monthlyUsage": "今月のAPI利用",
+    "percentUsed": "{{percent}}% 使用済み"
+  },
+  "sessionDropdown": {
+    "pastSessions": "過去のセッション",
+    "noSessions": "過去のセッションはありません"
+  },
   "verification": {
     "home": {
       "title": "検証一覧",
       "newVerification": "新規検証",
+      "duplicate": "複製",
+      "delete": "削除",
       "noVerifications": "検証がありません",
       "noVerificationsDesc": "新規検証ボタンから最初の検証を作成してください",
       "projects": "{{count}} 件",
@@ -541,6 +558,7 @@
     "bio": "自己紹介",
     "bioPlaceholder": "自己紹介を入力",
     "saved": "保存しました",
+    "researcher": "研究者",
     "apiUsage": "API利用状況",
     "monthlyApiUsage": "今月のAPI利用",
     "usagePercent": "{{percent}}% 使用済み"
@@ -598,13 +616,53 @@
     "title": "Integration",
     "subtitle": "外部サービスとの連携設定",
     "save": "保存",
-    "saved": "保存しました"
+    "saved": "保存しました",
+    "connectionTitle": "接続",
+    "connectionSubtitle": "外部サービスと連携します。",
+    "github": {
+      "connecting": "GitHubと連携中...",
+      "success": "GitHub連携が完了しました。リダイレクト中...",
+      "error": "GitHub連携に失敗しました。",
+      "backToPage": "Integrationページに戻る",
+      "connectError": "GitHub連携の開始に失敗しました",
+      "disconnectError": "GitHub連携の解除に失敗しました",
+      "disconnect": "連携解除",
+      "connect": "連携",
+      "description": "実装はGitHubのリポジトリに保存されます。アカウントを連携してください。",
+      "connected": "連携済み",
+      "changeAccount": "アカウントを変更",
+      "privateRepo": "リポジトリをプライベートで作成する",
+      "privateRepoDesc": "新しく作成されるリポジトリはデフォルトでプライベートに設定されます。"
+    },
+    "slack": {
+      "name": "Slack（coming soon）",
+      "connect": "連携",
+      "description": "Slackアカウントを連携して、実行完了の通知が届く様に設定できます。"
+    }
   },
   "userPlan": {
     "title": "User Plan",
     "subtitle": "プランの確認・変更",
     "current": "現在のプラン",
-    "upgrade": "アップグレード"
+    "upgrade": "アップグレード",
+    "planTitle": "プラン",
+    "planSubtitle": "サブスクリプションプランを管理します",
+    "currentPlan": "現在のプラン",
+    "perMonth": "/月",
+    "processing": "処理中...",
+    "confirmDowngrade": "本当にダウングレードしますか？",
+    "downgrade": "ダウングレード",
+    "upgradeToPro": "Pro にアップグレード",
+    "downgradeFailed": "ダウングレードに失敗しました。もう一度お試しください。",
+    "checkoutFailed": "チェックアウトの開始に失敗しました。もう一度お試しください。",
+    "freeFeatures": ["基本的な自動研究", "コミュニティサポート", "標準LLMアクセス"],
+    "proFeatures": [
+      "Freeの全機能",
+      "優先研究実行",
+      "高度なLLMモデル",
+      "優先サポート",
+      "カスタム連携"
+    ]
   },
   "papers": {
     "title": "論文",

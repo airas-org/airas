@@ -1,5 +1,6 @@
 import { Check, ExternalLink, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { OpenAPI } from "@/lib/api";
 import { Button } from "@/ui";
 
@@ -28,17 +29,8 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-const FREE_FEATURES = ["Basic autonomous research", "Community support", "Standard LLM access"];
-
-const PRO_FEATURES = [
-  "Everything in Free",
-  "Priority research execution",
-  "Advanced LLM models",
-  "Priority support",
-  "Custom integrations",
-];
-
 export function UserPlanPage() {
+  const { t } = useTranslation();
   const [plan, setPlan] = useState<PlanInfo>({
     plan_type: "free",
     status: "active",
@@ -91,7 +83,7 @@ export function UserPlanPage() {
       await apiFetch("/stripe/cancel", { method: "POST" });
       window.location.reload();
     } catch {
-      setError("ダウングレードに失敗しました。もう一度お試しください。");
+      setError(t("userPlan.downgradeFailed"));
     } finally {
       setDowngrading(false);
     }
@@ -112,13 +104,15 @@ export function UserPlanPage() {
         window.location.href = data.checkout_url;
       }
     } catch {
-      setError("チェックアウトの開始に失敗しました。もう一度お試しください。");
+      setError(t("userPlan.checkoutFailed"));
     } finally {
       setUpgrading(false);
     }
   };
 
   const currentPlan = plan.plan_type.toLowerCase();
+  const freeFeatures = t("userPlan.freeFeatures", { returnObjects: true }) as string[];
+  const proFeatures = t("userPlan.proFeatures", { returnObjects: true }) as string[];
 
   if (loading) {
     return (
@@ -131,9 +125,11 @@ export function UserPlanPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-3xl mx-auto px-8 py-8">
-        <h1 className="text-heading-2 font-heading-2 text-default-font">プラン</h1>
+        <h1 className="text-heading-2 font-heading-2 text-default-font">
+          {t("userPlan.planTitle")}
+        </h1>
         <p className="text-caption font-caption text-subtext-color mt-1">
-          サブスクリプションプランを管理します
+          {t("userPlan.planSubtitle")}
         </p>
 
         {error && (
@@ -152,16 +148,19 @@ export function UserPlanPage() {
             {currentPlan === "free" && (
               <div className="absolute -top-3 left-4">
                 <span className="inline-block rounded-full bg-brand-600 px-3 py-0.5 text-caption font-caption text-white">
-                  現在のプラン
+                  {t("userPlan.currentPlan")}
                 </span>
               </div>
             )}
             <h2 className="text-body-bold font-body-bold text-default-font mt-1">Free</h2>
             <p className="text-heading-2 font-heading-2 text-default-font mt-2">
-              $0<span className="text-caption font-caption text-subtext-color">/month</span>
+              $0
+              <span className="text-caption font-caption text-subtext-color">
+                {t("userPlan.perMonth")}
+              </span>
             </p>
             <ul className="mt-4 space-y-2">
-              {FREE_FEATURES.map((feature) => (
+              {freeFeatures.map((feature) => (
                 <li
                   key={feature}
                   className="flex items-start gap-2 text-caption font-caption text-subtext-color"
@@ -182,12 +181,12 @@ export function UserPlanPage() {
                   {downgrading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      処理中...
+                      {t("userPlan.processing")}
                     </>
                   ) : confirmDowngrade ? (
-                    "本当にダウングレードしますか？"
+                    t("userPlan.confirmDowngrade")
                   ) : (
-                    "ダウングレード"
+                    t("userPlan.downgrade")
                   )}
                 </Button>
                 {confirmDowngrade && (
@@ -196,7 +195,7 @@ export function UserPlanPage() {
                     className="shrink-0"
                     onClick={() => setConfirmDowngrade(false)}
                   >
-                    キャンセル
+                    {t("common.cancel")}
                   </Button>
                 )}
               </div>
@@ -212,16 +211,19 @@ export function UserPlanPage() {
             {currentPlan === "pro" && (
               <div className="absolute -top-3 left-4">
                 <span className="inline-block rounded-full bg-brand-600 px-3 py-0.5 text-caption font-caption text-white">
-                  現在のプラン
+                  {t("userPlan.currentPlan")}
                 </span>
               </div>
             )}
             <h2 className="text-body-bold font-body-bold text-default-font mt-1">Pro</h2>
             <p className="text-heading-2 font-heading-2 text-default-font mt-2">
-              $29<span className="text-caption font-caption text-subtext-color">/month</span>
+              $29
+              <span className="text-caption font-caption text-subtext-color">
+                {t("userPlan.perMonth")}
+              </span>
             </p>
             <ul className="mt-4 space-y-2">
-              {PRO_FEATURES.map((feature) => (
+              {proFeatures.map((feature) => (
                 <li
                   key={feature}
                   className="flex items-start gap-2 text-caption font-caption text-subtext-color"
@@ -236,12 +238,12 @@ export function UserPlanPage() {
                 {upgrading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    処理中...
+                    {t("userPlan.processing")}
                   </>
                 ) : (
                   <>
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Pro にアップグレード
+                    {t("userPlan.upgradeToPro")}
                   </>
                 )}
               </Button>

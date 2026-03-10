@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
@@ -127,6 +128,7 @@ export function MainContent({
   onCreateWithMethod,
   autonomousListViewKey,
 }: MainContentProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [selectedPapers, setSelectedPapers] = useState<Paper[]>([]);
 
@@ -184,7 +186,7 @@ export function MainContent({
                   onClick={() => navigate("/verification")}
                   className="rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
                 >
-                  検証一覧
+                  {t("nav.verificationList")}
                 </button>
               </div>
               <div className="flex-1 flex items-center justify-center pb-[20vh] p-6">
