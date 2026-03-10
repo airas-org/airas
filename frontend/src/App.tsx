@@ -491,17 +491,16 @@ export default function App() {
             </div>
           }
           footer={
-            <button
-              type="button"
-              className={cn(
-                "flex w-full items-center gap-2.5 rounded-md px-1 py-1 -mx-1 transition-colors cursor-pointer",
-                isSettingsView ? "text-brand-700" : "text-neutral-600 hover:bg-neutral-100",
-              )}
-              onClick={() => navigate("/settings/profile")}
-            >
-              <FeatherSettings className="h-4 w-4" />
-              <span className="text-sm font-medium">{t("nav.settings")}</span>
-            </button>
+            !isSettingsView ? (
+              <button
+                type="button"
+                className="flex w-full items-center gap-2.5 rounded-md px-1 py-1 -mx-1 transition-colors cursor-pointer text-neutral-600 hover:bg-neutral-100"
+                onClick={() => navigate("/settings/profile")}
+              >
+                <FeatherSettings className="h-4 w-4" />
+                <span className="text-sm font-medium">{t("nav.settings")}</span>
+              </button>
+            ) : undefined
           }
         >
           {isSettingsView ? (
