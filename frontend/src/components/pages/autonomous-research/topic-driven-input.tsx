@@ -166,7 +166,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
           Topic-Driven Research
         </span>
       </div>
-      <div className="flex w-full max-w-[1024px] flex-col items-start gap-6">
+      <div className="flex w-full max-w-[768px] flex-col items-start gap-6">
         <div className="flex w-full flex-col items-start gap-2 rounded-lg bg-card border border-border px-4 py-4">
           <div className="flex items-center gap-1">
             <span className="text-body-bold font-body-bold text-default-font">
