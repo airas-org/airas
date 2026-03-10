@@ -1,6 +1,7 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { OpenAPI } from "@/lib/api/core/OpenAPI";
 import { Loader } from "@/ui";
 import { mockExperimentResultResponse } from "../mock-data";
@@ -95,6 +96,7 @@ export function VerificationDetailPage({
   onCreateWithMethod,
 }: VerificationDetailPageProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [isPaperGenerating, setIsPaperGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -453,6 +455,15 @@ export function VerificationDetailPage({
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto">
+      <div className="flex-shrink-0 px-4 pt-3">
+        <button
+          type="button"
+          onClick={() => navigate("/verification")}
+          className="rounded-md px-2 py-1 text-xs text-subtext-color hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+        >
+          {t("verification.home.title")}
+        </button>
+      </div>
       {!hasQuery && (
         <div className="flex-1 flex items-center justify-center pb-[20vh] p-6">
           <ChatInput onSubmit={handleChatSubmit} />

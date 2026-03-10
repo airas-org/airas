@@ -22,7 +22,8 @@
     "help": "ヘルプ",
     "docs": "ドキュメント",
     "legal": "利用規約",
-    "experimental": "実験的機能"
+    "experimental": "実験的機能",
+    "reproduction": "再現実装"
   },
   "userMenu": {
     "developer": "開発者",
@@ -88,10 +89,27 @@
       }
     }
   },
+  "receipts": {
+    "title": "領収書 / 請求書",
+    "subtitle": "過去の領収書や請求書を確認できます。",
+    "empty": "領収書・請求書はまだありません。"
+  },
+  "usage": {
+    "title": "利用量",
+    "apiStatus": "API利用状況",
+    "monthlyUsage": "今月のAPI利用",
+    "percentUsed": "{{percent}}% 使用済み"
+  },
+  "sessionDropdown": {
+    "pastSessions": "過去のセッション",
+    "noSessions": "過去のセッションはありません"
+  },
   "verification": {
     "home": {
       "title": "検証一覧",
       "newVerification": "新規検証",
+      "duplicate": "複製",
+      "delete": "削除",
       "noVerifications": "検証がありません",
       "noVerificationsDesc": "新規検証ボタンから最初の検証を作成してください",
       "projects": "{{count}} 件",
@@ -212,9 +230,10 @@
       "listSubtitle": "過去に実行した自動研究セッションの履歴を確認できます",
       "inputPlaceholder": "研究トピックを入力してください",
       "start": "研究を開始",
-      "newSession": "新規研究を開始",
-      "firstSession": "最初の研究を開始",
+      "newSession": "新規研究",
+      "firstSession": "新規研究",
       "noSessions": "まだ研究セッションがありません",
+      "emptyStateTitle": "新しく研究を始める",
       "searchPlaceholder": "セッションを検索...",
       "sessionCount": "{{count}} 件のセッション",
       "sort": "並び替え",
@@ -225,7 +244,7 @@
       "newSessionTitle": "新規研究セッション",
       "researchTopic": "研究テーマ",
       "researchTopicPlaceholder": "例: Vision-Language Models を用いた Video QA の性能向上手法",
-      "backToList": "一覧に戻る",
+      "backToList": "研究一覧",
       "cancel": "キャンセル",
       "running": "実行中...",
       "run": "自動研究を実行",
@@ -268,7 +287,7 @@
       "fetchLatest": "最新を取得",
       "saving": "保存中...",
       "save": "保存",
-      "noProgress": "まだ表示できる進捗はありません。",
+      "noProgress": "研究結果を読み込んでいます",
       "researchHistory": "研究履歴",
       "purpose": "目的",
       "paperUrl": "論文URL",
@@ -286,9 +305,10 @@
       "listHeading": "仮説駆動研究セッション一覧",
       "inputPlaceholder": "検証したい仮説を入力してください",
       "start": "検証を開始",
-      "newSession": "新規研究を開始",
-      "firstSession": "最初の研究を開始",
+      "newSession": "新規研究",
+      "firstSession": "新規研究",
       "noSessions": "まだ研究セッションがありません",
+      "emptyStateTitle": "新しく研究を始める",
       "searchPlaceholder": "セッションを検索...",
       "sessionCount": "{{count}} 件のセッション",
       "sort": "並び替え",
@@ -307,7 +327,7 @@
       "experimentalCode": "実験コード",
       "expectedResult": "期待される結果",
       "expectedConclusion": "期待される結論",
-      "backToList": "一覧に戻る",
+      "backToList": "研究一覧",
       "cancel": "キャンセル",
       "running": "実行中...",
       "run": "仮説駆動研究を実行",
@@ -346,7 +366,7 @@
       "fetchLatest": "最新を取得",
       "saving": "保存中...",
       "save": "保存",
-      "noProgress": "まだ表示できる進捗はありません。",
+      "noProgress": "研究結果を読み込んでいます",
       "researchHistory": "研究履歴",
       "purpose": "目的",
       "paperUrl": "論文URL",
@@ -538,6 +558,7 @@
     "bio": "自己紹介",
     "bioPlaceholder": "自己紹介を入力",
     "saved": "保存しました",
+    "researcher": "研究者",
     "apiUsage": "API利用状況",
     "monthlyApiUsage": "今月のAPI利用",
     "usagePercent": "{{percent}}% 使用済み"
@@ -595,13 +616,53 @@
     "title": "Integration",
     "subtitle": "外部サービスとの連携設定",
     "save": "保存",
-    "saved": "保存しました"
+    "saved": "保存しました",
+    "connectionTitle": "接続",
+    "connectionSubtitle": "外部サービスと連携します。",
+    "github": {
+      "connecting": "GitHubと連携中...",
+      "success": "GitHub連携が完了しました。リダイレクト中...",
+      "error": "GitHub連携に失敗しました。",
+      "backToPage": "Integrationページに戻る",
+      "connectError": "GitHub連携の開始に失敗しました",
+      "disconnectError": "GitHub連携の解除に失敗しました",
+      "disconnect": "連携解除",
+      "connect": "連携",
+      "description": "実装はGitHubのリポジトリに保存されます。アカウントを連携してください。",
+      "connected": "連携済み",
+      "changeAccount": "アカウントを変更",
+      "privateRepo": "リポジトリをプライベートで作成する",
+      "privateRepoDesc": "新しく作成されるリポジトリはデフォルトでプライベートに設定されます。"
+    },
+    "slack": {
+      "name": "Slack（coming soon）",
+      "connect": "連携",
+      "description": "Slackアカウントを連携して、実行完了の通知が届く様に設定できます。"
+    }
   },
   "userPlan": {
     "title": "User Plan",
     "subtitle": "プランの確認・変更",
     "current": "現在のプラン",
-    "upgrade": "アップグレード"
+    "upgrade": "アップグレード",
+    "planTitle": "プラン",
+    "planSubtitle": "サブスクリプションプランを管理します",
+    "currentPlan": "現在のプラン",
+    "perMonth": "/月",
+    "processing": "処理中...",
+    "confirmDowngrade": "本当にダウングレードしますか？",
+    "downgrade": "ダウングレード",
+    "upgradeToPro": "Pro にアップグレード",
+    "downgradeFailed": "ダウングレードに失敗しました。もう一度お試しください。",
+    "checkoutFailed": "チェックアウトの開始に失敗しました。もう一度お試しください。",
+    "freeFeatures": ["基本的な自動研究", "コミュニティサポート", "標準LLMアクセス"],
+    "proFeatures": [
+      "Freeの全機能",
+      "優先研究実行",
+      "高度なLLMモデル",
+      "優先サポート",
+      "カスタム連携"
+    ]
   },
   "papers": {
     "title": "論文",
@@ -750,10 +811,9 @@
     "openOnGitHub": "GitHubで開く",
     "close": "閉じる"
   },
-  "autoResearchResult": {
-    "noProgress": "まだ表示できる進捗はありません。",
-    "evaluationMetric": "評価指標",
-    "baseline": "ベースライン"
+  "reproduction": {
+    "title": "再現実装",
+    "comingSoon": "近日公開予定です"
   },
   "common": {
     "loading": "読み込み中...",

@@ -10,7 +10,6 @@ import {
   FeatherFlaskConical,
   FeatherLoader,
   FeatherPlus,
-  FeatherSearch,
   FeatherX,
 } from "@subframe/core";
 import { useState } from "react";
@@ -19,7 +18,6 @@ import type { ResearchSection } from "@/types/research";
 import { Badge } from "@/ui/components/Badge";
 import { Button } from "@/ui/components/Button";
 import { DropdownMenu } from "@/ui/components/DropdownMenu";
-import { TextField } from "@/ui/components/TextField";
 
 type SortKey = "newest" | "oldest" | "title";
 
@@ -35,18 +33,13 @@ export function TopicDrivenList({
   onNavigateToInput,
 }: TopicDrivenListProps) {
   const { t, i18n } = useTranslation();
-  const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
 
-  const filtered = sessions
-    .filter((s) =>
-      searchQuery.trim() ? s.title.toLowerCase().includes(searchQuery.toLowerCase()) : true,
-    )
-    .sort((a, b) => {
-      if (sortKey === "newest") return b.createdAt.getTime() - a.createdAt.getTime();
-      if (sortKey === "oldest") return a.createdAt.getTime() - b.createdAt.getTime();
-      return a.title.localeCompare(b.title);
-    });
+  const filtered = sessions.sort((a, b) => {
+    if (sortKey === "newest") return b.createdAt.getTime() - a.createdAt.getTime();
+    if (sortKey === "oldest") return a.createdAt.getTime() - b.createdAt.getTime();
+    return a.title.localeCompare(b.title);
+  });
 
   const statusBadge = (status: ResearchSection["status"]) => {
     const cls = "text-[11px] py-0 px-1.5";
@@ -71,122 +64,121 @@ export function TopicDrivenList({
     );
   };
 
-  return (
-    <div className="flex h-full w-full flex-col items-center bg-default-background px-6 py-12 overflow-auto">
-      <div className="flex w-full max-w-[768px] flex-col items-start gap-6">
-        <div className="flex w-full flex-col items-center gap-4">
-          <img
-            className="h-12 flex-none object-contain"
-            src="https://res.cloudinary.com/subframe/image/upload/v1772095364/uploads/36719/yglokiomst2au6hj5g8o.png"
-            alt=""
-          />
-          <span className="text-heading-1 font-heading-1 text-default-font text-center">
-            {t("autonomous.topicDriven.listTitle")}
-          </span>
-          <span className="text-body font-body text-subtext-color text-center">
-            {t("autonomous.topicDriven.listSubtitle")}
-          </span>
-        </div>
-        <div className="flex w-full items-center justify-between gap-3">
-          <TextField
-            className="h-auto grow shrink-0 basis-0"
-            variant="outline"
-            label=""
-            helpText=""
-            icon={<FeatherSearch />}
+  if (sessions.length === 0) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-default-background">
+        <div className="flex flex-col items-center gap-6 text-center">
+          <FeatherFlaskConical className="h-12 w-12 text-neutral-300" />
+          <button
+            type="button"
+            onClick={onNavigateToInput}
+            className="text-xl font-semibold text-brand-600 hover:text-brand-700 transition-colors cursor-pointer hover:underline underline-offset-4"
           >
-            <TextField.Input
-              placeholder={t("autonomous.topicDriven.searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </TextField>
-          <Button variant="brand-primary" icon={<FeatherPlus />} onClick={onNavigateToInput}>
-            {t("autonomous.topicDriven.newSession")}
-          </Button>
+            {t("autonomous.topicDriven.emptyStateTitle")}
+          </button>
         </div>
-        <div className="flex w-full items-center gap-2 border-b border-solid border-neutral-border pb-3">
-          <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
-            {t("autonomous.topicDriven.sessionCount", { count: filtered.length })}
-          </span>
-          <SubframeCore.DropdownMenu.Root>
-            <SubframeCore.DropdownMenu.Trigger asChild>
-              <Button
-                variant="neutral-secondary"
-                size="small"
-                icon={<FeatherArrowDownUp />}
-                iconRight={<FeatherChevronDown />}
-              >
-                {t("autonomous.topicDriven.sort")}
-              </Button>
-            </SubframeCore.DropdownMenu.Trigger>
-            <SubframeCore.DropdownMenu.Portal>
-              <SubframeCore.DropdownMenu.Content side="bottom" align="end" sideOffset={4} asChild>
-                <DropdownMenu>
-                  <DropdownMenu.DropdownItem icon={null} onSelect={() => setSortKey("newest")}>
-                    {t("autonomous.topicDriven.sortNewest")}
-                  </DropdownMenu.DropdownItem>
-                  <DropdownMenu.DropdownItem icon={null} onSelect={() => setSortKey("oldest")}>
-                    {t("autonomous.topicDriven.sortOldest")}
-                  </DropdownMenu.DropdownItem>
-                  <DropdownMenu.DropdownItem icon={null} onSelect={() => setSortKey("title")}>
-                    {t("autonomous.topicDriven.sortTitle")}
-                  </DropdownMenu.DropdownItem>
-                </DropdownMenu>
-              </SubframeCore.DropdownMenu.Content>
-            </SubframeCore.DropdownMenu.Portal>
-          </SubframeCore.DropdownMenu.Root>
-        </div>
-        <div className="flex w-full flex-col items-start gap-3">
-          {filtered.length === 0 && (
-            <div className="flex w-full flex-col items-center gap-4 py-12">
-              <span className="text-body font-body text-subtext-color">
-                {searchQuery.trim()
-                  ? t("autonomous.topicDriven.noSearchResults")
-                  : t("autonomous.topicDriven.noSessions")}
-              </span>
-              {!searchQuery.trim() && (
-                <Button variant="brand-primary" icon={<FeatherPlus />} onClick={onNavigateToInput}>
-                  {t("autonomous.topicDriven.firstSession")}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full w-full flex-col bg-default-background">
+      <div className="flex-shrink-0 px-6 py-6">
+        <button
+          type="button"
+          onClick={onNavigateToInput}
+          className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+        >
+          <FeatherPlus className="h-4 w-4" />
+          {t("autonomous.topicDriven.newSession")}
+        </button>
+      </div>
+      <div className="flex-1 overflow-auto px-6 pb-6">
+        <div className="flex w-full max-w-[768px] flex-col items-start gap-6">
+          <div className="flex w-full items-center gap-2 border-b border-solid border-neutral-border pb-3">
+            <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
+              {t("autonomous.topicDriven.sessionCount", { count: filtered.length })}
+            </span>
+            <SubframeCore.DropdownMenu.Root>
+              <SubframeCore.DropdownMenu.Trigger asChild>
+                <Button
+                  variant="neutral-secondary"
+                  size="small"
+                  icon={<FeatherArrowDownUp />}
+                  iconRight={<FeatherChevronDown />}
+                >
+                  {t("autonomous.topicDriven.sort")}
                 </Button>
-              )}
-            </div>
-          )}
-          {filtered.map((session) => (
-            <button
-              key={session.id}
-              type="button"
-              className="flex w-full flex-col items-start gap-2 rounded-lg border border-solid border-neutral-border bg-default-background px-4 py-3 cursor-pointer hover:border-brand-300 hover:shadow-md transition-all text-left"
-              onClick={() => onSelectSession(session)}
-            >
-              <div className="flex w-full items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <FeatherFlaskConical className="text-body font-body text-brand-600" />
-                  <span className="text-caption-bold font-caption-bold text-default-font">
-                    {session.title}
-                  </span>
-                </div>
-                {statusBadge(session.status)}
+              </SubframeCore.DropdownMenu.Trigger>
+              <SubframeCore.DropdownMenu.Portal>
+                <SubframeCore.DropdownMenu.Content side="bottom" align="end" sideOffset={4} asChild>
+                  <DropdownMenu>
+                    <DropdownMenu.DropdownItem icon={null} onSelect={() => setSortKey("newest")}>
+                      {t("autonomous.topicDriven.sortNewest")}
+                    </DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem icon={null} onSelect={() => setSortKey("oldest")}>
+                      {t("autonomous.topicDriven.sortOldest")}
+                    </DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem icon={null} onSelect={() => setSortKey("title")}>
+                      {t("autonomous.topicDriven.sortTitle")}
+                    </DropdownMenu.DropdownItem>
+                  </DropdownMenu>
+                </SubframeCore.DropdownMenu.Content>
+              </SubframeCore.DropdownMenu.Portal>
+            </SubframeCore.DropdownMenu.Root>
+          </div>
+          <div className="flex w-full flex-col items-start gap-3">
+            {filtered.length === 0 && (
+              <div className="flex w-full flex-col items-center gap-4 py-12">
+                <span className="text-body font-body text-subtext-color">
+                  {t("autonomous.topicDriven.noSessions")}
+                </span>
+                <button
+                  type="button"
+                  onClick={onNavigateToInput}
+                  className="flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors cursor-pointer"
+                >
+                  <FeatherPlus className="h-4 w-4" />
+                  {t("autonomous.topicDriven.firstSession")}
+                </button>
               </div>
-              <div className="flex w-full items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1">
-                    <FeatherCalendar className="h-3 w-3 text-subtext-color" />
-                    <span className="text-[11px] text-subtext-color">
-                      {session.createdAt.toLocaleDateString(i18n.language, {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+            )}
+            {filtered.map((session) => (
+              <button
+                key={session.id}
+                type="button"
+                className="flex w-full flex-col items-start gap-2 rounded-lg border border-solid border-neutral-border bg-default-background px-4 py-3 cursor-pointer hover:border-brand-300 hover:shadow-md transition-all text-left"
+                onClick={() => onSelectSession(session)}
+              >
+                <div className="flex w-full items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FeatherFlaskConical className="text-body font-body text-brand-600" />
+                    <span className="text-caption-bold font-caption-bold text-default-font">
+                      {session.title}
                     </span>
                   </div>
+                  {statusBadge(session.status)}
                 </div>
-                <FeatherChevronRight className="text-body font-body text-subtext-color" />
-              </div>
-            </button>
-          ))}
+                <div className="flex w-full items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1">
+                      <FeatherCalendar className="h-3 w-3 text-subtext-color" />
+                      <span className="text-[11px] text-subtext-color">
+                        {session.createdAt.toLocaleDateString(i18n.language, {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                  <FeatherChevronRight className="text-body font-body text-subtext-color" />
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
