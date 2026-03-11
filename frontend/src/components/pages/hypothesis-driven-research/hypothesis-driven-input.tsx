@@ -1,7 +1,7 @@
 import {
-  FeatherArrowLeft,
   FeatherBarChart3,
   FeatherGithub,
+  FeatherLayoutList,
   FeatherLightbulb,
   FeatherPlay,
   FeatherSettings,
@@ -29,7 +29,6 @@ import {
 } from "@/lib/api";
 import { Accordion } from "@/ui/components/Accordion";
 import { Button } from "@/ui/components/Button";
-import { LinkButton } from "@/ui/components/LinkButton";
 import { Select } from "@/ui/components/Select";
 import { Switch } from "@/ui/components/Switch";
 import { TextArea } from "@/ui/components/TextArea";
@@ -150,9 +149,11 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
     };
 
     try {
+      const githubSession = localStorage.getItem("github_session_token");
       const response =
         await HypothesisDrivenResearchService.executeHypothesisDrivenResearchAirasV1HypothesisDrivenResearchRunPost(
           payload,
+          githubSession,
         );
       onResearchStarted(response.task_id);
     } catch (err) {
@@ -190,27 +191,20 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
   ]);
 
   return (
-    <div className="flex h-full w-full flex-col items-start bg-default-background">
-      <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-1 pb-2 sticky top-0 z-10 gap-1">
-        <div className="flex w-full items-center">
-          <LinkButton variant="neutral" icon={<FeatherArrowLeft />} onClick={onBack}>
-            <span className="text-caption font-caption">
-              {t("autonomous.hypothesisDriven.backToList")}
-            </span>
-          </LinkButton>
-        </div>
-        <span className="text-body-bold font-body-bold text-default-font">
-          Hypothesis-Driven Research
-        </span>
+    <div className="flex h-full w-full flex-col bg-default-background">
+      <div className="flex-shrink-0 px-6 py-6">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+        >
+          <FeatherLayoutList className="h-4 w-4" />
+          {t("autonomous.hypothesisDriven.backToList")}
+        </button>
       </div>
-      <div className="flex w-full grow shrink-0 basis-0 flex-col items-center px-6 py-6 overflow-auto">
-        <div className="flex w-full max-w-[1024px] flex-col items-start gap-6 rounded-xl border border-solid border-neutral-border bg-neutral-800 px-6 py-6 shadow-sm">
-          <span className="text-heading-2 font-heading-2 text-default-font">
-            {t("autonomous.hypothesisDriven.newSessionTitle")}
-          </span>
-          <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-neutral-border" />
-
-          <div className="flex w-full flex-col items-start gap-2">
+      <div className="flex-1 overflow-auto px-6 pb-6">
+        <div className="flex w-full max-w-[768px] flex-col items-start gap-6">
+          <div className="flex w-full flex-col items-start gap-2 rounded-lg bg-card border border-border px-4 py-4">
             <span className="text-body font-body text-subtext-color">
               {t("autonomous.hypothesisDriven.researchTopic")}
             </span>
@@ -223,7 +217,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
             </TextField>
           </div>
 
-          <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
+          <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
             <div className="flex w-full items-center gap-2">
               <FeatherLightbulb className="text-body font-body text-default-font" />
               <span className="text-body-bold font-body-bold text-default-font">
@@ -374,7 +368,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
           </div>
 
           <div className="flex w-full flex-wrap items-start gap-4">
-            <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
+            <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
               <div className="flex w-full items-center gap-2">
                 <FeatherGithub className="text-body font-body text-default-font" />
                 <span className="text-body-bold font-body-bold text-default-font">
@@ -433,7 +427,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
 
             <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4">
               {/* Runner Config */}
-              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
+              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
                 <div className="flex w-full items-center gap-2">
                   <FeatherPlay className="text-body font-body text-default-font" />
                   <span className="text-body-bold font-body-bold text-default-font">
@@ -458,7 +452,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
               {/* Compute Environment */}
               <Accordion
                 trigger={
-                  <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
+                  <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
                     <FeatherSettings className="text-body font-body text-default-font" />
                     <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
                       {t("autonomous.hypothesisDriven.computeEnvironment")}
@@ -488,7 +482,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
               </Accordion>
 
               {/* W&B */}
-              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
+              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
                 <div className="flex w-full items-center gap-2">
                   <FeatherBarChart3 className="text-body font-body text-default-font" />
                   <span className="text-body-bold font-body-bold text-default-font">
@@ -539,7 +533,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
 
           <Accordion
             trigger={
-              <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
+              <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
                 <FeatherSettings className="text-body font-body text-default-font" />
                 <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
                   {t("autonomous.hypothesisDriven.advancedSettings")}
@@ -650,7 +644,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
 
           <Accordion
             trigger={
-              <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
+              <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
                 <FeatherSettings className="text-body font-body text-default-font" />
                 <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
                   {t("autonomous.hypothesisDriven.llmSettings")}
@@ -671,7 +665,6 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
             </div>
           )}
 
-          <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-neutral-border" />
           <div className="flex w-full items-center justify-end gap-3">
             <Button variant="neutral-secondary" onClick={onBack}>
               {t("autonomous.hypothesisDriven.cancel")}

@@ -71,7 +71,7 @@ export function VerificationCard({
                       }}
                     >
                       <FeatherCopy className="h-2.5 w-2.5 text-neutral-400" />
-                      <span>Duplicate</span>
+                      <span>{t("verification.home.duplicate")}</span>
                     </div>
                   </SubframeCore.DropdownMenu.Item>
                   <div className="my-0.5 h-px bg-neutral-700" />
@@ -84,7 +84,7 @@ export function VerificationCard({
                       }}
                     >
                       <FeatherTrash2 className="h-2.5 w-2.5" />
-                      <span>Delete</span>
+                      <span>{t("verification.home.delete")}</span>
                     </div>
                   </SubframeCore.DropdownMenu.Item>
                 </div>

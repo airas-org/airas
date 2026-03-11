@@ -32,7 +32,7 @@ export function ProfilePage() {
             <div className="flex flex-col gap-1">
               <span className="text-heading-3 font-heading-3 text-default-font">田中 太郎</span>
               <span className="text-body font-body text-subtext-color">tanaka@example.com</span>
-              <Badge variant="brand">Researcher</Badge>
+              <Badge variant="brand">{t("profile.researcher")}</Badge>
             </div>
           </div>
 

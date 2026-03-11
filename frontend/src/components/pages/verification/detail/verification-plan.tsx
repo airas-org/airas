@@ -62,12 +62,8 @@ export function VerificationPlanView({
             {t("verification.detail.verificationPlan.steps")}
           </p>
           <ol className="mt-2 space-y-1.5 list-decimal list-inside">
-            {verificationMethod.steps.map((step, index) => (
-              // eslint-disable-next-line react/no-array-index-key
-              <li
-                key={`step-${index}-${step.slice(0, 20)}`}
-                className="text-sm text-muted-foreground"
-              >
+            {verificationMethod.steps.map((step) => (
+              <li key={step} className="text-sm text-muted-foreground">
                 {step}
               </li>
             ))}

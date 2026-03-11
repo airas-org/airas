@@ -1,7 +1,7 @@
 import {
-  FeatherArrowLeft,
   FeatherBarChart3,
   FeatherGithub,
+  FeatherLayoutList,
   FeatherPlay,
   FeatherSettings,
 } from "@subframe/core";
@@ -28,7 +28,6 @@ import {
 } from "@/lib/api";
 import { Accordion } from "@/ui/components/Accordion";
 import { Button } from "@/ui/components/Button";
-import { LinkButton } from "@/ui/components/LinkButton";
 import { Select } from "@/ui/components/Select";
 import { Switch } from "@/ui/components/Switch";
 import { TextArea } from "@/ui/components/TextArea";
@@ -123,9 +122,11 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
     };
 
     try {
+      const githubSession = localStorage.getItem("github_session_token");
       const response =
         await TopicOpenEndedResearchService.executeTopicOpenEndedResearchAirasV1TopicOpenEndedResearchRunPost(
           payload,
+          githubSession,
         );
       onResearchStarted(response.task_id);
     } catch (err) {
@@ -158,27 +159,20 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
   ]);
 
   return (
-    <div className="flex h-full w-full flex-col items-start bg-default-background">
-      <div className="flex w-full flex-col border-b border-solid border-neutral-border bg-default-background px-6 pt-1 pb-2 sticky top-0 z-10 gap-1">
-        <div className="flex w-full items-center">
-          <LinkButton variant="neutral" icon={<FeatherArrowLeft />} onClick={onBack}>
-            <span className="text-caption font-caption">
-              {t("autonomous.topicDriven.backToList")}
-            </span>
-          </LinkButton>
-        </div>
-        <span className="text-body-bold font-body-bold text-default-font">
-          Topic-Driven Research
-        </span>
+    <div className="flex h-full w-full flex-col bg-default-background">
+      <div className="flex-shrink-0 px-6 py-6">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+        >
+          <FeatherLayoutList className="h-4 w-4" />
+          {t("autonomous.topicDriven.backToList")}
+        </button>
       </div>
-      <div className="flex w-full grow shrink-0 basis-0 flex-col items-center px-6 py-6 overflow-auto">
-        <div className="flex w-full max-w-[1024px] flex-col items-start gap-6 rounded-xl border border-solid border-neutral-border bg-neutral-800 px-6 py-6 shadow-sm">
-          <span className="text-heading-2 font-heading-2 text-default-font">
-            {t("autonomous.topicDriven.newSessionTitle")}
-          </span>
-          <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-neutral-border" />
-
-          <div className="flex w-full flex-col items-start gap-2">
+      <div className="flex-1 overflow-auto px-6 pb-6">
+        <div className="flex w-full max-w-[768px] flex-col items-start gap-6">
+          <div className="flex w-full flex-col items-start gap-2 rounded-lg bg-card border border-border px-4 py-4">
             <div className="flex items-center gap-1">
               <span className="text-body-bold font-body-bold text-default-font">
                 {t("autonomous.topicDriven.researchTopic")}
@@ -195,7 +189,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
           </div>
 
           <div className="flex w-full flex-wrap items-start gap-4">
-            <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
+            <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
               <div className="flex w-full items-center gap-2">
                 <FeatherGithub className="text-body font-body text-default-font" />
                 <span className="text-body-bold font-body-bold text-default-font">
@@ -254,7 +248,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
 
             <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-col items-start gap-4">
               {/* Runner Config */}
-              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
+              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
                 <div className="flex w-full items-center gap-2">
                   <FeatherPlay className="text-body font-body text-default-font" />
                   <span className="text-body-bold font-body-bold text-default-font">
@@ -279,7 +273,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
               {/* Compute Environment */}
               <Accordion
                 trigger={
-                  <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
+                  <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
                     <FeatherSettings className="text-body font-body text-default-font" />
                     <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
                       {t("autonomous.topicDriven.computeEnvironment")}
@@ -307,7 +301,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
               </Accordion>
 
               {/* W&B */}
-              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-neutral-900 px-4 py-4">
+              <div className="flex w-full flex-col items-start gap-4 rounded-lg bg-card border border-border px-4 py-4">
                 <div className="flex w-full items-center gap-2">
                   <FeatherBarChart3 className="text-body font-body text-default-font" />
                   <span className="text-body-bold font-body-bold text-default-font">
@@ -358,7 +352,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
 
           <Accordion
             trigger={
-              <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
+              <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
                 <FeatherSettings className="text-body font-body text-default-font" />
                 <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
                   {t("autonomous.topicDriven.advancedSettings")}
@@ -523,7 +517,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
 
           <Accordion
             trigger={
-              <div className="flex w-full items-center gap-2 rounded-lg bg-neutral-900 px-4 py-3">
+              <div className="flex w-full items-center gap-2 rounded-lg bg-card border border-border px-4 py-3">
                 <FeatherSettings className="text-body font-body text-default-font" />
                 <span className="grow shrink-0 basis-0 text-body-bold font-body-bold text-default-font">
                   {t("autonomous.topicDriven.llmSettings")}
@@ -544,7 +538,6 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
             </div>
           )}
 
-          <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-neutral-border" />
           <div className="flex w-full items-center justify-end gap-3">
             <Button variant="neutral-secondary" onClick={onBack}>
               {t("autonomous.topicDriven.cancel")}
