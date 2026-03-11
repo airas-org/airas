@@ -19,6 +19,8 @@ uv sync
 
 # Install git hooks (run from repo root, but use backend's uv project for the tool)
 cd /workspaces/airas
+# Unset core.hooksPath if set (e.g. by Claude Code), to allow pre-commit to install hooks cleanly
+git config --unset-all core.hooksPath || true
 uv run --project backend pre-commit install
 
 # --- Frontend (Node + npm) ---
