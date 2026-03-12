@@ -47,15 +47,11 @@ import { cn } from "@/lib/utils";
 import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
 import { DropdownMenu, IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
 
-// Attach GitHub session header only to GitHub-related generated API calls
-OpenAPI.HEADERS = async (options) => {
+// Attach GitHub session header to all generated API calls when the token is available
+OpenAPI.HEADERS = async () => {
   const sessionToken = localStorage.getItem("github_session_token");
   const headers: Record<string, string> = {};
-  if (
-    sessionToken &&
-    typeof options?.url === "string" &&
-    options.url.toLowerCase().includes("github")
-  ) {
+  if (sessionToken) {
     headers["X-GitHub-Session"] = sessionToken;
   }
   return headers;
