@@ -69,7 +69,6 @@ class DispatchExperimentOnEphemeralCloudSubgraph:
         )
 
         inputs = {
-            "target_workflow": self.workflow_file,
             "run_id": run_id,
             "branch_name": github_config.branch_name,
             "cloud_provider": self.cloud_provider,
