@@ -6,14 +6,15 @@ Orchestrates the full iterative experiment lifecycle:
   3. Record cycle → Decide next action
   4. Based on decision:
      - scale_up:  Re-execute at full scale on a new stage branch
-     - redesign:  Create new branch → Refine design → Back to step 1
+     - redesign:  Create next cycle branch → Refine design → Back to step 1
      - complete:  Return experiment_history
      - abort:     Return experiment_history
 
-Branch structure:
-  {base_branch}/pilot-{run_id}    — pilot-stage execution branches
-  {base_branch}/full-{run_id}     — full-stage execution branches
-  {base_branch}-redesign-{n}/...  — redesign cycle branches
+Branch structure (base_branch = e.g. "main"):
+  {base_branch}                         — final deliverables (PDF, ResearchHistory)
+  {base_branch}/{n}/pilot/{run_id}      — pilot-stage execution branches
+  {base_branch}/{n}/full/{run_id}       — full-stage execution branches
+  where {n} is the cycle number (1, 2, ...)
 """
 
 import logging
@@ -129,6 +130,7 @@ class ExperimentCycleGraphState(
     ExperimentCycleGraphOutputState,
     total=False,
 ):
+    base_github_config: GitHubConfig
     run_ids: list[str]
     current_run_stage: RunStage
     stage_github_config: GitHubConfig
@@ -170,20 +172,34 @@ class ExperimentCycleGraph:
     # Code Generation Pipeline (shared by initial and redesign paths)
     # =======================================================================
     @record_execution_time
-    def _initialize(self, state: ExperimentCycleGraphState) -> dict[str, Any]:
+    async def _initialize(self, state: ExperimentCycleGraphState) -> dict[str, Any]:
         logger.info("=== Experiment Cycle Graph: Initialize ===")
+        github_config = state["github_config"]
+        cycle_branch_name = f"{github_config.branch_name}/1"
+
+        result = (
+            await CreateBranchSubgraph(
+                github_client=self.github_client,
+                new_branch_name=cycle_branch_name,
+            )
+            .build_graph()
+            .ainvoke({"github_config": github_config})
+        )
+
         return {
             "experiment_history": ExperimentHistory(),
+            "base_github_config": github_config,
+            "github_config": result["new_github_config"],
             "current_run_stage": RunStage.PILOT,
-            "cycle_count": 0,
+            "cycle_count": 1,
         }
 
     @record_execution_time
     async def _run_code_generation(
         self, state: ExperimentCycleGraphState
     ) -> dict[str, Any]:
-        cycle_count = state.get("cycle_count", 0)
-        prompt_path = _REGENERATOR_PROMPT_PATH if cycle_count > 0 else None
+        cycle_count = state.get("cycle_count", 1)
+        prompt_path = _REGENERATOR_PROMPT_PATH if cycle_count > 1 else None
         logger.info(
             f"=== Run Code Generation (prompt_path={prompt_path or 'default'}) ==="
         )
@@ -269,11 +285,11 @@ class ExperimentCycleGraph:
     # =======================================================================
     @record_execution_time
     async def _run_experiment(self, state: ExperimentCycleGraphState) -> dict[str, Any]:
-        cycle_count = state.get("cycle_count", 0)
+        cycle_count = state.get("cycle_count", 1)
         run_stage = state.get("current_run_stage", RunStage.PILOT)
         github_config = state["github_config"]
         logger.info(
-            f"=== Execute Experiment (cycle={cycle_count + 1}, stage={run_stage.value}) ==="
+            f"=== Execute Experiment (cycle={cycle_count}, stage={run_stage.value}) ==="
         )
 
         # Create a stage-specific branch: {branch_name}/{stage}
@@ -433,7 +449,7 @@ class ExperimentCycleGraph:
     # =======================================================================
     def _route_after_decision(self, state: ExperimentCycleGraphState) -> str:
         decision = state["experiment_cycle_decision"]
-        cycle_count = state.get("cycle_count", 0) + 1
+        cycle_count = state.get("cycle_count", 1)
 
         if cycle_count >= _MAX_EXPERIMENT_CYCLES:
             logger.warning(
@@ -460,24 +476,22 @@ class ExperimentCycleGraph:
     @record_execution_time
     def _prepare_scale_up(self, state: ExperimentCycleGraphState) -> dict[str, Any]:
         logger.info("=== Prepare Scale Up (pilot → full) ===")
-        cycle_count = state.get("cycle_count", 0) + 1
         return {
             "current_run_stage": RunStage.FULL,
-            "cycle_count": cycle_count,
         }
 
     # =======================================================================
-    # Redesign: new branch → refine design → code gen → sanity → loop back
+    # Redesign: new cycle branch → refine design → code gen → sanity → loop
     # =======================================================================
     @record_execution_time
-    async def _create_redesign_branch(
+    async def _create_next_cycle_branch(
         self, state: ExperimentCycleGraphState
     ) -> dict[str, Any]:
-        cycle_count = state.get("cycle_count", 0) + 1
-        github_config = state["github_config"]
-        new_branch_name = f"{github_config.branch_name}-redesign-{cycle_count}"
+        cycle_count = state.get("cycle_count", 1) + 1
+        base_config = state["base_github_config"]
+        new_branch_name = f"{base_config.branch_name}/{cycle_count}"
 
-        logger.info(f"=== Create Redesign Branch: {new_branch_name} ===")
+        logger.info(f"=== Create Next Cycle Branch: {new_branch_name} ===")
 
         result = (
             await CreateBranchSubgraph(
@@ -485,7 +499,7 @@ class ExperimentCycleGraph:
                 new_branch_name=new_branch_name,
             )
             .build_graph()
-            .ainvoke({"github_config": github_config})
+            .ainvoke({"github_config": base_config})
         )
 
         return {
@@ -577,7 +591,9 @@ class ExperimentCycleGraph:
         graph_builder.add_node("prepare_scale_up", self._prepare_scale_up)
 
         # Redesign
-        graph_builder.add_node("create_redesign_branch", self._create_redesign_branch)
+        graph_builder.add_node(
+            "create_next_cycle_branch", self._create_next_cycle_branch
+        )
         graph_builder.add_node(
             "refine_experimental_design", self._refine_experimental_design
         )
@@ -611,7 +627,7 @@ class ExperimentCycleGraph:
             self._route_after_decision,
             {
                 "scale_up": "prepare_scale_up",
-                "redesign": "create_redesign_branch",
+                "redesign": "create_next_cycle_branch",
                 "complete": "finalize",
                 "abort": "finalize",
             },
@@ -620,8 +636,8 @@ class ExperimentCycleGraph:
         # Scale up → skip code gen, go straight to experiment execution
         graph_builder.add_edge("prepare_scale_up", "run_experiment")
 
-        # Redesign → refine design → back to code gen pipeline
-        graph_builder.add_edge("create_redesign_branch", "refine_experimental_design")
+        # Redesign → new cycle → refine design → back to code gen pipeline
+        graph_builder.add_edge("create_next_cycle_branch", "refine_experimental_design")
         graph_builder.add_edge("refine_experimental_design", "run_code_generation")
 
         # Finalize
