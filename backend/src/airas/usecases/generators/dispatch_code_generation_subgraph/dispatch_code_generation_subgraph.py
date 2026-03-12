@@ -52,10 +52,12 @@ class DispatchCodeGenerationSubgraph:
         self,
         github_client: GithubClient,
         workflow_file: str = "run_code_generator.yml",
+        prompt_path: str | None = None,
         llm_mapping: DispatchCodeGenerationLLMMapping | None = None,
     ):
         self.github_client = github_client
         self.workflow_file = workflow_file
+        self.prompt_path = prompt_path
         self.llm_mapping = llm_mapping or DispatchCodeGenerationLLMMapping()
 
     @record_execution_time
@@ -82,6 +84,9 @@ class DispatchCodeGenerationSubgraph:
             "github_actions_agent": github_actions_agent,
             "model_name": self.llm_mapping.dispatch_code_generation.llm_name,
         }
+
+        if self.prompt_path is not None:
+            inputs["prompt_path"] = self.prompt_path
 
         success = await dispatch_workflow(
             self.github_client,

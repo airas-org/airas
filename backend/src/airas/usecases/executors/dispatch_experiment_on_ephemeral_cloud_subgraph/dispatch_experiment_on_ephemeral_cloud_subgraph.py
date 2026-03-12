@@ -5,6 +5,7 @@ from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
+from airas.core.types.experiment_history import RunStage
 from airas.core.types.github import GitHubConfig
 from airas.infra.github_client import GithubClient
 from airas.usecases.github.nodes.dispatch_workflow import dispatch_workflow
@@ -41,16 +42,18 @@ class DispatchExperimentOnEphemeralCloudSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
-        target_workflow: str,
+        workflow_file: str = "run_experiment.yml",
         cloud_provider: str = "aws",
         gpu_instance_type: str = "g4dn.xlarge",
         max_instance_hours: int = 120,
+        run_stage: RunStage | None = None,
     ):
         self.github_client = github_client
-        self.target_workflow = target_workflow
+        self.workflow_file = workflow_file
         self.cloud_provider = cloud_provider
         self.gpu_instance_type = gpu_instance_type
         self.max_instance_hours = max_instance_hours
+        self.run_stage = run_stage
 
     @record_execution_time
     async def _dispatch_experiment_on_ephemeral_cloud(
@@ -60,19 +63,22 @@ class DispatchExperimentOnEphemeralCloudSubgraph:
         run_id = state["run_id"]
 
         logger.info(
-            f"Dispatching {self.target_workflow} via ephemeral cloud runner for run_id={run_id} "
+            f"Dispatching {self.workflow_file} via ephemeral cloud runner for run_id={run_id} "
             f"on branch '{github_config.branch_name}' "
             f"(provider={self.cloud_provider}, instance={self.gpu_instance_type})"
         )
 
         inputs = {
-            "target_workflow": self.target_workflow,
+            "target_workflow": self.workflow_file,
             "run_id": run_id,
             "branch_name": github_config.branch_name,
             "cloud_provider": self.cloud_provider,
             "gpu_instance_type": self.gpu_instance_type,
             "max_instance_hours": str(self.max_instance_hours),
         }
+
+        if self.run_stage is not None:
+            inputs["mode"] = self.run_stage.value
 
         success = await dispatch_workflow(
             self.github_client,
@@ -85,11 +91,11 @@ class DispatchExperimentOnEphemeralCloudSubgraph:
 
         if success:
             logger.info(
-                f"Ephemeral cloud dispatch successful: {self.target_workflow} for run_id={run_id}"
+                f"Ephemeral cloud dispatch successful: {self.workflow_file} for run_id={run_id}"
             )
         else:
             logger.error(
-                f"Ephemeral cloud dispatch failed: {self.target_workflow} for run_id={run_id}"
+                f"Ephemeral cloud dispatch failed: {self.workflow_file} for run_id={run_id}"
             )
 
         return {"dispatched": success}

@@ -2,10 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ExperimentalAnalysis } from './ExperimentalAnalysis';
-import type { ExperimentalDesign_Input } from './ExperimentalDesign_Input';
-import type { ExperimentalResults } from './ExperimentalResults';
 import type { ExperimentCode } from './ExperimentCode';
+import type { ExperimentHistory_Input } from './ExperimentHistory_Input';
 import type { PaperContent } from './PaperContent';
 import type { PaperReviewScores } from './PaperReviewScores';
 import type { ResearchHypothesis } from './ResearchHypothesis';
@@ -28,21 +26,13 @@ export type ResearchHistory_Input = {
      */
     research_hypothesis?: (ResearchHypothesis | null);
     /**
-     * Experimental design and methodology
+     * History of experiment cycles (design, results, analysis)
      */
-    experimental_design?: (ExperimentalDesign_Input | null);
+    experiment_history?: (ExperimentHistory_Input | null);
     /**
      * Generated experiment code and implementation
      */
     experiment_code?: (ExperimentCode | null);
-    /**
-     * Results from running experiments
-     */
-    experimental_results?: (ExperimentalResults | null);
-    /**
-     * Analysis and interpretation of experimental results
-     */
-    experimental_analysis?: (ExperimentalAnalysis | null);
     /**
      * Generated paper content including sections and text
      */
