@@ -12,8 +12,8 @@ Orchestrates the full iterative experiment lifecycle:
 
 Branch structure (base_branch = e.g. "main"):
   {base_branch}                         — final deliverables (PDF, ResearchHistory)
-  {base_branch}/{n}/pilot/{run_id}      — pilot-stage execution branches
-  {base_branch}/{n}/full/{run_id}       — full-stage execution branches
+  {base_branch}-{n}-pilot-{run_id}      — pilot-stage execution branches
+  {base_branch}-{n}-full-{run_id}       — full-stage execution branches
   where {n} is the cycle number (1, 2, ...)
 """
 
@@ -175,7 +175,8 @@ class ExperimentCycleGraph:
     async def _initialize(self, state: ExperimentCycleGraphState) -> dict[str, Any]:
         logger.info("=== Experiment Cycle Graph: Initialize ===")
         github_config = state["github_config"]
-        cycle_branch_name = f"{github_config.branch_name}/1"
+        cycle_count = 1
+        cycle_branch_name = f"{github_config.branch_name}-{cycle_count}"
 
         result = (
             await CreateBranchSubgraph(
@@ -191,7 +192,7 @@ class ExperimentCycleGraph:
             "base_github_config": github_config,
             "github_config": result["new_github_config"],
             "current_run_stage": RunStage.PILOT,
-            "cycle_count": 1,
+            "cycle_count": cycle_count,
         }
 
     @record_execution_time
@@ -292,8 +293,8 @@ class ExperimentCycleGraph:
             f"=== Execute Experiment (cycle={cycle_count}, stage={run_stage.value}) ==="
         )
 
-        # Create a stage-specific branch: {branch_name}/{stage}
-        stage_branch_name = f"{github_config.branch_name}/{run_stage.value}"
+        # Create a stage-specific branch: {branch_name}-{stage}
+        stage_branch_name = f"{github_config.branch_name}-{run_stage.value}"
         result = (
             await CreateBranchSubgraph(
                 github_client=self.github_client,
@@ -489,7 +490,7 @@ class ExperimentCycleGraph:
     ) -> dict[str, Any]:
         cycle_count = state.get("cycle_count", 1) + 1
         base_config = state["base_github_config"]
-        new_branch_name = f"{base_config.branch_name}/{cycle_count}"
+        new_branch_name = f"{base_config.branch_name}-{cycle_count}"
 
         logger.info(f"=== Create Next Cycle Branch: {new_branch_name} ===")
 
