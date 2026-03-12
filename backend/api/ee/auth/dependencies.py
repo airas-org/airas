@@ -3,6 +3,7 @@ from typing import Annotated
 from uuid import UUID
 
 import httpx
+from anyio import to_thread
 from dependency_injector.wiring import Provide, inject
 from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -104,7 +105,7 @@ async def get_github_client(
     ],
     x_github_session: Annotated[str | None, Header()] = None,
 ) -> GithubClient:
-    token = _resolve_github_token(service, x_github_session)
+    token = await to_thread.run_sync(lambda: _resolve_github_token(service, x_github_session))
     return GithubClient(
         github_token=token,
         sync_session=github_sync_session,
