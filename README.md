@@ -34,25 +34,24 @@ Currently, it focuses on the automation of machine learning research.
 
 ## Quick Start
 
-### Option 1 — GitHub Actions (no local setup required)
+### Option 1 — Local Deployment
+
+- Install [Docker](https://www.docker.com/get-started) if you haven't already.
+
+- Copy `.env.example` to `.env` and update the configuration as needed.
+
+- Start the application:
+
+    ```bash
+    make up
+    ```
+
+- Open your browser and navigate to: `http://localhost:5173/`
+
+### Option 2 — GitHub Actions (no local setup required)
 
 Run the full research pipeline directly from any GitHub repository using the provided workflow.
 See **[QUICKSTART.md](./QUICKSTART.md)** for setup instructions and required API keys.
-
-### Option 2 — Local setup
-
-Copy `.env.example` to `.env` and update the configuration as needed.
-Then, start the application by running:
-
-```bash
-make up
-```
-
-Once the application is running, open your browser and navigate to:
-
-`http://localhost:5173/`
-
-You should now see the web application up and running.
 
 ## Roadmap
 
