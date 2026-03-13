@@ -12,7 +12,12 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
-import { AUTONOMOUS_SUB_NAVS, type AutonomousSubNav, getAutonomousSubNav, MainContent } from "@/components/main-content";
+import {
+  AUTONOMOUS_SUB_NAVS,
+  type AutonomousSubNav,
+  getAutonomousSubNav,
+  MainContent,
+} from "@/components/main-content";
 import {
   type AutonomousActiveSectionMap,
   type AutonomousSectionsMap,
@@ -121,10 +126,13 @@ export function AppLayout({ eeComponents }: AppLayoutProps) {
     [],
   );
 
-  const handleCreateSection = useCallback((subNav: AutonomousSubNav) => {
-    setAutonomousActiveSectionMap((prev) => ({ ...prev, [subNav]: null }));
-    resetWorkflow();
-  }, [resetWorkflow]);
+  const handleCreateSection = useCallback(
+    (subNav: AutonomousSubNav) => {
+      setAutonomousActiveSectionMap((prev) => ({ ...prev, [subNav]: null }));
+      resetWorkflow();
+    },
+    [resetWorkflow],
+  );
 
   const handleUpdateSectionTitle = useCallback(
     (subNav: AutonomousSubNav, title: string) => {

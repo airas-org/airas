@@ -19,9 +19,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/auth/github/callback" element={<GitHubOAuthCallbackRoute />} />
-      {eeComponents && (
-        <Route path="/auth/callback" element={<eeComponents.AuthCallback />} />
-      )}
+      {eeComponents && <Route path="/auth/callback" element={<eeComponents.AuthCallback />} />}
       <Route path="*" element={guardedContent} />
     </Routes>
   );

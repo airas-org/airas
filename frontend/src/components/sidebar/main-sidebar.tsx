@@ -1,8 +1,4 @@
-import {
-  FeatherBrainCircuit,
-  FeatherRefreshCw,
-  FeatherTarget,
-} from "@subframe/core";
+import { FeatherBrainCircuit, FeatherRefreshCw, FeatherTarget } from "@subframe/core";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import type { AutonomousSubNav } from "@/components/main-content";
@@ -73,8 +69,7 @@ export function MainSidebar({
         <button
           type="button"
           className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
-            activeSection === "autonomous-research" &&
-            autonomousSubNav === "hypothesis-driven"
+            activeSection === "autonomous-research" && autonomousSubNav === "hypothesis-driven"
               ? "text-brand-700 bg-brand-50"
               : "text-neutral-600 hover:bg-neutral-100"
           }`}
