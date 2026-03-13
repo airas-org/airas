@@ -436,6 +436,7 @@ export function useVerifications(navigate: (path: string) => void) {
   const handleCreateWithQuery = useCallback(
     async (query: string) => {
       const apiBase = OpenAPI.BASE;
+      let newId: string | null = null;
       try {
         const authHeaders = await getAuthHeaders();
 
@@ -446,7 +447,7 @@ export function useVerifications(navigate: (path: string) => void) {
         });
         if (!createRes.ok) return;
         const session = await createRes.json();
-        const newId: string = session.id;
+        newId = session.id as string;
 
         handleAddVerification(session);
         handleUpdateVerification(newId, { query, phase: "proposing-policies" });
