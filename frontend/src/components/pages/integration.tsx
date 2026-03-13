@@ -2,6 +2,7 @@ import { FeatherGithub, FeatherSlack } from "@subframe/core";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Navigate, useLocation } from "react-router-dom";
 import { OpenAPI } from "@/lib/api";
 import { Avatar } from "@/ui/components/Avatar";
 import { Button } from "@/ui/components/Button";
@@ -304,4 +305,17 @@ export function IntegrationPage() {
       </div>
     </div>
   );
+}
+
+export function GitHubOAuthCallbackRoute() {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const code = params.get("code");
+  const state = params.get("state");
+  const savedState = sessionStorage.getItem("github_oauth_state");
+
+  if (code && state && state === savedState) {
+    return <GitHubOAuthCallback code={code} />;
+  }
+  return <Navigate to="/" replace />;
 }

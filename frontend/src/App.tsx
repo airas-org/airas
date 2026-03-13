@@ -23,49 +23,25 @@ import {
   FeatherTarget,
   FeatherUser,
 } from "@subframe/core";
-import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { AUTONOMOUS_SUB_NAVS, type AutonomousSubNav, MainContent } from "@/components/main-content";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { AUTONOMOUS_SUB_NAVS, type AutonomousSubNav, getAutonomousSubNav, MainContent } from "@/components/main-content";
 import {
   type AutonomousActiveSectionMap,
   type AutonomousSectionsMap,
   useAutonomousResearchSessions,
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
-import { GitHubOAuthCallback } from "@/components/pages/integration";
-import type { SettingsTab } from "@/components/pages/settings";
-import type { ProposedMethod, Verification } from "@/components/pages/verification";
-import {
-  getAuthHeaders,
-  useVerifications,
-} from "@/components/pages/verification/use-verifications";
+import { GitHubOAuthCallbackRoute } from "@/components/pages/integration";
+import { getSettingsTab } from "@/components/pages/settings";
+import { useVerifications } from "@/components/pages/verification/use-verifications";
 import { isEnterpriseEnabled } from "@/ee/config";
+import { useEEComponents } from "@/hooks/use-ee-components";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { OpenAPI } from "@/lib/api";
+import { useWorkflowTree } from "@/hooks/use-workflow-tree";
 import { cn } from "@/lib/utils";
-import type { FeatureType, ResearchSection, WorkflowNode, WorkflowTree } from "@/types/research";
+import type { ResearchSection } from "@/types/research";
 import { DropdownMenu, IconButton, SidebarWithSections, TopbarWithRightNav } from "@/ui";
-
-// Attach GitHub session header only to GitHub-related generated API calls
-OpenAPI.HEADERS = async (options) => {
-  const sessionToken = localStorage.getItem("github_session_token");
-  const headers: Record<string, string> = {};
-  if (
-    sessionToken &&
-    typeof options?.url === "string" &&
-    options.url.toLowerCase().includes("github")
-  ) {
-    headers["X-GitHub-Session"] = sessionToken;
-  }
-  return headers;
-};
-
-const initialWorkflowTree: WorkflowTree = {
-  nodes: {},
-  rootId: null,
-  activeNodeId: null,
-};
 
 const initialAutonomousSectionsMap = AUTONOMOUS_SUB_NAVS.reduce<AutonomousSectionsMap>(
   (acc, nav) => {
@@ -83,54 +59,6 @@ const initialAutonomousActiveSectionMap = AUTONOMOUS_SUB_NAVS.reduce<AutonomousA
   {} as AutonomousActiveSectionMap,
 );
 
-// Lazy-loaded EE components (only imported when EE is enabled)
-type AuthGuardType = typeof import("@/ee/auth/components/AuthGuard").AuthGuard;
-type UserMenuType = typeof import("@/ee/auth/components/UserMenu").UserMenu;
-type AuthCallbackType = typeof import("@/ee/auth/components/AuthCallback").AuthCallback;
-
-interface EEComponents {
-  AuthGuard: AuthGuardType;
-  UserMenu: UserMenuType;
-  AuthCallback: AuthCallbackType;
-}
-
-function useEEComponents() {
-  const [eeComponents, setEeComponents] = useState<EEComponents | null>(null);
-
-  useEffect(() => {
-    if (!isEnterpriseEnabled()) return;
-
-    Promise.all([
-      import("@/ee/auth/components/AuthGuard"),
-      import("@/ee/auth/components/UserMenu"),
-      import("@/ee/auth/components/AuthCallback"),
-      import("@/ee/auth/lib/axios-interceptor"),
-    ]).then(([authGuard, userMenu, authCallback, interceptor]) => {
-      // Set token resolver for the OpenAPI generated client
-      OpenAPI.TOKEN = interceptor.openApiTokenResolver;
-      // Also keep axios interceptor for any direct axios calls
-      axios.interceptors.request.use(interceptor.authRequestInterceptor);
-      setEeComponents({
-        AuthGuard: authGuard.AuthGuard,
-        UserMenu: userMenu.UserMenu,
-        AuthCallback: authCallback.AuthCallback,
-      });
-    });
-  }, []);
-
-  return eeComponents;
-}
-
-const SETTINGS_TABS: SettingsTab[] = [
-  "profile",
-  "feedback",
-  "integration",
-  "api-token",
-  "user-plan",
-  "receipts",
-  "usage",
-];
-
 function getActiveSection(pathname: string): string {
   if (pathname.startsWith("/autonomous-research")) return "autonomous-research";
   if (pathname.startsWith("/settings")) return "settings";
@@ -139,30 +67,6 @@ function getActiveSection(pathname: string): string {
   if (pathname.startsWith("/reproduction")) return "reproduction";
   if (pathname.startsWith("/papers")) return "papers";
   return "home";
-}
-
-function getAutonomousSubNav(pathname: string): AutonomousSubNav {
-  if (pathname.includes("hypothesis-driven")) return "hypothesis-driven";
-  return "topic-driven";
-}
-
-function getSettingsTab(pathname: string): SettingsTab {
-  const tab = pathname.split("/settings/")[1] as SettingsTab | undefined;
-  if (tab && SETTINGS_TABS.includes(tab)) return tab;
-  return "profile";
-}
-
-function GitHubOAuthCallbackRoute() {
-  const location = useLocation();
-  const params = new URLSearchParams(location.search);
-  const code = params.get("code");
-  const state = params.get("state");
-  const savedState = sessionStorage.getItem("github_oauth_state");
-
-  if (code && state && state === savedState) {
-    return <GitHubOAuthCallback code={code} />;
-  }
-  return <Navigate to="/" replace />;
 }
 
 export default function App() {
@@ -182,8 +86,16 @@ export default function App() {
     useState<AutonomousActiveSectionMap>(initialAutonomousActiveSectionMap);
 
   // Workflow
-  const [workflowTree, setWorkflowTree] = useState<WorkflowTree>(initialWorkflowTree);
-  const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
+  const {
+    workflowTree,
+    activeNodeId,
+    setActiveNodeId,
+    handleNavigate,
+    addWorkflowNode,
+    updateNodeSnapshot,
+    resetDownstreamSessions,
+    resetWorkflow,
+  } = useWorkflowTree();
 
   // Verification
   const {
@@ -191,7 +103,8 @@ export default function App() {
     handleUpdateVerification,
     handleDeleteVerification,
     handleDuplicateVerification,
-    handleAddVerification,
+    handleCreateWithMethod,
+    handleCreateWithQuery,
   } = useVerifications(navigate);
 
   // autonomousListViewKey forces list remount when clicking the same sub-nav
@@ -210,142 +123,6 @@ export default function App() {
     setAutonomousActiveSectionMap,
   });
 
-  const handleCreateWithMethod = useCallback(
-    async (sourceVerification: Verification, method: ProposedMethod) => {
-      const apiBase = OpenAPI.BASE;
-      try {
-        const authHeaders = await getAuthHeaders();
-
-        // 1. 新しいセッションを作成
-        const createRes = await fetch(`${apiBase}/airas/v1/verification/sessions`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders },
-          body: JSON.stringify({ title: method.title }),
-        });
-        if (!createRes.ok) return;
-        const session = await createRes.json();
-        const newId: string = session.id;
-
-        // 2. ローカル状態に追加し、初期データをセット（クエリ引き継ぎ、選択済みメソッドをセット）
-        // phase を "methods-proposed" にセットして hasQuery=true にし、ローディング画面を表示
-        handleAddVerification(session);
-        handleUpdateVerification(newId, {
-          title: method.title,
-          query: sourceVerification.query,
-          proposedMethods: [method],
-          selectedMethodId: method.id,
-          phase: "methods-proposed",
-        });
-
-        // 3. 新セッションに遷移（"Generating verification plan..." ローディングが表示される）
-        navigate(`/verification/${newId}`);
-
-        // 4. generate-method API を呼び出す
-        const res = await fetch(`${apiBase}/airas/v1/verification/generate-method`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders },
-          body: JSON.stringify({
-            user_query: sourceVerification.query,
-            selected_policy: {
-              id: method.id,
-              title: method.title,
-              what_to_verify: method.whatToVerify,
-              method: method.method,
-              pros: method.pros,
-              cons: method.cons,
-            },
-            verification_id: newId,
-          }),
-        });
-        if (!res.ok) {
-          // 失敗時は selectedMethodId をクリアして再選択できる状態に戻す
-          handleUpdateVerification(newId, {
-            selectedMethodId: undefined,
-            phase: "methods-proposed",
-          });
-          return;
-        }
-        const data = await res.json();
-
-        // 5. 生成された検証方法でセッションを更新
-        handleUpdateVerification(newId, {
-          phase: "plan-generated",
-          verificationMethod: {
-            whatToVerify: data.what_to_verify,
-            experimentSettings: data.experiment_settings,
-            steps: data.steps,
-          },
-        });
-      } catch {
-        // ignore
-      }
-    },
-    [navigate, handleAddVerification, handleUpdateVerification],
-  );
-
-  const handleCreateWithQuery = useCallback(
-    async (query: string) => {
-      const apiBase = OpenAPI.BASE;
-      try {
-        const authHeaders = await getAuthHeaders();
-
-        const createRes = await fetch(`${apiBase}/airas/v1/verification/sessions`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders },
-          body: JSON.stringify({}),
-        });
-        if (!createRes.ok) return;
-        const session = await createRes.json();
-        const newId: string = session.id;
-
-        handleAddVerification(session);
-        handleUpdateVerification(newId, { query, phase: "proposing-policies" });
-        navigate(`/verification/${newId}`);
-
-        const res = await fetch(`${apiBase}/airas/v1/verification/propose-policies`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders },
-          body: JSON.stringify({ user_query: query, verification_id: newId }),
-        });
-        if (!res.ok) {
-          // 失敗時は phase を initial に戻してクエリ入力に復帰できる状態にする
-          handleUpdateVerification(newId, { phase: "initial" });
-          return;
-        }
-        const data = await res.json();
-        if (!data.feasible) {
-          // 非feasibleの場合も phase を initial に戻す
-          handleUpdateVerification(newId, { phase: "initial" });
-          return;
-        }
-
-        // propose-policies レスポンスを ProposedMethod[] に変換
-        // (VerificationDetailPage.handleChatSubmit と同じ変換ロジック)
-        const methods: ProposedMethod[] = data.proposed_methods.map(
-          (m: {
-            id: string;
-            title: string;
-            what_to_verify: string;
-            method: string;
-            pros?: string[];
-            cons?: string[];
-          }) => ({
-            id: m.id,
-            title: m.title,
-            whatToVerify: m.what_to_verify,
-            method: m.method,
-            pros: m.pros ?? [],
-            cons: m.cons ?? [],
-          }),
-        );
-        handleUpdateVerification(newId, { phase: "methods-proposed", proposedMethods: methods });
-      } catch {
-        // ignore
-      }
-    },
-    [navigate, handleAddVerification, handleUpdateVerification],
-  );
-
   const handleSelectAutonomousSession = useCallback(
     (subNav: AutonomousSubNav, section: ResearchSection) => {
       setAutonomousActiveSectionMap((prev) => ({
@@ -358,105 +135,8 @@ export default function App() {
 
   const handleCreateSection = useCallback((subNav: AutonomousSubNav) => {
     setAutonomousActiveSectionMap((prev) => ({ ...prev, [subNav]: null }));
-    setWorkflowTree(initialWorkflowTree);
-    setActiveNodeId(null);
-  }, []);
-
-  const handleNavigate = useCallback(
-    (nodeId: string) => {
-      const node = workflowTree.nodes[nodeId];
-      if (node) {
-        setActiveNodeId(nodeId);
-      }
-    },
-    [workflowTree],
-  );
-
-  const addWorkflowNode = useCallback(
-    (
-      type: FeatureType,
-      parentNodeId: string | null,
-      isBranch = false,
-      data?: WorkflowNode["data"],
-      snapshot?: WorkflowNode["snapshot"],
-    ): string => {
-      const newNodeId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-      setWorkflowTree((prev) => {
-        const newNodes = { ...prev.nodes };
-
-        let branchIndex = 0;
-        if (parentNodeId) {
-          const parentNode = prev.nodes[parentNodeId];
-          if (parentNode) {
-            if (isBranch) {
-              const siblingBranches = parentNode.children.map(
-                (id) => prev.nodes[id]?.branchIndex || 0,
-              );
-              const maxSiblingBranch =
-                siblingBranches.length > 0 ? Math.max(...siblingBranches) : parentNode.branchIndex;
-              branchIndex = maxSiblingBranch + 1;
-            } else {
-              branchIndex = parentNode.branchIndex;
-            }
-          }
-        } else if (isBranch) {
-          let maxBranch = 0;
-          for (const nodeId in prev.nodes) {
-            maxBranch = Math.max(maxBranch, prev.nodes[nodeId].branchIndex);
-          }
-          branchIndex = maxBranch + 1;
-        }
-
-        const newNode: WorkflowNode = {
-          id: newNodeId,
-          type,
-          branchIndex,
-          parentId: parentNodeId,
-          children: [],
-          data: data || {},
-          snapshot,
-          createdAt: new Date(),
-        };
-
-        newNodes[newNodeId] = newNode;
-
-        if (parentNodeId && newNodes[parentNodeId]) {
-          newNodes[parentNodeId] = {
-            ...newNodes[parentNodeId],
-            children: [...newNodes[parentNodeId].children, newNodeId],
-          };
-        }
-
-        return {
-          nodes: newNodes,
-          rootId: prev.rootId || newNodeId,
-          activeNodeId: newNodeId,
-        };
-      });
-
-      setActiveNodeId(newNodeId);
-      return newNodeId;
-    },
-    [],
-  );
-
-  const updateNodeSnapshot = useCallback((nodeId: string, snapshot: WorkflowNode["snapshot"]) => {
-    setWorkflowTree((prev) => ({
-      ...prev,
-      nodes: {
-        ...prev.nodes,
-        [nodeId]: {
-          ...prev.nodes[nodeId],
-          snapshot,
-        },
-      },
-    }));
-  }, []);
-
-  const resetDownstreamSessions = useCallback((_fromType: FeatureType) => {
-    // ここはそのまま
-  }, []);
+    resetWorkflow();
+  }, [resetWorkflow]);
 
   const handleUpdateSectionTitle = useCallback(
     (subNav: AutonomousSubNav, title: string) => {
