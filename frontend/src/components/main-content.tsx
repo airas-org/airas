@@ -1,10 +1,20 @@
-"use client";
-
+import { FeatherLayoutList } from "@subframe/core";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
+import { NotificationsPage } from "@/components/pages/notifications";
 import { PapersPage } from "@/components/pages/papers";
+import { ReproductionPage } from "@/components/pages/reproduction";
 import { SettingsPage } from "@/components/pages/settings";
+import {
+  type ProposedMethod,
+  type Verification,
+  VerificationDetailPage,
+  VerificationHomePage,
+} from "@/components/pages/verification";
+import { ChatInput } from "@/components/pages/verification/detail/chat-input";
 import type {
   FeatureType,
   Paper,
@@ -13,7 +23,6 @@ import type {
   WorkflowTree as WorkflowTreeType,
 } from "@/types/research";
 
-export type NavKey = "papers" | "assisted-research" | "autonomous-research" | "settings";
 export const AUTONOMOUS_SUB_NAVS = ["topic-driven", "hypothesis-driven"] as const;
 export type AutonomousSubNav = (typeof AUTONOMOUS_SUB_NAVS)[number];
 
@@ -34,30 +43,94 @@ interface AssistedResearchProps {
 }
 
 interface MainContentProps {
-  assistedSection: ResearchSection | null;
-  autonomousSection: ResearchSection | null;
-  activeFeature: string | null;
-  activeNav: NavKey;
-  autonomousSubNav: AutonomousSubNav;
+  autonomousSectionMap: Record<AutonomousSubNav, ResearchSection | null>;
+  autonomousSessions: Record<AutonomousSubNav, ResearchSection[]>;
+  onSelectAutonomousSession: (subNav: AutonomousSubNav, section: ResearchSection) => void;
   assistedResearchProps: AssistedResearchProps;
-  sessionsExpanded: boolean;
-  onToggleSessions: () => void;
-  onCreateSection: () => void;
-  onUpdateSectionTitle: (title: string) => void;
-  onRefreshSessions: (preferredId?: string) => Promise<void>;
+  onCreateSection: (subNav: AutonomousSubNav) => void;
+  onUpdateSectionTitle: (subNav: AutonomousSubNav, title: string) => void;
+  onRefreshSessions: (subNav: AutonomousSubNav, preferredId?: string) => Promise<void>;
+  verifications: Verification[];
+  onDeleteVerification: (id: string) => void;
+  onDuplicateVerification: (id: string) => void;
+  onUpdateVerification: (id: string, updates: Partial<Verification>) => void;
+  onCreateWithQuery: (query: string) => void;
+  onCreateWithMethod: (sourceVerification: Verification, method: ProposedMethod) => void;
+  autonomousListViewKey: number;
 }
 
-export function MainContent({
-  autonomousSection,
-  activeNav,
-  autonomousSubNav,
-  assistedResearchProps,
-  sessionsExpanded,
-  onToggleSessions,
+function VerificationDetailRoute({
+  verifications,
+  onUpdateVerification,
+  onCreateWithMethod,
+}: {
+  verifications: Verification[];
+  onUpdateVerification: (id: string, updates: Partial<Verification>) => void;
+  onCreateWithMethod: (sourceVerification: Verification, method: ProposedMethod) => void;
+}) {
+  const { id } = useParams<{ id: string }>();
+  const verification = verifications.find((v) => v.id === id) ?? null;
+  return (
+    <VerificationDetailPage
+      verification={verification}
+      onUpdateVerification={onUpdateVerification}
+      onCreateWithMethod={onCreateWithMethod}
+    />
+  );
+}
+
+function AutonomousResearchRoute({
+  subNav,
+  autonomousSectionMap,
+  autonomousSessions,
+  onSelectAutonomousSession,
   onCreateSection,
   onUpdateSectionTitle,
   onRefreshSessions,
+  listViewKey,
+}: {
+  subNav: AutonomousSubNav;
+  autonomousSectionMap: Record<AutonomousSubNav, ResearchSection | null>;
+  autonomousSessions: Record<AutonomousSubNav, ResearchSection[]>;
+  onSelectAutonomousSession: (subNav: AutonomousSubNav, section: ResearchSection) => void;
+  onCreateSection: (subNav: AutonomousSubNav) => void;
+  onUpdateSectionTitle: (subNav: AutonomousSubNav, title: string) => void;
+  onRefreshSessions: (subNav: AutonomousSubNav, preferredId?: string) => Promise<void>;
+  listViewKey: number;
+}) {
+  const PageComponent =
+    subNav === "topic-driven" ? AutonomousResearchPage : HypothesisDrivenResearchPage;
+  return (
+    <PageComponent
+      section={autonomousSectionMap[subNav]}
+      sessions={autonomousSessions[subNav]}
+      onSelectSession={(section) => onSelectAutonomousSession(subNav, section)}
+      onCreateSection={() => onCreateSection(subNav)}
+      onUpdateSectionTitle={(title) => onUpdateSectionTitle(subNav, title)}
+      onRefreshSessions={(preferredId) => onRefreshSessions(subNav, preferredId)}
+      listViewKey={listViewKey}
+    />
+  );
+}
+
+export function MainContent({
+  autonomousSectionMap,
+  autonomousSessions,
+  onSelectAutonomousSession,
+  assistedResearchProps,
+  onCreateSection,
+  onUpdateSectionTitle,
+  onRefreshSessions,
+  verifications,
+  onDeleteVerification,
+  onDuplicateVerification,
+  onUpdateVerification,
+  onCreateWithQuery,
+  onCreateWithMethod,
+  autonomousListViewKey,
 }: MainContentProps) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const [selectedPapers, setSelectedPapers] = useState<Paper[]>([]);
 
   const handlePapersStepExecuted = useCallback(
@@ -101,52 +174,119 @@ export function MainContent({
   }, [assistedResearchProps, selectedPapers]);
 
   return (
-    <div className="flex-1 flex">
-      <div className={activeNav === "papers" ? "flex-1 flex" : "hidden"}>
-        <PapersPage
-          selectedPapers={selectedPapers}
-          onPapersChange={setSelectedPapers}
-          onStepExecuted={handlePapersStepExecuted}
-          onSave={handleSavePapersSnapshot}
+    <div className="flex-1 flex min-w-0">
+      <Routes>
+        <Route path="/" element={<Navigate to="/home" replace />} />
+        <Route
+          path="/home"
+          element={
+            <div className="flex-1 flex flex-col">
+              <div className="flex-shrink-0 px-6 py-6">
+                <button
+                  type="button"
+                  onClick={() => navigate("/verification")}
+                  className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+                >
+                  <FeatherLayoutList className="h-4 w-4" />
+                  {t("nav.verificationList")}
+                </button>
+              </div>
+              <div className="flex-1 flex items-center justify-center pb-[20vh] p-6">
+                <ChatInput onSubmit={onCreateWithQuery} />
+              </div>
+            </div>
+          }
         />
-      </div>
-
-      <div className={activeNav === "autonomous-research" ? "flex-1 flex" : "hidden"}>
-        {autonomousSubNav === "topic-driven" ? (
-          <AutonomousResearchPage
-            section={autonomousSection}
-            sessionsExpanded={sessionsExpanded}
-            onToggleSessions={onToggleSessions}
-            onCreateSection={onCreateSection}
-            onUpdateSectionTitle={onUpdateSectionTitle}
-            onRefreshSessions={onRefreshSessions}
-          />
-        ) : (
-          <HypothesisDrivenResearchPage
-            section={autonomousSection}
-            sessionsExpanded={sessionsExpanded}
-            onToggleSessions={onToggleSessions}
-            onCreateSection={onCreateSection}
-            onUpdateSectionTitle={onUpdateSectionTitle}
-            onRefreshSessions={onRefreshSessions}
-          />
-        )}
-      </div>
-
-      <div
-        className={
-          activeNav === "assisted-research" ? "flex-1 flex items-center justify-center" : "hidden"
-        }
-      >
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-muted-foreground">Assisted Research</h2>
-          <p className="text-sm text-muted-foreground mt-2">Coming soon</p>
-        </div>
-      </div>
-
-      <div className={activeNav === "settings" ? "flex-1 flex" : "hidden"}>
-        <SettingsPage />
-      </div>
+        <Route
+          path="/verification"
+          element={
+            <VerificationHomePage
+              verifications={verifications}
+              onSelectVerification={(id) => navigate(`/verification/${id}`)}
+              onDeleteVerification={onDeleteVerification}
+              onDuplicateVerification={onDuplicateVerification}
+              onCreateNew={() => navigate("/home")}
+            />
+          }
+        />
+        <Route
+          path="/verification/:id"
+          element={
+            <VerificationDetailRoute
+              verifications={verifications}
+              onUpdateVerification={onUpdateVerification}
+              onCreateWithMethod={onCreateWithMethod}
+            />
+          }
+        />
+        <Route
+          path="/papers"
+          element={
+            <PapersPage
+              selectedPapers={selectedPapers}
+              onPapersChange={setSelectedPapers}
+              onStepExecuted={handlePapersStepExecuted}
+              onSave={handleSavePapersSnapshot}
+            />
+          }
+        />
+        <Route
+          path="/autonomous-research/topic-driven"
+          element={
+            <AutonomousResearchRoute
+              subNav="topic-driven"
+              autonomousSectionMap={autonomousSectionMap}
+              autonomousSessions={autonomousSessions}
+              onSelectAutonomousSession={onSelectAutonomousSession}
+              onCreateSection={onCreateSection}
+              onUpdateSectionTitle={onUpdateSectionTitle}
+              onRefreshSessions={onRefreshSessions}
+              listViewKey={autonomousListViewKey}
+            />
+          }
+        />
+        <Route
+          path="/autonomous-research/hypothesis-driven"
+          element={
+            <AutonomousResearchRoute
+              subNav="hypothesis-driven"
+              autonomousSectionMap={autonomousSectionMap}
+              autonomousSessions={autonomousSessions}
+              onSelectAutonomousSession={onSelectAutonomousSession}
+              onCreateSection={onCreateSection}
+              onUpdateSectionTitle={onUpdateSectionTitle}
+              onRefreshSessions={onRefreshSessions}
+              listViewKey={autonomousListViewKey}
+            />
+          }
+        />
+        <Route
+          path="/autonomous-research"
+          element={<Navigate to="/autonomous-research/topic-driven" replace />}
+        />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/reproduction" element={<ReproductionPage />} />
+        <Route path="/settings/:tab" element={<SettingsRoute />} />
+        <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
+        <Route path="*" element={<Navigate to="/home" replace />} />
+      </Routes>
     </div>
   );
+}
+
+function SettingsRoute() {
+  const { tab } = useParams<{ tab: string }>();
+  const VALID_TABS = [
+    "profile",
+    "feedback",
+    "integration",
+    "api-token",
+    "user-plan",
+    "receipts",
+    "usage",
+  ];
+  const activeTab = VALID_TABS.includes(tab ?? "")
+    ? (tab as Parameters<typeof SettingsPage>[0]["activeTab"])
+    : "profile";
+  return <SettingsPage activeTab={activeTab} />;
 }

@@ -5,20 +5,21 @@ from fastapi import APIRouter, Depends
 from langfuse import observe
 
 from airas.container import Container
+from airas.core.types.runner import EphemeralCloudRunnerConfig, StaticRunnerConfig
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
+from airas.usecases.executors.dispatch_experiment_on_ephemeral_cloud_subgraph.dispatch_experiment_on_ephemeral_cloud_subgraph import (
+    DispatchExperimentOnEphemeralCloudSubgraph,
+)
+from airas.usecases.executors.dispatch_experiment_on_static_runner_subgraph.dispatch_experiment_on_static_runner_subgraph import (
+    DispatchExperimentOnStaticRunnerSubgraph,
+)
 from airas.usecases.executors.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
     DispatchExperimentValidationSubgraph,
-)
-from airas.usecases.executors.dispatch_main_experiment_subgraph.dispatch_main_experiment_subgraph import (
-    DispatchMainExperimentSubgraph,
-)
-from airas.usecases.executors.dispatch_sanity_check_subgraph.dispatch_sanity_check_subgraph import (
-    DispatchSanityCheckSubgraph,
 )
 from airas.usecases.executors.dispatch_visualization_subgraph.dispatch_visualization_subgraph import (
     DispatchVisualizationSubgraph,
@@ -32,6 +33,7 @@ from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph impo
 from airas.usecases.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
     DispatchDiagramGenerationSubgraph,
 )
+from api.ee.auth.dependencies import get_github_client
 from api.schemas.experiments import (
     AnalyzeExperimentRequestBody,
     AnalyzeExperimentResponseBody,
@@ -59,7 +61,7 @@ router = APIRouter(prefix="/experiments", tags=["experiments"])
 @observe()
 async def fetch_run_ids(
     request: FetchRunIdsRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -83,7 +85,7 @@ async def fetch_run_ids(
 @observe()
 async def fetch_experimental_results(
     request: FetchExperimentalResultsRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -107,7 +109,7 @@ async def fetch_experimental_results(
 @observe()
 async def dispatch_sanity_check(
     request: DispatchSanityCheckRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -115,13 +117,28 @@ async def dispatch_sanity_check(
     handler = langfuse_client.create_handler()
     config = {"callbacks": [handler]} if handler else {}
 
-    result = (
-        await DispatchSanityCheckSubgraph(
+    if isinstance(request.runner_config, StaticRunnerConfig):
+        subgraph = DispatchExperimentOnStaticRunnerSubgraph(
             github_client=github_client,
-            runner_label=request.runner_label,
+            workflow_file="run_sanity_check.yml",
+            runner_label=request.runner_config.runner_label,
         )
-        .build_graph()
-        .ainvoke(request, config=config)
+    elif isinstance(request.runner_config, EphemeralCloudRunnerConfig):
+        subgraph = DispatchExperimentOnEphemeralCloudSubgraph(
+            github_client=github_client,
+            target_workflow="run_sanity_check.yml",
+            cloud_provider=request.runner_config.cloud_provider,
+            gpu_instance_type=request.runner_config.gpu_instance_type,
+            max_instance_hours=request.runner_config.max_instance_hours,
+        )
+    else:
+        raise TypeError(
+            f"Unsupported runner config type: {type(request.runner_config)}"
+        )
+
+    result = await subgraph.build_graph().ainvoke(
+        {"github_config": request.github_config, "run_id": request.run_id},
+        config=config,
     )
     return DispatchSanityCheckResponseBody(
         dispatched=result["dispatched"],
@@ -136,7 +153,7 @@ async def dispatch_sanity_check(
 @observe()
 async def dispatch_experiment_validation(
     request: DispatchExperimentValidationRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -163,7 +180,7 @@ async def dispatch_experiment_validation(
 @observe()
 async def dispatch_main_experiment(
     request: DispatchMainExperimentRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -171,13 +188,28 @@ async def dispatch_main_experiment(
     handler = langfuse_client.create_handler()
     config = {"callbacks": [handler]} if handler else {}
 
-    result = (
-        await DispatchMainExperimentSubgraph(
+    if isinstance(request.runner_config, StaticRunnerConfig):
+        subgraph = DispatchExperimentOnStaticRunnerSubgraph(
             github_client=github_client,
-            runner_label=request.runner_label,
+            workflow_file="run_main_experiment.yml",
+            runner_label=request.runner_config.runner_label,
         )
-        .build_graph()
-        .ainvoke(request, config=config)
+    elif isinstance(request.runner_config, EphemeralCloudRunnerConfig):
+        subgraph = DispatchExperimentOnEphemeralCloudSubgraph(
+            github_client=github_client,
+            target_workflow="run_main_experiment.yml",
+            cloud_provider=request.runner_config.cloud_provider,
+            gpu_instance_type=request.runner_config.gpu_instance_type,
+            max_instance_hours=request.runner_config.max_instance_hours,
+        )
+    else:
+        raise TypeError(
+            f"Unsupported runner config type: {type(request.runner_config)}"
+        )
+
+    result = await subgraph.build_graph().ainvoke(
+        {"github_config": request.github_config, "run_id": request.run_id},
+        config=config,
     )
     return DispatchMainExperimentResponseBody(
         dispatched=result["dispatched"],
@@ -192,7 +224,7 @@ async def dispatch_main_experiment(
 @observe()
 async def dispatch_visualization(
     request: DispatchVisualizationRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -219,7 +251,7 @@ async def dispatch_visualization(
 @observe()
 async def dispatch_diagram_generation(
     request: DispatchDiagramGenerationRequestBody,
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

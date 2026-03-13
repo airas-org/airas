@@ -1,12 +1,10 @@
-"use client";
-
 import { SiGithub } from "@icons-pack/react-simple-icons";
 import { Check, Code2, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { useTranslation } from "react-i18next";
 import { createGitHubRepo, generateExperimentCode, pushToGitHub } from "@/lib/api-mock";
 import type { ExperimentConfig } from "@/types/research";
+import { Button, Card } from "@/ui";
 
 interface CodeGenerationSectionProps {
   configs: ExperimentConfig[];
@@ -23,6 +21,7 @@ export function CodeGenerationSection({
   onStepExecuted,
   onSave,
 }: CodeGenerationSectionProps) {
+  const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isPushing, setIsPushing] = useState(false);
@@ -96,15 +95,17 @@ export function CodeGenerationSection({
           <Code2 className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-foreground">実験コードの生成</h3>
-          <p className="text-sm text-muted-foreground">実験設定からコードを生成しGitHubへ送信</p>
+          <h3 className="text-lg font-semibold text-foreground">
+            {t("features.codeGeneration.title")}
+          </h3>
+          <p className="text-sm text-muted-foreground">{t("features.codeGeneration.subtitle")}</p>
         </div>
       </div>
 
       {configs.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <Code2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>先に実験設定を作成してください</p>
+          <p>{t("features.codeGeneration.noConfigMessage")}</p>
         </div>
       ) : (
         <>
@@ -114,7 +115,9 @@ export function CodeGenerationSection({
               disabled={isGenerating}
               className="w-full bg-blue-700 hover:bg-blue-800 text-white"
             >
-              {isGenerating ? "生成中..." : "実験コードを生成"}
+              {isGenerating
+                ? t("features.codeGeneration.generating")
+                : t("features.codeGeneration.generate")}
             </Button>
           )}
 
@@ -129,14 +132,18 @@ export function CodeGenerationSection({
               {!githubUrl ? (
                 <Button onClick={handlePushToGitHub} disabled={isPushing} className="w-full">
                   <SiGithub className="w-4 h-4 mr-2" />
-                  {isPushing ? "送信中..." : "GitHubへ送信"}
+                  {isPushing
+                    ? t("features.codeGeneration.pushing")
+                    : t("features.codeGeneration.pushToGitHub")}
                 </Button>
               ) : (
                 <div className="space-y-4">
                   <div className="p-4 bg-blue-700/10 border border-blue-700/20 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       <Check className="w-5 h-5 text-blue-700" />
-                      <span className="font-medium text-foreground">GitHubに送信完了</span>
+                      <span className="font-medium text-foreground">
+                        {t("features.codeGeneration.pushSuccess")}
+                      </span>
                     </div>
                     <a
                       href={githubUrl}
@@ -156,12 +163,14 @@ export function CodeGenerationSection({
                       className="w-full bg-blue-700 hover:bg-blue-800 text-white"
                     >
                       <Check className="w-4 h-4 mr-2" />
-                      このコードを確定
+                      {t("features.codeGeneration.confirmCode")}
                     </Button>
                   ) : (
                     <div className="flex items-center justify-center gap-2 p-3 bg-muted rounded-lg">
                       <Check className="w-5 h-5 text-blue-700" />
-                      <span className="text-sm text-muted-foreground">確定済み</span>
+                      <span className="text-sm text-muted-foreground">
+                        {t("features.codeGeneration.confirmed")}
+                      </span>
                     </div>
                   )}
                 </div>

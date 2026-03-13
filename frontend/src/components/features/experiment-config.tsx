@@ -1,13 +1,9 @@
-"use client";
-
 import { Cpu, Database, Edit3, Plus, Save, Settings2, Sliders, Trash2 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { useTranslation } from "react-i18next";
 import { generateExperimentConfig } from "@/lib/api-mock";
 import type { ExperimentConfig, Method } from "@/types/research";
+import { Button, Card, TextArea, TextField } from "@/ui";
 
 interface ExperimentConfigSectionProps {
   method: Method | null;
@@ -26,6 +22,7 @@ export function ExperimentConfigSection({
   onBranchCreated,
   onSave,
 }: ExperimentConfigSectionProps) {
+  const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isManualMode, setIsManualMode] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -142,7 +139,9 @@ export function ExperimentConfigSection({
   const renderTempConfigPreview = () => (
     <div className="space-y-4">
       <div className="p-4 bg-muted/50 border border-border rounded-lg">
-        <p className="text-sm text-muted-foreground mb-4">生成された実験設定（プレビュー）</p>
+        <p className="text-sm text-muted-foreground mb-4">
+          {t("features.experimentConfig.generatedPreview")}
+        </p>
         {tempConfigs.map((config) => (
           <div key={config.id} className="p-4 border border-border rounded-lg mb-4 last:mb-0">
             <div className="flex items-center gap-2 mb-3">
@@ -170,7 +169,7 @@ export function ExperimentConfigSection({
         className="w-full bg-blue-700 hover:bg-blue-800 text-white"
       >
         <Save className="w-4 h-4 mr-2" />
-        この設定を確定
+        {t("features.experimentConfig.confirmConfig")}
       </Button>
     </div>
   );
@@ -182,30 +181,32 @@ export function ExperimentConfigSection({
           <Settings2 className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-foreground">実験設定の作成</h3>
-          <p className="text-sm text-muted-foreground">生成された手法に対する実験設定を作成</p>
+          <h3 className="text-lg font-semibold text-foreground">
+            {t("features.experimentConfig.title")}
+          </h3>
+          <p className="text-sm text-muted-foreground">{t("features.experimentConfig.subtitle")}</p>
         </div>
       </div>
 
       {configs.length === 0 && !isEditing && tempConfigs.length === 0 && (
         <div className="flex gap-2 mb-6">
           <Button
-            variant={!isManualMode ? "default" : "outline"}
-            size="sm"
+            variant={!isManualMode ? "brand-primary" : "neutral-secondary"}
+            size="small"
             onClick={() => setIsManualMode(false)}
             className={
               !isManualMode ? "bg-blue-700 hover:bg-blue-800 text-white" : "bg-transparent"
             }
           >
-            手法から生成
+            {t("features.experimentConfig.generateFromMethod")}
           </Button>
           <Button
-            variant={isManualMode ? "default" : "outline"}
-            size="sm"
+            variant={isManualMode ? "brand-primary" : "neutral-secondary"}
+            size="small"
             onClick={handleStartManualInput}
             className={isManualMode ? "bg-blue-700 hover:bg-blue-800 text-white" : "bg-transparent"}
           >
-            手動で入力
+            {t("features.experimentConfig.manualInput")}
           </Button>
         </div>
       )}
@@ -216,20 +217,22 @@ export function ExperimentConfigSection({
             className="text-sm font-medium text-foreground mb-2 block"
             htmlFor={manualMethodDescriptionId}
           >
-            対象手法の説明
+            {t("features.experimentConfig.targetMethodDescription")}
           </label>
-          <Textarea
-            id={manualMethodDescriptionId}
-            value={manualMethodInput}
-            onChange={(e) => setManualMethodInput(e.target.value)}
-            placeholder="実験対象の手法について説明してください..."
-            className="min-h-[100px] mb-4 bg-background"
-          />
+          <TextArea>
+            <TextArea.Input
+              id={manualMethodDescriptionId}
+              value={manualMethodInput}
+              onChange={(e) => setManualMethodInput(e.target.value)}
+              placeholder={t("features.experimentConfig.targetMethodPlaceholder")}
+              className="min-h-[100px] mb-4"
+            />
+          </TextArea>
           <Button
             onClick={handleStartManualInput}
             className="w-full bg-blue-700 hover:bg-blue-800 text-white"
           >
-            実験設定を入力
+            {t("features.experimentConfig.inputExperimentConfig")}
           </Button>
         </div>
       )}
@@ -248,9 +251,15 @@ export function ExperimentConfigSection({
             return (
               <div key={config.id} className="p-4 border border-border rounded-lg space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground">実験設定 {index + 1}</span>
+                  <span className="text-sm font-medium text-foreground">
+                    {t("features.experimentConfig.configNumber", { number: index + 1 })}
+                  </span>
                   {editingConfigs.length > 1 && (
-                    <Button variant="ghost" size="sm" onClick={() => handleRemoveConfig(index)}>
+                    <Button
+                      variant="neutral-tertiary"
+                      size="small"
+                      onClick={() => handleRemoveConfig(index)}
+                    >
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
                   )}
@@ -258,27 +267,29 @@ export function ExperimentConfigSection({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block" htmlFor={modelId}>
-                      モデル名
+                      {t("features.experimentConfig.modelName")}
                     </label>
-                    <Input
-                      id={modelId}
-                      value={config.model}
-                      onChange={(e) => handleConfigChange(index, "model", e.target.value)}
-                      placeholder="例: Transformer"
-                      className="bg-background"
-                    />
+                    <TextField>
+                      <TextField.Input
+                        id={modelId}
+                        value={config.model}
+                        onChange={(e) => handleConfigChange(index, "model", e.target.value)}
+                        placeholder="例: Transformer"
+                      />
+                    </TextField>
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block" htmlFor={datasetId}>
-                      データセット
+                      {t("features.experimentConfig.dataset")}
                     </label>
-                    <Input
-                      id={datasetId}
-                      value={config.dataset}
-                      onChange={(e) => handleConfigChange(index, "dataset", e.target.value)}
-                      placeholder="例: CIFAR-10"
-                      className="bg-background"
-                    />
+                    <TextField>
+                      <TextField.Input
+                        id={datasetId}
+                        value={config.dataset}
+                        onChange={(e) => handleConfigChange(index, "dataset", e.target.value)}
+                        placeholder="例: CIFAR-10"
+                      />
+                    </TextField>
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-3">
@@ -286,19 +297,20 @@ export function ExperimentConfigSection({
                     <label className="text-xs text-muted-foreground mb-1 block" htmlFor={epochsId}>
                       Epochs
                     </label>
-                    <Input
-                      id={epochsId}
-                      type="number"
-                      value={config.hyperparameters.epochs}
-                      onChange={(e) =>
-                        handleConfigChange(
-                          index,
-                          "hyperparameters.epochs",
-                          Number.parseInt(e.target.value, 10),
-                        )
-                      }
-                      className="bg-background"
-                    />
+                    <TextField>
+                      <TextField.Input
+                        id={epochsId}
+                        type="number"
+                        value={String(config.hyperparameters.epochs)}
+                        onChange={(e) =>
+                          handleConfigChange(
+                            index,
+                            "hyperparameters.epochs",
+                            Number.parseInt(e.target.value, 10),
+                          )
+                        }
+                      />
+                    </TextField>
                   </div>
                   <div>
                     <label
@@ -307,20 +319,21 @@ export function ExperimentConfigSection({
                     >
                       Learning Rate
                     </label>
-                    <Input
-                      id={learningRateId}
-                      type="number"
-                      step="0.0001"
-                      value={config.hyperparameters.learning_rate}
-                      onChange={(e) =>
-                        handleConfigChange(
-                          index,
-                          "hyperparameters.learning_rate",
-                          Number.parseFloat(e.target.value),
-                        )
-                      }
-                      className="bg-background"
-                    />
+                    <TextField>
+                      <TextField.Input
+                        id={learningRateId}
+                        type="number"
+                        step="0.0001"
+                        value={String(config.hyperparameters.learning_rate)}
+                        onChange={(e) =>
+                          handleConfigChange(
+                            index,
+                            "hyperparameters.learning_rate",
+                            Number.parseFloat(e.target.value),
+                          )
+                        }
+                      />
+                    </TextField>
                   </div>
                   <div>
                     <label
@@ -329,19 +342,20 @@ export function ExperimentConfigSection({
                     >
                       Batch Size
                     </label>
-                    <Input
-                      id={batchSizeId}
-                      type="number"
-                      value={config.hyperparameters.batch_size}
-                      onChange={(e) =>
-                        handleConfigChange(
-                          index,
-                          "hyperparameters.batch_size",
-                          Number.parseInt(e.target.value, 10),
-                        )
-                      }
-                      className="bg-background"
-                    />
+                    <TextField>
+                      <TextField.Input
+                        id={batchSizeId}
+                        type="number"
+                        value={String(config.hyperparameters.batch_size)}
+                        onChange={(e) =>
+                          handleConfigChange(
+                            index,
+                            "hyperparameters.batch_size",
+                            Number.parseInt(e.target.value, 10),
+                          )
+                        }
+                      />
+                    </TextField>
                   </div>
                   <div>
                     <label
@@ -350,19 +364,20 @@ export function ExperimentConfigSection({
                     >
                       Hidden Dim
                     </label>
-                    <Input
-                      id={hiddenDimId}
-                      type="number"
-                      value={config.hyperparameters.hidden_dim}
-                      onChange={(e) =>
-                        handleConfigChange(
-                          index,
-                          "hyperparameters.hidden_dim",
-                          Number.parseInt(e.target.value, 10),
-                        )
-                      }
-                      className="bg-background"
-                    />
+                    <TextField>
+                      <TextField.Input
+                        id={hiddenDimId}
+                        type="number"
+                        value={String(config.hyperparameters.hidden_dim)}
+                        onChange={(e) =>
+                          handleConfigChange(
+                            index,
+                            "hyperparameters.hidden_dim",
+                            Number.parseInt(e.target.value, 10),
+                          )
+                        }
+                      />
+                    </TextField>
                   </div>
                 </div>
                 <div>
@@ -370,37 +385,43 @@ export function ExperimentConfigSection({
                     className="text-xs text-muted-foreground mb-1 block"
                     htmlFor={descriptionId}
                   >
-                    説明
+                    {t("features.experimentConfig.description")}
                   </label>
-                  <Textarea
-                    id={descriptionId}
-                    value={config.description}
-                    onChange={(e) => handleConfigChange(index, "description", e.target.value)}
-                    placeholder="実験の説明..."
-                    className="min-h-[60px] bg-background"
-                  />
+                  <TextArea>
+                    <TextArea.Input
+                      id={descriptionId}
+                      value={config.description}
+                      onChange={(e) => handleConfigChange(index, "description", e.target.value)}
+                      placeholder={t("features.experimentConfig.descriptionPlaceholder")}
+                      className="min-h-[60px]"
+                    />
+                  </TextArea>
                 </div>
               </div>
             );
           })}
-          <Button variant="outline" onClick={handleAddConfig} className="w-full bg-transparent">
+          <Button
+            variant="neutral-secondary"
+            onClick={handleAddConfig}
+            className="w-full bg-transparent"
+          >
             <Plus className="w-4 h-4 mr-2" />
-            実験設定を追加
+            {t("features.experimentConfig.addConfig")}
           </Button>
           <div className="flex gap-2 justify-end">
             <Button
-              variant="outline"
+              variant="neutral-secondary"
               onClick={() => setIsEditing(false)}
               className="bg-transparent"
             >
-              キャンセル
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleSaveConfigs}
               className="bg-blue-700 hover:bg-blue-800 text-white"
             >
               <Save className="w-4 h-4 mr-2" />
-              保存
+              {t("common.save")}
             </Button>
           </div>
         </div>
@@ -415,12 +436,14 @@ export function ExperimentConfigSection({
         (!method ? (
           <div className="text-center py-8 text-muted-foreground">
             <Settings2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>先に新規手法を生成するか、手動入力モードを使用してください</p>
+            <p>{t("features.experimentConfig.noMethodMessage")}</p>
           </div>
         ) : (
           <>
             <div className="mb-6 p-4 bg-muted rounded-lg">
-              <p className="text-sm font-medium text-muted-foreground mb-1">対象手法:</p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">
+                {t("features.experimentConfig.targetMethod")}
+              </p>
               <p className="text-foreground">{method.name}</p>
             </div>
             <Button
@@ -428,7 +451,9 @@ export function ExperimentConfigSection({
               disabled={isGenerating}
               className="w-full bg-blue-700 hover:bg-blue-800 text-white"
             >
-              {isGenerating ? "生成中..." : "実験設定を生成"}
+              {isGenerating
+                ? t("features.experimentConfig.generating")
+                : t("features.experimentConfig.generate")}
             </Button>
           </>
         ))}
@@ -436,10 +461,12 @@ export function ExperimentConfigSection({
       {configs.length > 0 && !isEditing && (
         <div className="space-y-4">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-foreground">実験設定一覧</span>
-            <Button variant="ghost" size="sm" onClick={handleEdit}>
+            <span className="text-sm font-medium text-foreground">
+              {t("features.experimentConfig.configList")}
+            </span>
+            <Button variant="neutral-tertiary" size="small" onClick={handleEdit}>
               <Edit3 className="w-4 h-4 mr-1" />
-              編集
+              {t("common.edit")}
             </Button>
           </div>
           {configs.map((config) => (

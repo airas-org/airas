@@ -28,6 +28,35 @@ def _extract_json_from_zip(zip_data: bytes) -> dict:
             return json.loads(content)
 
 
+async def download_and_parse_artifact_by_id(
+    github_client: GithubClient,
+    github_owner: str,
+    repository_name: str,
+    artifact_id: int,
+) -> dict:
+    logger.info(f"Downloading artifact by id={artifact_id}")
+
+    zip_data = await github_client.adownload_artifact_archive(
+        github_owner=github_owner,
+        repository_name=repository_name,
+        artifact_id=artifact_id,
+    )
+
+    if not zip_data:
+        logger.error(f"Failed to download artifact {artifact_id}")
+        return {}
+
+    try:
+        artifact_data = _extract_json_from_zip(zip_data)
+        logger.info(
+            f"Successfully parsed artifact data (keys={list(artifact_data.keys())}, key_count={len(artifact_data)})"
+        )
+        return artifact_data
+    except Exception as e:
+        logger.error(f"Failed to extract JSON from artifact: {e}")
+        return {}
+
+
 async def download_and_parse_artifact(
     github_client: GithubClient,
     github_config: GitHubConfig,

@@ -1,10 +1,8 @@
-"use client";
-
 import { CheckCircle2, Clock, FolderOpen, XCircle } from "lucide-react";
 import type { CSSProperties } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { ResearchSection } from "@/types/research";
+import { ScrollArea } from "@/ui";
 
 interface SectionsSidebarProps {
   sections: ResearchSection[];

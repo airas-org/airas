@@ -1,7 +1,6 @@
 import asyncio
 import base64
 import logging
-import os
 from datetime import datetime, timezone
 from typing import Any, Literal, Protocol, runtime_checkable
 
@@ -58,6 +57,7 @@ GITHUB_RETRY = retry(
 class GithubClient(BaseHTTPClient):
     def __init__(
         self,
+        github_token: str,
         base_url: str = "https://api.github.com",
         default_headers: dict[str, str] | None = None,
         parser: ResponseParserProtocol | None = None,
@@ -66,7 +66,7 @@ class GithubClient(BaseHTTPClient):
     ) -> None:
         auth_headers = {
             "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {os.getenv('GH_PERSONAL_ACCESS_TOKEN')}",
+            "Authorization": f"Bearer {github_token}",
             "X-GitHub-Api-Version": "2022-11-28",
         }
         super().__init__(
@@ -1123,6 +1123,78 @@ class GithubClient(BaseHTTPClient):
             case _:
                 self._raise_for_status(response, path)
                 return None
+
+    async def alist_workflow_runs_for_workflow(
+        self,
+        github_owner: str,
+        repository_name: str,
+        workflow_file_name: str,
+        branch_name: str | None = None,
+        per_page: int = 10,
+    ) -> dict | None:
+        path = f"/repos/{github_owner}/{repository_name}/actions/workflows/{workflow_file_name}/runs"
+        params: dict = {"per_page": per_page}
+        if branch_name:
+            params["branch"] = branch_name
+
+        response = await self.aget(path=path, params=params)
+        match response.status_code:
+            case 200:
+                logger.info(f"Success (200): {path}")
+                return response.json()
+            case 403:
+                logger.error(f"Access forbidden (403): {path}")
+                raise GithubClientFatalError(f"Access forbidden (403): {path}")
+            case 404:
+                logger.error(f"Workflow or repository not found (404): {path}")
+                raise GithubClientFatalError(
+                    f"Workflow or repository not found (404): {path}"
+                )
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
+    async def aget_workflow_run(
+        self,
+        github_owner: str,
+        repository_name: str,
+        workflow_run_id: int,
+    ) -> dict | None:
+        path = f"/repos/{github_owner}/{repository_name}/actions/runs/{workflow_run_id}"
+
+        response = await self.aget(path=path)
+        match response.status_code:
+            case 200:
+                logger.info(f"Success (200): {path}")
+                return response.json()
+            case 404:
+                logger.warning(f"Workflow run not found (404): {path}")
+                return None
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
+    async def acancel_workflow_run(
+        self,
+        github_owner: str,
+        repository_name: str,
+        workflow_run_id: int,
+    ) -> bool:
+        path = f"/repos/{github_owner}/{repository_name}/actions/runs/{workflow_run_id}/cancel"
+
+        response = await self.apost(path=path)
+        match response.status_code:
+            case 202:
+                logger.info(f"Workflow run {workflow_run_id} cancel accepted (202)")
+                return True
+            case 409:
+                logger.warning(
+                    f"Workflow run {workflow_run_id} is already completed (409)"
+                )
+                return False
+            case _:
+                self._raise_for_status(response, path)
+                return False
 
     async def aget_repository_content(
         self,

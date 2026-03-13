@@ -1,0 +1,148 @@
+import { FeatherPlus } from "@subframe/core";
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import type { Verification } from "../types";
+import { VerificationCard } from "./verification-card";
+
+interface VerificationHomePageProps {
+  verifications: Verification[];
+  onSelectVerification: (id: string) => void;
+  onDeleteVerification: (id: string) => void;
+  onDuplicateVerification: (id: string) => void;
+  onCreateNew: () => void;
+}
+
+interface CategoryColumnProps {
+  label: string;
+  count: number;
+  verifications: Verification[];
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
+}
+
+function CategoryColumn({
+  label,
+  count,
+  verifications,
+  onSelect,
+  onDelete,
+  onDuplicate,
+}: CategoryColumnProps) {
+  return (
+    <div className="w-[200px] shrink-0 rounded-lg border border-border bg-card p-2.5">
+      <div className="flex items-center gap-1.5 mb-2">
+        <h2 className="text-[10px] font-semibold text-subtext-color uppercase tracking-wider whitespace-nowrap">
+          {label}
+        </h2>
+        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-neutral-200 px-1 text-[9px] font-medium text-neutral-600">
+          {count}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        {verifications.map((v) => (
+          <VerificationCard
+            key={v.id}
+            verification={v}
+            onClick={() => onSelect(v.id)}
+            onDelete={() => onDelete(v.id)}
+            onDuplicate={() => onDuplicate(v.id)}
+          />
+        ))}
+        {verifications.length === 0 && (
+          <p className="py-6 text-center text-caption font-caption text-neutral-400">No items</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type CategoryKey =
+  | "hypothesis"
+  | "plan-decided"
+  | "implementation-done"
+  | "experiments-done"
+  | "paper-done";
+
+function getCategoryKey(v: Verification): CategoryKey {
+  switch (v.phase) {
+    case "initial":
+    case "proposing-policies":
+    case "methods-proposed":
+      return "hypothesis";
+    case "plan-generated":
+      return "plan-decided";
+    case "code-generating":
+    case "code-generated":
+      return "implementation-done";
+    case "experiments-done":
+      return "experiments-done";
+    case "paper-writing":
+      return v.paperDraft?.status === "ready" ? "paper-done" : "experiments-done";
+  }
+}
+
+export function VerificationHomePage({
+  verifications,
+  onSelectVerification,
+  onDeleteVerification,
+  onDuplicateVerification,
+  onCreateNew,
+}: VerificationHomePageProps) {
+  const { t } = useTranslation();
+  const categories: { key: CategoryKey; label: string }[] = [
+    { key: "hypothesis", label: t("verification.home.categories.hypothesis") },
+    { key: "plan-decided", label: t("verification.home.categories.planDecided") },
+    { key: "implementation-done", label: t("verification.home.categories.implementationDone") },
+    { key: "experiments-done", label: t("verification.home.categories.experimentsDone") },
+    { key: "paper-done", label: t("verification.home.categories.paperDone") },
+  ];
+
+  const grouped = useMemo(() => {
+    const map: Record<CategoryKey, Verification[]> = {
+      hypothesis: [],
+      "plan-decided": [],
+      "implementation-done": [],
+      "experiments-done": [],
+      "paper-done": [],
+    };
+    for (const v of verifications) {
+      map[getCategoryKey(v)].push(v);
+    }
+    return map;
+  }, [verifications]);
+
+  return (
+    <div className="flex-1 overflow-y-auto overflow-x-clip min-w-0">
+      <div className="max-w-full mx-auto px-6 py-6">
+        <div className="flex items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={onCreateNew}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+          >
+            <FeatherPlus className="h-4 w-4" />
+            {t("verification.home.newVerification")}
+          </button>
+          <p className="text-caption font-caption text-subtext-color">
+            {t("verification.home.projects", { count: verifications.length })}
+          </p>
+        </div>
+
+        <div className="mt-6 flex gap-2 items-start overflow-x-auto">
+          {categories.map((cat) => (
+            <CategoryColumn
+              key={cat.key}
+              label={cat.label}
+              count={grouped[cat.key].length}
+              verifications={grouped[cat.key]}
+              onSelect={onSelectVerification}
+              onDelete={onDeleteVerification}
+              onDuplicate={onDuplicateVerification}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

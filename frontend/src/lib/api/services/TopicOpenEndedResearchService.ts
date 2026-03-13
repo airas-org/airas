@@ -14,15 +14,20 @@ export class TopicOpenEndedResearchService {
     /**
      * Execute Topic Open Ended Research
      * @param requestBody
+     * @param xGithubSession
      * @returns TopicOpenEndedResearchResponseBody Successful Response
      * @throws ApiError
      */
     public static executeTopicOpenEndedResearchAirasV1TopicOpenEndedResearchRunPost(
         requestBody: TopicOpenEndedResearchRequestBody,
+        xGithubSession?: (string | null),
     ): CancelablePromise<TopicOpenEndedResearchResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/topic_open_ended_research/run',
+            headers: {
+                'x-github-session': xGithubSession,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {

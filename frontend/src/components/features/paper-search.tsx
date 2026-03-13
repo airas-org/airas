@@ -1,14 +1,10 @@
-"use client";
-
 import { Calendar, Check, Quote, Save, Search, Users } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { useTranslation } from "react-i18next";
 import { searchPapers } from "@/lib/api/paper-search";
 import { cn } from "@/lib/utils";
 import type { Paper } from "@/types/research";
+import { Badge, Button, Card, TextField } from "@/ui";
 
 interface PaperSearchSectionProps {
   selectedPapers: Paper[];
@@ -23,6 +19,7 @@ export function PaperSearchSection({
   onStepExecuted,
   onSave,
 }: PaperSearchSectionProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [papers, setPapers] = useState<Paper[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -42,7 +39,7 @@ export function PaperSearchSection({
     } catch (err) {
       console.error(err);
       setPapers([]);
-      setError("論文の検索に失敗しました。時間をおいて再度お試しください。");
+      setError(t("features.paperSearch.errorMessage"));
     } finally {
       setIsSearching(false);
     }
@@ -74,21 +71,24 @@ export function PaperSearchSection({
           <Search className="w-5 h-5 text-primary-foreground" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-foreground">論文取得</h3>
-          <p className="text-sm text-muted-foreground">関連する研究論文を検索・選択</p>
+          <h3 className="text-lg font-semibold text-foreground">
+            {t("features.paperSearch.title")}
+          </h3>
+          <p className="text-sm text-muted-foreground">{t("features.paperSearch.subtitle")}</p>
         </div>
       </div>
 
       <div className="flex gap-3 mb-6">
-        <Input
-          placeholder="検索キーワードを入力..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          className="flex-1"
-        />
+        <TextField className="flex-1">
+          <TextField.Input
+            placeholder={t("features.paperSearch.searchPlaceholder")}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          />
+        </TextField>
         <Button onClick={handleSearch} disabled={isSearching}>
-          {isSearching ? "検索中..." : "検索"}
+          {isSearching ? t("features.paperSearch.searching") : t("features.paperSearch.search")}
         </Button>
       </div>
 
@@ -139,7 +139,7 @@ export function PaperSearchSection({
                       </span>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="shrink-0">
+                  <Badge variant="neutral" className="shrink-0">
                     {Math.round(paper.relevanceScore * 100)}% match
                   </Badge>
                 </div>
@@ -152,7 +152,7 @@ export function PaperSearchSection({
       {papers.length > 0 && (
         <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            {tempSelectedPapers.length} 件の論文を選択中
+            {t("features.paperSearch.selectedCount", { count: tempSelectedPapers.length })}
           </p>
           <Button
             onClick={handleConfirmSelection}
@@ -160,7 +160,7 @@ export function PaperSearchSection({
             className="bg-blue-700 hover:bg-blue-800 text-white"
           >
             <Save className="w-4 h-4 mr-2" />
-            選択を確定
+            {t("features.paperSearch.confirmSelection")}
           </Button>
         </div>
       )}
@@ -168,7 +168,7 @@ export function PaperSearchSection({
       {selectedPapers.length > 0 && papers.length === 0 && (
         <div className="mt-6 pt-6 border-t border-border">
           <p className="text-sm text-muted-foreground mb-2">
-            確定済み: {selectedPapers.length} 件の論文
+            {t("features.paperSearch.confirmedCount", { count: selectedPapers.length })}
           </p>
           <div className="flex flex-wrap gap-2">
             {selectedPapers.map((paper) => (

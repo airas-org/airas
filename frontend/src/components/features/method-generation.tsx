@@ -1,13 +1,9 @@
-"use client";
-
 import { Edit3, FileText, Lightbulb, Save, Sparkles } from "lucide-react";
 import { useId, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { useTranslation } from "react-i18next";
 import { generateMethod } from "@/lib/api-mock";
 import type { Method, Paper } from "@/types/research";
+import { Button, Card, TextArea, TextField } from "@/ui";
 
 interface MethodGenerationSectionProps {
   selectedPapers: Paper[];
@@ -26,6 +22,7 @@ export function MethodGenerationSection({
   onBranchCreated,
   onSave,
 }: MethodGenerationSectionProps) {
+  const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [editedDescription, setEditedDescription] = useState("");
   const [isManualMode, setIsManualMode] = useState(false);
@@ -128,30 +125,32 @@ export function MethodGenerationSection({
           <Lightbulb className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-foreground">新規手法の生成</h3>
-          <p className="text-sm text-muted-foreground">選択した論文から新しい研究手法を生成</p>
+          <h3 className="text-lg font-semibold text-foreground">
+            {t("features.methodGeneration.title")}
+          </h3>
+          <p className="text-sm text-muted-foreground">{t("features.methodGeneration.subtitle")}</p>
         </div>
       </div>
 
       {!generatedMethod && !tempMethod && (
         <div className="flex gap-2 mb-6">
           <Button
-            variant={!isManualMode ? "default" : "outline"}
-            size="sm"
+            variant={!isManualMode ? "brand-primary" : "neutral-secondary"}
+            size="small"
             onClick={() => setIsManualMode(false)}
             className={
               !isManualMode ? "bg-blue-700 hover:bg-blue-800 text-white" : "bg-transparent"
             }
           >
-            論文から生成
+            {t("features.methodGeneration.generateFromPapers")}
           </Button>
           <Button
-            variant={isManualMode ? "default" : "outline"}
-            size="sm"
+            variant={isManualMode ? "brand-primary" : "neutral-secondary"}
+            size="small"
             onClick={() => setIsManualMode(true)}
             className={isManualMode ? "bg-blue-700 hover:bg-blue-800 text-white" : "bg-transparent"}
           >
-            手動で入力
+            {t("features.methodGeneration.manualInput")}
           </Button>
         </div>
       )}
@@ -163,30 +162,33 @@ export function MethodGenerationSection({
               className="text-sm font-medium text-foreground mb-2 block"
               htmlFor={manualMethodNameId}
             >
-              手法名
+              {t("features.methodGeneration.methodName")}
             </label>
-            <Input
-              id={manualMethodNameId}
-              value={manualMethodName}
-              onChange={(e) => setManualMethodName(e.target.value)}
-              placeholder="例: Attention-based Graph Neural Network"
-              className="bg-background"
-            />
+            <TextField>
+              <TextField.Input
+                id={manualMethodNameId}
+                value={manualMethodName}
+                onChange={(e) => setManualMethodName(e.target.value)}
+                placeholder="例: Attention-based Graph Neural Network"
+              />
+            </TextField>
           </div>
           <div>
             <label
               className="text-sm font-medium text-foreground mb-2 block"
               htmlFor={manualMethodDescriptionId}
             >
-              手法の説明
+              {t("features.methodGeneration.methodDescription")}
             </label>
-            <Textarea
-              id={manualMethodDescriptionId}
-              value={manualMethodDescription}
-              onChange={(e) => setManualMethodDescription(e.target.value)}
-              placeholder="手法の詳細な説明を入力してください..."
-              className="min-h-[200px] font-mono text-sm bg-background"
-            />
+            <TextArea>
+              <TextArea.Input
+                id={manualMethodDescriptionId}
+                value={manualMethodDescription}
+                onChange={(e) => setManualMethodDescription(e.target.value)}
+                placeholder={t("features.methodGeneration.descriptionPlaceholder")}
+                className="min-h-[200px] font-mono text-sm"
+              />
+            </TextArea>
           </div>
           <Button
             onClick={handleManualSave}
@@ -194,7 +196,7 @@ export function MethodGenerationSection({
             className="w-full bg-blue-700 hover:bg-blue-800 text-white"
           >
             <Save className="w-4 h-4 mr-2" />
-            保存
+            {t("common.save")}
           </Button>
         </div>
       )}
@@ -205,13 +207,13 @@ export function MethodGenerationSection({
         (selectedPapers.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>先に論文を選択するか、手動入力モードを使用してください</p>
+            <p>{t("features.methodGeneration.noPapersMessage")}</p>
           </div>
         ) : (
           <>
             <div className="mb-6">
               <p className="text-sm text-muted-foreground mb-3">
-                {selectedPapers.length} 件の論文を基に新規手法を生成します:
+                {t("features.methodGeneration.paperCountMessage", { count: selectedPapers.length })}
               </p>
               <div className="flex flex-wrap gap-2">
                 {selectedPapers.map((paper) => (
@@ -230,7 +232,9 @@ export function MethodGenerationSection({
               className="w-full bg-blue-700 hover:bg-blue-800 text-white"
             >
               <Sparkles className="w-4 h-4 mr-2" />
-              {isGenerating ? "生成中..." : "新規手法を生成"}
+              {isGenerating
+                ? t("features.methodGeneration.generating")
+                : t("features.methodGeneration.generate")}
             </Button>
           </>
         ))}
@@ -238,21 +242,25 @@ export function MethodGenerationSection({
       {tempMethod && !generatedMethod && (
         <div className="space-y-4">
           <div className="p-4 bg-muted/50 border border-border rounded-lg">
-            <p className="text-sm text-muted-foreground mb-2">生成された手法（プレビュー）</p>
+            <p className="text-sm text-muted-foreground mb-2">
+              {t("features.methodGeneration.generatedPreview")}
+            </p>
             <p className="text-lg font-semibold text-foreground mb-2">{tempMethod.name}</p>
             <div>
               <label
                 className="text-sm font-medium text-foreground mb-2 block"
                 htmlFor={previewDescriptionId}
               >
-                手法の説明（編集可能）
+                {t("features.methodGeneration.editableDescription")}
               </label>
-              <Textarea
-                id={previewDescriptionId}
-                value={editedDescription}
-                onChange={(e) => handleDescriptionChange(e.target.value)}
-                className="min-h-[200px] font-mono text-sm bg-background"
-              />
+              <TextArea>
+                <TextArea.Input
+                  id={previewDescriptionId}
+                  value={editedDescription}
+                  onChange={(e) => handleDescriptionChange(e.target.value)}
+                  className="min-h-[200px] font-mono text-sm"
+                />
+              </TextArea>
             </div>
           </div>
           <Button
@@ -260,7 +268,7 @@ export function MethodGenerationSection({
             className="w-full bg-blue-700 hover:bg-blue-800 text-white"
           >
             <Save className="w-4 h-4 mr-2" />
-            この手法を確定
+            {t("features.methodGeneration.confirmMethod")}
           </Button>
         </div>
       )}
@@ -274,58 +282,65 @@ export function MethodGenerationSection({
                   className="text-sm font-medium text-foreground mb-2 block"
                   htmlFor={editMethodNameId}
                 >
-                  手法名
+                  {t("features.methodGeneration.methodName")}
                 </label>
-                <Input
-                  id={editMethodNameId}
-                  value={manualMethodName}
-                  onChange={(e) => setManualMethodName(e.target.value)}
-                  className="bg-background"
-                />
+                <TextField>
+                  <TextField.Input
+                    id={editMethodNameId}
+                    value={manualMethodName}
+                    onChange={(e) => setManualMethodName(e.target.value)}
+                  />
+                </TextField>
               </div>
               <div>
                 <label
                   className="text-sm font-medium text-foreground mb-2 block"
                   htmlFor={editMethodDescriptionId}
                 >
-                  手法の説明
+                  {t("features.methodGeneration.methodDescription")}
                 </label>
-                <Textarea
-                  id={editMethodDescriptionId}
-                  value={manualMethodDescription}
-                  onChange={(e) => setManualMethodDescription(e.target.value)}
-                  className="min-h-[300px] font-mono text-sm bg-background"
-                />
+                <TextArea>
+                  <TextArea.Input
+                    id={editMethodDescriptionId}
+                    value={manualMethodDescription}
+                    onChange={(e) => setManualMethodDescription(e.target.value)}
+                    className="min-h-[300px] font-mono text-sm"
+                  />
+                </TextArea>
               </div>
               <div className="flex gap-2 justify-end">
                 <Button
-                  variant="outline"
+                  variant="neutral-secondary"
                   onClick={() => setIsEditing(false)}
                   className="bg-transparent"
                 >
-                  キャンセル
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   onClick={handleSaveEdit}
                   className="bg-blue-700 hover:bg-blue-800 text-white"
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  保存
+                  {t("common.save")}
                 </Button>
               </div>
             </>
           ) : (
             <>
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-foreground">手法名</p>
-                <Button variant="ghost" size="sm" onClick={handleEdit}>
+                <p className="text-sm font-medium text-foreground">
+                  {t("features.methodGeneration.methodName")}
+                </p>
+                <Button variant="neutral-tertiary" size="small" onClick={handleEdit}>
                   <Edit3 className="w-4 h-4 mr-1" />
-                  編集
+                  {t("common.edit")}
                 </Button>
               </div>
               <p className="text-lg font-semibold text-foreground">{generatedMethod.name}</p>
               <div>
-                <p className="text-sm font-medium text-foreground mb-2 block">手法の説明</p>
+                <p className="text-sm font-medium text-foreground mb-2 block">
+                  {t("features.methodGeneration.methodDescription")}
+                </p>
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-sm text-foreground whitespace-pre-wrap">
                     {generatedMethod.description}

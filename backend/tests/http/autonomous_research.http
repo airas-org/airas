@@ -5,8 +5,7 @@ Content-Type: application/json
 
 {
     "github_config": {
-        "github_owner": "auto-res2",
-        "repository_name": "matsuzawa-20260211-4",
+        "repository_name": "matsuzawa-20260309",
         "branch_name": "main"
     },
     "research_topic": "Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments",
@@ -16,7 +15,7 @@ Content-Type: application/json
     },
     "wandb_config": {
         "entity": "airas",
-        "project": "2026-02-11"
+        "project": "2026-0309-matsuzawa"
     },
     "is_github_repo_private": false,
     "num_paper_search_queries": 3,

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from langfuse import observe
 
 from airas.container import Container
+from airas.core.types.github import GitHubConfig
 from airas.infra.db.models.e2e import Status
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
@@ -18,7 +19,11 @@ from airas.usecases.autonomous_research.e2e_research_service_protocol import (
 from airas.usecases.autonomous_research.hypothesis_driven_research.hypothesis_driven_research import (
     HypothesisDrivenResearch,
 )
-from api.ee.auth.dependencies import get_current_user_id
+from api.ee.auth.dependencies import (
+    get_current_user_id,
+    get_github_client,
+    get_github_owner,
+)
 from api.schemas.hypothesis_driven_research import (
     HypothesisDrivenResearchListItemResponse,
     HypothesisDrivenResearchListResponseBody,
@@ -39,6 +44,7 @@ async def _execute_hypothesis_driven_research(
     task_id: uuid.UUID,
     created_by: uuid.UUID,
     request: HypothesisDrivenResearchRequestBody,
+    github_owner: str,
     github_client: GithubClient,
     langchain_client: LangChainClient,
     langfuse_client: LangfuseClient,
@@ -51,6 +57,7 @@ async def _execute_hypothesis_driven_research(
             github_client=github_client,
             langchain_client=langchain_client,
             e2e_service=e2e_service,
+            compute_environment=request.compute_environment,
             runner_config=request.runner_config,
             wandb_config=request.wandb_config,
             task_id=task_id,
@@ -74,7 +81,11 @@ async def _execute_hypothesis_driven_research(
         async for chunk in graph.astream(
             {
                 "task_id": task_id,
-                "github_config": request.github_config,
+                "github_config": GitHubConfig(
+                    github_owner=github_owner,
+                    repository_name=request.github_config.repository_name,
+                    branch_name=request.github_config.branch_name,
+                ),
                 "research_hypothesis": request.research_hypothesis,
                 "research_topic": request.research_topic,
             },
@@ -110,7 +121,8 @@ async def _execute_hypothesis_driven_research(
 async def execute_hypothesis_driven_research(
     request: HypothesisDrivenResearchRequestBody,
     current_user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
-    github_client: Annotated[GithubClient, Depends(Provide[Container.github_client])],
+    github_owner: Annotated[str, Depends(get_github_owner)],
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
     langchain_client: Annotated[
         LangChainClient, Depends(Provide[Container.langchain_client])
     ],
@@ -129,6 +141,7 @@ async def execute_hypothesis_driven_research(
             task_id=task_id,
             created_by=current_user_id,
             request=request,
+            github_owner=github_owner,
             github_client=github_client,
             langchain_client=langchain_client,
             langfuse_client=langfuse_client,

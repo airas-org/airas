@@ -1,16 +1,5 @@
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { GoogleGenAIParams, NodeLLMConfig, OpenAIParams } from "@/lib/api";
+import { Label, Select, TextField } from "@/ui";
 import {
   ANTHROPIC_MODELS,
   DEFAULT_NODE_LLM_CONFIG,
@@ -91,43 +80,29 @@ export function NodeLLMSelector({ nodeKey, label, value, onChange }: NodeLLMSele
   return (
     <div className="space-y-2">
       <Label className="text-xs font-semibold text-muted-foreground">{label}</Label>
-      <Select value={currentModelName} onValueChange={handleModelChange}>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder={`デフォルト (${defaultModelName})`} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__default__" className="text-blue-600 font-medium">
-            {defaultModelName}
-          </SelectItem>
-          <SelectSeparator />
-
-          <SelectGroup>
-            <SelectLabel>OpenAI</SelectLabel>
-            {OPENAI_MODELS.map((model) => (
-              <SelectItem key={model} value={model}>
-                {model}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-          <SelectSeparator />
-          <SelectGroup>
-            <SelectLabel>Google</SelectLabel>
-            {GOOGLE_MODELS.map((model) => (
-              <SelectItem key={model} value={model}>
-                {model}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-          <SelectSeparator />
-          <SelectGroup>
-            <SelectLabel>Anthropic</SelectLabel>
-            {ANTHROPIC_MODELS.map((model) => (
-              <SelectItem key={model} value={model}>
-                {model}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
+      <Select
+        value={currentModelName}
+        onValueChange={handleModelChange}
+        placeholder={defaultModelName}
+      >
+        <Select.Item value="__default__" className="text-blue-600 font-medium">
+          {defaultModelName}
+        </Select.Item>
+        {OPENAI_MODELS.map((model) => (
+          <Select.Item key={model} value={model}>
+            {model}
+          </Select.Item>
+        ))}
+        {GOOGLE_MODELS.map((model) => (
+          <Select.Item key={model} value={model}>
+            {model}
+          </Select.Item>
+        ))}
+        {ANTHROPIC_MODELS.map((model) => (
+          <Select.Item key={model} value={model}>
+            {model}
+          </Select.Item>
+        ))}
       </Select>
 
       {/* TODO: We'll refactor when the number of parameters increases. */}
@@ -143,16 +118,13 @@ export function NodeLLMSelector({ nodeKey, label, value, onChange }: NodeLLMSele
             <Select
               value={(value?.params as OpenAIParams)?.reasoning_effort ?? "none"}
               onValueChange={handleReasoningEffortChange}
+              placeholder="None"
+              className="mt-1"
             >
-              <SelectTrigger className="w-full mt-1">
-                <SelectValue placeholder="None" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-              </SelectContent>
+              <Select.Item value="none">None</Select.Item>
+              <Select.Item value="low">Low</Select.Item>
+              <Select.Item value="medium">Medium</Select.Item>
+              <Select.Item value="high">High</Select.Item>
             </Select>
           </div>
         </div>
@@ -169,13 +141,14 @@ export function NodeLLMSelector({ nodeKey, label, value, onChange }: NodeLLMSele
             <p className="text-[10px] text-muted-foreground/70 mt-0.5">
               0=off, 1024-32768=fixed, -1=dynamic
             </p>
-            <Input
-              type="number"
-              placeholder="None"
-              value={(value?.params as GoogleGenAIParams)?.thinking_budget ?? ""}
-              onChange={(e) => handleThinkingBudgetChange(e.target.value)}
-              className="w-full mt-1"
-            />
+            <TextField className="mt-1">
+              <TextField.Input
+                type="number"
+                placeholder="None"
+                value={String((value?.params as GoogleGenAIParams)?.thinking_budget ?? "")}
+                onChange={(e) => handleThinkingBudgetChange(e.target.value)}
+              />
+            </TextField>
           </div>
         </div>
       )}

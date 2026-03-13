@@ -28,6 +28,22 @@ RUN apt-get install -y curl ca-certificates gnupg && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
+# Railway CLI
+RUN npm install -g @railway/cli
+
+# ttyd (web terminal)
+RUN DPKG_ARCH=$(dpkg --print-architecture) && \
+    if [ "$DPKG_ARCH" = "amd64" ]; then TTYD_ARCH="x86_64"; else TTYD_ARCH="aarch64"; fi && \
+    curl -fsSL -o /usr/local/bin/ttyd \
+      "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.${TTYD_ARCH}" && \
+    chmod +x /usr/local/bin/ttyd
+
+# cloudflared (Cloudflare Tunnel)
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -fsSL -o /usr/local/bin/cloudflared \
+      "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARCH}" && \
+    chmod +x /usr/local/bin/cloudflared
+
 # Claude Code
 RUN curl -fsSL https://claude.ai/install.sh | bash
 

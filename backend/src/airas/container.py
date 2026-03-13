@@ -18,30 +18,21 @@ from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.qdrant_client import QdrantClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
-from airas.repository.assisted_research_link_repository import (
-    AssistedResearchLinkRepository,
-)
-from airas.repository.assisted_research_session_repository import (
-    AssistedResearchSessionRepository,
-)
-from airas.repository.assisted_research_step_repository import (
-    AssistedResearchStepRepository,
-)
-from airas.usecases.assisted_research.assisted_research_link_service import (
-    AssistedResearchLinkService,
-)
-from airas.usecases.assisted_research.assisted_research_session_service import (
-    AssistedResearchSessionService,
-)
-from airas.usecases.assisted_research.assisted_research_step_service import (
-    AssistedResearchStepService,
-)
+from airas.repository.user_api_key_repository import UserApiKeyRepository
+from airas.repository.user_github_token_repository import UserGitHubTokenRepository
+from airas.repository.user_plan_repository import UserPlanRepository
+from airas.repository.verification_repository import VerificationRepository
 from airas.usecases.autonomous_research.sql_e2e_research_service import (
     SqlE2EResearchService,
 )
+from airas.usecases.ee.api_key_resolver import ApiKeyResolver
+from airas.usecases.ee.api_key_service import ApiKeyService
+from airas.usecases.ee.github_oauth_service import GitHubOAuthService
+from airas.usecases.ee.plan_service import PlanService
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
+from airas.usecases.verification.verification_service import VerificationService
 
 T = TypeVar("T")
 
@@ -130,8 +121,11 @@ class Container(containers.DeclarativeContainer):
     )
 
     # --- Code & Experiment Platforms ---
+    # NOTE: github_client in the container uses GH_PERSONAL_ACCESS_TOKEN as fallback.
+    # In EE mode, use get_github_client() FastAPI dependency instead (per-user OAuth token).
     github_client: providers.Factory[GithubClient] = providers.Factory(
         GithubClient,
+        github_token=os.getenv("GH_PERSONAL_ACCESS_TOKEN", ""),
         sync_session=github_sync_session,  # Use non-cached session
         async_session=github_async_session,  # Use non-cached session
     )
@@ -194,26 +188,31 @@ class Container(containers.DeclarativeContainer):
         session_factory=session_factory,
     )
 
-    ## ---  Assisted Research Service ---
-    assisted_research_session_repository = providers.Factory(
-        AssistedResearchSessionRepository, db=db_session
-    )
-    assisted_research_session_service = providers.Factory(
-        AssistedResearchSessionService, repo=assisted_research_session_repository
+    # --- EE: API Key & Plan Services ---
+    user_api_key_repository = providers.Factory(UserApiKeyRepository, db=db_session)
+    api_key_service = providers.Factory(ApiKeyService, repo=user_api_key_repository)
+
+    user_plan_repository = providers.Factory(UserPlanRepository, db=db_session)
+    plan_service = providers.Factory(PlanService, repo=user_plan_repository)
+
+    api_key_resolver = providers.Factory(
+        ApiKeyResolver,
+        plan_repo=user_plan_repository,
+        api_key_repo=user_api_key_repository,
     )
 
-    assisted_research_step_repository = providers.Factory(
-        AssistedResearchStepRepository, db=db_session
+    # --- EE: GitHub OAuth ---
+    user_github_token_repository = providers.Factory(
+        UserGitHubTokenRepository, db=db_session
     )
-    assisted_research_step_service = providers.Factory(
-        AssistedResearchStepService, repo=assisted_research_step_repository
+    github_oauth_service = providers.Factory(
+        GitHubOAuthService, repo=user_github_token_repository
     )
 
-    assisted_research_link_repository = providers.Factory(
-        AssistedResearchLinkRepository, db=db_session
-    )
-    assisted_research_link_service = providers.Factory(
-        AssistedResearchLinkService, repo=assisted_research_link_repository
+    ## --- Verification Service ---
+    verification_repository = providers.Factory(VerificationRepository, db=db_session)
+    verification_service = providers.Factory(
+        VerificationService, repo=verification_repository
     )
 
     ## ---  Autonomous Research Service ---

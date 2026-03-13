@@ -1,12 +1,38 @@
 import { LogOut, UserCircle } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/ee/auth/hooks/useAuth";
 import { useSession } from "@/ee/auth/hooks/useSession";
+import { OpenAPI } from "@/lib/api";
 
 export function UserMenu() {
   const { session } = useSession();
   const { signOut } = useAuth();
   const [open, setOpen] = useState(false);
+  const [plan, setPlan] = useState<string | null>(null);
+
+  const fetchPlan = useCallback(async () => {
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (OpenAPI.TOKEN) {
+        const token =
+          typeof OpenAPI.TOKEN === "function"
+            ? await (OpenAPI.TOKEN as (options: unknown) => Promise<string>)({})
+            : OpenAPI.TOKEN;
+        if (token) headers.Authorization = `Bearer ${token}`;
+      }
+      const res = await fetch(`${OpenAPI.BASE}/airas/ee/plan`, { headers });
+      if (res.ok) {
+        const data = (await res.json()) as { plan_type: string };
+        setPlan(data.plan_type === "pro" ? "Pro" : "Free");
+      }
+    } catch {
+      // API not available - fallback
+    }
+  }, []);
+
+  useEffect(() => {
+    if (session) void fetchPlan();
+  }, [session, fetchPlan]);
 
   if (!session) return null;
 
@@ -34,6 +60,11 @@ export function UserMenu() {
         <div className="absolute right-0 top-full mt-1 w-48 rounded-md border border-border bg-card shadow-lg z-50">
           <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border truncate">
             {session.user.email ?? ""}
+          </div>
+          <div className="px-3 py-1.5 border-b border-border">
+            <span className="inline-block rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+              {plan ?? "Free"}
+            </span>
           </div>
           <button
             type="button"
