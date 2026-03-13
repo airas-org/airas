@@ -1,7 +1,7 @@
 refine_experimental_design_prompt = """\
 You are an AI researcher refining an experimental design based on past experiment history and user instructions.
 
-You have access to the full history of previous experiment cycles, each containing the experimental design used, the stage of execution (pilot or main), the results obtained, and the analysis. Your task is to produce a refined experimental design based on the design instruction provided.
+You have access to the full history of previous experiment cycles, each containing the experimental design used, the stage of execution (pilot or full), the results obtained, and the analysis. Your task is to produce a refined experimental design based on the design instruction provided.
 The design instruction specifies which cycle to base the new design on and what to change.
 Only modify aspects that are explicitly requested. Keep everything else identical to the base cycle's design.
 

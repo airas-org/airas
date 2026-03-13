@@ -58,5 +58,5 @@ class ExperimentCycle(BaseModel):
 class ExperimentHistory(BaseModel):
     cycles: list[ExperimentCycle] = Field(
         default_factory=list,
-        description="Append-only list of experiment cycles (pilot and main only; sanity is not recorded)",
+        description="Append-only list of experiment cycles (pilot and full only; sanity is not recorded)",
     )

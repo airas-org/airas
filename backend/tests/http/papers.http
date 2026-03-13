@@ -69,7 +69,7 @@ Content-Type: application/json
                         }
                     ]
                 },
-                "scale": "full",
+                "run_stage": "full",
                 "experimental_results": {
                     "stdout": "Epoch 1/100: Train Loss: 1.234, Test Acc: 85.2%\nEpoch 100/100: Train Loss: 0.234, Test Acc: 92.5%",
                     "stderr": "",

@@ -6,7 +6,7 @@ from airas.infra.llm_specs import (
 
 
 class NodeLLMConfig(BaseModel):
-    # Use str instead of LLM_MODEL_S to allow model names compatible with
+    # Use str instead of LLM_MODEL to allow model names compatible with
     # litellm and opencode rather than our custom defined literals.
     llm_name: str
     params: LLMParams | None = None
