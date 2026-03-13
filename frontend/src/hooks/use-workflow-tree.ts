@@ -29,7 +29,7 @@ export function useWorkflowTree() {
       data?: WorkflowNode["data"],
       snapshot?: WorkflowNode["snapshot"],
     ): string => {
-      const newNodeId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const newNodeId = `node-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
       setWorkflowTree((prev) => {
         const newNodes = { ...prev.nodes };

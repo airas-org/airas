@@ -3,6 +3,7 @@
 import { Route, Routes } from "react-router-dom";
 import { AppLayout } from "@/components/app-layout";
 import { GitHubOAuthCallbackRoute } from "@/components/pages/integration";
+import { isEnterpriseEnabled } from "@/ee/config";
 import { useEEComponents } from "@/hooks/use-ee-components";
 
 export default function App() {
@@ -19,7 +20,12 @@ export default function App() {
   return (
     <Routes>
       <Route path="/auth/github/callback" element={<GitHubOAuthCallbackRoute />} />
-      {eeComponents && <Route path="/auth/callback" element={<eeComponents.AuthCallback />} />}
+      {isEnterpriseEnabled() && (
+        <Route
+          path="/auth/callback"
+          element={eeComponents ? <eeComponents.AuthCallback /> : <div>Loading...</div>}
+        />
+      )}
       <Route path="*" element={guardedContent} />
     </Routes>
   );

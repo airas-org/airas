@@ -357,6 +357,7 @@ export function useVerifications(navigate: (path: string) => void) {
   const handleCreateWithMethod = useCallback(
     async (sourceVerification: Verification, method: ProposedMethod) => {
       const apiBase = OpenAPI.BASE;
+      let newId: string | null = null;
       try {
         const authHeaders = await getAuthHeaders();
 
@@ -368,7 +369,7 @@ export function useVerifications(navigate: (path: string) => void) {
         });
         if (!createRes.ok) return;
         const session = await createRes.json();
-        const newId: string = session.id;
+        newId = session.id as string;
 
         // 2. ローカル状態に追加し、初期データをセット
         handleAddVerification(session);
@@ -418,8 +419,15 @@ export function useVerifications(navigate: (path: string) => void) {
             steps: data.steps,
           },
         });
-      } catch {
-        // ignore
+      } catch (error) {
+        console.error("handleCreateWithMethod failed", error);
+        if (newId !== null) {
+          handleUpdateVerification(newId, {
+            selectedMethodId: undefined,
+            phase: "methods-proposed",
+          });
+        }
+        // TODO: Replace with toast notification once a toast manager is available
       }
     },
     [navigate, handleAddVerification, handleUpdateVerification],
@@ -477,8 +485,12 @@ export function useVerifications(navigate: (path: string) => void) {
           }),
         );
         handleUpdateVerification(newId, { phase: "methods-proposed", proposedMethods: methods });
-      } catch {
-        // ignore
+      } catch (error) {
+        console.error("handleCreateWithQuery failed", error);
+        if (newId !== null) {
+          handleUpdateVerification(newId, { phase: "initial" });
+        }
+        // TODO: Replace with toast notification once a toast manager is available
       }
     },
     [navigate, handleAddVerification, handleUpdateVerification],

@@ -278,12 +278,22 @@ export function AppLayout({ eeComponents }: AppLayoutProps) {
                 <IconButton
                   variant="neutral-tertiary"
                   icon={<SiGithub className="h-4 w-4" />}
-                  onClick={() => window.open("https://github.com/airas-org/airas", "_blank")}
+                  onClick={() =>
+                    window.open(
+                      "https://github.com/airas-org/airas",
+                      "_blank",
+                      "noopener,noreferrer",
+                    )
+                  }
+                  aria-label="Open GitHub repository"
                 />
                 <IconButton
                   variant="neutral-tertiary"
                   icon={<SiX className="h-4 w-4" />}
-                  onClick={() => window.open("https://x.com/fuyu_quant", "_blank")}
+                  onClick={() =>
+                    window.open("https://x.com/fuyu_quant", "_blank", "noopener,noreferrer")
+                  }
+                  aria-label="Open X profile"
                 />
               </div>
               <IconButton
@@ -292,6 +302,7 @@ export function AppLayout({ eeComponents }: AppLayoutProps) {
                 }
                 icon={<FeatherBell className="h-4 w-4" />}
                 onClick={() => navigate("/notifications")}
+                aria-label="Open notifications"
               />
               {eeComponents ? (
                 <eeComponents.UserMenu />

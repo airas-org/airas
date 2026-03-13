@@ -314,6 +314,7 @@ export function GitHubOAuthCallbackRoute() {
   const state = params.get("state");
   const savedState = sessionStorage.getItem("github_oauth_state");
 
+  sessionStorage.removeItem("github_oauth_state");
   if (code && state && state === savedState) {
     return <GitHubOAuthCallback code={code} />;
   }

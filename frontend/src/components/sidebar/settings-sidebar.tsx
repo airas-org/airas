@@ -49,7 +49,9 @@ export function SettingsSidebar() {
           icon={<FeatherBookOpen />}
           selected={false}
           rightSlot={<FeatherExternalLink className="h-3 w-3 text-neutral-400" />}
-          onClick={() => window.open("https://airas-org.github.io/airas/", "_blank")}
+          onClick={() =>
+            window.open("https://airas-org.github.io/airas/", "_blank", "noopener,noreferrer")
+          }
         >
           {t("nav.docs")}
         </SidebarWithSections.NavItem>
@@ -57,7 +59,9 @@ export function SettingsSidebar() {
           icon={<SiDiscord className="h-4 w-4" />}
           selected={false}
           rightSlot={<FeatherExternalLink className="h-3 w-3 text-neutral-400" />}
-          onClick={() => window.open("https://discord.gg/uDmkgKfkes", "_blank")}
+          onClick={() =>
+            window.open("https://discord.gg/uDmkgKfkes", "_blank", "noopener,noreferrer")
+          }
         >
           Discord
         </SidebarWithSections.NavItem>
@@ -102,14 +106,14 @@ export function SettingsSidebar() {
           selected={getSettingsTab(location.pathname) === "receipts"}
           onClick={() => navigate("/settings/receipts")}
         >
-          領収書 / 請求書
+          {t("receipts.title")}
         </SidebarWithSections.NavItem>
         <SidebarWithSections.NavItem
           icon={<FeatherBarChart2 />}
           selected={getSettingsTab(location.pathname) === "usage"}
           onClick={() => navigate("/settings/usage")}
         >
-          利用量
+          {t("usage.title")}
         </SidebarWithSections.NavItem>
       </SidebarWithSections.NavSection>
     </>

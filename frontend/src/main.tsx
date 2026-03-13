@@ -11,13 +11,16 @@ OpenAPI.BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "htt
 // Attach GitHub session header only to GitHub-related generated API calls
 OpenAPI.HEADERS = async (options) => {
   const sessionToken = localStorage.getItem("github_session_token");
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = {
+    ...(options?.headers as Record<string, string> | undefined),
+  };
   if (
     sessionToken &&
     typeof options?.url === "string" &&
-    options.url.toLowerCase().includes("github")
+    options.url.toLowerCase().includes("github") &&
+    headers["x-github-session"] === undefined
   ) {
-    headers["X-GitHub-Session"] = sessionToken;
+    headers["x-github-session"] = sessionToken;
   }
   return headers;
 };
