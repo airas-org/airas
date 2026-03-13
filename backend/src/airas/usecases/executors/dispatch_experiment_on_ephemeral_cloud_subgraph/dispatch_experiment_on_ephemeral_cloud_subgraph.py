@@ -61,7 +61,7 @@ class DispatchExperimentOnEphemeralCloudSubgraph:
         run_id = state["run_id"]
 
         logger.info(
-            f"Dispatching {self.workflow_file} via ephemeral cloud runner for run_id={run_id} "
+            f"Dispatching {_CLOUD_RUNNER_WORKFLOW_FILE} via ephemeral cloud runner for run_id={run_id} "
             f"on branch '{github_config.branch_name}' "
             f"(provider={self.cloud_provider}, instance={self.gpu_instance_type})"
         )
@@ -88,11 +88,11 @@ class DispatchExperimentOnEphemeralCloudSubgraph:
 
         if success:
             logger.info(
-                f"Ephemeral cloud dispatch successful: {self.workflow_file} for run_id={run_id}"
+                f"Ephemeral cloud dispatch successful: {_CLOUD_RUNNER_WORKFLOW_FILE} for run_id={run_id}"
             )
         else:
             logger.error(
-                f"Ephemeral cloud dispatch failed: {self.workflow_file} for run_id={run_id}"
+                f"Ephemeral cloud dispatch failed: {_CLOUD_RUNNER_WORKFLOW_FILE} for run_id={run_id}"
             )
 
         return {"dispatched": success}

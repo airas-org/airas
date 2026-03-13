@@ -85,7 +85,10 @@ export function HypothesisAllLLMConfig({
           Object.keys(rest).length === 0 ? null : (rest as HypothesisDrivenResearchLLMMapping),
         );
       } else {
-        onChange({ ...llmMapping, [topKey]: updatedTop } as HypothesisDrivenResearchLLMMapping);
+        onChange({
+          ...(llmMapping ?? {}),
+          [topKey]: updatedTop,
+        } as HypothesisDrivenResearchLLMMapping);
       }
     } else {
       if (!config) {
@@ -95,7 +98,7 @@ export function HypothesisAllLLMConfig({
           Object.keys(rest).length === 0 ? null : (rest as HypothesisDrivenResearchLLMMapping),
         );
       } else {
-        onChange({ ...llmMapping, [subgraphKey]: config as never });
+        onChange({ ...(llmMapping ?? {}), [subgraphKey]: config as never });
       }
     }
   };

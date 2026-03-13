@@ -457,6 +457,15 @@ class ExperimentCycleGraph:
                 f"Maximum experiment cycles ({_MAX_EXPERIMENT_CYCLES}) reached. "
                 f"Forcing completion."
             )
+            if decision.action != ExperimentCycleAction.COMPLETE:
+                forced_reason = (
+                    f"{decision.reasoning}\n\n[System] Maximum experiment cycles "
+                    f"({_MAX_EXPERIMENT_CYCLES}) reached. Forcing completion."
+                    if decision.reasoning
+                    else f"[System] Maximum experiment cycles ({_MAX_EXPERIMENT_CYCLES}) reached. Forcing completion."
+                )
+                decision.action = ExperimentCycleAction.COMPLETE
+                decision.reasoning = forced_reason
             return "complete"
 
         if decision.action == ExperimentCycleAction.SCALE_UP:

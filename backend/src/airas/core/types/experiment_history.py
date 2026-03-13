@@ -3,7 +3,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self
 
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
 from airas.core.types.experimental_design import ExperimentalDesign
@@ -35,6 +36,15 @@ class ExperimentCycleDecision(BaseModel):
         None,
         description="Instruction for refining the experimental design. Required when action is redesign.",
     )
+
+    @model_validator(mode="after")
+    def _validate_redesign_requires_instruction(self) -> Self:
+        if (
+            self.action == ExperimentCycleAction.REDESIGN
+            and not self.design_instruction
+        ):
+            raise ValueError("design_instruction is required when action is redesign.")
+        return self
 
 
 class ExperimentCycle(BaseModel):

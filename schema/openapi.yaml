@@ -2465,7 +2465,7 @@ components:
             $ref: '#/components/schemas/ExperimentCycle-Input'
           type: array
           title: Cycles
-          description: Append-only list of experiment cycles (pilot and main only;
+          description: Append-only list of experiment cycles (pilot and full only;
             sanity is not recorded)
       type: object
       title: ExperimentHistory
@@ -2476,7 +2476,7 @@ components:
             $ref: '#/components/schemas/ExperimentCycle-Output'
           type: array
           title: Cycles
-          description: Append-only list of experiment cycles (pilot and main only;
+          description: Append-only list of experiment cycles (pilot and full only;
             sanity is not recorded)
       type: object
       title: ExperimentHistory
