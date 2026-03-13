@@ -42,14 +42,12 @@ class DispatchExperimentOnEphemeralCloudSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
-        workflow_file: str = "run_experiment.yml",
         cloud_provider: str = "aws",
         gpu_instance_type: str = "g4dn.xlarge",
         max_instance_hours: int = 120,
         run_stage: RunStage | None = None,
     ):
         self.github_client = github_client
-        self.workflow_file = workflow_file
         self.cloud_provider = cloud_provider
         self.gpu_instance_type = gpu_instance_type
         self.max_instance_hours = max_instance_hours
