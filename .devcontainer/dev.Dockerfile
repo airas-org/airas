@@ -12,9 +12,13 @@ RUN apt-get update && apt-get install -y \
     && update-locale LANG=en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
 RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
-    && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+    && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
 
 # Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
@@ -31,10 +35,16 @@ RUN DPKG_ARCH=$(dpkg --print-architecture) && \
       "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.${TTYD_ARCH}" && \
     chmod +x /usr/local/bin/ttyd
 
+ARG CLOUDFLARED_VERSION=2025.1.0
 RUN ARCH=$(dpkg --print-architecture) && \
-    curl -fsSL -o /usr/local/bin/cloudflared \
-      "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARCH}" && \
-    chmod +x /usr/local/bin/cloudflared
+    cd /tmp && \
+    curl -fsSL -o "cloudflared-linux-${ARCH}" \
+      "https://github.com/cloudflare/cloudflared/releases/download/${CLOUDFLARED_VERSION}/cloudflared-linux-${ARCH}" && \
+    curl -fsSL -o "cloudflared-linux-${ARCH}.sha256" \
+      "https://github.com/cloudflare/cloudflared/releases/download/${CLOUDFLARED_VERSION}/cloudflared-linux-${ARCH}.sha256" && \
+    echo "$(cat cloudflared-linux-${ARCH}.sha256)  cloudflared-linux-${ARCH}" | sha256sum -c - && \
+    install -m 0755 "cloudflared-linux-${ARCH}" /usr/local/bin/cloudflared && \
+    rm "cloudflared-linux-${ARCH}" "cloudflared-linux-${ARCH}.sha256"
 
 # uv・Claude Code
 USER $USERNAME
