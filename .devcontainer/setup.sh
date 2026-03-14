@@ -19,6 +19,8 @@ uv sync
 
 # Install git hooks (run from repo root, but use backend's uv project for the tool)
 cd /workspaces/airas
+# Ensure this repo uses the default .git/hooks path regardless of any global core.hooksPath
+git config --local core.hooksPath .git/hooks
 uv run --project backend pre-commit install
 
 # --- Frontend (Node + npm) ---
