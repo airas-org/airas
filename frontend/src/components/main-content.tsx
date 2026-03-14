@@ -26,6 +26,11 @@ import type {
 export const AUTONOMOUS_SUB_NAVS = ["topic-driven", "hypothesis-driven"] as const;
 export type AutonomousSubNav = (typeof AUTONOMOUS_SUB_NAVS)[number];
 
+export function getAutonomousSubNav(pathname: string): AutonomousSubNav {
+  if (pathname.includes("hypothesis-driven")) return "hypothesis-driven";
+  return "topic-driven";
+}
+
 interface AssistedResearchProps {
   workflowTree: WorkflowTreeType;
   activeNodeId: string | null;

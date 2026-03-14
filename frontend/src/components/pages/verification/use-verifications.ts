@@ -354,6 +354,149 @@ export function useVerifications(navigate: (path: string) => void) {
     [verifications],
   );
 
+  const handleCreateWithMethod = useCallback(
+    async (sourceVerification: Verification, method: ProposedMethod) => {
+      const apiBase = OpenAPI.BASE;
+      let newId: string | null = null;
+      try {
+        const authHeaders = await getAuthHeaders();
+
+        // 1. 新しいセッションを作成
+        const createRes = await fetch(`${apiBase}/airas/v1/verification/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({ title: method.title }),
+        });
+        if (!createRes.ok) return;
+        const session = await createRes.json();
+        newId = session.id as string;
+
+        // 2. ローカル状態に追加し、初期データをセット
+        handleAddVerification(session);
+        handleUpdateVerification(newId, {
+          title: method.title,
+          query: sourceVerification.query,
+          proposedMethods: [method],
+          selectedMethodId: method.id,
+          phase: "methods-proposed",
+        });
+
+        // 3. 新セッションに遷移
+        navigate(`/verification/${newId}`);
+
+        // 4. generate-method API を呼び出す
+        const res = await fetch(`${apiBase}/airas/v1/verification/generate-method`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({
+            user_query: sourceVerification.query,
+            selected_policy: {
+              id: method.id,
+              title: method.title,
+              what_to_verify: method.whatToVerify,
+              method: method.method,
+              pros: method.pros,
+              cons: method.cons,
+            },
+            verification_id: newId,
+          }),
+        });
+        if (!res.ok) {
+          handleUpdateVerification(newId, {
+            selectedMethodId: undefined,
+            phase: "methods-proposed",
+          });
+          return;
+        }
+        const data = await res.json();
+
+        // 5. 生成された検証方法でセッションを更新
+        handleUpdateVerification(newId, {
+          phase: "plan-generated",
+          verificationMethod: {
+            whatToVerify: data.what_to_verify,
+            experimentSettings: data.experiment_settings,
+            steps: data.steps,
+          },
+        });
+      } catch (error) {
+        console.error("handleCreateWithMethod failed", error);
+        if (newId !== null) {
+          handleUpdateVerification(newId, {
+            selectedMethodId: undefined,
+            phase: "methods-proposed",
+          });
+        }
+        // TODO: Replace with toast notification once a toast manager is available
+      }
+    },
+    [navigate, handleAddVerification, handleUpdateVerification],
+  );
+
+  const handleCreateWithQuery = useCallback(
+    async (query: string) => {
+      const apiBase = OpenAPI.BASE;
+      let newId: string | null = null;
+      try {
+        const authHeaders = await getAuthHeaders();
+
+        const createRes = await fetch(`${apiBase}/airas/v1/verification/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({}),
+        });
+        if (!createRes.ok) return;
+        const session = await createRes.json();
+        newId = session.id as string;
+
+        handleAddVerification(session);
+        handleUpdateVerification(newId, { query, phase: "proposing-policies" });
+        navigate(`/verification/${newId}`);
+
+        const res = await fetch(`${apiBase}/airas/v1/verification/propose-policies`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({ user_query: query, verification_id: newId }),
+        });
+        if (!res.ok) {
+          handleUpdateVerification(newId, { phase: "initial" });
+          return;
+        }
+        const data = await res.json();
+        if (!data.feasible) {
+          handleUpdateVerification(newId, { phase: "initial" });
+          return;
+        }
+
+        const methods: ProposedMethod[] = data.proposed_methods.map(
+          (m: {
+            id: string;
+            title: string;
+            what_to_verify: string;
+            method: string;
+            pros?: string[];
+            cons?: string[];
+          }) => ({
+            id: m.id,
+            title: m.title,
+            whatToVerify: m.what_to_verify,
+            method: m.method,
+            pros: m.pros ?? [],
+            cons: m.cons ?? [],
+          }),
+        );
+        handleUpdateVerification(newId, { phase: "methods-proposed", proposedMethods: methods });
+      } catch (error) {
+        console.error("handleCreateWithQuery failed", error);
+        if (newId !== null) {
+          handleUpdateVerification(newId, { phase: "initial" });
+        }
+        // TODO: Replace with toast notification once a toast manager is available
+      }
+    },
+    [navigate, handleAddVerification, handleUpdateVerification],
+  );
+
   return {
     verifications,
     isLoading,
@@ -362,5 +505,7 @@ export function useVerifications(navigate: (path: string) => void) {
     handleDeleteVerification,
     handleDuplicateVerification,
     handleAddVerification,
+    handleCreateWithMethod,
+    handleCreateWithQuery,
   };
 }
