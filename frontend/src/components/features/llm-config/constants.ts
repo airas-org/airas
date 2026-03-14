@@ -151,6 +151,16 @@ export const HYPOTHESIS_SUBGRAPH_NODE_CONFIGS = {
   ],
 } as const;
 
+/**
+ * Mapping from display subgraph key to nested path in HypothesisDrivenResearchLLMMapping.
+ * Keys under experiment_cycle are accessed via their path segments.
+ */
+export const HYPOTHESIS_NESTED_SUBGRAPH_PATHS: Record<string, string[]> = {
+  code_generation: ["experiment_cycle", "code_generation", "dispatch_code_generation"],
+  dispatch_experiment_validation: ["experiment_cycle", "dispatch_experiment_validation"],
+  analyze_experiment: ["experiment_cycle", "analyze_experiment"],
+};
+
 export const HYPOTHESIS_SUBGRAPH_DISPLAY_CONFIG = [
   { key: "generate_experimental_design", title: "1. 実験デザイン生成" },
   { key: "code_generation", title: "2. コード生成" },

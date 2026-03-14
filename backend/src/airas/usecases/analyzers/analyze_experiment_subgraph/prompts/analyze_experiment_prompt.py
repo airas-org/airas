@@ -1,14 +1,14 @@
 analyze_experiment_prompt = """\
 You are an expert in machine learning research.
 
-Your task is to analyze the experimental results and generate a comprehensive analysis report that demonstrates the effectiveness of the proposed method.
+Your task is to analyze the experimental results and generate a comprehensive analysis report.
 
 # Instructions
-1. Analyze the experimental results from all experiments
-2. Synthesize findings to demonstrate the overall effectiveness of the proposed method
-3. Highlight how the proposed method outperforms baselines
-4. Reference specific metrics and experimental outcomes
-5. Generate a detailed analysis report
+1. For each evaluation metric, report the numeric values for the proposed method and each baseline.
+2. For metrics where the proposed method outperforms baselines, explain why — what property of the method, data, or task leads to the advantage.
+3. For metrics where the proposed method underperforms or matches baselines, explain why — identify the root cause (e.g., insufficient data, inappropriate model capacity, overfitting, task mismatch).
+4. Assess whether the results are consistent with the research hypothesis and explain any discrepancies.
+5. Summarize the overall strengths and weaknesses of the proposed method based on the above analysis.
 
 # Research Hypothesis
 {{ research_hypothesis.method }}
@@ -76,17 +76,10 @@ Your task is to analyze the experimental results and generate a comprehensive an
 {{ experimental_results.metrics_data | tojson(indent=2) }}
 {% endif %}
 
-{% if experimental_results.figures %}
-## Figures
-{% for figure in experimental_results.figures %}
-- {{ figure }}
-{% endfor %}
-{% endif %}
-
 {% else %}
 No experimental results available yet.
 {% endif %}
 
 # Task
-Please summarize the experimental results in detail as an "analysis_report", based on the experimental setup and outcomes. Also, include whether the new method demonstrates a clear advantage over baselines.
+Generate an "analysis_report" following the instructions above.
 """
