@@ -211,6 +211,33 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
       - HTTPBearer: []
+  /airas/v1/experimental_settings/refinements:
+    post:
+      tags:
+      - experimental_settings
+      summary: Refine Experimental Design
+      operationId: refine_experimental_design_airas_v1_experimental_settings_refinements_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefineExperimentalDesignSubgraphRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefineExperimentalDesignSubgraphResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/experiments/run-ids:
     post:
       tags:
@@ -1574,7 +1601,7 @@ components:
         analyze_experiment:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gpt-5.4-2026-03-05
       type: object
       title: AnalyzeExperimentLLMMapping
     AnalyzeExperimentRequestBody:
@@ -1861,6 +1888,14 @@ components:
       - citation
       - task_type
       title: DatasetConfig
+    DecideExperimentCycleLLMMapping:
+      properties:
+        decide_experiment_cycle:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5.4-2026-03-05
+      type: object
+      title: DecideExperimentCycleLLMMapping
     DispatchCodeGenerationLLMMapping:
       properties:
         dispatch_code_generation:
@@ -1996,13 +2031,7 @@ components:
           type: integer
           title: Workflow Run Id
         run_stage:
-          type: string
-          enum:
-          - sanity
-          - pilot
-          - main
-          - visualization
-          title: Run Stage
+          $ref: '#/components/schemas/RunStage'
         research_hypothesis:
           $ref: '#/components/schemas/ResearchHypothesis'
         experimental_design:
@@ -2319,6 +2348,138 @@ components:
       - status
       - conclusion
       title: ExperimentCodeStatusResponseBody
+    ExperimentCycle-Input:
+      properties:
+        experimental_design:
+          $ref: '#/components/schemas/ExperimentalDesign-Input'
+          description: Experimental design used in this cycle
+        run_stage:
+          $ref: '#/components/schemas/RunStage'
+          description: Stage at which the experiment was executed (pilot or full)
+        experimental_results:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentalResults'
+          - type: 'null'
+          description: Results from the experiment execution
+        experimental_analysis:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentalAnalysis'
+          - type: 'null'
+          description: Analysis of the experiment results
+        decision:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentCycleDecision'
+          - type: 'null'
+          description: Decision made after analyzing this cycle's results
+      type: object
+      required:
+      - experimental_design
+      - run_stage
+      title: ExperimentCycle
+    ExperimentCycle-Output:
+      properties:
+        experimental_design:
+          $ref: '#/components/schemas/ExperimentalDesign-Output'
+          description: Experimental design used in this cycle
+        run_stage:
+          $ref: '#/components/schemas/RunStage'
+          description: Stage at which the experiment was executed (pilot or full)
+        experimental_results:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentalResults'
+          - type: 'null'
+          description: Results from the experiment execution
+        experimental_analysis:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentalAnalysis'
+          - type: 'null'
+          description: Analysis of the experiment results
+        decision:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentCycleDecision'
+          - type: 'null'
+          description: Decision made after analyzing this cycle's results
+      type: object
+      required:
+      - experimental_design
+      - run_stage
+      title: ExperimentCycle
+    ExperimentCycleAction:
+      type: string
+      enum:
+      - scale_up
+      - redesign
+      - abort
+      - complete
+      title: ExperimentCycleAction
+    ExperimentCycleDecision:
+      properties:
+        action:
+          $ref: '#/components/schemas/ExperimentCycleAction'
+          description: The decided next action for the experiment cycle
+        reasoning:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reasoning
+          description: Explanation of why this action was chosen
+        design_instruction:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Design Instruction
+          description: Instruction for refining the experimental design. Required
+            when action is redesign.
+      type: object
+      required:
+      - action
+      title: ExperimentCycleDecision
+    ExperimentCycleGraphLLMMapping:
+      properties:
+        code_generation:
+          anyOf:
+          - $ref: '#/components/schemas/CodeGenerationGraphLLMMapping'
+          - type: 'null'
+        dispatch_experiment_validation:
+          anyOf:
+          - $ref: '#/components/schemas/DispatchExperimentValidationLLMMapping'
+          - type: 'null'
+        analyze_experiment:
+          anyOf:
+          - $ref: '#/components/schemas/AnalyzeExperimentLLMMapping'
+          - type: 'null'
+        decide_experiment_cycle:
+          anyOf:
+          - $ref: '#/components/schemas/DecideExperimentCycleLLMMapping'
+          - type: 'null'
+        refine_experimental_design:
+          anyOf:
+          - $ref: '#/components/schemas/RefineExperimentalDesignLLMMapping'
+          - type: 'null'
+      type: object
+      title: ExperimentCycleGraphLLMMapping
+    ExperimentHistory-Input:
+      properties:
+        cycles:
+          items:
+            $ref: '#/components/schemas/ExperimentCycle-Input'
+          type: array
+          title: Cycles
+          description: Append-only list of experiment cycles (pilot and full only;
+            sanity is not recorded)
+      type: object
+      title: ExperimentHistory
+    ExperimentHistory-Output:
+      properties:
+        cycles:
+          items:
+            $ref: '#/components/schemas/ExperimentCycle-Output'
+          type: array
+          title: Cycles
+          description: Append-only list of experiment cycles (pilot and full only;
+            sanity is not recorded)
+      type: object
+      title: ExperimentHistory
     ExperimentalAnalysis:
       properties:
         analysis_report:
@@ -2449,14 +2610,22 @@ components:
           - type: 'null'
           title: Stderr
           description: Standard error from the run
-        figures:
+        result_figures:
           anyOf:
           - items:
               type: string
             type: array
           - type: 'null'
-          title: Figures
-          description: Figures specific to this run
+          title: Result Figures
+          description: Result figure filenames (e.g. plot.pdf)
+        diagram_figures:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Diagram Figures
+          description: Method diagram filenames (e.g. architecture.pdf)
         metrics_data:
           anyOf:
           - additionalProperties: true
@@ -2574,7 +2743,7 @@ components:
         dispatch_experiment_code_generation:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: anthropic/claude-sonnet-4-6
+            llm_name: anthropic/claude-sonnet-4-5
       type: object
       title: GenerateExperimentCodeLLMMapping
     GenerateExperimentCodeRequestBody:
@@ -2669,7 +2838,7 @@ components:
         generate_experimental_design:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gpt-5.4-2026-03-05
       type: object
       title: GenerateExperimentalDesignLLMMapping
     GenerateExperimentalDesignSubgraphRequestBody:
@@ -2720,7 +2889,7 @@ components:
         generate_hypothesis:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gpt-5.4-2026-03-05
         evaluate_novelty_and_significance:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
@@ -2728,7 +2897,7 @@ components:
         refine_hypothesis:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gpt-5.4-2026-03-05
       type: object
       title: GenerateHypothesisSubgraphV0LLMMapping
     GenerateHypothesisSubgraphV0RequestBody:
@@ -3009,17 +3178,9 @@ components:
           anyOf:
           - $ref: '#/components/schemas/GenerateExperimentalDesignLLMMapping'
           - type: 'null'
-        code_generation:
+        experiment_cycle:
           anyOf:
-          - $ref: '#/components/schemas/CodeGenerationGraphLLMMapping'
-          - type: 'null'
-        dispatch_experiment_validation:
-          anyOf:
-          - $ref: '#/components/schemas/DispatchExperimentValidationLLMMapping'
-          - type: 'null'
-        analyze_experiment:
-          anyOf:
-          - $ref: '#/components/schemas/AnalyzeExperimentLLMMapping'
+          - $ref: '#/components/schemas/ExperimentCycleGraphLLMMapping'
           - type: 'null'
         write:
           anyOf:
@@ -3999,6 +4160,64 @@ components:
       - is_images_prepared
       - execution_time
       title: PushLatexSubgraphResponseBody
+    RefineExperimentalDesignLLMMapping:
+      properties:
+        refine_experimental_design:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5.4-2026-03-05
+      type: object
+      title: RefineExperimentalDesignLLMMapping
+    RefineExperimentalDesignSubgraphRequestBody:
+      properties:
+        research_hypothesis:
+          $ref: '#/components/schemas/ResearchHypothesis'
+        experiment_history:
+          $ref: '#/components/schemas/ExperimentHistory-Input'
+        design_instruction:
+          type: string
+          title: Design Instruction
+        compute_environment:
+          $ref: '#/components/schemas/ComputeEnvironment'
+        num_models_to_use:
+          type: integer
+          title: Num Models To Use
+        num_datasets_to_use:
+          type: integer
+          title: Num Datasets To Use
+        num_comparative_methods:
+          type: integer
+          title: Num Comparative Methods
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/RefineExperimentalDesignLLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - research_hypothesis
+      - experiment_history
+      - design_instruction
+      - compute_environment
+      - num_models_to_use
+      - num_datasets_to_use
+      - num_comparative_methods
+      title: RefineExperimentalDesignSubgraphRequestBody
+    RefineExperimentalDesignSubgraphResponseBody:
+      properties:
+        experimental_design:
+          $ref: '#/components/schemas/ExperimentalDesign-Output'
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - experimental_design
+      - execution_time
+      title: RefineExperimentalDesignSubgraphResponseBody
     ResearchHistory-Input:
       properties:
         research_topic:
@@ -4028,26 +4247,16 @@ components:
           - $ref: '#/components/schemas/ResearchHypothesis'
           - type: 'null'
           description: Research hypothesis generated
-        experimental_design:
+        experiment_history:
           anyOf:
-          - $ref: '#/components/schemas/ExperimentalDesign-Input'
+          - $ref: '#/components/schemas/ExperimentHistory-Input'
           - type: 'null'
-          description: Experimental design and methodology
+          description: History of experiment cycles (design, results, analysis)
         experiment_code:
           anyOf:
           - $ref: '#/components/schemas/ExperimentCode'
           - type: 'null'
           description: Generated experiment code and implementation
-        experimental_results:
-          anyOf:
-          - $ref: '#/components/schemas/ExperimentalResults'
-          - type: 'null'
-          description: Results from running experiments
-        experimental_analysis:
-          anyOf:
-          - $ref: '#/components/schemas/ExperimentalAnalysis'
-          - type: 'null'
-          description: Analysis and interpretation of experimental results
         paper_content:
           anyOf:
           - $ref: '#/components/schemas/PaperContent'
@@ -4126,26 +4335,16 @@ components:
           - $ref: '#/components/schemas/ResearchHypothesis'
           - type: 'null'
           description: Research hypothesis generated
-        experimental_design:
+        experiment_history:
           anyOf:
-          - $ref: '#/components/schemas/ExperimentalDesign-Output'
+          - $ref: '#/components/schemas/ExperimentHistory-Output'
           - type: 'null'
-          description: Experimental design and methodology
+          description: History of experiment cycles (design, results, analysis)
         experiment_code:
           anyOf:
           - $ref: '#/components/schemas/ExperimentCode'
           - type: 'null'
           description: Generated experiment code and implementation
-        experimental_results:
-          anyOf:
-          - $ref: '#/components/schemas/ExperimentalResults'
-          - type: 'null'
-          description: Results from running experiments
-        experimental_analysis:
-          anyOf:
-          - $ref: '#/components/schemas/ExperimentalAnalysis'
-          - type: 'null'
-          description: Analysis and interpretation of experimental results
         paper_content:
           anyOf:
           - $ref: '#/components/schemas/PaperContent'
@@ -4335,7 +4534,7 @@ components:
         extract_github_url_from_text:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gemini-2.5-flash
         select_experimental_files:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
@@ -4343,7 +4542,7 @@ components:
         extract_reference_titles:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gemini-2.5-flash
       type: object
       title: RetrievePaperSubgraphLLMMapping
     RetrievePaperSubgraphRequestBody:
@@ -4380,6 +4579,14 @@ components:
       - research_study_list
       - execution_time
       title: RetrievePaperSubgraphResponseBody
+    RunStage:
+      type: string
+      enum:
+      - sanity
+      - pilot
+      - full
+      - visualization
+      title: RunStage
     SearchPaperTitlesFromQdrantLLMMapping:
       properties:
         search_paper_titles_from_qdrant:
@@ -4562,17 +4769,9 @@ components:
           anyOf:
           - $ref: '#/components/schemas/GenerateExperimentalDesignLLMMapping'
           - type: 'null'
-        code_generation:
+        experiment_cycle:
           anyOf:
-          - $ref: '#/components/schemas/CodeGenerationGraphLLMMapping'
-          - type: 'null'
-        dispatch_experiment_validation:
-          anyOf:
-          - $ref: '#/components/schemas/DispatchExperimentValidationLLMMapping'
-          - type: 'null'
-        analyze_experiment:
-          anyOf:
-          - $ref: '#/components/schemas/AnalyzeExperimentLLMMapping'
+          - $ref: '#/components/schemas/ExperimentCycleGraphLLMMapping'
           - type: 'null'
         write:
           anyOf:
@@ -5170,25 +5369,21 @@ components:
         write_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gpt-5.4-2026-03-05
         refine_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gpt-5.4-2026-03-05
       type: object
       title: WriteLLMMapping
     WriteSubgraphRequestBody:
       properties:
         research_hypothesis:
           $ref: '#/components/schemas/ResearchHypothesis'
-        experimental_design:
-          $ref: '#/components/schemas/ExperimentalDesign-Input'
+        experiment_history:
+          $ref: '#/components/schemas/ExperimentHistory-Input'
         experiment_code:
           $ref: '#/components/schemas/ExperimentCode'
-        experimental_results:
-          $ref: '#/components/schemas/ExperimentalResults'
-        experimental_analysis:
-          $ref: '#/components/schemas/ExperimentalAnalysis'
         research_study_list:
           items:
             $ref: '#/components/schemas/ResearchStudy'
@@ -5208,10 +5403,8 @@ components:
       type: object
       required:
       - research_hypothesis
-      - experimental_design
+      - experiment_history
       - experiment_code
-      - experimental_results
-      - experimental_analysis
       - research_study_list
       - references_bib
       title: WriteSubgraphRequestBody

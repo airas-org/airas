@@ -62,6 +62,7 @@ class GoogleGenAIParams(BaseModel):
 
 # https://platform.openai.com/docs/models
 OPENAI_MODELS: TypeAlias = Literal[
+    "gpt-5.4-2026-03-05",
     "gpt-5.2-pro-2025-12-11",
     "gpt-5.2-codex",
     "gpt-5.2",

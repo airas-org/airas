@@ -7,6 +7,7 @@ from typing_extensions import TypedDict
 
 from airas.core.execution_timers import time_node
 from airas.core.logging_utils import setup_logging
+from airas.core.types.experiment_history import RunStage
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.github import (
     GitHubActionsAgent,
@@ -43,7 +44,7 @@ from airas.usecases.github.poll_github_actions_subgraph.poll_github_actions_subg
 setup_logging()
 logger = logging.getLogger(__name__)
 
-record_execution_time = lambda f: time_node("main_experiment_graph")(f)  # noqa: E731
+record_execution_time = lambda f: time_node("experiment_execution_graph")(f)  # noqa: E731
 
 _STANDARD_WORKFLOW_RECURSION_LIMIT = 50000
 _MAX_RETRY_GITHUB_ACTIONS_VALIDATION = 10
@@ -71,7 +72,7 @@ class GitHubActionsWorkflowError(WorkflowExecutionError):
         self.conclusion = conclusion
 
 
-class MainExperimentInputState(TypedDict):
+class ExperimentExecutionInputState(TypedDict):
     github_config: GitHubConfig
     run_ids: list[str]
     research_topic: str
@@ -79,24 +80,26 @@ class MainExperimentInputState(TypedDict):
     experimental_design: ExperimentalDesign
 
 
-class MainExperimentState(MainExperimentInputState, total=False):
+class ExperimentExecutionState(ExperimentExecutionInputState, total=False):
     main_experiment_branches: list[str]
     main_experiment_branch_results: Annotated[dict[str, dict], lambda x, y: {**x, **y}]
 
 
-class MainExperimentGraph:
+class ExperimentExecutionGraph:
     def __init__(
         self,
         github_client: GithubClient,
         runner_config: ExperimentRunnerConfig,
         wandb_config: WandbConfig,
         github_actions_agent: GitHubActionsAgent,
+        run_stage: RunStage = RunStage.FULL,
         llm_mapping: DispatchExperimentValidationLLMMapping | None = None,
     ):
         self.github_client = github_client
         self.runner_config = runner_config
         self.wandb_config = wandb_config
         self.github_actions_agent = github_actions_agent
+        self.run_stage = run_stage
         self.llm_mapping = llm_mapping or DispatchExperimentValidationLLMMapping()
 
     def _validate_github_actions_completion(
@@ -162,7 +165,7 @@ class MainExperimentGraph:
 
     @record_execution_time
     async def _create_branches(
-        self, state: MainExperimentState
+        self, state: ExperimentExecutionState
     ) -> dict[str, list[str]]:
         logger.info("=== Create Branches for Main Experiment ===")
 
@@ -185,7 +188,7 @@ class MainExperimentGraph:
 
         return {"main_experiment_branches": branches}
 
-    def _dispatch_branches(self, state: MainExperimentState) -> list[Send]:
+    def _dispatch_branches(self, state: ExperimentExecutionState) -> list[Send]:
         branches = state.get("main_experiment_branches", [])
         logger.info(
             f"=== Dispatching {len(branches)} branches for independent processing ==="
@@ -235,13 +238,13 @@ class MainExperimentGraph:
             if isinstance(self.runner_config, StaticRunnerConfig):
                 dispatch_subgraph = DispatchExperimentOnStaticRunnerSubgraph(
                     github_client=self.github_client,
-                    workflow_file="run_main_experiment.yml",
+                    run_stage=self.run_stage,
                     runner_label=self.runner_config.runner_label,
                 )
             elif isinstance(self.runner_config, EphemeralCloudRunnerConfig):
                 dispatch_subgraph = DispatchExperimentOnEphemeralCloudSubgraph(
                     github_client=self.github_client,
-                    target_workflow="run_main_experiment.yml",
+                    run_stage=self.run_stage,
                     cloud_provider=self.runner_config.cloud_provider,
                     gpu_instance_type=self.runner_config.gpu_instance_type,
                     max_instance_hours=self.runner_config.max_instance_hours,
@@ -299,7 +302,7 @@ class MainExperimentGraph:
                         "research_topic": state["research_topic"],
                         "run_id": run_id,
                         "workflow_run_id": workflow_run_id,
-                        "run_stage": "main",
+                        "run_stage": self.run_stage.value,
                         "research_hypothesis": state["research_hypothesis"],
                         "experimental_design": state["experimental_design"],
                         "wandb_config": self.wandb_config,
@@ -406,7 +409,7 @@ class MainExperimentGraph:
 
     @record_execution_time
     def _collect_main_experiment_results(
-        self, state: MainExperimentState
+        self, state: ExperimentExecutionState
     ) -> dict[str, Any]:
         branch_results = state.get("main_experiment_branch_results", {})
         branches = state.get("main_experiment_branches", [])
@@ -441,8 +444,8 @@ class MainExperimentGraph:
 
     def build_graph(self):
         graph_builder = StateGraph(
-            MainExperimentState,
-            input_schema=MainExperimentInputState,
+            ExperimentExecutionState,
+            input_schema=ExperimentExecutionInputState,
         )
 
         graph_builder.add_node("create_branches", self._create_branches)

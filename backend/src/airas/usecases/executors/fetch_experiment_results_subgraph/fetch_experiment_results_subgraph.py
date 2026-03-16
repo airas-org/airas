@@ -60,8 +60,7 @@ class FetchExperimentResultsSubgraph:
         self, state: FetchExperimentResultsSubgraphState
     ) -> dict[str, ExperimentalResults]:
         if not (run_ids := state.get("run_ids")):
-            logger.error("No run_ids found in state")
-            return {"experimental_results": ExperimentalResults()}
+            raise ValueError("No run_ids found in state")
 
         github_config = state["github_config"]
 
