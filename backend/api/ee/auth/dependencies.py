@@ -1,4 +1,5 @@
 import os
+from collections.abc import Callable
 from typing import Annotated
 from uuid import UUID
 
@@ -9,7 +10,18 @@ from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from airas.container import Container
+from airas.core.types.llm_provider import LLMProvider
 from airas.infra.github_client import GithubClient
+from airas.infra.langchain_client import (
+    PROVIDER_REQUIRED_ENV_VARS as LANGCHAIN_REQUIRED_ENV_VARS,
+)
+from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import (
+    PROVIDER_REQUIRED_ENV_VARS as LITELLM_REQUIRED_ENV_VARS,
+)
+from airas.infra.litellm_client import LiteLLMClient
+from airas.infra.llm_provider_resolver import detect_available_providers
+from airas.usecases.ee.api_key_resolver import ApiKeyResolver
 from airas.usecases.ee.github_oauth_service import GitHubOAuthService
 from api.ee.auth.middleware import extract_user_id_from_request
 from api.ee.settings import get_ee_settings
@@ -92,6 +104,45 @@ def _resolve_github_token(
     return token
 
 
+def _resolve_for_ee(
+    resolver: ApiKeyResolver,
+    user_id: UUID,
+) -> tuple[Callable[[str], str | None] | None, dict[str, str] | None]:
+    """Return (get_api_key, api_keys) when EE is enabled, else (None, None)."""
+    settings = get_ee_settings()
+    if not settings.enabled:
+        return None, None
+    keys = resolver.resolve_keys(user_id)
+    key_fn = resolver.create_key_fn(keys)
+    return key_fn, keys
+
+
+@inject
+def get_langchain_client(
+    user_id: Annotated[UUID, Depends(get_current_user_id)],
+    resolver: Annotated[ApiKeyResolver, Depends(Provide[Container.api_key_resolver])],
+) -> LangChainClient:
+    """Create a LangChainClient with per-request API keys (EE) or env-var fallback."""
+    key_fn, api_keys = _resolve_for_ee(resolver, user_id)
+    available: set[LLMProvider] | None = None
+    if api_keys is not None:
+        available = detect_available_providers(LANGCHAIN_REQUIRED_ENV_VARS, api_keys)
+    return LangChainClient(get_api_key=key_fn, available_providers=available)
+
+
+@inject
+def get_litellm_client(
+    user_id: Annotated[UUID, Depends(get_current_user_id)],
+    resolver: Annotated[ApiKeyResolver, Depends(Provide[Container.api_key_resolver])],
+) -> LiteLLMClient:
+    """Create a LiteLLMClient with per-request API keys (EE) or env-var fallback."""
+    key_fn, api_keys = _resolve_for_ee(resolver, user_id)
+    available: set[LLMProvider] | None = None
+    if api_keys is not None:
+        available = detect_available_providers(LITELLM_REQUIRED_ENV_VARS, api_keys)
+    return LiteLLMClient(get_api_key=key_fn, available_providers=available)
+
+
 @inject
 async def get_github_client(
     service: Annotated[
@@ -105,7 +156,9 @@ async def get_github_client(
     ],
     x_github_session: Annotated[str | None, Header()] = None,
 ) -> GithubClient:
-    token = await to_thread.run_sync(lambda: _resolve_github_token(service, x_github_session))
+    token = await to_thread.run_sync(
+        lambda: _resolve_github_token(service, x_github_session)
+    )
     return GithubClient(
         github_token=token,
         sync_session=github_sync_session,

@@ -1,4 +1,3 @@
-from enum import Enum
 from functools import lru_cache
 from typing import Annotated, TypeAlias, get_args
 
@@ -6,14 +5,7 @@ import litellm
 from pydantic import BaseModel, Field
 from typing_extensions import Literal
 
-
-class LLMProvider(str, Enum):
-    GOOGLE = "google"
-    OPENAI = "openai"
-    ANTHROPIC = "anthropic"
-    OPENROUTER = "openrouter"
-    BEDROCK = "bedrock"
-
+from airas.core.types.llm_provider import LLMProvider
 
 PROVIDER_REQUIRED_ENV_VARS: dict[LLMProvider, list[str]] = {
     LLMProvider.GOOGLE: [

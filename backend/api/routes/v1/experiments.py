@@ -33,7 +33,7 @@ from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph impo
 from airas.usecases.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
     DispatchDiagramGenerationSubgraph,
 )
-from api.ee.auth.dependencies import get_github_client
+from api.ee.auth.dependencies import get_github_client, get_langchain_client
 from api.schemas.experiments import (
     AnalyzeExperimentRequestBody,
     AnalyzeExperimentResponseBody,
@@ -280,9 +280,7 @@ async def dispatch_diagram_generation(
 @observe()
 async def analyze_experiment(
     request: AnalyzeExperimentRequestBody,
-    langchain_client: Annotated[
-        LangChainClient, Depends(Provide[Container.langchain_client])
-    ],
+    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

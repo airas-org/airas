@@ -13,6 +13,7 @@ from airas.usecases.generators.generate_experimental_design_subgraph.generate_ex
 from airas.usecases.generators.refine_experimental_design_subgraph.refine_experimental_design_subgraph import (
     RefineExperimentalDesignSubgraph,
 )
+from api.ee.auth.dependencies import get_langchain_client
 from api.schemas.experimental_settings import (
     GenerateExperimentalDesignSubgraphRequestBody,
     GenerateExperimentalDesignSubgraphResponseBody,
@@ -30,9 +31,7 @@ router = APIRouter(prefix="/experimental_settings", tags=["experimental_settings
 @observe()
 async def generate_experimental_design(
     request: GenerateExperimentalDesignSubgraphRequestBody,
-    langchain_client: Annotated[
-        LangChainClient, Depends(Provide[Container.langchain_client])
-    ],
+    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -65,9 +64,7 @@ async def generate_experimental_design(
 @observe()
 async def refine_experimental_design(
     request: RefineExperimentalDesignSubgraphRequestBody,
-    langchain_client: Annotated[
-        LangChainClient, Depends(Provide[Container.langchain_client])
-    ],
+    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

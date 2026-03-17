@@ -23,6 +23,7 @@ from api.ee.auth.dependencies import (
     get_current_user_id,
     get_github_client,
     get_github_owner,
+    get_langchain_client,
 )
 from api.schemas.hypothesis_driven_research import (
     HypothesisDrivenResearchListItemResponse,
@@ -123,9 +124,7 @@ async def execute_hypothesis_driven_research(
     current_user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
     github_owner: Annotated[str, Depends(get_github_owner)],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langchain_client: Annotated[
-        LangChainClient, Depends(Provide[Container.langchain_client])
-    ],
+    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

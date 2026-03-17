@@ -5,7 +5,7 @@
 import type { ExperimentCycle_Output } from './ExperimentCycle_Output';
 export type ExperimentHistory_Output = {
     /**
-     * Append-only list of experiment cycles (pilot and main only; sanity is not recorded)
+     * Append-only list of experiment cycles (pilot and full only; sanity is not recorded)
      */
     cycles?: Array<ExperimentCycle_Output>;
 };

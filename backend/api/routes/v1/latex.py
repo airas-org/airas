@@ -17,7 +17,7 @@ from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph 
 from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
     PushLatexSubgraph,
 )
-from api.ee.auth.dependencies import get_github_client
+from api.ee.auth.dependencies import get_github_client, get_langchain_client
 from api.schemas.latex import (
     CompileLatexSubgraphRequestBody,
     CompileLatexSubgraphResponseBody,
@@ -35,9 +35,7 @@ router = APIRouter(prefix="/latex", tags=["latex"])
 @observe()
 async def generate_latex(
     request: GenerateLatexSubgraphRequestBody,
-    langchain_client: Annotated[
-        LangChainClient, Depends(Provide[Container.langchain_client])
-    ],
+    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])

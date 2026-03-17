@@ -2,17 +2,20 @@
 
 Free users: use their own API keys stored in DB (encrypted).
 Pro users: use platform-provided API keys from environment variables.
+
+This module owns the full ``user_id + model -> api_key`` resolution chain.
 """
 
 import logging
 import os
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from uuid import UUID
 
 from airas.infra.db.models.user_api_key import ApiProvider
 from airas.infra.db.models.user_plan import PlanType
 from airas.infra.encryption import decrypt
+from airas.infra.llm_provider_resolver import PROVIDER_PRIMARY_KEY, infer_provider
 from airas.repository.user_api_key_repository import UserApiKeyRepository
 from airas.repository.user_plan_repository import UserPlanRepository
 
@@ -64,6 +67,21 @@ class ApiKeyResolver:
                     keys[env_name] = decrypt(db_key.encrypted_key)
 
         return keys
+
+    def create_key_fn(self, keys: dict[str, str]) -> Callable[[str], str | None]:
+        def _resolve(model_name: str) -> str | None:
+            provider = infer_provider(model_name)
+            if provider is None:
+                logger.warning(
+                    f"Cannot infer provider for model '{model_name}'; no api_key will be injected."
+                )
+                return None
+            env_var = PROVIDER_PRIMARY_KEY.get(provider)
+            if env_var is None:
+                return None
+            return keys.get(env_var)
+
+        return _resolve
 
     @contextmanager
     def inject_keys(self, user_id: UUID) -> Generator[None, None, None]:
