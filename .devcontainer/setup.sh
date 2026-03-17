@@ -6,7 +6,7 @@ WORKSPACE=/workspaces/airas
 BACKEND="$WORKSPACE/backend"
 FRONTEND="$WORKSPACE/frontend"
 
-UV_VENV_DIR=/home/developer/.venvs/airas
+UV_VENV_DIR="$HOME/.venvs/airas"
 
 # --- Backend (Python + uv) ---
 cd "$BACKEND"
@@ -16,17 +16,21 @@ uv python install 3.11
 uv python pin 3.11
 
 # Create venv if missing or broken
+mkdir -p "$(dirname "$UV_VENV_DIR")"
 if [ ! -x "$UV_VENV_DIR/bin/python" ]; then
     rm -rf "$UV_VENV_DIR"
     uv venv --python 3.11 "$UV_VENV_DIR"
 fi
+
+# Ensure uv uses the dedicated venv for this project
+export UV_PROJECT_ENVIRONMENT="$UV_VENV_DIR"
 
 # Install dependencies (use lock if present)
 uv sync
 
 # Install git hooks (run from repo root, but use backend's uv project for the tool)
 cd "$WORKSPACE"
-git config --local --unset-all core.hooksPath 2>/dev/null || true
+git config --local --unset-all core.hooksPath || true
 
 uv run --project backend pre-commit install --overwrite
 
