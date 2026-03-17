@@ -1,5 +1,4 @@
 import os
-from collections.abc import Callable
 from typing import Annotated
 from uuid import UUID
 
@@ -10,7 +9,6 @@ from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from airas.container import Container
-from airas.core.types.llm_provider import LLMProvider
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import (
     PROVIDER_REQUIRED_ENV_VARS as LANGCHAIN_REQUIRED_ENV_VARS,
@@ -104,17 +102,10 @@ def _resolve_github_token(
     return token
 
 
-def _resolve_for_ee(
-    resolver: ApiKeyResolver,
-    user_id: UUID,
-) -> tuple[Callable[[str], str | None] | None, dict[str, str] | None]:
-    """Return (get_api_key, api_keys) when EE is enabled, else (None, None)."""
-    settings = get_ee_settings()
-    if not settings.enabled:
-        return None, None
-    keys = resolver.resolve_keys(user_id)
-    key_fn = resolver.create_key_fn(keys)
-    return key_fn, keys
+_NO_LLM_PROVIDERS = HTTPException(
+    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    detail="No LLM provider API keys are configured. Set at least one provider's API key.",
+)
 
 
 @inject
@@ -123,11 +114,19 @@ def get_langchain_client(
     resolver: Annotated[ApiKeyResolver, Depends(Provide[Container.api_key_resolver])],
 ) -> LangChainClient:
     """Create a LangChainClient with per-request API keys (EE) or env-var fallback."""
-    key_fn, api_keys = _resolve_for_ee(resolver, user_id)
-    available: set[LLMProvider] | None = None
-    if api_keys is not None:
-        available = detect_available_providers(LANGCHAIN_REQUIRED_ENV_VARS, api_keys)
-    return LangChainClient(get_api_key=key_fn, available_providers=available)
+    if not get_ee_settings().enabled:
+        client = LangChainClient()
+        if not client.available_providers:
+            raise _NO_LLM_PROVIDERS
+        return client
+    keys = resolver.resolve_keys(user_id)
+    available = detect_available_providers(LANGCHAIN_REQUIRED_ENV_VARS, keys)
+    if not available:
+        raise _NO_LLM_PROVIDERS
+    return LangChainClient(
+        get_api_key=resolver.create_key_fn(keys),
+        available_providers=available,
+    )
 
 
 @inject
@@ -136,11 +135,19 @@ def get_litellm_client(
     resolver: Annotated[ApiKeyResolver, Depends(Provide[Container.api_key_resolver])],
 ) -> LiteLLMClient:
     """Create a LiteLLMClient with per-request API keys (EE) or env-var fallback."""
-    key_fn, api_keys = _resolve_for_ee(resolver, user_id)
-    available: set[LLMProvider] | None = None
-    if api_keys is not None:
-        available = detect_available_providers(LITELLM_REQUIRED_ENV_VARS, api_keys)
-    return LiteLLMClient(get_api_key=key_fn, available_providers=available)
+    if not get_ee_settings().enabled:
+        client = LiteLLMClient()
+        if not client.available_providers:
+            raise _NO_LLM_PROVIDERS
+        return client
+    keys = resolver.resolve_keys(user_id)
+    available = detect_available_providers(LITELLM_REQUIRED_ENV_VARS, keys)
+    if not available:
+        raise _NO_LLM_PROVIDERS
+    return LiteLLMClient(
+        get_api_key=resolver.create_key_fn(keys),
+        available_providers=available,
+    )
 
 
 @inject
