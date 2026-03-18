@@ -1,5 +1,7 @@
 import os
+from collections.abc import Callable
 from contextlib import asynccontextmanager
+from typing import AsyncContextManager
 
 from dependency_injector import providers
 from fastapi import Depends, FastAPI
@@ -37,7 +39,9 @@ from api.routes.v1 import (
 )
 
 
-def _make_lifespan(enable_enterprise: bool):
+def _make_lifespan(
+    enable_enterprise: bool,
+) -> Callable[[FastAPI], AsyncContextManager[None]]:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         database_url = os.getenv("DATABASE_URL")
