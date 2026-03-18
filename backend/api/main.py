@@ -1,7 +1,5 @@
 import os
-from collections.abc import Callable
 from contextlib import asynccontextmanager
-from typing import AsyncContextManager
 
 from dependency_injector import providers
 from fastapi import Depends, FastAPI
@@ -17,7 +15,6 @@ from airas.usecases.autonomous_research.in_memory_e2e_research_service import (
     InMemoryE2EResearchService,
 )
 from api.ee.auth.dependencies import get_current_user_id
-from api.ee.settings import get_ee_settings
 from api.routes.v1 import (
     bibfile,
     code,
@@ -39,48 +36,37 @@ from api.routes.v1 import (
 )
 
 
-def _make_lifespan(
-    enable_enterprise: bool,
-) -> Callable[[FastAPI], AsyncContextManager[None]]:
-    @asynccontextmanager
-    async def lifespan(app: FastAPI):
-        database_url = os.getenv("DATABASE_URL")
-        # Railway provides postgresql:// but SQLAlchemy needs the psycopg driver specified
-        if database_url and database_url.startswith("postgresql://"):
-            database_url = database_url.replace(
-                "postgresql://", "postgresql+psycopg://", 1
-            )
-        container = Container()
-        container.config.from_dict({"database_url": database_url})
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    database_url = os.getenv("DATABASE_URL")
+    # Railway provides postgresql:// but SQLAlchemy needs the psycopg driver specified
+    if database_url and database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+    container = Container()
+    container.config.from_dict({"database_url": database_url})
 
-        # Make container discoverable by dependency_injector's FastAPI integration
-        app.state.container = container
-        app.container = container
+    # Make container discoverable by dependency_injector's FastAPI integration
+    app.state.container = container
+    app.container = container
 
-        if database_url:
-            engine = container.engine()
-            SQLModel.metadata.create_all(engine)
-        else:
-            container.e2e_research_service.override(
-                providers.Singleton(InMemoryE2EResearchService)
-            )
+    if database_url:
+        engine = container.engine()
+        SQLModel.metadata.create_all(engine)
+    else:
+        container.e2e_research_service.override(
+            providers.Singleton(InMemoryE2EResearchService)
+        )
 
-        # Wire only the packages whose routes are actually registered.
-        packages: list = [routes_v1]
-        if enable_enterprise:
-            import api.ee as ee_pkg
+    import api.ee as ee_pkg
 
-            packages.append(ee_pkg)
-        container.wire(packages=packages)
-        await container.init_resources()
+    container.wire(packages=[routes_v1, ee_pkg])
+    await container.init_resources()
 
-        try:
-            yield
-        finally:
-            await container.shutdown_resources()
-            container.unwire()
-
-    return lifespan
+    try:
+        yield
+    finally:
+        await container.shutdown_resources()
+        container.unwire()
 
 
 def register_ee_routes(application: FastAPI) -> None:
@@ -98,16 +84,12 @@ def register_ee_routes(application: FastAPI) -> None:
     application.include_router(ee_github_oauth_router, prefix="/airas/ee")
 
 
-def create_app(*, enable_enterprise: bool) -> FastAPI:
-    """Create and configure the FastAPI application.
-
-    Args:
-        enable_enterprise: Control EE route registration explicitly.
-    """
+def create_app() -> FastAPI:
+    """Create and configure the FastAPI application."""
     application = FastAPI(
         title="AIRAS API",
         version="0.0.1",
-        lifespan=_make_lifespan(enable_enterprise),
+        lifespan=_lifespan,
     )
 
     @application.get("/health")
@@ -149,11 +131,10 @@ def create_app(*, enable_enterprise: bool) -> FastAPI:
     for router in v1_routers:
         application.include_router(router, prefix="/airas/v1", dependencies=auth_deps)
 
-    if enable_enterprise:
-        register_ee_routes(application)
+    register_ee_routes(application)
 
     return application
 
 
 # Module-level instance used by uvicorn (api.main:app) and runtime.
-app = create_app(enable_enterprise=get_ee_settings().enabled)
+app = create_app()

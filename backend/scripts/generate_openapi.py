@@ -1,8 +1,4 @@
-"""Generate OpenAPI schema from FastAPI app and save to YAML file.
-
-Always generates the full schema including EE routes, regardless of
-runtime configuration, so the frontend TypeScript client covers all endpoints.
-"""
+"""Generate OpenAPI schema from FastAPI app and save to YAML file."""
 
 import sys
 from pathlib import Path
@@ -15,7 +11,7 @@ sys.path.insert(0, str(backend_dir))
 
 from api.main import create_app  # noqa: E402
 
-app = create_app(enable_enterprise=True)
+app = create_app()
 
 
 def generate_openapi_schema(output_path: Path) -> None:
