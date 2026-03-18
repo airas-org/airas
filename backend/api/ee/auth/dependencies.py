@@ -1,15 +1,26 @@
 import os
+from collections.abc import Callable
 from typing import Annotated
 from uuid import UUID
 
 import httpx
 from anyio import to_thread
-from dependency_injector.wiring import Provide, inject
+from dependency_injector.wiring import Provide, Provider, inject
 from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from airas.container import Container
 from airas.infra.github_client import GithubClient
+from airas.infra.langchain_client import (
+    PROVIDER_REQUIRED_ENV_VARS as LANGCHAIN_REQUIRED_ENV_VARS,
+)
+from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import (
+    PROVIDER_REQUIRED_ENV_VARS as LITELLM_REQUIRED_ENV_VARS,
+)
+from airas.infra.litellm_client import LiteLLMClient
+from airas.infra.llm_provider_resolver import detect_available_providers
+from airas.usecases.ee.api_key_resolver import ApiKeyResolver
 from airas.usecases.ee.github_oauth_service import GitHubOAuthService
 from api.ee.auth.middleware import extract_user_id_from_request
 from api.ee.settings import get_ee_settings
@@ -92,6 +103,54 @@ def _resolve_github_token(
     return token
 
 
+_NO_LLM_PROVIDERS = HTTPException(
+    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    detail="No LLM provider API keys are configured. Set at least one provider's API key.",
+)
+
+
+@inject
+def get_langchain_client(
+    user_id: Annotated[UUID, Depends(get_current_user_id)],
+    resolver: Annotated[ApiKeyResolver, Depends(Provide[Container.api_key_resolver])],
+    langchain_client_factory: Annotated[
+        Callable[..., LangChainClient],
+        Depends(Provider[Container.langchain_client]),
+    ],
+) -> LangChainClient:
+    """Create a LangChainClient via Container with resolved API keys."""
+    resolved_user_id = user_id if get_ee_settings().enabled else None
+    keys = resolver.resolve_keys(resolved_user_id)
+    available = detect_available_providers(LANGCHAIN_REQUIRED_ENV_VARS, keys)
+    if not available:
+        raise _NO_LLM_PROVIDERS
+    return langchain_client_factory(
+        get_api_key=resolver.create_key_fn(keys),
+        available_providers=available,
+    )
+
+
+@inject
+def get_litellm_client(
+    user_id: Annotated[UUID, Depends(get_current_user_id)],
+    resolver: Annotated[ApiKeyResolver, Depends(Provide[Container.api_key_resolver])],
+    litellm_client_factory: Annotated[
+        Callable[..., LiteLLMClient],
+        Depends(Provider[Container.litellm_client]),
+    ],
+) -> LiteLLMClient:
+    """Create a LiteLLMClient via Container with resolved API keys."""
+    resolved_user_id = user_id if get_ee_settings().enabled else None
+    keys = resolver.resolve_keys(resolved_user_id)
+    available = detect_available_providers(LITELLM_REQUIRED_ENV_VARS, keys)
+    if not available:
+        raise _NO_LLM_PROVIDERS
+    return litellm_client_factory(
+        get_api_key=resolver.create_key_fn(keys),
+        available_providers=available,
+    )
+
+
 @inject
 async def get_github_client(
     service: Annotated[
@@ -105,7 +164,9 @@ async def get_github_client(
     ],
     x_github_session: Annotated[str | None, Header()] = None,
 ) -> GithubClient:
-    token = await to_thread.run_sync(lambda: _resolve_github_token(service, x_github_session))
+    token = await to_thread.run_sync(
+        lambda: _resolve_github_token(service, x_github_session)
+    )
     return GithubClient(
         github_token=token,
         sync_session=github_sync_session,
