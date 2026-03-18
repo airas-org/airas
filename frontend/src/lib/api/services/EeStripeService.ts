@@ -2,8 +2,10 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { CancelSubscriptionResponse } from '../models/CancelSubscriptionResponse';
 import type { CheckoutRequest } from '../models/CheckoutRequest';
 import type { CheckoutResponse } from '../models/CheckoutResponse';
+import type { WebhookReceivedResponse } from '../models/WebhookReceivedResponse';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -29,10 +31,10 @@ export class EeStripeService {
     }
     /**
      * Cancel Subscription
-     * @returns any Successful Response
+     * @returns CancelSubscriptionResponse Successful Response
      * @throws ApiError
      */
-    public static cancelSubscriptionAirasEeStripeCancelPost(): CancelablePromise<any> {
+    public static cancelSubscriptionAirasEeStripeCancelPost(): CancelablePromise<CancelSubscriptionResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/ee/stripe/cancel',
@@ -40,10 +42,10 @@ export class EeStripeService {
     }
     /**
      * Stripe Webhook
-     * @returns any Successful Response
+     * @returns WebhookReceivedResponse Successful Response
      * @throws ApiError
      */
-    public static stripeWebhookAirasEeStripeWebhookPost(): CancelablePromise<any> {
+    public static stripeWebhookAirasEeStripeWebhookPost(): CancelablePromise<WebhookReceivedResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/ee/stripe/webhook',

@@ -4,7 +4,9 @@
 /* eslint-disable */
 import type { GitHubAuthorizeResponse } from '../models/GitHubAuthorizeResponse';
 import type { GitHubCallbackRequest } from '../models/GitHubCallbackRequest';
+import type { GitHubCallbackResponse } from '../models/GitHubCallbackResponse';
 import type { GitHubConnectionStatus } from '../models/GitHubConnectionStatus';
+import type { GitHubDisconnectResponse } from '../models/GitHubDisconnectResponse';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -32,12 +34,12 @@ export class EeGithubOauthService {
     /**
      * Callback
      * @param requestBody
-     * @returns any Successful Response
+     * @returns GitHubCallbackResponse Successful Response
      * @throws ApiError
      */
     public static callbackAirasEeGithubCallbackPost(
         requestBody: GitHubCallbackRequest,
-    ): CancelablePromise<any> {
+    ): CancelablePromise<GitHubCallbackResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/ee/github/callback',
@@ -71,12 +73,12 @@ export class EeGithubOauthService {
     /**
      * Disconnect
      * @param xGithubSession
-     * @returns any Successful Response
+     * @returns GitHubDisconnectResponse Successful Response
      * @throws ApiError
      */
     public static disconnectAirasEeGithubDisconnectDelete(
         xGithubSession?: (string | null),
-    ): CancelablePromise<any> {
+    ): CancelablePromise<GitHubDisconnectResponse> {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/airas/ee/github/disconnect',

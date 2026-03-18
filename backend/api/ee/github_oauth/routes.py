@@ -9,7 +9,9 @@ from airas.usecases.ee.github_oauth_service import GitHubOAuthService
 from api.schemas.ee import (
     GitHubAuthorizeResponse,
     GitHubCallbackRequest,
+    GitHubCallbackResponse,
     GitHubConnectionStatus,
+    GitHubDisconnectResponse,
 )
 
 router = APIRouter(prefix="/github", tags=["ee-github-oauth"])
@@ -27,14 +29,14 @@ def authorize(
     return GitHubAuthorizeResponse(authorize_url=authorize_url, state=state)
 
 
-@router.post("/callback")
+@router.post("/callback", response_model=GitHubCallbackResponse)
 @inject
 async def callback(
     request: GitHubCallbackRequest,
     service: Annotated[
         GitHubOAuthService, Depends(Provide[Container.github_oauth_service])
     ],
-):
+) -> GitHubCallbackResponse:
     try:
         result = await service.exchange_code(
             code=request.code, redirect_uri=request.redirect_uri
@@ -48,11 +50,11 @@ async def callback(
         access_token=result["access_token"],
         github_login=result["github_login"],
     )
-    return {
-        "connected": True,
-        "github_login": result["github_login"],
-        "session_token": session_token,
-    }
+    return GitHubCallbackResponse(
+        connected=True,
+        github_login=result["github_login"],
+        session_token=session_token,
+    )
 
 
 @router.get("/status", response_model=GitHubConnectionStatus)
@@ -71,17 +73,17 @@ def status(
     return GitHubConnectionStatus(connected=True, **info)
 
 
-@router.delete("/disconnect")
+@router.delete("/disconnect", response_model=GitHubDisconnectResponse)
 @inject
 def disconnect(
     service: Annotated[
         GitHubOAuthService, Depends(Provide[Container.github_oauth_service])
     ],
     x_github_session: Annotated[str | None, Header()] = None,
-):
+) -> GitHubDisconnectResponse:
     if not x_github_session:
         raise HTTPException(status_code=400, detail="X-GitHub-Session header required")
     deleted = service.disconnect(x_github_session)
     if not deleted:
         raise HTTPException(status_code=404, detail="GitHub connection not found")
-    return {"disconnected": True}
+    return GitHubDisconnectResponse(disconnected=True)

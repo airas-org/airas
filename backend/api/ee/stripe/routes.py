@@ -9,7 +9,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from airas.container import Container
 from airas.usecases.ee.plan_service import PlanService
 from api.ee.auth.dependencies import get_current_user_id
-from api.schemas.ee import CheckoutRequest, CheckoutResponse
+from api.schemas.ee import (
+    CancelSubscriptionResponse,
+    CheckoutRequest,
+    CheckoutResponse,
+    WebhookReceivedResponse,
+)
 
 router = APIRouter(prefix="/stripe", tags=["ee-stripe"])
 
@@ -29,18 +34,18 @@ def create_checkout(
     return CheckoutResponse(checkout_url=url)
 
 
-@router.post("/cancel")
+@router.post("/cancel", response_model=CancelSubscriptionResponse)
 @inject
 def cancel_subscription(
     current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     service: Annotated[PlanService, Depends(Provide[Container.plan_service])],
-):
+) -> CancelSubscriptionResponse:
     service.cancel_subscription(current_user_id)
-    return {"status": "canceled"}
+    return CancelSubscriptionResponse(status="canceled")
 
 
-@router.post("/webhook")
-async def stripe_webhook(request: Request):
+@router.post("/webhook", response_model=WebhookReceivedResponse)
+async def stripe_webhook(request: Request) -> WebhookReceivedResponse:
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature", "")
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
@@ -67,4 +72,4 @@ async def stripe_webhook(request: Request):
         plan_service = PlanService(repo=repo)
         plan_service.handle_webhook_event(event)
 
-    return {"received": True}
+    return WebhookReceivedResponse(received=True)
