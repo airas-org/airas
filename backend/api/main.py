@@ -37,98 +37,119 @@ from api.routes.v1 import (
 )
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    database_url = os.getenv("DATABASE_URL")
-    # Railway provides postgresql:// but SQLAlchemy needs the psycopg driver specified
-    if database_url and database_url.startswith("postgresql://"):
-        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
-    container = Container()
-    container.config.from_dict({"database_url": database_url})
+def _make_lifespan(enable_enterprise: bool):
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        database_url = os.getenv("DATABASE_URL")
+        # Railway provides postgresql:// but SQLAlchemy needs the psycopg driver specified
+        if database_url and database_url.startswith("postgresql://"):
+            database_url = database_url.replace(
+                "postgresql://", "postgresql+psycopg://", 1
+            )
+        container = Container()
+        container.config.from_dict({"database_url": database_url})
 
-    # Make container discoverable by dependency_injector's FastAPI integration (request.app.container)
-    app.state.container = container
-    app.container = container
+        # Make container discoverable by dependency_injector's FastAPI integration
+        app.state.container = container
+        app.container = container
 
-    if database_url:
-        engine = container.engine()
-        SQLModel.metadata.create_all(engine)
-    else:
-        container.e2e_research_service.override(
-            providers.Singleton(InMemoryE2EResearchService)
-        )
+        if database_url:
+            engine = container.engine()
+            SQLModel.metadata.create_all(engine)
+        else:
+            container.e2e_research_service.override(
+                providers.Singleton(InMemoryE2EResearchService)
+            )
 
-    # Explicitly wire route modules so dependency_injector resolves Provide[] dependencies.
-    import api.ee as ee_pkg
+        # Wire only the packages whose routes are actually registered.
+        packages: list = [routes_v1]
+        if enable_enterprise:
+            import api.ee as ee_pkg
 
-    container.wire(packages=[routes_v1, ee_pkg])
-    await container.init_resources()
+            packages.append(ee_pkg)
+        container.wire(packages=packages)
+        await container.init_resources()
 
-    try:
-        yield
-    finally:
-        await container.shutdown_resources()
-        container.unwire()
+        try:
+            yield
+        finally:
+            await container.shutdown_resources()
+            container.unwire()
 
-
-app = FastAPI(title="AIRAS API", version="0.0.1", lifespan=lifespan)
-
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
+    return lifespan
 
 
-# Allow frontend to call the API with browser preflight
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://app.airas.io",
-        "https://app-dev.airas.io",
-    ],
-    allow_origin_regex=r"https://(airas.*\.vercel\.app|.*\.trycloudflare\.com)|http://(localhost|127\.0\.0\.1):\d+",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-auth_deps = [Depends(get_current_user_id)]
-app.include_router(papers.router, prefix="/airas/v1", dependencies=auth_deps)
-app.include_router(models.router, prefix="/airas/v1", dependencies=auth_deps)
-app.include_router(datasets.router, prefix="/airas/v1", dependencies=auth_deps)
-app.include_router(hypotheses.router, prefix="/airas/v1", dependencies=auth_deps)
-app.include_router(
-    experimental_settings.router, prefix="/airas/v1", dependencies=auth_deps
-)
-app.include_router(experiments.router, prefix="/airas/v1", dependencies=auth_deps)
-app.include_router(code.router, prefix="/airas/v1", dependencies=auth_deps)
-app.include_router(repositories.router, prefix="/airas/v1", dependencies=auth_deps)
-app.include_router(bibfile.router, prefix="/airas/v1", dependencies=auth_deps)
-app.include_router(latex.router, prefix="/airas/v1", dependencies=auth_deps)
-app.include_router(research_history.router, prefix="/airas/v1", dependencies=auth_deps)
-app.include_router(github_actions.router, prefix="/airas/v1", dependencies=auth_deps)
-app.include_router(github.router, prefix="/airas/v1", dependencies=auth_deps)
-app.include_router(
-    interactive_repo_agent.router, prefix="/airas/v1", dependencies=auth_deps
-)
-app.include_router(
-    topic_open_ended_research.router, prefix="/airas/v1", dependencies=auth_deps
-)
-app.include_router(
-    hypothesis_driven_research.router, prefix="/airas/v1", dependencies=auth_deps
-)
-app.include_router(verification.router, prefix="/airas/v1", dependencies=auth_deps)
-
-# Register EE routes if enterprise is enabled
-_ee_settings = get_ee_settings()
-if _ee_settings.enabled:
+def register_ee_routes(application: FastAPI) -> None:
+    """Register all Enterprise Edition routes."""
     from api.ee.api_keys.routes import router as ee_api_keys_router
     from api.ee.auth.routes import router as ee_auth_router
     from api.ee.github_oauth.routes import router as ee_github_oauth_router
     from api.ee.plan.routes import router as ee_plan_router
     from api.ee.stripe.routes import router as ee_stripe_router
 
-    app.include_router(ee_auth_router, prefix="/airas/ee")
-    app.include_router(ee_api_keys_router, prefix="/airas/ee")
-    app.include_router(ee_plan_router, prefix="/airas/ee")
-    app.include_router(ee_stripe_router, prefix="/airas/ee")
-    app.include_router(ee_github_oauth_router, prefix="/airas/ee")
+    application.include_router(ee_auth_router, prefix="/airas/ee")
+    application.include_router(ee_api_keys_router, prefix="/airas/ee")
+    application.include_router(ee_plan_router, prefix="/airas/ee")
+    application.include_router(ee_stripe_router, prefix="/airas/ee")
+    application.include_router(ee_github_oauth_router, prefix="/airas/ee")
+
+
+def create_app(*, enable_enterprise: bool) -> FastAPI:
+    """Create and configure the FastAPI application.
+
+    Args:
+        enable_enterprise: Control EE route registration explicitly.
+    """
+    application = FastAPI(
+        title="AIRAS API",
+        version="0.0.1",
+        lifespan=_make_lifespan(enable_enterprise),
+    )
+
+    @application.get("/health")
+    def health():
+        return {"status": "ok"}
+
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "https://app.airas.io",
+            "https://app-dev.airas.io",
+        ],
+        allow_origin_regex=r"https://(airas.*\.vercel\.app|.*\.trycloudflare\.com)|http://(localhost|127\.0\.0\.1):\d+",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    auth_deps = [Depends(get_current_user_id)]
+    v1_routers = [
+        papers.router,
+        models.router,
+        datasets.router,
+        hypotheses.router,
+        experimental_settings.router,
+        experiments.router,
+        code.router,
+        repositories.router,
+        bibfile.router,
+        latex.router,
+        research_history.router,
+        github_actions.router,
+        github.router,
+        interactive_repo_agent.router,
+        topic_open_ended_research.router,
+        hypothesis_driven_research.router,
+        verification.router,
+    ]
+    for router in v1_routers:
+        application.include_router(router, prefix="/airas/v1", dependencies=auth_deps)
+
+    if enable_enterprise:
+        register_ee_routes(application)
+
+    return application
+
+
+# Module-level instance used by uvicorn (api.main:app) and runtime.
+app = create_app(enable_enterprise=get_ee_settings().enabled)
