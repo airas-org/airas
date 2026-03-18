@@ -1,10 +1,11 @@
 import os
+from collections.abc import Callable
 from typing import Annotated
 from uuid import UUID
 
 import httpx
 from anyio import to_thread
-from dependency_injector.wiring import Provide, inject
+from dependency_injector.wiring import Provide, Provider, inject
 from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -112,18 +113,18 @@ _NO_LLM_PROVIDERS = HTTPException(
 def get_langchain_client(
     user_id: Annotated[UUID, Depends(get_current_user_id)],
     resolver: Annotated[ApiKeyResolver, Depends(Provide[Container.api_key_resolver])],
+    langchain_client_factory: Annotated[
+        Callable[..., LangChainClient],
+        Depends(Provider[Container.langchain_client]),
+    ],
 ) -> LangChainClient:
-    """Create a LangChainClient with per-request API keys (EE) or env-var fallback."""
-    if not get_ee_settings().enabled:
-        client = LangChainClient()
-        if not client.available_providers:
-            raise _NO_LLM_PROVIDERS
-        return client
-    keys = resolver.resolve_keys(user_id)
+    """Create a LangChainClient via Container with resolved API keys."""
+    resolved_user_id = user_id if get_ee_settings().enabled else None
+    keys = resolver.resolve_keys(resolved_user_id)
     available = detect_available_providers(LANGCHAIN_REQUIRED_ENV_VARS, keys)
     if not available:
         raise _NO_LLM_PROVIDERS
-    return LangChainClient(
+    return langchain_client_factory(
         get_api_key=resolver.create_key_fn(keys),
         available_providers=available,
     )
@@ -133,18 +134,18 @@ def get_langchain_client(
 def get_litellm_client(
     user_id: Annotated[UUID, Depends(get_current_user_id)],
     resolver: Annotated[ApiKeyResolver, Depends(Provide[Container.api_key_resolver])],
+    litellm_client_factory: Annotated[
+        Callable[..., LiteLLMClient],
+        Depends(Provider[Container.litellm_client]),
+    ],
 ) -> LiteLLMClient:
-    """Create a LiteLLMClient with per-request API keys (EE) or env-var fallback."""
-    if not get_ee_settings().enabled:
-        client = LiteLLMClient()
-        if not client.available_providers:
-            raise _NO_LLM_PROVIDERS
-        return client
-    keys = resolver.resolve_keys(user_id)
+    """Create a LiteLLMClient via Container with resolved API keys."""
+    resolved_user_id = user_id if get_ee_settings().enabled else None
+    keys = resolver.resolve_keys(resolved_user_id)
     available = detect_available_providers(LITELLM_REQUIRED_ENV_VARS, keys)
     if not available:
         raise _NO_LLM_PROVIDERS
-    return LiteLLMClient(
+    return litellm_client_factory(
         get_api_key=resolver.create_key_fn(keys),
         available_providers=available,
     )

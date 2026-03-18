@@ -110,10 +110,12 @@ class Container(containers.DeclarativeContainer):
     github_async_session = providers.Resource(init_github_async_session)
 
     # --- LangChain Client ---
-    langchain_client: providers.Factory = providers.Factory(LangChainClient)
+    langchain_client: providers.Factory[LangChainClient] = providers.Factory(
+        LangChainClient
+    )
 
     # --- LiteLLM Client ---
-    litellm_client: providers.Factory = providers.Factory(LiteLLMClient)
+    litellm_client: providers.Factory[LiteLLMClient] = providers.Factory(LiteLLMClient)
 
     # --- Observability ---
     langfuse_client: providers.Factory[LangfuseClient] = providers.Factory(
@@ -197,7 +199,7 @@ class Container(containers.DeclarativeContainer):
 
     api_key_resolver = providers.Factory(
         ApiKeyResolver,
-        plan_repo=user_plan_repository,
+        plan_service=plan_service,
         api_key_repo=user_api_key_repository,
     )
 
