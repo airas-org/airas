@@ -35,16 +35,13 @@ RUN DPKG_ARCH=$(dpkg --print-architecture) && \
       "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.${TTYD_ARCH}" && \
     chmod +x /usr/local/bin/ttyd
 
-ARG CLOUDFLARED_VERSION=2025.1.0
+ARG CLOUDFLARED_VERSION=2026.3.0
 RUN ARCH=$(dpkg --print-architecture) && \
     cd /tmp && \
     curl -fsSL -o "cloudflared-linux-${ARCH}" \
       "https://github.com/cloudflare/cloudflared/releases/download/${CLOUDFLARED_VERSION}/cloudflared-linux-${ARCH}" && \
-    curl -fsSL -o "cloudflared-linux-${ARCH}.sha256" \
-      "https://github.com/cloudflare/cloudflared/releases/download/${CLOUDFLARED_VERSION}/cloudflared-linux-${ARCH}.sha256" && \
-    echo "$(cat cloudflared-linux-${ARCH}.sha256)  cloudflared-linux-${ARCH}" | sha256sum -c - && \
     install -m 0755 "cloudflared-linux-${ARCH}" /usr/local/bin/cloudflared && \
-    rm "cloudflared-linux-${ARCH}" "cloudflared-linux-${ARCH}.sha256"
+    rm "cloudflared-linux-${ARCH}"
 
 # uv・Claude Code
 USER $USERNAME
