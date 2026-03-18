@@ -2,29 +2,40 @@
 set -euo pipefail
 set -x
 
+WORKSPACE=/workspaces/airas
+BACKEND="$WORKSPACE/backend"
+FRONTEND="$WORKSPACE/frontend"
+
+UV_VENV_DIR="$HOME/.venvs/airas"
+
 # --- Backend (Python + uv) ---
-cd /workspaces/airas/backend
+cd "$BACKEND"
 
 # Ensure Python 3.11 is available via uv (idempotent)
 uv python install 3.11
 uv python pin 3.11
 
-# Create venv if missing (idempotent-ish)
-if [ ! -d ".venv" ]; then
-  uv venv --python 3.11
+# Create venv if missing or broken
+mkdir -p "$(dirname "$UV_VENV_DIR")"
+if [ ! -x "$UV_VENV_DIR/bin/python" ]; then
+    rm -rf "$UV_VENV_DIR"
+    uv venv --python 3.11 "$UV_VENV_DIR"
 fi
 
-# Install deps (use lock if present)
+# Ensure uv uses the dedicated venv for this project
+export UV_PROJECT_ENVIRONMENT="$UV_VENV_DIR"
+
+# Install dependencies (use lock if present)
 uv sync
 
 # Install git hooks (run from repo root, but use backend's uv project for the tool)
-cd /workspaces/airas
-# Ensure this repo uses the default .git/hooks path regardless of any global core.hooksPath
-git config --local core.hooksPath .git/hooks
-uv run --project backend pre-commit install
+cd "$WORKSPACE"
+git config --local --unset-all core.hooksPath || true
+
+uv run --project backend pre-commit install --overwrite
 
 # --- Frontend (Node + npm) ---
-cd /workspaces/airas/frontend
+cd "$FRONTEND"
 
 # Prefer deterministic install if lockfile exists
 if [ -f "package-lock.json" ]; then
@@ -33,13 +44,12 @@ else
   npm install
 fi
 
-set +x
-
 # --- Load .env into shell profile ---
-if [ -f /workspaces/airas/.env ]; then
-  if ! grep -q "source /workspaces/airas/.env" ~/.bashrc 2>/dev/null; then
-    echo 'set -a; source /workspaces/airas/.env; set +a' >> ~/.bashrc
-  fi
+set +x
+if [ -f "$WORKSPACE/.env" ]; then
+    if ! grep -q "source $WORKSPACE/.env" ~/.bashrc 2>/dev/null; then
+        echo "set -a; source $WORKSPACE/.env; set +a" >> ~/.bashrc
+    fi
 fi
 
 echo "[setup] done"
