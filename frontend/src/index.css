@@ -210,7 +210,9 @@
 }
 
 /* --- Brand text (selected / active states, badges) --- */
-.dark .text-brand-700,
+.dark .text-brand-700 {
+  color: rgb(255 255 255) !important;
+}
 .dark .text-brand-800 {
   color: rgb(96 165 250) !important; /* blue-400 */
 }
