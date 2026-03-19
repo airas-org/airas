@@ -47,8 +47,8 @@ export function useEE(): EEState {
 
         const client = supabaseMod.getSupabase();
         if (!client) {
-          // Supabase未設定: コンポーネントは使えるが未認証
-          setState({ components, isAuthenticated: false, loading: false });
+          // Supabase not configured (self-hosted): hide auth UI
+          setState({ components: null, isAuthenticated: false, loading: false });
           return;
         }
 
