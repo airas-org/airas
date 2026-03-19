@@ -26,6 +26,7 @@ import { useVerifications } from "@/components/pages/verification/use-verificati
 import { MainSidebar } from "@/components/sidebar/main-sidebar";
 import { AutonomousResearchProvider } from "@/contexts/autonomous-research-context";
 import { VerificationProvider } from "@/contexts/verification-context";
+import { isSelfHosted } from "@/ee/config";
 import type { EEState } from "@/hooks/use-ee-components";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWorkflowTree } from "@/hooks/use-workflow-tree";
@@ -67,6 +68,7 @@ export function AppLayout({ ee }: AppLayoutProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const selfHosted = isSelfHosted();
 
   const activeSection = getActiveSection(location.pathname);
   const autonomousSubNav = getAutonomousSubNav(location.pathname);
@@ -333,14 +335,14 @@ export function AppLayout({ ee }: AppLayoutProps) {
               />
               {ee.isAuthenticated && ee.components ? (
                 <ee.components.UserMenu />
-              ) : (
+              ) : !selfHosted ? (
                 <IconButton
                   variant="neutral-secondary"
                   icon={<FeatherUser />}
                   onClick={() => navigate("/login")}
                   aria-label="Log in"
                 />
-              )}
+              ) : null}
             </>
           }
         />

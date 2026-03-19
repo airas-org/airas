@@ -25,6 +25,7 @@ export function useEE(): EEState {
   useEffect(() => {
     let mounted = true;
     let interceptorId: number | null = null;
+    let authSubscription: { unsubscribe: () => void } | null = null;
 
     async function load() {
       try {
@@ -62,11 +63,14 @@ export function useEE(): EEState {
 
         setState({ components, isAuthenticated: !!session, loading: false });
 
-        client.auth.onAuthStateChange((_event, session) => {
+        const {
+          data: { subscription },
+        } = client.auth.onAuthStateChange((_event, session) => {
           if (mounted) {
             setState((prev) => ({ ...prev, isAuthenticated: !!session }));
           }
         });
+        authSubscription = subscription;
       } catch {
         // EE components not available
         if (mounted) {
@@ -82,6 +86,7 @@ export function useEE(): EEState {
       if (interceptorId !== null) {
         axios.interceptors.request.eject(interceptorId);
       }
+      authSubscription?.unsubscribe();
     };
   }, []);
 
