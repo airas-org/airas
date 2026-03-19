@@ -209,6 +209,11 @@
   background-color: rgb(59 130 246 / 0.25) !important; /* blue-500/25% */
 }
 
+/* --- Brand text (selected / active states, badges) --- */
+.dark .text-brand-700 {
+  color: rgb(96 165 250) !important; /* blue-400 */
+}
+
 /* --- Error hovers (light tints) --- */
 .dark .hover\:bg-error-50:hover,
 .dark .hover\:bg-error-100:hover {
