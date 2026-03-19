@@ -44,7 +44,7 @@ function ApiProviderCard({
       key={id}
       className="flex w-full flex-col items-start overflow-hidden rounded-xl border border-solid border-neutral-800 bg-neutral-900 shadow-sm"
     >
-      <div className="flex w-full flex-col items-start gap-5 px-6 py-6">
+      <div className="flex w-full flex-col items-start gap-6 px-6 py-6">
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-neutral-800">
@@ -52,11 +52,7 @@ function ApiProviderCard({
             </div>
             <span className="text-heading-2 font-heading-2 text-white">{label}</span>
           </div>
-          {entry ? (
-            <Badge variant="brand">{t("apiToken.configured")}</Badge>
-          ) : (
-            <Badge variant="neutral">{t("apiToken.notConfigured")}</Badge>
-          )}
+          {!entry && <Badge variant="neutral">{t("apiToken.notConfigured")}</Badge>}
         </div>
 
         {entry ? (
