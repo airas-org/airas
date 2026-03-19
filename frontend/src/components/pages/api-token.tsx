@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useEE } from "@/hooks/use-ee-components";
 import type { ApiKeyResponse } from "@/lib/api/models/ApiKeyResponse";
 import { ApiProvider } from "@/lib/api/models/ApiProvider";
 import { EeApiKeysService } from "@/lib/api/services/EeApiKeysService";
@@ -44,7 +45,7 @@ function ApiProviderCard({
       key={id}
       className="flex w-full flex-col items-start overflow-hidden rounded-xl border border-solid border-neutral-800 bg-neutral-900 shadow-sm"
     >
-      <div className="flex w-full flex-col items-start gap-6 px-6 py-6">
+      <div className="flex w-full flex-col items-start gap-5 px-6 py-6">
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-neutral-800">
@@ -77,7 +78,7 @@ function ApiProviderCard({
         ) : (
           <div className="flex w-full items-end gap-3">
             <div className="flex-1">
-              <TextField label={`${label} API Key`}>
+              <TextField label={`${label} API Key`} className="gap-2">
                 <TextField.Input
                   type="password"
                   placeholder={t("apiToken.apiKeyPlaceholder")}
@@ -103,6 +104,7 @@ function ApiProviderCard({
 
 export function ApiTokenPage() {
   const { t } = useTranslation();
+  const { loading: eeLoading } = useEE();
   const [keys, setKeys] = useState<KeysRecord>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -128,8 +130,10 @@ export function ApiTokenPage() {
   }, [t]);
 
   useEffect(() => {
-    void fetchKeys();
-  }, [fetchKeys]);
+    if (!eeLoading) {
+      void fetchKeys();
+    }
+  }, [eeLoading, fetchKeys]);
 
   const handleSave = async (provider: ApiProvider) => {
     const apiKey = inputValues[provider].trim();
