@@ -206,12 +206,20 @@ export function MainContent({ assistedResearchProps }: MainContentProps) {
 
 function SettingsRoute() {
   const { tab } = useParams<{ tab: string }>();
-  const { isAuthenticated } = useEE();
+  const { isAuthenticated, loading } = useEE();
 
   const isValidTab = SETTINGS_TABS.includes(tab as never);
   const isEETab = EE_ONLY_TABS.includes(tab as never);
 
-  if (!isValidTab || (!isAuthenticated && isEETab)) {
+  if (!isValidTab) {
+    return <Navigate to="/settings/profile" replace />;
+  }
+
+  if (isEETab && loading) {
+    return null;
+  }
+
+  if (isEETab && !isAuthenticated) {
     return <Navigate to="/settings/profile" replace />;
   }
 

@@ -11,12 +11,14 @@ type EEComponents = {
 export interface EEState {
   components: EEComponents | null;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 export function useEE(): EEState {
   const [state, setState] = useState<EEState>({
     components: null,
     isAuthenticated: false,
+    loading: true,
   });
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export function useEE(): EEState {
         const client = supabaseMod.getSupabase();
         if (!client) {
           // Supabase未設定: コンポーネントは使えるが未認証
-          setState({ components, isAuthenticated: false });
+          setState({ components, isAuthenticated: false, loading: false });
           return;
         }
 
@@ -57,7 +59,7 @@ export function useEE(): EEState {
 
         if (!mounted) return;
 
-        setState({ components, isAuthenticated: !!session });
+        setState({ components, isAuthenticated: !!session, loading: false });
 
         client.auth.onAuthStateChange((_event, session) => {
           if (mounted) {
@@ -66,6 +68,9 @@ export function useEE(): EEState {
         });
       } catch {
         // EE components not available
+        if (mounted) {
+          setState((prev) => ({ ...prev, loading: false }));
+        }
       }
     }
 
