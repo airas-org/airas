@@ -53,7 +53,7 @@ function ApiProviderCard({
             <span className="text-heading-2 font-heading-2 text-white">{label}</span>
           </div>
           {entry ? (
-            <Badge variant="success">{t("apiToken.configured")}</Badge>
+            <Badge variant="brand">{t("apiToken.configured")}</Badge>
           ) : (
             <Badge variant="neutral">{t("apiToken.notConfigured")}</Badge>
           )}
