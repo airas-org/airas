@@ -23,7 +23,8 @@
     "docs": "Documentation",
     "legal": "Terms of Use",
     "experimental": "Experimental",
-    "reproduction": "Reproduction"
+    "reproduction": "Reproduction",
+    "research": "Research"
   },
   "userMenu": {
     "developer": "Developer",
@@ -588,26 +589,19 @@
     "countSuffix": ""
   },
   "apiToken": {
-    "title": "API Token",
-    "subtitle": "Manage your API tokens",
-    "generate": "Generate Token",
-    "copy": "Copy",
-    "noTokens": "No tokens",
-    "pageSubtitle": "Manage tokens for accessing the AIRAS API",
-    "generateSection": "Generate new token",
-    "tokenName": "Token name",
-    "tokenNamePlaceholder": "e.g., Research script",
-    "generateButton": "Generate",
-    "tokenWarning": "This token will only be shown once. Please save it in a safe place.",
-    "copied": "Copied",
-    "issuedTokens": "Issued tokens",
-    "noTokensYet": "No tokens have been issued yet",
-    "createdAt": "Created",
-    "lastUsed": "Last used",
-    "revoke": "Revoke",
-    "usageExample": "Usage example",
-    "apiKeysSection": "API Keys",
-    "copyError": "Failed to copy to clipboard"
+    "title": "LLM API Keys",
+    "pageSubtitle": "Manage API keys for LLM providers used by AIRAS",
+    "notConfigured": "Not configured",
+    "configured": "Configured",
+    "updatedAt": "Updated",
+    "apiKeyPlaceholder": "Enter API key",
+    "save": "Save",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure you want to delete the {{provider}} API key?",
+    "fetchError": "Failed to load API keys",
+    "saveError": "Failed to save API key",
+    "deleteError": "Failed to delete API key"
   },
   "settings": {
     "accountSection": "Account",

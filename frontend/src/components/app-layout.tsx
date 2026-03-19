@@ -6,10 +6,9 @@ import {
   FeatherGlobe,
   FeatherPanelLeftClose,
   FeatherPanelLeftOpen,
-  FeatherSettings,
   FeatherUser,
 } from "@subframe/core";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -25,8 +24,9 @@ import {
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
 import { useVerifications } from "@/components/pages/verification/use-verifications";
 import { MainSidebar } from "@/components/sidebar/main-sidebar";
-import { SettingsSidebar } from "@/components/sidebar/settings-sidebar";
-import type { EEComponents } from "@/hooks/use-ee-components";
+import { AutonomousResearchProvider } from "@/contexts/autonomous-research-context";
+import { VerificationProvider } from "@/contexts/verification-context";
+import type { EEState } from "@/hooks/use-ee-components";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWorkflowTree } from "@/hooks/use-workflow-tree";
 import { cn } from "@/lib/utils";
@@ -60,10 +60,10 @@ function getActiveSection(pathname: string): string {
 }
 
 interface AppLayoutProps {
-  eeComponents: EEComponents | null;
+  ee: EEState;
 }
 
-export function AppLayout({ eeComponents }: AppLayoutProps) {
+export function AppLayout({ ee }: AppLayoutProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -134,22 +134,17 @@ export function AppLayout({ eeComponents }: AppLayoutProps) {
     [resetWorkflow],
   );
 
-  const handleUpdateSectionTitle = useCallback(
-    (subNav: AutonomousSubNav, title: string) => {
-      setAutonomousSectionsMap((prev) => ({
-        ...prev,
-        [subNav]: prev[subNav].map((s) =>
-          s.id === autonomousActiveSectionMap[subNav]?.id ? { ...s, title } : s,
-        ),
+  const handleUpdateSectionTitle = useCallback((subNav: AutonomousSubNav, title: string) => {
+    setAutonomousActiveSectionMap((prevActive) => {
+      const current = prevActive[subNav];
+      if (!current) return prevActive;
+      setAutonomousSectionsMap((prevSections) => ({
+        ...prevSections,
+        [subNav]: prevSections[subNav].map((s) => (s.id === current.id ? { ...s, title } : s)),
       }));
-      setAutonomousActiveSectionMap((prev) => {
-        const current = prev[subNav];
-        if (!current) return prev;
-        return { ...prev, [subNav]: { ...current, title } };
-      });
-    },
-    [autonomousActiveSectionMap],
-  );
+      return { ...prevActive, [subNav]: { ...current, title } };
+    });
+  }, []);
 
   const handleMobileNavClose = useCallback(() => {
     if (isMobile) setSidebarOpen(false);
@@ -159,7 +154,53 @@ export function AppLayout({ eeComponents }: AppLayoutProps) {
     ? "ja"
     : "en";
 
-  const isSettingsView = activeSection === "settings";
+  const dropdownItemClassName =
+    "[&_span]:text-xs [&_span]:text-white hover:bg-neutral-700 data-[highlighted]:bg-neutral-700 [&_.text-default-font]:text-white";
+
+  const handleRefreshSessions = useCallback(
+    (subNav: AutonomousSubNav, preferredId?: string) => fetchSections(subNav, preferredId),
+    [fetchSections],
+  );
+
+  const autonomousResearchValue = useMemo(
+    () => ({
+      sectionsMap: autonomousSectionsMap,
+      activeSectionMap: autonomousActiveSectionMap,
+      onSelectSession: handleSelectAutonomousSession,
+      onCreateSection: handleCreateSection,
+      onUpdateSectionTitle: handleUpdateSectionTitle,
+      onRefreshSessions: handleRefreshSessions,
+      listViewKey: autonomousListViewKey,
+    }),
+    [
+      autonomousSectionsMap,
+      autonomousActiveSectionMap,
+      handleSelectAutonomousSession,
+      handleCreateSection,
+      handleUpdateSectionTitle,
+      handleRefreshSessions,
+      autonomousListViewKey,
+    ],
+  );
+
+  const verificationValue = useMemo(
+    () => ({
+      verifications,
+      onDeleteVerification: handleDeleteVerification,
+      onDuplicateVerification: handleDuplicateVerification,
+      onUpdateVerification: handleUpdateVerification,
+      onCreateWithQuery: handleCreateWithQuery,
+      onCreateWithMethod: handleCreateWithMethod,
+    }),
+    [
+      verifications,
+      handleDeleteVerification,
+      handleDuplicateVerification,
+      handleUpdateVerification,
+      handleCreateWithQuery,
+      handleCreateWithMethod,
+    ],
+  );
 
   return (
     <div className="flex min-h-screen bg-default-background">
@@ -185,29 +226,15 @@ export function AppLayout({ eeComponents }: AppLayoutProps) {
               />
             </div>
           }
-          footer={
-            !isSettingsView ? (
-              <button
-                type="button"
-                className="flex w-full items-center gap-2.5 rounded-md px-1 py-1 -mx-1 transition-colors cursor-pointer text-neutral-600 hover:bg-neutral-100"
-                onClick={() => navigate("/settings/profile")}
-              >
-                <FeatherSettings className="h-4 w-4" />
-                <span className="text-sm font-medium">{t("nav.settings")}</span>
-              </button>
-            ) : undefined
-          }
+          footer={undefined}
         >
-          {isSettingsView ? (
-            <SettingsSidebar />
-          ) : (
-            <MainSidebar
-              activeSection={activeSection}
-              autonomousSubNav={autonomousSubNav}
-              onMobileNavClose={handleMobileNavClose}
-              onAutonomousSubNavClick={() => setAutonomousListViewKey((k) => k + 1)}
-            />
-          )}
+          <MainSidebar
+            activeSection={activeSection}
+            autonomousSubNav={autonomousSubNav}
+            isEE={ee.isAuthenticated}
+            onMobileNavClose={handleMobileNavClose}
+            onAutonomousSubNavClick={() => setAutonomousListViewKey((k) => k + 1)}
+          />
         </SidebarWithSections>
       </aside>
 
@@ -215,7 +242,7 @@ export function AppLayout({ eeComponents }: AppLayoutProps) {
         <button
           type="button"
           aria-label="Close sidebar"
-          className="fixed inset-0 z-20 bg-black/50 transition-opacity cursor-default"
+          className="fixed inset-0 z-20 bg-black/50 transition-opacity cursor-pointer"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -259,14 +286,14 @@ export function AppLayout({ eeComponents }: AppLayoutProps) {
                       <DropdownMenu.DropdownItem
                         icon={currentLanguage === "ja" ? <FeatherCheck /> : null}
                         onSelect={() => i18n.changeLanguage("ja")}
-                        className="[&_span]:text-xs [&_span]:text-white hover:bg-neutral-700 data-[highlighted]:bg-neutral-700 [&_.text-default-font]:text-white"
+                        className={dropdownItemClassName}
                       >
                         日本語
                       </DropdownMenu.DropdownItem>
                       <DropdownMenu.DropdownItem
                         icon={currentLanguage === "en" ? <FeatherCheck /> : null}
                         onSelect={() => i18n.changeLanguage("en")}
-                        className="[&_span]:text-xs [&_span]:text-white hover:bg-neutral-700 data-[highlighted]:bg-neutral-700 [&_.text-default-font]:text-white"
+                        className={dropdownItemClassName}
                       >
                         English
                       </DropdownMenu.DropdownItem>
@@ -304,41 +331,35 @@ export function AppLayout({ eeComponents }: AppLayoutProps) {
                 onClick={() => navigate("/notifications")}
                 aria-label="Open notifications"
               />
-              {eeComponents ? (
-                <eeComponents.UserMenu />
+              {ee.isAuthenticated && ee.components ? (
+                <ee.components.UserMenu />
               ) : (
-                <span title="Enterprise Edition is not enabled">
-                  <IconButton disabled variant="neutral-secondary" icon={<FeatherUser />} />
-                </span>
+                <IconButton
+                  variant="neutral-secondary"
+                  icon={<FeatherUser />}
+                  onClick={() => navigate("/login")}
+                  aria-label="Log in"
+                />
               )}
             </>
           }
         />
         <div className="flex-1 flex min-h-0">
-          <MainContent
-            autonomousSectionMap={autonomousActiveSectionMap}
-            autonomousSessions={autonomousSectionsMap}
-            onSelectAutonomousSession={handleSelectAutonomousSession}
-            assistedResearchProps={{
-              workflowTree,
-              activeNodeId,
-              setActiveNodeId,
-              addWorkflowNode,
-              updateNodeSnapshot,
-              resetDownstreamSessions,
-              onNavigate: handleNavigate,
-            }}
-            onCreateSection={handleCreateSection}
-            onUpdateSectionTitle={handleUpdateSectionTitle}
-            onRefreshSessions={(subNav, preferredId) => fetchSections(subNav, preferredId)}
-            verifications={verifications}
-            onDeleteVerification={handleDeleteVerification}
-            onDuplicateVerification={handleDuplicateVerification}
-            onUpdateVerification={handleUpdateVerification}
-            onCreateWithQuery={handleCreateWithQuery}
-            onCreateWithMethod={handleCreateWithMethod}
-            autonomousListViewKey={autonomousListViewKey}
-          />
+          <AutonomousResearchProvider value={autonomousResearchValue}>
+            <VerificationProvider value={verificationValue}>
+              <MainContent
+                assistedResearchProps={{
+                  workflowTree,
+                  activeNodeId,
+                  setActiveNodeId,
+                  addWorkflowNode,
+                  updateNodeSnapshot,
+                  resetDownstreamSessions,
+                  onNavigate: handleNavigate,
+                }}
+              />
+            </VerificationProvider>
+          </AutonomousResearchProvider>
         </div>
       </div>
     </div>

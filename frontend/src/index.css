@@ -151,3 +151,111 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*
+ * Dark-mode hover/active/bg fix:
+ * Light-theme utility colors (neutral-50..300, brand-50..100, error-50..100)
+ * are near-white and unreadable on dark backgrounds.
+ * Remap them to dark equivalents under the .dark class.
+ */
+
+/* --- Neutral hovers --- */
+.dark .hover\:bg-neutral-50:hover,
+.dark .data-\[highlighted\]\:bg-neutral-100[data-highlighted],
+.dark .hover\:bg-neutral-100:hover {
+  background-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+.dark .hover\:bg-neutral-200:hover,
+.dark .active\:bg-neutral-200:active {
+  background-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+.dark .hover\:bg-neutral-300:hover {
+  background-color: rgb(82 82 82) !important; /* neutral-600 */
+}
+.dark .hover\:bg-white:hover {
+  background-color: rgb(38 38 38) !important; /* neutral-800 */
+}
+
+/* --- Neutral static backgrounds --- */
+.dark .bg-neutral-50 {
+  background-color: rgb(38 38 38) !important; /* neutral-800 */
+}
+.dark .bg-neutral-100 {
+  background-color: rgb(38 38 38) !important; /* neutral-800 */
+}
+.dark .bg-neutral-200 {
+  background-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+
+/* --- Neutral active --- */
+.dark .active\:bg-neutral-50:active,
+.dark .active\:bg-neutral-100:active {
+  background-color: rgb(82 82 82) !important; /* neutral-600 */
+}
+
+/* --- Brand hovers (light tints) --- */
+.dark .hover\:bg-brand-50:hover,
+.dark .hover\:bg-brand-100:hover {
+  background-color: rgb(30 58 138 / 0.4) !important; /* brand-900/40% */
+}
+.dark .active\:bg-brand-100:active,
+.dark .active\:bg-brand-50:active {
+  background-color: rgb(30 58 138 / 0.6) !important; /* brand-900/60% */
+}
+.dark .bg-brand-50 {
+  background-color: rgb(30 58 138 / 0.25) !important; /* brand-900/25% */
+}
+.dark .bg-brand-100 {
+  background-color: rgb(30 58 138 / 0.35) !important; /* brand-900/35% */
+}
+
+/* --- Error hovers (light tints) --- */
+.dark .hover\:bg-error-50:hover,
+.dark .hover\:bg-error-100:hover {
+  background-color: rgb(127 29 29 / 0.4) !important; /* error-900/40% */
+}
+.dark .active\:bg-error-100:active,
+.dark .active\:bg-error-50:active {
+  background-color: rgb(127 29 29 / 0.6) !important; /* error-900/60% */
+}
+.dark .bg-error-50 {
+  background-color: rgb(127 29 29 / 0.25) !important; /* error-900/25% */
+}
+
+/* --- White backgrounds --- */
+.dark .bg-white {
+  background-color: rgb(38 38 38) !important; /* neutral-800 */
+}
+.dark .hover\:bg-neutral-50:hover {
+  background-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+
+/* --- Disabled states --- */
+.dark .disabled\:bg-neutral-100:disabled {
+  background-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+.dark .disabled\:bg-neutral-200:disabled {
+  background-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+.dark .disabled\:bg-neutral-50:disabled {
+  background-color: rgb(38 38 38) !important; /* neutral-800 */
+}
+
+/* --- Borders (light) --- */
+.dark .border-neutral-100 {
+  border-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+.dark .border-neutral-200 {
+  border-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+
+/* --- Neutral text on dark remapped backgrounds --- */
+.dark .text-neutral-600 {
+  color: rgb(163 163 163) !important; /* neutral-400 */
+}
+.dark .text-neutral-700 {
+  color: rgb(212 212 212) !important; /* neutral-300 */
+}
+.dark .hover\:text-neutral-900:hover {
+  color: rgb(245 245 245) !important; /* neutral-100 */
+}

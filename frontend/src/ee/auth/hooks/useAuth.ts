@@ -1,8 +1,10 @@
-import { supabase } from "@/ee/auth/lib/supabase";
+import { getSupabase } from "@/ee/auth/lib/supabase";
 
 export function useAuth() {
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const client = getSupabase();
+    if (!client) throw new Error("Supabase is not configured");
+    const { error } = await client.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
@@ -10,7 +12,9 @@ export function useAuth() {
   };
 
   const signInWithGitHub = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const client = getSupabase();
+    if (!client) throw new Error("Supabase is not configured");
+    const { error } = await client.auth.signInWithOAuth({
       provider: "github",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
@@ -18,7 +22,9 @@ export function useAuth() {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
+    const client = getSupabase();
+    if (!client) throw new Error("Supabase is not configured");
+    const { error } = await client.auth.signOut();
     if (error) throw error;
   };
 

@@ -1,54 +1,83 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { isEnterpriseEnabled } from "@/ee/config";
 import { OpenAPI } from "@/lib/api";
 
-// Lazy-loaded EE components (only imported when EE is enabled)
-type AuthGuardType = typeof import("@/ee/auth/components/AuthGuard").AuthGuard;
-type UserMenuType = typeof import("@/ee/auth/components/UserMenu").UserMenu;
-type AuthCallbackType = typeof import("@/ee/auth/components/AuthCallback").AuthCallback;
+type EEComponents = {
+  AuthCallback: React.ComponentType;
+  UserMenu: React.ComponentType;
+  LoginPage: React.ComponentType;
+};
 
-export interface EEComponents {
-  AuthGuard: AuthGuardType;
-  UserMenu: UserMenuType;
-  AuthCallback: AuthCallbackType;
+export interface EEState {
+  components: EEComponents | null;
+  isAuthenticated: boolean;
 }
 
-export function useEEComponents() {
-  const [eeComponents, setEeComponents] = useState<EEComponents | null>(null);
+export function useEE(): EEState {
+  const [state, setState] = useState<EEState>({
+    components: null,
+    isAuthenticated: false,
+  });
 
   useEffect(() => {
-    if (!isEnterpriseEnabled()) return;
-
+    let mounted = true;
     let interceptorId: number | null = null;
 
-    Promise.all([
-      import("@/ee/auth/components/AuthGuard"),
-      import("@/ee/auth/components/UserMenu"),
-      import("@/ee/auth/components/AuthCallback"),
-      import("@/ee/auth/lib/axios-interceptor"),
-    ])
-      .then(([authGuard, userMenu, authCallback, interceptor]) => {
-        // Set token resolver for the OpenAPI generated client
-        OpenAPI.TOKEN = interceptor.openApiTokenResolver;
-        // Also keep axios interceptor for any direct axios calls
-        interceptorId = axios.interceptors.request.use(interceptor.authRequestInterceptor);
-        setEeComponents({
-          AuthGuard: authGuard.AuthGuard,
-          UserMenu: userMenu.UserMenu,
+    async function load() {
+      try {
+        const [authCallback, userMenu, loginPage, interceptor, supabaseMod] = await Promise.all([
+          import("@/ee/auth/components/AuthCallback"),
+          import("@/ee/auth/components/UserMenu"),
+          import("@/ee/auth/components/LoginPage"),
+          import("@/ee/auth/lib/axios-interceptor"),
+          import("@/ee/auth/lib/supabase"),
+        ]);
+
+        if (!mounted) return;
+
+        const components: EEComponents = {
           AuthCallback: authCallback.AuthCallback,
+          UserMenu: userMenu.UserMenu,
+          LoginPage: loginPage.LoginPage,
+        };
+
+        const client = supabaseMod.getSupabase();
+        if (!client) {
+          // Supabase未設定: コンポーネントは使えるが未認証
+          setState({ components, isAuthenticated: false });
+          return;
+        }
+
+        OpenAPI.TOKEN = interceptor.openApiTokenResolver;
+        interceptorId = axios.interceptors.request.use(interceptor.authRequestInterceptor);
+
+        const {
+          data: { session },
+        } = await client.auth.getSession();
+
+        if (!mounted) return;
+
+        setState({ components, isAuthenticated: !!session });
+
+        client.auth.onAuthStateChange((_event, session) => {
+          if (mounted) {
+            setState((prev) => ({ ...prev, isAuthenticated: !!session }));
+          }
         });
-      })
-      .catch((error) => {
-        console.error("Failed to load EE components", error);
-      });
+      } catch {
+        // EE components not available
+      }
+    }
+
+    void load();
 
     return () => {
+      mounted = false;
       if (interceptorId !== null) {
         axios.interceptors.request.eject(interceptorId);
       }
     };
   }, []);
 
-  return eeComponents;
+  return state;
 }
