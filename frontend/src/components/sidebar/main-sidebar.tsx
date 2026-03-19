@@ -22,7 +22,7 @@ import { SidebarWithSections } from "@/ui";
 interface MainSidebarProps {
   activeSection: string;
   autonomousSubNav: AutonomousSubNav;
-  isEE: boolean;
+  isAuthenticated: boolean;
   onMobileNavClose: () => void;
   onAutonomousSubNavClick: () => void;
 }
@@ -30,7 +30,7 @@ interface MainSidebarProps {
 export function MainSidebar({
   activeSection,
   autonomousSubNav,
-  isEE,
+  isAuthenticated,
   onMobileNavClose,
   onAutonomousSubNavClick,
 }: MainSidebarProps) {
@@ -107,7 +107,7 @@ export function MainSidebar({
       </SidebarWithSections.NavSection>
 
       {/* --- Settings (EE only) --- */}
-      {isEE && (
+      {isAuthenticated && (
         <SidebarWithSections.NavSection
           label={<span className="text-sm font-medium">{t("nav.settings")}</span>}
         >

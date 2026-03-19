@@ -231,7 +231,7 @@ export function AppLayout({ ee }: AppLayoutProps) {
           <MainSidebar
             activeSection={activeSection}
             autonomousSubNav={autonomousSubNav}
-            isEE={ee.isAuthenticated}
+            isAuthenticated={ee.isAuthenticated}
             onMobileNavClose={handleMobileNavClose}
             onAutonomousSubNavClick={() => setAutonomousListViewKey((k) => k + 1)}
           />

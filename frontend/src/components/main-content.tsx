@@ -7,12 +7,11 @@ import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driv
 import { NotificationsPage } from "@/components/pages/notifications";
 import { PapersPage } from "@/components/pages/papers";
 import { ReproductionPage } from "@/components/pages/reproduction";
-import { EE_ONLY_TABS, SETTINGS_TABS, SettingsPage } from "@/components/pages/settings";
+import { SETTINGS_TABS, SettingsPage } from "@/components/pages/settings";
 import { VerificationDetailPage, VerificationHomePage } from "@/components/pages/verification";
 import { ChatInput } from "@/components/pages/verification/detail/chat-input";
 import { useAutonomousResearchContext } from "@/contexts/autonomous-research-context";
 import { useVerificationContext } from "@/contexts/verification-context";
-import { useEE } from "@/hooks/use-ee-components";
 import type {
   FeatureType,
   Paper,
@@ -206,20 +205,8 @@ export function MainContent({ assistedResearchProps }: MainContentProps) {
 
 function SettingsRoute() {
   const { tab } = useParams<{ tab: string }>();
-  const { isAuthenticated, loading } = useEE();
 
-  const isValidTab = SETTINGS_TABS.includes(tab as never);
-  const isEETab = EE_ONLY_TABS.includes(tab as never);
-
-  if (!isValidTab) {
-    return <Navigate to="/settings/profile" replace />;
-  }
-
-  if (isEETab && loading) {
-    return null;
-  }
-
-  if (isEETab && !isAuthenticated) {
+  if (!SETTINGS_TABS.includes(tab as never)) {
     return <Navigate to="/settings/profile" replace />;
   }
 
