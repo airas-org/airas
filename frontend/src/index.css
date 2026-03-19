@@ -226,9 +226,6 @@
 .dark .bg-white {
   background-color: rgb(38 38 38) !important; /* neutral-800 */
 }
-.dark .hover\:bg-neutral-50:hover {
-  background-color: rgb(64 64 64) !important; /* neutral-700 */
-}
 
 /* --- Disabled states --- */
 .dark .disabled\:bg-neutral-100:disabled {

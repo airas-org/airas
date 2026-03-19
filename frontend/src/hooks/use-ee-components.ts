@@ -1,11 +1,12 @@
 import axios from "axios";
+import type { ComponentType } from "react";
 import { useEffect, useState } from "react";
 import { OpenAPI } from "@/lib/api";
 
 type EEComponents = {
-  AuthCallback: React.ComponentType;
-  UserMenu: React.ComponentType;
-  LoginPage: React.ComponentType;
+  AuthCallback: ComponentType;
+  UserMenu: ComponentType;
+  LoginPage: ComponentType;
 };
 
 export interface EEState {
