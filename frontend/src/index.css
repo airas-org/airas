@@ -196,17 +196,17 @@
 /* --- Brand hovers (light tints) --- */
 .dark .hover\:bg-brand-50:hover,
 .dark .hover\:bg-brand-100:hover {
-  background-color: rgb(30 58 138 / 0.4) !important; /* brand-900/40% */
+  background-color: rgb(59 130 246 / 0.3) !important; /* blue-500/30% */
 }
 .dark .active\:bg-brand-100:active,
 .dark .active\:bg-brand-50:active {
-  background-color: rgb(30 58 138 / 0.6) !important; /* brand-900/60% */
+  background-color: rgb(59 130 246 / 0.4) !important; /* blue-500/40% */
 }
 .dark .bg-brand-50 {
-  background-color: rgb(30 58 138 / 0.25) !important; /* brand-900/25% */
+  background-color: rgb(59 130 246 / 0.2) !important; /* blue-500/20% */
 }
 .dark .bg-brand-100 {
-  background-color: rgb(30 58 138 / 0.35) !important; /* brand-900/35% */
+  background-color: rgb(59 130 246 / 0.25) !important; /* blue-500/25% */
 }
 
 /* --- Error hovers (light tints) --- */

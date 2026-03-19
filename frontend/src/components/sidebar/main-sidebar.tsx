@@ -73,7 +73,7 @@ export function MainSidebar({
         <div className="flex flex-col gap-0.5 pl-7">
           <button
             type="button"
-            className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
+            className={`flex items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors cursor-pointer ${
               activeSection === "autonomous-research" && autonomousSubNav === "topic-driven"
                 ? "text-brand-700 bg-brand-50"
                 : "text-neutral-600 hover:bg-neutral-100"
@@ -89,7 +89,7 @@ export function MainSidebar({
           </button>
           <button
             type="button"
-            className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
+            className={`flex items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors cursor-pointer ${
               activeSection === "autonomous-research" && autonomousSubNav === "hypothesis-driven"
                 ? "text-brand-700 bg-brand-50"
                 : "text-neutral-600 hover:bg-neutral-100"
