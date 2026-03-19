@@ -222,6 +222,33 @@
   background-color: rgb(127 29 29 / 0.25) !important; /* error-900/25% */
 }
 
+/* --- Success badge (dark) --- */
+.dark .bg-success-100 {
+  background-color: rgb(22 101 52 / 0.3) !important; /* green-800/30% */
+}
+.dark .border-success-100 {
+  border-color: rgb(22 101 52 / 0.4) !important;
+}
+.dark .text-success-800 {
+  color: rgb(74 222 128) !important; /* green-400 */
+}
+
+/* --- Brand primary button (dark) --- */
+.dark .bg-brand-600 {
+  background-color: rgb(37 99 235) !important; /* blue-600 */
+}
+.dark .hover\:bg-brand-500:hover {
+  background-color: rgb(59 130 246) !important; /* blue-500 */
+}
+.dark .active\:bg-brand-600:active {
+  background-color: rgb(29 78 216) !important; /* blue-700 */
+}
+
+/* --- Destructive secondary button (dark) --- */
+.dark .text-error-700 {
+  color: rgb(248 113 113) !important; /* red-400 */
+}
+
 /* --- White backgrounds --- */
 .dark .bg-white {
   background-color: rgb(38 38 38) !important; /* neutral-800 */

@@ -52,12 +52,21 @@ export function useEE(): EEState {
           return;
         }
 
+        const previousToken = OpenAPI.TOKEN;
         OpenAPI.TOKEN = interceptor.openApiTokenResolver;
         interceptorId = axios.interceptors.request.use(interceptor.authRequestInterceptor);
 
         const {
           data: { session },
-        } = await client.auth.getSession();
+        } = await client.auth.getSession().catch((e: unknown) => {
+          // Rollback interceptor/token on session fetch failure
+          if (interceptorId !== null) {
+            axios.interceptors.request.eject(interceptorId);
+            interceptorId = null;
+          }
+          OpenAPI.TOKEN = previousToken;
+          throw e;
+        });
 
         if (!mounted) return;
 
@@ -71,8 +80,8 @@ export function useEE(): EEState {
           }
         });
         authSubscription = subscription;
-      } catch {
-        // EE components not available
+      } catch (error) {
+        console.error("Failed to initialize EE modules", error);
         if (mounted) {
           setState((prev) => ({ ...prev, loading: false }));
         }

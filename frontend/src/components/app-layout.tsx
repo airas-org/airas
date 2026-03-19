@@ -333,16 +333,17 @@ export function AppLayout({ ee }: AppLayoutProps) {
                 onClick={() => navigate("/notifications")}
                 aria-label="Open notifications"
               />
-              {ee.isAuthenticated && ee.components ? (
-                <ee.components.UserMenu />
-              ) : !selfHosted ? (
-                <IconButton
-                  variant="neutral-secondary"
-                  icon={<FeatherUser />}
-                  onClick={() => navigate("/login")}
-                  aria-label="Log in"
-                />
-              ) : null}
+              {!ee.loading &&
+                (ee.isAuthenticated && ee.components ? (
+                  <ee.components.UserMenu />
+                ) : !selfHosted && ee.components ? (
+                  <IconButton
+                    variant="neutral-secondary"
+                    icon={<FeatherUser />}
+                    onClick={() => navigate("/login")}
+                    aria-label="Log in"
+                  />
+                ) : null)}
             </>
           }
         />

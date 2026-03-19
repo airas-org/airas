@@ -59,7 +59,7 @@ function ApiProviderCard({
           )}
         </div>
 
-        {entry && (
+        {entry ? (
           <div className="flex w-full items-center justify-between rounded-lg px-5 py-4 border border-solid border-neutral-800/60 bg-neutral-950/50">
             <div className="flex flex-col items-start gap-1">
               <code className="text-sm font-mono text-neutral-300">{entry.masked_key}</code>
@@ -78,28 +78,28 @@ function ApiProviderCard({
               {t("apiToken.delete")}
             </Button>
           </div>
-        )}
-
-        <div className="flex w-full items-end gap-3">
-          <div className="flex-1">
-            <TextField label={`${label} API Key`}>
-              <TextField.Input
-                type="password"
-                placeholder={t("apiToken.apiKeyPlaceholder")}
-                value={inputValue}
-                onChange={(e) => onInputChange(e.target.value)}
-              />
-            </TextField>
+        ) : (
+          <div className="flex w-full items-end gap-3">
+            <div className="flex-1">
+              <TextField label={`${label} API Key`}>
+                <TextField.Input
+                  type="password"
+                  placeholder={t("apiToken.apiKeyPlaceholder")}
+                  value={inputValue}
+                  onChange={(e) => onInputChange(e.target.value)}
+                />
+              </TextField>
+            </div>
+            <Button
+              variant="brand-primary"
+              onClick={onSave}
+              disabled={!inputValue.trim() || isSaving}
+            >
+              {isSaving && <Loader2 className="h-3 w-3 animate-spin" />}
+              {isSaving ? t("apiToken.saving") : t("apiToken.save")}
+            </Button>
           </div>
-          <Button
-            variant="brand-primary"
-            onClick={onSave}
-            disabled={!inputValue.trim() || isSaving}
-          >
-            {isSaving && <Loader2 className="h-3 w-3 animate-spin" />}
-            {isSaving ? t("apiToken.saving") : t("apiToken.save")}
-          </Button>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driv
 import { NotificationsPage } from "@/components/pages/notifications";
 import { PapersPage } from "@/components/pages/papers";
 import { ReproductionPage } from "@/components/pages/reproduction";
-import { SETTINGS_TABS, SettingsPage } from "@/components/pages/settings";
+import { SETTINGS_TABS, SettingsPage, type SettingsTab } from "@/components/pages/settings";
 import { VerificationDetailPage, VerificationHomePage } from "@/components/pages/verification";
 import { ChatInput } from "@/components/pages/verification/detail/chat-input";
 import { useAutonomousResearchContext } from "@/contexts/autonomous-research-context";
@@ -204,11 +204,11 @@ export function MainContent({ assistedResearchProps }: MainContentProps) {
 }
 
 function SettingsRoute() {
-  const { tab } = useParams<{ tab: string }>();
+  const { tab } = useParams<{ tab?: string }>();
 
-  if (!SETTINGS_TABS.includes(tab as never)) {
+  if (!tab || !SETTINGS_TABS.includes(tab as SettingsTab)) {
     return <Navigate to="/settings/profile" replace />;
   }
 
-  return <SettingsPage activeTab={tab as Parameters<typeof SettingsPage>[0]["activeTab"]} />;
+  return <SettingsPage activeTab={tab as SettingsTab} />;
 }
