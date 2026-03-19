@@ -9,6 +9,8 @@ export default function App() {
   const ee = useEE();
   const selfHosted = isSelfHosted();
 
+  if (ee.loading) return null;
+
   const appLayout = <AppLayout ee={ee} />;
 
   return (

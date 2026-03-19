@@ -1,7 +1,6 @@
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useEE } from "@/hooks/use-ee-components";
 import type { ApiKeyResponse } from "@/lib/api/models/ApiKeyResponse";
 import { ApiProvider } from "@/lib/api/models/ApiProvider";
 import { EeApiKeysService } from "@/lib/api/services/EeApiKeysService";
@@ -104,7 +103,6 @@ function ApiProviderCard({
 
 export function ApiTokenPage() {
   const { t } = useTranslation();
-  const { loading: eeLoading } = useEE();
   const [keys, setKeys] = useState<KeysRecord>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,10 +128,8 @@ export function ApiTokenPage() {
   }, [t]);
 
   useEffect(() => {
-    if (!eeLoading) {
-      void fetchKeys();
-    }
-  }, [eeLoading, fetchKeys]);
+    void fetchKeys();
+  }, [fetchKeys]);
 
   const handleSave = async (provider: ApiProvider) => {
     const apiKey = inputValues[provider].trim();
