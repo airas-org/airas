@@ -1,10 +1,12 @@
 import type { InternalAxiosRequestConfig } from "axios";
-import { supabase } from "@/ee/auth/lib/supabase";
+import { getSupabase } from "@/ee/auth/lib/supabase";
 
 async function getAccessToken(): Promise<string | null> {
+  const client = getSupabase();
+  if (!client) return null;
   const {
     data: { session },
-  } = await supabase.auth.getSession();
+  } = await client.auth.getSession();
   return session?.access_token ?? null;
 }
 

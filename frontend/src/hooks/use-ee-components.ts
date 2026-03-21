@@ -1,54 +1,103 @@
 import axios from "axios";
+import type { ComponentType } from "react";
 import { useEffect, useState } from "react";
-import { isEnterpriseEnabled } from "@/ee/config";
 import { OpenAPI } from "@/lib/api";
 
-// Lazy-loaded EE components (only imported when EE is enabled)
-type AuthGuardType = typeof import("@/ee/auth/components/AuthGuard").AuthGuard;
-type UserMenuType = typeof import("@/ee/auth/components/UserMenu").UserMenu;
-type AuthCallbackType = typeof import("@/ee/auth/components/AuthCallback").AuthCallback;
+type EEComponents = {
+  AuthCallback: ComponentType;
+  UserMenu: ComponentType;
+  LoginPage: ComponentType;
+};
 
-export interface EEComponents {
-  AuthGuard: AuthGuardType;
-  UserMenu: UserMenuType;
-  AuthCallback: AuthCallbackType;
+export interface EEState {
+  components: EEComponents | null;
+  isAuthenticated: boolean;
+  loading: boolean;
 }
 
-export function useEEComponents() {
-  const [eeComponents, setEeComponents] = useState<EEComponents | null>(null);
+export function useEE(): EEState {
+  const [state, setState] = useState<EEState>({
+    components: null,
+    isAuthenticated: false,
+    loading: true,
+  });
 
   useEffect(() => {
-    if (!isEnterpriseEnabled()) return;
-
+    let mounted = true;
     let interceptorId: number | null = null;
+    let authSubscription: { unsubscribe: () => void } | null = null;
 
-    Promise.all([
-      import("@/ee/auth/components/AuthGuard"),
-      import("@/ee/auth/components/UserMenu"),
-      import("@/ee/auth/components/AuthCallback"),
-      import("@/ee/auth/lib/axios-interceptor"),
-    ])
-      .then(([authGuard, userMenu, authCallback, interceptor]) => {
-        // Set token resolver for the OpenAPI generated client
-        OpenAPI.TOKEN = interceptor.openApiTokenResolver;
-        // Also keep axios interceptor for any direct axios calls
-        interceptorId = axios.interceptors.request.use(interceptor.authRequestInterceptor);
-        setEeComponents({
-          AuthGuard: authGuard.AuthGuard,
-          UserMenu: userMenu.UserMenu,
+    async function load() {
+      try {
+        const [authCallback, userMenu, loginPage, interceptor, supabaseMod] = await Promise.all([
+          import("@/ee/auth/components/AuthCallback"),
+          import("@/ee/auth/components/UserMenu"),
+          import("@/ee/auth/components/LoginPage"),
+          import("@/ee/auth/lib/axios-interceptor"),
+          import("@/ee/auth/lib/supabase"),
+        ]);
+
+        if (!mounted) return;
+
+        const components: EEComponents = {
           AuthCallback: authCallback.AuthCallback,
+          UserMenu: userMenu.UserMenu,
+          LoginPage: loginPage.LoginPage,
+        };
+
+        const client = supabaseMod.getSupabase();
+        if (!client) {
+          // Supabase not configured (self-hosted): hide auth UI
+          setState({ components: null, isAuthenticated: false, loading: false });
+          return;
+        }
+
+        const previousToken = OpenAPI.TOKEN;
+        OpenAPI.TOKEN = interceptor.openApiTokenResolver;
+        interceptorId = axios.interceptors.request.use(interceptor.authRequestInterceptor);
+
+        const {
+          data: { session },
+        } = await client.auth.getSession().catch((e: unknown) => {
+          // Rollback interceptor/token on session fetch failure
+          if (interceptorId !== null) {
+            axios.interceptors.request.eject(interceptorId);
+            interceptorId = null;
+          }
+          OpenAPI.TOKEN = previousToken;
+          throw e;
         });
-      })
-      .catch((error) => {
-        console.error("Failed to load EE components", error);
-      });
+
+        if (!mounted) return;
+
+        setState({ components, isAuthenticated: !!session, loading: false });
+
+        const {
+          data: { subscription },
+        } = client.auth.onAuthStateChange((_event, session) => {
+          if (mounted) {
+            setState((prev) => ({ ...prev, isAuthenticated: !!session }));
+          }
+        });
+        authSubscription = subscription;
+      } catch (error) {
+        console.error("Failed to initialize EE modules", error);
+        if (mounted) {
+          setState((prev) => ({ ...prev, loading: false }));
+        }
+      }
+    }
+
+    void load();
 
     return () => {
+      mounted = false;
       if (interceptorId !== null) {
         axios.interceptors.request.eject(interceptorId);
       }
+      authSubscription?.unsubscribe();
     };
   }, []);
 
-  return eeComponents;
+  return state;
 }

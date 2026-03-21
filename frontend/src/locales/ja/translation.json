@@ -23,7 +23,8 @@
     "docs": "ドキュメント",
     "legal": "利用規約",
     "experimental": "実験的機能",
-    "reproduction": "再現実装"
+    "reproduction": "再現実装",
+    "research": "研究"
   },
   "userMenu": {
     "developer": "開発者",
@@ -587,26 +588,19 @@
     "countSuffix": "件"
   },
   "apiToken": {
-    "title": "API Token",
-    "subtitle": "APIトークンの管理",
-    "generate": "トークンを生成",
-    "copy": "コピー",
-    "noTokens": "トークンがありません",
-    "pageSubtitle": "AIRAS APIにアクセスするためのトークンを管理します",
-    "generateSection": "新しいトークンを生成",
-    "tokenName": "トークン名",
-    "tokenNamePlaceholder": "例: 研究用スクリプト",
-    "generateButton": "生成",
-    "tokenWarning": "このトークンは一度だけ表示されます。安全な場所に保存してください。",
-    "copied": "コピー済み",
-    "issuedTokens": "発行済みトークン",
-    "noTokensYet": "トークンはまだ発行されていません",
-    "createdAt": "作成",
-    "lastUsed": "最終使用",
-    "revoke": "取り消し",
-    "usageExample": "使用例",
-    "apiKeysSection": "API Keys",
-    "copyError": "クリップボードへのコピーに失敗しました"
+    "title": "LLM APIキー",
+    "pageSubtitle": "AIRASで使用するLLMプロバイダーのAPIキーを管理します",
+    "notConfigured": "未設定",
+    "configured": "設定済み",
+    "updatedAt": "更新日",
+    "apiKeyPlaceholder": "APIキーを入力",
+    "save": "保存",
+    "saving": "保存中...",
+    "delete": "削除",
+    "deleteConfirm": "{{provider}}のAPIキーを削除してもよろしいですか？",
+    "fetchError": "APIキーの読み込みに失敗しました",
+    "saveError": "APIキーの保存に失敗しました",
+    "deleteError": "APIキーの削除に失敗しました"
   },
   "settings": {
     "accountSection": "アカウント",

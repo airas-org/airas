@@ -1,11 +1,16 @@
 import { useEffect } from "react";
-import { supabase } from "@/ee/auth/lib/supabase";
+import { getSupabase } from "@/ee/auth/lib/supabase";
 
 export function AuthCallback() {
   useEffect(() => {
-    supabase.auth.getSession().then(() => {
+    const client = getSupabase();
+    if (client) {
+      client.auth.getSession().then(() => {
+        window.location.href = "/";
+      });
+    } else {
       window.location.href = "/";
-    });
+    }
   }, []);
 
   return (

@@ -25,10 +25,10 @@ export const SETTINGS_TABS: SettingsTab[] = [
   "usage",
 ];
 
-export function getSettingsTab(pathname: string): SettingsTab {
+export function getSettingsTab(pathname: string): SettingsTab | null {
   const tab = pathname.split("/settings/")[1] as SettingsTab | undefined;
   if (tab && SETTINGS_TABS.includes(tab)) return tab;
-  return "profile";
+  return null;
 }
 
 interface SettingsPageProps {
