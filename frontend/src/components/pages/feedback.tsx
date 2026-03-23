@@ -2,6 +2,7 @@ import { FeatherAlertTriangle, FeatherCheckCircle } from "@subframe/core";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { FeedbackCategory } from "@/lib/api/models/FeedbackCategory";
 import { FeedbackService } from "@/lib/api/services/FeedbackService";
 import { Accordion } from "@/ui/components/Accordion";
 import { Alert } from "@/ui/components/Alert";
@@ -15,8 +16,6 @@ const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const MAX_SUBJECT_LENGTH = 255;
 const MAX_DETAIL_LENGTH = 5000;
 
-type Category = "bug" | "feature" | "general" | "other";
-
 interface ValidationErrors {
   category?: string;
   subject?: string;
@@ -26,7 +25,7 @@ interface ValidationErrors {
 
 export function FeedbackPage() {
   const { t } = useTranslation();
-  const [category, setCategory] = useState<Category | null>(null);
+  const [category, setFeedbackCategory] = useState<FeedbackCategory | null>(null);
   const [subject, setSubject] = useState("");
   const [detail, setDetail] = useState("");
   const [email, setEmail] = useState("");
@@ -36,7 +35,7 @@ export function FeedbackPage() {
   const [errors, setErrors] = useState<ValidationErrors>({});
 
   const resetForm = () => {
-    setCategory(null);
+    setFeedbackCategory(null);
     setSubject("");
     setDetail("");
     setEmail("");
@@ -144,7 +143,7 @@ export function FeedbackPage() {
                 placeholder={t("feedback.categoryPlaceholder")}
                 value={category ?? ""}
                 onValueChange={(v) => {
-                  setCategory(v as Category);
+                  setFeedbackCategory(v as FeedbackCategory);
                   setErrors((prev) => ({ ...prev, category: undefined }));
                 }}
                 error={!!errors.category}
