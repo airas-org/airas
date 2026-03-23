@@ -61,8 +61,6 @@ async def _lifespan(app: FastAPI):
             providers.Singleton(InMemoryE2EResearchService)
         )
 
-    _configure_feedback_email_notifier(container)
-
     import api.ee as ee_pkg
 
     container.wire(packages=[routes_v1, ee_pkg])
@@ -73,36 +71,6 @@ async def _lifespan(app: FastAPI):
     finally:
         await container.shutdown_resources()
         container.unwire()
-
-
-def _configure_feedback_email_notifier(container: Container) -> None:
-    """Override feedback_service with email notifier if SMTP env vars are set."""
-    smtp_host = os.getenv("FEEDBACK_SMTP_HOST")
-    to_address = os.getenv("FEEDBACK_TO_EMAIL")
-    if not smtp_host or not to_address:
-        return
-
-    from airas.infra.email_feedback_notifier import EmailFeedbackNotifier
-    from airas.usecases.feedback.feedback_service import FeedbackService
-
-    notifier = EmailFeedbackNotifier(
-        smtp_host=smtp_host,
-        smtp_port=int(os.getenv("FEEDBACK_SMTP_PORT", "587")),
-        smtp_user=os.getenv("FEEDBACK_SMTP_USER", ""),
-        smtp_password=os.getenv("FEEDBACK_SMTP_PASSWORD", ""),
-        from_address=os.getenv("FEEDBACK_FROM_EMAIL", to_address),
-        to_address=to_address,
-        use_tls=os.getenv("FEEDBACK_SMTP_USE_TLS", "true").lower() == "true",
-        use_ssl=os.getenv("FEEDBACK_SMTP_USE_SSL", "false").lower() == "true",
-    )
-
-    container.feedback_service.override(
-        providers.Factory(
-            FeedbackService,
-            repo=container.feedback_repository,
-            notifiers=[notifier],
-        )
-    )
 
 
 def register_ee_routes(application: FastAPI) -> None:
