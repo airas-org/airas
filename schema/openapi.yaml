@@ -1594,6 +1594,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/feedback:
+    post:
+      tags:
+      - feedback
+      summary: Create Feedback
+      operationId: create_feedback_airas_v1_feedback_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFeedbackRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateFeedbackResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/ee/auth/me:
     get:
       tags:
@@ -2136,6 +2163,63 @@ components:
           title: Description
       type: object
       title: ComputeEnvironment
+    CreateFeedbackRequestBody:
+      properties:
+        category:
+          $ref: '#/components/schemas/FeedbackCategory'
+        subject:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Subject
+        detail:
+          type: string
+          maxLength: 5000
+          minLength: 1
+          title: Detail
+        email:
+          anyOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+          title: Email
+      type: object
+      required:
+      - category
+      - subject
+      - detail
+      title: CreateFeedbackRequestBody
+    CreateFeedbackResponseBody:
+      properties:
+        id:
+          type: string
+          title: Id
+        category:
+          type: string
+          title: Category
+        subject:
+          type: string
+          title: Subject
+        detail:
+          type: string
+          title: Detail
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        created_at:
+          type: string
+          title: Created At
+      type: object
+      required:
+      - id
+      - category
+      - subject
+      - detail
+      - email
+      - created_at
+      title: CreateFeedbackResponseBody
     DatasetConfig:
       properties:
         description:
@@ -2966,6 +3050,14 @@ components:
           description: Metrics data for runs (keyed by run_id or 'comparison')
       type: object
       title: ExperimentalResults
+    FeedbackCategory:
+      type: string
+      enum:
+      - bug
+      - feature
+      - general
+      - other
+      title: FeedbackCategory
     FetchExperimentCodeRequestBody:
       properties:
         github_config:

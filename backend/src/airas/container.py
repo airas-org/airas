@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session, create_engine
 
 from airas.infra.arxiv_client import ArxivClient
+from airas.infra.email_feedback_notifier import EmailFeedbackNotifier
 from airas.infra.github_client import GithubClient
 from airas.infra.hugging_face_client import HuggingFaceClient
 from airas.infra.langchain_client import LangChainClient
@@ -18,6 +19,7 @@ from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.qdrant_client import QdrantClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
+from airas.repository.feedback_repository import FeedbackRepository
 from airas.repository.user_api_key_repository import UserApiKeyRepository
 from airas.repository.user_github_token_repository import UserGitHubTokenRepository
 from airas.repository.user_plan_repository import UserPlanRepository
@@ -27,6 +29,7 @@ from airas.usecases.autonomous_research.sql_e2e_research_service import (
 )
 from airas.usecases.ee.api_key_resolver import ApiKeyResolver
 from airas.usecases.ee.api_key_service import ApiKeyService
+from airas.usecases.ee.feedback_service import FeedbackService
 from airas.usecases.ee.github_oauth_service import GitHubOAuthService
 from airas.usecases.ee.plan_service import PlanService
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
@@ -209,6 +212,30 @@ class Container(containers.DeclarativeContainer):
     )
     github_oauth_service = providers.Factory(
         GitHubOAuthService, repo=user_github_token_repository
+    )
+
+    ## --- Feedback Service ---
+    feedback_repository = providers.Factory(FeedbackRepository, db=db_session)
+
+    @staticmethod
+    def _build_feedback_notifiers() -> list:
+        from_addr = os.getenv("FEEDBACK_FROM_ADDRESS", "")
+        to_addr = os.getenv("FEEDBACK_TO_ADDRESS", "")
+        region = os.getenv("AWS_SES_REGION", "ap-northeast-1")
+        if not (from_addr and to_addr):
+            return []
+        return [
+            EmailFeedbackNotifier(
+                from_address=from_addr,
+                to_address=to_addr,
+                region_name=region,
+            )
+        ]
+
+    feedback_service = providers.Factory(
+        FeedbackService,
+        repo=feedback_repository,
+        notifiers=providers.Callable(_build_feedback_notifiers.__func__),
     )
 
     ## --- Verification Service ---
