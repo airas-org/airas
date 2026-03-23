@@ -7,5 +7,5 @@ Content-Type: application/json
     "category": "bug",
     "subject": "Test bug report",
     "detail": "This is a test feedback submitted via HTTP test file.",
-    "email": "sender@example.com"
+    "email": "test@example.com"
 }
