@@ -1,17 +1,14 @@
-"use client";
-
 import { FeatherAlertTriangle, FeatherCheckCircle } from "@subframe/core";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { OpenAPI } from "@/lib/api/core/OpenAPI";
+import { FeedbackService } from "@/lib/api/services/FeedbackService";
 import { Accordion } from "@/ui/components/Accordion";
 import { Alert } from "@/ui/components/Alert";
 import { Button } from "@/ui/components/Button";
 import { Select } from "@/ui/components/Select";
 import { TextArea } from "@/ui/components/TextArea";
 import { TextField } from "@/ui/components/TextField";
-import { getAuthHeaders } from "./verification/use-verifications";
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
@@ -29,7 +26,7 @@ interface ValidationErrors {
 
 export function FeedbackPage() {
   const { t } = useTranslation();
-  const [category, setCategory] = useState<Category | "">("");
+  const [category, setCategory] = useState<Category | null>(null);
   const [subject, setSubject] = useState("");
   const [detail, setDetail] = useState("");
   const [email, setEmail] = useState("");
@@ -37,6 +34,14 @@ export function FeedbackPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<ValidationErrors>({});
+
+  const resetForm = () => {
+    setCategory(null);
+    setSubject("");
+    setDetail("");
+    setEmail("");
+    setErrors({});
+  };
 
   const faqItems = [
     {
@@ -80,31 +85,18 @@ export function FeedbackPage() {
 
     setSubmitting(true);
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(`${OpenAPI.BASE}/airas/v1/feedback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...headers },
-        body: JSON.stringify({
-          category,
-          subject: subject.trim(),
-          detail: detail.trim(),
-          email: email.trim() || null,
-        }),
+      await FeedbackService.createFeedbackAirasV1FeedbackPost({
+        category: category!,
+        subject: subject.trim(),
+        detail: detail.trim(),
+        email: email.trim() || null,
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.message ?? `API error: ${res.status}`);
-      }
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
-      setCategory("");
-      setSubject("");
-      setDetail("");
-      setEmail("");
-      setErrors({});
+      resetForm();
     } catch (e) {
       console.error(e);
-      setError(t("feedback.submitError"));
+      setError(e instanceof Error ? e.message : t("feedback.submitError"));
     } finally {
       setSubmitting(false);
     }
@@ -150,7 +142,7 @@ export function FeedbackPage() {
               <Select
                 label={t("feedback.category")}
                 placeholder={t("feedback.categoryPlaceholder")}
-                value={category}
+                value={category ?? ""}
                 onValueChange={(v) => {
                   setCategory(v as Category);
                   setErrors((prev) => ({ ...prev, category: undefined }));
