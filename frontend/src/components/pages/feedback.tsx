@@ -1,22 +1,42 @@
 "use client";
 
-import { FeatherCheckCircle } from "@subframe/core";
+import { FeatherAlertTriangle, FeatherCheckCircle } from "@subframe/core";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { OpenAPI } from "@/lib/api/core/OpenAPI";
 import { Accordion } from "@/ui/components/Accordion";
 import { Alert } from "@/ui/components/Alert";
 import { Button } from "@/ui/components/Button";
 import { Select } from "@/ui/components/Select";
 import { TextArea } from "@/ui/components/TextArea";
 import { TextField } from "@/ui/components/TextField";
+import { getAuthHeaders } from "./verification/use-verifications";
+
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+const MAX_SUBJECT_LENGTH = 255;
+const MAX_DETAIL_LENGTH = 5000;
+
+type Category = "bug" | "feature" | "general" | "other";
+
+interface ValidationErrors {
+  category?: string;
+  subject?: string;
+  detail?: string;
+  email?: string;
+}
 
 export function FeedbackPage() {
   const { t } = useTranslation();
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState<Category | "">("");
   const [subject, setSubject] = useState("");
   const [detail, setDetail] = useState("");
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<ValidationErrors>({});
 
   const faqItems = [
     {
@@ -33,13 +53,61 @@ export function FeedbackPage() {
     },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validate = (): ValidationErrors => {
+    const v: ValidationErrors = {};
+    const trimmedSubject = subject.trim();
+    const trimmedDetail = detail.trim();
+    if (!category) v.category = t("feedback.validation.categoryRequired");
+    if (!trimmedSubject) v.subject = t("feedback.validation.subjectRequired");
+    else if (trimmedSubject.length > MAX_SUBJECT_LENGTH)
+      v.subject = t("feedback.validation.subjectTooLong");
+    if (!trimmedDetail) v.detail = t("feedback.validation.detailRequired");
+    else if (trimmedDetail.length > MAX_DETAIL_LENGTH)
+      v.detail = t("feedback.validation.detailTooLong");
+    if (email && !EMAIL_REGEX.test(email)) v.email = t("feedback.validation.emailInvalid");
+    return v;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setCategory("");
-    setSubject("");
-    setDetail("");
-    setEmail("");
+    if (submitting) return;
+    setError(null);
+    setSubmitted(false);
+
+    const v = validate();
+    setErrors(v);
+    if (Object.keys(v).length > 0) return;
+
+    setSubmitting(true);
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${OpenAPI.BASE}/airas/v1/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify({
+          category,
+          subject: subject.trim(),
+          detail: detail.trim(),
+          email: email.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.message ?? `API error: ${res.status}`);
+      }
+      setSubmitted(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      setCategory("");
+      setSubject("");
+      setDetail("");
+      setEmail("");
+      setErrors({});
+    } catch (e) {
+      console.error(e);
+      setError(t("feedback.submitError"));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -65,6 +133,16 @@ export function FeedbackPage() {
               </div>
             )}
 
+            {error && (
+              <div className="mb-4">
+                <Alert
+                  variant="error"
+                  icon={<FeatherAlertTriangle />}
+                  title={t("feedback.submitError")}
+                />
+              </div>
+            )}
+
             <form
               onSubmit={handleSubmit}
               className="rounded-lg border border-border bg-card p-6 flex flex-col gap-5"
@@ -73,7 +151,12 @@ export function FeedbackPage() {
                 label={t("feedback.category")}
                 placeholder={t("feedback.categoryPlaceholder")}
                 value={category}
-                onValueChange={setCategory}
+                onValueChange={(v) => {
+                  setCategory(v as Category);
+                  setErrors((prev) => ({ ...prev, category: undefined }));
+                }}
+                error={!!errors.category}
+                helpText={errors.category}
               >
                 <Select.Item value="bug">{t("feedback.categoryBug")}</Select.Item>
                 <Select.Item value="feature">{t("feedback.categoryFeature")}</Select.Item>
@@ -81,32 +164,56 @@ export function FeedbackPage() {
                 <Select.Item value="other">{t("feedback.categoryOther")}</Select.Item>
               </Select>
 
-              <TextField label={t("feedback.subject")}>
+              <TextField
+                label={t("feedback.subject")}
+                error={!!errors.subject}
+                helpText={errors.subject}
+              >
                 <TextField.Input
                   placeholder={t("feedback.subjectPlaceholder")}
                   value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
+                  onChange={(e) => {
+                    setSubject(e.target.value);
+                    setErrors((prev) => ({ ...prev, subject: undefined }));
+                  }}
                 />
               </TextField>
 
-              <TextArea label={t("feedback.detail")}>
+              <TextArea
+                label={t("feedback.detail")}
+                error={!!errors.detail}
+                helpText={errors.detail}
+              >
                 <TextArea.Input
                   placeholder={t("feedback.detailPlaceholder")}
                   value={detail}
-                  onChange={(e) => setDetail(e.target.value)}
+                  onChange={(e) => {
+                    setDetail(e.target.value);
+                    setErrors((prev) => ({ ...prev, detail: undefined }));
+                  }}
                 />
               </TextArea>
 
-              <TextField label={t("feedback.email")} helpText={t("feedback.emailHelpText")}>
+              <TextField
+                label={t("feedback.email")}
+                helpText={errors.email || t("feedback.emailHelpText")}
+                error={!!errors.email}
+              >
                 <TextField.Input
                   placeholder="example@email.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setErrors((prev) => ({ ...prev, email: undefined }));
+                  }}
                 />
               </TextField>
 
               <div className="flex justify-end">
-                <Button type="submit">{t("feedback.submit")}</Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting && <Loader2 className="h-3 w-3 animate-spin" />}
+                  {submitting ? t("feedback.submitting") : t("feedback.submit")}
+                </Button>
               </div>
             </form>
           </div>
