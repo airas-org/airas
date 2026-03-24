@@ -60,9 +60,9 @@ Content-Type: application/json
     }
 }
 
-### Verification - Generate Experiment Code (default llm_mapping)
+### Verification - Generate Verification Code (default llm_mapping)
 
-POST http://localhost:8000/airas/v1/verification/generate-experiment-code
+POST http://localhost:8000/airas/v1/verification/generate-code
 Content-Type: application/json
 
 {
@@ -86,15 +86,16 @@ Content-Type: application/json
         "Compare results and analyze differences"
     ],
     "modification_notes": "",
-    "repository_name": "my-experiment-repo",
-    "github_owner": "auto-res2",
-    "branch_name": "main",
+    "github_config": {
+        "repository_name": "my-experiment-repo",
+        "branch_name": "main"
+    },
     "github_actions_agent": "open_code"
 }
 
-### Verification - Generate Experiment Code (custom llm_mapping)
+### Verification - Generate Verification Code (custom llm_mapping)
 
-POST http://localhost:8000/airas/v1/verification/generate-experiment-code
+POST http://localhost:8000/airas/v1/verification/generate-code
 Content-Type: application/json
 
 {
@@ -118,17 +119,18 @@ Content-Type: application/json
         "Compare results and analyze differences"
     ],
     "modification_notes": "Use temperature=0 for reproducibility",
-    "repository_name": "my-experiment-repo",
-    "github_owner": "auto-res2",
-    "branch_name": "main",
+    "github_config": {
+        "repository_name": "matsuzawa-20260324",
+        "branch_name": "main"
+    },
     "github_actions_agent": "open_code",
     "llm_mapping": {
-        "dispatch_experiment_code_generation": {
+        "dispatch_verification_code_generation": {
             "llm_name": "anthropic/claude-sonnet-4-6"
         }
     }
 }
 
-### Verification - Get Experiment Code Status
+### Verification - Get Verification Code Status
 
-GET http://localhost:8000/airas/v1/verification/experiment-code-status/auto-res2/my-experiment-repo/123456789
+GET http://localhost:8000/airas/v1/verification/code-status/matsuzawa-20260324/23477654309

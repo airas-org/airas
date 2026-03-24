@@ -1,20 +1,24 @@
 import { FeatherLayoutList } from "@subframe/core";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
+import type {
+  AutonomousActiveSectionMap,
+  AutonomousSectionsMap,
+} from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
 import { NotificationsPage } from "@/components/pages/notifications";
 import { PapersPage } from "@/components/pages/papers";
 import { ReproductionPage } from "@/components/pages/reproduction";
 import { SETTINGS_TABS, SettingsPage, type SettingsTab } from "@/components/pages/settings";
+import type { ProposedMethod, Verification } from "@/components/pages/verification";
 import { VerificationDetailPage, VerificationHomePage } from "@/components/pages/verification";
 import { ChatInput } from "@/components/pages/verification/detail/chat-input";
-import { useAutonomousResearchContext } from "@/contexts/autonomous-research-context";
-import { useVerificationContext } from "@/contexts/verification-context";
 import type {
   FeatureType,
   Paper,
+  ResearchSection,
   WorkflowNode,
   WorkflowTree as WorkflowTreeType,
 } from "@/types/research";
@@ -43,24 +47,38 @@ interface AssistedResearchProps {
   onNavigate: (nodeId: string) => void;
 }
 
+interface VerificationProps {
+  verifications: Verification[];
+  onDeleteVerification: (id: string) => void;
+  onDuplicateVerification: (id: string) => void;
+  onUpdateVerification: (id: string, updates: Partial<Verification>) => void;
+  onCreateWithQuery: (query: string) => void;
+  onCreateWithMethod: (sourceVerification: Verification, method: ProposedMethod) => void;
+}
+
+interface AutonomousResearchProps {
+  sectionsMap: AutonomousSectionsMap;
+  activeSectionMap: AutonomousActiveSectionMap;
+  onSelectSession: (subNav: AutonomousSubNav, section: ResearchSection) => void;
+  onCreateSection: (subNav: AutonomousSubNav) => void;
+  onUpdateSectionTitle: (subNav: AutonomousSubNav, title: string) => void;
+  onRefreshSessions: (subNav: AutonomousSubNav, preferredId?: string) => Promise<void>;
+  listViewKey: number;
+}
+
 interface MainContentProps {
   assistedResearchProps: AssistedResearchProps;
+  verificationProps: VerificationProps;
+  autonomousResearchProps: AutonomousResearchProps;
 }
 
-function VerificationDetailRoute() {
-  const { id } = useParams<{ id: string }>();
-  const { verifications, onUpdateVerification, onCreateWithMethod } = useVerificationContext();
-  const verification = verifications.find((v) => v.id === id) ?? null;
-  return (
-    <VerificationDetailPage
-      verification={verification}
-      onUpdateVerification={onUpdateVerification}
-      onCreateWithMethod={onCreateWithMethod}
-    />
-  );
-}
-
-function AutonomousResearchRoute({ subNav }: { subNav: AutonomousSubNav }) {
+function AutonomousResearchRoute({
+  subNav,
+  autonomousResearchProps,
+}: {
+  subNav: AutonomousSubNav;
+  autonomousResearchProps: AutonomousResearchProps;
+}) {
   const {
     activeSectionMap,
     sectionsMap,
@@ -69,7 +87,7 @@ function AutonomousResearchRoute({ subNav }: { subNav: AutonomousSubNav }) {
     onUpdateSectionTitle,
     onRefreshSessions,
     listViewKey,
-  } = useAutonomousResearchContext();
+  } = autonomousResearchProps;
   const PageComponent =
     subNav === "topic-driven" ? AutonomousResearchPage : HypothesisDrivenResearchPage;
   return (
@@ -85,39 +103,66 @@ function AutonomousResearchRoute({ subNav }: { subNav: AutonomousSubNav }) {
   );
 }
 
-export function MainContent({ assistedResearchProps }: MainContentProps) {
+function VerificationDetailRoute({
+  verifications,
+  onUpdateVerification,
+  onCreateWithMethod,
+}: {
+  verifications: Verification[];
+  onUpdateVerification: VerificationProps["onUpdateVerification"];
+  onCreateWithMethod: VerificationProps["onCreateWithMethod"];
+}) {
+  const { id } = useParams<{ id: string }>();
+  const verification = verifications.find((v) => v.id === id) ?? null;
+  return (
+    <VerificationDetailPage
+      verification={verification}
+      onUpdateVerification={onUpdateVerification}
+      onCreateWithMethod={onCreateWithMethod}
+    />
+  );
+}
+
+export function MainContent({
+  assistedResearchProps,
+  verificationProps,
+  autonomousResearchProps,
+}: MainContentProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [selectedPapers, setSelectedPapers] = useState<Paper[]>([]);
 
-  const { verifications, onDeleteVerification, onDuplicateVerification, onCreateWithQuery } =
-    useVerificationContext();
+  const {
+    verifications,
+    onDeleteVerification,
+    onDuplicateVerification,
+    onCreateWithQuery,
+    onUpdateVerification,
+    onCreateWithMethod,
+  } = verificationProps;
 
-  const handlePapersStepExecuted = useCallback(
-    (papers: Paper[]) => {
-      setSelectedPapers(papers);
-      const snapshot: WorkflowNode["snapshot"] = {
-        selectedPapers: papers,
-        generatedMethod: null,
-        experimentConfigs: [],
-        githubUrl: null,
-        experimentResults: [],
-        analysisText: null,
-        generatedPaper: null,
-      };
-      const nodeId = assistedResearchProps.addWorkflowNode(
-        "papers",
-        null,
-        false,
-        { selectedPapers: papers },
-        snapshot,
-      );
-      assistedResearchProps.setActiveNodeId(nodeId);
-    },
-    [assistedResearchProps],
-  );
+  function handlePapersStepExecuted(papers: Paper[]) {
+    setSelectedPapers(papers);
+    const snapshot: WorkflowNode["snapshot"] = {
+      selectedPapers: papers,
+      generatedMethod: null,
+      experimentConfigs: [],
+      githubUrl: null,
+      experimentResults: [],
+      analysisText: null,
+      generatedPaper: null,
+    };
+    const nodeId = assistedResearchProps.addWorkflowNode(
+      "papers",
+      null,
+      false,
+      { selectedPapers: papers },
+      snapshot,
+    );
+    assistedResearchProps.setActiveNodeId(nodeId);
+  }
 
-  const handleSavePapersSnapshot = useCallback(() => {
+  function handleSavePapersSnapshot() {
     const { activeNodeId, workflowTree, updateNodeSnapshot } = assistedResearchProps;
     if (activeNodeId && workflowTree.nodes[activeNodeId]?.type === "papers") {
       const snapshot: WorkflowNode["snapshot"] = {
@@ -131,7 +176,7 @@ export function MainContent({ assistedResearchProps }: MainContentProps) {
       };
       updateNodeSnapshot(activeNodeId, snapshot);
     }
-  }, [assistedResearchProps, selectedPapers]);
+  }
 
   return (
     <div className="flex-1 flex min-w-0">
@@ -169,7 +214,16 @@ export function MainContent({ assistedResearchProps }: MainContentProps) {
             />
           }
         />
-        <Route path="/verification/:id" element={<VerificationDetailRoute />} />
+        <Route
+          path="/verification/:id"
+          element={
+            <VerificationDetailRoute
+              verifications={verifications}
+              onUpdateVerification={onUpdateVerification}
+              onCreateWithMethod={onCreateWithMethod}
+            />
+          }
+        />
         <Route
           path="/papers"
           element={
@@ -183,11 +237,21 @@ export function MainContent({ assistedResearchProps }: MainContentProps) {
         />
         <Route
           path="/autonomous-research/topic-driven"
-          element={<AutonomousResearchRoute subNav="topic-driven" />}
+          element={
+            <AutonomousResearchRoute
+              subNav="topic-driven"
+              autonomousResearchProps={autonomousResearchProps}
+            />
+          }
         />
         <Route
           path="/autonomous-research/hypothesis-driven"
-          element={<AutonomousResearchRoute subNav="hypothesis-driven" />}
+          element={
+            <AutonomousResearchRoute
+              subNav="hypothesis-driven"
+              autonomousResearchProps={autonomousResearchProps}
+            />
+          }
         />
         <Route
           path="/autonomous-research"

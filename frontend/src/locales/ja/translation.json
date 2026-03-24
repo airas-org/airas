@@ -183,6 +183,9 @@
         "modificationNotes": "修正内容",
         "repositoryName": "リポジトリ名"
       },
+      "generatingPlan": "検証方法を生成中...",
+      "generatingCode": "実験コードを生成中...",
+      "codeGenerated": "実験コードが生成されました",
       "experimentCode": {
         "title": "実験コード"
       },

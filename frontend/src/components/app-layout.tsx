@@ -8,7 +8,7 @@ import {
   FeatherPanelLeftOpen,
   FeatherUser,
 } from "@subframe/core";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -22,13 +22,11 @@ import {
   type AutonomousSectionsMap,
   useAutonomousResearchSessions,
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
-import { useVerifications } from "@/components/pages/verification/use-verifications";
 import { MainSidebar } from "@/components/sidebar/main-sidebar";
-import { AutonomousResearchProvider } from "@/contexts/autonomous-research-context";
-import { VerificationProvider } from "@/contexts/verification-context";
 import { isSelfHosted } from "@/ee/config";
 import type { EEState } from "@/hooks/use-ee-components";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useVerifications } from "@/hooks/use-verifications";
 import { useWorkflowTree } from "@/hooks/use-workflow-tree";
 import { cn } from "@/lib/utils";
 import type { ResearchSection } from "@/types/research";
@@ -100,7 +98,7 @@ export function AppLayout({ ee }: AppLayoutProps) {
     handleDuplicateVerification,
     handleCreateWithMethod,
     handleCreateWithQuery,
-  } = useVerifications(navigate);
+  } = useVerifications();
 
   // autonomousListViewKey forces list remount when clicking the same sub-nav
   const [autonomousListViewKey, setAutonomousListViewKey] = useState(0);
@@ -118,25 +116,19 @@ export function AppLayout({ ee }: AppLayoutProps) {
     setAutonomousActiveSectionMap,
   });
 
-  const handleSelectAutonomousSession = useCallback(
-    (subNav: AutonomousSubNav, section: ResearchSection) => {
-      setAutonomousActiveSectionMap((prev) => ({
-        ...prev,
-        [subNav]: section,
-      }));
-    },
-    [],
-  );
+  function handleSelectAutonomousSession(subNav: AutonomousSubNav, section: ResearchSection) {
+    setAutonomousActiveSectionMap((prev) => ({
+      ...prev,
+      [subNav]: section,
+    }));
+  }
 
-  const handleCreateSection = useCallback(
-    (subNav: AutonomousSubNav) => {
-      setAutonomousActiveSectionMap((prev) => ({ ...prev, [subNav]: null }));
-      resetWorkflow();
-    },
-    [resetWorkflow],
-  );
+  function handleCreateSection(subNav: AutonomousSubNav) {
+    setAutonomousActiveSectionMap((prev) => ({ ...prev, [subNav]: null }));
+    resetWorkflow();
+  }
 
-  const handleUpdateSectionTitle = useCallback((subNav: AutonomousSubNav, title: string) => {
+  function handleUpdateSectionTitle(subNav: AutonomousSubNav, title: string) {
     setAutonomousActiveSectionMap((prevActive) => {
       const current = prevActive[subNav];
       if (!current) return prevActive;
@@ -146,11 +138,11 @@ export function AppLayout({ ee }: AppLayoutProps) {
       }));
       return { ...prevActive, [subNav]: { ...current, title } };
     });
-  }, []);
+  }
 
-  const handleMobileNavClose = useCallback(() => {
+  function handleMobileNavClose() {
     if (isMobile) setSidebarOpen(false);
-  }, [isMobile]);
+  }
 
   const currentLanguage = (i18n.resolvedLanguage ?? i18n.language)?.toLowerCase().startsWith("ja")
     ? "ja"
@@ -159,50 +151,9 @@ export function AppLayout({ ee }: AppLayoutProps) {
   const dropdownItemClassName =
     "[&_span]:text-xs [&_span]:text-white hover:bg-neutral-700 data-[highlighted]:bg-neutral-700 [&_.text-default-font]:text-white";
 
-  const handleRefreshSessions = useCallback(
-    (subNav: AutonomousSubNav, preferredId?: string) => fetchSections(subNav, preferredId),
-    [fetchSections],
-  );
-
-  const autonomousResearchValue = useMemo(
-    () => ({
-      sectionsMap: autonomousSectionsMap,
-      activeSectionMap: autonomousActiveSectionMap,
-      onSelectSession: handleSelectAutonomousSession,
-      onCreateSection: handleCreateSection,
-      onUpdateSectionTitle: handleUpdateSectionTitle,
-      onRefreshSessions: handleRefreshSessions,
-      listViewKey: autonomousListViewKey,
-    }),
-    [
-      autonomousSectionsMap,
-      autonomousActiveSectionMap,
-      handleSelectAutonomousSession,
-      handleCreateSection,
-      handleUpdateSectionTitle,
-      handleRefreshSessions,
-      autonomousListViewKey,
-    ],
-  );
-
-  const verificationValue = useMemo(
-    () => ({
-      verifications,
-      onDeleteVerification: handleDeleteVerification,
-      onDuplicateVerification: handleDuplicateVerification,
-      onUpdateVerification: handleUpdateVerification,
-      onCreateWithQuery: handleCreateWithQuery,
-      onCreateWithMethod: handleCreateWithMethod,
-    }),
-    [
-      verifications,
-      handleDeleteVerification,
-      handleDuplicateVerification,
-      handleUpdateVerification,
-      handleCreateWithQuery,
-      handleCreateWithMethod,
-    ],
-  );
+  function handleRefreshSessions(subNav: AutonomousSubNav, preferredId?: string) {
+    return fetchSections(subNav, preferredId);
+  }
 
   return (
     <div className="flex min-h-screen bg-default-background">
@@ -348,21 +299,34 @@ export function AppLayout({ ee }: AppLayoutProps) {
           }
         />
         <div className="flex-1 flex min-h-0">
-          <AutonomousResearchProvider value={autonomousResearchValue}>
-            <VerificationProvider value={verificationValue}>
-              <MainContent
-                assistedResearchProps={{
-                  workflowTree,
-                  activeNodeId,
-                  setActiveNodeId,
-                  addWorkflowNode,
-                  updateNodeSnapshot,
-                  resetDownstreamSessions,
-                  onNavigate: handleNavigate,
-                }}
-              />
-            </VerificationProvider>
-          </AutonomousResearchProvider>
+          <MainContent
+            assistedResearchProps={{
+              workflowTree,
+              activeNodeId,
+              setActiveNodeId,
+              addWorkflowNode,
+              updateNodeSnapshot,
+              resetDownstreamSessions,
+              onNavigate: handleNavigate,
+            }}
+            verificationProps={{
+              verifications,
+              onDeleteVerification: handleDeleteVerification,
+              onDuplicateVerification: handleDuplicateVerification,
+              onUpdateVerification: handleUpdateVerification,
+              onCreateWithQuery: handleCreateWithQuery,
+              onCreateWithMethod: handleCreateWithMethod,
+            }}
+            autonomousResearchProps={{
+              sectionsMap: autonomousSectionsMap,
+              activeSectionMap: autonomousActiveSectionMap,
+              onSelectSession: handleSelectAutonomousSession,
+              onCreateSection: handleCreateSection,
+              onUpdateSectionTitle: handleUpdateSectionTitle,
+              onRefreshSessions: handleRefreshSessions,
+              listViewKey: autonomousListViewKey,
+            }}
+          />
         </div>
       </div>
     </div>

@@ -11,8 +11,8 @@ from airas.infra.db.models.verification import VerificationModel
 from airas.infra.github_client import GithubClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.infra.litellm_client import LiteLLMClient
-from airas.usecases.assisted_research.generate_experiment_code_subgraph.generate_experiment_code_subgraph import (
-    GenerateExperimentCodeSubgraph,
+from airas.usecases.assisted_research.generate_verification_code_subgraph.generate_verification_code_subgraph import (
+    GenerateVerificationCodeSubgraph,
 )
 from airas.usecases.assisted_research.generate_verification_method_subgraph.generate_verification_method_subgraph import (
     GenerateVerificationMethodSubgraph,
@@ -24,14 +24,15 @@ from airas.usecases.verification.verification_service import VerificationService
 from api.ee.auth.dependencies import (
     get_current_user_id,
     get_github_client,
+    get_github_owner,
     get_litellm_client,
 )
 from api.schemas.verification import (
     ExperimentCodeStatusResponseBody,
-    GenerateExperimentCodeRequestBody,
-    GenerateExperimentCodeResponseBody,
     GenerateMethodRequestBody,
     GenerateMethodResponseBody,
+    GenerateVerificationCodeRequestBody,
+    GenerateVerificationCodeResponseBody,
     ProposedMethodSchema,
     ProposePoliciesRequestBody,
     ProposePoliciesResponseBody,
@@ -273,13 +274,12 @@ async def generate_method(
     )
 
 
-@router.post(
-    "/generate-experiment-code", response_model=GenerateExperimentCodeResponseBody
-)
+@router.post("/generate-code", response_model=GenerateVerificationCodeResponseBody)
 @inject
 @observe(capture_input=False)
-async def generate_experiment_code(
-    request: GenerateExperimentCodeRequestBody,
+async def generate_verification_code(
+    request: GenerateVerificationCodeRequestBody,
+    github_owner: Annotated[str, Depends(get_github_owner)],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
@@ -288,18 +288,18 @@ async def generate_experiment_code(
         VerificationService,
         Depends(Closing[Provide[Container.verification_service]]),
     ],
-) -> GenerateExperimentCodeResponseBody:
+) -> GenerateVerificationCodeResponseBody:
     handler = langfuse_client.create_handler()
     config = {"callbacks": [handler]} if handler else {}
 
     github_config = GitHubConfig(
-        github_owner=request.github_owner,
-        repository_name=request.repository_name,
-        branch_name=request.branch_name,
+        github_owner=github_owner,
+        repository_name=request.github_config.repository_name,
+        branch_name=request.github_config.branch_name,
     )
 
     result = await (
-        GenerateExperimentCodeSubgraph(
+        GenerateVerificationCodeSubgraph(
             github_client=github_client, llm_mapping=request.llm_mapping
         )
         .build_graph()
@@ -310,7 +310,7 @@ async def generate_experiment_code(
                 "experiment_settings": request.experiment_settings,
                 "steps": request.steps,
                 "modification_notes": request.modification_notes,
-                "repository_name": request.repository_name,
+                "repository_name": request.github_config.repository_name,
                 "github_config": github_config,
                 "github_actions_agent": request.github_actions_agent,
             },
@@ -319,7 +319,7 @@ async def generate_experiment_code(
     )
 
     github_url = (
-        f"https://github.com/{request.github_owner}/{request.repository_name}"
+        f"https://github.com/{github_owner}/{request.github_config.repository_name}"
         if result.get("dispatched")
         else None
     )
@@ -327,8 +327,8 @@ async def generate_experiment_code(
     if request.verification_id is not None:
         update_kwargs: dict[str, object] = {
             "phase": "code-generated",
-            "repository_name": request.repository_name,
-            "github_owner": request.github_owner,
+            "repository_name": request.github_config.repository_name,
+            "github_owner": github_owner,
             "modification_notes": request.modification_notes,
         }
         if result.get("dispatched"):
@@ -337,7 +337,7 @@ async def generate_experiment_code(
             update_kwargs["code_generation_status"] = "pending"
         verification_service.update(request.verification_id, **update_kwargs)
 
-    return GenerateExperimentCodeResponseBody(
+    return GenerateVerificationCodeResponseBody(
         dispatched=result.get("dispatched", False),
         workflow_run_id=result.get("workflow_run_id"),
         github_url=github_url,
@@ -346,15 +346,15 @@ async def generate_experiment_code(
 
 
 @router.get(
-    "/experiment-code-status/{github_owner}/{repository_name}/{workflow_run_id}",
+    "/code-status/{repository_name}/{workflow_run_id}",
     response_model=ExperimentCodeStatusResponseBody,
 )
 @inject
 @observe()
-async def get_experiment_code_status(
-    github_owner: str,
+async def get_verification_code_status(
     repository_name: str,
     workflow_run_id: int,
+    github_owner: Annotated[str, Depends(get_github_owner)],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
 ) -> ExperimentCodeStatusResponseBody:
     result = await github_client.aget_workflow_run(
