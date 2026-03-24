@@ -100,13 +100,15 @@ export function useEE(): EEState {
 
         setState({ components, isAuthenticated: authenticated, planType, loading: false });
 
+        let authEventSeq = 0;
         const {
           data: { subscription },
         } = client.auth.onAuthStateChange(async (_event, session) => {
           if (!mounted) return;
+          const seq = ++authEventSeq;
           const authed = !!session;
           const plan = authed ? await fetchPlanType() : null;
-          if (mounted) {
+          if (mounted && seq === authEventSeq) {
             setState((prev) => ({ ...prev, isAuthenticated: authed, planType: plan }));
           }
         });

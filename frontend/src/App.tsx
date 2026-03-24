@@ -11,6 +11,12 @@ export default function App() {
 
   if (ee.loading) return null;
 
+  if (enterprise && !ee.components) {
+    throw new Error(
+      "ENTERPRISE_ENABLED is true but authentication could not be initialized. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
+    );
+  }
+
   const appLayout = <AppLayout ee={ee} />;
 
   return (

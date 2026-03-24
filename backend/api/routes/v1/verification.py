@@ -324,18 +324,17 @@ async def generate_verification_code(
         else None
     )
 
-    if request.verification_id is not None:
-        update_kwargs: dict[str, object] = {
-            "phase": "code-generated",
-            "repository_name": request.github_config.repository_name,
-            "github_owner": github_owner,
-            "modification_notes": request.modification_notes,
-        }
-        if result.get("dispatched"):
-            update_kwargs["github_url"] = github_url
-            update_kwargs["workflow_run_id"] = result.get("workflow_run_id")
-            update_kwargs["code_generation_status"] = "pending"
-        verification_service.update(request.verification_id, **update_kwargs)
+    if request.verification_id is not None and result.get("dispatched"):
+        verification_service.update(
+            request.verification_id,
+            phase="code-generating",
+            repository_name=request.github_config.repository_name,
+            github_owner=github_owner,
+            modification_notes=request.modification_notes,
+            github_url=github_url,
+            workflow_run_id=result.get("workflow_run_id"),
+            code_generation_status="pending",
+        )
 
     return GenerateVerificationCodeResponseBody(
         dispatched=result.get("dispatched", False),
