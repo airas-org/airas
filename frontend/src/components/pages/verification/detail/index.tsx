@@ -74,8 +74,6 @@ interface VerificationDetailPageProps {
   onCreateWithMethod?: (sourceVerification: Verification, method: ProposedMethod) => void;
 }
 
-const MAX_POLL_ATTEMPTS = 180;
-
 export function VerificationDetailPage({
   verification,
   onUpdateVerification,
@@ -103,15 +101,8 @@ export function VerificationDetailPage({
   const startPolling = useCallback(
     (workflowRunId: number, repositoryName: string, verificationId: string) => {
       stopPolling();
-      let attempts = 0;
 
       const poll = async () => {
-        if (attempts >= MAX_POLL_ATTEMPTS) {
-          stopPolling();
-          return;
-        }
-        attempts += 1;
-
         try {
           const data =
             await VerificationService.getVerificationCodeStatusAirasV1VerificationCodeStatusRepositoryNameWorkflowRunIdGet(

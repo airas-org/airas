@@ -14,8 +14,10 @@ interface MathMarkdownProps {
  */
 export function MathMarkdown({ children, className }: MathMarkdownProps) {
   return (
-    <ReactMarkdown className={className} remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-      {children}
-    </ReactMarkdown>
+    <div className={className}>
+      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+        {children}
+      </ReactMarkdown>
+    </div>
   );
 }

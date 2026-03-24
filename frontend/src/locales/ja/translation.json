@@ -184,10 +184,10 @@
         "repositoryName": "リポジトリ名"
       },
       "generatingPlan": "検証方法を生成中...",
-      "generatingCode": "実験コードを生成中...",
-      "codeGenerated": "実験コードが生成されました",
+      "generatingCode": "検証コードを生成中...",
+      "codeGenerated": "検証コードが生成されました",
       "experimentCode": {
-        "title": "実験コード"
+        "title": "検証コード"
       },
       "experimentSettings": {
         "title": "実験設定",
