@@ -11,7 +11,7 @@ import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driv
 import { NotificationsPage } from "@/components/pages/notifications";
 import { PapersPage } from "@/components/pages/papers";
 import { ReproductionPage } from "@/components/pages/reproduction";
-import { SETTINGS_TABS, SettingsPage, type SettingsTab } from "@/components/pages/settings";
+import { SettingsPage, type SettingsTab } from "@/components/pages/settings";
 import type { ProposedMethod, Verification } from "@/components/pages/verification";
 import { VerificationDetailPage, VerificationHomePage } from "@/components/pages/verification";
 import { ChatInput } from "@/components/pages/verification/detail/chat-input";
@@ -70,6 +70,7 @@ interface MainContentProps {
   assistedResearchProps: AssistedResearchProps;
   verificationProps: VerificationProps;
   autonomousResearchProps: AutonomousResearchProps;
+  settingsTabs: SettingsTab[];
 }
 
 function AutonomousResearchRoute({
@@ -127,6 +128,7 @@ export function MainContent({
   assistedResearchProps,
   verificationProps,
   autonomousResearchProps,
+  settingsTabs,
 }: MainContentProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -259,7 +261,7 @@ export function MainContent({
         />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/reproduction" element={<ReproductionPage />} />
-        <Route path="/settings/:tab" element={<SettingsRoute />} />
+        <Route path="/settings/:tab" element={<SettingsRoute settingsTabs={settingsTabs} />} />
         <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
@@ -267,10 +269,10 @@ export function MainContent({
   );
 }
 
-function SettingsRoute() {
+function SettingsRoute({ settingsTabs }: { settingsTabs: SettingsTab[] }) {
   const { tab } = useParams<{ tab?: string }>();
 
-  if (!tab || !SETTINGS_TABS.includes(tab as SettingsTab)) {
+  if (!tab || !settingsTabs.includes(tab as SettingsTab)) {
     return <Navigate to="/settings/profile" replace />;
   }
 

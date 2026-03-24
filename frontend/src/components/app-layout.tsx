@@ -22,6 +22,7 @@ import {
   type AutonomousSectionsMap,
   useAutonomousResearchSessions,
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
+import { getSettingsTabs } from "@/components/pages/settings";
 import { MainSidebar } from "@/components/sidebar/main-sidebar";
 import { isEnterpriseEnabled } from "@/ee/config";
 import type { EEState } from "@/hooks/use-ee-components";
@@ -185,6 +186,7 @@ export function AppLayout({ ee }: AppLayoutProps) {
             activeSection={activeSection}
             autonomousSubNav={autonomousSubNav}
             isAuthenticated={ee.isAuthenticated}
+            settingsTabs={getSettingsTabs(ee.planType)}
             onMobileNavClose={handleMobileNavClose}
             onAutonomousSubNavClick={() => setAutonomousListViewKey((k) => k + 1)}
           />
@@ -326,6 +328,7 @@ export function AppLayout({ ee }: AppLayoutProps) {
               onRefreshSessions: handleRefreshSessions,
               listViewKey: autonomousListViewKey,
             }}
+            settingsTabs={getSettingsTabs(ee.planType)}
           />
         </div>
       </div>

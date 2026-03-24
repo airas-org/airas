@@ -101,12 +101,7 @@ export function VerificationDetailPage({
   }, [stopPolling]);
 
   const startPolling = useCallback(
-    (
-      workflowRunId: number,
-      githubOwner: string,
-      repositoryName: string,
-      verificationId: string,
-    ) => {
+    (workflowRunId: number, repositoryName: string, verificationId: string) => {
       stopPolling();
       let attempts = 0;
 
@@ -119,8 +114,7 @@ export function VerificationDetailPage({
 
         try {
           const data =
-            await VerificationService.getVerificationCodeStatusAirasV1VerificationCodeStatusGithubOwnerRepositoryNameWorkflowRunIdGet(
-              githubOwner,
+            await VerificationService.getVerificationCodeStatusAirasV1VerificationCodeStatusRepositoryNameWorkflowRunIdGet(
               repositoryName,
               workflowRunId,
             );
@@ -145,6 +139,23 @@ export function VerificationDetailPage({
     },
     [onUpdateVerification, stopPolling],
   );
+
+  // Resume polling when returning to a verification that is still generating
+  useEffect(() => {
+    if (
+      verification?.phase === "code-generating" &&
+      verification.workflowRunId &&
+      verification.repositoryName
+    ) {
+      startPolling(verification.workflowRunId, verification.repositoryName, verification.id);
+    }
+  }, [
+    verification?.id,
+    verification?.phase,
+    verification?.workflowRunId,
+    verification?.repositoryName,
+    startPolling,
+  ]);
 
   const handleChatSubmit = useCallback(
     async (query: string) => {
@@ -247,8 +258,6 @@ export function VerificationDetailPage({
       });
 
       try {
-        const githubOwner = "airas-org";
-
         const data =
           await VerificationService.generateVerificationCodeAirasV1VerificationGenerateCodePost({
             user_query: verification.query,
@@ -256,9 +265,10 @@ export function VerificationDetailPage({
             experiment_settings: updatedMethod.experimentSettings,
             steps: updatedMethod.steps,
             modification_notes: modificationNotes,
-            repository_name: repositoryName,
-            github_owner: githubOwner,
-            branch_name: "main",
+            github_config: {
+              repository_name: repositoryName,
+              branch_name: "main",
+            },
             github_actions_agent:
               GenerateVerificationCodeRequestBody.github_actions_agent.CLAUDE_CODE,
             verification_id: verification.id,
@@ -270,7 +280,7 @@ export function VerificationDetailPage({
         });
 
         if (data.workflow_run_id) {
-          startPolling(data.workflow_run_id, githubOwner, repositoryName, verification.id);
+          startPolling(data.workflow_run_id, repositoryName, verification.id);
         } else {
           onUpdateVerification(verification.id, { phase: "code-generated" });
         }

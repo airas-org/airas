@@ -2,7 +2,7 @@ import axios from "axios";
 import type { ComponentType } from "react";
 import { useEffect, useState } from "react";
 import { isEnterpriseEnabled } from "@/ee/config";
-import { OpenAPI } from "@/lib/api";
+import { EePlanService, OpenAPI } from "@/lib/api";
 
 type EEComponents = {
   AuthCallback: ComponentType;
@@ -10,22 +10,35 @@ type EEComponents = {
   LoginPage: ComponentType;
 };
 
+export type PlanType = "free" | "pro";
+
 export interface EEState {
   components: EEComponents | null;
   isAuthenticated: boolean;
+  planType: PlanType | null;
   loading: boolean;
 }
 
 const NON_EE_STATE: EEState = {
   components: null,
   isAuthenticated: false,
+  planType: null,
   loading: false,
 };
+
+async function fetchPlanType(): Promise<PlanType> {
+  try {
+    const data = await EePlanService.getPlanAirasEePlanGet();
+    return data.plan_type === "pro" ? "pro" : "free";
+  } catch {
+    return "free";
+  }
+}
 
 export function useEE(): EEState {
   const [state, setState] = useState<EEState>(
     isEnterpriseEnabled()
-      ? { components: null, isAuthenticated: false, loading: true }
+      ? { components: null, isAuthenticated: false, planType: null, loading: true }
       : NON_EE_STATE,
   );
 
@@ -80,13 +93,21 @@ export function useEE(): EEState {
 
         if (!mounted) return;
 
-        setState({ components, isAuthenticated: !!session, loading: false });
+        const authenticated = !!session;
+        const planType = authenticated ? await fetchPlanType() : null;
+
+        if (!mounted) return;
+
+        setState({ components, isAuthenticated: authenticated, planType, loading: false });
 
         const {
           data: { subscription },
-        } = client.auth.onAuthStateChange((_event, session) => {
+        } = client.auth.onAuthStateChange(async (_event, session) => {
+          if (!mounted) return;
+          const authed = !!session;
+          const plan = authed ? await fetchPlanType() : null;
           if (mounted) {
-            setState((prev) => ({ ...prev, isAuthenticated: !!session }));
+            setState((prev) => ({ ...prev, isAuthenticated: authed, planType: plan }));
           }
         });
         authSubscription = subscription;
