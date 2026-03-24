@@ -23,7 +23,7 @@ import {
   useAutonomousResearchSessions,
 } from "@/components/pages/autonomous-research/use-autonomous-research-sessions";
 import { MainSidebar } from "@/components/sidebar/main-sidebar";
-import { isSelfHosted } from "@/ee/config";
+import { isEnterpriseEnabled } from "@/ee/config";
 import type { EEState } from "@/hooks/use-ee-components";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useVerifications } from "@/hooks/use-verifications";
@@ -66,7 +66,7 @@ export function AppLayout({ ee }: AppLayoutProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const selfHosted = isSelfHosted();
+  const enterprise = isEnterpriseEnabled();
 
   const activeSection = getActiveSection(location.pathname);
   const autonomousSubNav = getAutonomousSubNav(location.pathname);
@@ -287,7 +287,7 @@ export function AppLayout({ ee }: AppLayoutProps) {
               {!ee.loading &&
                 (ee.isAuthenticated && ee.components ? (
                   <ee.components.UserMenu />
-                ) : !selfHosted && ee.components ? (
+                ) : enterprise && ee.components ? (
                   <IconButton
                     variant="neutral-secondary"
                     icon={<FeatherUser />}

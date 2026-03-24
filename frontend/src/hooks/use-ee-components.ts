@@ -1,6 +1,7 @@
 import axios from "axios";
 import type { ComponentType } from "react";
 import { useEffect, useState } from "react";
+import { isEnterpriseEnabled } from "@/ee/config";
 import { OpenAPI } from "@/lib/api";
 
 type EEComponents = {
@@ -15,14 +16,22 @@ export interface EEState {
   loading: boolean;
 }
 
+const NON_EE_STATE: EEState = {
+  components: null,
+  isAuthenticated: false,
+  loading: false,
+};
+
 export function useEE(): EEState {
-  const [state, setState] = useState<EEState>({
-    components: null,
-    isAuthenticated: false,
-    loading: true,
-  });
+  const [state, setState] = useState<EEState>(
+    isEnterpriseEnabled()
+      ? { components: null, isAuthenticated: false, loading: true }
+      : NON_EE_STATE,
+  );
 
   useEffect(() => {
+    if (!isEnterpriseEnabled()) return;
+
     let mounted = true;
     let interceptorId: number | null = null;
     let authSubscription: { unsubscribe: () => void } | null = null;
@@ -47,8 +56,10 @@ export function useEE(): EEState {
 
         const client = supabaseMod.getSupabase();
         if (!client) {
-          // Supabase not configured (self-hosted): hide auth UI
-          setState({ components: null, isAuthenticated: false, loading: false });
+          console.error(
+            "ENTERPRISE_ENABLED is true but VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY are not set",
+          );
+          setState(NON_EE_STATE);
           return;
         }
 
@@ -59,7 +70,6 @@ export function useEE(): EEState {
         const {
           data: { session },
         } = await client.auth.getSession().catch((e: unknown) => {
-          // Rollback interceptor/token on session fetch failure
           if (interceptorId !== null) {
             axios.interceptors.request.eject(interceptorId);
             interceptorId = null;
