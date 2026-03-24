@@ -20,6 +20,9 @@ from airas.usecases.assisted_research.generate_verification_method_subgraph.gene
 from airas.usecases.assisted_research.propose_verification_policy_subgraph.propose_verification_policy_subgraph import (
     ProposeVerificationPolicySubgraph,
 )
+from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgraph import (
+    PrepareRepositorySubgraph,
+)
 from airas.usecases.verification.verification_service import VerificationService
 from api.ee.auth.dependencies import (
     get_current_user_id,
@@ -297,6 +300,17 @@ async def generate_verification_code(
         repository_name=request.github_config.repository_name,
         branch_name=request.github_config.branch_name,
     )
+
+    prepare_result = await (
+        PrepareRepositorySubgraph(github_client=github_client)
+        .build_graph()
+        .ainvoke({"github_config": github_config}, config=config)
+    )
+    if not prepare_result.get("is_repository_ready"):
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to prepare repository.",
+        )
 
     result = await (
         GenerateVerificationCodeSubgraph(
