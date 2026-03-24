@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MathMarkdown } from "@/components/shared/math-markdown";
 import type { VerificationMethod } from "../types";
 
 interface VerificationPlanViewProps {
@@ -54,7 +55,9 @@ export function VerificationPlanView({
           <p className="text-sm font-medium text-foreground">
             {t("verification.detail.verificationPlan.whatToVerify")}
           </p>
-          <p className="text-sm text-muted-foreground mt-1">{verificationMethod.whatToVerify}</p>
+          <MathMarkdown className="text-sm text-muted-foreground mt-1 [&>p]:m-0">
+            {verificationMethod.whatToVerify}
+          </MathMarkdown>
         </div>
 
         <div>
@@ -64,7 +67,7 @@ export function VerificationPlanView({
           <ol className="mt-2 space-y-1.5 list-decimal list-inside">
             {verificationMethod.steps.map((step) => (
               <li key={step} className="text-sm text-muted-foreground">
-                {step}
+                <MathMarkdown className="inline [&>p]:inline [&>p]:m-0">{step}</MathMarkdown>
               </li>
             ))}
           </ol>
@@ -102,7 +105,7 @@ export function VerificationPlanView({
                           className="w-full rounded border border-neutral-300 px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-brand-500"
                         />
                       ) : (
-                        description
+                        <MathMarkdown className="[&>p]:m-0">{description}</MathMarkdown>
                       )}
                     </td>
                   </tr>

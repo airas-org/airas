@@ -1,6 +1,7 @@
 import { FeatherChevronDown, FeatherChevronRight } from "@subframe/core";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MathMarkdown } from "@/components/shared/math-markdown";
 import { Loader, Table } from "@/ui";
 import type { ExperimentSetting } from "../types";
 
@@ -16,7 +17,9 @@ export function ExperimentCard({ experiment, onRun }: ExperimentCardProps) {
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <h3 className="text-sm font-semibold text-foreground">{experiment.title}</h3>
-      <p className="text-xs text-muted-foreground mt-1">{experiment.description}</p>
+      <MathMarkdown className="text-xs text-muted-foreground mt-1 [&>p]:m-0">
+        {experiment.description}
+      </MathMarkdown>
       <div className="mt-2 space-y-1">
         {experiment.parameters.map((param) => (
           <div key={param.name} className="text-xs">
@@ -57,7 +60,9 @@ export function ExperimentCard({ experiment, onRun }: ExperimentCardProps) {
             </button>
             {resultExpanded && (
               <div className="mt-2 space-y-3">
-                <p className="text-xs text-muted-foreground">{experiment.result.summary}</p>
+                <MathMarkdown className="text-xs text-muted-foreground [&>p]:m-0">
+                  {experiment.result.summary}
+                </MathMarkdown>
                 <Table
                   header={
                     <Table.HeaderRow>
@@ -73,7 +78,9 @@ export function ExperimentCard({ experiment, onRun }: ExperimentCardProps) {
                     </Table.Row>
                   ))}
                 </Table>
-                <p className="text-xs text-muted-foreground">{experiment.result.details}</p>
+                <MathMarkdown className="text-xs text-muted-foreground [&>p]:m-0">
+                  {experiment.result.details}
+                </MathMarkdown>
               </div>
             )}
           </div>
