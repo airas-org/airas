@@ -7,7 +7,7 @@ on:
       - main
 
 env:
-  RAILWAY_API_URL: https://backboard.railway.app/graphql/v2
+  RAILWAY_API_URL: https://backboard.railway.com/graphql/v2
   VERCEL_API_URL: https://api.vercel.com
 
 jobs:
@@ -116,6 +116,7 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
           RAILWAY_DOMAIN: ${{ steps.railway.outputs.domain }}
           BRANCH: ${{ github.head_ref }}
           DEVELOP_PUBLIC_URL: ${{ secrets.DEVELOP_PUBLIC_URL }}
@@ -128,7 +129,7 @@ jobs:
 
             # Delete existing branch-scoped env var if present
             LIST_RESPONSE=$(curl -s -o /tmp/vercel_list.json -w "%{http_code}" \
-              "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env" \
+              "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env?teamId=$VERCEL_TEAM_ID" \
               -H "Authorization: Bearer $VERCEL_TOKEN")
             if [ "$LIST_RESPONSE" != "200" ]; then
               echo "::error::Vercel list env vars returned HTTP $LIST_RESPONSE"
@@ -141,7 +142,7 @@ jobs:
 
             if [ -n "$EXISTING_ID" ]; then
               DEL_CODE=$(curl -s -o /tmp/vercel_del.json -w "%{http_code}" \
-                -X DELETE "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env/$EXISTING_ID" \
+                -X DELETE "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env/$EXISTING_ID?teamId=$VERCEL_TEAM_ID" \
                 -H "Authorization: Bearer $VERCEL_TOKEN")
               if [ "$DEL_CODE" != "200" ]; then
                 echo "::warning::Vercel delete env var returned HTTP $DEL_CODE"
@@ -159,7 +160,7 @@ jobs:
               '{key: $key, value: $value, type: "plain", target: ["preview"], gitBranch: $branch}')
 
             CREATE_CODE=$(curl -s -o /tmp/vercel_create.json -w "%{http_code}" \
-              -X POST "$VERCEL_API_URL/v10/projects/$VERCEL_PROJECT_ID/env" \
+              -X POST "$VERCEL_API_URL/v10/projects/$VERCEL_PROJECT_ID/env?teamId=$VERCEL_TEAM_ID" \
               -H "Authorization: Bearer $VERCEL_TOKEN" \
               -H "Content-Type: application/json" \
               -d "$PAYLOAD")
@@ -181,6 +182,7 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
           BRANCH: ${{ github.head_ref }}
           REPO_ID: ${{ github.event.repository.id }}
         run: |
@@ -194,7 +196,7 @@ jobs:
             '{name: "airas", project: $project, gitSource: {type: "github", ref: $ref, repoId: $repoId}, target: "preview"}')
 
           DEPLOY_CODE=$(curl -s -o /tmp/vercel_deploy.json -w "%{http_code}" \
-            -X POST "$VERCEL_API_URL/v13/deployments" \
+            -X POST "$VERCEL_API_URL/v13/deployments?teamId=$VERCEL_TEAM_ID" \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD")
@@ -265,6 +267,7 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
           BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
@@ -272,7 +275,7 @@ jobs:
           delete_vercel_env() {
             local key="$1"
             LIST_CODE=$(curl -s -o /tmp/vercel_list.json -w "%{http_code}" \
-              "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env" \
+              "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env?teamId=$VERCEL_TEAM_ID" \
               -H "Authorization: Bearer $VERCEL_TOKEN")
             if [ "$LIST_CODE" != "200" ]; then
               echo "::warning::Vercel list env vars returned HTTP $LIST_CODE"
@@ -285,7 +288,7 @@ jobs:
 
             if [ -n "$EXISTING_ID" ]; then
               DEL_CODE=$(curl -s -o /tmp/vercel_del.json -w "%{http_code}" \
-                -X DELETE "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env/$EXISTING_ID" \
+                -X DELETE "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env/$EXISTING_ID?teamId=$VERCEL_TEAM_ID" \
                 -H "Authorization: Bearer $VERCEL_TOKEN")
               if [ "$DEL_CODE" != "200" ]; then
                 echo "::warning::Vercel delete returned HTTP $DEL_CODE"
