@@ -236,6 +236,7 @@ jobs:
           fi
 
       - name: Comment PR with preview URLs
+        continue-on-error: true
         uses: actions/github-script@v7
         env:
           RAILWAY_DOMAIN: ${{ steps.railway.outputs.domain }}
