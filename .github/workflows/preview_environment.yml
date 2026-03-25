@@ -55,12 +55,10 @@ jobs:
             fi
             RESPONSE=$(cat /tmp/railway_response.json)
 
-            # Debug: show response structure on first attempt
+            # Debug: show full response on first attempt
             if [ "$i" -eq 1 ]; then
-              echo "Raw response (truncated):"
-              echo "$RESPONSE" | jq '{data_keys: (.data | keys?), env_count: (.data.project.environments.edges? | length), errors: .errors}' 2>/dev/null || echo "$RESPONSE" | head -c 500
-              echo "Available environments:"
-              echo "$RESPONSE" | jq -r '.data.project.environments.edges[]? | .node.name // "unnamed"'
+              echo "Full Railway API response:"
+              echo "$RESPONSE" | jq . 2>/dev/null || echo "$RESPONSE"
             fi
 
             # Extract environment matching this PR (name ends with -$PR_NUMBER)
