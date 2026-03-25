@@ -43,7 +43,7 @@ jobs:
           ENV_ID=""
           for i in $(seq 1 90); do
             HTTP_CODE=$(railway_gql \
-              'query($projectId: String!) { project(id: $projectId) { environments { edges { node { id name deployments(first: 1) { edges { node { status } } } serviceInstances { edges { node { serviceId } } } } } } } }' \
+              'query($projectId: String!) { project(id: $projectId) { environments { edges { node { id name deployments(first: 1) { edges { node { status } } } } } } } }' \
               "{\"projectId\": \"$RAILWAY_PROJECT_ID\"}")
 
             if [ "$HTTP_CODE" != "200" ]; then
@@ -54,22 +54,29 @@ jobs:
             fi
             RESPONSE=$(cat /tmp/railway_response.json)
 
-            ENV_ID=$(echo "$RESPONSE" | jq -r --arg branch "$BRANCH" '
-              [.data.project.environments.edges[]
-              | select(.node.name == $branch)] | first
-              | .node.id // empty')
+            # Debug: show available environment names on first attempt
+            if [ "$i" -eq 1 ]; then
+              echo "Available environments:"
+              echo "$RESPONSE" | jq -r '.data.project.environments.edges[]? | .node.name // "unnamed"'
+            fi
 
-            DEPLOY_COUNT=$(echo "$RESPONSE" | jq -r --arg branch "$BRANCH" '
-              [.data.project.environments.edges[]
-              | select(.node.name == $branch)] | first
-              | .node.deployments.edges | length // 0')
+            # Extract environment matching this branch (null-safe)
+            ENV_NODE=$(echo "$RESPONSE" | jq --arg branch "$BRANCH" '
+              [.data.project.environments.edges[]?
+              | select(.node.name == $branch)] | first // null')
 
-            ENV_STATUS=$(echo "$RESPONSE" | jq -r --arg branch "$BRANCH" '
-              [.data.project.environments.edges[]
-              | select(.node.name == $branch)] | first
-              | (if (.node.deployments.edges | length) > 0
-                 then .node.deployments.edges[0].node.status
-                 else "NO_DEPLOYMENTS" end)')
+            if [ "$ENV_NODE" = "null" ] || [ -z "$ENV_NODE" ]; then
+              echo "Attempt $i/90: environment not found for branch '$BRANCH'"
+              sleep 10
+              continue
+            fi
+
+            ENV_ID=$(echo "$ENV_NODE" | jq -r '.node.id // empty')
+            DEPLOY_COUNT=$(echo "$ENV_NODE" | jq -r '.node.deployments.edges | length')
+            ENV_STATUS=$(echo "$ENV_NODE" | jq -r '
+              if (.node.deployments.edges | length) > 0
+              then .node.deployments.edges[0].node.status
+              else "NO_DEPLOYMENTS" end')
 
             if [ -n "$ENV_ID" ] && [ "$ENV_STATUS" = "SUCCESS" ]; then
               echo "Railway PR environment deployed (envId=$ENV_ID, attempt $i)"
