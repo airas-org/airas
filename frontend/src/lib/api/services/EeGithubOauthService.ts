@@ -121,16 +121,16 @@ export class EeGithubOauthService {
      *
      * This endpoint runs on the production/develop backend (the fixed callback URL
      * registered with the GitHub App).  It exchanges the code for credentials,
-     * wraps them in a short-lived JWT, and 302-redirects to the preview frontend.
+     * wraps them in an encrypted token, and 302-redirects to the preview frontend.
      * @param code
      * @param state
-     * @returns any Successful Response
+     * @returns void
      * @throws ApiError
      */
     public static proxyCallbackAirasEeGithubProxyCallbackGet(
         code: string,
         state: string,
-    ): CancelablePromise<any> {
+    ): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/airas/ee/github/proxy-callback',
@@ -139,6 +139,7 @@ export class EeGithubOauthService {
                 'state': state,
             },
             errors: {
+                302: `Redirect to preview frontend with encrypted proxy token`,
                 422: `Validation Error`,
             },
         });
@@ -147,9 +148,10 @@ export class EeGithubOauthService {
      * Proxy Complete
      * Complete the OAuth Proxy flow on the preview backend.
      *
-     * The preview frontend sends the proxy JWT it received via redirect.
-     * This endpoint validates the JWT, creates a local session, and stores
-     * the GitHub token in this environment's own database.
+     * The preview frontend sends the encrypted proxy token it received via
+     * redirect.  This endpoint decrypts and validates the token, creates a
+     * local session, and stores the GitHub token in this environment's own
+     * database.
      * @param requestBody
      * @returns GitHubCallbackResponse Successful Response
      * @throws ApiError

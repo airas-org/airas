@@ -8,16 +8,17 @@ Service-specific classes (GitHub, Slack, Discord ...) hold an instance of
 this class via composition and delegate proxy operations to it.
 """
 
-import base64
+import hashlib
+import hmac
 import json
 import logging
 import os
 import re
 import secrets
-from datetime import datetime, timedelta, timezone
+import time
 from typing import Any
 
-import jwt
+from cryptography.fernet import Fernet, InvalidToken
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,14 @@ class OAuthProxyService:
         if not (val := os.getenv("OAUTH_PROXY_SHARED_SECRET", "")):
             raise RuntimeError("OAUTH_PROXY_SHARED_SECRET is not configured")
         return val
+
+    def _get_fernet(self) -> Fernet:
+        """Derive a Fernet key from the shared secret."""
+        key_bytes = hashlib.sha256(self._get_proxy_secret().encode()).digest()
+        import base64
+
+        fernet_key = base64.urlsafe_b64encode(key_bytes)
+        return Fernet(fernet_key)
 
     def get_develop_public_url(self) -> str:
         if not (val := os.getenv("DEVELOP_PUBLIC_URL", "")):
@@ -46,33 +55,69 @@ class OAuthProxyService:
         if not re.fullmatch(pattern, origin):
             raise ValueError(f"Origin not allowed: {origin}")
 
+    # ---- state helpers (HMAC-signed) ----
+
     def encode_state(self, origin: str) -> str:
+        """Create an HMAC-signed state value that embeds the preview origin."""
         self.validate_origin(origin)
         nonce = secrets.token_urlsafe(32)
         payload = json.dumps({"nonce": nonce, "origin": origin})
-        return base64.urlsafe_b64encode(payload.encode()).decode()
+        sig = hmac.new(
+            self._get_proxy_secret().encode(), payload.encode(), hashlib.sha256
+        ).hexdigest()
+        combined = json.dumps({"payload": payload, "sig": sig})
+        import base64
+
+        return base64.urlsafe_b64encode(combined.encode()).decode()
 
     def decode_state(self, state: str) -> str:
+        """Decode and verify an HMAC-signed state, returning the origin.
+
+        Also re-validates the origin against the allowlist to prevent
+        open redirects from tampered state values.
+        """
+        import base64
+
         try:
             raw = base64.urlsafe_b64decode(state.encode())
-            data = json.loads(raw)
-            return data["origin"]
+            combined = json.loads(raw)
+            payload = combined["payload"]
+            sig = combined["sig"]
         except Exception as exc:
             raise ValueError(f"Invalid state parameter: {exc}") from exc
 
+        expected_sig = hmac.new(
+            self._get_proxy_secret().encode(), payload.encode(), hashlib.sha256
+        ).hexdigest()
+        if not hmac.compare_digest(sig, expected_sig):
+            raise ValueError("State signature verification failed")
+
+        data = json.loads(payload)
+        origin = data["origin"]
+        self.validate_origin(origin)
+        return origin
+
+    # ---- proxy token (Fernet-encrypted) ----
+
     def create_proxy_token(self, claims: dict[str, Any], ttl_minutes: int = 5) -> str:
-        now = datetime.now(timezone.utc)
-        payload = {
-            **claims,
-            "iat": now,
-            "exp": now + timedelta(minutes=ttl_minutes),
-        }
-        return jwt.encode(payload, self._get_proxy_secret(), algorithm="HS256")
+        """Encrypt claims into an opaque, time-limited token.
+
+        Uses Fernet symmetric encryption so that sensitive data (e.g.
+        access_token) is not visible in the URL query string.
+        """
+        claims["_exp"] = int(time.time()) + ttl_minutes * 60
+        plaintext = json.dumps(claims).encode()
+        return self._get_fernet().encrypt(plaintext).decode()
 
     def validate_proxy_token(self, token: str) -> dict[str, Any]:
+        """Decrypt and validate a proxy token, returning its claims."""
         try:
-            return jwt.decode(token, self._get_proxy_secret(), algorithms=["HS256"])
-        except jwt.ExpiredSignatureError as exc:
-            raise ValueError("Proxy token has expired") from exc
-        except jwt.InvalidTokenError as exc:
-            raise ValueError(f"Invalid proxy token: {exc}") from exc
+            plaintext = self._get_fernet().decrypt(token.encode())
+        except InvalidToken as exc:
+            raise ValueError("Invalid or expired proxy token") from exc
+
+        claims = json.loads(plaintext)
+        if time.time() > claims.get("_exp", 0):
+            raise ValueError("Proxy token has expired")
+        claims.pop("_exp", None)
+        return claims

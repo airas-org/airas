@@ -317,6 +317,8 @@ export function GitHubOAuthCallbackRoute() {
   const proxyToken = params.get("proxy_token");
 
   if (proxyToken) {
+    // Remove proxy_token from URL to prevent leakage via browser history / Referer
+    window.history.replaceState(null, "", location.pathname);
     return <GitHubOAuthCallback proxyToken={proxyToken} />;
   }
 

@@ -12,7 +12,9 @@ env:
 
 jobs:
   setup-preview:
-    if: github.event.action == 'opened' || github.event.action == 'reopened'
+    if: |
+      (github.event.action == 'opened' || github.event.action == 'reopened')
+      && github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
     steps:
       - name: Wait for Railway PR environment
@@ -26,13 +28,20 @@ jobs:
           echo "Waiting for Railway PR environment (branch: $BRANCH)..."
 
           for i in $(seq 1 90); do
-            RESPONSE=$(curl -sf -X POST "$RAILWAY_API_URL" \
+            HTTP_CODE=$(curl -s -o /tmp/railway_response.json -w "%{http_code}" -X POST "$RAILWAY_API_URL" \
               -H "Authorization: Bearer $RAILWAY_API_TOKEN" \
               -H "Content-Type: application/json" \
               -d '{
                 "query": "query($projectId: String!) { project(id: $projectId) { environments { edges { node { id name deployments(first: 1) { edges { node { status } } } domains { serviceDomains { domain } } } } } } }",
                 "variables": { "projectId": "'"$RAILWAY_PROJECT_ID"'" }
-              }') || { echo "::warning::Railway API request failed (attempt $i)"; sleep 10; continue; }
+              }')
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "::warning::Railway API returned HTTP $HTTP_CODE (attempt $i)"
+              cat /tmp/railway_response.json 2>/dev/null || true
+              sleep 10
+              continue
+            fi
+            RESPONSE=$(cat /tmp/railway_response.json)
 
             ENV_DOMAIN=$(echo "$RESPONSE" | jq -r --arg branch "$BRANCH" '
               [.data.project.environments.edges[]
@@ -79,28 +88,47 @@ jobs:
             local value="$2"
 
             # Delete existing branch-scoped env var if present
-            EXISTING_ID=$(curl -sf "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env" \
-              -H "Authorization: Bearer $VERCEL_TOKEN" \
-              | jq -r --arg key "$key" --arg branch "$BRANCH" \
-                '[.envs[] | select(.key == $key and .gitBranch == $branch)] | first | .id // empty')
+            LIST_RESPONSE=$(curl -s -o /tmp/vercel_list.json -w "%{http_code}" \
+              "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env" \
+              -H "Authorization: Bearer $VERCEL_TOKEN")
+            if [ "$LIST_RESPONSE" != "200" ]; then
+              echo "::error::Vercel list env vars returned HTTP $LIST_RESPONSE"
+              cat /tmp/vercel_list.json 2>/dev/null || true
+              return 1
+            fi
+            EXISTING_ID=$(jq -r --arg key "$key" --arg branch "$BRANCH" \
+              '[.envs[] | select(.key == $key and .gitBranch == $branch)] | first | .id // empty' \
+              /tmp/vercel_list.json)
 
             if [ -n "$EXISTING_ID" ]; then
-              curl -sf -X DELETE "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env/$EXISTING_ID" \
-                -H "Authorization: Bearer $VERCEL_TOKEN" > /dev/null
-              echo "Deleted existing $key for branch $BRANCH"
+              DEL_CODE=$(curl -s -o /tmp/vercel_del.json -w "%{http_code}" \
+                -X DELETE "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env/$EXISTING_ID" \
+                -H "Authorization: Bearer $VERCEL_TOKEN")
+              if [ "$DEL_CODE" != "200" ]; then
+                echo "::warning::Vercel delete env var returned HTTP $DEL_CODE"
+                cat /tmp/vercel_del.json 2>/dev/null || true
+              else
+                echo "Deleted existing $key for branch $BRANCH"
+              fi
             fi
 
-            # Create new branch-scoped env var
-            curl -sf -X POST "$VERCEL_API_URL/v10/projects/$VERCEL_PROJECT_ID/env" \
+            # Create new branch-scoped env var (use jq for safe JSON escaping)
+            PAYLOAD=$(jq -n \
+              --arg key "$key" \
+              --arg value "$value" \
+              --arg branch "$BRANCH" \
+              '{key: $key, value: $value, type: "plain", target: ["preview"], gitBranch: $branch}')
+
+            CREATE_CODE=$(curl -s -o /tmp/vercel_create.json -w "%{http_code}" \
+              -X POST "$VERCEL_API_URL/v10/projects/$VERCEL_PROJECT_ID/env" \
               -H "Authorization: Bearer $VERCEL_TOKEN" \
               -H "Content-Type: application/json" \
-              -d '{
-                "key": "'"$key"'",
-                "value": "'"$value"'",
-                "type": "plain",
-                "target": ["preview"],
-                "gitBranch": "'"$BRANCH"'"
-              }' > /dev/null
+              -d "$PAYLOAD")
+            if [ "$CREATE_CODE" != "200" ] && [ "$CREATE_CODE" != "201" ]; then
+              echo "::error::Vercel create env var returned HTTP $CREATE_CODE"
+              cat /tmp/vercel_create.json 2>/dev/null || true
+              return 1
+            fi
             echo "Set $key for branch $BRANCH"
           }
 
@@ -120,27 +148,31 @@ jobs:
           set -euo pipefail
 
           # Trigger a new deployment so VITE_* vars are embedded in the build
-          DEPLOY_RESPONSE=$(curl -sf -X POST "$VERCEL_API_URL/v13/deployments" \
+          PAYLOAD=$(jq -n \
+            --arg project "$VERCEL_PROJECT_ID" \
+            --arg ref "$BRANCH" \
+            --arg repoId "$REPO_ID" \
+            '{name: "airas", project: $project, gitSource: {type: "github", ref: $ref, repoId: $repoId}, target: "preview"}')
+
+          DEPLOY_CODE=$(curl -s -o /tmp/vercel_deploy.json -w "%{http_code}" \
+            -X POST "$VERCEL_API_URL/v13/deployments" \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
             -H "Content-Type: application/json" \
-            -d '{
-              "name": "airas",
-              "project": "'"$VERCEL_PROJECT_ID"'",
-              "gitSource": {
-                "type": "github",
-                "ref": "'"$BRANCH"'",
-                "repoId": "'"$REPO_ID"'"
-              },
-              "target": "preview"
-            }')
+            -d "$PAYLOAD")
 
-          DEPLOY_URL=$(echo "$DEPLOY_RESPONSE" | jq -r '.url // empty')
+          if [ "$DEPLOY_CODE" != "200" ] && [ "$DEPLOY_CODE" != "201" ]; then
+            echo "::error::Vercel deploy returned HTTP $DEPLOY_CODE"
+            cat /tmp/vercel_deploy.json 2>/dev/null || true
+            exit 1
+          fi
+
+          DEPLOY_URL=$(jq -r '.url // empty' /tmp/vercel_deploy.json)
           if [ -n "$DEPLOY_URL" ]; then
             echo "Vercel redeploy triggered: https://$DEPLOY_URL"
             echo "url=https://$DEPLOY_URL" >> "$GITHUB_OUTPUT"
           else
             echo "::warning::Vercel redeploy response did not contain a URL"
-            echo "$DEPLOY_RESPONSE" | jq .
+            jq . /tmp/vercel_deploy.json
           fi
 
       - name: Comment PR with preview URLs
@@ -187,7 +219,7 @@ jobs:
             }
 
   cleanup-preview:
-    if: github.event.action == 'closed'
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
     steps:
       - name: Remove Vercel environment variables
@@ -200,15 +232,28 @@ jobs:
 
           delete_vercel_env() {
             local key="$1"
-            EXISTING_ID=$(curl -sf "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env" \
-              -H "Authorization: Bearer $VERCEL_TOKEN" \
-              | jq -r --arg key "$key" --arg branch "$BRANCH" \
-                '[.envs[] | select(.key == $key and .gitBranch == $branch)] | first | .id // empty')
+            LIST_CODE=$(curl -s -o /tmp/vercel_list.json -w "%{http_code}" \
+              "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env" \
+              -H "Authorization: Bearer $VERCEL_TOKEN")
+            if [ "$LIST_CODE" != "200" ]; then
+              echo "::warning::Vercel list env vars returned HTTP $LIST_CODE"
+              cat /tmp/vercel_list.json 2>/dev/null || true
+              return 0
+            fi
+            EXISTING_ID=$(jq -r --arg key "$key" --arg branch "$BRANCH" \
+              '[.envs[] | select(.key == $key and .gitBranch == $branch)] | first | .id // empty' \
+              /tmp/vercel_list.json)
 
             if [ -n "$EXISTING_ID" ]; then
-              curl -sf -X DELETE "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env/$EXISTING_ID" \
-                -H "Authorization: Bearer $VERCEL_TOKEN" > /dev/null
-              echo "Deleted $key for branch $BRANCH"
+              DEL_CODE=$(curl -s -o /tmp/vercel_del.json -w "%{http_code}" \
+                -X DELETE "$VERCEL_API_URL/v9/projects/$VERCEL_PROJECT_ID/env/$EXISTING_ID" \
+                -H "Authorization: Bearer $VERCEL_TOKEN")
+              if [ "$DEL_CODE" != "200" ]; then
+                echo "::warning::Vercel delete returned HTTP $DEL_CODE"
+                cat /tmp/vercel_del.json 2>/dev/null || true
+              else
+                echo "Deleted $key for branch $BRANCH"
+              fi
             fi
           }
 

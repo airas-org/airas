@@ -2061,7 +2061,7 @@ paths:
 
         registered with the GitHub App).  It exchanges the code for credentials,
 
-        wraps them in a short-lived JWT, and 302-redirects to the preview frontend.'
+        wraps them in an encrypted token, and 302-redirects to the preview frontend.'
       operationId: proxy_callback_airas_ee_github_proxy_callback_get
       parameters:
       - name: code
@@ -2077,8 +2077,8 @@ paths:
           type: string
           title: State
       responses:
-        '200':
-          description: Successful Response
+        '302':
+          description: Redirect to preview frontend with encrypted proxy token
           content:
             application/json:
               schema: {}
@@ -2096,11 +2096,13 @@ paths:
       description: 'Complete the OAuth Proxy flow on the preview backend.
 
 
-        The preview frontend sends the proxy JWT it received via redirect.
+        The preview frontend sends the encrypted proxy token it received via
 
-        This endpoint validates the JWT, creates a local session, and stores
+        redirect.  This endpoint decrypts and validates the token, creates a
 
-        the GitHub token in this environment''s own database.'
+        local session, and stores the GitHub token in this environment''s own
+
+        database.'
       operationId: proxy_complete_airas_ee_github_proxy_complete_post
       requestBody:
         content:

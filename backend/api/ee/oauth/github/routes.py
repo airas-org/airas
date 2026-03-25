@@ -115,7 +115,13 @@ def proxy_authorize(
     return GitHubAuthorizeResponse(authorize_url=authorize_url, state=state)
 
 
-@router.get("/proxy-callback")
+@router.get(
+    "/proxy-callback",
+    status_code=302,
+    responses={
+        302: {"description": "Redirect to preview frontend with encrypted proxy token"}
+    },
+)
 @inject
 async def proxy_callback(
     code: Annotated[str, Query()],
@@ -128,7 +134,7 @@ async def proxy_callback(
 
     This endpoint runs on the production/develop backend (the fixed callback URL
     registered with the GitHub App).  It exchanges the code for credentials,
-    wraps them in a short-lived JWT, and 302-redirects to the preview frontend.
+    wraps them in an encrypted token, and 302-redirects to the preview frontend.
     """
     try:
         origin = service.proxy.decode_state(state)
@@ -162,9 +168,10 @@ def proxy_complete(
 ) -> GitHubCallbackResponse:
     """Complete the OAuth Proxy flow on the preview backend.
 
-    The preview frontend sends the proxy JWT it received via redirect.
-    This endpoint validates the JWT, creates a local session, and stores
-    the GitHub token in this environment's own database.
+    The preview frontend sends the encrypted proxy token it received via
+    redirect.  This endpoint decrypts and validates the token, creates a
+    local session, and stores the GitHub token in this environment's own
+    database.
     """
     try:
         claims = service.proxy.validate_proxy_token(request.proxy_token)
