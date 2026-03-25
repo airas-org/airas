@@ -21,8 +21,8 @@ from airas.infra.litellm_client import (
 from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.llm_provider_resolver import detect_available_providers
 from airas.usecases.ee.api_key_resolver import ApiKeyResolver
-from airas.usecases.ee.github_oauth_service import GitHubOAuthService
 from api.ee.auth.middleware import extract_user_id_from_request
+from api.ee.oauth.github.service import GitHubOAuthService
 from api.ee.settings import get_ee_settings
 
 # FastAPI dependencies that absorb EE / non-EE branching and provide a unified interface to route handlers.

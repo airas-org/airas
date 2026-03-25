@@ -68,6 +68,10 @@ class GitHubDisconnectResponse(BaseModel):
     disconnected: bool
 
 
+class GitHubProxyCompleteRequest(BaseModel):
+    proxy_token: str
+
+
 class CancelSubscriptionResponse(BaseModel):
     status: str
 

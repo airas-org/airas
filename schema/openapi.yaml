@@ -1848,6 +1848,111 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/proxy-authorize:
+    get:
+      tags:
+      - ee-github-oauth
+      summary: Proxy Authorize
+      description: 'Return a GitHub authorize URL for the OAuth Proxy flow.
+
+
+        Called by preview frontends.  The ``origin`` is embedded in the state
+
+        so that the proxy-callback can redirect back to the correct frontend.'
+      operationId: proxy_authorize_airas_ee_github_proxy_authorize_get
+      parameters:
+      - name: origin
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Origin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitHubAuthorizeResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/proxy-callback:
+    get:
+      tags:
+      - ee-github-oauth
+      summary: Proxy Callback
+      description: 'Receive the OAuth callback from GitHub and redirect to the preview
+        frontend.
+
+
+        This endpoint runs on the production/develop backend (the fixed callback URL
+
+        registered with the GitHub App).  It exchanges the code for credentials,
+
+        wraps them in a short-lived JWT, and 302-redirects to the preview frontend.'
+      operationId: proxy_callback_airas_ee_github_proxy_callback_get
+      parameters:
+      - name: code
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Code
+      - name: state
+        in: query
+        required: true
+        schema:
+          type: string
+          title: State
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/proxy-complete:
+    post:
+      tags:
+      - ee-github-oauth
+      summary: Proxy Complete
+      description: 'Complete the OAuth Proxy flow on the preview backend.
+
+
+        The preview frontend sends the proxy JWT it received via redirect.
+
+        This endpoint validates the JWT, creates a local session, and stores
+
+        the GitHub token in this environment''s own database.'
+      operationId: proxy_complete_airas_ee_github_proxy_complete_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GitHubProxyCompleteRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitHubCallbackResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AnalyzeExperimentLLMMapping:
@@ -3492,6 +3597,15 @@ components:
       required:
       - disconnected
       title: GitHubDisconnectResponse
+    GitHubProxyCompleteRequest:
+      properties:
+        proxy_token:
+          type: string
+          title: Proxy Token
+      type: object
+      required:
+      - proxy_token
+      title: GitHubProxyCompleteRequest
     GithubDownloadRequest:
       properties:
         github_config:
