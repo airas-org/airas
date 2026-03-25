@@ -210,7 +210,7 @@ jobs:
             --arg project "$VERCEL_PROJECT_ID" \
             --arg ref "$BRANCH" \
             --arg repoId "$REPO_ID" \
-            '{name: "airas", project: $project, gitSource: {type: "github", ref: $ref, repoId: $repoId}, target: "preview"}')
+            '{name: "airas", project: $project, gitSource: {type: "github", ref: $ref, repoId: $repoId}}')
 
           DEPLOY_CODE=$(curl -s -o /tmp/vercel_deploy.json -w "%{http_code}" \
             -X POST "$VERCEL_API_URL/v13/deployments?teamId=$VERCEL_TEAM_ID" \
