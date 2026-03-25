@@ -6,6 +6,9 @@ on:
     branches-ignore:
       - main
 
+permissions:
+  pull-requests: write
+
 env:
   RAILWAY_API_URL: https://backboard.railway.com/graphql/v2
   VERCEL_API_URL: https://api.vercel.com
@@ -55,10 +58,9 @@ jobs:
             fi
             RESPONSE=$(cat /tmp/railway_response.json)
 
-            # Debug: show full response on first attempt
+            # Show available environment names on first attempt
             if [ "$i" -eq 1 ]; then
-              echo "Full Railway API response:"
-              echo "$RESPONSE" | jq . 2>/dev/null || echo "$RESPONSE"
+              echo "Available environments: $(echo "$RESPONSE" | jq -r '[.data.project.environments.edges[]? | .node.name] | join(", ")')"
             fi
 
             # Extract environment matching this PR (name ends with -$PR_NUMBER)
