@@ -12,6 +12,14 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HypothesisAllLLMConfig } from "@/components/features/llm-config";
 import {
+  defaultRunnerConfigFormState,
+  isRunnerConfigFormValid,
+  RunnerConfigForm,
+  type RunnerConfigFormState,
+  toRunnerConfigPayload,
+} from "@/components/features/runner-config-form";
+import { GITHUB_SESSION_KEY } from "@/ee/config";
+import {
   type HypothesisDrivenResearchLLMMapping,
   HypothesisDrivenResearchRequestBody,
   HypothesisDrivenResearchService,
@@ -136,6 +144,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
     };
 
     try {
+      const githubSession = localStorage.getItem(GITHUB_SESSION_KEY);
       const response =
         await HypothesisDrivenResearchService.executeHypothesisDrivenResearchAirasV1HypothesisDrivenResearchRunPost(
           payload,

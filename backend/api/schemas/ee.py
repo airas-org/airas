@@ -52,3 +52,29 @@ class GitHubConnectionStatus(BaseModel):
     connected: bool
     github_login: str | None = None
     connected_at: datetime | None = None
+
+
+class GetMeResponse(BaseModel):
+    user_id: str
+
+
+class GitHubCallbackResponse(BaseModel):
+    connected: bool
+    github_login: str
+    session_token: str
+
+
+class GitHubProxyCompleteRequest(BaseModel):
+    proxy_token: str
+
+
+class GitHubDisconnectResponse(BaseModel):
+    disconnected: bool
+
+
+class CancelSubscriptionResponse(BaseModel):
+    status: str
+
+
+class WebhookReceivedResponse(BaseModel):
+    received: bool

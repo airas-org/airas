@@ -11,6 +11,14 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AllLLMConfig } from "@/components/features/llm-config";
 import {
+  defaultRunnerConfigFormState,
+  isRunnerConfigFormValid,
+  RunnerConfigForm,
+  type RunnerConfigFormState,
+  toRunnerConfigPayload,
+} from "@/components/features/runner-config-form";
+import { GITHUB_SESSION_KEY } from "@/ee/config";
+import {
   type TopicOpenEndedResearchLLMMapping,
   TopicOpenEndedResearchRequestBody,
   TopicOpenEndedResearchService,
@@ -110,6 +118,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
     };
 
     try {
+      const githubSession = localStorage.getItem(GITHUB_SESSION_KEY);
       const response =
         await TopicOpenEndedResearchService.executeTopicOpenEndedResearchAirasV1TopicOpenEndedResearchRunPost(
           payload,

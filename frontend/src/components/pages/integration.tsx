@@ -1,12 +1,15 @@
 import { FeatherGithub, FeatherSlack } from "@subframe/core";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Navigate, useLocation } from "react-router-dom";
+import { GITHUB_SESSION_KEY } from "@/ee/config";
+import { isProxyEnabled, proxyAuthorizeGitHub } from "@/ee/oauth-proxy";
 import { OpenAPI } from "@/lib/api";
+import { EeGithubOauthService } from "@/lib/api/services/EeGithubOauthService";
 import { Avatar } from "@/ui/components/Avatar";
 import { Button } from "@/ui/components/Button";
 import { Switch } from "@/ui/components/Switch";
-
-const GITHUB_SESSION_KEY = "github_session_token";
 
 interface GitHubConnection {
   connected: boolean;
@@ -35,26 +38,33 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function GitHubOAuthCallback({ code }: { code: string }) {
+export function GitHubOAuthCallback({ code, proxyToken }: { code?: string; proxyToken?: string }) {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
 
   useEffect(() => {
-    const redirectUri = `${window.location.origin}/auth/github/callback`;
-    const state = sessionStorage.getItem("github_oauth_state") ?? "";
-
-    fetch(`${OpenAPI.BASE}/airas/ee/github/callback`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, state, redirect_uri: redirectUri }),
-    })
-      .then(async (res) => {
+    const complete = proxyToken
+      ? EeGithubOauthService.proxyCompleteAirasEeGithubProxyCompletePost({
+        proxy_token: proxyToken,
+      })
+      : fetch(`${OpenAPI.BASE}/airas/ee/github/callback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          state: sessionStorage.getItem("github_oauth_state") ?? "",
+          redirect_uri: `${window.location.origin}/auth/github/callback`,
+        }),
+      }).then(async (res) => {
         if (!res.ok) throw new Error(`API error: ${res.status}`);
         return res.json() as Promise<{
           connected: boolean;
           github_login: string;
           session_token: string;
         }>;
-      })
+      });
+
+    complete
       .then((data) => {
         sessionStorage.removeItem("github_oauth_state");
         localStorage.setItem(GITHUB_SESSION_KEY, data.session_token);
@@ -66,7 +76,7 @@ export function GitHubOAuthCallback({ code }: { code: string }) {
       .catch(() => {
         setStatus("error");
       });
-  }, [code]);
+  }, [code, proxyToken]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-950">
@@ -122,12 +132,17 @@ export function IntegrationPage() {
     setGithubConnecting(true);
     setError(null);
     try {
-      const redirectUri = `${window.location.origin}/auth/github/callback`;
-      const data = await apiFetch<{ authorize_url: string; state: string }>(
-        `/github/authorize?redirect_uri=${encodeURIComponent(redirectUri)}`,
-      );
-      sessionStorage.setItem("github_oauth_state", data.state);
-      window.location.href = data.authorize_url;
+      if (isProxyEnabled()) {
+        const data = await proxyAuthorizeGitHub(window.location.origin);
+        window.location.href = data.authorize_url;
+      } else {
+        const redirectUri = `${window.location.origin}/auth/github/callback`;
+        const data = await apiFetch<{ authorize_url: string; state: string }>(
+          `/github/authorize?redirect_uri=${encodeURIComponent(redirectUri)}`,
+        );
+        sessionStorage.setItem("github_oauth_state", data.state);
+        window.location.href = data.authorize_url;
+      }
     } catch {
       setError("GitHub連携の開始に失敗しました");
       setGithubConnecting(false);
@@ -294,4 +309,24 @@ export function IntegrationPage() {
       </div>
     </div>
   );
+}
+
+export function GitHubOAuthCallbackRoute() {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const proxyToken = params.get("proxy_token");
+
+  if (proxyToken) {
+    return <GitHubOAuthCallback proxyToken={proxyToken} />;
+  }
+
+  const code = params.get("code");
+  const state = params.get("state");
+  const savedState = sessionStorage.getItem("github_oauth_state");
+
+  sessionStorage.removeItem("github_oauth_state");
+  if (code && state && state === savedState) {
+    return <GitHubOAuthCallback code={code} />;
+  }
+  return <Navigate to="/" replace />;
 }

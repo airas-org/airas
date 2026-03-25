@@ -1469,6 +1469,658 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/verification/sessions:
+    get:
+      tags:
+      - verification
+      summary: List Sessions
+      operationId: list_sessions_airas_v1_verification_sessions_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationSessionListResponse'
+      security:
+      - HTTPBearer: []
+    post:
+      tags:
+      - verification
+      summary: Create Session
+      operationId: create_session_airas_v1_verification_sessions_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationSessionCreateRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationSessionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /airas/v1/verification/sessions/{verification_id}:
+    get:
+      tags:
+      - verification
+      summary: Get Session
+      operationId: get_session_airas_v1_verification_sessions__verification_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: verification_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Verification Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationSessionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - verification
+      summary: Update Session
+      operationId: update_session_airas_v1_verification_sessions__verification_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: verification_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Verification Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationSessionUpdateRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationSessionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - verification
+      summary: Delete Session
+      operationId: delete_session_airas_v1_verification_sessions__verification_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: verification_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Verification Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/verification/propose-policies:
+    post:
+      tags:
+      - verification
+      summary: Propose Policies
+      operationId: propose_policies_airas_v1_verification_propose_policies_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposePoliciesRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposePoliciesResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /airas/v1/verification/generate-method:
+    post:
+      tags:
+      - verification
+      summary: Generate Method
+      operationId: generate_method_airas_v1_verification_generate_method_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateMethodRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateMethodResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /airas/v1/verification/generate-code:
+    post:
+      tags:
+      - verification
+      summary: Generate Verification Code
+      operationId: generate_verification_code_airas_v1_verification_generate_code_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateVerificationCodeRequestBody'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateVerificationCodeResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/verification/code-status/{repository_name}/{workflow_run_id}:
+    get:
+      tags:
+      - verification
+      summary: Get Verification Code Status
+      operationId: get_verification_code_status_airas_v1_verification_code_status__repository_name___workflow_run_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: repository_name
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Repository Name
+      - name: workflow_run_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Run Id
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentCodeStatusResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/feedback:
+    post:
+      tags:
+      - feedback
+      summary: Create Feedback
+      operationId: create_feedback_airas_v1_feedback_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFeedbackRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateFeedbackResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /airas/ee/auth/me:
+    get:
+      tags:
+      - ee-auth
+      summary: Get Me
+      description: Return the current authenticated user's ID.
+      operationId: get_me_airas_ee_auth_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMeResponse'
+      security:
+      - HTTPBearer: []
+  /airas/ee/api-keys:
+    get:
+      tags:
+      - ee-api-keys
+      summary: List Api Keys
+      operationId: list_api_keys_airas_ee_api_keys_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyListResponse'
+      security:
+      - HTTPBearer: []
+    post:
+      tags:
+      - ee-api-keys
+      summary: Save Api Key
+      operationId: save_api_key_airas_ee_api_keys_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveApiKeyRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /airas/ee/api-keys/{provider}:
+    delete:
+      tags:
+      - ee-api-keys
+      summary: Delete Api Key
+      operationId: delete_api_key_airas_ee_api_keys__provider__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: provider
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ApiProvider'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/plan:
+    get:
+      tags:
+      - ee-plan
+      summary: Get Plan
+      operationId: get_plan_airas_ee_plan_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPlanResponse'
+      security:
+      - HTTPBearer: []
+  /airas/ee/stripe/checkout:
+    post:
+      tags:
+      - ee-stripe
+      summary: Create Checkout
+      operationId: create_checkout_airas_ee_stripe_checkout_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /airas/ee/stripe/cancel:
+    post:
+      tags:
+      - ee-stripe
+      summary: Cancel Subscription
+      operationId: cancel_subscription_airas_ee_stripe_cancel_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelSubscriptionResponse'
+      security:
+      - HTTPBearer: []
+  /airas/ee/stripe/webhook:
+    post:
+      tags:
+      - ee-stripe
+      summary: Stripe Webhook
+      operationId: stripe_webhook_airas_ee_stripe_webhook_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookReceivedResponse'
+  /airas/ee/github/authorize:
+    get:
+      tags:
+      - ee-github-oauth
+      summary: Authorize
+      operationId: authorize_airas_ee_github_authorize_get
+      parameters:
+      - name: redirect_uri
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Redirect Uri
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitHubAuthorizeResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/callback:
+    post:
+      tags:
+      - ee-github-oauth
+      summary: Callback
+      operationId: callback_airas_ee_github_callback_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GitHubCallbackRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitHubCallbackResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/status:
+    get:
+      tags:
+      - ee-github-oauth
+      summary: Status
+      operationId: status_airas_ee_github_status_get
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitHubConnectionStatus'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/disconnect:
+    delete:
+      tags:
+      - ee-github-oauth
+      summary: Disconnect
+      operationId: disconnect_airas_ee_github_disconnect_delete
+      parameters:
+      - name: x-github-session
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Github-Session
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitHubDisconnectResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/proxy-authorize:
+    get:
+      tags:
+      - ee-github-oauth
+      summary: Proxy Authorize
+      description: 'Return a GitHub authorize URL for the OAuth Proxy flow.
+
+
+        Called by preview frontends.  The ``origin`` is embedded in the state
+
+        so that the proxy-callback can redirect back to the correct frontend.'
+      operationId: proxy_authorize_airas_ee_github_proxy_authorize_get
+      parameters:
+      - name: origin
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Origin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitHubAuthorizeResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/proxy-callback:
+    get:
+      tags:
+      - ee-github-oauth
+      summary: Proxy Callback
+      description: 'Receive the OAuth callback from GitHub and redirect to the preview
+        frontend.
+
+
+        This endpoint runs on the production/develop backend (the fixed callback URL
+
+        registered with the GitHub App).  It exchanges the code for credentials,
+
+        wraps them in a short-lived JWT, and 302-redirects to the preview frontend.'
+      operationId: proxy_callback_airas_ee_github_proxy_callback_get
+      parameters:
+      - name: code
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Code
+      - name: state
+        in: query
+        required: true
+        schema:
+          type: string
+          title: State
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/proxy-complete:
+    post:
+      tags:
+      - ee-github-oauth
+      summary: Proxy Complete
+      description: 'Complete the OAuth Proxy flow on the preview backend.
+
+
+        The preview frontend sends the proxy JWT it received via redirect.
+
+        This endpoint validates the JWT, creates a local session, and stores
+
+        the GitHub token in this environment''s own database.'
+      operationId: proxy_complete_airas_ee_github_proxy_complete_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GitHubProxyCompleteRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitHubCallbackResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AnalyzeExperimentLLMMapping:
@@ -2713,6 +3365,44 @@ components:
       - branch_name
       title: GitHubConfigRequest
       description: Request body schema for GitHub config (owner is resolved server-side).
+    GitHubConnectionStatus:
+      properties:
+        connected:
+          type: boolean
+          title: Connected
+        github_login:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Login
+        connected_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Connected At
+      type: object
+      required:
+      - connected
+      title: GitHubConnectionStatus
+    GitHubDisconnectResponse:
+      properties:
+        disconnected:
+          type: boolean
+          title: Disconnected
+      type: object
+      required:
+      - disconnected
+      title: GitHubDisconnectResponse
+    GitHubProxyCompleteRequest:
+      properties:
+        proxy_token:
+          type: string
+          title: Proxy Token
+      type: object
+      required:
+      - proxy_token
+      title: GitHubProxyCompleteRequest
     GithubDownloadRequest:
       properties:
         github_config:

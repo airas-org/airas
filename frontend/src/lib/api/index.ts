@@ -72,6 +72,7 @@ export type { GitHubConfig } from './models/GitHubConfig';
 export type { GitHubConfigRequest } from './models/GitHubConfigRequest';
 export type { GithubDownloadRequest } from './models/GithubDownloadRequest';
 export type { GithubDownloadResponse } from './models/GithubDownloadResponse';
+export type { GitHubProxyCompleteRequest } from './models/GitHubProxyCompleteRequest';
 export type { GithubUploadRequest } from './models/GithubUploadRequest';
 export type { GithubUploadResponse } from './models/GithubUploadResponse';
 export type { GoogleGenAIParams } from './models/GoogleGenAIParams';
