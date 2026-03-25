@@ -24,9 +24,10 @@ jobs:
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
           RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
           BRANCH: ${{ github.head_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          echo "Waiting for Railway PR environment (branch: $BRANCH)..."
+          echo "Waiting for Railway PR environment (PR #$PR_NUMBER, branch: $BRANCH)..."
 
           railway_gql() {
             local query="$1"
@@ -60,36 +61,34 @@ jobs:
               echo "$RESPONSE" | jq -r '.data.project.environments.edges[]? | .node.name // "unnamed"'
             fi
 
-            # Extract environment matching this branch (null-safe)
-            ENV_NODE=$(echo "$RESPONSE" | jq --arg branch "$BRANCH" '
+            # Extract environment matching this PR (name ends with -$PR_NUMBER)
+            ENV_NODE=$(echo "$RESPONSE" | jq --arg pr "$PR_NUMBER" '
               [.data.project.environments.edges[]?
-              | select(.node.name == $branch)] | first // null')
+              | select(.node.name | endswith("-" + $pr))] | first // null')
 
             if [ "$ENV_NODE" = "null" ] || [ -z "$ENV_NODE" ]; then
-              echo "Attempt $i/90: environment not found for branch '$BRANCH'"
-              sleep 10
-              continue
+              echo "Attempt $i/90: environment not found for PR #$PR_NUMBER"
+            else
+              ENV_ID=$(echo "$ENV_NODE" | jq -r '.node.id // empty')
+              DEPLOY_COUNT=$(echo "$ENV_NODE" | jq -r '.node.deployments.edges | length')
+              ENV_STATUS=$(echo "$ENV_NODE" | jq -r '
+                if (.node.deployments.edges | length) > 0
+                then .node.deployments.edges[0].node.status
+                else "NO_DEPLOYMENTS" end')
+
+              if [ -n "$ENV_ID" ] && [ "$ENV_STATUS" = "SUCCESS" ]; then
+                echo "Railway PR environment deployed (envId=$ENV_ID, attempt $i)"
+                break
+              fi
+
+              echo "Attempt $i/90: envId=${ENV_ID:-none} status=$ENV_STATUS deployments=$DEPLOY_COUNT"
             fi
-
-            ENV_ID=$(echo "$ENV_NODE" | jq -r '.node.id // empty')
-            DEPLOY_COUNT=$(echo "$ENV_NODE" | jq -r '.node.deployments.edges | length')
-            ENV_STATUS=$(echo "$ENV_NODE" | jq -r '
-              if (.node.deployments.edges | length) > 0
-              then .node.deployments.edges[0].node.status
-              else "NO_DEPLOYMENTS" end')
-
-            if [ -n "$ENV_ID" ] && [ "$ENV_STATUS" = "SUCCESS" ]; then
-              echo "Railway PR environment deployed (envId=$ENV_ID, attempt $i)"
-              break
-            fi
-
-            echo "Attempt $i/90: envId=${ENV_ID:-none} status=$ENV_STATUS deployments=$DEPLOY_COUNT"
-            sleep 10
 
             if [ "$i" -eq 90 ]; then
               echo "::error::Timed out waiting for Railway PR environment (15 min)"
               exit 1
             fi
+            sleep 10
           done
 
           # Step 2: Query the service domain for this environment
