@@ -22,19 +22,30 @@ jobs:
         env:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
           BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
           echo "Waiting for Railway PR environment (branch: $BRANCH)..."
 
-          for i in $(seq 1 90); do
-            HTTP_CODE=$(curl -s -o /tmp/railway_response.json -w "%{http_code}" -X POST "$RAILWAY_API_URL" \
+          railway_gql() {
+            local query="$1"
+            local variables="$2"
+            local payload
+            payload=$(jq -n --arg q "$query" --argjson v "$variables" '{query: $q, variables: $v}')
+            curl -s -o /tmp/railway_response.json -w "%{http_code}" -X POST "$RAILWAY_API_URL" \
               -H "Authorization: Bearer $RAILWAY_API_TOKEN" \
               -H "Content-Type: application/json" \
-              -d '{
-                "query": "query($projectId: String!) { project(id: $projectId) { environments { edges { node { id name deployments(first: 1) { edges { node { status } } } domains { serviceDomains { domain } } } } } } }",
-                "variables": { "projectId": "'"$RAILWAY_PROJECT_ID"'" }
-              }')
+              -d "$payload"
+          }
+
+          # Step 1: Wait for the PR environment to exist and have a successful deployment
+          ENV_ID=""
+          for i in $(seq 1 90); do
+            HTTP_CODE=$(railway_gql \
+              'query($projectId: String!) { project(id: $projectId) { environments { edges { node { id name deployments(first: 1) { edges { node { status } } } serviceInstances { edges { node { serviceId } } } } } } } }' \
+              "{\"projectId\": \"$RAILWAY_PROJECT_ID\"}")
+
             if [ "$HTTP_CODE" != "200" ]; then
               echo "::warning::Railway API returned HTTP $HTTP_CODE (attempt $i)"
               cat /tmp/railway_response.json 2>/dev/null || true
@@ -43,15 +54,15 @@ jobs:
             fi
             RESPONSE=$(cat /tmp/railway_response.json)
 
-            ENV_DOMAIN=$(echo "$RESPONSE" | jq -r --arg branch "$BRANCH" '
+            ENV_ID=$(echo "$RESPONSE" | jq -r --arg branch "$BRANCH" '
               [.data.project.environments.edges[]
               | select(.node.name == $branch)] | first
-              | .node.domains.serviceDomains[0].domain // empty')
+              | .node.id // empty')
 
             DEPLOY_COUNT=$(echo "$RESPONSE" | jq -r --arg branch "$BRANCH" '
               [.data.project.environments.edges[]
               | select(.node.name == $branch)] | first
-              | .node.deployments.edges | length')
+              | .node.deployments.edges | length // 0')
 
             ENV_STATUS=$(echo "$RESPONSE" | jq -r --arg branch "$BRANCH" '
               [.data.project.environments.edges[]
@@ -60,18 +71,40 @@ jobs:
                  then .node.deployments.edges[0].node.status
                  else "NO_DEPLOYMENTS" end)')
 
-            if [ -n "$ENV_DOMAIN" ] && [ "$ENV_STATUS" = "SUCCESS" ]; then
-              echo "Railway PR environment ready: $ENV_DOMAIN (attempt $i)"
-              echo "domain=$ENV_DOMAIN" >> "$GITHUB_OUTPUT"
-              exit 0
+            if [ -n "$ENV_ID" ] && [ "$ENV_STATUS" = "SUCCESS" ]; then
+              echo "Railway PR environment deployed (envId=$ENV_ID, attempt $i)"
+              break
             fi
 
-            echo "Attempt $i/90: status=$ENV_STATUS domain=${ENV_DOMAIN:-none} deployments=$DEPLOY_COUNT"
+            echo "Attempt $i/90: envId=${ENV_ID:-none} status=$ENV_STATUS deployments=$DEPLOY_COUNT"
             sleep 10
+
+            if [ "$i" -eq 90 ]; then
+              echo "::error::Timed out waiting for Railway PR environment (15 min)"
+              exit 1
+            fi
           done
 
-          echo "::error::Timed out waiting for Railway PR environment (15 min)"
-          exit 1
+          # Step 2: Query the service domain for this environment
+          HTTP_CODE=$(railway_gql \
+            'query($projectId: String!, $environmentId: String!, $serviceId: String!) { domains(projectId: $projectId, environmentId: $environmentId, serviceId: $serviceId) { serviceDomains { domain } } }' \
+            "{\"projectId\": \"$RAILWAY_PROJECT_ID\", \"environmentId\": \"$ENV_ID\", \"serviceId\": \"$RAILWAY_SERVICE_ID\"}")
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Railway domains query returned HTTP $HTTP_CODE"
+            cat /tmp/railway_response.json 2>/dev/null || true
+            exit 1
+          fi
+
+          ENV_DOMAIN=$(jq -r '.data.domains.serviceDomains[0].domain // empty' /tmp/railway_response.json)
+          if [ -z "$ENV_DOMAIN" ]; then
+            echo "::error::No service domain found for PR environment"
+            jq . /tmp/railway_response.json
+            exit 1
+          fi
+
+          echo "Railway PR environment ready: $ENV_DOMAIN"
+          echo "domain=$ENV_DOMAIN" >> "$GITHUB_OUTPUT"
 
       - name: Set Vercel environment variables
         env:
