@@ -103,10 +103,27 @@ jobs:
           fi
 
           ENV_DOMAIN=$(jq -r '.data.domains.serviceDomains[0].domain // empty' /tmp/railway_response.json)
+
+          # Step 2b: If no domain exists, create one
           if [ -z "$ENV_DOMAIN" ]; then
-            echo "::error::No service domain found for PR environment"
-            jq . /tmp/railway_response.json
-            exit 1
+            echo "No service domain found, creating one..."
+            HTTP_CODE=$(railway_gql \
+              'mutation($input: ServiceDomainCreateInput!) { serviceDomainCreate(input: $input) { domain } }' \
+              "{\"input\": {\"serviceId\": \"$RAILWAY_SERVICE_ID\", \"environmentId\": \"$ENV_ID\"}}")
+
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "::error::Railway domain creation returned HTTP $HTTP_CODE"
+              cat /tmp/railway_response.json 2>/dev/null || true
+              exit 1
+            fi
+
+            ENV_DOMAIN=$(jq -r '.data.serviceDomainCreate.domain // empty' /tmp/railway_response.json)
+            if [ -z "$ENV_DOMAIN" ]; then
+              echo "::error::Failed to create service domain"
+              jq . /tmp/railway_response.json
+              exit 1
+            fi
+            echo "Created service domain: $ENV_DOMAIN"
           fi
 
           echo "Railway PR environment ready: $ENV_DOMAIN"
