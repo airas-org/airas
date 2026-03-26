@@ -2,7 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type GenerateExperimentCodeResponseBody = {
+export type GenerateVerificationCodeResponseBody = {
     dispatched: boolean;
     workflow_run_id: (number | null);
     github_url: (string | null);

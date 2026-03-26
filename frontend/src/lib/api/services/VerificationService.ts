@@ -2,13 +2,13 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ExperimentCodeStatusResponseBody } from '../models/ExperimentCodeStatusResponseBody';
-import type { GenerateExperimentCodeRequestBody } from '../models/GenerateExperimentCodeRequestBody';
-import type { GenerateExperimentCodeResponseBody } from '../models/GenerateExperimentCodeResponseBody';
 import type { GenerateMethodRequestBody } from '../models/GenerateMethodRequestBody';
 import type { GenerateMethodResponseBody } from '../models/GenerateMethodResponseBody';
+import type { GenerateVerificationCodeRequestBody } from '../models/GenerateVerificationCodeRequestBody';
+import type { GenerateVerificationCodeResponseBody } from '../models/GenerateVerificationCodeResponseBody';
 import type { ProposePoliciesRequestBody } from '../models/ProposePoliciesRequestBody';
 import type { ProposePoliciesResponseBody } from '../models/ProposePoliciesResponseBody';
+import type { VerificationCodeStatusResponseBody } from '../models/VerificationCodeStatusResponseBody';
 import type { VerificationSessionCreateRequest } from '../models/VerificationSessionCreateRequest';
 import type { VerificationSessionListResponse } from '../models/VerificationSessionListResponse';
 import type { VerificationSessionResponse } from '../models/VerificationSessionResponse';
@@ -150,19 +150,19 @@ export class VerificationService {
         });
     }
     /**
-     * Generate Experiment Code
+     * Generate Verification Code
      * @param requestBody
      * @param xGithubSession
-     * @returns GenerateExperimentCodeResponseBody Successful Response
+     * @returns GenerateVerificationCodeResponseBody Successful Response
      * @throws ApiError
      */
-    public static generateExperimentCodeAirasV1VerificationGenerateExperimentCodePost(
-        requestBody: GenerateExperimentCodeRequestBody,
+    public static generateVerificationCodeAirasV1VerificationGenerateCodePost(
+        requestBody: GenerateVerificationCodeRequestBody,
         xGithubSession?: (string | null),
-    ): CancelablePromise<GenerateExperimentCodeResponseBody> {
+    ): CancelablePromise<GenerateVerificationCodeResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/airas/v1/verification/generate-experiment-code',
+            url: '/airas/v1/verification/generate-code',
             headers: {
                 'x-github-session': xGithubSession,
             },
@@ -174,25 +174,22 @@ export class VerificationService {
         });
     }
     /**
-     * Get Experiment Code Status
-     * @param githubOwner
+     * Get Verification Code Status
      * @param repositoryName
      * @param workflowRunId
      * @param xGithubSession
-     * @returns ExperimentCodeStatusResponseBody Successful Response
+     * @returns VerificationCodeStatusResponseBody Successful Response
      * @throws ApiError
      */
-    public static getExperimentCodeStatusAirasV1VerificationExperimentCodeStatusGithubOwnerRepositoryNameWorkflowRunIdGet(
-        githubOwner: string,
+    public static getVerificationCodeStatusAirasV1VerificationCodeStatusRepositoryNameWorkflowRunIdGet(
         repositoryName: string,
         workflowRunId: number,
         xGithubSession?: (string | null),
-    ): CancelablePromise<ExperimentCodeStatusResponseBody> {
+    ): CancelablePromise<VerificationCodeStatusResponseBody> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/airas/v1/verification/experiment-code-status/{github_owner}/{repository_name}/{workflow_run_id}',
+            url: '/airas/v1/verification/code-status/{repository_name}/{workflow_run_id}',
             path: {
-                'github_owner': githubOwner,
                 'repository_name': repositoryName,
                 'workflow_run_id': workflowRunId,
             },

@@ -54,7 +54,6 @@ export type { ExperimentalDesign_Input } from './models/ExperimentalDesign_Input
 export type { ExperimentalDesign_Output } from './models/ExperimentalDesign_Output';
 export type { ExperimentalResults } from './models/ExperimentalResults';
 export type { ExperimentCode } from './models/ExperimentCode';
-export type { ExperimentCodeStatusResponseBody } from './models/ExperimentCodeStatusResponseBody';
 export type { ExperimentCycle_Input } from './models/ExperimentCycle_Input';
 export type { ExperimentCycle_Output } from './models/ExperimentCycle_Output';
 export { ExperimentCycleAction } from './models/ExperimentCycleAction';
@@ -74,9 +73,6 @@ export type { GenerateBibfileSubgraphResponseBody } from './models/GenerateBibfi
 export type { GenerateExperimentalDesignLLMMapping } from './models/GenerateExperimentalDesignLLMMapping';
 export type { GenerateExperimentalDesignSubgraphRequestBody } from './models/GenerateExperimentalDesignSubgraphRequestBody';
 export type { GenerateExperimentalDesignSubgraphResponseBody } from './models/GenerateExperimentalDesignSubgraphResponseBody';
-export type { GenerateExperimentCodeLLMMapping } from './models/GenerateExperimentCodeLLMMapping';
-export { GenerateExperimentCodeRequestBody } from './models/GenerateExperimentCodeRequestBody';
-export type { GenerateExperimentCodeResponseBody } from './models/GenerateExperimentCodeResponseBody';
 export type { GenerateHypothesisSubgraphV0LLMMapping } from './models/GenerateHypothesisSubgraphV0LLMMapping';
 export type { GenerateHypothesisSubgraphV0RequestBody } from './models/GenerateHypothesisSubgraphV0RequestBody';
 export type { GenerateHypothesisSubgraphV0ResponseBody } from './models/GenerateHypothesisSubgraphV0ResponseBody';
@@ -86,6 +82,9 @@ export type { GenerateLatexSubgraphResponseBody } from './models/GenerateLatexSu
 export type { GenerateMethodRequestBody } from './models/GenerateMethodRequestBody';
 export type { GenerateMethodResponseBody } from './models/GenerateMethodResponseBody';
 export type { GenerateQueriesLLMMapping } from './models/GenerateQueriesLLMMapping';
+export type { GenerateVerificationCodeLLMMapping } from './models/GenerateVerificationCodeLLMMapping';
+export { GenerateVerificationCodeRequestBody } from './models/GenerateVerificationCodeRequestBody';
+export type { GenerateVerificationCodeResponseBody } from './models/GenerateVerificationCodeResponseBody';
 export type { GenerateVerificationMethodLLMMapping } from './models/GenerateVerificationMethodLLMMapping';
 export type { GetMeResponse } from './models/GetMeResponse';
 export type { GitHubAuthorizeResponse } from './models/GitHubAuthorizeResponse';
@@ -167,6 +166,7 @@ export type { TopicOpenEndedResearchUpdateRequestBody } from './models/TopicOpen
 export type { TrainingConfig } from './models/TrainingConfig';
 export type { UserPlanResponse } from './models/UserPlanResponse';
 export type { ValidationError } from './models/ValidationError';
+export type { VerificationCodeStatusResponseBody } from './models/VerificationCodeStatusResponseBody';
 export type { VerificationSessionCreateRequest } from './models/VerificationSessionCreateRequest';
 export type { VerificationSessionListResponse } from './models/VerificationSessionListResponse';
 export type { VerificationSessionResponse } from './models/VerificationSessionResponse';

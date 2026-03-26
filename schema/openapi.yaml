@@ -1510,12 +1510,12 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
       - HTTPBearer: []
-  /airas/v1/verification/generate-experiment-code:
+  /airas/v1/verification/generate-code:
     post:
       tags:
       - verification
-      summary: Generate Experiment Code
-      operationId: generate_experiment_code_airas_v1_verification_generate_experiment_code_post
+      summary: Generate Verification Code
+      operationId: generate_verification_code_airas_v1_verification_generate_code_post
       security:
       - HTTPBearer: []
       parameters:
@@ -1532,35 +1532,29 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenerateExperimentCodeRequestBody'
+              $ref: '#/components/schemas/GenerateVerificationCodeRequestBody'
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenerateExperimentCodeResponseBody'
+                $ref: '#/components/schemas/GenerateVerificationCodeResponseBody'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/verification/experiment-code-status/{github_owner}/{repository_name}/{workflow_run_id}:
+  /airas/v1/verification/code-status/{repository_name}/{workflow_run_id}:
     get:
       tags:
       - verification
-      summary: Get Experiment Code Status
-      operationId: get_experiment_code_status_airas_v1_verification_experiment_code_status__github_owner___repository_name___workflow_run_id__get
+      summary: Get Verification Code Status
+      operationId: get_verification_code_status_airas_v1_verification_code_status__repository_name___workflow_run_id__get
       security:
       - HTTPBearer: []
       parameters:
-      - name: github_owner
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Github Owner
       - name: repository_name
         in: path
         required: true
@@ -1587,7 +1581,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExperimentCodeStatusResponseBody'
+                $ref: '#/components/schemas/VerificationCodeStatusResponseBody'
         '422':
           description: Validation Error
           content:
@@ -2748,21 +2742,6 @@ components:
             'config/run/run1.yaml')
       type: object
       title: ExperimentCode
-    ExperimentCodeStatusResponseBody:
-      properties:
-        status:
-          type: string
-          title: Status
-        conclusion:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Conclusion
-      type: object
-      required:
-      - status
-      - conclusion
-      title: ExperimentCodeStatusResponseBody
     ExperimentCycle-Input:
       properties:
         experimental_design:
@@ -3161,101 +3140,6 @@ components:
       - references_bib
       - execution_time
       title: GenerateBibfileSubgraphResponseBody
-    GenerateExperimentCodeLLMMapping:
-      properties:
-        dispatch_experiment_code_generation:
-          $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: anthropic/claude-sonnet-4-5
-      type: object
-      title: GenerateExperimentCodeLLMMapping
-    GenerateExperimentCodeRequestBody:
-      properties:
-        user_query:
-          type: string
-          title: User Query
-        what_to_verify:
-          type: string
-          title: What To Verify
-        experiment_settings:
-          additionalProperties:
-            type: string
-          type: object
-          title: Experiment Settings
-        steps:
-          items:
-            type: string
-          type: array
-          title: Steps
-        modification_notes:
-          type: string
-          title: Modification Notes
-        repository_name:
-          type: string
-          title: Repository Name
-        github_owner:
-          type: string
-          title: Github Owner
-        branch_name:
-          type: string
-          title: Branch Name
-        github_actions_agent:
-          type: string
-          enum:
-          - claude_code
-          - open_code
-          title: Github Actions Agent
-        llm_mapping:
-          anyOf:
-          - $ref: '#/components/schemas/GenerateExperimentCodeLLMMapping'
-          - type: 'null'
-        verification_id:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Verification Id
-      type: object
-      required:
-      - user_query
-      - what_to_verify
-      - experiment_settings
-      - steps
-      - modification_notes
-      - repository_name
-      - github_owner
-      - branch_name
-      - github_actions_agent
-      title: GenerateExperimentCodeRequestBody
-    GenerateExperimentCodeResponseBody:
-      properties:
-        dispatched:
-          type: boolean
-          title: Dispatched
-        workflow_run_id:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Workflow Run Id
-        github_url:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Github Url
-        execution_time:
-          additionalProperties:
-            items:
-              type: number
-            type: array
-          type: object
-          title: Execution Time
-      type: object
-      required:
-      - dispatched
-      - workflow_run_id
-      - github_url
-      - execution_time
-      title: GenerateExperimentCodeResponseBody
     GenerateExperimentalDesignLLMMapping:
       properties:
         generate_experimental_design:
@@ -3470,6 +3354,92 @@ components:
             llm_name: gpt-5.2
       type: object
       title: GenerateQueriesLLMMapping
+    GenerateVerificationCodeLLMMapping:
+      properties:
+        dispatch_verification_code_generation:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: anthropic/claude-sonnet-4-5
+      type: object
+      title: GenerateVerificationCodeLLMMapping
+    GenerateVerificationCodeRequestBody:
+      properties:
+        user_query:
+          type: string
+          title: User Query
+        what_to_verify:
+          type: string
+          title: What To Verify
+        experiment_settings:
+          additionalProperties:
+            type: string
+          type: object
+          title: Experiment Settings
+        steps:
+          items:
+            type: string
+          type: array
+          title: Steps
+        modification_notes:
+          type: string
+          title: Modification Notes
+        github_config:
+          $ref: '#/components/schemas/GitHubConfigRequest'
+        github_actions_agent:
+          type: string
+          enum:
+          - claude_code
+          - open_code
+          title: Github Actions Agent
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateVerificationCodeLLMMapping'
+          - type: 'null'
+        verification_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Verification Id
+      type: object
+      required:
+      - user_query
+      - what_to_verify
+      - experiment_settings
+      - steps
+      - modification_notes
+      - github_config
+      - github_actions_agent
+      title: GenerateVerificationCodeRequestBody
+    GenerateVerificationCodeResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        workflow_run_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Workflow Run Id
+        github_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Url
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - workflow_run_id
+      - github_url
+      - execution_time
+      title: GenerateVerificationCodeResponseBody
     GenerateVerificationMethodLLMMapping:
       properties:
         generate_verification_method:
@@ -5670,6 +5640,21 @@ components:
       - msg
       - type
       title: ValidationError
+    VerificationCodeStatusResponseBody:
+      properties:
+        status:
+          type: string
+          title: Status
+        conclusion:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Conclusion
+      type: object
+      required:
+      - status
+      - conclusion
+      title: VerificationCodeStatusResponseBody
     VerificationSessionCreateRequest:
       properties:
         title:

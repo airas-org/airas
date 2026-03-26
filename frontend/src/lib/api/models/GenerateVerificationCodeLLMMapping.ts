@@ -3,7 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
-export type GenerateExperimentCodeLLMMapping = {
-    dispatch_experiment_code_generation?: NodeLLMConfig;
+export type GenerateVerificationCodeLLMMapping = {
+    dispatch_verification_code_generation?: NodeLLMConfig;
 };
 

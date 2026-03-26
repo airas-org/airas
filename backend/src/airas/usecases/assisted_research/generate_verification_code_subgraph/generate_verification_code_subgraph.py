@@ -20,16 +20,16 @@ logger = logging.getLogger(__name__)
 
 
 def record_execution_time(f):
-    return time_node("generate_experiment_code_subgraph")(f)  # noqa: E731
+    return time_node("generate_verification_code_subgraph")(f)  # noqa: E731
 
 
-class GenerateExperimentCodeLLMMapping(BaseModel):
-    dispatch_experiment_code_generation: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
+class GenerateVerificationCodeLLMMapping(BaseModel):
+    dispatch_verification_code_generation: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
         "dispatch_experiment_code_generation"
     ]
 
 
-class GenerateExperimentCodeSubgraphInputState(TypedDict):
+class GenerateVerificationCodeSubgraphInputState(TypedDict):
     user_query: str
     what_to_verify: str
     experiment_settings: dict[str, dict[str, Any]]
@@ -40,33 +40,33 @@ class GenerateExperimentCodeSubgraphInputState(TypedDict):
     github_actions_agent: GitHubActionsAgent
 
 
-class GenerateExperimentCodeSubgraphOutputState(ExecutionTimeState):
+class GenerateVerificationCodeSubgraphOutputState(ExecutionTimeState):
     dispatched: bool
     workflow_run_id: int | None
 
 
-class GenerateExperimentCodeSubgraphState(
-    GenerateExperimentCodeSubgraphInputState,
-    GenerateExperimentCodeSubgraphOutputState,
+class GenerateVerificationCodeSubgraphState(
+    GenerateVerificationCodeSubgraphInputState,
+    GenerateVerificationCodeSubgraphOutputState,
     total=False,
 ):
     pass
 
 
-class GenerateExperimentCodeSubgraph:
+class GenerateVerificationCodeSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
         workflow_file: str = "run_verification_code_generator.yml",
-        llm_mapping: GenerateExperimentCodeLLMMapping | None = None,
+        llm_mapping: GenerateVerificationCodeLLMMapping | None = None,
     ):
         self.github_client = github_client
         self.workflow_file = workflow_file
-        self.llm_mapping = llm_mapping or GenerateExperimentCodeLLMMapping()
+        self.llm_mapping = llm_mapping or GenerateVerificationCodeLLMMapping()
 
     @record_execution_time
-    async def _dispatch_experiment_code_generation(
-        self, state: GenerateExperimentCodeSubgraphState
+    async def _dispatch_verification_code_generation(
+        self, state: GenerateVerificationCodeSubgraphState
     ) -> dict:
         github_config = state["github_config"]
         github_actions_agent = state["github_actions_agent"]
@@ -77,7 +77,7 @@ class GenerateExperimentCodeSubgraph:
         modification_notes = state["modification_notes"]
 
         logger.info(
-            f"Dispatching experiment code generation on branch '{github_config.branch_name}'"
+            f"Dispatching verification code generation on branch '{github_config.branch_name}'"
         )
 
         inputs = {
@@ -88,7 +88,7 @@ class GenerateExperimentCodeSubgraph:
             "steps": json.dumps(steps),
             "modification_notes": modification_notes,
             "github_actions_agent": github_actions_agent,
-            "model_name": self.llm_mapping.dispatch_experiment_code_generation.llm_name,
+            "model_name": self.llm_mapping.dispatch_verification_code_generation.llm_name,
         }
 
         workflow_run_id = await dispatch_workflow_and_get_run_id(
@@ -102,10 +102,10 @@ class GenerateExperimentCodeSubgraph:
 
         if workflow_run_id is not None:
             logger.info(
-                f"Experiment code generation dispatch successful (workflow_run_id={workflow_run_id})"
+                f"Verification code generation dispatch successful (workflow_run_id={workflow_run_id})"
             )
         else:
-            logger.error("Experiment code generation dispatch failed")
+            logger.error("Verification code generation dispatch failed")
 
         return {
             "dispatched": workflow_run_id is not None,
@@ -114,17 +114,17 @@ class GenerateExperimentCodeSubgraph:
 
     def build_graph(self):
         graph_builder = StateGraph(
-            GenerateExperimentCodeSubgraphState,
-            input_schema=GenerateExperimentCodeSubgraphInputState,
-            output_schema=GenerateExperimentCodeSubgraphOutputState,
+            GenerateVerificationCodeSubgraphState,
+            input_schema=GenerateVerificationCodeSubgraphInputState,
+            output_schema=GenerateVerificationCodeSubgraphOutputState,
         )
 
         graph_builder.add_node(
-            "dispatch_experiment_code_generation",
-            self._dispatch_experiment_code_generation,
+            "dispatch_verification_code_generation",
+            self._dispatch_verification_code_generation,
         )
 
-        graph_builder.add_edge(START, "dispatch_experiment_code_generation")
-        graph_builder.add_edge("dispatch_experiment_code_generation", END)
+        graph_builder.add_edge(START, "dispatch_verification_code_generation")
+        graph_builder.add_edge("dispatch_verification_code_generation", END)
 
         return graph_builder.compile()

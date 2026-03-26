@@ -1,6 +1,7 @@
 import { FeatherChevronDown, FeatherChevronRight } from "@subframe/core";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MathMarkdown } from "@/components/shared/math-markdown";
 import { Badge } from "@/ui";
 import type { ProposedMethod } from "../types";
 
@@ -29,13 +30,17 @@ function MethodCard({ method, isSelected, showSelectButton, onSelect }: MethodCa
         <p className="text-xs font-semibold text-foreground">
           {t("verification.detail.proposedMethods.whatToVerify")}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">{method.whatToVerify}</p>
+        <MathMarkdown className="text-xs text-muted-foreground mt-0.5 [&>p]:m-0">
+          {method.whatToVerify}
+        </MathMarkdown>
       </div>
       <div className="mt-2">
         <p className="text-xs font-semibold text-foreground">
           {t("verification.detail.proposedMethods.method")}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">{method.method}</p>
+        <MathMarkdown className="text-xs text-muted-foreground mt-0.5 [&>p]:m-0">
+          {method.method}
+        </MathMarkdown>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-4">
         <div>
@@ -44,7 +49,7 @@ function MethodCard({ method, isSelected, showSelectButton, onSelect }: MethodCa
             {method.pros.map((pro) => (
               <li key={pro} className="text-xs text-muted-foreground flex gap-1">
                 <span className="text-success-800 flex-shrink-0">+</span>
-                {pro}
+                <MathMarkdown className="inline [&>p]:inline [&>p]:m-0">{pro}</MathMarkdown>
               </li>
             ))}
           </ul>
@@ -55,7 +60,7 @@ function MethodCard({ method, isSelected, showSelectButton, onSelect }: MethodCa
             {method.cons.map((con) => (
               <li key={con} className="text-xs text-muted-foreground flex gap-1">
                 <span className="text-error-700 flex-shrink-0">-</span>
-                {con}
+                <MathMarkdown className="inline [&>p]:inline [&>p]:m-0">{con}</MathMarkdown>
               </li>
             ))}
           </ul>

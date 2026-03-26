@@ -13,16 +13,33 @@ import {
   FeatherTarget,
   FeatherUser,
 } from "@subframe/core";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { AutonomousSubNav } from "@/components/main-content";
-import { getSettingsTab } from "@/components/pages/settings";
+import { getSettingsTab, type SettingsTab } from "@/components/pages/settings";
 import { SidebarWithSections } from "@/ui";
+
+interface SettingsNavItem {
+  tab: SettingsTab;
+  icon: ReactNode;
+  labelKey: string;
+}
+
+const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
+  { tab: "profile", icon: <FeatherUser />, labelKey: "nav.profile" },
+  { tab: "integration", icon: <FeatherLink />, labelKey: "nav.integration" },
+  { tab: "api-token", icon: <FeatherKey />, labelKey: "apiToken.title" },
+  { tab: "user-plan", icon: <FeatherCreditCard />, labelKey: "nav.userPlan" },
+  { tab: "receipts", icon: <FeatherReceipt />, labelKey: "receipts.title" },
+  { tab: "usage", icon: <FeatherBarChart2 />, labelKey: "usage.title" },
+];
 
 interface MainSidebarProps {
   activeSection: string;
   autonomousSubNav: AutonomousSubNav;
   isAuthenticated: boolean;
+  settingsTabs: SettingsTab[];
   onMobileNavClose: () => void;
   onAutonomousSubNavClick: () => void;
 }
@@ -31,6 +48,7 @@ export function MainSidebar({
   activeSection,
   autonomousSubNav,
   isAuthenticated,
+  settingsTabs,
   onMobileNavClose,
   onAutonomousSubNavClick,
 }: MainSidebarProps) {
@@ -111,66 +129,19 @@ export function MainSidebar({
         <SidebarWithSections.NavSection
           label={<span className="text-sm font-medium">{t("nav.settings")}</span>}
         >
-          <SidebarWithSections.NavItem
-            icon={<FeatherUser />}
-            selected={getSettingsTab(location.pathname) === "profile"}
-            onClick={() => {
-              navigate("/settings/profile");
-              onMobileNavClose();
-            }}
-          >
-            {t("nav.profile")}
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherLink />}
-            selected={getSettingsTab(location.pathname) === "integration"}
-            onClick={() => {
-              navigate("/settings/integration");
-              onMobileNavClose();
-            }}
-          >
-            {t("nav.integration")}
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherKey />}
-            selected={getSettingsTab(location.pathname) === "api-token"}
-            onClick={() => {
-              navigate("/settings/api-token");
-              onMobileNavClose();
-            }}
-          >
-            {t("apiToken.title")}
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherCreditCard />}
-            selected={getSettingsTab(location.pathname) === "user-plan"}
-            onClick={() => {
-              navigate("/settings/user-plan");
-              onMobileNavClose();
-            }}
-          >
-            {t("nav.userPlan")}
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherReceipt />}
-            selected={getSettingsTab(location.pathname) === "receipts"}
-            onClick={() => {
-              navigate("/settings/receipts");
-              onMobileNavClose();
-            }}
-          >
-            {t("receipts.title")}
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherBarChart2 />}
-            selected={getSettingsTab(location.pathname) === "usage"}
-            onClick={() => {
-              navigate("/settings/usage");
-              onMobileNavClose();
-            }}
-          >
-            {t("usage.title")}
-          </SidebarWithSections.NavItem>
+          {SETTINGS_NAV_ITEMS.filter((item) => settingsTabs.includes(item.tab)).map((item) => (
+            <SidebarWithSections.NavItem
+              key={item.tab}
+              icon={item.icon}
+              selected={getSettingsTab(location.pathname) === item.tab}
+              onClick={() => {
+                navigate(`/settings/${item.tab}`);
+                onMobileNavClose();
+              }}
+            >
+              {t(item.labelKey)}
+            </SidebarWithSections.NavItem>
+          ))}
         </SidebarWithSections.NavSection>
       )}
 
@@ -198,16 +169,18 @@ export function MainSidebar({
         >
           Discord
         </SidebarWithSections.NavItem>
-        <SidebarWithSections.NavItem
-          icon={<FeatherMessageSquare />}
-          selected={getSettingsTab(location.pathname) === "feedback"}
-          onClick={() => {
-            navigate("/settings/feedback");
-            onMobileNavClose();
-          }}
-        >
-          {t("nav.feedback")}
-        </SidebarWithSections.NavItem>
+        {isAuthenticated && settingsTabs.includes("feedback") && (
+          <SidebarWithSections.NavItem
+            icon={<FeatherMessageSquare />}
+            selected={getSettingsTab(location.pathname) === "feedback"}
+            onClick={() => {
+              navigate("/settings/feedback");
+              onMobileNavClose();
+            }}
+          >
+            {t("nav.feedback")}
+          </SidebarWithSections.NavItem>
+        )}
       </SidebarWithSections.NavSection>
     </>
   );

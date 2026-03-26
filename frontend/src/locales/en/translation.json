@@ -184,8 +184,11 @@
         "modificationNotes": "Modification Content",
         "repositoryName": "Repository Name"
       },
+      "generatingPlan": "Generating verification plan...",
+      "generatingCode": "Generating verification code...",
+      "codeGenerated": "Verification code generated",
       "experimentCode": {
-        "title": "Experiment Code"
+        "title": "Verification Code"
       },
       "experimentSettings": {
         "title": "Experiment Settings",

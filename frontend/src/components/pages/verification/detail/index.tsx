@@ -2,7 +2,8 @@ import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { OpenAPI } from "@/lib/api/core/OpenAPI";
+import { GenerateVerificationCodeRequestBody } from "@/lib/api/models/GenerateVerificationCodeRequestBody";
+import { VerificationService } from "@/lib/api/services/VerificationService";
 import { Loader } from "@/ui";
 import { mockExperimentResultResponse } from "../mock-data";
 import type { PaperDraft, ProposedMethod, Verification, VerificationMethod } from "../types";
@@ -73,23 +74,6 @@ interface VerificationDetailPageProps {
   onCreateWithMethod?: (sourceVerification: Verification, method: ProposedMethod) => void;
 }
 
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const headers: Record<string, string> = {};
-  if (OpenAPI.TOKEN) {
-    const token =
-      typeof OpenAPI.TOKEN === "function" ? await OpenAPI.TOKEN({} as never) : OpenAPI.TOKEN;
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  if (OpenAPI.HEADERS) {
-    const extraHeaders =
-      typeof OpenAPI.HEADERS === "function" ? await OpenAPI.HEADERS({} as never) : OpenAPI.HEADERS;
-    Object.assign(headers, extraHeaders);
-  }
-  return headers;
-}
-
 export function VerificationDetailPage({
   verification,
   onUpdateVerification,
@@ -99,12 +83,14 @@ export function VerificationDetailPage({
   const navigate = useNavigate();
   const [isPaperGenerating, setIsPaperGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isPollingRef = useRef(false);
 
   const stopPolling = useCallback(() => {
-    if (pollingIntervalRef.current !== null) {
-      clearInterval(pollingIntervalRef.current);
-      pollingIntervalRef.current = null;
+    isPollingRef.current = false;
+    if (pollingTimerRef.current !== null) {
+      clearTimeout(pollingTimerRef.current);
+      pollingTimerRef.current = null;
     }
   }, []);
 
@@ -115,39 +101,62 @@ export function VerificationDetailPage({
   }, [stopPolling]);
 
   const startPolling = useCallback(
-    (
-      workflowRunId: number,
-      githubOwner: string,
-      repositoryName: string,
-      verificationId: string,
-    ) => {
+    (workflowRunId: number, repositoryName: string, verificationId: string) => {
       stopPolling();
-      const apiBase = OpenAPI.BASE;
+      isPollingRef.current = true;
 
-      pollingIntervalRef.current = setInterval(async () => {
+      const poll = async () => {
+        if (!isPollingRef.current) return;
+
         try {
-          const authHeaders = await getAuthHeaders();
-          const res = await fetch(
-            `${apiBase}/airas/v1/verification/experiment-code-status/${githubOwner}/${repositoryName}/${workflowRunId}`,
-            { headers: authHeaders },
-          );
-          if (!res.ok) return;
-          const data = await res.json();
+          const data =
+            await VerificationService.getVerificationCodeStatusAirasV1VerificationCodeStatusRepositoryNameWorkflowRunIdGet(
+              repositoryName,
+              workflowRunId,
+            );
+
+          if (!isPollingRef.current) return;
+
           onUpdateVerification(verificationId, {
             codeGenerationStatus: data.status,
             codeGenerationConclusion: data.conclusion ?? null,
           });
+
           if (data.status === "completed" || data.conclusion != null) {
             stopPolling();
             onUpdateVerification(verificationId, { phase: "code-generated" });
+            return;
           }
         } catch {
           // ignore transient errors during polling
         }
-      }, 10000);
+
+        if (isPollingRef.current) {
+          pollingTimerRef.current = setTimeout(poll, 10000);
+        }
+      };
+
+      poll();
     },
     [onUpdateVerification, stopPolling],
   );
+
+  // Resume polling when returning to a verification that is still generating
+  useEffect(() => {
+    if (
+      verification?.phase === "code-generating" &&
+      verification.workflowRunId &&
+      verification.repositoryName
+    ) {
+      startPolling(verification.workflowRunId, verification.repositoryName, verification.id);
+    }
+  }, [
+    verification?.id,
+    verification?.phase,
+    verification?.workflowRunId,
+    verification?.repositoryName,
+    startPolling,
+  ]);
 
   const handleChatSubmit = useCallback(
     async (query: string) => {
@@ -159,46 +168,25 @@ export function VerificationDetailPage({
       });
 
       try {
-        const apiBase = OpenAPI.BASE;
-        const authHeaders = await getAuthHeaders();
-        const res = await fetch(`${apiBase}/airas/v1/verification/propose-policies`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...authHeaders,
-          },
-          body: JSON.stringify({ user_query: query, verification_id: verification.id }),
-        });
-
-        if (!res.ok) {
-          setErrorMessage(`Failed to propose policies: ${res.statusText}`);
-          return;
-        }
-
-        const data = await res.json();
+        const data =
+          await VerificationService.proposePoliciesAirasV1VerificationProposePoliciesPost({
+            user_query: query,
+            verification_id: verification.id,
+          });
 
         if (!data.feasible) {
           setErrorMessage(data.infeasible_reason ?? "This query is not feasible for verification.");
           return;
         }
 
-        const methods: ProposedMethod[] = data.proposed_methods.map(
-          (m: {
-            id: string;
-            title: string;
-            what_to_verify: string;
-            method: string;
-            pros?: string[];
-            cons?: string[];
-          }) => ({
-            id: m.id,
-            title: m.title,
-            whatToVerify: m.what_to_verify,
-            method: m.method,
-            pros: m.pros ?? [],
-            cons: m.cons ?? [],
-          }),
-        );
+        const methods: ProposedMethod[] = data.proposed_methods.map((m) => ({
+          id: m.id,
+          title: m.title,
+          whatToVerify: m.what_to_verify,
+          method: m.method,
+          pros: m.pros ?? [],
+          cons: m.cons ?? [],
+        }));
 
         onUpdateVerification(verification.id, {
           phase: "methods-proposed",
@@ -220,34 +208,19 @@ export function VerificationDetailPage({
       onUpdateVerification(verification.id, { selectedMethodId: methodId });
 
       try {
-        const apiBase = OpenAPI.BASE;
-        const authHeaders = await getAuthHeaders();
-        const res = await fetch(`${apiBase}/airas/v1/verification/generate-method`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...authHeaders,
+        const data = await VerificationService.generateMethodAirasV1VerificationGenerateMethodPost({
+          user_query: verification.query,
+          selected_policy: {
+            id: selected.id,
+            title: selected.title,
+            what_to_verify: selected.whatToVerify,
+            method: selected.method,
+            pros: selected.pros,
+            cons: selected.cons,
           },
-          body: JSON.stringify({
-            user_query: verification.query,
-            selected_policy: {
-              id: selected.id,
-              title: selected.title,
-              what_to_verify: selected.whatToVerify,
-              method: selected.method,
-              pros: selected.pros,
-              cons: selected.cons,
-            },
-            verification_id: verification.id,
-          }),
+          verification_id: verification.id,
         });
 
-        if (!res.ok) {
-          setErrorMessage(`Failed to generate method: ${res.statusText}`);
-          return;
-        }
-
-        const data = await res.json();
         const verificationMethod: VerificationMethod = {
           whatToVerify: data.what_to_verify,
           experimentSettings: data.experiment_settings,
@@ -286,45 +259,32 @@ export function VerificationDetailPage({
       });
 
       try {
-        const apiBase = OpenAPI.BASE;
-        const authHeaders = await getAuthHeaders();
-        const githubOwner = "airas-org";
-
-        const res = await fetch(`${apiBase}/airas/v1/verification/generate-experiment-code`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...authHeaders,
-          },
-          body: JSON.stringify({
+        const data =
+          await VerificationService.generateVerificationCodeAirasV1VerificationGenerateCodePost({
             user_query: verification.query,
             what_to_verify: updatedMethod.whatToVerify,
             experiment_settings: updatedMethod.experimentSettings,
             steps: updatedMethod.steps,
             modification_notes: modificationNotes,
-            repository_name: repositoryName,
-            github_owner: githubOwner,
-            branch_name: "main",
-            github_actions_agent: "claude_code",
+            github_config: {
+              repository_name: repositoryName,
+              branch_name: "main",
+            },
+            github_actions_agent:
+              GenerateVerificationCodeRequestBody.github_actions_agent.CLAUDE_CODE,
             verification_id: verification.id,
-          }),
-        });
-
-        if (!res.ok) {
-          setErrorMessage(`Failed to generate experiment code: ${res.statusText}`);
-          onUpdateVerification(verification.id, { phase: "plan-generated" });
-          return;
-        }
-
-        const data = await res.json();
+          });
 
         onUpdateVerification(verification.id, {
           workflowRunId: data.workflow_run_id ?? null,
           githubUrl: data.github_url ?? null,
         });
 
-        if (data.workflow_run_id) {
-          startPolling(data.workflow_run_id, githubOwner, repositoryName, verification.id);
+        if (data.dispatched && data.workflow_run_id) {
+          startPolling(data.workflow_run_id, repositoryName, verification.id);
+        } else if (!data.dispatched) {
+          setErrorMessage("Failed to dispatch workflow.");
+          onUpdateVerification(verification.id, { phase: "plan-generated" });
         } else {
           onUpdateVerification(verification.id, { phase: "code-generated" });
         }
@@ -424,16 +384,16 @@ export function VerificationDetailPage({
       });
     }
     if (anyCompleted) {
-      entries.push({
-        id: "sec-dashboard",
-        label: t("verification.detail.tocLabels.results"),
-      });
-    }
-    if (anyCompleted) {
-      entries.push({
-        id: "sec-paper",
-        label: t("verification.detail.tocLabels.paperWriting"),
-      });
+      entries.push(
+        {
+          id: "sec-dashboard",
+          label: t("verification.detail.tocLabels.results"),
+        },
+        {
+          id: "sec-paper",
+          label: t("verification.detail.tocLabels.paperWriting"),
+        },
+      );
     }
     if (verification.paperDraft) {
       entries.push({
@@ -514,7 +474,7 @@ export function VerificationDetailPage({
               <div className="flex items-center gap-2 px-3 py-4">
                 <Loader size="small" />
                 <span className="text-xs text-muted-foreground">
-                  Generating verification plan...
+                  {t("verification.detail.generatingPlan")}
                 </span>
               </div>
             )}
@@ -534,7 +494,7 @@ export function VerificationDetailPage({
                 <div className="flex items-center gap-2">
                   <Loader size="small" />
                   <span className="text-xs text-muted-foreground">
-                    Generating experiment code...
+                    {t("verification.detail.generatingCode")}
                   </span>
                 </div>
                 {verification.githubUrl && (
@@ -562,7 +522,9 @@ export function VerificationDetailPage({
               verification.githubUrl &&
               !verification.implementation && (
                 <div className="rounded-md border border-border bg-card p-4 space-y-1">
-                  <p className="text-sm font-medium text-foreground">Experiment code generated</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {t("verification.detail.codeGenerated")}
+                  </p>
                   <a
                     href={verification.githubUrl}
                     target="_blank"
@@ -590,20 +552,21 @@ export function VerificationDetailPage({
             )}
 
             {hasAnyCompleted && verification.implementation && (
-              <div id="sec-dashboard">
-                <ExperimentDashboard experiments={verification.implementation.experimentSettings} />
-              </div>
-            )}
-
-            {hasAnyCompleted && verification.implementation && (
-              <div id="sec-paper" className="space-y-6">
-                <PaperWritingSection
-                  experiments={verification.implementation.experimentSettings}
-                  paperDraft={verification.paperDraft}
-                  isGenerating={isPaperGenerating}
-                  onGeneratePaper={handleGeneratePaper}
-                />
-              </div>
+              <>
+                <div id="sec-dashboard">
+                  <ExperimentDashboard
+                    experiments={verification.implementation.experimentSettings}
+                  />
+                </div>
+                <div id="sec-paper" className="space-y-6">
+                  <PaperWritingSection
+                    experiments={verification.implementation.experimentSettings}
+                    paperDraft={verification.paperDraft}
+                    isGenerating={isPaperGenerating}
+                    onGeneratePaper={handleGeneratePaper}
+                  />
+                </div>
+              </>
             )}
 
             {isPaperGenerating && !verification.paperDraft && (

@@ -3,8 +3,8 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig  # noqa: F401
-from airas.usecases.assisted_research.generate_experiment_code_subgraph.generate_experiment_code_subgraph import (
-    GenerateExperimentCodeLLMMapping,
+from airas.usecases.assisted_research.generate_verification_code_subgraph.generate_verification_code_subgraph import (
+    GenerateVerificationCodeLLMMapping,
 )
 from airas.usecases.assisted_research.generate_verification_method_subgraph.generate_verification_method_subgraph import (
     GenerateVerificationMethodLLMMapping,
@@ -12,6 +12,7 @@ from airas.usecases.assisted_research.generate_verification_method_subgraph.gene
 from airas.usecases.assisted_research.propose_verification_policy_subgraph.propose_verification_policy_subgraph import (
     ProposeVerificationPolicyLLMMapping,
 )
+from api.schemas.github import GitHubConfigRequest
 
 
 class ProposedMethodSchema(BaseModel):
@@ -50,28 +51,26 @@ class GenerateMethodResponseBody(BaseModel):
     execution_time: dict[str, list[float]]
 
 
-class GenerateExperimentCodeRequestBody(BaseModel):
+class GenerateVerificationCodeRequestBody(BaseModel):
     user_query: str
     what_to_verify: str
     experiment_settings: dict[str, str]
     steps: list[str]
     modification_notes: str
-    repository_name: str
-    github_owner: str
-    branch_name: str
+    github_config: GitHubConfigRequest
     github_actions_agent: GitHubActionsAgent
-    llm_mapping: GenerateExperimentCodeLLMMapping | None = None
+    llm_mapping: GenerateVerificationCodeLLMMapping | None = None
     verification_id: UUID | None = None
 
 
-class GenerateExperimentCodeResponseBody(BaseModel):
+class GenerateVerificationCodeResponseBody(BaseModel):
     dispatched: bool
     workflow_run_id: int | None
     github_url: str | None
     execution_time: dict[str, list[float]]
 
 
-class ExperimentCodeStatusResponseBody(BaseModel):
+class VerificationCodeStatusResponseBody(BaseModel):
     status: str
     conclusion: str | None
 
