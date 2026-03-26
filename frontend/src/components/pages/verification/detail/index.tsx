@@ -84,8 +84,10 @@ export function VerificationDetailPage({
   const [isPaperGenerating, setIsPaperGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const pollingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isPollingRef = useRef(false);
 
   const stopPolling = useCallback(() => {
+    isPollingRef.current = false;
     if (pollingTimerRef.current !== null) {
       clearTimeout(pollingTimerRef.current);
       pollingTimerRef.current = null;
@@ -101,8 +103,11 @@ export function VerificationDetailPage({
   const startPolling = useCallback(
     (workflowRunId: number, repositoryName: string, verificationId: string) => {
       stopPolling();
+      isPollingRef.current = true;
 
       const poll = async () => {
+        if (!isPollingRef.current) return;
+
         try {
           const data =
             await VerificationService.getVerificationCodeStatusAirasV1VerificationCodeStatusRepositoryNameWorkflowRunIdGet(
@@ -110,12 +115,15 @@ export function VerificationDetailPage({
               workflowRunId,
             );
 
+          if (!isPollingRef.current) return;
+
           onUpdateVerification(verificationId, {
             codeGenerationStatus: data.status,
             codeGenerationConclusion: data.conclusion ?? null,
           });
 
           if (data.status === "completed" || data.conclusion != null) {
+            stopPolling();
             onUpdateVerification(verificationId, { phase: "code-generated" });
             return;
           }
@@ -123,7 +131,9 @@ export function VerificationDetailPage({
           // ignore transient errors during polling
         }
 
-        pollingTimerRef.current = setTimeout(poll, 10000);
+        if (isPollingRef.current) {
+          pollingTimerRef.current = setTimeout(poll, 10000);
+        }
       };
 
       poll();
@@ -270,8 +280,11 @@ export function VerificationDetailPage({
           githubUrl: data.github_url ?? null,
         });
 
-        if (data.workflow_run_id) {
+        if (data.dispatched && data.workflow_run_id) {
           startPolling(data.workflow_run_id, repositoryName, verification.id);
+        } else if (!data.dispatched) {
+          setErrorMessage("Failed to dispatch workflow.");
+          onUpdateVerification(verification.id, { phase: "plan-generated" });
         } else {
           onUpdateVerification(verification.id, { phase: "code-generated" });
         }

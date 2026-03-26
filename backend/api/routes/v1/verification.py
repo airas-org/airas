@@ -306,10 +306,12 @@ async def generate_verification_code(
         .build_graph()
         .ainvoke({"github_config": github_config}, config=config)
     )
-    if not prepare_result.get("is_repository_ready"):
+    if not prepare_result.get("is_repository_ready") or not prepare_result.get(
+        "is_branch_ready"
+    ):
         raise HTTPException(
             status_code=500,
-            detail="Failed to prepare repository.",
+            detail="Failed to prepare repository or branch.",
         )
 
     result = await (
