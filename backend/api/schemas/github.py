@@ -1,6 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from airas.core.types.github import GitHubConfig
+
+
+class GitHubConfigRequest(BaseModel):
+    """Request body schema for GitHub config (owner is resolved server-side)."""
+
+    repository_name: str = Field(..., description="Name of the repository")
+    branch_name: str = Field(..., description="Branch name")
 
 
 class PushGitHubRequestBody(BaseModel):

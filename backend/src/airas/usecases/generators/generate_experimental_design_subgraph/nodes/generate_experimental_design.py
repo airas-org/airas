@@ -6,10 +6,10 @@ from pydantic import BaseModel
 
 from airas.core.llm_config import NodeLLMConfig
 from airas.core.types.experimental_design import (
+    ComputeEnvironment,
     EvaluationMetric,
     ExperimentalDesign,
     MethodConfig,
-    RunnerConfig,
 )
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.infra.langchain_client import LangChainClient
@@ -37,7 +37,7 @@ async def generate_experimental_design(
     llm_config: NodeLLMConfig,
     llm_client: LangChainClient,
     research_hypothesis: ResearchHypothesis,
-    runner_config: RunnerConfig,
+    compute_environment: ComputeEnvironment,
     num_models_to_use: int,
     num_datasets_to_use: int,
     num_comparative_methods: int,
@@ -50,7 +50,7 @@ async def generate_experimental_design(
     # TODO: Handling cases where selection from a list is mandatory
     data = {
         "research_hypothesis": research_hypothesis,
-        "runner_config": runner_config,
+        "compute_environment": compute_environment,
         "model_list": json.dumps(LLM_API_MODELS, indent=4, ensure_ascii=False),
         "dataset_list": json.dumps(
             PROMPT_ENGINEERING_DATASETS, indent=4, ensure_ascii=False
@@ -117,7 +117,7 @@ async def generate_experimental_design(
 
     return ExperimentalDesign(
         experiment_summary=output.experiment_summary,
-        runner_config=runner_config,
+        compute_environment=compute_environment,
         evaluation_metrics=evaluation_metrics,
         models_to_use=models_to_use,
         datasets_to_use=datasets_to_use,

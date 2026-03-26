@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ResearchSection } from "@/types/research";
 import { HypothesisDrivenDetail } from "./hypothesis-driven-detail";
 import { HypothesisDrivenInput } from "./hypothesis-driven-input";
@@ -28,11 +28,16 @@ export function HypothesisDrivenResearchPage({
   listViewKey,
 }: HypothesisDrivenResearchPageProps) {
   const [subView, setSubView] = useState<SubView>(section ? "detail" : "list");
+  const onCreateSectionRef = useRef(onCreateSection);
+  onCreateSectionRef.current = onCreateSection;
+  const onRefreshSessionsRef = useRef(onRefreshSessions);
+  onRefreshSessionsRef.current = onRefreshSessions;
 
-  // サイドバーからクリック時は常に一覧画面を表示
+  // サイドバーからクリック時は入力画面を表示
   useEffect(() => {
     if (listViewKey !== undefined) {
-      setSubView("list");
+      onCreateSectionRef.current();
+      setSubView("input");
     }
   }, [listViewKey]);
 
@@ -55,17 +60,14 @@ export function HypothesisDrivenResearchPage({
 
   useEffect(() => {
     if (subView === "list") {
-      void onRefreshSessions();
+      void onRefreshSessionsRef.current();
     }
-  }, [subView, onRefreshSessions]);
+  }, [subView]);
 
-  const handleResearchStarted = useCallback(
-    async (taskId: string) => {
-      await onRefreshSessions(taskId);
-      setSubView("list");
-    },
-    [onRefreshSessions],
-  );
+  const handleResearchStarted = useCallback(async (taskId: string) => {
+    await onRefreshSessionsRef.current(taskId);
+    setSubView("list");
+  }, []);
 
   if (subView === "input") {
     return (

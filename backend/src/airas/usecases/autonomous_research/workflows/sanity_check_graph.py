@@ -6,7 +6,8 @@ from typing_extensions import TypedDict
 
 from airas.core.execution_timers import time_node
 from airas.core.logging_utils import setup_logging
-from airas.core.types.experimental_design import ExperimentalDesign, RunnerConfig
+from airas.core.types.experiment_history import RunStage
+from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.github import (
     GitHubActionsAgent,
     GitHubActionsConclusion,
@@ -14,14 +15,22 @@ from airas.core.types.github import (
     GitHubConfig,
 )
 from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.core.types.runner import (
+    EphemeralCloudRunnerConfig,
+    ExperimentRunnerConfig,
+    StaticRunnerConfig,
+)
 from airas.core.types.wandb import WandbConfig
 from airas.infra.github_client import GithubClient
+from airas.usecases.executors.dispatch_experiment_on_ephemeral_cloud_subgraph.dispatch_experiment_on_ephemeral_cloud_subgraph import (
+    DispatchExperimentOnEphemeralCloudSubgraph,
+)
+from airas.usecases.executors.dispatch_experiment_on_static_runner_subgraph.dispatch_experiment_on_static_runner_subgraph import (
+    DispatchExperimentOnStaticRunnerSubgraph,
+)
 from airas.usecases.executors.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
     DispatchExperimentValidationLLMMapping,
     DispatchExperimentValidationSubgraph,
-)
-from airas.usecases.executors.dispatch_sanity_check_subgraph.dispatch_sanity_check_subgraph import (
-    DispatchSanityCheckSubgraph,
 )
 from airas.usecases.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
     DownloadGithubActionsArtifactsSubgraph,
@@ -81,7 +90,7 @@ class SanityCheckGraph:
     def __init__(
         self,
         github_client: GithubClient,
-        runner_config: RunnerConfig,
+        runner_config: ExperimentRunnerConfig,
         wandb_config: WandbConfig,
         github_actions_agent: GitHubActionsAgent,
         llm_mapping: DispatchExperimentValidationLLMMapping | None = None,
@@ -168,15 +177,26 @@ class SanityCheckGraph:
             f"(index {current_index + 1}/{len(run_ids)}, attempt {retry_count + 1}/{_MAX_RETRY_GITHUB_ACTIONS_VALIDATION}) ==="
         )
 
-        dispatch_result = (
-            await DispatchSanityCheckSubgraph(
+        if isinstance(self.runner_config, StaticRunnerConfig):
+            dispatch_subgraph = DispatchExperimentOnStaticRunnerSubgraph(
                 github_client=self.github_client,
+                run_stage=RunStage.SANITY,
                 runner_label=self.runner_config.runner_label,
             )
-            .build_graph()
-            .ainvoke(
-                {"github_config": state["github_config"], "run_id": current_run_id}
+        elif isinstance(self.runner_config, EphemeralCloudRunnerConfig):
+            dispatch_subgraph = DispatchExperimentOnEphemeralCloudSubgraph(
+                github_client=self.github_client,
+                run_stage=RunStage.SANITY,
+                cloud_provider=self.runner_config.cloud_provider,
+                gpu_instance_type=self.runner_config.gpu_instance_type,
+                max_instance_hours=self.runner_config.max_instance_hours,
             )
+        else:
+            raise TypeError(
+                f"Unsupported runner config type: {type(self.runner_config)}"
+            )
+        dispatch_result = await dispatch_subgraph.build_graph().ainvoke(
+            {"github_config": state["github_config"], "run_id": current_run_id}
         )
 
         if not dispatch_result.get("dispatched", False):

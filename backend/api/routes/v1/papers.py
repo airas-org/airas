@@ -9,6 +9,7 @@ from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
 )
@@ -19,7 +20,7 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_fr
     SearchPaperTitlesFromQdrantSubgraph,
 )
 from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
-from api.ee.auth.dependencies import get_github_client
+from api.ee.auth.dependencies import get_github_client, get_langchain_client
 from api.schemas.papers import (
     RetrievePaperSubgraphRequestBody,
     RetrievePaperSubgraphResponseBody,
@@ -41,9 +42,9 @@ async def search_paper_titles(
     container: Container = fastapi_request.app.state.container
 
     if request.search_method == "qdrant":
-        litellm_client = container.litellm_client()
-        if hasattr(litellm_client, "__await__"):
-            litellm_client = await litellm_client
+        # NOTE: Qdrant embedding uses platform keys (env vars), not per-user keys.
+        # LiteLLMClient() with no args falls back to os.environ.
+        litellm_client = LiteLLMClient()
 
         qdrant_client = container.qdrant_client()
         if hasattr(qdrant_client, "__await__"):
@@ -87,9 +88,7 @@ async def search_paper_titles(
 @observe()
 async def get_paper_title(
     request: RetrievePaperSubgraphRequestBody,
-    langchain_client: Annotated[
-        LangChainClient, Depends(Provide[Container.langchain_client])
-    ],
+    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
     arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
     langfuse_client: Annotated[
@@ -122,9 +121,7 @@ async def get_paper_title(
 @observe()
 async def generate_paper(
     request: WriteSubgraphRequestBody,
-    langchain_client: Annotated[
-        LangChainClient, Depends(Provide[Container.langchain_client])
-    ],
+    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

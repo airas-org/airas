@@ -5,22 +5,28 @@ Content-Type: application/json
 
 {
     "github_config": {
-        "github_owner": "auto-res2",
-        "repository_name": "matsuzawa-20260211-4",
+        "repository_name": "matsuzawa-20260313-2",
         "branch_name": "main"
     },
     "research_topic": "Proposing an improved Chain-of-Thought based on human thinking methods, evaluated purely through prompt tuning without fine-tuning or time-intensive experiments",
     "runner_config": {
-        "runner_label": ["self-hosted", "gpu-runner"],
-        "description": "NVIDIA H200, VRAM: 140 GB, RAM: 240 GB"
+        "type": "ephemeral_cloud",
+        "cloud_provider": "aws",
+        "gpu_instance_type": "g4dn.xlarge"
+    },
+    "compute_environment": {
+        "gpu_type": "NVIDIA T4",
+        "gpu_count": 1,
+        "gpu_memory_gb": 16,
+        "description": "AWS g4dn.xlarge - NVIDIA T4, VRAM: 16 GB"
     },
     "wandb_config": {
         "entity": "airas",
-        "project": "2026-02-11"
+        "project": "2026-0313-matsuzawa-2"
     },
     "is_github_repo_private": false,
     "num_paper_search_queries": 3,
-    "papers_per_query": 3,
+    "papers_per_query": 2,
     "hypothesis_refinement_iterations": 1,
     "num_experiment_models": 1,
     "num_experiment_datasets": 1,

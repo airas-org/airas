@@ -1,13 +1,10 @@
-"use client";
-
 import { SiGithub } from "@icons-pack/react-simple-icons";
 import { Check, Code2, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { createGitHubRepo, generateExperimentCode, pushToGitHub } from "@/lib/api-mock";
 import type { ExperimentConfig } from "@/types/research";
+import { Button, Card } from "@/ui";
 
 interface CodeGenerationSectionProps {
   configs: ExperimentConfig[];

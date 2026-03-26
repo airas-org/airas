@@ -1,24 +1,38 @@
 import type { Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
-import { supabase } from "@/ee/auth/lib/supabase";
+import { getSupabase } from "@/ee/auth/lib/supabase";
 
 export function useSession() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    let mounted = true;
+    const client = getSupabase();
+    if (!client) {
       setLoading(false);
+      return;
+    }
+
+    client.auth.getSession().then(({ data: { session } }) => {
+      if (mounted) {
+        setSession(session);
+        setLoading(false);
+      }
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    } = client.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        setSession(session);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return { session, loading };

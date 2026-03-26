@@ -1,0 +1,129 @@
+import json
+import logging
+
+from jinja2 import Environment
+from pydantic import BaseModel
+
+from airas.core.llm_config import NodeLLMConfig
+from airas.core.types.experiment_history import ExperimentHistory
+from airas.core.types.experimental_design import (
+    ComputeEnvironment,
+    EvaluationMetric,
+    ExperimentalDesign,
+    MethodConfig,
+)
+from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.infra.langchain_client import LangChainClient
+from airas.resources.datasets.prompt_engineering_datasets import (
+    PROMPT_ENGINEERING_DATASETS,
+)
+from airas.resources.models.llm_api_models import LLM_API_MODELS
+from airas.usecases.generators.refine_experimental_design_subgraph.prompts.refine_experimental_design_prompt import (
+    refine_experimental_design_prompt,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class LLMOutput(BaseModel):
+    experiment_summary: str
+    evaluation_metrics: list[EvaluationMetric]
+    models_to_use: list[str]
+    datasets_to_use: list[str]
+    proposed_method: MethodConfig
+    comparative_methods: list[MethodConfig]
+
+
+async def refine_experimental_design(
+    llm_config: NodeLLMConfig,
+    llm_client: LangChainClient,
+    research_hypothesis: ResearchHypothesis,
+    experiment_history: ExperimentHistory,
+    design_instruction: str,
+    compute_environment: ComputeEnvironment,
+    num_models_to_use: int,
+    num_datasets_to_use: int,
+    num_comparative_methods: int,
+) -> ExperimentalDesign:
+    env = Environment()
+
+    template = env.from_string(refine_experimental_design_prompt)
+
+    data = {
+        "research_hypothesis": research_hypothesis,
+        "experiment_history": experiment_history,
+        "design_instruction": design_instruction,
+        "compute_environment": compute_environment,
+        "model_list": json.dumps(LLM_API_MODELS, indent=4, ensure_ascii=False),
+        "dataset_list": json.dumps(
+            PROMPT_ENGINEERING_DATASETS, indent=4, ensure_ascii=False
+        ),
+        "num_models_to_use": num_models_to_use,
+        "num_datasets_to_use": num_datasets_to_use,
+        "num_comparative_methods": num_comparative_methods,
+    }
+    messages = template.render(data)
+    output = await llm_client.structured_outputs(
+        message=messages,
+        data_model=LLMOutput,
+        llm_name=llm_config.llm_name,
+        params=llm_config.params,
+    )
+    if output is None:
+        raise ValueError("No response from LLM in refine_experimental_design.")
+
+    primary_metric = research_hypothesis.primary_metric
+    evaluation_metrics = output.evaluation_metrics
+
+    if primary_metric not in {metric.name for metric in evaluation_metrics}:
+        logger.warning(
+            f"Primary metric '{primary_metric}' not found in evaluation_metrics. "
+            f"Adding it to the list."
+        )
+        evaluation_metrics.append(
+            EvaluationMetric(
+                name=primary_metric,
+                description=f"Primary metric as specified in hypothesis: {primary_metric}",
+            )
+        )
+
+    models_to_use = output.models_to_use
+    datasets_to_use = output.datasets_to_use
+    comparative_methods = output.comparative_methods
+
+    if len(models_to_use) > num_models_to_use:
+        discarded_models = models_to_use[num_models_to_use:]
+        logger.warning(
+            f"LLM generated {len(models_to_use)} models but {num_models_to_use} were requested. "
+            f"Truncating to first {num_models_to_use}. "
+            f"Discarded models: {discarded_models}"
+        )
+        models_to_use = models_to_use[:num_models_to_use]
+
+    if len(datasets_to_use) > num_datasets_to_use:
+        discarded_datasets = datasets_to_use[num_datasets_to_use:]
+        logger.warning(
+            f"LLM generated {len(datasets_to_use)} datasets but {num_datasets_to_use} were requested. "
+            f"Truncating to first {num_datasets_to_use}. "
+            f"Discarded datasets: {discarded_datasets}"
+        )
+        datasets_to_use = datasets_to_use[:num_datasets_to_use]
+
+    if len(comparative_methods) > num_comparative_methods:
+        discarded_comparative_methods = comparative_methods[num_comparative_methods:]
+        logger.warning(
+            f"LLM generated {len(comparative_methods)} comparative methods but {num_comparative_methods} were requested. "
+            f"Truncating to first {num_comparative_methods}. "
+            f"Discarded comparative methods: {discarded_comparative_methods}"
+        )
+        comparative_methods = comparative_methods[:num_comparative_methods]
+
+    return ExperimentalDesign(
+        experiment_summary=output.experiment_summary,
+        compute_environment=compute_environment,
+        evaluation_metrics=evaluation_metrics,
+        models_to_use=models_to_use,
+        datasets_to_use=datasets_to_use,
+        proposed_method=output.proposed_method,
+        comparative_methods=comparative_methods,
+    )

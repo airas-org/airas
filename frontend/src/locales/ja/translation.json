@@ -22,7 +22,9 @@
     "help": "ヘルプ",
     "docs": "ドキュメント",
     "legal": "利用規約",
-    "experimental": "実験的機能"
+    "experimental": "実験的機能",
+    "reproduction": "再現実装",
+    "research": "研究"
   },
   "userMenu": {
     "developer": "開発者",
@@ -88,10 +90,27 @@
       }
     }
   },
+  "receipts": {
+    "title": "領収書 / 請求書",
+    "subtitle": "過去の領収書や請求書を確認できます。",
+    "empty": "領収書・請求書はまだありません。"
+  },
+  "usage": {
+    "title": "利用量",
+    "apiStatus": "API利用状況",
+    "monthlyUsage": "今月のAPI利用",
+    "percentUsed": "{{percent}}% 使用済み"
+  },
+  "sessionDropdown": {
+    "pastSessions": "過去のセッション",
+    "noSessions": "過去のセッションはありません"
+  },
   "verification": {
     "home": {
       "title": "検証一覧",
       "newVerification": "新規検証",
+      "duplicate": "複製",
+      "delete": "削除",
       "noVerifications": "検証がありません",
       "noVerificationsDesc": "新規検証ボタンから最初の検証を作成してください",
       "projects": "{{count}} 件",
@@ -104,11 +123,11 @@
         "results": "実験結果",
         "paperWriting": "執筆のための情報収集",
         "paper": "論文",
-        "hypothesis": "仮説入力済み",
-        "planDecided": "方針決定済み",
+        "hypothesis": "仮説入力",
+        "planDecided": "方針決定",
         "implementationDone": "実装完了",
         "experimentsDone": "実験完了",
-        "paperDone": "論文生成が完了"
+        "paperDone": "論文生成"
       },
       "badgeLabels": {
         "initial": "未開始",
@@ -121,7 +140,7 @@
       }
     },
     "detail": {
-      "newTitle": "新規検証",
+      "newTitle": "名称未設定",
       "copyTitle": "(コピー)",
       "chatInput": {
         "title": "何を検証しますか？",
@@ -142,6 +161,7 @@
         "reproductionExperiment": "以下の論文の再現実験を行いたい: ",
         "performanceBenchmark": "以下の性能ベンチマークを実施したい: "
       },
+      "proposingPolicies": "検証方針を作成中です...",
       "proposedMethods": {
         "title": "検証方針の提案",
         "subtitle": "AIが{{count}}つの検証方針を提案しました。1つを選択してください。",
@@ -150,10 +170,18 @@
         "method": "手法",
         "otherMethods": "その他の検証方法（{{count}}）"
       },
+      "userInput": {
+        "cardTitle": "ユーザー入力",
+        "titlePlaceholder": "名称未設定"
+      },
       "verificationPlan": {
         "title": "検証方法",
         "whatToVerify": "検証内容",
-        "steps": "具体的な手順"
+        "steps": "手順",
+        "experimentSettings": "実験設定",
+        "experimentLabel": "実験{{number}}",
+        "modificationNotes": "修正内容",
+        "repositoryName": "リポジトリ名"
       },
       "experimentCode": {
         "title": "実験コード"
@@ -203,9 +231,10 @@
       "listSubtitle": "過去に実行した自動研究セッションの履歴を確認できます",
       "inputPlaceholder": "研究トピックを入力してください",
       "start": "研究を開始",
-      "newSession": "新規研究を開始",
-      "firstSession": "最初の研究を開始",
+      "newSession": "新規研究",
+      "firstSession": "新規研究",
       "noSessions": "まだ研究セッションがありません",
+      "emptyStateTitle": "新しく研究を始める",
       "searchPlaceholder": "セッションを検索...",
       "sessionCount": "{{count}} 件のセッション",
       "sort": "並び替え",
@@ -216,7 +245,7 @@
       "newSessionTitle": "新規研究セッション",
       "researchTopic": "研究テーマ",
       "researchTopicPlaceholder": "例: Vision-Language Models を用いた Video QA の性能向上手法",
-      "backToList": "一覧に戻る",
+      "backToList": "研究一覧",
       "cancel": "キャンセル",
       "running": "実行中...",
       "run": "自動研究を実行",
@@ -227,8 +256,21 @@
       "repository": "リポジトリ",
       "branch": "ブランチ",
       "makePrivate": "リポジトリをプライベートにする",
+      "runnerType": "タイプ",
+      "runnerTypeStatic": "セルフホスト / GitHub ホスト",
+      "runnerTypeCloud": "クラウド（オンデマンド）",
       "runnerLabel": "ラベル",
-      "runnerDescription": "説明",
+      "cloudProvider": "クラウドプロバイダー",
+      "gpuInstanceType": "インスタンスタイプ",
+      "maxInstanceHours": "最大稼働時間 (h)",
+      "computeEnvironment": "計算環境",
+      "ceCpuCores": "CPU コア数",
+      "ceGpuType": "GPU 種類",
+      "ceGpuCount": "GPU 数",
+      "ceStorageType": "ストレージ種類",
+      "ceStorageGb": "ストレージ容量 (GB)",
+      "ceDescription": "補足情報",
+      "ceDescriptionPlaceholder": "上記フィールドに収まらない環境情報（ネットワーク帯域、特殊な依存関係など）",
       "numPaperSearchQueries": "論文検索クエリ数",
       "papersPerQuery": "1クエリあたりの取得論文数",
       "hypothesisRefinementIterations": "仮説リファインメント回数",
@@ -246,7 +288,7 @@
       "fetchLatest": "最新を取得",
       "saving": "保存中...",
       "save": "保存",
-      "noProgress": "まだ表示できる進捗はありません。",
+      "noProgress": "研究結果を読み込んでいます",
       "researchHistory": "研究履歴",
       "purpose": "目的",
       "paperUrl": "論文URL",
@@ -264,9 +306,10 @@
       "listHeading": "仮説駆動研究セッション一覧",
       "inputPlaceholder": "検証したい仮説を入力してください",
       "start": "検証を開始",
-      "newSession": "新規研究を開始",
-      "firstSession": "最初の研究を開始",
+      "newSession": "新規研究",
+      "firstSession": "新規研究",
       "noSessions": "まだ研究セッションがありません",
+      "emptyStateTitle": "新しく研究を始める",
       "searchPlaceholder": "セッションを検索...",
       "sessionCount": "{{count}} 件のセッション",
       "sort": "並び替え",
@@ -285,7 +328,7 @@
       "experimentalCode": "実験コード",
       "expectedResult": "期待される結果",
       "expectedConclusion": "期待される結論",
-      "backToList": "一覧に戻る",
+      "backToList": "研究一覧",
       "cancel": "キャンセル",
       "running": "実行中...",
       "run": "仮説駆動研究を実行",
@@ -296,8 +339,21 @@
       "repository": "リポジトリ",
       "branch": "ブランチ",
       "makePrivate": "リポジトリをプライベートにする",
+      "runnerType": "タイプ",
+      "runnerTypeStatic": "セルフホスト / GitHub ホスト",
+      "runnerTypeCloud": "クラウド（オンデマンド）",
       "runnerLabel": "ラベル",
-      "runnerDescription": "説明",
+      "cloudProvider": "クラウドプロバイダー",
+      "gpuInstanceType": "インスタンスタイプ",
+      "maxInstanceHours": "最大稼働時間 (h)",
+      "computeEnvironment": "計算環境",
+      "ceCpuCores": "CPU コア数",
+      "ceGpuType": "GPU 種類",
+      "ceGpuCount": "GPU 数",
+      "ceStorageType": "ストレージ種類",
+      "ceStorageGb": "ストレージ容量 (GB)",
+      "ceDescription": "補足情報",
+      "ceDescriptionPlaceholder": "上記フィールドに収まらない環境情報（ネットワーク帯域、特殊な依存関係など）",
       "numExperimentModels": "実験モデル数",
       "numExperimentDatasets": "データセット数",
       "numComparativeMethods": "比較手法数",
@@ -311,7 +367,7 @@
       "fetchLatest": "最新を取得",
       "saving": "保存中...",
       "save": "保存",
-      "noProgress": "まだ表示できる進捗はありません。",
+      "noProgress": "研究結果を読み込んでいます",
       "researchHistory": "研究履歴",
       "purpose": "目的",
       "paperUrl": "論文URL",
@@ -419,6 +475,16 @@
     "detailPlaceholder": "詳細な内容を入力してください",
     "email": "メールアドレス（任意）",
     "emailHelpText": "返信が必要な場合はご記入ください",
+    "submitting": "送信中...",
+    "submitError": "フィードバックの送信に失敗しました。もう一度お試しください。",
+    "validation": {
+      "categoryRequired": "カテゴリを選択してください",
+      "subjectRequired": "件名を入力してください",
+      "subjectTooLong": "件名は255文字以内で入力してください",
+      "detailRequired": "詳細を入力してください",
+      "detailTooLong": "詳細は5000文字以内で入力してください",
+      "emailInvalid": "有効なメールアドレスを入力してください"
+    },
     "faq": "よくある質問",
     "faqItems": {
       "q1": "AIRASで生成された研究成果の著作権はどうなりますか？",
@@ -503,6 +569,7 @@
     "bio": "自己紹介",
     "bioPlaceholder": "自己紹介を入力",
     "saved": "保存しました",
+    "researcher": "研究者",
     "apiUsage": "API利用状況",
     "monthlyApiUsage": "今月のAPI利用",
     "usagePercent": "{{percent}}% 使用済み"
@@ -531,26 +598,19 @@
     "countSuffix": "件"
   },
   "apiToken": {
-    "title": "API Token",
-    "subtitle": "APIトークンの管理",
-    "generate": "トークンを生成",
-    "copy": "コピー",
-    "noTokens": "トークンがありません",
-    "pageSubtitle": "AIRAS APIにアクセスするためのトークンを管理します",
-    "generateSection": "新しいトークンを生成",
-    "tokenName": "トークン名",
-    "tokenNamePlaceholder": "例: 研究用スクリプト",
-    "generateButton": "生成",
-    "tokenWarning": "このトークンは一度だけ表示されます。安全な場所に保存してください。",
-    "copied": "コピー済み",
-    "issuedTokens": "発行済みトークン",
-    "noTokensYet": "トークンはまだ発行されていません",
-    "createdAt": "作成",
-    "lastUsed": "最終使用",
-    "revoke": "取り消し",
-    "usageExample": "使用例",
-    "apiKeysSection": "API Keys",
-    "copyError": "クリップボードへのコピーに失敗しました"
+    "title": "LLM APIキー",
+    "pageSubtitle": "AIRASで使用するLLMプロバイダーのAPIキーを管理します",
+    "notConfigured": "未設定",
+    "configured": "設定済み",
+    "updatedAt": "更新日",
+    "apiKeyPlaceholder": "APIキーを入力",
+    "save": "保存",
+    "saving": "保存中...",
+    "delete": "削除",
+    "deleteConfirm": "{{provider}}のAPIキーを削除してもよろしいですか？",
+    "fetchError": "APIキーの読み込みに失敗しました",
+    "saveError": "APIキーの保存に失敗しました",
+    "deleteError": "APIキーの削除に失敗しました"
   },
   "settings": {
     "accountSection": "アカウント",
@@ -560,13 +620,53 @@
     "title": "Integration",
     "subtitle": "外部サービスとの連携設定",
     "save": "保存",
-    "saved": "保存しました"
+    "saved": "保存しました",
+    "connectionTitle": "接続",
+    "connectionSubtitle": "外部サービスと連携します。",
+    "github": {
+      "connecting": "GitHubと連携中...",
+      "success": "GitHub連携が完了しました。リダイレクト中...",
+      "error": "GitHub連携に失敗しました。",
+      "backToPage": "Integrationページに戻る",
+      "connectError": "GitHub連携の開始に失敗しました",
+      "disconnectError": "GitHub連携の解除に失敗しました",
+      "disconnect": "連携解除",
+      "connect": "連携",
+      "description": "実装はGitHubのリポジトリに保存されます。アカウントを連携してください。",
+      "connected": "連携済み",
+      "changeAccount": "アカウントを変更",
+      "privateRepo": "リポジトリをプライベートで作成する",
+      "privateRepoDesc": "新しく作成されるリポジトリはデフォルトでプライベートに設定されます。"
+    },
+    "slack": {
+      "name": "Slack（coming soon）",
+      "connect": "連携",
+      "description": "Slackアカウントを連携して、実行完了の通知が届く様に設定できます。"
+    }
   },
   "userPlan": {
     "title": "User Plan",
     "subtitle": "プランの確認・変更",
     "current": "現在のプラン",
-    "upgrade": "アップグレード"
+    "upgrade": "アップグレード",
+    "planTitle": "プラン",
+    "planSubtitle": "サブスクリプションプランを管理します",
+    "currentPlan": "現在のプラン",
+    "perMonth": "/月",
+    "processing": "処理中...",
+    "confirmDowngrade": "本当にダウングレードしますか？",
+    "downgrade": "ダウングレード",
+    "upgradeToPro": "Pro にアップグレード",
+    "downgradeFailed": "ダウングレードに失敗しました。もう一度お試しください。",
+    "checkoutFailed": "チェックアウトの開始に失敗しました。もう一度お試しください。",
+    "freeFeatures": ["基本的な自動研究", "コミュニティサポート", "標準LLMアクセス"],
+    "proFeatures": [
+      "Freeの全機能",
+      "優先研究実行",
+      "高度なLLMモデル",
+      "優先サポート",
+      "カスタム連携"
+    ]
   },
   "papers": {
     "title": "論文",
@@ -715,10 +815,9 @@
     "openOnGitHub": "GitHubで開く",
     "close": "閉じる"
   },
-  "autoResearchResult": {
-    "noProgress": "まだ表示できる進捗はありません。",
-    "evaluationMetric": "評価指標",
-    "baseline": "ベースライン"
+  "reproduction": {
+    "title": "再現実装",
+    "comingSoon": "近日公開予定です"
   },
   "common": {
     "loading": "読み込み中...",

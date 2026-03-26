@@ -1,15 +1,15 @@
 "use client";
-
 /*
  * Documentation:
  * Link Button — https://app.subframe.com/32f8a386b602/library?component=Link+Button_a4ee726a-774c-4091-8c49-55b659356024
  */
 
-import * as SubframeCore from "@subframe/core";
 import React from "react";
+import * as SubframeCore from "@subframe/core";
 import * as SubframeUtils from "../utils";
 
-interface LinkButtonRootProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface LinkButtonRootProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   disabled?: boolean;
   variant?: "brand" | "neutral" | "inverse";
   size?: "large" | "medium" | "small";
@@ -33,14 +33,14 @@ const LinkButtonRoot = React.forwardRef<HTMLButtonElement, LinkButtonRootProps>(
       type = "button",
       ...otherProps
     }: LinkButtonRootProps,
-    ref,
+    ref
   ) {
     return (
       <button
         className={SubframeUtils.twClassNames(
           "group/a4ee726a flex cursor-pointer items-center gap-1 border-none bg-transparent text-left",
           { "flex-row flex-nowrap gap-1": size === "large" },
-          className,
+          className
         )}
         ref={ref}
         type={type}
@@ -54,9 +54,10 @@ const LinkButtonRoot = React.forwardRef<HTMLButtonElement, LinkButtonRootProps>(
               {
                 "text-caption font-caption": size === "small",
                 "text-heading-3 font-heading-3": size === "large",
-                "text-white group-hover/a4ee726a:text-white": variant === "inverse",
+                "text-white group-hover/a4ee726a:text-white":
+                  variant === "inverse",
                 "text-brand-700": variant === "brand",
-              },
+              }
             )}
           >
             {icon}
@@ -69,9 +70,10 @@ const LinkButtonRoot = React.forwardRef<HTMLButtonElement, LinkButtonRootProps>(
               {
                 "text-caption font-caption": size === "small",
                 "text-heading-3 font-heading-3": size === "large",
-                "text-white group-hover/a4ee726a:text-white": variant === "inverse",
+                "text-white group-hover/a4ee726a:text-white":
+                  variant === "inverse",
                 "text-brand-700": variant === "brand",
-              },
+              }
             )}
           >
             {children}
@@ -84,9 +86,10 @@ const LinkButtonRoot = React.forwardRef<HTMLButtonElement, LinkButtonRootProps>(
               {
                 "text-caption font-caption": size === "small",
                 "text-heading-3 font-heading-3": size === "large",
-                "text-white group-hover/a4ee726a:text-white": variant === "inverse",
+                "text-white group-hover/a4ee726a:text-white":
+                  variant === "inverse",
                 "text-brand-700": variant === "brand",
-              },
+              }
             )}
           >
             {iconRight}
@@ -94,7 +97,7 @@ const LinkButtonRoot = React.forwardRef<HTMLButtonElement, LinkButtonRootProps>(
         ) : null}
       </button>
     );
-  },
+  }
 );
 
 export const LinkButton = LinkButtonRoot;

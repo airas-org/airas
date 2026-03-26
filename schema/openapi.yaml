@@ -211,6 +211,33 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
       - HTTPBearer: []
+  /airas/v1/experimental_settings/refinements:
+    post:
+      tags:
+      - experimental_settings
+      summary: Refine Experimental Design
+      operationId: refine_experimental_design_airas_v1_experimental_settings_refinements_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefineExperimentalDesignSubgraphRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefineExperimentalDesignSubgraphResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /airas/v1/experiments/run-ids:
     post:
       tags:
@@ -949,174 +976,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/assisted_research/session:
-    post:
-      tags:
-      - assisted_research
-      summary: Create Session
-      operationId: create_session_airas_v1_assisted_research_session_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AssistedResearchSessionCreateRequest'
-        required: true
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AssistedResearchSessionResponse'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
-  /airas/v1/assisted_research/session/{session_id}:
-    get:
-      tags:
-      - assisted_research
-      summary: Get Session
-      operationId: get_session_airas_v1_assisted_research_session__session_id__get
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: session_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-          title: Session Id
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AssistedResearchSessionResponse'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/assisted_research/step:
-    post:
-      tags:
-      - assisted_research
-      summary: Create Step
-      operationId: create_step_airas_v1_assisted_research_step_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AssistedResearchStepCreateRequest'
-        required: true
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AssistedResearchStepResponse'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
-  /airas/v1/assisted_research/step/{step_id}:
-    get:
-      tags:
-      - assisted_research
-      summary: Get Step
-      operationId: get_step_airas_v1_assisted_research_step__step_id__get
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: step_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-          title: Step Id
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AssistedResearchStepResponse'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/assisted_research/link:
-    post:
-      tags:
-      - assisted_research
-      summary: Create Link
-      operationId: create_link_airas_v1_assisted_research_link_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AssistedResearchLinkCreateRequest'
-        required: true
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AssistedResearchLinkResponse'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
-  /airas/v1/assisted_research/link/{from_step_id}:
-    get:
-      tags:
-      - assisted_research
-      summary: Get Link
-      operationId: get_link_airas_v1_assisted_research_link__from_step_id__get
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: from_step_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-          title: From Step Id
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AssistedResearchLinkListResponse'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/interactive-repo-agent/dispatch:
     post:
       tags:
@@ -1651,12 +1510,12 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
       - HTTPBearer: []
-  /airas/v1/verification/generate-code:
+  /airas/v1/verification/generate-experiment-code:
     post:
       tags:
       - verification
-      summary: Generate Verification Code
-      operationId: generate_verification_code_airas_v1_verification_generate_code_post
+      summary: Generate Experiment Code
+      operationId: generate_experiment_code_airas_v1_verification_generate_experiment_code_post
       security:
       - HTTPBearer: []
       parameters:
@@ -1673,29 +1532,35 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenerateVerificationCodeRequestBody'
+              $ref: '#/components/schemas/GenerateExperimentCodeRequestBody'
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenerateVerificationCodeResponseBody'
+                $ref: '#/components/schemas/GenerateExperimentCodeResponseBody'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/verification/code-status/{repository_name}/{workflow_run_id}:
+  /airas/v1/verification/experiment-code-status/{github_owner}/{repository_name}/{workflow_run_id}:
     get:
       tags:
       - verification
-      summary: Get Verification Code Status
-      operationId: get_verification_code_status_airas_v1_verification_code_status__repository_name___workflow_run_id__get
+      summary: Get Experiment Code Status
+      operationId: get_experiment_code_status_airas_v1_verification_experiment_code_status__github_owner___repository_name___workflow_run_id__get
       security:
       - HTTPBearer: []
       parameters:
+      - name: github_owner
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Github Owner
       - name: repository_name
         in: path
         required: true
@@ -2130,7 +1995,7 @@ components:
         analyze_experiment:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gpt-5.4-2026-03-05
       type: object
       title: AnalyzeExperimentLLMMapping
     AnalyzeExperimentRequestBody:
@@ -2179,163 +2044,46 @@ components:
           default: anthropic
       type: object
       title: AnthropicParams
-    AssistedResearchLinkCreateRequest:
+    ApiKeyListResponse:
       properties:
-        from_step_id:
-          type: string
-          format: uuid
-          title: From Step Id
-        to_step_id:
-          type: string
-          format: uuid
-          title: To Step Id
-      type: object
-      required:
-      - from_step_id
-      - to_step_id
-      title: AssistedResearchLinkCreateRequest
-    AssistedResearchLinkListResponse:
-      properties:
-        links:
+        keys:
           items:
-            $ref: '#/components/schemas/AssistedResearchLinkResponse'
+            $ref: '#/components/schemas/ApiKeyResponse'
           type: array
-          title: Links
+          title: Keys
       type: object
       required:
-      - links
-      title: AssistedResearchLinkListResponse
-    AssistedResearchLinkResponse:
+      - keys
+      title: ApiKeyListResponse
+    ApiKeyResponse:
       properties:
-        from_step_id:
+        provider:
+          $ref: '#/components/schemas/ApiProvider'
+        masked_key:
           type: string
-          format: uuid
-          title: From Step Id
-        to_step_id:
-          type: string
-          format: uuid
-          title: To Step Id
-      type: object
-      required:
-      - from_step_id
-      - to_step_id
-      title: AssistedResearchLinkResponse
-    AssistedResearchSessionCreateRequest:
-      properties:
-        title:
-          type: string
-          maxLength: 200
-          minLength: 1
-          title: Title
-      type: object
-      required:
-      - title
-      title: AssistedResearchSessionCreateRequest
-    AssistedResearchSessionResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        title:
-          type: string
-          title: Title
+          title: Masked Key
         created_at:
           type: string
           format: date-time
           title: Created At
-        created_by:
-          type: string
-          format: uuid
-          title: Created By
-        active_head_step_id:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Active Head Step Id
-      type: object
-      required:
-      - id
-      - title
-      - created_at
-      - created_by
-      - active_head_step_id
-      title: AssistedResearchSessionResponse
-    AssistedResearchStepCreateRequest:
-      properties:
-        session_id:
-          type: string
-          format: uuid
-          title: Session Id
-        status:
-          $ref: '#/components/schemas/Status'
-        step_type:
-          $ref: '#/components/schemas/StepType'
-        error_message:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Error Message
-        result:
-          title: Result
-        schema_version:
-          type: integer
-          minimum: 1.0
-          title: Schema Version
-      type: object
-      required:
-      - session_id
-      - status
-      - step_type
-      - error_message
-      - result
-      - schema_version
-      title: AssistedResearchStepCreateRequest
-    AssistedResearchStepResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        session_id:
-          type: string
-          format: uuid
-          title: Session Id
-        created_by:
-          type: string
-          format: uuid
-          title: Created By
-        created_at:
+        updated_at:
           type: string
           format: date-time
-          title: Created At
-        status:
-          $ref: '#/components/schemas/Status'
-        step_type:
-          $ref: '#/components/schemas/StepType'
-        error_message:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Error Message
-        result:
-          title: Result
-        schema_version:
-          type: integer
-          title: Schema Version
+          title: Updated At
       type: object
       required:
-      - id
-      - session_id
-      - created_by
+      - provider
+      - masked_key
       - created_at
-      - status
-      - step_type
-      - error_message
-      - result
-      - schema_version
-      title: AssistedResearchStepResponse
+      - updated_at
+      title: ApiKeyResponse
+    ApiProvider:
+      type: string
+      enum:
+      - openai
+      - anthropic
+      - gemini
+      title: ApiProvider
     CancelInteractiveRepoAgentRequestBody:
       properties:
         github_config:
@@ -2361,6 +2109,37 @@ components:
       - cancelled
       - execution_time
       title: CancelInteractiveRepoAgentResponseBody
+    CancelSubscriptionResponse:
+      properties:
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - status
+      title: CancelSubscriptionResponse
+    CheckoutRequest:
+      properties:
+        success_url:
+          type: string
+          title: Success Url
+        cancel_url:
+          type: string
+          title: Cancel Url
+      type: object
+      required:
+      - success_url
+      - cancel_url
+      title: CheckoutRequest
+    CheckoutResponse:
+      properties:
+        checkout_url:
+          type: string
+          title: Checkout Url
+      type: object
+      required:
+      - checkout_url
+      title: CheckoutResponse
     CodeGenerationGraphLLMMapping:
       properties:
         dispatch_code_generation:
@@ -2428,6 +2207,126 @@ components:
       - paper_url
       - execution_time
       title: CompileLatexSubgraphResponseBody
+    ComputeEnvironment:
+      properties:
+        os:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Os
+        cpu_cores:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Cpu Cores
+        ram_gb:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Ram Gb
+        gpu_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Gpu Type
+        gpu_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Gpu Count
+        gpu_memory_gb:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Gpu Memory Gb
+        storage_type:
+          anyOf:
+          - type: string
+            enum:
+            - nvme
+            - ssd
+            - hdd
+          - type: 'null'
+          title: Storage Type
+        storage_gb:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Storage Gb
+        python_version:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Python Version
+        cuda_version:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cuda Version
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+      type: object
+      title: ComputeEnvironment
+    CreateFeedbackRequestBody:
+      properties:
+        category:
+          $ref: '#/components/schemas/FeedbackCategory'
+        subject:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Subject
+        detail:
+          type: string
+          maxLength: 5000
+          minLength: 1
+          title: Detail
+        email:
+          anyOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+          title: Email
+      type: object
+      required:
+      - category
+      - subject
+      - detail
+      title: CreateFeedbackRequestBody
+    CreateFeedbackResponseBody:
+      properties:
+        id:
+          type: string
+          title: Id
+        category:
+          type: string
+          title: Category
+        subject:
+          type: string
+          title: Subject
+        detail:
+          type: string
+          title: Detail
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        created_at:
+          type: string
+          title: Created At
+      type: object
+      required:
+      - id
+      - category
+      - subject
+      - detail
+      - email
+      - created_at
+      title: CreateFeedbackResponseBody
     DatasetConfig:
       properties:
         description:
@@ -2511,6 +2410,14 @@ components:
       - citation
       - task_type
       title: DatasetConfig
+    DecideExperimentCycleLLMMapping:
+      properties:
+        decide_experiment_cycle:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5.4-2026-03-05
+      type: object
+      title: DecideExperimentCycleLLMMapping
     DispatchCodeGenerationLLMMapping:
       properties:
         dispatch_code_generation:
@@ -2646,13 +2553,7 @@ components:
           type: integer
           title: Workflow Run Id
         run_stage:
-          type: string
-          enum:
-          - sanity
-          - pilot
-          - main
-          - visualization
-          title: Run Stage
+          $ref: '#/components/schemas/RunStage'
         research_hypothesis:
           $ref: '#/components/schemas/ResearchHypothesis'
         experimental_design:
@@ -2758,13 +2659,16 @@ components:
         run_id:
           type: string
           title: Run Id
-        runner_label:
-          anyOf:
-          - items:
-              type: string
-            type: array
-          - type: 'null'
-          title: Runner Label
+        runner_config:
+          oneOf:
+          - $ref: '#/components/schemas/StaticRunnerConfig'
+          - $ref: '#/components/schemas/EphemeralCloudRunnerConfig'
+          title: Runner Config
+          discriminator:
+            propertyName: type
+            mapping:
+              ephemeral_cloud: '#/components/schemas/EphemeralCloudRunnerConfig'
+              static: '#/components/schemas/StaticRunnerConfig'
       type: object
       required:
       - github_config
@@ -2794,13 +2698,16 @@ components:
         run_id:
           type: string
           title: Run Id
-        runner_label:
-          anyOf:
-          - items:
-              type: string
-            type: array
-          - type: 'null'
-          title: Runner Label
+        runner_config:
+          oneOf:
+          - $ref: '#/components/schemas/StaticRunnerConfig'
+          - $ref: '#/components/schemas/EphemeralCloudRunnerConfig'
+          title: Runner Config
+          discriminator:
+            propertyName: type
+            mapping:
+              ephemeral_cloud: '#/components/schemas/EphemeralCloudRunnerConfig'
+              static: '#/components/schemas/StaticRunnerConfig'
       type: object
       required:
       - github_config
@@ -2891,6 +2798,36 @@ components:
       - artifact_data
       - execution_time
       title: DownloadGithubActionsArtifactsResponseBody
+    EphemeralCloudRunnerConfig:
+      properties:
+        type:
+          type: string
+          const: ephemeral_cloud
+          title: Type
+        cloud_provider:
+          type: string
+          enum:
+          - aws
+          - gcp
+          title: Cloud Provider
+          description: Cloud provider ('aws' or 'gcp')
+          default: aws
+        gpu_instance_type:
+          type: string
+          title: Gpu Instance Type
+          description: Instance type (e.g., 'g4dn.xlarge' for AWS, 'n1-standard-4'
+            for GCP)
+          default: g4dn.xlarge
+        max_instance_hours:
+          type: integer
+          minimum: 1.0
+          title: Max Instance Hours
+          description: Max instance lifetime in hours (safety net for orphaned instances)
+          default: 120
+      type: object
+      required:
+      - type
+      title: EphemeralCloudRunnerConfig
     EvaluationMetric:
       properties:
         name:
@@ -2918,6 +2855,153 @@ components:
             'config/run/run1.yaml')
       type: object
       title: ExperimentCode
+    ExperimentCodeStatusResponseBody:
+      properties:
+        status:
+          type: string
+          title: Status
+        conclusion:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Conclusion
+      type: object
+      required:
+      - status
+      - conclusion
+      title: ExperimentCodeStatusResponseBody
+    ExperimentCycle-Input:
+      properties:
+        experimental_design:
+          $ref: '#/components/schemas/ExperimentalDesign-Input'
+          description: Experimental design used in this cycle
+        run_stage:
+          $ref: '#/components/schemas/RunStage'
+          description: Stage at which the experiment was executed (pilot or full)
+        experimental_results:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentalResults'
+          - type: 'null'
+          description: Results from the experiment execution
+        experimental_analysis:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentalAnalysis'
+          - type: 'null'
+          description: Analysis of the experiment results
+        decision:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentCycleDecision'
+          - type: 'null'
+          description: Decision made after analyzing this cycle's results
+      type: object
+      required:
+      - experimental_design
+      - run_stage
+      title: ExperimentCycle
+    ExperimentCycle-Output:
+      properties:
+        experimental_design:
+          $ref: '#/components/schemas/ExperimentalDesign-Output'
+          description: Experimental design used in this cycle
+        run_stage:
+          $ref: '#/components/schemas/RunStage'
+          description: Stage at which the experiment was executed (pilot or full)
+        experimental_results:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentalResults'
+          - type: 'null'
+          description: Results from the experiment execution
+        experimental_analysis:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentalAnalysis'
+          - type: 'null'
+          description: Analysis of the experiment results
+        decision:
+          anyOf:
+          - $ref: '#/components/schemas/ExperimentCycleDecision'
+          - type: 'null'
+          description: Decision made after analyzing this cycle's results
+      type: object
+      required:
+      - experimental_design
+      - run_stage
+      title: ExperimentCycle
+    ExperimentCycleAction:
+      type: string
+      enum:
+      - scale_up
+      - redesign
+      - abort
+      - complete
+      title: ExperimentCycleAction
+    ExperimentCycleDecision:
+      properties:
+        action:
+          $ref: '#/components/schemas/ExperimentCycleAction'
+          description: The decided next action for the experiment cycle
+        reasoning:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reasoning
+          description: Explanation of why this action was chosen
+        design_instruction:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Design Instruction
+          description: Instruction for refining the experimental design. Required
+            when action is redesign.
+      type: object
+      required:
+      - action
+      title: ExperimentCycleDecision
+    ExperimentCycleGraphLLMMapping:
+      properties:
+        code_generation:
+          anyOf:
+          - $ref: '#/components/schemas/CodeGenerationGraphLLMMapping'
+          - type: 'null'
+        dispatch_experiment_validation:
+          anyOf:
+          - $ref: '#/components/schemas/DispatchExperimentValidationLLMMapping'
+          - type: 'null'
+        analyze_experiment:
+          anyOf:
+          - $ref: '#/components/schemas/AnalyzeExperimentLLMMapping'
+          - type: 'null'
+        decide_experiment_cycle:
+          anyOf:
+          - $ref: '#/components/schemas/DecideExperimentCycleLLMMapping'
+          - type: 'null'
+        refine_experimental_design:
+          anyOf:
+          - $ref: '#/components/schemas/RefineExperimentalDesignLLMMapping'
+          - type: 'null'
+      type: object
+      title: ExperimentCycleGraphLLMMapping
+    ExperimentHistory-Input:
+      properties:
+        cycles:
+          items:
+            $ref: '#/components/schemas/ExperimentCycle-Input'
+          type: array
+          title: Cycles
+          description: Append-only list of experiment cycles (pilot and full only;
+            sanity is not recorded)
+      type: object
+      title: ExperimentHistory
+    ExperimentHistory-Output:
+      properties:
+        cycles:
+          items:
+            $ref: '#/components/schemas/ExperimentCycle-Output'
+          type: array
+          title: Cycles
+          description: Append-only list of experiment cycles (pilot and full only;
+            sanity is not recorded)
+      type: object
+      title: ExperimentHistory
     ExperimentalAnalysis:
       properties:
         analysis_report:
@@ -2937,9 +3021,9 @@ components:
           title: Experiment Summary
           description: Overall experimental design including task definition, data
             handling approach, and implementation details
-        runner_config:
+        compute_environment:
           anyOf:
-          - $ref: '#/components/schemas/RunnerConfig'
+          - $ref: '#/components/schemas/ComputeEnvironment'
           - type: 'null'
           description: Computational environment specification
         evaluation_metrics:
@@ -2990,9 +3074,9 @@ components:
           title: Experiment Summary
           description: Overall experimental design including task definition, data
             handling approach, and implementation details
-        runner_config:
+        compute_environment:
           anyOf:
-          - $ref: '#/components/schemas/RunnerConfig'
+          - $ref: '#/components/schemas/ComputeEnvironment'
           - type: 'null'
           description: Computational environment specification
         evaluation_metrics:
@@ -3048,14 +3132,22 @@ components:
           - type: 'null'
           title: Stderr
           description: Standard error from the run
-        figures:
+        result_figures:
           anyOf:
           - items:
               type: string
             type: array
           - type: 'null'
-          title: Figures
-          description: Figures specific to this run
+          title: Result Figures
+          description: Result figure filenames (e.g. plot.pdf)
+        diagram_figures:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Diagram Figures
+          description: Method diagram filenames (e.g. architecture.pdf)
         metrics_data:
           anyOf:
           - additionalProperties: true
@@ -3065,6 +3157,14 @@ components:
           description: Metrics data for runs (keyed by run_id or 'comparison')
       type: object
       title: ExperimentalResults
+    FeedbackCategory:
+      type: string
+      enum:
+      - bug
+      - feature
+      - general
+      - other
+      title: FeedbackCategory
     FetchExperimentCodeRequestBody:
       properties:
         github_config:
@@ -3168,20 +3268,115 @@ components:
       - references_bib
       - execution_time
       title: GenerateBibfileSubgraphResponseBody
+    GenerateExperimentCodeLLMMapping:
+      properties:
+        dispatch_experiment_code_generation:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: anthropic/claude-sonnet-4-5
+      type: object
+      title: GenerateExperimentCodeLLMMapping
+    GenerateExperimentCodeRequestBody:
+      properties:
+        user_query:
+          type: string
+          title: User Query
+        what_to_verify:
+          type: string
+          title: What To Verify
+        experiment_settings:
+          additionalProperties:
+            type: string
+          type: object
+          title: Experiment Settings
+        steps:
+          items:
+            type: string
+          type: array
+          title: Steps
+        modification_notes:
+          type: string
+          title: Modification Notes
+        repository_name:
+          type: string
+          title: Repository Name
+        github_owner:
+          type: string
+          title: Github Owner
+        branch_name:
+          type: string
+          title: Branch Name
+        github_actions_agent:
+          type: string
+          enum:
+          - claude_code
+          - open_code
+          title: Github Actions Agent
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateExperimentCodeLLMMapping'
+          - type: 'null'
+        verification_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Verification Id
+      type: object
+      required:
+      - user_query
+      - what_to_verify
+      - experiment_settings
+      - steps
+      - modification_notes
+      - repository_name
+      - github_owner
+      - branch_name
+      - github_actions_agent
+      title: GenerateExperimentCodeRequestBody
+    GenerateExperimentCodeResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        workflow_run_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Workflow Run Id
+        github_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Url
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - workflow_run_id
+      - github_url
+      - execution_time
+      title: GenerateExperimentCodeResponseBody
     GenerateExperimentalDesignLLMMapping:
       properties:
         generate_experimental_design:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gpt-5.4-2026-03-05
       type: object
       title: GenerateExperimentalDesignLLMMapping
     GenerateExperimentalDesignSubgraphRequestBody:
       properties:
         research_hypothesis:
           $ref: '#/components/schemas/ResearchHypothesis'
-        runner_config:
-          $ref: '#/components/schemas/RunnerConfig'
+        compute_environment:
+          $ref: '#/components/schemas/ComputeEnvironment'
         num_models_to_use:
           type: integer
           title: Num Models To Use
@@ -3198,7 +3393,7 @@ components:
       type: object
       required:
       - research_hypothesis
-      - runner_config
+      - compute_environment
       - num_models_to_use
       - num_datasets_to_use
       - num_comparative_methods
@@ -3224,7 +3419,7 @@ components:
         generate_hypothesis:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gpt-5.4-2026-03-05
         evaluate_novelty_and_significance:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
@@ -3232,7 +3427,7 @@ components:
         refine_hypothesis:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gpt-5.4-2026-03-05
       type: object
       title: GenerateHypothesisSubgraphV0LLMMapping
     GenerateHypothesisSubgraphV0RequestBody:
@@ -3323,6 +3518,57 @@ components:
       - latex_text
       - execution_time
       title: GenerateLatexSubgraphResponseBody
+    GenerateMethodRequestBody:
+      properties:
+        user_query:
+          type: string
+          title: User Query
+        selected_policy:
+          $ref: '#/components/schemas/ProposedMethodSchema'
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateVerificationMethodLLMMapping'
+          - type: 'null'
+        verification_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Verification Id
+      type: object
+      required:
+      - user_query
+      - selected_policy
+      title: GenerateMethodRequestBody
+    GenerateMethodResponseBody:
+      properties:
+        what_to_verify:
+          type: string
+          title: What To Verify
+        experiment_settings:
+          additionalProperties:
+            type: string
+          type: object
+          title: Experiment Settings
+        steps:
+          items:
+            type: string
+          type: array
+          title: Steps
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - what_to_verify
+      - experiment_settings
+      - steps
+      - execution_time
+      title: GenerateMethodResponseBody
     GenerateQueriesLLMMapping:
       properties:
         generate_queries:
@@ -3331,6 +3577,70 @@ components:
             llm_name: gpt-5.2
       type: object
       title: GenerateQueriesLLMMapping
+    GenerateVerificationMethodLLMMapping:
+      properties:
+        generate_verification_method:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5.4-2026-03-05
+      type: object
+      title: GenerateVerificationMethodLLMMapping
+    GetMeResponse:
+      properties:
+        user_id:
+          type: string
+          title: User Id
+      type: object
+      required:
+      - user_id
+      title: GetMeResponse
+    GitHubAuthorizeResponse:
+      properties:
+        authorize_url:
+          type: string
+          title: Authorize Url
+        state:
+          type: string
+          title: State
+      type: object
+      required:
+      - authorize_url
+      - state
+      title: GitHubAuthorizeResponse
+    GitHubCallbackRequest:
+      properties:
+        code:
+          type: string
+          title: Code
+        state:
+          type: string
+          title: State
+        redirect_uri:
+          type: string
+          title: Redirect Uri
+      type: object
+      required:
+      - code
+      - state
+      - redirect_uri
+      title: GitHubCallbackRequest
+    GitHubCallbackResponse:
+      properties:
+        connected:
+          type: boolean
+          title: Connected
+        github_login:
+          type: string
+          title: Github Login
+        session_token:
+          type: string
+          title: Session Token
+      type: object
+      required:
+      - connected
+      - github_login
+      - session_token
+      title: GitHubCallbackResponse
     GitHubConfig:
       properties:
         github_owner:
@@ -3492,17 +3802,9 @@ components:
           anyOf:
           - $ref: '#/components/schemas/GenerateExperimentalDesignLLMMapping'
           - type: 'null'
-        code_generation:
+        experiment_cycle:
           anyOf:
-          - $ref: '#/components/schemas/CodeGenerationGraphLLMMapping'
-          - type: 'null'
-        dispatch_experiment_validation:
-          anyOf:
-          - $ref: '#/components/schemas/DispatchExperimentValidationLLMMapping'
-          - type: 'null'
-        analyze_experiment:
-          anyOf:
-          - $ref: '#/components/schemas/AnalyzeExperimentLLMMapping'
+          - $ref: '#/components/schemas/ExperimentCycleGraphLLMMapping'
           - type: 'null'
         write:
           anyOf:
@@ -3581,8 +3883,18 @@ components:
           type: string
           title: Research Topic
           default: ''
+        compute_environment:
+          $ref: '#/components/schemas/ComputeEnvironment'
         runner_config:
-          $ref: '#/components/schemas/RunnerConfig'
+          oneOf:
+          - $ref: '#/components/schemas/StaticRunnerConfig'
+          - $ref: '#/components/schemas/EphemeralCloudRunnerConfig'
+          title: Runner Config
+          discriminator:
+            propertyName: type
+            mapping:
+              ephemeral_cloud: '#/components/schemas/EphemeralCloudRunnerConfig'
+              static: '#/components/schemas/StaticRunnerConfig'
         wandb_config:
           $ref: '#/components/schemas/WandbConfig'
         is_github_repo_private:
@@ -3624,6 +3936,7 @@ components:
       required:
       - github_config
       - research_hypothesis
+      - compute_environment
       - runner_config
       - wandb_config
       title: HypothesisDrivenResearchRequestBody
@@ -4310,6 +4623,95 @@ components:
       - is_branch_ready
       - execution_time
       title: PrepareRepositorySubgraphResponseBody
+    ProposePoliciesRequestBody:
+      properties:
+        user_query:
+          type: string
+          title: User Query
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/ProposeVerificationPolicyLLMMapping'
+          - type: 'null'
+        verification_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Verification Id
+      type: object
+      required:
+      - user_query
+      title: ProposePoliciesRequestBody
+    ProposePoliciesResponseBody:
+      properties:
+        feasible:
+          type: boolean
+          title: Feasible
+        infeasible_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Infeasible Reason
+        proposed_methods:
+          items:
+            $ref: '#/components/schemas/ProposedMethodSchema'
+          type: array
+          title: Proposed Methods
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - feasible
+      - infeasible_reason
+      - proposed_methods
+      - execution_time
+      title: ProposePoliciesResponseBody
+    ProposeVerificationPolicyLLMMapping:
+      properties:
+        propose_verification_policy:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5.4-2026-03-05
+      type: object
+      title: ProposeVerificationPolicyLLMMapping
+    ProposedMethodSchema:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        what_to_verify:
+          type: string
+          title: What To Verify
+        method:
+          type: string
+          title: Method
+        pros:
+          items:
+            type: string
+          type: array
+          title: Pros
+          default: []
+        cons:
+          items:
+            type: string
+          type: array
+          title: Cons
+          default: []
+      type: object
+      required:
+      - id
+      - title
+      - what_to_verify
+      - method
+      title: ProposedMethodSchema
     PushGitHubRequestBody:
       properties:
         github_config:
@@ -4382,6 +4784,64 @@ components:
       - is_images_prepared
       - execution_time
       title: PushLatexSubgraphResponseBody
+    RefineExperimentalDesignLLMMapping:
+      properties:
+        refine_experimental_design:
+          $ref: '#/components/schemas/NodeLLMConfig'
+          default:
+            llm_name: gpt-5.4-2026-03-05
+      type: object
+      title: RefineExperimentalDesignLLMMapping
+    RefineExperimentalDesignSubgraphRequestBody:
+      properties:
+        research_hypothesis:
+          $ref: '#/components/schemas/ResearchHypothesis'
+        experiment_history:
+          $ref: '#/components/schemas/ExperimentHistory-Input'
+        design_instruction:
+          type: string
+          title: Design Instruction
+        compute_environment:
+          $ref: '#/components/schemas/ComputeEnvironment'
+        num_models_to_use:
+          type: integer
+          title: Num Models To Use
+        num_datasets_to_use:
+          type: integer
+          title: Num Datasets To Use
+        num_comparative_methods:
+          type: integer
+          title: Num Comparative Methods
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/RefineExperimentalDesignLLMMapping'
+          - type: 'null'
+      type: object
+      required:
+      - research_hypothesis
+      - experiment_history
+      - design_instruction
+      - compute_environment
+      - num_models_to_use
+      - num_datasets_to_use
+      - num_comparative_methods
+      title: RefineExperimentalDesignSubgraphRequestBody
+    RefineExperimentalDesignSubgraphResponseBody:
+      properties:
+        experimental_design:
+          $ref: '#/components/schemas/ExperimentalDesign-Output'
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - experimental_design
+      - execution_time
+      title: RefineExperimentalDesignSubgraphResponseBody
     ResearchHistory-Input:
       properties:
         research_topic:
@@ -4411,26 +4871,16 @@ components:
           - $ref: '#/components/schemas/ResearchHypothesis'
           - type: 'null'
           description: Research hypothesis generated
-        experimental_design:
+        experiment_history:
           anyOf:
-          - $ref: '#/components/schemas/ExperimentalDesign-Input'
+          - $ref: '#/components/schemas/ExperimentHistory-Input'
           - type: 'null'
-          description: Experimental design and methodology
+          description: History of experiment cycles (design, results, analysis)
         experiment_code:
           anyOf:
           - $ref: '#/components/schemas/ExperimentCode'
           - type: 'null'
           description: Generated experiment code and implementation
-        experimental_results:
-          anyOf:
-          - $ref: '#/components/schemas/ExperimentalResults'
-          - type: 'null'
-          description: Results from running experiments
-        experimental_analysis:
-          anyOf:
-          - $ref: '#/components/schemas/ExperimentalAnalysis'
-          - type: 'null'
-          description: Analysis and interpretation of experimental results
         paper_content:
           anyOf:
           - $ref: '#/components/schemas/PaperContent'
@@ -4509,26 +4959,16 @@ components:
           - $ref: '#/components/schemas/ResearchHypothesis'
           - type: 'null'
           description: Research hypothesis generated
-        experimental_design:
+        experiment_history:
           anyOf:
-          - $ref: '#/components/schemas/ExperimentalDesign-Output'
+          - $ref: '#/components/schemas/ExperimentHistory-Output'
           - type: 'null'
-          description: Experimental design and methodology
+          description: History of experiment cycles (design, results, analysis)
         experiment_code:
           anyOf:
           - $ref: '#/components/schemas/ExperimentCode'
           - type: 'null'
           description: Generated experiment code and implementation
-        experimental_results:
-          anyOf:
-          - $ref: '#/components/schemas/ExperimentalResults'
-          - type: 'null'
-          description: Results from running experiments
-        experimental_analysis:
-          anyOf:
-          - $ref: '#/components/schemas/ExperimentalAnalysis'
-          - type: 'null'
-          description: Analysis and interpretation of experimental results
         paper_content:
           anyOf:
           - $ref: '#/components/schemas/PaperContent'
@@ -4718,7 +5158,7 @@ components:
         extract_github_url_from_text:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gemini-2.5-flash
         select_experimental_files:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
@@ -4726,7 +5166,7 @@ components:
         extract_reference_titles:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gemini-2.5-flash
       type: object
       title: RetrievePaperSubgraphLLMMapping
     RetrievePaperSubgraphRequestBody:
@@ -4763,25 +5203,26 @@ components:
       - research_study_list
       - execution_time
       title: RetrievePaperSubgraphResponseBody
-    RunnerConfig:
+    RunStage:
+      type: string
+      enum:
+      - sanity
+      - pilot
+      - full
+      - visualization
+      title: RunStage
+    SaveApiKeyRequest:
       properties:
-        runner_label:
-          items:
-            type: string
-          type: array
-          title: Runner Label
-          description: Runner labels used by GitHub Actions (e.g., ['ubuntu-latest']
-            or ['self-hosted', 'gpu-runner'])
-        description:
+        provider:
+          $ref: '#/components/schemas/ApiProvider'
+        api_key:
           type: string
-          title: Description
-          description: Machine specifications and environment details for LLM to design
-            appropriate experiments
+          title: Api Key
       type: object
       required:
-      - runner_label
-      - description
-      title: RunnerConfig
+      - provider
+      - api_key
+      title: SaveApiKeyRequest
     SearchPaperTitlesFromQdrantLLMMapping:
       properties:
         search_paper_titles_from_qdrant:
@@ -4900,6 +5341,23 @@ components:
       - secrets_set
       - execution_time
       title: SetGithubActionsSecretsResponseBody
+    StaticRunnerConfig:
+      properties:
+        type:
+          type: string
+          const: static
+          title: Type
+        runner_label:
+          items:
+            type: string
+          type: array
+          title: Runner Label
+          description: Runner labels used by GitHub Actions (e.g., ['ubuntu-latest']
+            or ['self-hosted', 'gpu-runner'])
+      type: object
+      required:
+      - type
+      title: StaticRunnerConfig
     Status:
       type: string
       enum:
@@ -4947,17 +5405,9 @@ components:
           anyOf:
           - $ref: '#/components/schemas/GenerateExperimentalDesignLLMMapping'
           - type: 'null'
-        code_generation:
+        experiment_cycle:
           anyOf:
-          - $ref: '#/components/schemas/CodeGenerationGraphLLMMapping'
-          - type: 'null'
-        dispatch_experiment_validation:
-          anyOf:
-          - $ref: '#/components/schemas/DispatchExperimentValidationLLMMapping'
-          - type: 'null'
-        analyze_experiment:
-          anyOf:
-          - $ref: '#/components/schemas/AnalyzeExperimentLLMMapping'
+          - $ref: '#/components/schemas/ExperimentCycleGraphLLMMapping'
           - type: 'null'
         write:
           anyOf:
@@ -5037,8 +5487,18 @@ components:
         research_topic:
           type: string
           title: Research Topic
+        compute_environment:
+          $ref: '#/components/schemas/ComputeEnvironment'
         runner_config:
-          $ref: '#/components/schemas/RunnerConfig'
+          oneOf:
+          - $ref: '#/components/schemas/StaticRunnerConfig'
+          - $ref: '#/components/schemas/EphemeralCloudRunnerConfig'
+          title: Runner Config
+          discriminator:
+            propertyName: type
+            mapping:
+              ephemeral_cloud: '#/components/schemas/EphemeralCloudRunnerConfig'
+              static: '#/components/schemas/StaticRunnerConfig'
         wandb_config:
           $ref: '#/components/schemas/WandbConfig'
         is_github_repo_private:
@@ -5103,6 +5563,7 @@ components:
       required:
       - github_config
       - research_topic
+      - compute_environment
       - runner_config
       - wandb_config
       title: TopicOpenEndedResearchRequestBody
@@ -5282,6 +5743,28 @@ components:
           description: Additional experiment-specific parameters
       type: object
       title: TrainingConfig
+    UserPlanResponse:
+      properties:
+        plan_type:
+          type: string
+          title: Plan Type
+        status:
+          type: string
+          title: Status
+        stripe_customer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Stripe Customer Id
+        requires_api_keys:
+          type: boolean
+          title: Requires Api Keys
+          default: true
+      type: object
+      required:
+      - plan_type
+      - status
+      title: UserPlanResponse
     ValidationError:
       properties:
         loc:
@@ -5303,6 +5786,219 @@ components:
       - msg
       - type
       title: ValidationError
+    VerificationSessionCreateRequest:
+      properties:
+        title:
+          type: string
+          title: Title
+          default: 名称未設定
+      type: object
+      title: VerificationSessionCreateRequest
+    VerificationSessionListResponse:
+      properties:
+        sessions:
+          items:
+            $ref: '#/components/schemas/VerificationSessionResponse'
+          type: array
+          title: Sessions
+      type: object
+      required:
+      - sessions
+      title: VerificationSessionListResponse
+    VerificationSessionResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        query:
+          type: string
+          title: Query
+        created_by:
+          type: string
+          title: Created By
+        created_at:
+          type: string
+          title: Created At
+        updated_at:
+          type: string
+          title: Updated At
+        phase:
+          type: string
+          title: Phase
+        proposed_methods:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ProposedMethodSchema'
+            type: array
+          - type: 'null'
+          title: Proposed Methods
+        selected_method_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Selected Method Id
+        verification_method:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Verification Method
+        plan:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Plan
+        repository_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Repository Name
+        github_owner:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Owner
+        github_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Url
+        workflow_run_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Workflow Run Id
+        modification_notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Modification Notes
+        code_generation_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code Generation Status
+        code_generation_conclusion:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code Generation Conclusion
+        implementation:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Implementation
+        paper_draft:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Paper Draft
+      type: object
+      required:
+      - id
+      - title
+      - query
+      - created_by
+      - created_at
+      - updated_at
+      - phase
+      title: VerificationSessionResponse
+    VerificationSessionUpdateRequest:
+      properties:
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Title
+        query:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Query
+        phase:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Phase
+        proposed_methods:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ProposedMethodSchema'
+            type: array
+          - type: 'null'
+          title: Proposed Methods
+        selected_method_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Selected Method Id
+        verification_method:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Verification Method
+        plan:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Plan
+        repository_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Repository Name
+        github_owner:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Owner
+        github_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Url
+        workflow_run_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Workflow Run Id
+        modification_notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Modification Notes
+        code_generation_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code Generation Status
+        code_generation_conclusion:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code Generation Conclusion
+        implementation:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Implementation
+        paper_draft:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Paper Draft
+      type: object
+      title: VerificationSessionUpdateRequest
     WandbConfig:
       properties:
         entity:
@@ -5326,30 +6022,35 @@ components:
       - entity
       - project
       title: WandbConfig
+    WebhookReceivedResponse:
+      properties:
+        received:
+          type: boolean
+          title: Received
+      type: object
+      required:
+      - received
+      title: WebhookReceivedResponse
     WriteLLMMapping:
       properties:
         write_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gpt-5.4-2026-03-05
         refine_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
           default:
-            llm_name: gpt-5.2
+            llm_name: gpt-5.4-2026-03-05
       type: object
       title: WriteLLMMapping
     WriteSubgraphRequestBody:
       properties:
         research_hypothesis:
           $ref: '#/components/schemas/ResearchHypothesis'
-        experimental_design:
-          $ref: '#/components/schemas/ExperimentalDesign-Input'
+        experiment_history:
+          $ref: '#/components/schemas/ExperimentHistory-Input'
         experiment_code:
           $ref: '#/components/schemas/ExperimentCode'
-        experimental_results:
-          $ref: '#/components/schemas/ExperimentalResults'
-        experimental_analysis:
-          $ref: '#/components/schemas/ExperimentalAnalysis'
         research_study_list:
           items:
             $ref: '#/components/schemas/ResearchStudy'
@@ -5369,10 +6070,8 @@ components:
       type: object
       required:
       - research_hypothesis
-      - experimental_design
+      - experiment_history
       - experiment_code
-      - experimental_results
-      - experimental_analysis
       - research_study_list
       - references_bib
       title: WriteSubgraphRequestBody

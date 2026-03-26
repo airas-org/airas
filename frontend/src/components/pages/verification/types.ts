@@ -1,5 +1,6 @@
 export type VerificationPhase =
   | "initial"
+  | "proposing-policies"
   | "methods-proposed"
   | "plan-generated"
   | "code-generating"
@@ -24,6 +25,12 @@ export interface PaperDraft {
   status: "generating" | "ready";
 }
 
+export interface VerificationMethod {
+  whatToVerify: string;
+  experimentSettings: Record<string, string>;
+  steps: string[];
+}
+
 export interface Verification {
   id: string;
   title: string;
@@ -35,6 +42,13 @@ export interface Verification {
   proposedMethods?: ProposedMethod[];
   selectedMethodId?: string;
   paperDraft?: PaperDraft;
+  verificationMethod?: VerificationMethod;
+  repositoryName?: string;
+  modificationNotes?: string;
+  codeGenerationStatus?: string;
+  codeGenerationConclusion?: string | null;
+  workflowRunId?: number | null;
+  githubUrl?: string | null;
 }
 
 export interface VerificationPlan {

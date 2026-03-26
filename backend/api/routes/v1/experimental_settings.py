@@ -10,9 +10,15 @@ from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignSubgraph,
 )
+from airas.usecases.generators.refine_experimental_design_subgraph.refine_experimental_design_subgraph import (
+    RefineExperimentalDesignSubgraph,
+)
+from api.ee.auth.dependencies import get_langchain_client
 from api.schemas.experimental_settings import (
     GenerateExperimentalDesignSubgraphRequestBody,
     GenerateExperimentalDesignSubgraphResponseBody,
+    RefineExperimentalDesignSubgraphRequestBody,
+    RefineExperimentalDesignSubgraphResponseBody,
 )
 
 router = APIRouter(prefix="/experimental_settings", tags=["experimental_settings"])
@@ -25,9 +31,7 @@ router = APIRouter(prefix="/experimental_settings", tags=["experimental_settings
 @observe()
 async def generate_experimental_design(
     request: GenerateExperimentalDesignSubgraphRequestBody,
-    langchain_client: Annotated[
-        LangChainClient, Depends(Provide[Container.langchain_client])
-    ],
+    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -38,7 +42,7 @@ async def generate_experimental_design(
     result = (
         await GenerateExperimentalDesignSubgraph(
             langchain_client=langchain_client,
-            runner_config=request.runner_config,
+            compute_environment=request.compute_environment,
             num_models_to_use=request.num_models_to_use,
             num_datasets_to_use=request.num_datasets_to_use,
             num_comparative_methods=request.num_comparative_methods,
@@ -48,6 +52,39 @@ async def generate_experimental_design(
         .ainvoke(request, config=config)
     )
     return GenerateExperimentalDesignSubgraphResponseBody(
+        experimental_design=result["experimental_design"],
+        execution_time=result["execution_time"],
+    )
+
+
+@router.post(
+    "/refinements", response_model=RefineExperimentalDesignSubgraphResponseBody
+)
+@inject
+@observe()
+async def refine_experimental_design(
+    request: RefineExperimentalDesignSubgraphRequestBody,
+    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
+    langfuse_client: Annotated[
+        LangfuseClient, Depends(Provide[Container.langfuse_client])
+    ],
+) -> RefineExperimentalDesignSubgraphResponseBody:
+    handler = langfuse_client.create_handler()
+    config = {"callbacks": [handler]} if handler else {}
+
+    result = (
+        await RefineExperimentalDesignSubgraph(
+            langchain_client=langchain_client,
+            compute_environment=request.compute_environment,
+            num_models_to_use=request.num_models_to_use,
+            num_datasets_to_use=request.num_datasets_to_use,
+            num_comparative_methods=request.num_comparative_methods,
+            llm_mapping=request.llm_mapping,
+        )
+        .build_graph()
+        .ainvoke(request, config=config)
+    )
+    return RefineExperimentalDesignSubgraphResponseBody(
         experimental_design=result["experimental_design"],
         execution_time=result["execution_time"],
     )

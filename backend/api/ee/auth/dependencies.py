@@ -4,7 +4,6 @@ from typing import Annotated
 from uuid import UUID
 
 import httpx
-from airas.infra.llm_provider_resolver import detect_available_providers
 from anyio import to_thread
 from dependency_injector.wiring import Provide, Provider, inject
 from fastapi import Depends, Header, HTTPException, Request, status
@@ -20,6 +19,7 @@ from airas.infra.litellm_client import (
     PROVIDER_REQUIRED_ENV_VARS as LITELLM_REQUIRED_ENV_VARS,
 )
 from airas.infra.litellm_client import LiteLLMClient
+from airas.infra.llm_provider_resolver import detect_available_providers
 from airas.usecases.ee.api_key_resolver import ApiKeyResolver
 from api.ee.auth.middleware import extract_user_id_from_request
 from api.ee.oauth.github.service import GitHubOAuthService

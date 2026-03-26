@@ -9,8 +9,9 @@ from typing_extensions import TypedDict
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experiment_code import ExperimentCode
+from airas.core.types.experiment_history import ExperimentHistory
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
-from airas.core.types.experimental_design import ExperimentalDesign, RunnerConfig
+from airas.core.types.experimental_design import ComputeEnvironment, ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import (
     GitHubActionsAgent,
@@ -21,15 +22,12 @@ from airas.core.types.paper import PaperContent
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
+from airas.core.types.runner import ExperimentRunnerConfig
 from airas.core.types.wandb import WandbConfig
 from airas.core.utils import to_dict_deep
 from airas.infra.db.models.e2e import Status, StepType
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
-from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
-    AnalyzeExperimentLLMMapping,
-    AnalyzeExperimentSubgraph,
-)
 from airas.usecases.autonomous_research.e2e_research_service_protocol import (
     E2EResearchServiceProtocol,
 )
@@ -37,37 +35,16 @@ from airas.usecases.autonomous_research.node_decorators import (
     save_to_db,
     upload_to_github,
 )
-from airas.usecases.autonomous_research.workflows.code_generation_graph import (
-    CodeGenerationGraph,
-    CodeGenerationGraphLLMMapping,
-)
 from airas.usecases.autonomous_research.workflows.diagram_generation_graph import (
     DiagramGenerationGraph,
+)
+from airas.usecases.autonomous_research.workflows.experiment_cycle_graph import (
+    ExperimentCycleGraph,
+    ExperimentCycleGraphLLMMapping,
 )
 from airas.usecases.autonomous_research.workflows.latex_graph import (
     LaTeXGraph,
     LaTeXGraphLLMMapping,
-)
-from airas.usecases.autonomous_research.workflows.main_experiment_graph import (
-    MainExperimentGraph,
-)
-from airas.usecases.autonomous_research.workflows.sanity_check_graph import (
-    SanityCheckGraph,
-)
-from airas.usecases.autonomous_research.workflows.visualization_graph import (
-    VisualizationGraph,
-)
-from airas.usecases.executors.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
-    DispatchExperimentValidationLLMMapping,
-)
-from airas.usecases.executors.fetch_experiment_code_subgraph.fetch_experiment_code_subgraph import (
-    FetchExperimentCodeSubgraph,
-)
-from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment_results_subgraph import (
-    FetchExperimentResultsSubgraph,
-)
-from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph import (
-    FetchRunIdsSubgraph,
 )
 from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignLLMMapping,
@@ -100,9 +77,7 @@ _STANDARD_WORKFLOW_RECURSION_LIMIT = 50000
 
 class HypothesisDrivenResearchLLMMapping(BaseModel):
     generate_experimental_design: GenerateExperimentalDesignLLMMapping | None = None
-    code_generation: CodeGenerationGraphLLMMapping | None = None
-    dispatch_experiment_validation: DispatchExperimentValidationLLMMapping | None = None
-    analyze_experiment: AnalyzeExperimentLLMMapping | None = None
+    experiment_cycle: ExperimentCycleGraphLLMMapping | None = None
     write: WriteLLMMapping | None = None
     latex: LaTeXGraphLLMMapping | None = None
 
@@ -127,6 +102,7 @@ class HypothesisDrivenResearchState(
     current_step: StepType
     research_study_list: list[ResearchStudy]
     experimental_design: ExperimentalDesign
+    experiment_history: ExperimentHistory
     experiment_code: ExperimentCode
     experimental_results: ExperimentalResults
     experimental_analysis: ExperimentalAnalysis
@@ -136,7 +112,6 @@ class HypothesisDrivenResearchState(
     is_repository_ready: bool
     is_branch_ready: bool
     secrets_set: bool
-    run_ids: list[str]
     is_upload_successful: bool
 
 
@@ -146,7 +121,8 @@ class HypothesisDrivenResearch:
         github_client: GithubClient,
         langchain_client: LangChainClient,
         e2e_service: E2EResearchServiceProtocol,
-        runner_config: RunnerConfig,
+        compute_environment: ComputeEnvironment,
+        runner_config: ExperimentRunnerConfig,
         wandb_config: WandbConfig,
         task_id: UUID,
         created_by: UUID,
@@ -162,6 +138,7 @@ class HypothesisDrivenResearch:
         self.github_client = github_client
         self.langchain_client = langchain_client
         self.e2e_service = e2e_service
+        self.compute_environment = compute_environment
         self.runner_config = runner_config
         self.wandb_config = wandb_config
         self.task_id = task_id
@@ -234,7 +211,7 @@ class HypothesisDrivenResearch:
         result = (
             await GenerateExperimentalDesignSubgraph(
                 langchain_client=self.langchain_client,
-                runner_config=self.runner_config,
+                compute_environment=self.compute_environment,
                 num_models_to_use=self.num_experiment_models,
                 llm_mapping=self.llm_mapping.generate_experimental_design,
                 num_datasets_to_use=self.num_experiment_datasets,
@@ -250,150 +227,49 @@ class HypothesisDrivenResearch:
         }
 
     @record_execution_time
-    async def _run_code_generation(
-        self, state: HypothesisDrivenResearchState
-    ) -> dict[str, Any]:
-        logger.info("=== Run Code Generation ===")
-        await (
-            CodeGenerationGraph(
-                github_client=self.github_client,
-                wandb_config=self.wandb_config,
-                github_actions_agent=self.github_actions_agent,
-                llm_mapping=self.llm_mapping.code_generation,
-            )
-            .build_graph()
-            .ainvoke(
-                {
-                    "github_config": state["github_config"],
-                    "research_topic": state.get("research_topic", ""),
-                    "research_hypothesis": state["research_hypothesis"],
-                    "experimental_design": state["experimental_design"],
-                }
-            )
-        )
-        return {}
-
-    @record_execution_time
     @save_to_db
     @upload_to_github
-    async def _fetch_run_ids(
+    async def _run_experiment_cycle(
         self, state: HypothesisDrivenResearchState
     ) -> dict[str, Any]:
-        logger.info("=== Fetch Run IDs ===")
-        try:
-            result = (
-                await FetchRunIdsSubgraph(github_client=self.github_client)
-                .build_graph()
-                .ainvoke({"github_config": state["github_config"]})
-            )
-
-            if not (run_ids := result["run_ids"]):
-                error_msg = "No run IDs were fetched from the subgraph. Cannot proceed with experiments."
-                logger.error(error_msg)
-                raise ValueError(error_msg)
-
-            logger.info(f"Successfully fetched {len(run_ids)} run IDs: {run_ids}")
-
-            return {"run_ids": run_ids}
-        except ValueError:
-            raise
-        except Exception as e:
-            logger.exception(f"Failed to fetch run IDs: {e}")
-            raise ValueError("Failed to fetch run IDs") from e
-
-    @record_execution_time
-    async def _run_sanity_check(
-        self, state: HypothesisDrivenResearchState
-    ) -> dict[str, Any]:
-        logger.info("=== Run Sanity Check ===")
-        await (
-            SanityCheckGraph(
-                github_client=self.github_client,
-                runner_config=self.runner_config,
-                wandb_config=self.wandb_config,
-                github_actions_agent=self.github_actions_agent,
-                llm_mapping=self.llm_mapping.dispatch_experiment_validation,
-            )
-            .build_graph()
-            .ainvoke(
-                {
-                    "github_config": state["github_config"],
-                    "run_ids": state["run_ids"],
-                    "research_topic": state.get("research_topic", ""),
-                    "research_hypothesis": state["research_hypothesis"],
-                    "experimental_design": state["experimental_design"],
-                },
-                {"recursion_limit": _STANDARD_WORKFLOW_RECURSION_LIMIT},
-            )
-        )
-        return {}
-
-    @record_execution_time
-    @save_to_db
-    @upload_to_github
-    async def _fetch_experiment_code(
-        self, state: HypothesisDrivenResearchState
-    ) -> dict[str, ExperimentCode]:
-        logger.info("=== Fetch Experiment Code ===")
+        logger.info("=== Run Experiment Cycle ===")
         result = (
-            await FetchExperimentCodeSubgraph(github_client=self.github_client)
-            .build_graph()
-            .ainvoke({"github_config": state["github_config"]})
-        )
-
-        return {"experiment_code": result["experiment_code"]}
-
-    @record_execution_time
-    async def _run_main_experiment(
-        self, state: HypothesisDrivenResearchState
-    ) -> dict[str, Any]:
-        logger.info("=== Run Main Experiment ===")
-        await (
-            MainExperimentGraph(
+            await ExperimentCycleGraph(
                 github_client=self.github_client,
+                langchain_client=self.langchain_client,
                 runner_config=self.runner_config,
                 wandb_config=self.wandb_config,
+                compute_environment=self.compute_environment,
                 github_actions_agent=self.github_actions_agent,
-                llm_mapping=self.llm_mapping.dispatch_experiment_validation,
+                num_experiment_models=self.num_experiment_models,
+                num_experiment_datasets=self.num_experiment_datasets,
+                num_comparison_methods=self.num_comparison_methods,
+                llm_mapping=self.llm_mapping.experiment_cycle,
             )
             .build_graph()
             .ainvoke(
                 {
                     "github_config": state["github_config"],
-                    "run_ids": state["run_ids"],
-                    "research_topic": state.get("research_topic", ""),
                     "research_hypothesis": state["research_hypothesis"],
                     "experimental_design": state["experimental_design"],
+                    "research_topic": state.get("research_topic", ""),
                 }
             )
         )
-        return {}
 
-    @record_execution_time
-    async def _run_visualization(
-        self, state: HypothesisDrivenResearchState
-    ) -> dict[str, Any]:
-        logger.info("=== Run Visualization ===")
-        await (
-            VisualizationGraph(
-                github_client=self.github_client,
-                wandb_config=self.wandb_config,
-                github_actions_agent=self.github_actions_agent,
-                llm_mapping=self.llm_mapping.dispatch_experiment_validation,
-            )
-            .build_graph()
-            .ainvoke(
-                {
-                    "github_config": state["github_config"],
-                    "run_ids": state["run_ids"],
-                    "research_topic": state.get("research_topic", ""),
-                    "research_hypothesis": state["research_hypothesis"],
-                    "experimental_design": state["experimental_design"],
-                },
-                {"recursion_limit": _STANDARD_WORKFLOW_RECURSION_LIMIT},
-            )
-        )
-        return {}
+        experiment_history: ExperimentHistory = result["experiment_history"]
+        experiment_code: ExperimentCode = result["experiment_code"]
+
+        last_cycle = experiment_history.cycles[-1]
+
+        return {
+            "experiment_history": experiment_history,
+            "experiment_code": experiment_code,
+            "experimental_design": last_cycle.experimental_design,
+            "experimental_results": last_cycle.experimental_results,
+            "experimental_analysis": last_cycle.experimental_analysis,
+            "current_step": StepType.GENERATE_BIBFILE,
+        }
 
     @record_execution_time
     async def _run_diagram_generation(
@@ -414,52 +290,6 @@ class HypothesisDrivenResearch:
             )
         )
         return {}
-
-    @record_execution_time
-    @save_to_db
-    @upload_to_github
-    async def _fetch_experiment_results(
-        self, state: HypothesisDrivenResearchState
-    ) -> dict[str, Any]:
-        logger.info("=== Fetch Experiment Results ===")
-        result = (
-            await FetchExperimentResultsSubgraph(github_client=self.github_client)
-            .build_graph()
-            .ainvoke({"github_config": state["github_config"]})
-        )
-
-        return {
-            "experimental_results": result["experimental_results"],
-            "current_step": StepType.ANALYZE_EXPERIMENT_RESULTS,
-        }
-
-    @record_execution_time
-    @save_to_db
-    @upload_to_github
-    async def _analyze_experiment(
-        self, state: HypothesisDrivenResearchState
-    ) -> dict[str, Any]:
-        logger.info("=== Experiment Analysis ===")
-        result = (
-            await AnalyzeExperimentSubgraph(
-                langchain_client=self.langchain_client,
-                llm_mapping=self.llm_mapping.analyze_experiment,
-            )
-            .build_graph()
-            .ainvoke(
-                {
-                    "research_hypothesis": state["research_hypothesis"],
-                    "experimental_design": state["experimental_design"],
-                    "experiment_code": state["experiment_code"],
-                    "experimental_results": state["experimental_results"],
-                }
-            )
-        )
-
-        return {
-            "experimental_analysis": result["experimental_analysis"],
-            "current_step": StepType.GENERATE_BIBFILE,
-        }
 
     @record_execution_time
     @save_to_db
@@ -595,17 +425,8 @@ class HypothesisDrivenResearch:
         graph_builder.add_node(
             "generate_experimental_design", self._generate_experimental_design
         )
-        graph_builder.add_node("run_code_generation", self._run_code_generation)
-        graph_builder.add_node("fetch_run_ids", self._fetch_run_ids)
-        graph_builder.add_node("run_sanity_check", self._run_sanity_check)
-        graph_builder.add_node("fetch_experiment_code", self._fetch_experiment_code)
-        graph_builder.add_node("run_main_experiment", self._run_main_experiment)
-        graph_builder.add_node("run_visualization", self._run_visualization)
+        graph_builder.add_node("run_experiment_cycle", self._run_experiment_cycle)
         graph_builder.add_node("run_diagram_generation", self._run_diagram_generation)
-        graph_builder.add_node(
-            "fetch_experiment_results", self._fetch_experiment_results
-        )
-        graph_builder.add_node("analyze_experiment", self._analyze_experiment)
         graph_builder.add_node("generate_bibfile", self._generate_bibfile)
         graph_builder.add_node("push_bibfile", self._push_bibfile)
         graph_builder.add_node("generate_paper", self._generate_paper)
@@ -618,16 +439,9 @@ class HypothesisDrivenResearch:
         graph_builder.add_edge(
             "set_github_actions_secrets", "generate_experimental_design"
         )
-        graph_builder.add_edge("generate_experimental_design", "run_code_generation")
-        graph_builder.add_edge("run_code_generation", "fetch_run_ids")
-        graph_builder.add_edge("fetch_run_ids", "run_sanity_check")
-        graph_builder.add_edge("run_sanity_check", "fetch_experiment_code")
-        graph_builder.add_edge("fetch_experiment_code", "run_main_experiment")
-        graph_builder.add_edge("run_main_experiment", "run_visualization")
-        graph_builder.add_edge("run_visualization", "run_diagram_generation")
-        graph_builder.add_edge("run_diagram_generation", "fetch_experiment_results")
-        graph_builder.add_edge("fetch_experiment_results", "analyze_experiment")
-        graph_builder.add_edge("analyze_experiment", "generate_bibfile")
+        graph_builder.add_edge("generate_experimental_design", "run_experiment_cycle")
+        graph_builder.add_edge("run_experiment_cycle", "run_diagram_generation")
+        graph_builder.add_edge("run_diagram_generation", "generate_bibfile")
         graph_builder.add_edge("generate_bibfile", "push_bibfile")
         graph_builder.add_edge("push_bibfile", "generate_paper")
         graph_builder.add_edge("generate_paper", "run_latex")

@@ -1,5 +1,5 @@
-import { FeatherSearch } from "@subframe/core";
-import { useMemo, useState } from "react";
+import { FeatherPlus } from "@subframe/core";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { Verification } from "../types";
 import { VerificationCard } from "./verification-card";
@@ -9,6 +9,7 @@ interface VerificationHomePageProps {
   onSelectVerification: (id: string) => void;
   onDeleteVerification: (id: string) => void;
   onDuplicateVerification: (id: string) => void;
+  onCreateNew: () => void;
 }
 
 interface CategoryColumnProps {
@@ -66,6 +67,7 @@ type CategoryKey =
 function getCategoryKey(v: Verification): CategoryKey {
   switch (v.phase) {
     case "initial":
+    case "proposing-policies":
     case "methods-proposed":
       return "hypothesis";
     case "plan-generated":
@@ -85,6 +87,7 @@ export function VerificationHomePage({
   onSelectVerification,
   onDeleteVerification,
   onDuplicateVerification,
+  onCreateNew,
 }: VerificationHomePageProps) {
   const { t } = useTranslation();
   const categories: { key: CategoryKey; label: string }[] = [
@@ -94,15 +97,6 @@ export function VerificationHomePage({
     { key: "experiments-done", label: t("verification.home.categories.experimentsDone") },
     { key: "paper-done", label: t("verification.home.categories.paperDone") },
   ];
-  const [search, setSearch] = useState("");
-
-  const filtered = search
-    ? verifications.filter(
-        (v) =>
-          v.title.toLowerCase().includes(search.toLowerCase()) ||
-          v.query.toLowerCase().includes(search.toLowerCase()),
-      )
-    : verifications;
 
   const grouped = useMemo(() => {
     const map: Record<CategoryKey, Verification[]> = {
@@ -112,34 +106,27 @@ export function VerificationHomePage({
       "experiments-done": [],
       "paper-done": [],
     };
-    for (const v of filtered) {
+    for (const v of verifications) {
       map[getCategoryKey(v)].push(v);
     }
     return map;
-  }, [filtered]);
+  }, [verifications]);
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-clip min-w-0">
       <div className="max-w-full mx-auto px-6 py-6">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h1 className="text-heading-2 font-heading-2 text-default-font">
-              {t("verification.home.title")}
-            </h1>
-            <p className="text-caption font-caption text-subtext-color mt-1">
-              {t("verification.home.projects", { count: verifications.length })}
-            </p>
-          </div>
-          <div className="w-56 rounded-lg border border-border bg-card px-3 py-1.5 flex items-center gap-2">
-            <FeatherSearch className="h-4 w-4 text-subtext-color shrink-0" />
-            <input
-              type="text"
-              placeholder={t("verification.home.searchPlaceholder")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-transparent text-body font-body text-default-font outline-none placeholder:text-neutral-400"
-            />
-          </div>
+        <div className="flex items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={onCreateNew}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+          >
+            <FeatherPlus className="h-4 w-4" />
+            {t("verification.home.newVerification")}
+          </button>
+          <p className="text-caption font-caption text-subtext-color">
+            {t("verification.home.projects", { count: verifications.length })}
+          </p>
         </div>
 
         <div className="mt-6 flex gap-2 items-start overflow-x-auto">

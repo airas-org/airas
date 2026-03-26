@@ -1,4 +1,3 @@
-from enum import Enum
 from functools import lru_cache
 from typing import Annotated, TypeAlias, get_args
 
@@ -6,14 +5,7 @@ import litellm
 from pydantic import BaseModel, Field
 from typing_extensions import Literal
 
-
-class LLMProvider(str, Enum):
-    GOOGLE = "google"
-    OPENAI = "openai"
-    ANTHROPIC = "anthropic"
-    OPENROUTER = "openrouter"
-    BEDROCK = "bedrock"
-
+from airas.core.types.llm_provider import LLMProvider
 
 PROVIDER_REQUIRED_ENV_VARS: dict[LLMProvider, list[str]] = {
     LLMProvider.GOOGLE: [
@@ -62,6 +54,7 @@ class GoogleGenAIParams(BaseModel):
 
 # https://platform.openai.com/docs/models
 OPENAI_MODELS: TypeAlias = Literal[
+    "gpt-5.4-2026-03-05",
     "gpt-5.2-pro-2025-12-11",
     "gpt-5.2-codex",
     "gpt-5.2",

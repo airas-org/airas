@@ -2,6 +2,7 @@
 
 import { CheckCircle2, ChevronDown, Clock, History, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import type { ResearchSection } from "@/types/research";
 
@@ -18,6 +19,7 @@ export function SessionDropdown({
   onSelectSession,
   onRefreshSessions,
 }: SessionDropdownProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -48,13 +50,15 @@ export function SessionDropdown({
         className="flex items-center gap-1.5 rounded-md bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-200 transition-colors cursor-pointer"
       >
         <History className="h-3.5 w-3.5" />
-        Past Sessions
+        {t("sessionDropdown.pastSessions")}
         <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} />
       </button>
       {isOpen && (
         <div className="absolute left-0 top-full mt-1 z-20 w-72 rounded-md border border-neutral-200 bg-white shadow-lg overflow-hidden">
           {sessions.length === 0 ? (
-            <div className="px-4 py-3 text-sm text-neutral-500">No past sessions</div>
+            <div className="px-4 py-3 text-sm text-neutral-500">
+              {t("sessionDropdown.noSessions")}
+            </div>
           ) : (
             <div className="max-h-64 overflow-y-auto">
               {sessions.map((session) => (

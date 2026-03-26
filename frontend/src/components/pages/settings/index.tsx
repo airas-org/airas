@@ -15,6 +15,22 @@ export type SettingsTab =
   | "receipts"
   | "usage";
 
+export const SETTINGS_TABS: SettingsTab[] = [
+  "profile",
+  "feedback",
+  "integration",
+  "api-token",
+  "user-plan",
+  "receipts",
+  "usage",
+];
+
+export function getSettingsTab(pathname: string): SettingsTab | null {
+  const tab = pathname.split("/settings/")[1] as SettingsTab | undefined;
+  if (tab && SETTINGS_TABS.includes(tab)) return tab;
+  return null;
+}
+
 interface SettingsPageProps {
   activeTab: SettingsTab;
 }

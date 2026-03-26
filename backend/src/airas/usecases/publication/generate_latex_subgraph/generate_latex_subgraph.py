@@ -14,8 +14,8 @@ from airas.infra.langchain_client import LangChainClient
 from airas.usecases.github.nodes.retrieve_github_repository_file import (
     retrieve_github_repository_file,
 )
-from airas.usecases.publication.generate_latex_subgraph.nodes.convert_pandoc_citations_to_latex import (
-    convert_pandoc_citations_to_latex,
+from airas.usecases.publication.generate_latex_subgraph.nodes.convert_pandoc_to_latex import (
+    convert_pandoc_to_latex,
 )
 from airas.usecases.publication.generate_latex_subgraph.nodes.convert_to_latex import (
     convert_to_latex,
@@ -76,10 +76,10 @@ class GenerateLatexSubgraph:
         return {"latex_template_text": latex_template_text}
 
     @record_execution_time
-    def _convert_pandoc_citations_to_latex(
+    def _convert_pandoc_to_latex(
         self, state: GenerateLatexSubgraphState
     ) -> dict[str, PaperContent]:
-        paper_content = convert_pandoc_citations_to_latex(
+        paper_content = convert_pandoc_to_latex(
             paper_content=state["paper_content"],
             references_bib=state["references_bib"],
         )
@@ -117,16 +117,14 @@ class GenerateLatexSubgraph:
             output_schema=GenerateLatexSubgraphOutputState,
         )
         graph_builder.add_node("retrieve_latex_template", self._retrieve_latex_template)
-        graph_builder.add_node(
-            "convert_pandoc_citations_to_latex", self._convert_pandoc_citations_to_latex
-        )
+        graph_builder.add_node("convert_pandoc_to_latex", self._convert_pandoc_to_latex)
         graph_builder.add_node("convert_to_latex", self._convert_to_latex)
         graph_builder.add_node("embed_in_latex_template", self._embed_in_latex_template)
 
         graph_builder.add_edge(START, "retrieve_latex_template")
-        graph_builder.add_edge(START, "convert_pandoc_citations_to_latex")
+        graph_builder.add_edge(START, "convert_pandoc_to_latex")
         graph_builder.add_edge("retrieve_latex_template", "convert_to_latex")
-        graph_builder.add_edge("convert_pandoc_citations_to_latex", "convert_to_latex")
+        graph_builder.add_edge("convert_pandoc_to_latex", "convert_to_latex")
         graph_builder.add_edge("convert_to_latex", "embed_in_latex_template")
         graph_builder.add_edge("embed_in_latex_template", END)
 

@@ -28,6 +28,8 @@ from api.ee.auth.dependencies import (
     get_current_user_id,
     get_github_client,
     get_github_owner,
+    get_langchain_client,
+    get_litellm_client,
 )
 from api.schemas.topic_open_ended_research import (
     TopicOpenEndedResearchListItemResponse,
@@ -78,6 +80,7 @@ async def _execute_topic_open_ended_research(
             litellm_client=litellm_client,
             qdrant_client=qdrant_client,
             e2e_service=e2e_service,
+            compute_environment=request.compute_environment,
             runner_config=request.runner_config,
             wandb_config=request.wandb_config,
             task_id=task_id,
@@ -154,12 +157,8 @@ async def execute_topic_open_ended_research(
     github_owner: Annotated[str, Depends(get_github_owner)],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
     arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
-    langchain_client: Annotated[
-        LangChainClient, Depends(Provide[Container.langchain_client])
-    ],
-    litellm_client: Annotated[
-        LiteLLMClient, Depends(Provide[Container.litellm_client])
-    ],
+    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
+    litellm_client: Annotated[LiteLLMClient, Depends(get_litellm_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

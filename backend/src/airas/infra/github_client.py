@@ -1154,6 +1154,26 @@ class GithubClient(BaseHTTPClient):
                 self._raise_for_status(response, path)
                 return None
 
+    async def aget_workflow_run(
+        self,
+        github_owner: str,
+        repository_name: str,
+        workflow_run_id: int,
+    ) -> dict | None:
+        path = f"/repos/{github_owner}/{repository_name}/actions/runs/{workflow_run_id}"
+
+        response = await self.aget(path=path)
+        match response.status_code:
+            case 200:
+                logger.info(f"Success (200): {path}")
+                return response.json()
+            case 404:
+                logger.warning(f"Workflow run not found (404): {path}")
+                return None
+            case _:
+                self._raise_for_status(response, path)
+                return None
+
     async def acancel_workflow_run(
         self,
         github_owner: str,

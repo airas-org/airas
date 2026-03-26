@@ -1,16 +1,16 @@
 "use client";
-
 /*
  * Documentation:
  * Icon Button — https://app.subframe.com/32f8a386b602/library?component=Icon+Button_af9405b1-8c54-4e01-9786-5aad308224f6
  */
 
-import * as SubframeCore from "@subframe/core";
-import { FeatherPlus } from "@subframe/core";
 import React from "react";
+import { FeatherPlus } from "@subframe/core";
+import * as SubframeCore from "@subframe/core";
 import * as SubframeUtils from "../utils";
 
-interface IconButtonRootProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface IconButtonRootProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   disabled?: boolean;
   variant?:
     | "brand-primary"
@@ -42,7 +42,7 @@ const IconButtonRoot = React.forwardRef<HTMLButtonElement, IconButtonRootProps>(
       type = "button",
       ...otherProps
     }: IconButtonRootProps,
-    ref,
+    ref
   ) {
     return (
       <button
@@ -52,7 +52,8 @@ const IconButtonRoot = React.forwardRef<HTMLButtonElement, IconButtonRootProps>(
             "h-6 w-6": size === "small",
             "h-10 w-10": size === "large",
             "hover:bg-[#ffffff29] active:bg-[#ffffff3d]": variant === "inverse",
-            "hover:bg-error-50 active:bg-error-100": variant === "destructive-tertiary",
+            "hover:bg-error-50 active:bg-error-100":
+              variant === "destructive-tertiary",
             "bg-error-50 hover:bg-error-100 active:bg-error-50":
               variant === "destructive-secondary",
             "bg-error-600 hover:bg-error-500 active:bg-error-600":
@@ -61,11 +62,14 @@ const IconButtonRoot = React.forwardRef<HTMLButtonElement, IconButtonRootProps>(
               variant === "neutral-secondary",
             "bg-neutral-100 hover:bg-neutral-200 active:bg-neutral-100":
               variant === "neutral-primary",
-            "hover:bg-brand-50 active:bg-brand-100": variant === "brand-tertiary",
-            "bg-brand-50 hover:bg-brand-100 active:bg-brand-50": variant === "brand-secondary",
-            "bg-brand-600 hover:bg-brand-500 active:bg-brand-600": variant === "brand-primary",
+            "hover:bg-brand-50 active:bg-brand-100":
+              variant === "brand-tertiary",
+            "bg-brand-50 hover:bg-brand-100 active:bg-brand-50":
+              variant === "brand-secondary",
+            "bg-brand-600 hover:bg-brand-500 active:bg-brand-600":
+              variant === "brand-primary",
           },
-          className,
+          className
         )}
         ref={ref}
         type={type}
@@ -84,9 +88,11 @@ const IconButtonRoot = React.forwardRef<HTMLButtonElement, IconButtonRootProps>(
                   variant === "destructive-primary" ||
                   variant === "brand-primary",
                 "text-error-700":
-                  variant === "destructive-tertiary" || variant === "destructive-secondary",
-                "text-brand-700": variant === "brand-tertiary" || variant === "brand-secondary",
-              },
+                  variant === "destructive-tertiary" ||
+                  variant === "destructive-secondary",
+                "text-brand-700":
+                  variant === "brand-tertiary" || variant === "brand-secondary",
+              }
             )}
           >
             {icon}
@@ -102,14 +108,16 @@ const IconButtonRoot = React.forwardRef<HTMLButtonElement, IconButtonRootProps>(
                 variant === "destructive-primary" ||
                 variant === "brand-primary",
               "text-error-700":
-                variant === "destructive-tertiary" || variant === "destructive-secondary",
-              "text-brand-700": variant === "brand-tertiary" || variant === "brand-secondary",
-            },
+                variant === "destructive-tertiary" ||
+                variant === "destructive-secondary",
+              "text-brand-700":
+                variant === "brand-tertiary" || variant === "brand-secondary",
+            }
           )}
         />
       </button>
     );
-  },
+  }
 );
 
 export const IconButton = IconButtonRoot;

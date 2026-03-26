@@ -6,78 +6,69 @@ from airas.infra.llm_specs import (
 
 
 class NodeLLMConfig(BaseModel):
-    # Use str instead of LLM_MODELS to allow model names compatible with
+    # Use str instead of LLM_MODEL to allow model names compatible with
     # litellm and opencode rather than our custom defined literals.
     llm_name: str
     params: LLMParams | None = None
 
 
-BASE_CONFIG = NodeLLMConfig(llm_name="gpt-5.2")
-SEARCH_CONFIG = NodeLLMConfig(llm_name="gemini-2.5-flash")
-CODING_CONFIG = NodeLLMConfig(llm_name="gpt-5.2-codex")
-EMBEDDING_CONFIG = NodeLLMConfig(llm_name="gemini/gemini-embedding-001")
+BASE_MODEL_CONFIG = NodeLLMConfig(llm_name="gpt-5.2")
+ADVANCE_MODEL_CONFIG = NodeLLMConfig(llm_name="gpt-5.4-2026-03-05")
+BUDGET_MODEL_CONFIG = NodeLLMConfig(llm_name="gemini-2.5-flash")
+EMBEDDING_MODEL_CONFIG = NodeLLMConfig(llm_name="gemini/gemini-embedding-001")
+AGENT_MODEL_CONFIG = NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5")
 
 DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
     # retrieve/
     # GenerateQueriesSubgraph
-    "generate_queries": BASE_CONFIG,
+    "generate_queries": BASE_MODEL_CONFIG,
     # SearchPaperTitlesFromQdrantSubgraph
-    "search_paper_titles_from_qdrant": EMBEDDING_CONFIG,
+    "search_paper_titles_from_qdrant": EMBEDDING_MODEL_CONFIG,
     # RetrievePaperSubgraph
-    "search_arxiv_id_from_title": SEARCH_CONFIG,
-    "summarize_paper": BASE_CONFIG,
-    "extract_github_url_from_text": BASE_CONFIG,
-    "select_experimental_files": BASE_CONFIG,
-    "extract_reference_titles": BASE_CONFIG,
+    "search_arxiv_id_from_title": BUDGET_MODEL_CONFIG,
+    "summarize_paper": BASE_MODEL_CONFIG,
+    "extract_github_url_from_text": BUDGET_MODEL_CONFIG,
+    "select_experimental_files": BASE_MODEL_CONFIG,
+    "extract_reference_titles": BUDGET_MODEL_CONFIG,
     # generators/
     # GenerateHypothesisV0Subgraph
-    "generate_hypothesis": BASE_CONFIG,
-    "evaluate_novelty_and_significance": BASE_CONFIG,
-    "refine_hypothesis": BASE_CONFIG,
+    "generate_hypothesis": ADVANCE_MODEL_CONFIG,
+    "evaluate_novelty_and_significance": BASE_MODEL_CONFIG,
+    "refine_hypothesis": ADVANCE_MODEL_CONFIG,
     # GenerateExperimentalDesignSubgraph
-    "generate_experimental_design": BASE_CONFIG,
-    # GenerateCodeSubgraph
-    "generate_run_config": CODING_CONFIG,
-    "generate_experiment_code": CODING_CONFIG,
-    "validate_experiment_code": CODING_CONFIG,
-    # generators/
+    "generate_experimental_design": ADVANCE_MODEL_CONFIG,
+    # RefineExperimentalDesignSubgraph
+    "refine_experimental_design": ADVANCE_MODEL_CONFIG,
     # DispatchCodeGenerationSubgraph
-    "dispatch_code_generation": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
+    "dispatch_code_generation": AGENT_MODEL_CONFIG,
     # executors/
     # DispatchExperimentValidationSubgraph
-    "dispatch_experiment_validation": NodeLLMConfig(
-        llm_name="anthropic/claude-sonnet-4-5"
-    ),
-    # executors/
-    # ExecuteTrialExperimentSubgraph
-    # NOTE: GitHub Actions nodes use "provider/model" format for LiteLLM compatibility.
-    # All nodes will migrate to this format when fully transitioning to LiteLLM.
-    "dispatch_trial_experiment": NodeLLMConfig(llm_name="claude-sonnet-4-5"),
-    # ExecuteFullExperimentSubgraph
-    "dispatch_full_experiments": NodeLLMConfig(llm_name="claude-sonnet-4-5"),
-    # ExecuteEvaluationSubgraph
-    "dispatch_evaluation": NodeLLMConfig(llm_name="claude-sonnet-4-5"),
+    "dispatch_experiment_validation": AGENT_MODEL_CONFIG,
     # analyzers/
-    # AnalyzeExperimentSubgraph
-    "analyze_experiment": BASE_CONFIG,
+    "analyze_experiment": ADVANCE_MODEL_CONFIG,
+    # DecideExperimentCycleSubgraph
+    "decide_experiment_cycle": ADVANCE_MODEL_CONFIG,
     # writes/
     # WriterSubgraph
-    "write_paper": BASE_CONFIG,
-    "refine_paper": BASE_CONFIG,
+    "write_paper": ADVANCE_MODEL_CONFIG,
+    "refine_paper": ADVANCE_MODEL_CONFIG,
     # publication/
     # GenerateLatexSubgraph
-    "convert_to_latex": BASE_CONFIG,
+    "convert_to_latex": BASE_MODEL_CONFIG,
     # CompileLatexSubgraph
-    "compile_latex": NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5"),
+    "compile_latex": AGENT_MODEL_CONFIG,
     # GenerateHtmlSubgraph
-    "convert_to_html": BASE_CONFIG,
+    "convert_to_html": BASE_MODEL_CONFIG,
     # DispatchDiagramGenerationSubgraph
-    "dispatch_diagram_generation": NodeLLMConfig(
-        llm_name="anthropic/claude-sonnet-4-5"
-    ),
+    "dispatch_diagram_generation": AGENT_MODEL_CONFIG,
     # assisted_research/
     # DispatchInteractiveRepoAgentSubgraph
-    "dispatch_interactive_repo_agent": NodeLLMConfig(
-        llm_name="anthropic/claude-sonnet-4-5"
-    ),
+    "dispatch_interactive_repo_agent": AGENT_MODEL_CONFIG,
+    # verification/
+    # ProposeVerificationPolicySubgraph
+    "propose_verification_policy": ADVANCE_MODEL_CONFIG,
+    # GenerateVerificationMethodSubgraph
+    "generate_verification_method": ADVANCE_MODEL_CONFIG,
+    # GenerateExperimentCodeSubgraph
+    "dispatch_experiment_code_generation": AGENT_MODEL_CONFIG,
 }

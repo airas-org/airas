@@ -1,3 +1,7 @@
+# NOTE: To recognize figures and tables in experimental results, consider delegating
+# the analysis to an agent. (When using a VLLM backend, downloading the PDF would
+# be required for visual content extraction.)
+
 import logging
 
 from langgraph.graph import END, START, StateGraph

@@ -45,24 +45,24 @@ export function GitHubOAuthCallback({ code, proxyToken }: { code?: string; proxy
   useEffect(() => {
     const complete = proxyToken
       ? EeGithubOauthService.proxyCompleteAirasEeGithubProxyCompletePost({
-        proxy_token: proxyToken,
-      })
+          proxy_token: proxyToken,
+        })
       : fetch(`${OpenAPI.BASE}/airas/ee/github/callback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code,
-          state: sessionStorage.getItem("github_oauth_state") ?? "",
-          redirect_uri: `${window.location.origin}/auth/github/callback`,
-        }),
-      }).then(async (res) => {
-        if (!res.ok) throw new Error(`API error: ${res.status}`);
-        return res.json() as Promise<{
-          connected: boolean;
-          github_login: string;
-          session_token: string;
-        }>;
-      });
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code,
+            state: sessionStorage.getItem("github_oauth_state") ?? "",
+            redirect_uri: `${window.location.origin}/auth/github/callback`,
+          }),
+        }).then(async (res) => {
+          if (!res.ok) throw new Error(`API error: ${res.status}`);
+          return res.json() as Promise<{
+            connected: boolean;
+            github_login: string;
+            session_token: string;
+          }>;
+        });
 
     complete
       .then((data) => {
@@ -81,13 +81,15 @@ export function GitHubOAuthCallback({ code, proxyToken }: { code?: string; proxy
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-950">
       <div className="text-center space-y-2">
-        {status === "loading" && <p className="text-neutral-400">GitHubと連携中...</p>}
+        {status === "loading" && (
+          <p className="text-neutral-400">{t("integration.github.connecting")}</p>
+        )}
         {status === "success" && (
-          <p className="text-success-400">GitHub連携が完了しました。リダイレクト中...</p>
+          <p className="text-success-400">{t("integration.github.success")}</p>
         )}
         {status === "error" && (
           <div>
-            <p className="text-error-400">GitHub連携に失敗しました。</p>
+            <p className="text-error-400">{t("integration.github.error")}</p>
             <button
               type="button"
               className="mt-2 text-sm underline text-neutral-400"
@@ -95,7 +97,7 @@ export function GitHubOAuthCallback({ code, proxyToken }: { code?: string; proxy
                 window.location.href = "/settings/integration";
               }}
             >
-              Integrationページに戻る
+              {t("integration.github.backToPage")}
             </button>
           </div>
         )}
@@ -105,6 +107,7 @@ export function GitHubOAuthCallback({ code, proxyToken }: { code?: string; proxy
 }
 
 export function IntegrationPage() {
+  const { t, i18n } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [githubStatus, setGithubStatus] = useState<GitHubConnection>({
     connected: false,
@@ -144,7 +147,7 @@ export function IntegrationPage() {
         window.location.href = data.authorize_url;
       }
     } catch {
-      setError("GitHub連携の開始に失敗しました");
+      setError(t("integration.github.connectError"));
       setGithubConnecting(false);
     }
   };
@@ -157,14 +160,14 @@ export function IntegrationPage() {
       localStorage.removeItem(GITHUB_SESSION_KEY);
       await fetchGithubStatus();
     } catch {
-      setError("GitHub連携の解除に失敗しました");
+      setError(t("integration.github.disconnectError"));
     } finally {
       setGithubDisconnecting(false);
     }
   };
 
   const connectedAt = githubStatus.connected_at
-    ? new Date(githubStatus.connected_at).toLocaleDateString("ja-JP")
+    ? new Date(githubStatus.connected_at).toLocaleDateString(i18n.language)
     : null;
 
   return (
@@ -172,8 +175,12 @@ export function IntegrationPage() {
       <div className="flex flex-col items-center px-8 py-12 flex-1 overflow-y-auto">
         <div className="flex w-full max-w-[768px] flex-col items-start gap-8">
           <div className="flex w-full flex-col items-start gap-2">
-            <span className="text-heading-1 font-heading-1 text-white">接続</span>
-            <span className="text-body font-body text-neutral-400">外部サービスと連携します。</span>
+            <span className="text-heading-1 font-heading-1 text-white">
+              {t("integration.connectionTitle")}
+            </span>
+            <span className="text-body font-body text-neutral-400">
+              {t("integration.connectionSubtitle")}
+            </span>
           </div>
 
           {error && (
@@ -205,7 +212,7 @@ export function IntegrationPage() {
                         disabled={githubDisconnecting}
                       >
                         {githubDisconnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                        連携解除
+                        {t("integration.github.disconnect")}
                       </Button>
                     ) : (
                       <Button
@@ -216,12 +223,12 @@ export function IntegrationPage() {
                         disabled={githubConnecting}
                       >
                         {githubConnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-                        連携
+                        {t("integration.github.connect")}
                       </Button>
                     )}
                   </div>
                   <span className="text-body font-body text-neutral-400">
-                    実装はGitHubのリポジトリに保存されます。アカウントを連携してください。
+                    {t("integration.github.description")}
                   </span>
                 </div>
 
@@ -239,7 +246,8 @@ export function IntegrationPage() {
                           <div className="flex items-center gap-1.5">
                             <div className="flex h-2 w-2 flex-none items-start rounded-full bg-success-500" />
                             <span className="text-caption font-caption text-neutral-400">
-                              連携済み{connectedAt ? ` (${connectedAt})` : ""}
+                              {t("integration.github.connected")}
+                              {connectedAt ? ` (${connectedAt})` : ""}
                             </span>
                           </div>
                         </div>
@@ -252,17 +260,17 @@ export function IntegrationPage() {
                         disabled={githubConnecting}
                       >
                         {githubConnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                        アカウントを変更
+                        {t("integration.github.changeAccount")}
                       </Button>
                     </div>
                     <div className="flex w-full flex-col items-start gap-4 pt-6 border-t border-solid border-neutral-800/60">
                       <div className="flex w-full items-center justify-between">
                         <div className="flex flex-col items-start gap-1">
                           <span className="text-body-bold font-body-bold text-white">
-                            リポジトリをプライベートで作成する
+                            {t("integration.github.privateRepo")}
                           </span>
                           <span className="text-caption font-caption text-neutral-400">
-                            新しく作成されるリポジトリはデフォルトでプライベートに設定されます。
+                            {t("integration.github.privateRepoDesc")}
                           </span>
                         </div>
                         <Switch
@@ -286,7 +294,7 @@ export function IntegrationPage() {
                         <FeatherSlack className="text-heading-2 font-heading-2 text-white" />
                       </div>
                       <span className="text-heading-2 font-heading-2 text-white">
-                        Slack（coming soon）
+                        {t("integration.slack.name")}
                       </span>
                     </div>
                     <Button
@@ -295,11 +303,11 @@ export function IntegrationPage() {
                       size="medium"
                       disabled
                     >
-                      連携
+                      {t("integration.slack.connect")}
                     </Button>
                   </div>
                   <span className="text-body font-body text-neutral-400">
-                    Slackアカウントを連携して、実行完了の通知が届く様に設定できます。
+                    {t("integration.slack.description")}
                   </span>
                 </div>
               </div>
