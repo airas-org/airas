@@ -30,12 +30,12 @@ from airas.usecases.autonomous_research.sql_e2e_research_service import (
 from airas.usecases.ee.api_key_resolver import ApiKeyResolver
 from airas.usecases.ee.api_key_service import ApiKeyService
 from airas.usecases.ee.feedback_service import FeedbackService
-from airas.usecases.ee.github_oauth_service import GitHubOAuthService
 from airas.usecases.ee.plan_service import PlanService
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
 from airas.usecases.verification.verification_service import VerificationService
+from api.ee.oauth.github.service import GitHubOAuthService
 
 T = TypeVar("T")
 

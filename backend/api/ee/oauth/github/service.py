@@ -2,12 +2,14 @@ import logging
 import os
 import secrets
 from datetime import datetime, timezone
+from urllib.parse import quote
 
 import httpx
 
 from airas.infra.db.models.user_github_token import UserGitHubTokenModel
 from airas.infra.encryption import decrypt, encrypt
 from airas.repository.user_github_token_repository import UserGitHubTokenRepository
+from api.ee.oauth.oauth_proxy import OAuthProxyService
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +19,13 @@ class GitHubOAuthService:
     TOKEN_URL = "https://github.com/login/oauth/access_token"
     USER_URL = "https://api.github.com/user"
 
-    def __init__(self, repo: UserGitHubTokenRepository):
+    def __init__(
+        self,
+        repo: UserGitHubTokenRepository,
+        proxy: OAuthProxyService | None = None,
+    ):
         self.repo = repo
+        self.proxy = proxy or OAuthProxyService()
 
     @staticmethod
     def _get_client_id() -> str:
@@ -123,3 +130,20 @@ class GitHubOAuthService:
         if token_model is None:
             return None
         return decrypt(token_model.encrypted_token)
+
+    # ---- OAuth Proxy methods (GitHub-specific) ----
+
+    def get_proxy_authorize_url(self, origin: str) -> tuple[str, str]:
+        """Build GitHub authorize URL for the OAuth Proxy flow."""
+        state = self.proxy.encode_state(origin)
+        proxy_callback_url = (
+            f"{self.proxy.get_develop_public_url()}/airas/ee/github/proxy-callback"
+        )
+        params = {
+            "client_id": self._get_client_id(),
+            "redirect_uri": proxy_callback_url,
+            "scope": "repo",
+            "state": state,
+        }
+        qs = "&".join(f"{k}={quote(str(v), safe='')}" for k, v in params.items())
+        return f"{self.AUTHORIZE_URL}?{qs}", state

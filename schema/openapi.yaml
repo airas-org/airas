@@ -1881,6 +1881,88 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/proxy-authorize:
+    get:
+      tags:
+      - ee-github-oauth
+      summary: Proxy Authorize
+      operationId: proxy_authorize_airas_ee_github_proxy_authorize_get
+      parameters:
+      - name: origin
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Origin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitHubAuthorizeResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/proxy-callback:
+    get:
+      tags:
+      - ee-github-oauth
+      summary: Proxy Callback
+      operationId: proxy_callback_airas_ee_github_proxy_callback_get
+      parameters:
+      - name: code
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Code
+      - name: state
+        in: query
+        required: true
+        schema:
+          type: string
+          title: State
+      responses:
+        '302':
+          description: Redirect to preview frontend with encrypted proxy token
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/ee/github/proxy-complete:
+    post:
+      tags:
+      - ee-github-oauth
+      summary: Proxy Complete
+      operationId: proxy_complete_airas_ee_github_proxy_complete_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GitHubProxyCompleteRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitHubCallbackResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AnalyzeExperimentLLMMapping:
@@ -3599,6 +3681,15 @@ components:
       required:
       - disconnected
       title: GitHubDisconnectResponse
+    GitHubProxyCompleteRequest:
+      properties:
+        proxy_token:
+          type: string
+          title: Proxy Token
+      type: object
+      required:
+      - proxy_token
+      title: GitHubProxyCompleteRequest
     GithubDownloadRequest:
       properties:
         github_config:

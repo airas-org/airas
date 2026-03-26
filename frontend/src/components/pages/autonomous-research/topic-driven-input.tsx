@@ -21,6 +21,7 @@ import {
   type RunnerConfigFormState,
   toRunnerConfigPayload,
 } from "@/components/features/runner-config-form";
+import { GITHUB_SESSION_KEY } from "@/ee/config";
 import {
   type TopicOpenEndedResearchLLMMapping,
   TopicOpenEndedResearchRequestBody,
@@ -122,7 +123,7 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
     };
 
     try {
-      const githubSession = localStorage.getItem("github_session_token");
+      const githubSession = localStorage.getItem(GITHUB_SESSION_KEY);
       const response =
         await TopicOpenEndedResearchService.executeTopicOpenEndedResearchAirasV1TopicOpenEndedResearchRunPost(
           payload,

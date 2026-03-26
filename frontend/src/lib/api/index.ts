@@ -97,6 +97,7 @@ export type { GitHubConnectionStatus } from './models/GitHubConnectionStatus';
 export type { GitHubDisconnectResponse } from './models/GitHubDisconnectResponse';
 export type { GithubDownloadRequest } from './models/GithubDownloadRequest';
 export type { GithubDownloadResponse } from './models/GithubDownloadResponse';
+export type { GitHubProxyCompleteRequest } from './models/GitHubProxyCompleteRequest';
 export type { GithubUploadRequest } from './models/GithubUploadRequest';
 export type { GithubUploadResponse } from './models/GithubUploadResponse';
 export type { GoogleGenAIParams } from './models/GoogleGenAIParams';

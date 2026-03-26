@@ -64,6 +64,10 @@ class GitHubCallbackResponse(BaseModel):
     session_token: str
 
 
+class GitHubProxyCompleteRequest(BaseModel):
+    proxy_token: str
+
+
 class GitHubDisconnectResponse(BaseModel):
     disconnected: bool
 

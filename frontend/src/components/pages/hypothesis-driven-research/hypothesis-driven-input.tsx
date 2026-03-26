@@ -22,6 +22,7 @@ import {
   type RunnerConfigFormState,
   toRunnerConfigPayload,
 } from "@/components/features/runner-config-form";
+import { GITHUB_SESSION_KEY } from "@/ee/config";
 import {
   type HypothesisDrivenResearchLLMMapping,
   HypothesisDrivenResearchRequestBody,
@@ -149,7 +150,7 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
     };
 
     try {
-      const githubSession = localStorage.getItem("github_session_token");
+      const githubSession = localStorage.getItem(GITHUB_SESSION_KEY);
       const response =
         await HypothesisDrivenResearchService.executeHypothesisDrivenResearchAirasV1HypothesisDrivenResearchRunPost(
           payload,

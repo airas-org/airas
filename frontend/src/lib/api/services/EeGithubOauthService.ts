@@ -7,6 +7,7 @@ import type { GitHubCallbackRequest } from '../models/GitHubCallbackRequest';
 import type { GitHubCallbackResponse } from '../models/GitHubCallbackResponse';
 import type { GitHubConnectionStatus } from '../models/GitHubConnectionStatus';
 import type { GitHubDisconnectResponse } from '../models/GitHubDisconnectResponse';
+import type { GitHubProxyCompleteRequest } from '../models/GitHubProxyCompleteRequest';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -85,6 +86,69 @@ export class EeGithubOauthService {
             headers: {
                 'x-github-session': xGithubSession,
             },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Proxy Authorize
+     * @param origin
+     * @returns GitHubAuthorizeResponse Successful Response
+     * @throws ApiError
+     */
+    public static proxyAuthorizeAirasEeGithubProxyAuthorizeGet(
+        origin: string,
+    ): CancelablePromise<GitHubAuthorizeResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/airas/ee/github/proxy-authorize',
+            query: {
+                'origin': origin,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Proxy Callback
+     * @param code
+     * @param state
+     * @returns void
+     * @throws ApiError
+     */
+    public static proxyCallbackAirasEeGithubProxyCallbackGet(
+        code: string,
+        state: string,
+    ): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/airas/ee/github/proxy-callback',
+            query: {
+                'code': code,
+                'state': state,
+            },
+            errors: {
+                302: `Redirect to preview frontend with encrypted proxy token`,
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Proxy Complete
+     * @param requestBody
+     * @returns GitHubCallbackResponse Successful Response
+     * @throws ApiError
+     */
+    public static proxyCompleteAirasEeGithubProxyCompletePost(
+        requestBody: GitHubProxyCompleteRequest,
+    ): CancelablePromise<GitHubCallbackResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/airas/ee/github/proxy-complete',
+            body: requestBody,
+            mediaType: 'application/json',
             errors: {
                 422: `Validation Error`,
             },
