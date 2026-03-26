@@ -93,6 +93,23 @@ def disconnect(
 
 
 # ---- OAuth Proxy endpoints ----
+#
+# These endpoints allow preview environments (with dynamic URLs) to complete
+# the GitHub OAuth flow without registering their own callback URLs.
+#
+# Flow:
+#   1. Preview FE  -> GET  /proxy-authorize   (preview BE)
+#      Returns a GitHub authorize URL with the preview origin embedded in
+#      an HMAC-signed state parameter.
+#
+#   2. GitHub       -> GET  /proxy-callback    (develop BE — the fixed callback URL)
+#      Exchanges the authorization code for GitHub credentials, encrypts them
+#      into a short-lived Fernet proxy token, and 302-redirects back to the
+#      preview FE with the token in a query parameter.
+#
+#   3. Preview FE  -> POST /proxy-complete     (preview BE)
+#      Decrypts and validates the proxy token, stores the GitHub credentials
+#      in the preview environment's own database, and creates a local session.
 
 
 @router.get("/proxy-authorize", response_model=GitHubAuthorizeResponse)
@@ -103,11 +120,6 @@ def proxy_authorize(
         GitHubOAuthService, Depends(Provide[Container.github_oauth_service])
     ],
 ) -> GitHubAuthorizeResponse:
-    """Return a GitHub authorize URL for the OAuth Proxy flow.
-
-    Called by preview frontends.  The ``origin`` is embedded in the state
-    so that the proxy-callback can redirect back to the correct frontend.
-    """
     try:
         authorize_url, state = service.get_proxy_authorize_url(origin)
     except ValueError as e:
@@ -130,12 +142,6 @@ async def proxy_callback(
         GitHubOAuthService, Depends(Provide[Container.github_oauth_service])
     ],
 ) -> RedirectResponse:
-    """Receive the OAuth callback from GitHub and redirect to the preview frontend.
-
-    This endpoint runs on the production/develop backend (the fixed callback URL
-    registered with the GitHub App).  It exchanges the code for credentials,
-    wraps them in an encrypted token, and 302-redirects to the preview frontend.
-    """
     try:
         origin = service.proxy.decode_state(state)
     except ValueError as e:
@@ -166,13 +172,6 @@ def proxy_complete(
         GitHubOAuthService, Depends(Provide[Container.github_oauth_service])
     ],
 ) -> GitHubCallbackResponse:
-    """Complete the OAuth Proxy flow on the preview backend.
-
-    The preview frontend sends the encrypted proxy token it received via
-    redirect.  This endpoint decrypts and validates the token, creates a
-    local session, and stores the GitHub token in this environment's own
-    database.
-    """
     try:
         claims = service.proxy.validate_proxy_token(request.proxy_token)
     except ValueError as e:

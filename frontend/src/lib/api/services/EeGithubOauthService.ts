@@ -93,10 +93,6 @@ export class EeGithubOauthService {
     }
     /**
      * Proxy Authorize
-     * Return a GitHub authorize URL for the OAuth Proxy flow.
-     *
-     * Called by preview frontends.  The ``origin`` is embedded in the state
-     * so that the proxy-callback can redirect back to the correct frontend.
      * @param origin
      * @returns GitHubAuthorizeResponse Successful Response
      * @throws ApiError
@@ -117,11 +113,6 @@ export class EeGithubOauthService {
     }
     /**
      * Proxy Callback
-     * Receive the OAuth callback from GitHub and redirect to the preview frontend.
-     *
-     * This endpoint runs on the production/develop backend (the fixed callback URL
-     * registered with the GitHub App).  It exchanges the code for credentials,
-     * wraps them in an encrypted token, and 302-redirects to the preview frontend.
      * @param code
      * @param state
      * @returns void
@@ -146,12 +137,6 @@ export class EeGithubOauthService {
     }
     /**
      * Proxy Complete
-     * Complete the OAuth Proxy flow on the preview backend.
-     *
-     * The preview frontend sends the encrypted proxy token it received via
-     * redirect.  This endpoint decrypts and validates the token, creates a
-     * local session, and stores the GitHub token in this environment's own
-     * database.
      * @param requestBody
      * @returns GitHubCallbackResponse Successful Response
      * @throws ApiError
