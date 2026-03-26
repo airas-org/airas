@@ -478,6 +478,16 @@
     "detailPlaceholder": "詳細な内容を入力してください",
     "email": "メールアドレス（任意）",
     "emailHelpText": "返信が必要な場合はご記入ください",
+    "submitting": "送信中...",
+    "submitError": "フィードバックの送信に失敗しました。もう一度お試しください。",
+    "validation": {
+      "categoryRequired": "カテゴリを選択してください",
+      "subjectRequired": "件名を入力してください",
+      "subjectTooLong": "件名は255文字以内で入力してください",
+      "detailRequired": "詳細を入力してください",
+      "detailTooLong": "詳細は5000文字以内で入力してください",
+      "emailInvalid": "有効なメールアドレスを入力してください"
+    },
     "faq": "よくある質問",
     "faqItems": {
       "q1": "AIRASで生成された研究成果の著作権はどうなりますか？",

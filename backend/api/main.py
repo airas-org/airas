@@ -8,6 +8,9 @@ from sqlmodel import SQLModel
 
 import api.routes.v1 as routes_v1
 from airas.container import Container
+from airas.infra.db.models.feedback import (
+    FeedbackModel as _FeedbackModel,  # noqa: F401
+)
 from airas.infra.db.models.verification import (
     VerificationModel as _VerificationModel,  # noqa: F401
 )
@@ -21,6 +24,7 @@ from api.routes.v1 import (
     datasets,
     experimental_settings,
     experiments,
+    feedback,
     github,
     github_actions,
     hypotheses,
@@ -127,6 +131,7 @@ def create_app() -> FastAPI:
         topic_open_ended_research.router,
         hypothesis_driven_research.router,
         verification.router,
+        feedback.router,
     ]
     for router in v1_routers:
         application.include_router(router, prefix="/airas/v1", dependencies=auth_deps)
