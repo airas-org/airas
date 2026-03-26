@@ -15,7 +15,6 @@ import json
 import logging
 import os
 import re
-import secrets
 import time
 from typing import Any
 
@@ -57,8 +56,7 @@ class OAuthProxyService:
 
     def encode_state(self, origin: str) -> str:
         self.validate_origin(origin)
-        nonce = secrets.token_urlsafe(32)
-        payload = json.dumps({"nonce": nonce, "origin": origin})
+        payload = json.dumps({"origin": origin})
         sig = hmac.new(
             self._get_proxy_secret().encode(), payload.encode(), hashlib.sha256
         ).hexdigest()
