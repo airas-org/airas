@@ -8,6 +8,7 @@ Service-specific classes (GitHub, Slack, Discord ...) hold an instance of
 this class via composition and delegate proxy operations to it.
 """
 
+import base64
 import hashlib
 import hmac
 import json
@@ -30,7 +31,6 @@ class OAuthProxyService:
         return val
 
     def _get_fernet(self) -> Fernet:
-        """Derive a Fernet key from the shared secret."""
         key_bytes = hashlib.sha256(self._get_proxy_secret().encode()).digest()
         import base64
 
@@ -58,7 +58,6 @@ class OAuthProxyService:
     # ---- state helpers (HMAC-signed) ----
 
     def encode_state(self, origin: str) -> str:
-        """Create an HMAC-signed state value that embeds the preview origin."""
         self.validate_origin(origin)
         nonce = secrets.token_urlsafe(32)
         payload = json.dumps({"nonce": nonce, "origin": origin})
@@ -71,13 +70,6 @@ class OAuthProxyService:
         return base64.urlsafe_b64encode(combined.encode()).decode()
 
     def decode_state(self, state: str) -> str:
-        """Decode and verify an HMAC-signed state, returning the origin.
-
-        Also re-validates the origin against the allowlist to prevent
-        open redirects from tampered state values.
-        """
-        import base64
-
         try:
             raw = base64.urlsafe_b64decode(state.encode())
             combined = json.loads(raw)
@@ -100,17 +92,11 @@ class OAuthProxyService:
     # ---- proxy token (Fernet-encrypted) ----
 
     def create_proxy_token(self, claims: dict[str, Any], ttl_minutes: int = 5) -> str:
-        """Encrypt claims into an opaque, time-limited token.
-
-        Uses Fernet symmetric encryption so that sensitive data (e.g.
-        access_token) is not visible in the URL query string.
-        """
         claims["_exp"] = int(time.time()) + ttl_minutes * 60
         plaintext = json.dumps(claims).encode()
         return self._get_fernet().encrypt(plaintext).decode()
 
     def validate_proxy_token(self, token: str) -> dict[str, Any]:
-        """Decrypt and validate a proxy token, returning its claims."""
         try:
             plaintext = self._get_fernet().decrypt(token.encode())
         except InvalidToken as exc:
