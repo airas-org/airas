@@ -70,7 +70,7 @@ class GenerateVerificationCodeResponseBody(BaseModel):
     execution_time: dict[str, list[float]]
 
 
-class ExperimentCodeStatusResponseBody(BaseModel):
+class VerificationCodeStatusResponseBody(BaseModel):
     status: str
     conclusion: str | None
 

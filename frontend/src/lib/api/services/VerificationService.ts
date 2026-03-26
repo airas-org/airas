@@ -2,13 +2,13 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ExperimentCodeStatusResponseBody } from '../models/ExperimentCodeStatusResponseBody';
 import type { GenerateMethodRequestBody } from '../models/GenerateMethodRequestBody';
 import type { GenerateMethodResponseBody } from '../models/GenerateMethodResponseBody';
 import type { GenerateVerificationCodeRequestBody } from '../models/GenerateVerificationCodeRequestBody';
 import type { GenerateVerificationCodeResponseBody } from '../models/GenerateVerificationCodeResponseBody';
 import type { ProposePoliciesRequestBody } from '../models/ProposePoliciesRequestBody';
 import type { ProposePoliciesResponseBody } from '../models/ProposePoliciesResponseBody';
+import type { VerificationCodeStatusResponseBody } from '../models/VerificationCodeStatusResponseBody';
 import type { VerificationSessionCreateRequest } from '../models/VerificationSessionCreateRequest';
 import type { VerificationSessionListResponse } from '../models/VerificationSessionListResponse';
 import type { VerificationSessionResponse } from '../models/VerificationSessionResponse';
@@ -178,14 +178,14 @@ export class VerificationService {
      * @param repositoryName
      * @param workflowRunId
      * @param xGithubSession
-     * @returns ExperimentCodeStatusResponseBody Successful Response
+     * @returns VerificationCodeStatusResponseBody Successful Response
      * @throws ApiError
      */
     public static getVerificationCodeStatusAirasV1VerificationCodeStatusRepositoryNameWorkflowRunIdGet(
         repositoryName: string,
         workflowRunId: number,
         xGithubSession?: (string | null),
-    ): CancelablePromise<ExperimentCodeStatusResponseBody> {
+    ): CancelablePromise<VerificationCodeStatusResponseBody> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/airas/v1/verification/code-status/{repository_name}/{workflow_run_id}',

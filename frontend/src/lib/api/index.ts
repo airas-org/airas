@@ -54,7 +54,6 @@ export type { ExperimentalDesign_Input } from './models/ExperimentalDesign_Input
 export type { ExperimentalDesign_Output } from './models/ExperimentalDesign_Output';
 export type { ExperimentalResults } from './models/ExperimentalResults';
 export type { ExperimentCode } from './models/ExperimentCode';
-export type { ExperimentCodeStatusResponseBody } from './models/ExperimentCodeStatusResponseBody';
 export type { ExperimentCycle_Input } from './models/ExperimentCycle_Input';
 export type { ExperimentCycle_Output } from './models/ExperimentCycle_Output';
 export { ExperimentCycleAction } from './models/ExperimentCycleAction';
@@ -167,6 +166,7 @@ export type { TopicOpenEndedResearchUpdateRequestBody } from './models/TopicOpen
 export type { TrainingConfig } from './models/TrainingConfig';
 export type { UserPlanResponse } from './models/UserPlanResponse';
 export type { ValidationError } from './models/ValidationError';
+export type { VerificationCodeStatusResponseBody } from './models/VerificationCodeStatusResponseBody';
 export type { VerificationSessionCreateRequest } from './models/VerificationSessionCreateRequest';
 export type { VerificationSessionListResponse } from './models/VerificationSessionListResponse';
 export type { VerificationSessionResponse } from './models/VerificationSessionResponse';

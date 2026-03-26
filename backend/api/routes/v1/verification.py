@@ -31,7 +31,6 @@ from api.ee.auth.dependencies import (
     get_litellm_client,
 )
 from api.schemas.verification import (
-    ExperimentCodeStatusResponseBody,
     GenerateMethodRequestBody,
     GenerateMethodResponseBody,
     GenerateVerificationCodeRequestBody,
@@ -39,6 +38,7 @@ from api.schemas.verification import (
     ProposedMethodSchema,
     ProposePoliciesRequestBody,
     ProposePoliciesResponseBody,
+    VerificationCodeStatusResponseBody,
     VerificationSessionCreateRequest,
     VerificationSessionListResponse,
     VerificationSessionResponse,
@@ -362,7 +362,7 @@ async def generate_verification_code(
 
 @router.get(
     "/code-status/{repository_name}/{workflow_run_id}",
-    response_model=ExperimentCodeStatusResponseBody,
+    response_model=VerificationCodeStatusResponseBody,
 )
 @inject
 @observe()
@@ -371,15 +371,15 @@ async def get_verification_code_status(
     workflow_run_id: int,
     github_owner: Annotated[str, Depends(get_github_owner)],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-) -> ExperimentCodeStatusResponseBody:
+) -> VerificationCodeStatusResponseBody:
     result = await github_client.aget_workflow_run(
         github_owner=github_owner,
         repository_name=repository_name,
         workflow_run_id=workflow_run_id,
     )
     if result is None:
-        return ExperimentCodeStatusResponseBody(status="unknown", conclusion=None)
-    return ExperimentCodeStatusResponseBody(
+        return VerificationCodeStatusResponseBody(status="unknown", conclusion=None)
+    return VerificationCodeStatusResponseBody(
         status=result.get("status", "unknown"),
         conclusion=result.get("conclusion"),
     )
