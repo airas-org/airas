@@ -32,8 +32,6 @@ class OAuthProxyService:
 
     def _get_fernet(self) -> Fernet:
         key_bytes = hashlib.sha256(self._get_proxy_secret().encode()).digest()
-        import base64
-
         fernet_key = base64.urlsafe_b64encode(key_bytes)
         return Fernet(fernet_key)
 
@@ -65,7 +63,6 @@ class OAuthProxyService:
             self._get_proxy_secret().encode(), payload.encode(), hashlib.sha256
         ).hexdigest()
         combined = json.dumps({"payload": payload, "sig": sig})
-        import base64
 
         return base64.urlsafe_b64encode(combined.encode()).decode()
 
