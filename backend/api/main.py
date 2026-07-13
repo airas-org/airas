@@ -43,9 +43,6 @@ from api.routes.v1 import (
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     database_url = os.getenv("DATABASE_URL")
-    # Railway provides postgresql:// but SQLAlchemy needs the psycopg driver specified
-    if database_url and database_url.startswith("postgresql://"):
-        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
     container = Container()
     container.config.from_dict({"database_url": database_url})
 
@@ -100,11 +97,7 @@ def create_app() -> FastAPI:
 
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "https://app.airas.io",
-            "https://app-dev.airas.io",
-        ],
-        allow_origin_regex=r"https://(airas.*\.vercel\.app|.*\.trycloudflare\.com)|http://(localhost|127\.0\.0\.1):\d+",
+        allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

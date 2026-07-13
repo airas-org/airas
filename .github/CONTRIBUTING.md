@@ -44,18 +44,6 @@ Pull requests that do not meet these requirements may be requested for revision 
 ### MCP servers and Plugins
 For core team development, we use the following. If you need access, please contact us and we will invite you to each service.
 
-- [Vercel](https://vercel.com/docs/agent-resources/vercel-mcp#claude-code)
-
-    ```bash
-    claude mcp add --transport http vercel https://mcp.vercel.com
-    ```
-
-- [Railway](https://docs.railway.com/ai/mcp-server#claude-code)
-
-    ```bash
-    claude mcp add Railway npx @railway/mcp-server
-    ```
-
 - [Subframe](https://docs.subframe.com/guides/mcp-server#installation)
 
     ```bash
