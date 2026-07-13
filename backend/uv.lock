@@ -146,9 +146,7 @@ dependencies = [
 
 [package.optional-dependencies]
 mcp = [
-    { name = "asyncio" },
     { name = "mcp", extra = ["cli"] },
-    { name = "python-dotenv" },
 ]
 
 [package.dev-dependencies]
@@ -168,7 +166,6 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "anthropic", specifier = ">=0.66.0" },
-    { name = "asyncio", marker = "extra == 'mcp'", specifier = ">=3.4.3" },
     { name = "bibtexparser", specifier = ">=1.4.3" },
     { name = "boto3", specifier = ">=1.35.0" },
     { name = "dependency-injector", specifier = ">=4.48.2" },
@@ -194,7 +191,6 @@ requires-dist = [
     { name = "pynacl", specifier = ">=1.6.0" },
     { name = "pypdf", specifier = ">=4.3.1" },
     { name = "pytest-asyncio", specifier = ">=1.2.0" },
-    { name = "python-dotenv", marker = "extra == 'mcp'", specifier = ">=1.0.1" },
     { name = "pytz", specifier = ">=2025.2" },
     { name = "rank-bm25", specifier = ">=0.2.2" },
     { name = "semanticscholar", specifier = ">=0.8.4" },
@@ -384,15 +380,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/87/d6/21b30a550dafea84b1b8eee21b5e23fa16d010ae006011221f33dcd8d7f8/async-timeout-4.0.3.tar.gz", hash = "sha256:4640d96be84d82d02ed59ea2b7105a0f7b33abe8703703cd0ab0bf87c427522f", size = 8345, upload-time = "2023-08-10T16:35:56.907Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a7/fa/e01228c2938de91d47b307831c62ab9e4001e747789d0b05baf779a6488c/async_timeout-4.0.3-py3-none-any.whl", hash = "sha256:7405140ff1230c310e51dc27b3145b9092d659ce68ff733fb0cefe3ee42be028", size = 5721, upload-time = "2023-08-10T16:35:55.203Z" },
-]
-
-[[package]]
-name = "asyncio"
-version = "4.0.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/71/ea/26c489a11f7ca862d5705db67683a7361ce11c23a7b98fc6c2deaeccede2/asyncio-4.0.0.tar.gz", hash = "sha256:570cd9e50db83bc1629152d4d0b7558d6451bb1bfd5dfc2e935d96fc2f40329b", size = 5371, upload-time = "2025-08-05T02:51:46.605Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/57/64/eff2564783bd650ca25e15938d1c5b459cda997574a510f7de69688cb0b4/asyncio-4.0.0-py3-none-any.whl", hash = "sha256:c1eddb0659231837046809e68103969b2bef8b0400d59cfa6363f6b5ed8cc88b", size = 5555, upload-time = "2025-08-05T02:51:45.767Z" },
 ]
 
 [[package]]

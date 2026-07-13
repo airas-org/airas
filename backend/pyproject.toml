@@ -112,7 +112,8 @@ explicit = true
 
 [project.optional-dependencies]
 mcp = [
-    "asyncio>=3.4.3",
     "mcp[cli]>=1.6.0",
-    "python-dotenv>=1.0.1",
 ]
+
+[project.scripts]
+airas-mcp = "airas.mcp.server:main"
