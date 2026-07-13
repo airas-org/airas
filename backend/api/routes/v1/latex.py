@@ -17,7 +17,7 @@ from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph 
 from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
     PushLatexSubgraph,
 )
-from api.ee.auth.dependencies import get_github_client, get_langchain_client
+from api.dependencies import get_github_client, get_langchain_client
 from api.schemas.latex import (
     CompileLatexSubgraphRequestBody,
     CompileLatexSubgraphResponseBody,

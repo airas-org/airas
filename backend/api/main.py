@@ -1,23 +1,10 @@
-import os
 from contextlib import asynccontextmanager
 
-from dependency_injector import providers
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import SQLModel
 
 import api.routes.v1 as routes_v1
 from airas.container import Container
-from airas.infra.db.models.feedback import (
-    FeedbackModel as _FeedbackModel,  # noqa: F401
-)
-from airas.infra.db.models.verification import (
-    VerificationModel as _VerificationModel,  # noqa: F401
-)
-from airas.usecases.autonomous_research.in_memory_e2e_research_service import (
-    InMemoryE2EResearchService,
-)
-from api.ee.auth.dependencies import get_current_user_id
 from api.routes.v1 import (
     bibfile,
     code,
@@ -42,25 +29,13 @@ from api.routes.v1 import (
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
-    database_url = os.getenv("DATABASE_URL")
     container = Container()
-    container.config.from_dict({"database_url": database_url})
 
     # Make container discoverable by dependency_injector's FastAPI integration
     app.state.container = container
     app.container = container
 
-    if database_url:
-        engine = container.engine()
-        SQLModel.metadata.create_all(engine)
-    else:
-        container.e2e_research_service.override(
-            providers.Singleton(InMemoryE2EResearchService)
-        )
-
-    import api.ee as ee_pkg
-
-    container.wire(packages=[routes_v1, ee_pkg])
+    container.wire(packages=[routes_v1])
     await container.init_resources()
 
     try:
@@ -68,19 +43,6 @@ async def _lifespan(app: FastAPI):
     finally:
         await container.shutdown_resources()
         container.unwire()
-
-
-def register_ee_routes(application: FastAPI) -> None:
-    """Register all Enterprise Edition routes."""
-    from api.ee.api_keys.routes import router as ee_api_keys_router
-    from api.ee.auth.routes import router as ee_auth_router
-    from api.ee.github_oauth.routes import router as ee_github_oauth_router
-    from api.ee.plan.routes import router as ee_plan_router
-
-    application.include_router(ee_auth_router, prefix="/airas/ee")
-    application.include_router(ee_api_keys_router, prefix="/airas/ee")
-    application.include_router(ee_plan_router, prefix="/airas/ee")
-    application.include_router(ee_github_oauth_router, prefix="/airas/ee")
 
 
 def create_app() -> FastAPI:
@@ -103,7 +65,6 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    auth_deps = [Depends(get_current_user_id)]
     v1_routers = [
         papers.router,
         models.router,
@@ -125,9 +86,7 @@ def create_app() -> FastAPI:
         feedback.router,
     ]
     for router in v1_routers:
-        application.include_router(router, prefix="/airas/v1", dependencies=auth_deps)
-
-    register_ee_routes(application)
+        application.include_router(router, prefix="/airas/v1")
 
     return application
 

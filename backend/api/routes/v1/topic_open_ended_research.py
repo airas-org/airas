@@ -8,9 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from langfuse import observe
 
 from airas.container import Container
+from airas.core.types.e2e import Status
 from airas.core.types.github import GitHubConfig
 from airas.infra.arxiv_client import ArxivClient
-from airas.infra.db.models.e2e import Status
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
@@ -24,7 +24,7 @@ from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_end
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
-from api.ee.auth.dependencies import (
+from api.dependencies import (
     get_current_user_id,
     get_github_client,
     get_github_owner,

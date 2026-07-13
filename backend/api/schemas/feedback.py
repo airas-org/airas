@@ -2,7 +2,7 @@ import re
 
 from pydantic import BaseModel, Field, field_validator
 
-from airas.infra.db.models.feedback import FeedbackCategory
+from airas.core.types.feedback import FeedbackCategory
 
 
 class CreateFeedbackRequestBody(BaseModel):

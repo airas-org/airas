@@ -49,9 +49,3 @@ For core team development, we use the following. If you need access, please cont
     ```bash
     claude plugin marketplace add https://github.com/SubframeApp/subframe && claude plugin install subframe@subframe
     ```
-
-- [Supabase](https://supabase.com/docs/guides/getting-started/mcp)
-
-    ```bash
-    claude mcp add --scope project --transport http supabase "https://mcp.supabase.com/mcp"
-    ```

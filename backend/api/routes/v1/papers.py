@@ -20,7 +20,7 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_fr
     SearchPaperTitlesFromQdrantSubgraph,
 )
 from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
-from api.ee.auth.dependencies import get_github_client, get_langchain_client
+from api.dependencies import get_github_client, get_langchain_client
 from api.schemas.papers import (
     RetrievePaperSubgraphRequestBody,
     RetrievePaperSubgraphResponseBody,

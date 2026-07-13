@@ -6,7 +6,6 @@ import {
   FeatherGlobe,
   FeatherPanelLeftClose,
   FeatherPanelLeftOpen,
-  FeatherUser,
 } from "@subframe/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -26,8 +25,6 @@ import { useVerifications } from "@/components/pages/verification/use-verificati
 import { MainSidebar } from "@/components/sidebar/main-sidebar";
 import { AutonomousResearchProvider } from "@/contexts/autonomous-research-context";
 import { VerificationProvider } from "@/contexts/verification-context";
-import { isSelfHosted } from "@/ee/config";
-import type { EEState } from "@/hooks/use-ee-components";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWorkflowTree } from "@/hooks/use-workflow-tree";
 import { cn } from "@/lib/utils";
@@ -60,15 +57,10 @@ function getActiveSection(pathname: string): string {
   return "home";
 }
 
-interface AppLayoutProps {
-  ee: EEState;
-}
-
-export function AppLayout({ ee }: AppLayoutProps) {
+export function AppLayout() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const selfHosted = isSelfHosted();
 
   const activeSection = getActiveSection(location.pathname);
   const autonomousSubNav = getAutonomousSubNav(location.pathname);
@@ -233,7 +225,6 @@ export function AppLayout({ ee }: AppLayoutProps) {
           <MainSidebar
             activeSection={activeSection}
             autonomousSubNav={autonomousSubNav}
-            isAuthenticated={ee.isAuthenticated}
             onMobileNavClose={handleMobileNavClose}
             onAutonomousSubNavClick={() => setAutonomousListViewKey((k) => k + 1)}
           />
@@ -333,17 +324,6 @@ export function AppLayout({ ee }: AppLayoutProps) {
                 onClick={() => navigate("/notifications")}
                 aria-label="Open notifications"
               />
-              {!ee.loading &&
-                (ee.isAuthenticated && ee.components ? (
-                  <ee.components.UserMenu />
-                ) : !selfHosted && ee.components ? (
-                  <IconButton
-                    variant="neutral-secondary"
-                    icon={<FeatherUser />}
-                    onClick={() => navigate("/login")}
-                    aria-label="Log in"
-                  />
-                ) : null)}
             </>
           }
         />

@@ -4,8 +4,8 @@ import logging
 
 import boto3
 
-from airas.infra.db.models.feedback import FeedbackModel
-from airas.usecases.ee.feedback_service import FeedbackNotifier
+from airas.core.types.feedback import FeedbackModel
+from airas.usecases.feedback.feedback_service import FeedbackNotifier
 
 logger = logging.getLogger(__name__)
 

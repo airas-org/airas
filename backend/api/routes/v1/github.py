@@ -10,7 +10,7 @@ from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.github.push_github_subgraph.push_github_subgraph import (
     PushGitHubSubgraph,
 )
-from api.ee.auth.dependencies import get_github_client
+from api.dependencies import get_github_client
 from api.schemas.github import (
     PushGitHubRequestBody,
     PushGitHubResponseBody,

@@ -8,6 +8,7 @@ from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
+from airas.core.types.e2e import Status, StepType
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
@@ -26,7 +27,6 @@ from airas.core.types.runner import ExperimentRunnerConfig
 from airas.core.types.wandb import WandbConfig
 from airas.core.utils import to_dict_deep
 from airas.infra.arxiv_client import ArxivClient
-from airas.infra.db.models.e2e import Status, StepType
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.litellm_client import LiteLLMClient

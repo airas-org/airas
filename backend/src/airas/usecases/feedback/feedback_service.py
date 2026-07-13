@@ -4,8 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from airas.infra.db.models.feedback import FeedbackCategory, FeedbackModel
-from airas.repository.feedback_repository import FeedbackRepository
+from airas.core.types.feedback import FeedbackCategory, FeedbackModel
 
 logger = logging.getLogger(__name__)
 
@@ -19,12 +18,12 @@ class FeedbackNotifier(ABC):
 
 
 class FeedbackService:
+    """Deliver feedback via the configured notifiers (no persistence)."""
+
     def __init__(
         self,
-        repo: FeedbackRepository,
         notifiers: list[FeedbackNotifier] | None = None,
     ):
-        self.repo = repo
         self.notifiers = list(notifiers) if notifiers else []
 
     def create(
@@ -43,18 +42,8 @@ class FeedbackService:
             email=email,
             created_by=created_by,
         )
-        saved = self.repo.create(feedback)
-        self._run_notifiers(saved)
-        return saved
-
-    def list_by_user(
-        self,
-        created_by: UUID,
-        *,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> list[FeedbackModel]:
-        return self.repo.list_by_user(created_by, limit=limit, offset=offset)
+        self._run_notifiers(feedback)
+        return feedback
 
     def _run_notifiers(self, feedback: FeedbackModel) -> None:
         for notifier in self.notifiers:

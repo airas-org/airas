@@ -13,7 +13,7 @@ from airas.usecases.generators.generate_experimental_design_subgraph.generate_ex
 from airas.usecases.generators.refine_experimental_design_subgraph.refine_experimental_design_subgraph import (
     RefineExperimentalDesignSubgraph,
 )
-from api.ee.auth.dependencies import get_langchain_client
+from api.dependencies import get_langchain_client
 from api.schemas.experimental_settings import (
     GenerateExperimentalDesignSubgraphRequestBody,
     GenerateExperimentalDesignSubgraphResponseBody,

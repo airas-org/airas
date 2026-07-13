@@ -34,20 +34,15 @@ export class PapersService {
     /**
      * Get Paper Title
      * @param requestBody
-     * @param xGithubSession
      * @returns RetrievePaperSubgraphResponseBody Successful Response
      * @throws ApiError
      */
     public static getPaperTitleAirasV1PapersRetrievalPost(
         requestBody: RetrievePaperSubgraphRequestBody,
-        xGithubSession?: (string | null),
     ): CancelablePromise<RetrievePaperSubgraphResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/papers/retrieval',
-            headers: {
-                'x-github-session': xGithubSession,
-            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {

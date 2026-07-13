@@ -122,11 +122,9 @@ export function TopicDrivenInput({ onBack, onResearchStarted }: TopicDrivenInput
     };
 
     try {
-      const githubSession = localStorage.getItem("github_session_token");
       const response =
         await TopicOpenEndedResearchService.executeTopicOpenEndedResearchAirasV1TopicOpenEndedResearchRunPost(
           payload,
-          githubSession,
         );
       onResearchStarted(response.task_id);
     } catch (err) {

@@ -3,10 +3,7 @@ from enum import Enum
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import Column, String
-from sqlalchemy import Enum as SqlEnum
-from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
-from sqlmodel import Field, SQLModel
+from pydantic import BaseModel, Field
 
 
 class Status(str, Enum):
@@ -37,39 +34,23 @@ class StepType(str, Enum):
     DONE = "done"
 
 
-class E2EModel(SQLModel, table=True):
-    __tablename__ = "e2e_results"
+class E2EModel(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    title: str
 
-    id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    title: str = Field(nullable=False)
-
-    created_by: UUID = Field(nullable=False, index=True)
+    created_by: UUID
     created_at: datetime = Field(
-        sa_column=Column(TIMESTAMP(timezone=True), nullable=False),
         default_factory=lambda: datetime.now().astimezone(),
     )
 
-    status: Status = Field(
-        sa_column=Column(SqlEnum(Status, name="status"), nullable=False),
-        default=Status.PENDING,
-    )
-    current_step: Optional[StepType] = Field(
-        default=None,
-        sa_column=Column(SqlEnum(StepType, name="step_type"), nullable=True),
-    )
-    error_message: Optional[str] = Field(
-        default=None, sa_column=Column(String, nullable=True)
-    )
-    result: dict[str, Any] = Field(
-        default_factory=dict, sa_column=Column(JSONB, nullable=False)
-    )
+    status: Status = Status.PENDING
+    current_step: Optional[StepType] = None
+    error_message: Optional[str] = None
+    result: dict[str, Any] = Field(default_factory=dict)
 
     last_updated_at: datetime = Field(
-        sa_column=Column(TIMESTAMP(timezone=True), nullable=False),
         default_factory=lambda: datetime.now().astimezone(),
     )
 
-    github_url: Optional[str] = Field(
-        default=None, sa_column=Column(String, nullable=True)
-    )
-    schema_version: int = Field(default=1, nullable=False)
+    github_url: Optional[str] = None
+    schema_version: int = 1

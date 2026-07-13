@@ -152,20 +152,15 @@ export class VerificationService {
     /**
      * Generate Experiment Code
      * @param requestBody
-     * @param xGithubSession
      * @returns GenerateExperimentCodeResponseBody Successful Response
      * @throws ApiError
      */
     public static generateExperimentCodeAirasV1VerificationGenerateExperimentCodePost(
         requestBody: GenerateExperimentCodeRequestBody,
-        xGithubSession?: (string | null),
     ): CancelablePromise<GenerateExperimentCodeResponseBody> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/verification/generate-experiment-code',
-            headers: {
-                'x-github-session': xGithubSession,
-            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -178,7 +173,6 @@ export class VerificationService {
      * @param githubOwner
      * @param repositoryName
      * @param workflowRunId
-     * @param xGithubSession
      * @returns ExperimentCodeStatusResponseBody Successful Response
      * @throws ApiError
      */
@@ -186,7 +180,6 @@ export class VerificationService {
         githubOwner: string,
         repositoryName: string,
         workflowRunId: number,
-        xGithubSession?: (string | null),
     ): CancelablePromise<ExperimentCodeStatusResponseBody> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -195,9 +188,6 @@ export class VerificationService {
                 'github_owner': githubOwner,
                 'repository_name': repositoryName,
                 'workflow_run_id': workflowRunId,
-            },
-            headers: {
-                'x-github-session': xGithubSession,
             },
             errors: {
                 422: `Validation Error`,
