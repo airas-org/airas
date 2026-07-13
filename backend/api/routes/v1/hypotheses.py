@@ -10,7 +10,7 @@ from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph_v0 import (
     GenerateHypothesisSubgraphV0,
 )
-from api.ee.auth.dependencies import get_langchain_client
+from api.dependencies import get_langchain_client
 from api.schemas.hypotheses import (
     GenerateHypothesisSubgraphV0RequestBody,
     GenerateHypothesisSubgraphV0ResponseBody,

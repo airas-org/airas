@@ -1,5 +1,6 @@
 import logging
 
+from airas.core.types.research_session import ResearchSession
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
@@ -9,7 +10,6 @@ from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.llm_config import DEFAULT_NODE_LLMS
 from airas.core.logging_utils import setup_logging
 from airas.core.types.paper import PaperContent
-from airas.core.types.research_session import ResearchSession
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.llm_specs import LLM_MODELS
 from airas.usecases.publication.generate_html_subgraph.nodes.convert_to_html import (

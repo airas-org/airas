@@ -6,8 +6,6 @@ import httpx
 from dependency_injector import containers, providers
 from hishel import CacheOptions, SpecificationPolicy
 from hishel.httpx import AsyncCacheClient, SyncCacheClient
-from sqlalchemy.orm import sessionmaker
-from sqlmodel import Session, create_engine
 
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.email_feedback_notifier import EmailFeedbackNotifier
@@ -19,19 +17,10 @@ from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.qdrant_client import QdrantClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
-from airas.repository.feedback_repository import FeedbackRepository
-from airas.repository.user_api_key_repository import UserApiKeyRepository
-from airas.repository.user_github_token_repository import UserGitHubTokenRepository
-from airas.repository.user_plan_repository import UserPlanRepository
-from airas.repository.verification_repository import VerificationRepository
-from airas.usecases.autonomous_research.sql_e2e_research_service import (
-    SqlE2EResearchService,
+from airas.usecases.autonomous_research.in_memory_e2e_research_service import (
+    InMemoryE2EResearchService,
 )
-from airas.usecases.ee.api_key_resolver import ApiKeyResolver
-from airas.usecases.ee.api_key_service import ApiKeyService
-from airas.usecases.ee.feedback_service import FeedbackService
-from airas.usecases.ee.github_oauth_service import GitHubOAuthService
-from airas.usecases.ee.plan_service import PlanService
+from airas.usecases.feedback.feedback_service import FeedbackService
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
@@ -102,8 +91,6 @@ async def init_github_async_session() -> AsyncGenerator[httpx.AsyncClient, None]
 
 
 class Container(containers.DeclarativeContainer):
-    config = providers.Configuration()
-
     # --- HTTP Session ---
     sync_session = providers.Resource(init_sync_session)
     async_session = providers.Resource(init_async_session)
@@ -171,52 +158,7 @@ class Container(containers.DeclarativeContainer):
         providers.Singleton(AirasDbPaperSearchIndex)
     )
 
-    # --- Database Session ---
-    engine = providers.Singleton(
-        create_engine,
-        config.database_url,
-        pool_pre_ping=True,
-        future=True,
-    )
-
-    session_factory = providers.Singleton(
-        sessionmaker,
-        bind=engine,
-        class_=Session,
-        expire_on_commit=False,
-        autoflush=False,
-        autocommit=False,
-    )
-
-    db_session = providers.Factory(
-        lambda session_factory: session_factory(),
-        session_factory=session_factory,
-    )
-
-    # --- EE: API Key & Plan Services ---
-    user_api_key_repository = providers.Factory(UserApiKeyRepository, db=db_session)
-    api_key_service = providers.Factory(ApiKeyService, repo=user_api_key_repository)
-
-    user_plan_repository = providers.Factory(UserPlanRepository, db=db_session)
-    plan_service = providers.Factory(PlanService, repo=user_plan_repository)
-
-    api_key_resolver = providers.Factory(
-        ApiKeyResolver,
-        plan_service=plan_service,
-        api_key_repo=user_api_key_repository,
-    )
-
-    # --- EE: GitHub OAuth ---
-    user_github_token_repository = providers.Factory(
-        UserGitHubTokenRepository, db=db_session
-    )
-    github_oauth_service = providers.Factory(
-        GitHubOAuthService, repo=user_github_token_repository
-    )
-
     ## --- Feedback Service ---
-    feedback_repository = providers.Factory(FeedbackRepository, db=db_session)
-
     @staticmethod
     def _build_feedback_notifiers() -> list:
         from_addr = os.getenv("FEEDBACK_FROM_ADDRESS", "")
@@ -234,20 +176,14 @@ class Container(containers.DeclarativeContainer):
 
     feedback_service = providers.Factory(
         FeedbackService,
-        repo=feedback_repository,
         notifiers=providers.Callable(_build_feedback_notifiers.__func__),
     )
 
     ## --- Verification Service ---
-    verification_repository = providers.Factory(VerificationRepository, db=db_session)
-    verification_service = providers.Factory(
-        VerificationService, repo=verification_repository
-    )
+    verification_service = providers.Singleton(VerificationService)
 
     ## ---  Autonomous Research Service ---
-    e2e_research_service = providers.Factory(
-        SqlE2EResearchService, session_factory=session_factory
-    )
+    e2e_research_service = providers.Singleton(InMemoryE2EResearchService)
 
 
 container = Container()

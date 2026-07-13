@@ -7,7 +7,7 @@ from langfuse import observe
 
 from airas.container import Container
 from airas.core.types.github import GitHubConfig
-from airas.infra.db.models.verification import VerificationModel
+from airas.core.types.verification import VerificationModel
 from airas.infra.github_client import GithubClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.infra.litellm_client import LiteLLMClient
@@ -21,7 +21,7 @@ from airas.usecases.assisted_research.propose_verification_policy_subgraph.propo
     ProposeVerificationPolicySubgraph,
 )
 from airas.usecases.verification.verification_service import VerificationService
-from api.ee.auth.dependencies import (
+from api.dependencies import (
     get_current_user_id,
     get_github_client,
     get_litellm_client,

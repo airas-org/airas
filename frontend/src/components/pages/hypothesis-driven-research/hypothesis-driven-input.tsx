@@ -149,11 +149,9 @@ export function HypothesisDrivenInput({ onBack, onResearchStarted }: HypothesisD
     };
 
     try {
-      const githubSession = localStorage.getItem("github_session_token");
       const response =
         await HypothesisDrivenResearchService.executeHypothesisDrivenResearchAirasV1HypothesisDrivenResearchRunPost(
           payload,
-          githubSession,
         );
       onResearchStarted(response.task_id);
     } catch (err) {

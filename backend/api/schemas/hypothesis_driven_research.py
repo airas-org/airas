@@ -4,13 +4,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, computed_field
 
+from airas.core.types.e2e import Status, StepType
 from airas.core.types.experimental_design import ComputeEnvironment
 from airas.core.types.github import GitHubActionsAgent
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.runner import ExperimentRunnerConfig
 from airas.core.types.wandb import WandbConfig
-from airas.infra.db.models.e2e import Status, StepType
 from airas.usecases.autonomous_research.hypothesis_driven_research.hypothesis_driven_research import (
     HypothesisDrivenResearchLLMMapping,
 )

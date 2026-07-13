@@ -1,11 +1,12 @@
-from airas.core.types.github import GitHubRepositoryInfo
-from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_iteration import (
     ExperimentalDesign,
     ExperimentRun,
     ResearchIteration,
 )
 from airas.core.types.research_session import ResearchSession
+
+from airas.core.types.github import GitHubRepositoryInfo
+from airas.core.types.research_hypothesis import ResearchHypothesis
 
 retrieve_hugging_face_subgraph_input_data = {
     "research_session": ResearchSession(

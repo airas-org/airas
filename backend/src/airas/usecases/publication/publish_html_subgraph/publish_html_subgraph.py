@@ -1,6 +1,7 @@
 import logging
 import time
 
+from airas.core.types.research_session import ResearchSession
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
@@ -8,7 +9,6 @@ from airas.core.base import BaseSubgraph
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubRepositoryInfo
-from airas.core.types.research_session import ResearchSession
 from airas.infra.github_client import GithubClient
 from airas.usecases.publication.publish_html_subgraph.nodes.prepare_images_for_html import (
     prepare_images_for_html,

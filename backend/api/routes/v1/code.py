@@ -13,7 +13,7 @@ from airas.usecases.executors.fetch_experiment_code_subgraph.fetch_experiment_co
 from airas.usecases.generators.dispatch_code_generation_subgraph.dispatch_code_generation_subgraph import (
     DispatchCodeGenerationSubgraph,
 )
-from api.ee.auth.dependencies import get_github_client
+from api.dependencies import get_github_client
 from api.schemas.code import (
     DispatchCodeGenerationRequestBody,
     DispatchCodeGenerationResponseBody,

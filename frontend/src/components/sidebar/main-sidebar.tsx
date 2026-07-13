@@ -1,17 +1,11 @@
 import { SiDiscord } from "@icons-pack/react-simple-icons";
 import {
-  FeatherBarChart2,
   FeatherBookOpen,
   FeatherBrainCircuit,
-  FeatherCreditCard,
   FeatherExternalLink,
-  FeatherKey,
-  FeatherLink,
   FeatherMessageSquare,
-  FeatherReceipt,
   FeatherRefreshCw,
   FeatherTarget,
-  FeatherUser,
 } from "@subframe/core";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -22,7 +16,6 @@ import { SidebarWithSections } from "@/ui";
 interface MainSidebarProps {
   activeSection: string;
   autonomousSubNav: AutonomousSubNav;
-  isAuthenticated: boolean;
   onMobileNavClose: () => void;
   onAutonomousSubNavClick: () => void;
 }
@@ -30,7 +23,6 @@ interface MainSidebarProps {
 export function MainSidebar({
   activeSection,
   autonomousSubNav,
-  isAuthenticated,
   onMobileNavClose,
   onAutonomousSubNavClick,
 }: MainSidebarProps) {
@@ -105,74 +97,6 @@ export function MainSidebar({
           </button>
         </div>
       </SidebarWithSections.NavSection>
-
-      {/* --- Settings (EE only) --- */}
-      {isAuthenticated && (
-        <SidebarWithSections.NavSection
-          label={<span className="text-sm font-medium">{t("nav.settings")}</span>}
-        >
-          <SidebarWithSections.NavItem
-            icon={<FeatherUser />}
-            selected={getSettingsTab(location.pathname) === "profile"}
-            onClick={() => {
-              navigate("/settings/profile");
-              onMobileNavClose();
-            }}
-          >
-            {t("nav.profile")}
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherLink />}
-            selected={getSettingsTab(location.pathname) === "integration"}
-            onClick={() => {
-              navigate("/settings/integration");
-              onMobileNavClose();
-            }}
-          >
-            {t("nav.integration")}
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherKey />}
-            selected={getSettingsTab(location.pathname) === "api-token"}
-            onClick={() => {
-              navigate("/settings/api-token");
-              onMobileNavClose();
-            }}
-          >
-            {t("apiToken.title")}
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherCreditCard />}
-            selected={getSettingsTab(location.pathname) === "user-plan"}
-            onClick={() => {
-              navigate("/settings/user-plan");
-              onMobileNavClose();
-            }}
-          >
-            {t("nav.userPlan")}
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherReceipt />}
-            selected={getSettingsTab(location.pathname) === "receipts"}
-            onClick={() => {
-              navigate("/settings/receipts");
-              onMobileNavClose();
-            }}
-          >
-            {t("receipts.title")}
-          </SidebarWithSections.NavItem>
-          <SidebarWithSections.NavItem
-            icon={<FeatherBarChart2 />}
-            selected={getSettingsTab(location.pathname) === "usage"}
-            onClick={() => {
-              navigate("/settings/usage");
-              onMobileNavClose();
-            }}
-          >
-            {t("usage.title")}
-          </SidebarWithSections.NavItem>
-        </SidebarWithSections.NavSection>
-      )}
 
       {/* --- Support --- */}
       <SidebarWithSections.NavSection

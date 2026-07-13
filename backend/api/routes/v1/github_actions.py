@@ -16,7 +16,7 @@ from airas.usecases.github.poll_github_actions_subgraph.poll_github_actions_subg
 from airas.usecases.github.set_github_actions_secrets_subgraph.set_github_actions_secrets_subgraph import (
     SetGithubActionsSecretsSubgraph,
 )
-from api.ee.auth.dependencies import get_github_client
+from api.dependencies import get_github_client
 from api.schemas.github_actions import (
     DownloadGithubActionsArtifactsRequestBody,
     DownloadGithubActionsArtifactsResponseBody,

@@ -38,31 +38,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/papers/retrieval:
     post:
       tags:
       - papers
       summary: Get Paper Title
       operationId: get_paper_title_airas_v1_papers_retrieval_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/RetrievePaperSubgraphRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -101,8 +88,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/models:
     post:
       tags:
@@ -128,8 +113,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/datasets:
     post:
       tags:
@@ -155,8 +138,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/hypotheses/generations:
     post:
       tags:
@@ -182,8 +163,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/experimental_settings/generations:
     post:
       tags:
@@ -209,8 +188,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/experimental_settings/refinements:
     post:
       tags:
@@ -236,31 +213,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/experiments/run-ids:
     post:
       tags:
       - experiments
       summary: Fetch Run Ids
       operationId: fetch_run_ids_airas_v1_experiments_run_ids_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/FetchRunIdsRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -280,23 +244,12 @@ paths:
       - experiments
       summary: Fetch Experimental Results
       operationId: fetch_experimental_results_airas_v1_experiments_results_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/FetchExperimentalResultsRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -316,23 +269,12 @@ paths:
       - experiments
       summary: Dispatch Sanity Check
       operationId: dispatch_sanity_check_airas_v1_experiments_sanity_checks_dispatch_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DispatchSanityCheckRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -352,23 +294,12 @@ paths:
       - experiments
       summary: Dispatch Experiment Validation
       operationId: dispatch_experiment_validation_airas_v1_experiments_validations_dispatch_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DispatchExperimentValidationRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -388,23 +319,12 @@ paths:
       - experiments
       summary: Dispatch Main Experiment
       operationId: dispatch_main_experiment_airas_v1_experiments_main_runs_dispatch_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DispatchMainExperimentRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -424,23 +344,12 @@ paths:
       - experiments
       summary: Dispatch Visualization
       operationId: dispatch_visualization_airas_v1_experiments_visualizations_dispatch_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DispatchVisualizationRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -460,23 +369,12 @@ paths:
       - experiments
       summary: Dispatch Diagram Generation
       operationId: dispatch_diagram_generation_airas_v1_experiments_diagrams_dispatch_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DispatchDiagramGenerationRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -515,31 +413,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/code/generations/dispatch:
     post:
       tags:
       - code
       summary: Dispatch Code Generation
       operationId: dispatch_code_generation_airas_v1_code_generations_dispatch_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DispatchCodeGenerationRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -559,23 +444,12 @@ paths:
       - code
       summary: Fetch Experiment Code
       operationId: fetch_experiment_code_airas_v1_code_fetch_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/FetchExperimentCodeRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -595,23 +469,12 @@ paths:
       - repositories
       summary: Prepare Repository
       operationId: prepare_repository_airas_v1_repositories_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/PrepareRepositorySubgraphRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -650,31 +513,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/latex/generations:
     post:
       tags:
       - latex
       summary: Generate Latex
       operationId: generate_latex_airas_v1_latex_generations_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/GenerateLatexSubgraphRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -694,23 +544,12 @@ paths:
       - latex
       summary: Push Latex
       operationId: push_latex_airas_v1_latex_push_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/PushLatexSubgraphRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -730,23 +569,12 @@ paths:
       - latex
       summary: Compile Latex
       operationId: compile_latex_airas_v1_latex_compile_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CompileLatexSubgraphRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -766,23 +594,12 @@ paths:
       - research-history
       summary: Download Research History
       operationId: download_research_history_airas_v1_research_history_download_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/GithubDownloadRequest'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -802,23 +619,12 @@ paths:
       - research-history
       summary: Upload Research History
       operationId: upload_research_history_airas_v1_research_history_upload_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/GithubUploadRequest'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -838,23 +644,12 @@ paths:
       - github-actions
       summary: Poll Github Actions
       operationId: poll_github_actions_airas_v1_github_actions_polling_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/PollGithubActionsRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -874,23 +669,12 @@ paths:
       - github-actions
       summary: Set Github Actions Secrets
       operationId: set_github_actions_secrets_airas_v1_github_actions_secrets_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/SetGithubActionsSecretsRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -910,23 +694,12 @@ paths:
       - github-actions
       summary: Download Github Actions Artifacts
       operationId: download_github_actions_artifacts_airas_v1_github_actions_artifacts_download_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DownloadGithubActionsArtifactsRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -946,23 +719,12 @@ paths:
       - github
       summary: Push Github
       operationId: push_github_airas_v1_github_push_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/PushGitHubRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -982,23 +744,12 @@ paths:
       - interactive-repo-agent
       summary: Dispatch Interactive Repo Agent
       operationId: dispatch_interactive_repo_agent_airas_v1_interactive_repo_agent_dispatch_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DispatchInteractiveRepoAgentRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -1018,8 +769,6 @@ paths:
       - interactive-repo-agent
       summary: Cancel Interactive Repo Agent
       operationId: cancel_interactive_repo_agent_airas_v1_interactive_repo_agent__workflow_run_id__cancel_post
-      security:
-      - HTTPBearer: []
       parameters:
       - name: workflow_run_id
         in: path
@@ -1027,14 +776,6 @@ paths:
         schema:
           type: integer
           title: Workflow Run Id
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
         required: true
         content:
@@ -1060,23 +801,12 @@ paths:
       - topic_open_ended_research
       summary: Execute Topic Open Ended Research
       operationId: execute_topic_open_ended_research_airas_v1_topic_open_ended_research_run_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/TopicOpenEndedResearchRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -1096,8 +826,6 @@ paths:
       - topic_open_ended_research
       summary: Get Topic Open Ended Research Status
       operationId: get_topic_open_ended_research_status_airas_v1_topic_open_ended_research_status__task_id__get
-      security:
-      - HTTPBearer: []
       parameters:
       - name: task_id
         in: path
@@ -1125,8 +853,6 @@ paths:
       - topic_open_ended_research
       summary: List Topic Open Ended Research
       operationId: list_topic_open_ended_research_airas_v1_topic_open_ended_research_get
-      security:
-      - HTTPBearer: []
       parameters:
       - name: offset
         in: query
@@ -1162,8 +888,6 @@ paths:
       - topic_open_ended_research
       summary: Update Topic Open Ended Research
       operationId: update_topic_open_ended_research_airas_v1_topic_open_ended_research__task_id__patch
-      security:
-      - HTTPBearer: []
       parameters:
       - name: task_id
         in: path
@@ -1197,23 +921,12 @@ paths:
       - hypothesis_driven_research
       summary: Execute Hypothesis Driven Research
       operationId: execute_hypothesis_driven_research_airas_v1_hypothesis_driven_research_run_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/HypothesisDrivenResearchRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -1233,8 +946,6 @@ paths:
       - hypothesis_driven_research
       summary: Get Hypothesis Driven Research Status
       operationId: get_hypothesis_driven_research_status_airas_v1_hypothesis_driven_research_status__task_id__get
-      security:
-      - HTTPBearer: []
       parameters:
       - name: task_id
         in: path
@@ -1262,8 +973,6 @@ paths:
       - hypothesis_driven_research
       summary: List Hypothesis Driven Research
       operationId: list_hypothesis_driven_research_airas_v1_hypothesis_driven_research_get
-      security:
-      - HTTPBearer: []
       parameters:
       - name: offset
         in: query
@@ -1299,8 +1008,6 @@ paths:
       - hypothesis_driven_research
       summary: Update Hypothesis Driven Research
       operationId: update_hypothesis_driven_research_airas_v1_hypothesis_driven_research__task_id__patch
-      security:
-      - HTTPBearer: []
       parameters:
       - name: task_id
         in: path
@@ -1341,8 +1048,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VerificationSessionListResponse'
-      security:
-      - HTTPBearer: []
     post:
       tags:
       - verification
@@ -1367,16 +1072,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/verification/sessions/{verification_id}:
     get:
       tags:
       - verification
       summary: Get Session
       operationId: get_session_airas_v1_verification_sessions__verification_id__get
-      security:
-      - HTTPBearer: []
       parameters:
       - name: verification_id
         in: path
@@ -1403,8 +1104,6 @@ paths:
       - verification
       summary: Update Session
       operationId: update_session_airas_v1_verification_sessions__verification_id__patch
-      security:
-      - HTTPBearer: []
       parameters:
       - name: verification_id
         in: path
@@ -1437,8 +1136,6 @@ paths:
       - verification
       summary: Delete Session
       operationId: delete_session_airas_v1_verification_sessions__verification_id__delete
-      security:
-      - HTTPBearer: []
       parameters:
       - name: verification_id
         in: path
@@ -1481,8 +1178,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/verification/generate-method:
     post:
       tags:
@@ -1508,31 +1203,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
   /airas/v1/verification/generate-experiment-code:
     post:
       tags:
       - verification
       summary: Generate Experiment Code
       operationId: generate_experiment_code_airas_v1_verification_generate_experiment_code_post
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/GenerateExperimentCodeRequestBody'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -1552,8 +1234,6 @@ paths:
       - verification
       summary: Get Experiment Code Status
       operationId: get_experiment_code_status_airas_v1_verification_experiment_code_status__github_owner___repository_name___workflow_run_id__get
-      security:
-      - HTTPBearer: []
       parameters:
       - name: github_owner
         in: path
@@ -1573,14 +1253,6 @@ paths:
         schema:
           type: integer
           title: Workflow Run Id
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
       responses:
         '200':
           description: Successful Response
@@ -1613,213 +1285,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateFeedbackResponseBody'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
-  /airas/ee/auth/me:
-    get:
-      tags:
-      - ee-auth
-      summary: Get Me
-      description: Return the current authenticated user's ID.
-      operationId: get_me_airas_ee_auth_me_get
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetMeResponse'
-      security:
-      - HTTPBearer: []
-  /airas/ee/api-keys:
-    get:
-      tags:
-      - ee-api-keys
-      summary: List Api Keys
-      operationId: list_api_keys_airas_ee_api_keys_get
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiKeyListResponse'
-      security:
-      - HTTPBearer: []
-    post:
-      tags:
-      - ee-api-keys
-      summary: Save Api Key
-      operationId: save_api_key_airas_ee_api_keys_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SaveApiKeyRequest'
-        required: true
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiKeyResponse'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
-  /airas/ee/api-keys/{provider}:
-    delete:
-      tags:
-      - ee-api-keys
-      summary: Delete Api Key
-      operationId: delete_api_key_airas_ee_api_keys__provider__delete
-      security:
-      - HTTPBearer: []
-      parameters:
-      - name: provider
-        in: path
-        required: true
-        schema:
-          $ref: '#/components/schemas/ApiProvider'
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema: {}
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /airas/ee/plan:
-    get:
-      tags:
-      - ee-plan
-      summary: Get Plan
-      operationId: get_plan_airas_ee_plan_get
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPlanResponse'
-      security:
-      - HTTPBearer: []
-  /airas/ee/github/authorize:
-    get:
-      tags:
-      - ee-github-oauth
-      summary: Authorize
-      operationId: authorize_airas_ee_github_authorize_get
-      parameters:
-      - name: redirect_uri
-        in: query
-        required: true
-        schema:
-          type: string
-          title: Redirect Uri
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GitHubAuthorizeResponse'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /airas/ee/github/callback:
-    post:
-      tags:
-      - ee-github-oauth
-      summary: Callback
-      operationId: callback_airas_ee_github_callback_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GitHubCallbackRequest'
-        required: true
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GitHubCallbackResponse'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /airas/ee/github/status:
-    get:
-      tags:
-      - ee-github-oauth
-      summary: Status
-      operationId: status_airas_ee_github_status_get
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GitHubConnectionStatus'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /airas/ee/github/disconnect:
-    delete:
-      tags:
-      - ee-github-oauth
-      summary: Disconnect
-      operationId: disconnect_airas_ee_github_disconnect_delete
-      parameters:
-      - name: x-github-session
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Github-Session
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GitHubDisconnectResponse'
         '422':
           description: Validation Error
           content:
@@ -1882,46 +1347,6 @@ components:
           default: anthropic
       type: object
       title: AnthropicParams
-    ApiKeyListResponse:
-      properties:
-        keys:
-          items:
-            $ref: '#/components/schemas/ApiKeyResponse'
-          type: array
-          title: Keys
-      type: object
-      required:
-      - keys
-      title: ApiKeyListResponse
-    ApiKeyResponse:
-      properties:
-        provider:
-          $ref: '#/components/schemas/ApiProvider'
-        masked_key:
-          type: string
-          title: Masked Key
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-        updated_at:
-          type: string
-          format: date-time
-          title: Updated At
-      type: object
-      required:
-      - provider
-      - masked_key
-      - created_at
-      - updated_at
-      title: ApiKeyResponse
-    ApiProvider:
-      type: string
-      enum:
-      - openai
-      - anthropic
-      - gemini
-      title: ApiProvider
     CancelInteractiveRepoAgentRequestBody:
       properties:
         github_config:
@@ -3392,62 +2817,6 @@ components:
             llm_name: gpt-5.4-2026-03-05
       type: object
       title: GenerateVerificationMethodLLMMapping
-    GetMeResponse:
-      properties:
-        user_id:
-          type: string
-          title: User Id
-      type: object
-      required:
-      - user_id
-      title: GetMeResponse
-    GitHubAuthorizeResponse:
-      properties:
-        authorize_url:
-          type: string
-          title: Authorize Url
-        state:
-          type: string
-          title: State
-      type: object
-      required:
-      - authorize_url
-      - state
-      title: GitHubAuthorizeResponse
-    GitHubCallbackRequest:
-      properties:
-        code:
-          type: string
-          title: Code
-        state:
-          type: string
-          title: State
-        redirect_uri:
-          type: string
-          title: Redirect Uri
-      type: object
-      required:
-      - code
-      - state
-      - redirect_uri
-      title: GitHubCallbackRequest
-    GitHubCallbackResponse:
-      properties:
-        connected:
-          type: boolean
-          title: Connected
-        github_login:
-          type: string
-          title: Github Login
-        session_token:
-          type: string
-          title: Session Token
-      type: object
-      required:
-      - connected
-      - github_login
-      - session_token
-      title: GitHubCallbackResponse
     GitHubConfig:
       properties:
         github_owner:
@@ -3484,35 +2853,6 @@ components:
       - branch_name
       title: GitHubConfigRequest
       description: Request body schema for GitHub config (owner is resolved server-side).
-    GitHubConnectionStatus:
-      properties:
-        connected:
-          type: boolean
-          title: Connected
-        github_login:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Github Login
-        connected_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
-          title: Connected At
-      type: object
-      required:
-      - connected
-      title: GitHubConnectionStatus
-    GitHubDisconnectResponse:
-      properties:
-        disconnected:
-          type: boolean
-          title: Disconnected
-      type: object
-      required:
-      - disconnected
-      title: GitHubDisconnectResponse
     GithubDownloadRequest:
       properties:
         github_config:
@@ -5009,18 +4349,6 @@ components:
       - full
       - visualization
       title: RunStage
-    SaveApiKeyRequest:
-      properties:
-        provider:
-          $ref: '#/components/schemas/ApiProvider'
-        api_key:
-          type: string
-          title: Api Key
-      type: object
-      required:
-      - provider
-      - api_key
-      title: SaveApiKeyRequest
     SearchPaperTitlesFromQdrantLLMMapping:
       properties:
         search_paper_titles_from_qdrant:
@@ -5541,23 +4869,6 @@ components:
           description: Additional experiment-specific parameters
       type: object
       title: TrainingConfig
-    UserPlanResponse:
-      properties:
-        plan_type:
-          type: string
-          title: Plan Type
-        status:
-          type: string
-          title: Status
-        requires_api_keys:
-          type: boolean
-          title: Requires Api Keys
-          default: true
-      type: object
-      required:
-      - plan_type
-      - status
-      title: UserPlanResponse
     ValidationError:
       properties:
         loc:
@@ -5875,7 +5186,3 @@ components:
       - paper_content
       - execution_time
       title: WriteSubgraphResponseBody
-  securitySchemes:
-    HTTPBearer:
-      type: http
-      scheme: bearer
