@@ -79,12 +79,10 @@ def register_ee_routes(application: FastAPI) -> None:
     from api.ee.auth.routes import router as ee_auth_router
     from api.ee.github_oauth.routes import router as ee_github_oauth_router
     from api.ee.plan.routes import router as ee_plan_router
-    from api.ee.stripe.routes import router as ee_stripe_router
 
     application.include_router(ee_auth_router, prefix="/airas/ee")
     application.include_router(ee_api_keys_router, prefix="/airas/ee")
     application.include_router(ee_plan_router, prefix="/airas/ee")
-    application.include_router(ee_stripe_router, prefix="/airas/ee")
     application.include_router(ee_github_oauth_router, prefix="/airas/ee")
 
 

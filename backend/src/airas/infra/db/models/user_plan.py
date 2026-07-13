@@ -27,8 +27,6 @@ class UserPlanModel(SQLModel, table=True):
         default=PlanType.FREE,
         sa_column=Column(String, nullable=False, server_default="free"),
     )
-    stripe_customer_id: str | None = Field(default=None)
-    stripe_subscription_id: str | None = Field(default=None)
     status: PlanStatus = Field(
         default=PlanStatus.ACTIVE,
         sa_column=Column(String, nullable=False, server_default="active"),

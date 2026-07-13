@@ -23,6 +23,5 @@ def get_plan(
     return UserPlanResponse(
         plan_type=plan.plan_type,
         status=plan.status,
-        stripe_customer_id=plan.stripe_customer_id,
         requires_api_keys=not is_pro,
     )

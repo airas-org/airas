@@ -653,12 +653,6 @@
     "planSubtitle": "サブスクリプションプランを管理します",
     "currentPlan": "現在のプラン",
     "perMonth": "/月",
-    "processing": "処理中...",
-    "confirmDowngrade": "本当にダウングレードしますか？",
-    "downgrade": "ダウングレード",
-    "upgradeToPro": "Pro にアップグレード",
-    "downgradeFailed": "ダウングレードに失敗しました。もう一度お試しください。",
-    "checkoutFailed": "チェックアウトの開始に失敗しました。もう一度お試しください。",
     "freeFeatures": ["基本的な自動研究", "コミュニティサポート", "標準LLMアクセス"],
     "proFeatures": [
       "Freeの全機能",
