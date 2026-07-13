@@ -18,9 +18,12 @@ from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel
 
 from airas.core.types.experiment_code import ExperimentCode
+from airas.core.types.experiment_history import ExperimentHistory
 from airas.core.types.experimental_design import ComputeEnvironment, ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import GitHubConfig
+from airas.core.types.latex import LATEX_TEMPLATE_NAME
+from airas.core.types.paper import PaperContent
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
@@ -63,6 +66,15 @@ from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgra
 from airas.usecases.github.set_github_actions_secrets_subgraph.set_github_actions_secrets_subgraph import (
     SetGithubActionsSecretsSubgraph,
 )
+from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
+    CompileLatexSubgraph,
+)
+from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
+    GenerateLatexSubgraph,
+)
+from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
+    PushLatexSubgraph,
+)
 from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
 )
@@ -72,6 +84,10 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_tit
 from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_airas_db_subgraph import (
     SearchPaperTitlesFromAirasDbSubgraph,
 )
+from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
+    GenerateBibfileSubgraph,
+)
+from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
 
 mcp = FastMCP("airas")
 
@@ -596,6 +612,171 @@ async def download_research_history(
         )
     )
     return _dump(result["research_history"])
+
+
+# --- Paper writing & publication ---
+
+
+@mcp.tool()
+async def generate_bibfile(research_study_list: list[dict[str, Any]]) -> str:
+    """Generate a BibTeX references file from research studies.
+
+    `research_study_list` should be the output of `retrieve_papers`. Returns
+    the .bib content used by `generate_paper` and `generate_latex`.
+    No API keys required.
+    """
+    studies = [ResearchStudy.model_validate(study) for study in research_study_list]
+    result = (
+        await GenerateBibfileSubgraph()
+        .build_graph()
+        .ainvoke({"research_study_list": studies})
+    )
+    return result["references_bib"]
+
+
+@mcp.tool()
+async def generate_paper(
+    research_hypothesis: dict[str, Any],
+    experiment_history: dict[str, Any],
+    experiment_code: dict[str, Any],
+    research_study_list: list[dict[str, Any]],
+    references_bib: str,
+    writing_refinement_rounds: int = 2,
+) -> dict[str, Any]:
+    """Write the paper content from the completed research.
+
+    Takes the hypothesis, experiment history, experiment code, related
+    studies, and the BibTeX file (from `generate_bibfile`), and produces
+    structured paper content (title, abstract, sections). Pass the result
+    to `generate_latex`. Requires an LLM provider API key.
+    """
+    result = (
+        await WriteSubgraph(
+            langchain_client=LangChainClient(),
+            paper_content_refinement_iterations=writing_refinement_rounds,
+        )
+        .build_graph()
+        .ainvoke(
+            {
+                "research_hypothesis": ResearchHypothesis.model_validate(
+                    research_hypothesis
+                ),
+                "experiment_history": ExperimentHistory.model_validate(
+                    experiment_history
+                ),
+                "experiment_code": ExperimentCode.model_validate(experiment_code),
+                "research_study_list": [
+                    ResearchStudy.model_validate(study) for study in research_study_list
+                ],
+                "references_bib": references_bib,
+            }
+        )
+    )
+    return _dump(result["paper_content"])
+
+
+@mcp.tool()
+async def generate_latex(
+    paper_content: dict[str, Any],
+    references_bib: str,
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+) -> str:
+    """Convert paper content into a full LaTeX document.
+
+    `paper_content` should be the output of `generate_paper`. Available
+    templates: "mdpi", "iclr2024", "agents4science_2025". Push the returned
+    LaTeX to the experiment repository with `push_latex`, then build the PDF
+    with `compile_latex`. Requires an LLM provider API key and
+    GH_PERSONAL_ACCESS_TOKEN.
+    """
+    result = (
+        await GenerateLatexSubgraph(
+            langchain_client=LangChainClient(),
+            github_client=_github_client(),
+            latex_template_name=latex_template_name,
+        )
+        .build_graph()
+        .ainvoke(
+            {
+                "paper_content": PaperContent.model_validate(paper_content),
+                "references_bib": references_bib,
+            }
+        )
+    )
+    return result["latex_text"]
+
+
+@mcp.tool()
+async def push_latex(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    latex_text: str,
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+) -> dict[str, Any]:
+    """Push the LaTeX document and figures to the experiment repository.
+
+    Uploads the LaTeX source (from `generate_latex`) and prepares the images
+    so that `compile_latex` can build the PDF. Requires GH_PERSONAL_ACCESS_TOKEN.
+    """
+    result = (
+        await PushLatexSubgraph(
+            github_client=_github_client(),
+            latex_template_name=latex_template_name,
+        )
+        .build_graph()
+        .ainvoke(
+            {
+                "github_config": GitHubConfig(
+                    github_owner=github_owner,
+                    repository_name=repository_name,
+                    branch_name=branch_name,
+                ),
+                "latex_text": latex_text,
+            }
+        )
+    )
+    return {
+        "is_upload_successful": result["is_upload_successful"],
+        "is_images_prepared": result["is_images_prepared"],
+    }
+
+
+@mcp.tool()
+async def compile_latex(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+    github_actions_agent: Literal["claude_code", "open_code"] = "claude_code",
+) -> dict[str, Any]:
+    """Build the paper PDF on GitHub Actions (asynchronous).
+
+    Dispatches the LaTeX compilation workflow for the sources pushed by
+    `push_latex`. Returns immediately with `paper_url` (when available);
+    track the run with `get_workflow_runs`. Requires GH_PERSONAL_ACCESS_TOKEN.
+    """
+    result = (
+        await CompileLatexSubgraph(
+            github_client=_github_client(),
+            latex_template_name=latex_template_name,
+            github_actions_agent=github_actions_agent,
+        )
+        .build_graph()
+        .ainvoke(
+            {
+                "github_config": GitHubConfig(
+                    github_owner=github_owner,
+                    repository_name=repository_name,
+                    branch_name=branch_name,
+                )
+            }
+        )
+    )
+    return {
+        "compile_latex_dispatched": result["compile_latex_dispatched"],
+        "paper_url": result["paper_url"],
+    }
 
 
 def main() -> None:

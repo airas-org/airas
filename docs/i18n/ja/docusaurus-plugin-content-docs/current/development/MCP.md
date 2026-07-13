@@ -70,6 +70,16 @@ claude mcp add airas \
 | `download_workflow_artifacts` | 特定のワークフロー実行のアーティファクトを取得 |
 | `analyze_experiment` | 仮説・実験設計に照らして結果を解析 |
 
+### 論文執筆・出版
+
+| ツール | 説明 |
+| --- | --- |
+| `generate_bibfile` | 研究データからBibTeX参考文献ファイルを生成。APIキー不要 |
+| `generate_paper` | 完了した研究から論文本文（タイトル・アブストラクト・各セクション）を執筆 |
+| `generate_latex` | 論文本文をLaTeX文書に変換（テンプレート: mdpi / iclr2024 / agents4science_2025） |
+| `push_latex` | LaTeXソースと図を実験リポジトリにプッシュ |
+| `compile_latex` | GitHub Actionsで論文PDFをビルド（非同期） |
+
 ### 研究履歴の永続化
 
 | ツール | 説明 |
@@ -77,7 +87,7 @@ claude mcp add airas \
 | `upload_research_history` | 研究状態を実験リポジトリに保存 |
 | `download_research_history` | 保存した研究状態を復元し、別セッションで継続 |
 
-典型的なフロー: `generate_research_queries` → `search_paper_titles` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → `set_github_actions_secrets` → `dispatch_code_generation` →（`get_workflow_runs` でポーリング）→ `fetch_experiment_code` → `dispatch_experiment` →（ポーリング）→ `fetch_experiment_results` → `analyze_experiment` → `upload_research_history`
+典型的なフロー: `generate_research_queries` → `search_paper_titles` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → `set_github_actions_secrets` → `dispatch_code_generation` →（`get_workflow_runs` でポーリング）→ `fetch_experiment_code` → `dispatch_experiment` →（ポーリング）→ `fetch_experiment_results` → `analyze_experiment` → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`
 
 時間のかかるステップ（コード生成・実験）はGitHub Actions上で実行され、ツール自体は即座に返ります。完了待ちはせず `get_workflow_runs` で追跡してください。
 

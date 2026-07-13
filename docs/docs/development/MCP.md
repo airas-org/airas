@@ -70,6 +70,16 @@ Or add it to your project's `.mcp.json`:
 | `download_workflow_artifacts` | Download artifacts of a specific workflow run |
 | `analyze_experiment` | Analyze results against the hypothesis and design |
 
+### Paper writing & publication
+
+| Tool | Description |
+| --- | --- |
+| `generate_bibfile` | Generate a BibTeX references file from research studies; no API key required |
+| `generate_paper` | Write structured paper content (title, abstract, sections) from the completed research |
+| `generate_latex` | Convert paper content into a full LaTeX document (templates: mdpi / iclr2024 / agents4science_2025) |
+| `push_latex` | Push the LaTeX source and figures to the experiment repository |
+| `compile_latex` | Build the paper PDF on GitHub Actions (async) |
+
 ### Research history persistence
 
 | Tool | Description |
@@ -77,7 +87,7 @@ Or add it to your project's `.mcp.json`:
 | `upload_research_history` | Save research state to the experiment repository |
 | `download_research_history` | Restore research state to continue in a later session |
 
-A typical flow: `generate_research_queries` → `search_paper_titles` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → `set_github_actions_secrets` → `dispatch_code_generation` → (poll `get_workflow_runs`) → `fetch_experiment_code` → `dispatch_experiment` → (poll) → `fetch_experiment_results` → `analyze_experiment` → `upload_research_history`.
+A typical flow: `generate_research_queries` → `search_paper_titles` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → `set_github_actions_secrets` → `dispatch_code_generation` → (poll `get_workflow_runs`) → `fetch_experiment_code` → `dispatch_experiment` → (poll) → `fetch_experiment_results` → `analyze_experiment` → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`.
 
 Long-running steps (code generation, experiments) execute on GitHub Actions and return immediately; track them with `get_workflow_runs` instead of waiting.
 
