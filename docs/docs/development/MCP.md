@@ -46,14 +46,40 @@ Or add it to your project's `.mcp.json`:
 
 ## Tools
 
+### Paper discovery & hypothesis
+
 | Tool | Description |
 | --- | --- |
 | `generate_research_queries` | Generate paper search queries from a research topic |
 | `search_paper_titles` | BM25 search over the AIRAS papers database (major ML conferences); no API key required |
 | `retrieve_papers` | Fetch papers via arXiv and extract structured research study data |
 | `generate_hypothesis` | Generate a novel research hypothesis from a topic and related studies |
+| `generate_experimental_design` | Design experiments to test a hypothesis |
 
-A typical flow: `generate_research_queries` → `search_paper_titles` → `retrieve_papers` → `generate_hypothesis`.
+### Experiment execution (GitHub Actions)
+
+| Tool | Description |
+| --- | --- |
+| `prepare_repository` | Create and initialize an experiment repository |
+| `set_github_actions_secrets` | Copy LLM API keys from local env vars to the repository's Actions secrets |
+| `dispatch_code_generation` | Start experiment-code generation on GitHub Actions (async) |
+| `dispatch_experiment` | Start a sanity-check or main experiment run (async) |
+| `get_workflow_runs` | Check the status of recent workflow runs (non-blocking) |
+| `fetch_experiment_code` | Fetch the generated experiment code |
+| `fetch_experiment_results` | Fetch experiment results |
+| `download_workflow_artifacts` | Download artifacts of a specific workflow run |
+| `analyze_experiment` | Analyze results against the hypothesis and design |
+
+### Research history persistence
+
+| Tool | Description |
+| --- | --- |
+| `upload_research_history` | Save research state to the experiment repository |
+| `download_research_history` | Restore research state to continue in a later session |
+
+A typical flow: `generate_research_queries` → `search_paper_titles` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → `set_github_actions_secrets` → `dispatch_code_generation` → (poll `get_workflow_runs`) → `fetch_experiment_code` → `dispatch_experiment` → (poll) → `fetch_experiment_results` → `analyze_experiment` → `upload_research_history`.
+
+Long-running steps (code generation, experiments) execute on GitHub Actions and return immediately; track them with `get_workflow_runs` instead of waiting.
 
 ## Development
 
