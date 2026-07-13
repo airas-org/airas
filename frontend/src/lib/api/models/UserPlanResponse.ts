@@ -5,7 +5,6 @@
 export type UserPlanResponse = {
     plan_type: string;
     status: string;
-    stripe_customer_id?: (string | null);
     requires_api_keys?: boolean;
 };
 

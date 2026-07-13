@@ -654,12 +654,6 @@
     "planSubtitle": "Manage your subscription plans",
     "currentPlan": "Current Plan",
     "perMonth": "/month",
-    "processing": "Processing...",
-    "confirmDowngrade": "Are you sure you want to downgrade?",
-    "downgrade": "Downgrade",
-    "upgradeToPro": "Upgrade to Pro",
-    "downgradeFailed": "Downgrade failed. Please try again.",
-    "checkoutFailed": "Failed to start checkout. Please try again.",
     "freeFeatures": ["Basic autonomous research", "Community support", "Standard LLM access"],
     "proFeatures": [
       "Everything in Free",

@@ -67,9 +67,3 @@ For core team development, we use the following. If you need access, please cont
     ```bash
     claude mcp add --scope project --transport http supabase "https://mcp.supabase.com/mcp"
     ```
-
-- [Stripe](https://docs.stripe.com/mcp?locale=ja-JP&mcp-client=claudecode#connect)
-
-    ```bash
-    claude mcp add --transport http stripe https://mcp.stripe.com/
-    ```

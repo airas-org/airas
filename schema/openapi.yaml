@@ -1719,61 +1719,6 @@ paths:
                 $ref: '#/components/schemas/UserPlanResponse'
       security:
       - HTTPBearer: []
-  /airas/ee/stripe/checkout:
-    post:
-      tags:
-      - ee-stripe
-      summary: Create Checkout
-      operationId: create_checkout_airas_ee_stripe_checkout_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CheckoutRequest'
-        required: true
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CheckoutResponse'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - HTTPBearer: []
-  /airas/ee/stripe/cancel:
-    post:
-      tags:
-      - ee-stripe
-      summary: Cancel Subscription
-      operationId: cancel_subscription_airas_ee_stripe_cancel_post
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CancelSubscriptionResponse'
-      security:
-      - HTTPBearer: []
-  /airas/ee/stripe/webhook:
-    post:
-      tags:
-      - ee-stripe
-      summary: Stripe Webhook
-      operationId: stripe_webhook_airas_ee_stripe_webhook_post
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WebhookReceivedResponse'
   /airas/ee/github/authorize:
     get:
       tags:
@@ -2002,37 +1947,6 @@ components:
       - cancelled
       - execution_time
       title: CancelInteractiveRepoAgentResponseBody
-    CancelSubscriptionResponse:
-      properties:
-        status:
-          type: string
-          title: Status
-      type: object
-      required:
-      - status
-      title: CancelSubscriptionResponse
-    CheckoutRequest:
-      properties:
-        success_url:
-          type: string
-          title: Success Url
-        cancel_url:
-          type: string
-          title: Cancel Url
-      type: object
-      required:
-      - success_url
-      - cancel_url
-      title: CheckoutRequest
-    CheckoutResponse:
-      properties:
-        checkout_url:
-          type: string
-          title: Checkout Url
-      type: object
-      required:
-      - checkout_url
-      title: CheckoutResponse
     CodeGenerationGraphLLMMapping:
       properties:
         dispatch_code_generation:
@@ -5635,11 +5549,6 @@ components:
         status:
           type: string
           title: Status
-        stripe_customer_id:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Stripe Customer Id
         requires_api_keys:
           type: boolean
           title: Requires Api Keys
@@ -5906,15 +5815,6 @@ components:
       - entity
       - project
       title: WandbConfig
-    WebhookReceivedResponse:
-      properties:
-        received:
-          type: boolean
-          title: Received
-      type: object
-      required:
-      - received
-      title: WebhookReceivedResponse
     WriteLLMMapping:
       properties:
         write_paper:

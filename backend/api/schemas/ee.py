@@ -24,17 +24,7 @@ class ApiKeyListResponse(BaseModel):
 class UserPlanResponse(BaseModel):
     plan_type: str
     status: str
-    stripe_customer_id: str | None = None
     requires_api_keys: bool = True
-
-
-class CheckoutRequest(BaseModel):
-    success_url: str
-    cancel_url: str
-
-
-class CheckoutResponse(BaseModel):
-    checkout_url: str
 
 
 class GitHubAuthorizeResponse(BaseModel):
@@ -66,11 +56,3 @@ class GitHubCallbackResponse(BaseModel):
 
 class GitHubDisconnectResponse(BaseModel):
     disconnected: bool
-
-
-class CancelSubscriptionResponse(BaseModel):
-    status: str
-
-
-class WebhookReceivedResponse(BaseModel):
-    received: bool
