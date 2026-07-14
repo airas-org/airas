@@ -54,6 +54,9 @@ Or add it to your project's `.mcp.json`:
 | `retrieve_papers` | Fetch papers via arXiv and extract structured research study data |
 | `generate_hypothesis` | Generate a novel research hypothesis from a topic and related studies |
 | `generate_experimental_design` | Design experiments to test a hypothesis |
+| `refine_experimental_design` | Refine a design based on results so far and an instruction |
+| `retrieve_models` | List curated candidate models for a subfield; no API key required |
+| `retrieve_datasets` | List curated candidate datasets for a subfield; no API key required |
 
 ### Experiment execution (GitHub Actions)
 
@@ -65,9 +68,13 @@ Or add it to your project's `.mcp.json`:
 | `dispatch_experiment` | Start a sanity-check or main experiment run (async) |
 | `get_workflow_runs` | Check the status of recent workflow runs (non-blocking) |
 | `fetch_experiment_code` | Fetch the generated experiment code |
+| `fetch_run_ids` | List experiment run IDs recorded in the repository |
 | `fetch_experiment_results` | Fetch experiment results |
 | `download_workflow_artifacts` | Download artifacts of a specific workflow run |
 | `analyze_experiment` | Analyze results against the hypothesis and design |
+| `dispatch_visualization` | Generate result figures for given run IDs (async) |
+| `dispatch_diagram_generation` | Generate a method diagram for the paper (async) |
+| `push_files` | Push arbitrary files to the experiment repository |
 
 ### Paper writing & publication
 

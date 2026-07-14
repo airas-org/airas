@@ -19,7 +19,12 @@ from pydantic import BaseModel
 
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory
-from airas.core.types.experimental_design import ComputeEnvironment, ExperimentalDesign
+from airas.core.types.experimental_design import (
+    ComputeEnvironment,
+    DatasetSubfield,
+    ExperimentalDesign,
+    ModelSubfield,
+)
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
@@ -37,14 +42,23 @@ from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_sub
 from airas.usecases.executors.dispatch_experiment_on_static_runner_subgraph.dispatch_experiment_on_static_runner_subgraph import (
     DispatchExperimentOnStaticRunnerSubgraph,
 )
+from airas.usecases.executors.dispatch_visualization_subgraph.dispatch_visualization_subgraph import (
+    DispatchVisualizationSubgraph,
+)
 from airas.usecases.executors.fetch_experiment_code_subgraph.fetch_experiment_code_subgraph import (
     FetchExperimentCodeSubgraph,
 )
 from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment_results_subgraph import (
     FetchExperimentResultsSubgraph,
 )
+from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph import (
+    FetchRunIdsSubgraph,
+)
 from airas.usecases.generators.dispatch_code_generation_subgraph.dispatch_code_generation_subgraph import (
     DispatchCodeGenerationSubgraph,
+)
+from airas.usecases.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
+    DispatchDiagramGenerationSubgraph,
 )
 from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignSubgraph,
@@ -55,6 +69,9 @@ from airas.usecases.generators.generate_hypothesis_subgraph.generate_hypothesis_
 from airas.usecases.generators.generate_queries_subgraph.generate_queries_subgraph import (
     GenerateQueriesSubgraph,
 )
+from airas.usecases.generators.refine_experimental_design_subgraph.refine_experimental_design_subgraph import (
+    RefineExperimentalDesignSubgraph,
+)
 from airas.usecases.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
     DownloadGithubActionsArtifactsSubgraph,
 )
@@ -62,6 +79,9 @@ from airas.usecases.github.github_download_subgraph import GithubDownloadSubgrap
 from airas.usecases.github.github_upload_subgraph import GithubUploadSubgraph
 from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,
+)
+from airas.usecases.github.push_github_subgraph.push_github_subgraph import (
+    PushGitHubSubgraph,
 )
 from airas.usecases.github.set_github_actions_secrets_subgraph.set_github_actions_secrets_subgraph import (
     SetGithubActionsSecretsSubgraph,
@@ -74,6 +94,12 @@ from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph 
 )
 from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
     PushLatexSubgraph,
+)
+from airas.usecases.retrieve.retrieve_datasets_subgraph.retrieve_datasets_subgraph import (
+    RetrieveDatasetsSubgraph,
+)
+from airas.usecases.retrieve.retrieve_models_subgraph.retrieve_models_subgraph import (
+    RetrieveModelsSubgraph,
 )
 from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
@@ -244,6 +270,80 @@ async def generate_experimental_design(
         )
     )
     return _dump(result["experimental_design"])
+
+
+@mcp.tool()
+async def refine_experimental_design(
+    research_hypothesis: dict[str, Any],
+    experiment_history: dict[str, Any],
+    design_instruction: str,
+    compute_environment: dict[str, Any] | None = None,
+    num_models_to_use: int = 1,
+    num_datasets_to_use: int = 1,
+    num_comparative_methods: int = 1,
+) -> dict[str, Any]:
+    """Refine an experimental design based on results so far and an instruction.
+
+    Use after experiments have run: `experiment_history` carries the designs
+    and results accumulated so far, and `design_instruction` states what to
+    change (e.g. "add an ablation for the attention variant"). Returns the
+    revised experimental design. Requires an LLM provider API key.
+    """
+    env = ComputeEnvironment.model_validate(compute_environment or {})
+    result = (
+        await RefineExperimentalDesignSubgraph(
+            langchain_client=LangChainClient(),
+            compute_environment=env,
+            num_models_to_use=num_models_to_use,
+            num_datasets_to_use=num_datasets_to_use,
+            num_comparative_methods=num_comparative_methods,
+        )
+        .build_graph()
+        .ainvoke(
+            {
+                "research_hypothesis": ResearchHypothesis.model_validate(
+                    research_hypothesis
+                ),
+                "experiment_history": ExperimentHistory.model_validate(
+                    experiment_history
+                ),
+                "design_instruction": design_instruction,
+            }
+        )
+    )
+    return _dump(result["experimental_design"])
+
+
+@mcp.tool()
+async def retrieve_models(model_subfield: ModelSubfield) -> dict[str, Any]:
+    """List curated candidate models for experiments in the given subfield.
+
+    Subfields: "transformer_decoder_based_models", "image_models",
+    "multi_modal_models", "llm_api_models". Returns model configurations
+    usable in an experimental design. No API keys required.
+    """
+    result = (
+        await RetrieveModelsSubgraph()
+        .build_graph()
+        .ainvoke({"model_subfield": model_subfield})
+    )
+    return result["models_dict"]
+
+
+@mcp.tool()
+async def retrieve_datasets(dataset_subfield: DatasetSubfield) -> dict[str, Any]:
+    """List curated candidate datasets for experiments in the given subfield.
+
+    Subfields: "language_model_fine_tuning_datasets", "image_datasets",
+    "prompt_engineering_datasets". Returns dataset configurations usable in
+    an experimental design. No API keys required.
+    """
+    result = (
+        await RetrieveDatasetsSubgraph()
+        .build_graph()
+        .ainvoke({"dataset_subfield": dataset_subfield})
+    )
+    return result["datasets_dict"]
 
 
 # --- Experiment repository & execution (GitHub Actions) ---
@@ -612,6 +712,136 @@ async def download_research_history(
         )
     )
     return _dump(result["research_history"])
+
+
+@mcp.tool()
+async def fetch_run_ids(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+) -> list[str]:
+    """List the experiment run IDs recorded in the experiment repository.
+
+    Run IDs identify individual experiment runs defined by the generated
+    code; pass them to `dispatch_experiment` or `dispatch_visualization`.
+    Requires GH_PERSONAL_ACCESS_TOKEN.
+    """
+    result = (
+        await FetchRunIdsSubgraph(github_client=_github_client())
+        .build_graph()
+        .ainvoke(
+            {
+                "github_config": GitHubConfig(
+                    github_owner=github_owner,
+                    repository_name=repository_name,
+                    branch_name=branch_name,
+                )
+            }
+        )
+    )
+    return result["run_ids"]
+
+
+@mcp.tool()
+async def dispatch_visualization(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    run_ids: list[str],
+    runner_label: list[str] | None = None,
+) -> dict[str, Any]:
+    """Start result-visualization generation on GitHub Actions (asynchronous).
+
+    Generates figures for the given experiment `run_ids` (from
+    `fetch_run_ids`). The figures are used by the paper-writing stage.
+    Returns immediately; track with `get_workflow_runs`.
+    Requires GH_PERSONAL_ACCESS_TOKEN.
+    """
+    result = (
+        await DispatchVisualizationSubgraph(
+            github_client=_github_client(),
+            runner_label=runner_label,
+        )
+        .build_graph()
+        .ainvoke(
+            {
+                "github_config": GitHubConfig(
+                    github_owner=github_owner,
+                    repository_name=repository_name,
+                    branch_name=branch_name,
+                ),
+                "run_ids": run_ids,
+            }
+        )
+    )
+    return {"dispatched": result["dispatched"]}
+
+
+@mcp.tool()
+async def dispatch_diagram_generation(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    github_actions_agent: Literal["claude_code", "open_code"] = "claude_code",
+    diagram_description: str | None = None,
+) -> dict[str, Any]:
+    """Start method-diagram generation on GitHub Actions (asynchronous).
+
+    Generates an explanatory diagram of the proposed method for the paper.
+    `diagram_description` optionally guides what the diagram should show.
+    Returns immediately; track with `get_workflow_runs`.
+    Requires GH_PERSONAL_ACCESS_TOKEN.
+    """
+    result = (
+        await DispatchDiagramGenerationSubgraph(
+            github_client=_github_client(),
+            diagram_description=diagram_description,
+            prompt_path=None,
+            llm_mapping=None,
+        )
+        .build_graph()
+        .ainvoke(
+            {
+                "github_config": GitHubConfig(
+                    github_owner=github_owner,
+                    repository_name=repository_name,
+                    branch_name=branch_name,
+                ),
+                "github_actions_agent": github_actions_agent,
+            }
+        )
+    )
+    return {"dispatched": result["dispatched"]}
+
+
+@mcp.tool()
+async def push_files(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    files: dict[str, str],
+) -> dict[str, Any]:
+    """Push files to the experiment repository.
+
+    `files` maps repository paths to file contents (text). Useful for
+    manual fixes to experiment code or configuration between runs.
+    Requires GH_PERSONAL_ACCESS_TOKEN.
+    """
+    result = (
+        await PushGitHubSubgraph(github_client=_github_client())
+        .build_graph()
+        .ainvoke(
+            {
+                "github_config": GitHubConfig(
+                    github_owner=github_owner,
+                    repository_name=repository_name,
+                    branch_name=branch_name,
+                ),
+                "push_files": files,
+            }
+        )
+    )
+    return {"is_file_pushed": result["is_file_pushed"]}
 
 
 # --- Paper writing & publication ---

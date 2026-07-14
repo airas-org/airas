@@ -54,6 +54,9 @@ claude mcp add airas \
 | `retrieve_papers` | arXiv経由で論文を取得し、構造化された研究データを抽出 |
 | `generate_hypothesis` | トピックと関連研究から新規の研究仮説を生成 |
 | `generate_experimental_design` | 仮説を検証する実験を設計 |
+| `refine_experimental_design` | これまでの結果と指示に基づき実験設計を改良 |
+| `retrieve_models` | サブ分野ごとの候補モデル一覧を取得。APIキー不要 |
+| `retrieve_datasets` | サブ分野ごとの候補データセット一覧を取得。APIキー不要 |
 
 ### 実験実行（GitHub Actions）
 
@@ -65,9 +68,13 @@ claude mcp add airas \
 | `dispatch_experiment` | サニティチェック／本実験の実行を開始（非同期） |
 | `get_workflow_runs` | 直近のワークフロー実行のステータス確認（ノンブロッキング） |
 | `fetch_experiment_code` | 生成された実験コードを取得 |
+| `fetch_run_ids` | リポジトリに記録された実験run IDの一覧を取得 |
 | `fetch_experiment_results` | 実験結果を取得 |
 | `download_workflow_artifacts` | 特定のワークフロー実行のアーティファクトを取得 |
 | `analyze_experiment` | 仮説・実験設計に照らして結果を解析 |
+| `dispatch_visualization` | 指定run IDの結果グラフを生成（非同期） |
+| `dispatch_diagram_generation` | 論文用の手法ダイアグラムを生成（非同期） |
+| `push_files` | 任意のファイルを実験リポジトリにプッシュ |
 
 ### 論文執筆・出版
 
