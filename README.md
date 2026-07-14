@@ -45,7 +45,7 @@ claude mcp add airas \
   -- uvx --from "airas[mcp]" airas-mcp
 ```
 
-See the [MCP documentation](https://airas-org.github.io/airas/development/MCP) for the full tool list and configuration options.
+See the [MCP documentation](docs/development/MCP.mdx) for the full tool list and configuration options.
 
 ### Option 2 — Web Application (optional dashboard)
 
