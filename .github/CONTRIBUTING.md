@@ -41,6 +41,19 @@ Pull requests that do not meet these requirements may be requested for revision 
 
 ## For Core Team
 
+### Releasing to PyPI
+
+Publishing is automated via PyPI Trusted Publishing — no API tokens are involved. To release:
+
+1. Bump `version` in `backend/pyproject.toml` (must be newer than the latest release on [PyPI](https://pypi.org/project/airas/)) and merge it to `main` via the usual release flow.
+2. Tag the release commit and push the tag:
+
+    ```bash
+    git tag v0.2.0 && git push origin v0.2.0
+    ```
+
+3. The `publish.yml` workflow verifies the tag matches the package version, builds, smoke-tests the wheel, and publishes to PyPI.
+
 ### MCP servers and Plugins
 For core team development, we use the following. If you need access, please contact us and we will invite you to each service.
 
