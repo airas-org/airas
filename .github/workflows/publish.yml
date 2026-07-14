@@ -1,0 +1,54 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write # Required for PyPI Trusted Publishing (OIDC)
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify tag matches package version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          FILE_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('backend/pyproject.toml','rb'))['project']['version'])")
+          if [ "$TAG_VERSION" != "$FILE_VERSION" ]; then
+            echo "::error::Tag v${TAG_VERSION} does not match backend/pyproject.toml version ${FILE_VERSION}"
+            exit 1
+          fi
+
+      - name: Verify version is newer than PyPI
+        run: |
+          FILE_VERSION="${GITHUB_REF_NAME#v}"
+          PYPI_VERSION=$(curl -s https://pypi.org/pypi/airas/json | python3 -c "import json,sys; print(json.load(sys.stdin)['info']['version'])")
+          NEWEST=$(printf '%s\n%s\n' "$PYPI_VERSION" "$FILE_VERSION" | sort -V | tail -1)
+          if [ "$NEWEST" != "$FILE_VERSION" ] || [ "$FILE_VERSION" = "$PYPI_VERSION" ]; then
+            echo "::error::Version ${FILE_VERSION} is not newer than the latest PyPI release ${PYPI_VERSION}"
+            exit 1
+          fi
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build
+        working-directory: backend
+        run: uv build
+
+      - name: Smoke-test the wheel (airas-mcp entry point)
+        working-directory: backend
+        run: |
+          uv venv /tmp/smoke
+          VIRTUAL_ENV=/tmp/smoke uv pip install "$(ls dist/*.whl)[mcp]"
+          /tmp/smoke/bin/python -c "from airas.mcp.server import mcp, main; print('wheel ok:', mcp.name)"
+
+      - name: Publish to PyPI (Trusted Publishing)
+        working-directory: backend
+        run: uv publish --trusted-publishing always
