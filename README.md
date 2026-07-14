@@ -34,7 +34,20 @@ Currently, it focuses on the automation of machine learning research.
 
 ## Quick Start
 
-### Option 1 — Local Deployment
+### Option 1 — MCP Server (use from Claude Code / Claude Desktop)
+
+Use AIRAS research tools (paper search, retrieval, hypothesis generation, experiment execution, paper writing) directly from an MCP client. No clone, no Docker — only [uv](https://docs.astral.sh/uv/) is required:
+
+```bash
+claude mcp add airas \
+  --env OPENAI_API_KEY=sk-... \
+  --env GH_PERSONAL_ACCESS_TOKEN=ghp_... \
+  -- uvx --from "airas[mcp]" airas-mcp
+```
+
+See the [MCP documentation](docs/development/MCP.mdx) for the full tool list and configuration options.
+
+### Option 2 — Web Application (optional dashboard)
 
 - Install [Docker](https://www.docker.com/get-started) if you haven't already.
 
@@ -47,24 +60,6 @@ Currently, it focuses on the automation of machine learning research.
     ```
 
 - Open your browser and navigate to: `http://localhost:5173/`
-
-### Option 2 — GitHub Actions (no local setup required)
-
-Run the full research pipeline directly from any GitHub repository using the provided workflow.
-See **[QUICKSTART.md](./QUICKSTART.md)** for setup instructions and required API keys.
-
-### Option 3 — MCP Server (use from Claude Code / Claude Desktop)
-
-Use AIRAS research tools (paper search, retrieval, hypothesis generation) directly from an MCP client. No clone, no Docker — only [uv](https://docs.astral.sh/uv/) is required:
-
-```bash
-claude mcp add airas \
-  --env OPENAI_API_KEY=sk-... \
-  --env GH_PERSONAL_ACCESS_TOKEN=ghp_... \
-  -- uvx --from "airas[mcp]" airas-mcp
-```
-
-See the [MCP documentation](https://airas-org.github.io/airas/development/MCP) for the full tool list and configuration options.
 
 ## Roadmap
 

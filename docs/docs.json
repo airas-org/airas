@@ -1,0 +1,99 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "AIRAS",
+  "colors": {
+    "primary": "#4E77EE",
+    "light": "#7C9CF5",
+    "dark": "#3D5FD9"
+  },
+  "logo": {
+    "light": "/images/airas_long.png",
+    "dark": "/images/airas_long.png"
+  },
+  "favicon": "/images/airas_logo.png",
+  "navigation": {
+    "languages": [
+      {
+        "language": "en",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction"]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "component/generator",
+              "component/executor",
+              "component/html-uploader",
+              "component/retrieve-paper-subgraph",
+              "component/analytic-subgraph",
+              "component/experimental-plan-subgraph",
+              "component/latex-subgraph",
+              "component/readme-subgraph",
+              "component/research-preparation-subgraph",
+              "component/review-subgraph",
+              "component/writer-subgraph"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/api-key",
+              "development/roadmap",
+              "development/MCP"
+            ]
+          }
+        ]
+      },
+      {
+        "language": "ja",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["ja/introduction"]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "ja/component/generator",
+              "ja/component/executor",
+              "ja/component/html-uploader",
+              "ja/component/paper-uploader",
+              "ja/component/analytic-subgraph",
+              "ja/component/experimental-plan-subgraph",
+              "ja/component/latex-subgraph",
+              "ja/component/readme-subgraph",
+              "ja/component/research-preparation-subgraph",
+              "ja/component/review-subgraph",
+              "ja/component/writer-subgraph"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "ja/development/local-setup",
+              "ja/development/roadmap",
+              "ja/development/MCP"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/airas-org/airas"
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/airas-org/airas",
+      "x": "https://x.com/fuyu_quant"
+    }
+  }
+}
