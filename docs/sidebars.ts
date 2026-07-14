@@ -5,7 +5,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Get Started',
-      items: ['introduction', 'quickstart'],
+      items: ['introduction'],
     },
     {
       type: 'category',
