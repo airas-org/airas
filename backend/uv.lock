@@ -103,7 +103,7 @@ wheels = [
 
 [[package]]
 name = "airas"
-version = "0.2.0"
+version = "0.2.2"
 source = { editable = "." }
 dependencies = [
     { name = "anthropic" },
@@ -124,6 +124,7 @@ dependencies = [
     { name = "langfuse" },
     { name = "langgraph" },
     { name = "litellm" },
+    { name = "mcp", extra = ["cli"] },
     { name = "nltk" },
     { name = "openai" },
     { name = "pandas" },
@@ -142,11 +143,6 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "uvicorn" },
     { name = "wandb" },
-]
-
-[package.optional-dependencies]
-mcp = [
-    { name = "mcp", extra = ["cli"] },
 ]
 
 [package.dev-dependencies]
@@ -183,7 +179,7 @@ requires-dist = [
     { name = "langfuse", specifier = ">=3.11.1" },
     { name = "langgraph", specifier = "==1.0.3" },
     { name = "litellm", specifier = ">=1.80.16" },
-    { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'", specifier = ">=1.6.0" },
+    { name = "mcp", extras = ["cli"], specifier = ">=1.6.0" },
     { name = "nltk", specifier = ">=3.9.2" },
     { name = "openai", specifier = ">=1.35.13" },
     { name = "pandas", specifier = ">=2.3.0" },

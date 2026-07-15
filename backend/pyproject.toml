@@ -1,6 +1,6 @@
 [project]
 name = "airas"
-version = "0.2.1"
+version = "0.2.2"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -46,6 +46,7 @@ dependencies = [
     "nltk>=3.9.2",
     "litellm>=1.80.16",
     "boto3>=1.35.0",
+    "mcp[cli]>=1.6.0",
 ]
 
 [project.urls]
@@ -111,9 +112,10 @@ publish-url = "https://test.pypi.org/legacy/"
 explicit = true
 
 [project.optional-dependencies]
-mcp = [
-    "mcp[cli]>=1.6.0",
-]
+# Kept as a no-op alias so `airas[mcp]` (documented before 0.2.2) still installs.
+mcp = []
 
 [project.scripts]
+airas = "airas.mcp.server:main"
+# Backwards-compatible alias (documented command before 0.2.2)
 airas-mcp = "airas.mcp.server:main"

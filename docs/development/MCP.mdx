@@ -35,7 +35,7 @@ If a tool is called before its credential is configured, it returns an error poi
 ### 2. Register the server (Claude Code)
 
 ```bash
-claude mcp add airas -- uvx --from "airas[mcp]" airas-mcp
+claude mcp add airas -- uvx airas
 ```
 
 Or add it to your project's `.mcp.json`:
@@ -45,7 +45,7 @@ Or add it to your project's `.mcp.json`:
   "mcpServers": {
     "airas": {
       "command": "uvx",
-      "args": ["--from", "airas[mcp]", "airas-mcp"]
+      "args": ["airas"]
     }
   }
 }
@@ -111,8 +111,8 @@ Run the server from a checkout:
 
 ```bash
 cd backend
-uv sync --extra mcp
-uv run airas-mcp
+uv sync
+uv run airas
 ```
 
 The server uses stdio transport; it is started on demand by the MCP client and requires no database or web server.

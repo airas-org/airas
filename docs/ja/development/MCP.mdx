@@ -35,7 +35,7 @@ chmod 600 ~/.airas/credentials.json
 ### 2. サーバーの登録（Claude Code）
 
 ```bash
-claude mcp add airas -- uvx --from "airas[mcp]" airas-mcp
+claude mcp add airas -- uvx airas
 ```
 
 またはプロジェクトの `.mcp.json` に追加します：
@@ -45,7 +45,7 @@ claude mcp add airas -- uvx --from "airas[mcp]" airas-mcp
   "mcpServers": {
     "airas": {
       "command": "uvx",
-      "args": ["--from", "airas[mcp]", "airas-mcp"]
+      "args": ["airas"]
     }
   }
 }
@@ -111,8 +111,8 @@ claude mcp add airas -- uvx --from "airas[mcp]" airas-mcp
 
 ```bash
 cd backend
-uv sync --extra mcp
-uv run airas-mcp
+uv sync
+uv run airas
 ```
 
 サーバーはstdioトランスポートを使用し、MCPクライアントがオンデマンドで起動します。データベースやWebサーバーは不要です。
