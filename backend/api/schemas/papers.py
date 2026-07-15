@@ -1,9 +1,7 @@
 from pydantic import BaseModel, Field
 
 from airas.core.types.experiment_code import ExperimentCode
-from airas.core.types.experimental_analysis import ExperimentalAnalysis
-from airas.core.types.experimental_design import ExperimentalDesign
-from airas.core.types.experimental_results import ExperimentalResults
+from airas.core.types.experiment_history import ExperimentHistory
 from airas.core.types.paper import PaperContent, SearchMethod
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
@@ -37,10 +35,8 @@ class RetrievePaperSubgraphResponseBody(BaseModel):
 
 class WriteSubgraphRequestBody(BaseModel):
     research_hypothesis: ResearchHypothesis
-    experimental_design: ExperimentalDesign
+    experiment_history: ExperimentHistory
     experiment_code: ExperimentCode
-    experimental_results: ExperimentalResults
-    experimental_analysis: ExperimentalAnalysis
     research_study_list: list[ResearchStudy]
     references_bib: str
     writing_refinement_rounds: int = 2

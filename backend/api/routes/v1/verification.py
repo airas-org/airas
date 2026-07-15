@@ -7,7 +7,7 @@ from langfuse import observe
 
 from airas.container import Container
 from airas.core.types.github import GitHubConfig
-from airas.infra.db.models.verification import VerificationModel
+from airas.core.types.verification import VerificationModel
 from airas.infra.github_client import GithubClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.infra.litellm_client import LiteLLMClient
@@ -21,7 +21,11 @@ from airas.usecases.assisted_research.propose_verification_policy_subgraph.propo
     ProposeVerificationPolicySubgraph,
 )
 from airas.usecases.verification.verification_service import VerificationService
-from api.ee.auth.dependencies import get_current_user_id, get_github_client
+from api.dependencies import (
+    get_current_user_id,
+    get_github_client,
+    get_litellm_client,
+)
 from api.schemas.verification import (
     ExperimentCodeStatusResponseBody,
     GenerateExperimentCodeRequestBody,
@@ -160,9 +164,7 @@ def delete_session(
 @observe(capture_input=False)
 async def propose_policies(
     request: ProposePoliciesRequestBody,
-    litellm_client: Annotated[
-        LiteLLMClient, Depends(Provide[Container.litellm_client])
-    ],
+    litellm_client: Annotated[LiteLLMClient, Depends(get_litellm_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],
@@ -223,9 +225,7 @@ async def propose_policies(
 @observe(capture_input=False)
 async def generate_method(
     request: GenerateMethodRequestBody,
-    litellm_client: Annotated[
-        LiteLLMClient, Depends(Provide[Container.litellm_client])
-    ],
+    litellm_client: Annotated[LiteLLMClient, Depends(get_litellm_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

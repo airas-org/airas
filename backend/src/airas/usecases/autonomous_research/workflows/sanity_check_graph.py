@@ -6,6 +6,7 @@ from typing_extensions import TypedDict
 
 from airas.core.execution_timers import time_node
 from airas.core.logging_utils import setup_logging
+from airas.core.types.experiment_history import RunStage
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.github import (
     GitHubActionsAgent,
@@ -179,13 +180,13 @@ class SanityCheckGraph:
         if isinstance(self.runner_config, StaticRunnerConfig):
             dispatch_subgraph = DispatchExperimentOnStaticRunnerSubgraph(
                 github_client=self.github_client,
-                workflow_file="run_sanity_check.yml",
+                run_stage=RunStage.SANITY,
                 runner_label=self.runner_config.runner_label,
             )
         elif isinstance(self.runner_config, EphemeralCloudRunnerConfig):
             dispatch_subgraph = DispatchExperimentOnEphemeralCloudSubgraph(
                 github_client=self.github_client,
-                target_workflow="run_sanity_check.yml",
+                run_stage=RunStage.SANITY,
                 cloud_provider=self.runner_config.cloud_provider,
                 gpu_instance_type=self.runner_config.gpu_instance_type,
                 max_instance_hours=self.runner_config.max_instance_hours,

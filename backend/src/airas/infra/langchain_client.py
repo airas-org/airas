@@ -1,5 +1,6 @@
 import logging
 import os
+from collections.abc import Callable
 from typing import Any, get_args
 
 from botocore.config import Config
@@ -10,6 +11,8 @@ from langchain_core.messages.utils import trim_messages
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 
+from airas.core.types.llm_provider import LLMProvider
+from airas.infra.llm_provider_resolver import detect_available_providers
 from airas.infra.llm_specs import (
     ANTHROPIC_MODELS,
     ANTHROPIC_MODELS_FOR_OPENROUTER,
@@ -23,7 +26,6 @@ from airas.infra.llm_specs import (
     AnthropicParams,
     GoogleGenAIParams,
     LLMParams,
-    LLMProvider,
     OpenAIParams,
     get_model_context_info,
 )
@@ -46,20 +48,20 @@ class MissingEnvironmentVariablesError(RuntimeError):
 
 
 class LangChainClient:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        get_api_key: Callable[[str], str | None] | None = None,
+        available_providers: set[LLMProvider] | None = None,
+    ) -> None:
+        self._get_api_key = get_api_key or (lambda _: None)
         self._model_cache: dict[
             tuple[LLM_MODELS, bool, tuple[tuple[str, Any], ...] | None], object
         ] = {}
-        self._available_providers: set[LLMProvider] = self._detect_available_providers()
-
-    def _detect_available_providers(self) -> set[LLMProvider]:
-        available: set[LLMProvider] = set()
-        for provider, vars_ in PROVIDER_REQUIRED_ENV_VARS.items():
-            missing = [name for name in vars_ if not os.getenv(name)]
-            if missing:
-                continue
-            available.add(provider)
-        return available
+        self._available_providers = (
+            available_providers
+            if available_providers is not None
+            else detect_available_providers(PROVIDER_REQUIRED_ENV_VARS)
+        )
 
     def _select_provider_for_model(self, llm_name: LLM_MODELS) -> LLMProvider:
         """
@@ -156,29 +158,40 @@ class LangChainClient:
             f"web_search={web_search}, params={params}, langchain_kwargs={langchain_kwargs}"
         )
 
+        api_key = self._get_api_key(llm_name)
+
         if provider is LLMProvider.OPENROUTER:
             base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-            api_key = os.getenv("OPENROUTER_API_KEY")
+            resolved_key = api_key or os.getenv("OPENROUTER_API_KEY")
 
             model_name = f"{llm_name}:online" if web_search else llm_name
 
             model = ChatOpenAI(
-                api_key=api_key,
+                api_key=resolved_key,
                 base_url=base_url,
                 model=model_name,
                 **langchain_kwargs,
             )
 
         elif provider is LLMProvider.OPENAI:
-            model = ChatOpenAI(model=llm_name, **langchain_kwargs)
+            openai_kwargs: dict[str, Any] = {"model": llm_name, **langchain_kwargs}
+            if api_key is not None:
+                openai_kwargs["api_key"] = api_key
+            model = ChatOpenAI(**openai_kwargs)
             if web_search:
                 model = model.bind_tools([{"type": "web_search"}])
 
         elif provider is LLMProvider.GOOGLE:
-            model = ChatGoogleGenerativeAI(model=llm_name, **langchain_kwargs)
+            google_kwargs: dict[str, Any] = {"model": llm_name, **langchain_kwargs}
+            if api_key is not None:
+                google_kwargs["google_api_key"] = api_key
+            model = ChatGoogleGenerativeAI(**google_kwargs)
 
         elif provider is LLMProvider.ANTHROPIC:
-            model = ChatAnthropic(model=llm_name, **langchain_kwargs)
+            anthropic_kwargs: dict[str, Any] = {"model": llm_name, **langchain_kwargs}
+            if api_key is not None:
+                anthropic_kwargs["anthropic_api_key"] = api_key
+            model = ChatAnthropic(**anthropic_kwargs)
 
         elif provider is LLMProvider.BEDROCK:
             # https://reference.langchain.com/python/integrations/langchain_aws/
@@ -320,3 +333,7 @@ class LangChainClient:
         )
         response = await model_with_structure.ainvoke(trimmed_messages)
         return response
+
+    @property
+    def available_providers(self) -> set[LLMProvider]:
+        return self._available_providers

@@ -1,6 +1,6 @@
 [project]
 name = "airas"
-version = "0.0.11.dev58"
+version = "0.2.0"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -34,7 +34,6 @@ dependencies = [
     "wandb>=0.22.2",
     "dependency-injector>=4.48.2",
     "fastapi>=0.120.4",
-    "alembic>=1.13.1",
     "uvicorn>=0.34.2",
     "pytest-asyncio>=1.2.0",
     "hishel[async]>=1.1.5",
@@ -43,15 +42,10 @@ dependencies = [
     "langchain-aws>=1.1.0",
     "langchain-anthropic>=1.2.0",
     "langfuse>=3.11.1",
-    "sqlmodel>=0.0.27",
-    "sqlalchemy>=2.0.44",
-    "psycopg[binary]>=3.3.2",
     "rank-bm25>=0.2.2",
     "nltk>=3.9.2",
     "litellm>=1.80.16",
-    "PyJWT[crypto]>=2.8.0",
-    "cryptography>=44.0.0",
-    "stripe>=12.0.0",
+    "boto3>=1.35.0",
 ]
 
 [project.urls]
@@ -118,7 +112,8 @@ explicit = true
 
 [project.optional-dependencies]
 mcp = [
-    "asyncio>=3.4.3",
     "mcp[cli]>=1.6.0",
-    "python-dotenv>=1.0.1",
 ]
+
+[project.scripts]
+airas-mcp = "airas.mcp.server:main"

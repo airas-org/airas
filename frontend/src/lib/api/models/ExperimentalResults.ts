@@ -12,9 +12,13 @@ export type ExperimentalResults = {
      */
     stderr?: (string | null);
     /**
-     * Figures specific to this run
+     * Result figure filenames (e.g. plot.pdf)
      */
-    figures?: (Array<string> | null);
+    result_figures?: (Array<string> | null);
+    /**
+     * Method diagram filenames (e.g. architecture.pdf)
+     */
+    diagram_figures?: (Array<string> | null);
     /**
      * Metrics data for runs (keyed by run_id or 'comparison')
      */

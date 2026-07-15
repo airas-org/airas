@@ -293,7 +293,7 @@ Content-Type: application/json
                 "f1_score": 0.863
             }
         },
-        "figures": ["confusion_matrix.png", "attention_heatmap.png"]
+        "result_figures": ["confusion_matrix.pdf", "attention_heatmap.pdf"]
     }
 }
 

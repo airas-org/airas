@@ -1,5 +1,7 @@
 import logging
 
+from airas.core.types.research_iteration import ExternalResources
+from airas.core.types.research_session import ResearchSession
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
@@ -9,8 +11,6 @@ from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.llm_config import DEFAULT_NODE_LLMS
 from airas.core.logging_utils import setup_logging
 from airas.core.types.hugging_face import HuggingFace
-from airas.core.types.research_iteration import ExternalResources
-from airas.core.types.research_session import ResearchSession
 from airas.infra.hugging_face_client import HuggingFaceClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.llm_specs import LLM_MODELS

@@ -3,8 +3,6 @@
 #   make down      - Stop all services
 #   make logs      - Show service logs
 #   make ps        - Show service status
-#   make migrate   - Apply database migrations
-#   make db-reset  - Reset database (delete volumes)
 #   make update-api- Regenerate OpenAPI and frontend client
 
 SHELL := /bin/bash
@@ -14,12 +12,10 @@ COMPOSE_FILE ?= compose.yml
 PROJECT ?= oss-webapp
 
 BACKEND_SERVICE ?= backend
-DB_SERVICE ?= db
-MIGRATE_SERVICE ?= migrate
 
 COMPOSE_CMD := $(COMPOSE) -f $(COMPOSE_FILE) -p $(PROJECT)
 
-.PHONY: up down logs ps migrate db-reset update-api generate-openapi ruff mypy biome
+.PHONY: up down logs ps update-api generate-openapi ruff mypy biome
 
 up:
 	$(COMPOSE_CMD) up --build
@@ -32,14 +28,6 @@ logs:
 
 ps:
 	$(COMPOSE_CMD) ps
-
-migrate:
-	$(COMPOSE_CMD) run --rm $(MIGRATE_SERVICE)
-
-db-reset:
-	$(COMPOSE_CMD) down -v
-	$(COMPOSE_CMD) up -d $(DB_SERVICE)
-	$(MAKE) migrate
 
 update-api: generate-openapi
 

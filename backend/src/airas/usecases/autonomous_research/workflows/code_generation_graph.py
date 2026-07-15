@@ -74,11 +74,13 @@ class CodeGenerationGraph:
         github_client: GithubClient,
         wandb_config: WandbConfig,
         github_actions_agent: GitHubActionsAgent,
+        prompt_path: str | None = None,
         llm_mapping: CodeGenerationGraphLLMMapping | None = None,
     ):
         self.github_client = github_client
         self.wandb_config = wandb_config
         self.github_actions_agent = github_actions_agent
+        self.prompt_path = prompt_path
         self.llm_mapping = llm_mapping or CodeGenerationGraphLLMMapping()
 
     def _validate_github_actions_completion(
@@ -150,6 +152,7 @@ class CodeGenerationGraph:
         result = (
             await DispatchCodeGenerationSubgraph(
                 github_client=self.github_client,
+                prompt_path=self.prompt_path,
                 llm_mapping=self.llm_mapping.dispatch_code_generation,
             )
             .build_graph()

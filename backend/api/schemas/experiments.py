@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
-from airas.core.types.experiment_code import ExperimentCode, RunStage
+from airas.core.types.experiment_code import ExperimentCode
+from airas.core.types.experiment_history import RunStage
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults

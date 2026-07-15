@@ -1,0 +1,11 @@
+### Create feedback (with email notification)
+
+POST http://127.0.0.1:8000/airas/v1/feedback
+Content-Type: application/json
+
+{
+    "category": "bug",
+    "subject": "Test bug report",
+    "detail": "This is a test feedback submitted via HTTP test file.",
+    "email": "test@example.com"
+}

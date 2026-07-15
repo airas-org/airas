@@ -3,9 +3,7 @@ from typing import Any, Optional
 from pydantic import BaseModel, Field
 
 from airas.core.types.experiment_code import ExperimentCode
-from airas.core.types.experimental_analysis import ExperimentalAnalysis
-from airas.core.types.experimental_design import ExperimentalDesign
-from airas.core.types.experimental_results import ExperimentalResults
+from airas.core.types.experiment_history import ExperimentHistory
 from airas.core.types.paper import PaperContent, PaperReviewScores
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
@@ -27,17 +25,11 @@ class ResearchHistory(BaseModel):
     research_hypothesis: Optional[ResearchHypothesis] = Field(
         None, description="Research hypothesis generated"
     )
-    experimental_design: Optional[ExperimentalDesign] = Field(
-        None, description="Experimental design and methodology"
+    experiment_history: Optional[ExperimentHistory] = Field(
+        None, description="History of experiment cycles (design, results, analysis)"
     )
     experiment_code: Optional[ExperimentCode] = Field(
         None, description="Generated experiment code and implementation"
-    )
-    experimental_results: Optional[ExperimentalResults] = Field(
-        None, description="Results from running experiments"
-    )
-    experimental_analysis: Optional[ExperimentalAnalysis] = Field(
-        None, description="Analysis and interpretation of experimental results"
     )
 
     # --- Writing & Publication ---

@@ -13,7 +13,7 @@ from airas.usecases.assisted_research.cancel_interactive_repo_agent_subgraph.can
 from airas.usecases.assisted_research.dispatch_interactive_repo_agent_subgraph.dispatch_interactive_repo_agent_subgraph import (
     DispatchInteractiveRepoAgentSubgraph,
 )
-from api.ee.auth.dependencies import get_github_client
+from api.dependencies import get_github_client
 from api.schemas.interactive_repo_agent import (
     CancelInteractiveRepoAgentRequestBody,
     CancelInteractiveRepoAgentResponseBody,

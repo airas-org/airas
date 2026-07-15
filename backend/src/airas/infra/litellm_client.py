@@ -12,33 +12,23 @@ To view available models in your environment, run:
 import json
 import logging
 import os
-from enum import Enum
+from collections.abc import Callable
 from functools import lru_cache
 from typing import Any
 
 import litellm
 from litellm import get_valid_models
 
+from airas.core.types.llm_provider import LLMProvider
+from airas.infra.llm_provider_resolver import detect_available_providers
 from airas.infra.retry_policy import make_llm_retry_policy
 
 logger = logging.getLogger(__name__)
 
 _LLM_RETRY = make_llm_retry_policy()
 
-
-class LLMProvider(str, Enum):
-    GEMINI = "gemini"
-    VERTEX_AI = "vertex_ai"
-    OPENAI = "openai"
-    ANTHROPIC = "anthropic"
-    OPENROUTER = "openrouter"
-    BEDROCK = "bedrock"
-    AZURE = "azure"
-    VERCEL_AI_GATEWAY = "vercel_ai_gateway"
-
-
 PROVIDER_REQUIRED_ENV_VARS: dict[LLMProvider, list[str]] = {
-    LLMProvider.GEMINI: ["GEMINI_API_KEY"],
+    LLMProvider.GOOGLE: ["GEMINI_API_KEY"],
     LLMProvider.VERTEX_AI: ["VERTEX_PROJECT", "VERTEX_LOCATION"],
     LLMProvider.OPENAI: ["OPENAI_API_KEY"],
     LLMProvider.ANTHROPIC: ["ANTHROPIC_API_KEY"],
@@ -52,20 +42,20 @@ PROVIDER_REQUIRED_ENV_VARS: dict[LLMProvider, list[str]] = {
 
 
 class LiteLLMClient:
-    def __init__(self) -> None:
-        self._available_providers: set[LLMProvider] = self._detect_available_providers()
+    def __init__(
+        self,
+        get_api_key: Callable[[str], str | None] | None = None,
+        available_providers: set[LLMProvider] | None = None,
+    ) -> None:
+        self._get_api_key = get_api_key or (lambda _: None)
+        self._available_providers = (
+            available_providers
+            if available_providers is not None
+            else detect_available_providers(PROVIDER_REQUIRED_ENV_VARS)
+        )
         litellm.drop_params = True
         if logger.isEnabledFor(logging.DEBUG):
             os.environ["LITELLM_LOG"] = "DEBUG"
-
-    def _detect_available_providers(self) -> set[LLMProvider]:
-        available: set[LLMProvider] = set()
-        for provider, vars_ in PROVIDER_REQUIRED_ENV_VARS.items():
-            missing = [name for name in vars_ if not os.getenv(name)]
-            if missing:
-                continue
-            available.add(provider)
-        return available
 
     @_LLM_RETRY
     async def generate(
@@ -96,10 +86,13 @@ class LiteLLMClient:
                 "Proceeding without max_tokens limit."
             )
 
+        api_key = self._get_api_key(llm_name)
+
         try:
             response = await litellm.acompletion(
                 model=llm_name,
                 messages=messages,
+                api_key=api_key,
                 **litellm_kwargs,
             )  # TODO: timeoutを延長する
             content = response.choices[0].message.content
@@ -147,11 +140,14 @@ class LiteLLMClient:
                 "Proceeding without max_tokens limit."
             )
 
+        api_key = self._get_api_key(llm_name)
+
         try:
             response = await litellm.acompletion(
                 model=llm_name,
                 messages=messages,
                 response_format=data_model,
+                api_key=api_key,
                 **litellm_kwargs,
             )  # TODO: timeoutを延長する
 
@@ -193,9 +189,12 @@ class LiteLLMClient:
                 f"Failed to get model info for {model}: {e}. Proceeding without model metadata."
             )
 
+        api_key = self._get_api_key(model)
+
         try:
-            response = await litellm.aembedding(model=model, input=texts)
-            # Ensure we got a non-empty response
+            response = await litellm.aembedding(
+                model=model, input=texts, api_key=api_key
+            )
             data = getattr(response, "data", None)
             if not data:
                 raise ValueError(f"Empty embedding response from model {model}")

@@ -9,7 +9,7 @@ from airas.infra.github_client import GithubClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.github.github_download_subgraph import GithubDownloadSubgraph
 from airas.usecases.github.github_upload_subgraph import GithubUploadSubgraph
-from api.ee.auth.dependencies import get_github_client
+from api.dependencies import get_github_client
 from api.schemas.research_history import (
     GithubDownloadRequest,
     GithubDownloadResponse,

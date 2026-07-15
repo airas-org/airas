@@ -41,35 +41,24 @@ Pull requests that do not meet these requirements may be requested for revision 
 
 ## For Core Team
 
+### Releasing to PyPI
+
+Publishing is automated via PyPI Trusted Publishing — no API tokens are involved. To release:
+
+1. Bump `version` in `backend/pyproject.toml` (must be newer than the latest release on [PyPI](https://pypi.org/project/airas/)) and merge it to `main` via the usual release flow.
+2. Tag the release commit and push the tag:
+
+    ```bash
+    git tag v0.2.0 && git push origin v0.2.0
+    ```
+
+3. The `publish.yml` workflow verifies the tag matches the package version, builds, smoke-tests the wheel, and publishes to PyPI.
+
 ### MCP servers and Plugins
 For core team development, we use the following. If you need access, please contact us and we will invite you to each service.
-
-- [Vercel](https://vercel.com/docs/agent-resources/vercel-mcp#claude-code)
-
-    ```bash
-    claude mcp add --transport http vercel https://mcp.vercel.com
-    ```
-
-- [Railway](https://docs.railway.com/ai/mcp-server#claude-code)
-
-    ```bash
-    claude mcp add Railway npx @railway/mcp-server
-    ```
 
 - [Subframe](https://docs.subframe.com/guides/mcp-server#installation)
 
     ```bash
     claude plugin marketplace add https://github.com/SubframeApp/subframe && claude plugin install subframe@subframe
-    ```
-
-- [Supabase](https://supabase.com/docs/guides/getting-started/mcp)
-
-    ```bash
-    claude mcp add --scope project --transport http supabase "https://mcp.supabase.com/mcp"
-    ```
-
-- [Stripe](https://docs.stripe.com/mcp?locale=ja-JP&mcp-client=claudecode#connect)
-
-    ```bash
-    claude mcp add --transport http stripe https://mcp.stripe.com/
     ```

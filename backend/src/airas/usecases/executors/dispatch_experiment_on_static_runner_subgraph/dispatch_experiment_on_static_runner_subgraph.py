@@ -6,6 +6,7 @@ from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
+from airas.core.types.experiment_history import RunStage
 from airas.core.types.github import GitHubConfig
 from airas.infra.github_client import GithubClient
 from airas.usecases.github.nodes.dispatch_workflow import dispatch_workflow
@@ -39,12 +40,14 @@ class DispatchExperimentOnStaticRunnerSubgraph:
     def __init__(
         self,
         github_client: GithubClient,
-        workflow_file: str,
+        workflow_file: str = "run_experiment.yml",
         runner_label: list[str] | None = None,
+        run_stage: RunStage | None = None,
     ):
         self.github_client = github_client
         self.workflow_file = workflow_file
         self.runner_label = runner_label or ["ubuntu-latest"]
+        self.run_stage = run_stage
 
     @record_execution_time
     async def _dispatch_experiment_on_static_runner(
@@ -63,6 +66,9 @@ class DispatchExperimentOnStaticRunnerSubgraph:
             "run_id": run_id,
             "runner_label": json.dumps(self.runner_label),
         }
+
+        if self.run_stage is not None:
+            inputs["mode"] = self.run_stage.value
 
         success = await dispatch_workflow(
             self.github_client,

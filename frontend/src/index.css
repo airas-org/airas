@@ -151,3 +151,146 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*
+ * Dark-mode hover/active/bg fix:
+ * Light-theme utility colors (neutral-50..300, brand-50..100, error-50..100)
+ * are near-white and unreadable on dark backgrounds.
+ * Remap them to dark equivalents under the .dark class.
+ */
+
+/* --- Neutral hovers --- */
+.dark .hover\:bg-neutral-50:hover,
+.dark .data-\[highlighted\]\:bg-neutral-100[data-highlighted],
+.dark .hover\:bg-neutral-100:hover {
+  background-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+.dark .hover\:bg-neutral-200:hover,
+.dark .active\:bg-neutral-200:active {
+  background-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+.dark .hover\:bg-neutral-300:hover {
+  background-color: rgb(82 82 82) !important; /* neutral-600 */
+}
+.dark .hover\:bg-white:hover {
+  background-color: rgb(38 38 38) !important; /* neutral-800 */
+}
+
+/* --- Neutral static backgrounds --- */
+.dark .bg-neutral-50 {
+  background-color: rgb(38 38 38) !important; /* neutral-800 */
+}
+.dark .bg-neutral-100 {
+  background-color: rgb(38 38 38) !important; /* neutral-800 */
+}
+.dark .bg-neutral-200 {
+  background-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+
+/* --- Neutral active --- */
+.dark .active\:bg-neutral-50:active,
+.dark .active\:bg-neutral-100:active {
+  background-color: rgb(82 82 82) !important; /* neutral-600 */
+}
+
+/* --- Brand hovers (light tints) --- */
+.dark .hover\:bg-brand-50:hover,
+.dark .hover\:bg-brand-100:hover {
+  background-color: rgb(59 130 246 / 0.3) !important; /* blue-500/30% */
+}
+.dark .active\:bg-brand-100:active,
+.dark .active\:bg-brand-50:active {
+  background-color: rgb(59 130 246 / 0.4) !important; /* blue-500/40% */
+}
+.dark .bg-brand-50 {
+  background-color: rgb(59 130 246 / 0.2) !important; /* blue-500/20% */
+}
+.dark .bg-brand-100 {
+  background-color: rgb(59 130 246 / 0.25) !important; /* blue-500/25% */
+}
+
+/* --- Brand text (selected / active states, badges) --- */
+.dark .text-brand-700 {
+  color: rgb(255 255 255) !important;
+}
+.dark .text-brand-800 {
+  color: rgb(96 165 250) !important; /* blue-400 */
+}
+.dark .border-brand-100 {
+  border-color: rgb(59 130 246 / 0.3) !important; /* blue-500/30% */
+}
+
+/* --- Error hovers (light tints) --- */
+.dark .hover\:bg-error-50:hover,
+.dark .hover\:bg-error-100:hover {
+  background-color: rgb(127 29 29 / 0.4) !important; /* error-900/40% */
+}
+.dark .active\:bg-error-100:active,
+.dark .active\:bg-error-50:active {
+  background-color: rgb(127 29 29 / 0.6) !important; /* error-900/60% */
+}
+.dark .bg-error-50 {
+  background-color: rgb(127 29 29 / 0.25) !important; /* error-900/25% */
+}
+
+/* --- Success badge (dark) --- */
+.dark .bg-success-100 {
+  background-color: rgb(22 101 52 / 0.3) !important; /* green-800/30% */
+}
+.dark .border-success-100 {
+  border-color: rgb(22 101 52 / 0.4) !important;
+}
+.dark .text-success-800 {
+  color: rgb(74 222 128) !important; /* green-400 */
+}
+
+/* --- Brand primary button (dark) --- */
+.dark .bg-brand-600 {
+  background-color: rgb(37 99 235) !important; /* blue-600 */
+}
+.dark .hover\:bg-brand-500:hover {
+  background-color: rgb(59 130 246) !important; /* blue-500 */
+}
+.dark .active\:bg-brand-600:active {
+  background-color: rgb(29 78 216) !important; /* blue-700 */
+}
+
+/* --- Destructive secondary button (dark) --- */
+.dark .text-error-700 {
+  color: rgb(248 113 113) !important; /* red-400 */
+}
+
+/* --- White backgrounds --- */
+.dark .bg-white {
+  background-color: rgb(38 38 38) !important; /* neutral-800 */
+}
+
+/* --- Disabled states --- */
+.dark .disabled\:bg-neutral-100:disabled {
+  background-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+.dark .disabled\:bg-neutral-200:disabled {
+  background-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+.dark .disabled\:bg-neutral-50:disabled {
+  background-color: rgb(38 38 38) !important; /* neutral-800 */
+}
+
+/* --- Borders (light) --- */
+.dark .border-neutral-100 {
+  border-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+.dark .border-neutral-200 {
+  border-color: rgb(64 64 64) !important; /* neutral-700 */
+}
+
+/* --- Neutral text on dark remapped backgrounds --- */
+.dark .text-neutral-600 {
+  color: rgb(163 163 163) !important; /* neutral-400 */
+}
+.dark .text-neutral-700 {
+  color: rgb(212 212 212) !important; /* neutral-300 */
+}
+.dark .hover\:text-neutral-900:hover {
+  color: rgb(245 245 245) !important; /* neutral-100 */
+}

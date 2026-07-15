@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from airas.infra.db.models.e2e import E2EModel, Status, StepType
+from airas.core.types.e2e import E2EModel, Status, StepType
 
 
 class InMemoryE2EResearchService:

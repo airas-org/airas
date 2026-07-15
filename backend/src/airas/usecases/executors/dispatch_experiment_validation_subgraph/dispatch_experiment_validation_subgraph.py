@@ -7,7 +7,7 @@ from typing_extensions import TypedDict
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
-from airas.core.types.experiment_code import RunStage
+from airas.core.types.experiment_history import RunStage
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.research_hypothesis import ResearchHypothesis

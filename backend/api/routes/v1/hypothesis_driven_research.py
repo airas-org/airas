@@ -8,8 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from langfuse import observe
 
 from airas.container import Container
+from airas.core.types.e2e import Status
 from airas.core.types.github import GitHubConfig
-from airas.infra.db.models.e2e import Status
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
@@ -19,10 +19,11 @@ from airas.usecases.autonomous_research.e2e_research_service_protocol import (
 from airas.usecases.autonomous_research.hypothesis_driven_research.hypothesis_driven_research import (
     HypothesisDrivenResearch,
 )
-from api.ee.auth.dependencies import (
+from api.dependencies import (
     get_current_user_id,
     get_github_client,
     get_github_owner,
+    get_langchain_client,
 )
 from api.schemas.hypothesis_driven_research import (
     HypothesisDrivenResearchListItemResponse,
@@ -123,9 +124,7 @@ async def execute_hypothesis_driven_research(
     current_user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
     github_owner: Annotated[str, Depends(get_github_owner)],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langchain_client: Annotated[
-        LangChainClient, Depends(Provide[Container.langchain_client])
-    ],
+    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
     langfuse_client: Annotated[
         LangfuseClient, Depends(Provide[Container.langfuse_client])
     ],

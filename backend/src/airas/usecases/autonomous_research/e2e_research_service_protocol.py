@@ -1,7 +1,7 @@
 from typing import Any, Protocol, runtime_checkable
 from uuid import UUID
 
-from airas.infra.db.models.e2e import E2EModel, Status, StepType
+from airas.core.types.e2e import E2EModel, Status, StepType
 
 
 @runtime_checkable

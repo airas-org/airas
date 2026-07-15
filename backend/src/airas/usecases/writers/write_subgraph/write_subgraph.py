@@ -10,9 +10,7 @@ from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experiment_code import ExperimentCode
-from airas.core.types.experimental_analysis import ExperimentalAnalysis
-from airas.core.types.experimental_design import ExperimentalDesign
-from airas.core.types.experimental_results import ExperimentalResults
+from airas.core.types.experiment_history import ExperimentHistory
 from airas.core.types.paper import PaperContent
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
@@ -33,10 +31,8 @@ class WriteLLMMapping(BaseModel):
 
 class WriteSubgraphInputState(TypedDict):
     research_hypothesis: ResearchHypothesis
-    experimental_design: ExperimentalDesign
+    experiment_history: ExperimentHistory
     experiment_code: ExperimentCode
-    experimental_results: ExperimentalResults
-    experimental_analysis: ExperimentalAnalysis
     research_study_list: list[ResearchStudy]
     references_bib: str
 
@@ -83,10 +79,8 @@ class WriteSubgraph:
     def _generate_note(self, state: WriteSubgraphState) -> dict[str, str]:
         note = generate_note(
             research_hypothesis=state["research_hypothesis"],
-            experimental_design=state["experimental_design"],
+            experiment_history=state["experiment_history"],
             experiment_code=state["experiment_code"],
-            experimental_results=state["experimental_results"],
-            experimental_analysis=state["experimental_analysis"],
             research_study_list=state["research_study_list"],
             references_bib=state["references_bib"],
         )
