@@ -3,9 +3,12 @@
 Exposes AIRAS research subgraphs as MCP tools for use from MCP clients
 such as Claude Code and Claude Desktop.
 
-Credentials are read from environment variables:
+Credentials are read from ~/.airas/credentials.json (see credentials.py):
 - LLM providers: OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY (at least one)
 - GitHub (repository/experiment tools): GH_PERSONAL_ACCESS_TOKEN
+
+The file is re-read on every tool call, so keys can be added or rotated
+without restarting the server.
 
 Run locally:
     uvx --from "airas[mcp]" airas-mcp
@@ -14,6 +17,7 @@ Run locally:
 import os
 from typing import Any, Literal
 
+import httpx
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel
 
@@ -35,7 +39,12 @@ from airas.core.types.research_study import ResearchStudy
 from airas.core.types.wandb import WandbConfig
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.langchain_client import (
+    PROVIDER_REQUIRED_ENV_VARS,
+    LangChainClient,
+)
+from airas.infra.llm_provider_resolver import detect_available_providers
+from airas.mcp.credentials import SETUP_INSTRUCTIONS, refresh_environment
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
@@ -121,15 +130,42 @@ mcp = FastMCP("airas")
 # reused for the lifetime of the server process.
 _search_index = AirasDbPaperSearchIndex()
 
+# Process-lifetime HTTP sessions (the stdio server exits with the client,
+# so these are closed by process teardown).
+_GITHUB_TIMEOUT = httpx.Timeout(connect=10.0, read=60.0, write=120.0, pool=5.0)
+_github_sync_session = httpx.Client(follow_redirects=True, timeout=_GITHUB_TIMEOUT)
+_github_async_session = httpx.AsyncClient(
+    follow_redirects=True, timeout=_GITHUB_TIMEOUT
+)
+_sync_session = httpx.Client(follow_redirects=True)
+_async_session = httpx.AsyncClient(follow_redirects=True)
+
 
 def _github_client() -> GithubClient:
+    refresh_environment()
     token = os.getenv("GH_PERSONAL_ACCESS_TOKEN", "")
     if not token:
         raise RuntimeError(
-            "GH_PERSONAL_ACCESS_TOKEN environment variable is not set. "
-            "Set it in the `env` block of your MCP client configuration."
+            f"GH_PERSONAL_ACCESS_TOKEN is not configured. {SETUP_INSTRUCTIONS}"
         )
-    return GithubClient(github_token=token)
+    return GithubClient(
+        github_token=token,
+        sync_session=_github_sync_session,
+        async_session=_github_async_session,
+    )
+
+
+def _arxiv_client() -> ArxivClient:
+    return ArxivClient(sync_session=_sync_session, async_session=_async_session)
+
+
+def _langchain_client() -> LangChainClient:
+    refresh_environment()
+    if not detect_available_providers(PROVIDER_REQUIRED_ENV_VARS):
+        raise RuntimeError(
+            f"No LLM provider API keys are configured. {SETUP_INSTRUCTIONS}"
+        )
+    return LangChainClient()
 
 
 def _dump(value: Any) -> Any:
@@ -151,7 +187,7 @@ async def generate_research_queries(
     """
     result = (
         await GenerateQueriesSubgraph(
-            llm_client=LangChainClient(),
+            llm_client=_langchain_client(),
             num_paper_search_queries=num_queries,
         )
         .build_graph()
@@ -193,8 +229,8 @@ async def retrieve_papers(paper_titles: list[str]) -> list[dict[str, Any]]:
     """
     result = (
         await RetrievePaperSubgraph(
-            langchain_client=LangChainClient(),
-            arxiv_client=ArxivClient(),
+            langchain_client=_langchain_client(),
+            arxiv_client=_arxiv_client(),
             github_client=_github_client(),
             llm_mapping=None,
         )
@@ -219,7 +255,7 @@ async def generate_hypothesis(
     studies = [ResearchStudy.model_validate(study) for study in research_study_list]
     result = (
         await GenerateHypothesisSubgraphV0(
-            langchain_client=LangChainClient(),
+            langchain_client=_langchain_client(),
             refinement_rounds=refinement_rounds,
         )
         .build_graph()
@@ -254,7 +290,7 @@ async def generate_experimental_design(
     env = ComputeEnvironment.model_validate(compute_environment or {})
     result = (
         await GenerateExperimentalDesignSubgraph(
-            langchain_client=LangChainClient(),
+            langchain_client=_langchain_client(),
             compute_environment=env,
             num_models_to_use=num_models_to_use,
             num_datasets_to_use=num_datasets_to_use,
@@ -292,7 +328,7 @@ async def refine_experimental_design(
     env = ComputeEnvironment.model_validate(compute_environment or {})
     result = (
         await RefineExperimentalDesignSubgraph(
-            langchain_client=LangChainClient(),
+            langchain_client=_langchain_client(),
             compute_environment=env,
             num_models_to_use=num_models_to_use,
             num_datasets_to_use=num_datasets_to_use,
@@ -630,7 +666,7 @@ async def analyze_experiment(
     """
     result = (
         await AnalyzeExperimentSubgraph(
-            langchain_client=LangChainClient(),
+            langchain_client=_langchain_client(),
             llm_mapping=None,
         )
         .build_graph()
@@ -882,7 +918,7 @@ async def generate_paper(
     """
     result = (
         await WriteSubgraph(
-            langchain_client=LangChainClient(),
+            langchain_client=_langchain_client(),
             paper_content_refinement_iterations=writing_refinement_rounds,
         )
         .build_graph()
@@ -921,7 +957,7 @@ async def generate_latex(
     """
     result = (
         await GenerateLatexSubgraph(
-            langchain_client=LangChainClient(),
+            langchain_client=_langchain_client(),
             github_client=_github_client(),
             latex_template_name=latex_template_name,
         )
