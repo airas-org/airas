@@ -54,7 +54,7 @@ Use AIRAS research tools (paper search, retrieval, hypothesis generation, experi
 2. Register the MCP server:
 
     ```bash
-    claude mcp add airas -- uvx --from "airas[mcp]" airas-mcp
+    claude mcp add airas -- uvx airas
     ```
 
 See the [MCP documentation](docs/development/MCP.mdx) for the full tool list and configuration options.

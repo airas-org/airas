@@ -42,11 +42,11 @@ jobs:
         working-directory: backend
         run: uv build
 
-      - name: Smoke-test the wheel (airas-mcp entry point)
+      - name: Smoke-test the wheel (airas entry point)
         working-directory: backend
         run: |
           uv venv /tmp/smoke
-          VIRTUAL_ENV=/tmp/smoke uv pip install "$(ls dist/*.whl)[mcp]"
+          VIRTUAL_ENV=/tmp/smoke uv pip install "$(ls dist/*.whl)"
           /tmp/smoke/bin/python -c "from airas.mcp.server import mcp, main; print('wheel ok:', mcp.name)"
 
       - name: Publish to PyPI (Trusted Publishing)
