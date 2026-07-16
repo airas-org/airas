@@ -1,7 +1,9 @@
 ## Code Quality
 
-- `make ruff` - Run Python linter, auto-fix, and formatter (backend/)
-- `make mypy` - Run Python type checking (backend/)
-- `make biome` - Run JavaScript/TypeScript linter and formatter (frontend/)
+Lint hooks are defined in `.pre-commit-config.yaml` and run automatically on
+commit (`pre-commit install` once per clone). Manual runs:
 
-These also run automatically on commit via pre-commit (`pre-commit install` once per clone).
+- `pre-commit run ruff --all-files` - Python linter, auto-fix, and formatter (backend/)
+- `pre-commit run mypy --all-files` - Python type checking (backend/)
+- `pre-commit run biome --all-files` - JavaScript/TypeScript linter and formatter (frontend/)
+- `pre-commit run --all-files` - everything, including OpenAPI/client regeneration

@@ -17,7 +17,7 @@ uvx airas dashboard
 
 This serves the API and the web UI on http://localhost:24727 and opens a
 browser (use `--no-browser` / `--port` to override). In development
-checkouts the bundled assets are absent; use `docker compose` (`make up`)
+checkouts the bundled assets are absent; use `docker compose up --build`
 or the Vite dev server instead.
 
 ## E2E workflow

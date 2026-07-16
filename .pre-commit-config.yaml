@@ -1,28 +1,30 @@
-# Run `pre-commit install` once per clone to activate these hooks.
+# Lint/format/typecheck configuration lives in backend/pyproject.toml and
+# frontend/biome.json; these hooks are the single place that defines how the
+# tools are invoked. Run `pre-commit install` once per clone.
 #
-# The lint hooks invoke the Makefile targets directly so that pre-commit,
-# CI, and manual runs share the exact same tool versions (backend/uv.lock,
-# frontend/package-lock.json) and scope.
+# Manual runs:
+#   pre-commit run --all-files          # everything
+#   pre-commit run mypy --all-files     # a single hook
 repos:
 - repo: local
   hooks:
-    - id: make-ruff
-      name: make ruff
-      entry: make ruff
+    - id: ruff
+      name: ruff (check --fix + format)
+      entry: bash -lc 'cd backend && uv run ruff check --fix --show-fixes . && uv run ruff format .'
       language: system
       files: ^backend/.*\.py$
       pass_filenames: false
 
-    - id: make-mypy
-      name: make mypy
-      entry: make mypy
+    - id: mypy
+      name: mypy
+      entry: bash -lc 'cd backend && uv run mypy .'
       language: system
       files: ^backend/.*\.py$
       pass_filenames: false
 
-    - id: make-biome
-      name: make biome
-      entry: make biome
+    - id: biome
+      name: biome (check --write)
+      entry: bash -lc 'cd frontend && npx biome check --write .'
       language: system
       files: ^frontend/.*\.(js|jsx|ts|tsx|json|md)$
       pass_filenames: false

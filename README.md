@@ -68,7 +68,7 @@ See the [MCP documentation](docs/development/MCP.mdx) for the full tool list and
 - Start the application:
 
     ```bash
-    make up
+    docker compose up --build
     ```
 
 - Open your browser and navigate to: `http://localhost:5173/`
