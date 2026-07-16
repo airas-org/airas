@@ -116,7 +116,10 @@ def stop_dashboard(timeout: float = 10.0) -> dict[str, Any]:
             break
         time.sleep(0.2)
     else:
-        os.kill(pid, signal.SIGKILL)
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
 
     PID_FILE.unlink(missing_ok=True)
     return {"stopped": True, "pid": pid, "port": info.get("port")}
