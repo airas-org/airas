@@ -34,44 +34,31 @@ Currently, it focuses on the automation of machine learning research.
 
 ## Quick Start
 
-### Option 1 — MCP Server (use from Claude Code / Claude Desktop)
-
 Use AIRAS research tools (paper search, retrieval, hypothesis generation, experiment execution, paper writing) directly from an MCP client. No clone, no Docker — only [uv](https://docs.astral.sh/uv/) is required.
 
-1. Put your credentials in `~/.airas/credentials.json` (can also be done later — the file is re-read on every tool call):
+### Claude Code
 
-    ```bash
-    mkdir -p ~/.airas
-    cat > ~/.airas/credentials.json <<'EOF'
-    {
-      "OPENAI_API_KEY": "sk-...",
-      "GH_PERSONAL_ACCESS_TOKEN": "ghp_..."
+```bash
+claude mcp add airas -- uvx airas
+```
+
+### Other MCP clients (mcp.json)
+
+Add the following to your client's MCP configuration file (e.g. `.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "airas": {
+      "command": "uvx",
+      "args": ["airas"]
     }
-    EOF
-    chmod 600 ~/.airas/credentials.json
-    ```
-
-2. Register the MCP server:
-
-    ```bash
-    claude mcp add airas -- uvx airas
-    ```
+  }
+}
+```
 
 See the [MCP documentation](docs/development/MCP.mdx) for the full tool list and configuration options.
 
-### Option 2 — Web Application (optional dashboard)
-
-- Install [Docker](https://www.docker.com/get-started) if you haven't already.
-
-- Copy `.env.example` to `.env` and update the configuration as needed.
-
-- Start the application:
-
-    ```bash
-    make up
-    ```
-
-- Open your browser and navigate to: `http://localhost:5173/`
 
 ## Roadmap
 

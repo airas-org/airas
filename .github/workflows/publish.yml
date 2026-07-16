@@ -38,11 +38,33 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build dashboard frontend
+        working-directory: frontend
+        env:
+          # Empty base URL: the bundled dashboard is served same-origin
+          # by the FastAPI backend, so API calls use relative paths.
+          VITE_API_BASE_URL: ""
+        run: |
+          npm ci
+          npm run build
+
+      - name: Bundle frontend into the package
+        run: |
+          rm -rf backend/src/airas/dashboard/static
+          cp -r frontend/dist backend/src/airas/dashboard/static
+
       - name: Build
         working-directory: backend
         run: uv build
 
-      - name: Smoke-test the wheel (console scripts and mcp extra)
+      - name: Smoke-test the wheel (console scripts, mcp extra, dashboard assets)
         working-directory: backend
         run: |
           uv venv /tmp/smoke
@@ -51,7 +73,47 @@ jobs:
           test -x /tmp/smoke/bin/airas
           test -x /tmp/smoke/bin/airas-mcp
           /tmp/smoke/bin/python -c "from airas.mcp.server import mcp, main; print('wheel ok:', mcp.name)"
+          /tmp/smoke/bin/python -c "from airas.cli import main; print('cli ok')"
+          /tmp/smoke/bin/python - <<'EOF'
+          from pathlib import Path
+          import airas.dashboard
+          static = Path(airas.dashboard.__file__).parent / "static"
+          assert (static / "index.html").is_file(), "dashboard static assets missing from wheel"
+          print("dashboard assets ok:", len(list(static.rglob('*'))), "files")
+          EOF
 
       - name: Publish to PyPI (Trusted Publishing)
         working-directory: backend
         run: uv publish --trusted-publishing always
+
+      - name: Install mcp-publisher
+        env:
+          MCP_PUBLISHER_VERSION: v1.8.0
+          # From registry_1.8.0_checksums.txt on the GitHub release
+          MCP_PUBLISHER_SHA256: 1370446bbe74d562608e8005a6ccce02d146a661fbd78674e11cc70b9618d6cf
+        run: |
+          curl -sSfL -o mcp-publisher.tar.gz "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum -c -
+          tar xzf mcp-publisher.tar.gz mcp-publisher
+          rm mcp-publisher.tar.gz
+
+      - name: Wait for the new version to appear on PyPI
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          for i in $(seq 1 30); do
+            if curl -sf "https://pypi.org/pypi/airas/${VERSION}/json" > /dev/null; then
+              echo "PyPI serves airas ${VERSION}"
+              exit 0
+            fi
+            echo "Waiting for airas ${VERSION} on PyPI... (attempt ${i}/30)"
+            sleep 10
+          done
+          echo "::error::airas ${VERSION} did not appear on PyPI in time"
+          exit 1
+
+      - name: Publish to MCP Registry
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish

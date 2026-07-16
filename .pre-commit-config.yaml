@@ -1,31 +1,38 @@
+# Lint/format/typecheck configuration lives in backend/pyproject.toml and
+# frontend/biome.json; these hooks are the single place that defines how the
+# tools are invoked. Run `pre-commit install` once per clone.
+#
+# Manual runs:
+#   pre-commit run --all-files          # everything
+#   pre-commit run mypy --all-files     # a single hook
 repos:
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.11.8
-  hooks:
-    - id: ruff
-      args: ["--fix", "--show-fixes"]
-      files: ^backend/
-    - id: ruff-format
-      files: ^backend/
-
-- repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.15.0
-  hooks:
-    - id: mypy
-      args: ["--config-file=backend/pyproject.toml"]
-      files: ^backend/
-
 - repo: local
   hooks:
+    - id: ruff
+      name: ruff (check --fix + format)
+      entry: bash -lc 'cd backend && uv run ruff check --fix --show-fixes . && uv run ruff format .'
+      language: system
+      # Also trigger on config/lock changes, which can alter lint results.
+      files: ^backend/(.*\.py|pyproject\.toml|uv\.lock)$
+      pass_filenames: false
+
+    - id: mypy
+      name: mypy
+      entry: bash -lc 'cd backend && uv run mypy .'
+      language: system
+      files: ^backend/(.*\.py|pyproject\.toml|uv\.lock)$
+      pass_filenames: false
+
+    - id: biome
+      name: biome (check --write)
+      entry: bash -lc 'cd frontend && npx biome check --write .'
+      language: system
+      files: ^frontend/.*\.(js|jsx|ts|tsx|json|md)$
+      pass_filenames: false
+
     - id: update-openapi
       name: Update OpenAPI schema and frontend client
       entry: .pre-commit-hooks/update-openapi.sh
       language: system
-      files: ^backend/api/
+      files: ^backend/src/airas/dashboard/api/
       pass_filenames: false
-
-    - id: biome-check
-      name: biome check (write)
-      entry: bash -lc 'cd frontend && npx biome check --write'
-      language: system
-      files: ^frontend/.*\.(js|jsx|ts|tsx|json|md)$

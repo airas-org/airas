@@ -24,7 +24,8 @@
     "legal": "Terms of Use",
     "experimental": "Experimental",
     "reproduction": "Reproduction",
-    "research": "Research"
+    "research": "Research",
+    "apiKeys": "API Keys"
   },
   "userMenu": {
     "developer": "Developer",
@@ -827,5 +828,21 @@
     "next": "Next",
     "save": "Save",
     "noData": "No data"
+  },
+  "credentials": {
+    "pageTitle": "API Keys",
+    "pageSubtitle": "Credentials used by AIRAS (LLM providers, GitHub, and optional services). Stored in ~/.airas/credentials.json on this machine.",
+    "configured": "Configured",
+    "notConfigured": "Not configured",
+    "willBeRemoved": "Will be removed on save",
+    "placeholder": "Enter value",
+    "replacePlaceholder": "Enter a new value to replace",
+    "clear": "Clear",
+    "save": "Save",
+    "saving": "Saving...",
+    "savedTitle": "Credentials saved",
+    "fetchError": "Failed to load credentials",
+    "saveError": "Failed to save credentials",
+    "storageNote": "Changes take effect immediately; no restart is required."
   }
 }

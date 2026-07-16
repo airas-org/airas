@@ -15,12 +15,15 @@ Run locally:
 """
 
 import os
+import webbrowser
 from typing import Any, Literal
 
 import httpx
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel
 
+from airas.cli import DEFAULT_DASHBOARD_PORT
+from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory
 from airas.core.types.experimental_design import (
@@ -37,6 +40,15 @@ from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
 from airas.core.types.wandb import WandbConfig
+from airas.dashboard.launcher import (
+    dashboard_url,
+    has_bundled_ui,
+    is_dashboard_running,
+    start_dashboard,
+)
+from airas.dashboard.launcher import (
+    stop_dashboard as stop_dashboard_process,
+)
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import (
@@ -44,7 +56,6 @@ from airas.infra.langchain_client import (
     LangChainClient,
 )
 from airas.infra.llm_provider_resolver import detect_available_providers
-from airas.mcp.credentials import SETUP_INSTRUCTIONS, refresh_environment
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
@@ -1043,6 +1054,48 @@ async def compile_latex(
         "compile_latex_dispatched": result["compile_latex_dispatched"],
         "paper_url": result["paper_url"],
     }
+
+
+@mcp.tool()
+def open_dashboard(
+    port: int = DEFAULT_DASHBOARD_PORT, open_browser: bool = True
+) -> dict[str, Any]:
+    """Launch the AIRAS web dashboard on localhost and return its URL.
+
+    Starts the dashboard server (API + web UI) as a background process,
+    or reuses one that is already running on the port. By default the URL
+    is also opened in the user's browser. The dashboard keeps running
+    after the MCP session ends; stop it with `stop_dashboard`.
+    No API keys required to launch.
+    """
+    # The dashboard process inherits credentials from ~/.airas/credentials.json
+    # via the environment, so its API endpoints can call LLM/GitHub APIs.
+    refresh_environment()
+
+    url = dashboard_url(port)
+    if is_dashboard_running(port):
+        status = "already_running"
+    else:
+        start_dashboard(port)
+        status = "started"
+
+    if open_browser:
+        webbrowser.open(url)
+
+    result: dict[str, Any] = {"status": status, "url": url}
+    if not has_bundled_ui():
+        result["warning"] = (
+            "This installation has no bundled web UI (development checkout?), "
+            "so only the API is served. Install the published package "
+            "(`uvx airas`) for the full dashboard."
+        )
+    return result
+
+
+@mcp.tool()
+def stop_dashboard() -> dict[str, Any]:
+    """Stop the AIRAS web dashboard started by `open_dashboard`."""
+    return stop_dashboard_process()
 
 
 def main() -> None:

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.airas-org/airas",
+  "title": "AIRAS",
+  "description": "Automated AI research toolkit: hypothesis generation, experiments, and paper writing",
+  "repository": {
+    "url": "https://github.com/airas-org/airas",
+    "source": "github"
+  },
+  "version": "0.2.2",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "airas",
+      "version": "0.2.2",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

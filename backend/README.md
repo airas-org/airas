@@ -1,10 +1,28 @@
 # Backend
 
+<!-- mcp-name: io.github.airas-org/airas -->
+<!-- ^ MCP Registry ownership marker: must match server.json's name and stay
+     in the README published on PyPI (pyproject.toml's readme). -->
+
 ## Build API server
 
 ```bash
-uv run uvicorn api.main:app --host 0.0.0.0 --port 8000 --log-level debug --reload
+uv run uvicorn airas.dashboard.api.main:app --host 0.0.0.0 --port 8000 --log-level debug --reload
 ```
+
+## Dashboard (installed package)
+
+Wheels published to PyPI bundle the built frontend, so the full dashboard
+can be launched without this repository:
+
+```bash
+uvx airas dashboard
+```
+
+This serves the API and the web UI on http://localhost:24727 and opens a
+browser (use `--no-browser` / `--port` to override). In development
+checkouts the bundled assets are absent; use `docker compose up --build`
+or the Vite dev server instead.
 
 ## E2E workflow
 

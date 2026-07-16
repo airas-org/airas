@@ -217,7 +217,7 @@ jobs:
         working-directory: backend
         run: |
           mkdir -p /tmp/e2e-logs
-          uv run uvicorn api.main:app --host 0.0.0.0 --port 8000 \
+          uv run uvicorn airas.dashboard.api.main:app --host 0.0.0.0 --port 8000 \
             > /tmp/e2e-logs/server.log 2>&1 &
           echo $! > /tmp/e2e-logs/server.pid
           echo "Server PID: $(cat /tmp/e2e-logs/server.pid)"

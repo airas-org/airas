@@ -5,7 +5,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "make ruff && make mypy && make biome"
+          "command": "pre-commit run ruff --all-files && pre-commit run mypy --all-files && pre-commit run biome --all-files"
         }
       ]
     }

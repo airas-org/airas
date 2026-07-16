@@ -189,3 +189,9 @@ dist-ssr
 .claude/CLAUDE.local.md
 .claude/settings.local.json
 
+
+# Built dashboard frontend copied into the wheel by CI
+backend/src/airas/dashboard/static/
+
+# Playwright MCP artifacts
+.playwright-mcp/
