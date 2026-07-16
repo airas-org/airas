@@ -20,6 +20,7 @@ export type { CompileLatexSubgraphResponseBody } from './models/CompileLatexSubg
 export type { ComputeEnvironment } from './models/ComputeEnvironment';
 export type { CreateFeedbackRequestBody } from './models/CreateFeedbackRequestBody';
 export type { CreateFeedbackResponseBody } from './models/CreateFeedbackResponseBody';
+export type { CredentialStatus } from './models/CredentialStatus';
 export type { DatasetConfig } from './models/DatasetConfig';
 export type { DecideExperimentCycleLLMMapping } from './models/DecideExperimentCycleLLMMapping';
 export type { DispatchCodeGenerationLLMMapping } from './models/DispatchCodeGenerationLLMMapping';
@@ -97,6 +98,7 @@ export type { HypothesisDrivenResearchResponseBody } from './models/HypothesisDr
 export type { HypothesisDrivenResearchStatusResponseBody } from './models/HypothesisDrivenResearchStatusResponseBody';
 export type { HypothesisDrivenResearchUpdateRequestBody } from './models/HypothesisDrivenResearchUpdateRequestBody';
 export type { LaTeXGraphLLMMapping } from './models/LaTeXGraphLLMMapping';
+export type { ListCredentialsResponseBody } from './models/ListCredentialsResponseBody';
 export type { LLMExtractedInfo } from './models/LLMExtractedInfo';
 export type { MetaData } from './models/MetaData';
 export type { MethodConfig_Input } from './models/MethodConfig_Input';
@@ -152,6 +154,8 @@ export type { TopicOpenEndedResearchResponseBody } from './models/TopicOpenEnded
 export type { TopicOpenEndedResearchStatusResponseBody } from './models/TopicOpenEndedResearchStatusResponseBody';
 export type { TopicOpenEndedResearchUpdateRequestBody } from './models/TopicOpenEndedResearchUpdateRequestBody';
 export type { TrainingConfig } from './models/TrainingConfig';
+export type { UpdateCredentialsRequestBody } from './models/UpdateCredentialsRequestBody';
+export type { UpdateCredentialsResponseBody } from './models/UpdateCredentialsResponseBody';
 export type { ValidationError } from './models/ValidationError';
 export type { VerificationSessionCreateRequest } from './models/VerificationSessionCreateRequest';
 export type { VerificationSessionListResponse } from './models/VerificationSessionListResponse';
@@ -164,6 +168,7 @@ export type { WriteSubgraphResponseBody } from './models/WriteSubgraphResponseBo
 
 export { BibfileService } from './services/BibfileService';
 export { CodeService } from './services/CodeService';
+export { CredentialsService } from './services/CredentialsService';
 export { DatasetsService } from './services/DatasetsService';
 export { DefaultService } from './services/DefaultService';
 export { ExperimentalSettingsService } from './services/ExperimentalSettingsService';

@@ -1,5 +1,9 @@
 # Backend
 
+<!-- mcp-name: io.github.airas-org/airas -->
+<!-- ^ MCP Registry ownership marker: must match server.json's name and stay
+     in the README published on PyPI (pyproject.toml's readme). -->
+
 ## Build API server
 
 ```bash

@@ -10,6 +10,7 @@ from airas.container import Container
 from airas.dashboard.api.routes.v1 import (
     bibfile,
     code,
+    credentials,
     datasets,
     experimental_settings,
     experiments,
@@ -86,6 +87,7 @@ def create_app() -> FastAPI:
         hypothesis_driven_research.router,
         verification.router,
         feedback.router,
+        credentials.router,
     ]
     for router in v1_routers:
         application.include_router(router, prefix="/airas/v1")
