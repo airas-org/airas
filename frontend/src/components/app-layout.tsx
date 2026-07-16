@@ -53,6 +53,7 @@ function getActiveSection(pathname: string): string {
   if (pathname.startsWith("/verification")) return "verification";
   if (pathname.startsWith("/notifications")) return "notifications";
   if (pathname.startsWith("/reproduction")) return "reproduction";
+  if (pathname.startsWith("/paper-search")) return "paper-search";
   if (pathname.startsWith("/papers")) return "papers";
   return "home";
 }

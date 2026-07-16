@@ -5,6 +5,7 @@ import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-do
 import { AutonomousResearchPage } from "@/components/pages/autonomous-research";
 import { HypothesisDrivenResearchPage } from "@/components/pages/hypothesis-driven-research";
 import { NotificationsPage } from "@/components/pages/notifications";
+import { PaperSearchPage } from "@/components/pages/paper-search";
 import { PapersPage } from "@/components/pages/papers";
 import { ReproductionPage } from "@/components/pages/reproduction";
 import { SETTINGS_TABS, SettingsPage, type SettingsTab } from "@/components/pages/settings";
@@ -170,6 +171,7 @@ export function MainContent({ assistedResearchProps }: MainContentProps) {
           }
         />
         <Route path="/verification/:id" element={<VerificationDetailRoute />} />
+        <Route path="/paper-search" element={<PaperSearchPage />} />
         <Route
           path="/papers"
           element={

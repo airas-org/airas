@@ -25,7 +25,8 @@
     "experimental": "実験的機能",
     "reproduction": "再現実装",
     "research": "研究",
-    "apiKeys": "APIキー"
+    "apiKeys": "APIキー",
+    "paperSearch": "Paper"
   },
   "userMenu": {
     "developer": "開発者",
@@ -843,5 +844,34 @@
     "fetchError": "認証情報の読み込みに失敗しました",
     "saveError": "認証情報の保存に失敗しました",
     "storageNote": "変更は即座に反映されます。再起動は不要です。"
+  },
+  "paperSearch": {
+    "pageTitle": "論文検索",
+    "pageSubtitle": "OpenAlex・Semantic Scholar・arXiv・AIRAS会議データベースを横断検索し、オープンアクセスの全文を取得できます。",
+    "queryPlaceholder": "例: diffusion model distillation",
+    "search": "検索",
+    "searching": "検索中...",
+    "sources": "検索元",
+    "sourceNames": {
+      "openalex": "OpenAlex",
+      "semantic_scholar": "Semantic Scholar",
+      "arxiv": "arXiv",
+      "airas_db": "AIRAS DB"
+    },
+    "year": "年",
+    "maxResults": "各ソース件数",
+    "resultCount": "{{count}} 件",
+    "sourceFailed": "失敗",
+    "citations": "被引用 {{count}}",
+    "fetchFulltext": "全文を取得",
+    "fetchingFulltext": "全文を取得中...",
+    "fulltextError": "全文の取得に失敗しました",
+    "fulltextStatus": {
+      "fulltext": "全文",
+      "abstract_only": "要旨のみ",
+      "not_found": "見つかりません"
+    },
+    "searchError": "検索に失敗しました",
+    "noResults": "論文が見つかりませんでした"
   }
 }
