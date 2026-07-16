@@ -1,3 +1,5 @@
+name: oss-webapp
+
 services:
   backend:
     build:
