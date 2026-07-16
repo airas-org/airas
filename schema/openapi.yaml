@@ -38,6 +38,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/papers/source-search:
+    post:
+      tags:
+      - papers
+      summary: Search Papers
+      operationId: search_papers_airas_v1_papers_source_search_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchPapersRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchPapersResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/papers/fulltext:
+    post:
+      tags:
+      - papers
+      summary: Fetch Paper Fulltext
+      operationId: fetch_paper_fulltext_airas_v1_papers_fulltext_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchPaperFulltextRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchPaperFulltextResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/papers/retrieval:
     post:
       tags:
@@ -2512,6 +2562,56 @@ components:
       - experimental_results
       - execution_time
       title: FetchExperimentalResultsResponseBody
+    FetchPaperFulltextRequestBody:
+      properties:
+        arxiv_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Arxiv Id
+        doi:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Doi
+        pdf_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pdf Url
+      type: object
+      title: FetchPaperFulltextRequestBody
+    FetchPaperFulltextResponseBody:
+      properties:
+        text:
+          type: string
+          title: Text
+        status:
+          type: string
+          enum:
+          - fulltext
+          - abstract_only
+          - not_found
+          title: Status
+        resolved_from:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Resolved From
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - text
+      - status
+      - resolved_from
+      - execution_time
+      title: FetchPaperFulltextResponseBody
     FetchRunIdsRequestBody:
       properties:
         github_config:
@@ -3767,6 +3867,70 @@ components:
           description: Paper experimental quality score
       type: object
       title: PaperReviewScores
+    PaperSearchResult:
+      properties:
+        title:
+          type: string
+          title: Title
+        authors:
+          items:
+            type: string
+          type: array
+          title: Authors
+        abstract:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Abstract
+        doi:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Doi
+        arxiv_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Arxiv Id
+        url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Url
+        pdf_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pdf Url
+        published_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Published Date
+        venue:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Venue
+        citations:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Citations
+        source:
+          type: string
+          title: Source
+        external_ids:
+          additionalProperties:
+            type: string
+          type: object
+          title: External Ids
+      type: object
+      required:
+      - title
+      - source
+      title: PaperSearchResult
+      description: A paper found by any search source, normalized to a common shape.
     PollGithubActionsRequestBody:
       properties:
         github_config:
@@ -4481,6 +4645,69 @@ components:
       - paper_titles
       - execution_time
       title: SearchPaperTitlesResponseBody
+    SearchPapersRequestBody:
+      properties:
+        query:
+          type: string
+          title: Query
+        sources:
+          items:
+            type: string
+          type: array
+          title: Sources
+        max_results_per_source:
+          type: integer
+          maximum: 50.0
+          exclusiveMinimum: 0.0
+          title: Max Results Per Source
+          default: 5
+        year:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Year
+        search_mode:
+          type: string
+          enum:
+          - keyword
+          - semantic
+          title: Search Mode
+          default: keyword
+      type: object
+      required:
+      - query
+      title: SearchPapersRequestBody
+    SearchPapersResponseBody:
+      properties:
+        papers:
+          items:
+            $ref: '#/components/schemas/PaperSearchResult'
+          type: array
+          title: Papers
+        source_results:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Source Results
+        search_errors:
+          additionalProperties:
+            type: string
+          type: object
+          title: Search Errors
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - papers
+      - source_results
+      - search_errors
+      - execution_time
+      title: SearchPapersResponseBody
     SearchSpace:
       properties:
         param_name:

@@ -3,6 +3,7 @@ import {
   FeatherBookOpen,
   FeatherBrainCircuit,
   FeatherExternalLink,
+  FeatherFileText,
   FeatherKey,
   FeatherRefreshCw,
   FeatherTarget,
@@ -35,6 +36,16 @@ export function MainSidebar({
       <SidebarWithSections.NavSection
         label={<span className="text-sm font-medium">{t("nav.research")}</span>}
       >
+        <SidebarWithSections.NavItem
+          icon={<FeatherFileText />}
+          selected={activeSection === "paper-search"}
+          onClick={() => {
+            navigate("/paper-search");
+            onMobileNavClose();
+          }}
+        >
+          {t("nav.paperSearch")}
+        </SidebarWithSections.NavItem>
         <SidebarWithSections.NavItem
           icon={<FeatherTarget />}
           selected={activeSection === "home" || activeSection === "verification"}

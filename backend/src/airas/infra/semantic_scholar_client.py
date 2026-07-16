@@ -182,6 +182,50 @@ class SemanticScholarClient(BaseHTTPClient):
         raise_for_status(resp, path=path)
         return self._parser.parse(resp, as_="json")
 
+    @SEMANTIC_SCHOLAR_RETRY
+    def get_paper_by_doi(
+        self,
+        doi: str,
+        *,
+        fields: tuple[str, ...] | None = None,
+        timeout: float = 30.0,
+    ) -> dict[str, Any]:
+        """
+        Get paper details by DOI using Semantic Scholar API.
+
+        Args:
+            doi: DOI (e.g., "10.18653/v1/N18-3011")
+            fields: Fields to include in response
+            timeout: Request timeout in seconds
+
+        Returns:
+            Dictionary containing paper details
+        """
+        if not doi.strip():
+            raise ValueError("doi must be provided")
+
+        DEFAULT_FIELDS = (
+            "paperId",
+            "title",
+            "abstract",
+            "year",
+            "authors",
+            "venue",
+            "externalIds",
+            "openAccessPdf",
+        )
+
+        fields = fields or DEFAULT_FIELDS
+
+        path = f"paper/DOI:{doi.strip()}"
+        params: dict[str, Any] = {
+            "fields": ",".join(fields),
+        }
+
+        resp = self.get(path=path, params=params, timeout=timeout)
+        raise_for_status(resp, path=path)
+        return self._parser.parse(resp, as_="json")
+
 
 if __name__ == "__main__":
     client = SemanticScholarClient()

@@ -36,6 +36,7 @@ from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.paper import PaperContent
+from airas.core.types.paper_search import PAPER_SEARCH_SOURCES
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
@@ -56,6 +57,8 @@ from airas.infra.langchain_client import (
     LangChainClient,
 )
 from airas.infra.llm_provider_resolver import detect_available_providers
+from airas.infra.openalex_client import OpenAlexClient
+from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
@@ -115,6 +118,9 @@ from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph 
 from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
     PushLatexSubgraph,
 )
+from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.fetch_paper_fulltext_subgraph import (
+    FetchPaperFulltextSubgraph,
+)
 from airas.usecases.retrieve.retrieve_datasets_subgraph.retrieve_datasets_subgraph import (
     RetrieveDatasetsSubgraph,
 )
@@ -127,8 +133,8 @@ from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph imp
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
-from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_airas_db_subgraph import (
-    SearchPaperTitlesFromAirasDbSubgraph,
+from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph import (
+    SearchPapersSubgraph,
 )
 from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
     GenerateBibfileSubgraph,
@@ -170,6 +176,18 @@ def _arxiv_client() -> ArxivClient:
     return ArxivClient(sync_session=_sync_session, async_session=_async_session)
 
 
+def _openalex_client() -> OpenAlexClient:
+    refresh_environment()  # OPENALEX_API_KEY is optional
+    return OpenAlexClient(sync_session=_sync_session, async_session=_async_session)
+
+
+def _semantic_scholar_client() -> SemanticScholarClient:
+    refresh_environment()  # SEMANTIC_SCHOLAR_API_KEY is optional
+    return SemanticScholarClient(
+        sync_session=_sync_session, async_session=_async_session
+    )
+
+
 def _langchain_client() -> LangChainClient:
     refresh_environment()
     if not detect_available_providers(PROVIDER_REQUIRED_ENV_VARS):
@@ -194,7 +212,7 @@ async def generate_research_queries(
     """Generate academic paper search queries from a research topic.
 
     Use this first to turn a free-form research topic into effective
-    search queries, then pass them to `search_paper_titles`.
+    search queries, then pass them to `search_papers`.
     """
     result = (
         await GenerateQueriesSubgraph(
@@ -207,26 +225,114 @@ async def generate_research_queries(
     return result["queries"]
 
 
-@mcp.tool()
-async def search_paper_titles(
-    queries: list[str],
-    max_results_per_query: int = 3,
-) -> list[str]:
-    """Search the AIRAS papers database (major ML conferences) for paper titles.
+def _parse_paper_sources(sources: str) -> list[str]:
+    if not sources.strip() or sources.strip().lower() == "all":
+        return list(PAPER_SEARCH_SOURCES)
+    selected = [part.strip().lower() for part in sources.split(",") if part.strip()]
+    unknown = sorted(set(selected) - set(PAPER_SEARCH_SOURCES))
+    if unknown:
+        raise ValueError(
+            f"Unknown sources: {', '.join(unknown)}. "
+            f"Available: {', '.join(PAPER_SEARCH_SOURCES)} (or 'all')."
+        )
+    return selected
 
-    Takes search queries (e.g. from `generate_research_queries`) and returns
-    matching paper titles. The first call builds the search index, which can
-    take a while; subsequent calls are fast. No API keys required.
+
+@mcp.tool()
+async def search_papers(
+    query: str,
+    sources: str = "all",
+    max_results_per_source: int = 5,
+    year: str | None = None,
+    search_mode: Literal["keyword", "semantic"] = "keyword",
+) -> dict[str, Any]:
+    """Search academic papers across multiple sources in parallel.
+
+    Sources: openalex, semantic_scholar, arxiv, airas_db (curated major-ML-
+    conference database). Pass a comma-separated subset or "all". `year`
+    filters by publication year ("2024" or "2020-2024").
+
+    `search_mode="keyword"` (default) does lexical/relevance search on every
+    source. `search_mode="semantic"` does AI-embedding search that matches by
+    meaning; it is only supported by `openalex` and requires OPENALEX_API_KEY
+    (so pass sources="openalex"). Selecting any other source in semantic mode
+    is an error.
+
+    Results are normalized (title, authors, abstract, doi, arxiv_id, pdf_url,
+    citations, source) and de-duplicated across sources; failures of
+    individual sources are reported in `search_errors` without failing the
+    search. Keyword search needs no API keys (SEMANTIC_SCHOLAR_API_KEY /
+    OPENALEX_API_KEY optionally raise rate limits). Pass promising titles to
+    `retrieve_papers`, or an arxiv_id / doi / pdf_url to
+    `fetch_paper_fulltext`.
     """
+    refresh_environment()
+    selected_sources = _parse_paper_sources(sources)
+    if search_mode == "semantic":
+        unsupported = sorted(set(selected_sources) - {"openalex"})
+        if unsupported:
+            raise ValueError(
+                f"Semantic search is not supported by: {', '.join(unsupported)}. "
+                "Only 'openalex' supports semantic search."
+            )
+        if not os.getenv("OPENALEX_API_KEY"):
+            raise RuntimeError(
+                f"Semantic search requires OPENALEX_API_KEY. {SETUP_INSTRUCTIONS}"
+            )
     result = (
-        await SearchPaperTitlesFromAirasDbSubgraph(
-            search_index=_search_index,
-            papers_per_query=max_results_per_query,
+        await SearchPapersSubgraph(
+            openalex_client=_openalex_client(),
+            semantic_scholar_client=_semantic_scholar_client(),
+            arxiv_client=_arxiv_client(),
+            airas_db_search_index=_search_index,
         )
         .build_graph()
-        .ainvoke({"queries": queries})
+        .ainvoke(
+            {
+                "query": query,
+                "sources": selected_sources,
+                "max_results_per_source": max_results_per_source,
+                "year": year,
+                "search_mode": search_mode,
+            }
+        )
     )
-    return result["paper_titles"]
+    return {
+        "papers": [paper.model_dump(exclude_none=True) for paper in result["papers"]],
+        "source_results": result["source_results"],
+        "search_errors": result["search_errors"],
+    }
+
+
+@mcp.tool()
+async def fetch_paper_fulltext(
+    arxiv_id: str | None = None,
+    doi: str | None = None,
+    pdf_url: str | None = None,
+) -> dict[str, Any]:
+    """Fetch the full text of a paper by arXiv ID, DOI, or direct PDF URL.
+
+    Provide one identifier (tried in that order). arXiv IDs are fetched from
+    arXiv; DOIs are resolved to an open-access PDF via Semantic Scholar.
+    Returns the extracted text with `status`: "fulltext", "abstract_only"
+    (no legal open-access PDF found, abstract returned instead), or
+    "not_found". No API keys required.
+    """
+    if not (arxiv_id or doi or pdf_url):
+        raise ValueError("One of arxiv_id, doi, or pdf_url must be provided.")
+    refresh_environment()
+    result = (
+        await FetchPaperFulltextSubgraph(
+            semantic_scholar_client=_semantic_scholar_client(),
+        )
+        .build_graph()
+        .ainvoke({"arxiv_id": arxiv_id, "doi": doi, "pdf_url": pdf_url})
+    )
+    return {
+        "text": result["text"],
+        "status": result["status"],
+        "resolved_from": result["resolved_from"],
+    }
 
 
 @mcp.tool()

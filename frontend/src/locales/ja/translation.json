@@ -25,7 +25,8 @@
     "experimental": "実験的機能",
     "reproduction": "再現実装",
     "research": "研究",
-    "apiKeys": "APIキー"
+    "apiKeys": "APIキー",
+    "paperSearch": "Paper"
   },
   "userMenu": {
     "developer": "開発者",
@@ -849,5 +850,42 @@
       "integrations": "オプション連携",
       "other": "その他"
     }
+  },
+  "paperSearch": {
+    "pageTitle": "論文検索",
+    "pageSubtitle": "OpenAlex・Semantic Scholar・arXiv・AIRAS会議データベースを横断検索し、オープンアクセスの全文を取得できます。",
+    "queryPlaceholder": "例: diffusion model distillation",
+    "search": "検索",
+    "searching": "検索中...",
+    "sources": "検索元",
+    "sourceNames": {
+      "openalex": "OpenAlex",
+      "semantic_scholar": "Semantic Scholar",
+      "arxiv": "arXiv",
+      "airas_db": "AIRAS DB"
+    },
+    "year": "年",
+    "maxResults": "各ソース件数",
+    "resultCount": "{{count}} 件",
+    "sourceFailed": "失敗",
+    "citations": "被引用 {{count}}",
+    "fetchFulltext": "全文を取得",
+    "fetchingFulltext": "全文を取得中...",
+    "fulltextError": "全文の取得に失敗しました",
+    "fulltextStatus": {
+      "fulltext": "全文",
+      "abstract_only": "要旨のみ",
+      "not_found": "見つかりません"
+    },
+    "searchError": "検索に失敗しました",
+    "noResults": "論文が見つかりませんでした",
+    "mode": "モード",
+    "modes": {
+      "keyword": "キーワード",
+      "semantic": "意味検索"
+    },
+    "semanticHint": "OpenAlex のみ・AI埋め込み検索（OPENALEX_API_KEY が必要）",
+    "semanticKeyMissingTitle": "OPENALEX_API_KEY が設定されていません",
+    "semanticKeyMissingDescription": "意味検索には OpenAlex の API キーが必要です。APIキーページで OPENALEX_API_KEY を設定してから再度お試しください。"
   }
 }
