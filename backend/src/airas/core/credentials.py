@@ -93,6 +93,9 @@ CREDENTIAL_SPECS: tuple[CredentialSpec, ...] = (
     CredentialSpec("GEMINI_API_KEY"),
     CredentialSpec("OPENROUTER_API_KEY"),
     CredentialSpec("AWS_BEARER_TOKEN_BEDROCK"),
+    # Optional: raise rate limits for the paper-search sources.
+    CredentialSpec("SEMANTIC_SCHOLAR_API_KEY"),
+    CredentialSpec("OPENALEX_API_KEY"),
     CredentialSpec("WANDB_API_KEY"),
     CredentialSpec("LANGFUSE_SECRET_KEY"),
     CredentialSpec("LANGFUSE_PUBLIC_KEY"),

@@ -7,8 +7,12 @@ from langfuse import observe
 from airas.container import Container
 from airas.dashboard.api.dependencies import get_github_client, get_langchain_client
 from airas.dashboard.api.schemas.papers import (
+    FetchPaperFulltextRequestBody,
+    FetchPaperFulltextResponseBody,
     RetrievePaperSubgraphRequestBody,
     RetrievePaperSubgraphResponseBody,
+    SearchPapersRequestBody,
+    SearchPapersResponseBody,
     SearchPaperTitlesRequestBody,
     SearchPaperTitlesResponseBody,
     WriteSubgraphRequestBody,
@@ -19,6 +23,11 @@ from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.infra.litellm_client import LiteLLMClient
+from airas.infra.openalex_client import OpenAlexClient
+from airas.infra.semantic_scholar_client import SemanticScholarClient
+from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.fetch_paper_fulltext_subgraph import (
+    FetchPaperFulltextSubgraph,
+)
 from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
 )
@@ -27,6 +36,9 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_fr
 )
 from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_qdrant_subgraph import (
     SearchPaperTitlesFromQdrantSubgraph,
+)
+from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph import (
+    SearchPapersSubgraph,
 )
 from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
 
@@ -79,6 +91,84 @@ async def search_paper_titles(
 
     return SearchPaperTitlesResponseBody(
         paper_titles=result["paper_titles"],
+        execution_time=result["execution_time"],
+    )
+
+
+@router.post("/source-search", response_model=SearchPapersResponseBody)
+@inject
+@observe()
+async def search_papers(
+    request: SearchPapersRequestBody,
+    fastapi_request: Request,
+    openalex_client: Annotated[
+        OpenAlexClient, Depends(Provide[Container.openalex_client])
+    ],
+    semantic_scholar_client: Annotated[
+        SemanticScholarClient, Depends(Provide[Container.semantic_scholar_client])
+    ],
+    arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
+) -> SearchPapersResponseBody:
+    container: Container = fastapi_request.app.state.container
+    search_index = container.airas_db_search_index()
+
+    result = (
+        await SearchPapersSubgraph(
+            openalex_client=openalex_client,
+            semantic_scholar_client=semantic_scholar_client,
+            arxiv_client=arxiv_client,
+            airas_db_search_index=search_index,
+        )
+        .build_graph()
+        .ainvoke(
+            {
+                "query": request.query,
+                "sources": request.sources,
+                "max_results_per_source": request.max_results_per_source,
+                "year": request.year,
+            }
+        )
+    )
+    return SearchPapersResponseBody(
+        papers=result["papers"],
+        source_results=result["source_results"],
+        search_errors=result["search_errors"],
+        execution_time=result["execution_time"],
+    )
+
+
+@router.post("/fulltext", response_model=FetchPaperFulltextResponseBody)
+@inject
+@observe()
+async def fetch_paper_fulltext(
+    request: FetchPaperFulltextRequestBody,
+    semantic_scholar_client: Annotated[
+        SemanticScholarClient, Depends(Provide[Container.semantic_scholar_client])
+    ],
+) -> FetchPaperFulltextResponseBody:
+    if not (request.arxiv_id or request.doi or request.pdf_url):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="One of arxiv_id, doi, or pdf_url must be provided.",
+        )
+
+    result = (
+        await FetchPaperFulltextSubgraph(
+            semantic_scholar_client=semantic_scholar_client,
+        )
+        .build_graph()
+        .ainvoke(
+            {
+                "arxiv_id": request.arxiv_id,
+                "doi": request.doi,
+                "pdf_url": request.pdf_url,
+            }
+        )
+    )
+    return FetchPaperFulltextResponseBody(
+        text=result["text"],
+        status=result["status"],
+        resolved_from=result["resolved_from"],
         execution_time=result["execution_time"],
     )
 

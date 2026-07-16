@@ -62,6 +62,8 @@ export type { FetchExperimentalResultsRequestBody } from './models/FetchExperime
 export type { FetchExperimentalResultsResponseBody } from './models/FetchExperimentalResultsResponseBody';
 export type { FetchExperimentCodeRequestBody } from './models/FetchExperimentCodeRequestBody';
 export type { FetchExperimentCodeResponseBody } from './models/FetchExperimentCodeResponseBody';
+export type { FetchPaperFulltextRequestBody } from './models/FetchPaperFulltextRequestBody';
+export { FetchPaperFulltextResponseBody } from './models/FetchPaperFulltextResponseBody';
 export type { FetchRunIdsRequestBody } from './models/FetchRunIdsRequestBody';
 export type { FetchRunIdsResponseBody } from './models/FetchRunIdsResponseBody';
 export type { GenerateBibfileSubgraphRequestBody } from './models/GenerateBibfileSubgraphRequestBody';
@@ -110,6 +112,7 @@ export type { OpenAIParams } from './models/OpenAIParams';
 export type { OptunaConfig } from './models/OptunaConfig';
 export type { PaperContent } from './models/PaperContent';
 export type { PaperReviewScores } from './models/PaperReviewScores';
+export type { PaperSearchResult } from './models/PaperSearchResult';
 export type { PollGithubActionsRequestBody } from './models/PollGithubActionsRequestBody';
 export type { PollGithubActionsResponseBody } from './models/PollGithubActionsResponseBody';
 export type { PrepareRepositorySubgraphRequestBody } from './models/PrepareRepositorySubgraphRequestBody';
@@ -137,6 +140,8 @@ export type { RetrievePaperSubgraphLLMMapping } from './models/RetrievePaperSubg
 export type { RetrievePaperSubgraphRequestBody } from './models/RetrievePaperSubgraphRequestBody';
 export type { RetrievePaperSubgraphResponseBody } from './models/RetrievePaperSubgraphResponseBody';
 export { RunStage } from './models/RunStage';
+export type { SearchPapersRequestBody } from './models/SearchPapersRequestBody';
+export type { SearchPapersResponseBody } from './models/SearchPapersResponseBody';
 export type { SearchPaperTitlesFromQdrantLLMMapping } from './models/SearchPaperTitlesFromQdrantLLMMapping';
 export { SearchPaperTitlesRequestBody } from './models/SearchPaperTitlesRequestBody';
 export type { SearchPaperTitlesResponseBody } from './models/SearchPaperTitlesResponseBody';

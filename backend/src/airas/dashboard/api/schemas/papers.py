@@ -1,8 +1,11 @@
-from pydantic import BaseModel, Field
+from typing import Literal
+
+from pydantic import BaseModel, Field, field_validator
 
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory
 from airas.core.types.paper import PaperContent, SearchMethod
+from airas.core.types.paper_search import PAPER_SEARCH_SOURCES, PaperSearchResult
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
 from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
@@ -20,6 +23,47 @@ class SearchPaperTitlesRequestBody(BaseModel):
 
 class SearchPaperTitlesResponseBody(BaseModel):
     paper_titles: list[str]
+    execution_time: dict[str, list[float]]
+
+
+class SearchPapersRequestBody(BaseModel):
+    query: str
+    sources: list[str] = Field(default_factory=lambda: list(PAPER_SEARCH_SOURCES))
+    max_results_per_source: int = Field(default=5, gt=0, le=50)
+    year: str | None = None
+
+    @field_validator("sources")
+    @classmethod
+    def _validate_sources(cls, sources: list[str]) -> list[str]:
+        unknown = sorted(set(sources) - set(PAPER_SEARCH_SOURCES))
+        if unknown:
+            raise ValueError(
+                f"Unknown sources: {', '.join(unknown)}. "
+                f"Available: {', '.join(PAPER_SEARCH_SOURCES)}"
+            )
+        if not sources:
+            raise ValueError("At least one source must be selected")
+        return sources
+
+
+class SearchPapersResponseBody(BaseModel):
+    papers: list[PaperSearchResult]
+    source_results: dict[str, int]
+    search_errors: dict[str, str]
+    execution_time: dict[str, list[float]]
+
+
+class FetchPaperFulltextRequestBody(BaseModel):
+    # Exactly one identifier is enough; they are tried in this order.
+    arxiv_id: str | None = None
+    doi: str | None = None
+    pdf_url: str | None = None
+
+
+class FetchPaperFulltextResponseBody(BaseModel):
+    text: str
+    status: Literal["fulltext", "abstract_only", "not_found"]
+    resolved_from: str | None
     execution_time: dict[str, list[float]]
 
 
