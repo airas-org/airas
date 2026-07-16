@@ -7,6 +7,13 @@
     "url": "https://github.com/airas-org/airas",
     "source": "github"
   },
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/airas-org/airas/main/images/airas_logo.png",
+      "mimeType": "image/png",
+      "sizes": ["1563x1563"]
+    }
+  ],
   "version": "0.2.2",
   "packages": [
     {
