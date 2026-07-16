@@ -34,46 +34,30 @@ Currently, it focuses on the automation of machine learning research.
 
 ## Quick Start
 
-### Option 1 — MCP Server (use from Claude Code / Claude Desktop)
-
 Use AIRAS research tools (paper search, retrieval, hypothesis generation, experiment execution, paper writing) directly from an MCP client. No clone, no Docker — only [uv](https://docs.astral.sh/uv/) is required.
 
-1. Register the MCP server:
-
-    ```bash
-    claude mcp add airas -- uvx airas
-    ```
-
-2. Set your API keys (can also be done later — they are re-read on every tool call). The easiest way is the dashboard's settings page:
-
-    ```bash
-    uvx airas dashboard
-    ```
-
-    Open **API Keys** in the sidebar and enter your keys. Alternatively, edit `~/.airas/credentials.json` by hand:
-
-    ```bash
-    mkdir -p ~/.airas
-    cat > ~/.airas/credentials.json <<'EOF'
-    {
-      "OPENAI_API_KEY": "sk-...",
-      "GH_PERSONAL_ACCESS_TOKEN": "ghp_..."
-    }
-    EOF
-    chmod 600 ~/.airas/credentials.json
-    ```
-
-See the [MCP documentation](docs/development/MCP.mdx) for the full tool list and configuration options.
-
-### Option 2 — Web Dashboard
-
-Run the AIRAS web dashboard locally (no clone, no Docker):
+### Claude Code
 
 ```bash
-uvx airas dashboard
+claude mcp add airas -- uvx airas
 ```
 
-This opens http://localhost:24727 in your browser. Configure API keys from the **API Keys** page in the sidebar. From an MCP client you can also just ask to "open the AIRAS dashboard" (the `open_dashboard` tool).
+### Other MCP clients (mcp.json)
+
+Add the following to your client's MCP configuration file (e.g. `.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "airas": {
+      "command": "uvx",
+      "args": ["airas"]
+    }
+  }
+}
+```
+
+See the [MCP documentation](docs/development/MCP.mdx) for the full tool list and configuration options.
 
 
 ## Roadmap
