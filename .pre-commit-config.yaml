@@ -12,14 +12,15 @@ repos:
       name: ruff (check --fix + format)
       entry: bash -lc 'cd backend && uv run ruff check --fix --show-fixes . && uv run ruff format .'
       language: system
-      files: ^backend/.*\.py$
+      # Also trigger on config/lock changes, which can alter lint results.
+      files: ^backend/(.*\.py|pyproject\.toml|uv\.lock)$
       pass_filenames: false
 
     - id: mypy
       name: mypy
       entry: bash -lc 'cd backend && uv run mypy .'
       language: system
-      files: ^backend/.*\.py$
+      files: ^backend/(.*\.py|pyproject\.toml|uv\.lock)$
       pass_filenames: false
 
     - id: biome
