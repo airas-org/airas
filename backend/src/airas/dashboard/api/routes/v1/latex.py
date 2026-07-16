@@ -1,10 +1,13 @@
 from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import HTMLResponse
 from langfuse import observe
 
 from airas.container import Container
+from airas.core.types.github import GitHubConfig
+from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.dashboard.api.dependencies import get_github_client, get_langchain_client
 from airas.dashboard.api.schemas.latex import (
     CompileLatexSubgraphRequestBody,
@@ -22,6 +25,9 @@ from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph im
 )
 from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
     GenerateLatexSubgraph,
+)
+from airas.usecases.publication.open_in_overleaf_subgraph.open_in_overleaf_subgraph import (
+    OpenInOverleafSubgraph,
 )
 from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
     PushLatexSubgraph,
@@ -86,6 +92,44 @@ async def push_latex(
         is_images_prepared=result["is_images_prepared"],
         execution_time=result["execution_time"],
     )
+
+
+@router.get("/overleaf", response_class=HTMLResponse)
+@inject
+@observe()
+async def open_in_overleaf(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    github_client: Annotated[GithubClient, Depends(get_github_client)],
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+) -> HTMLResponse:
+    """Serve a page that forwards the paper's LaTeX project to Overleaf.
+
+    Opened in a browser (not called as a JSON API): the page carries the
+    zipped LaTeX sources inline and immediately POSTs them to Overleaf,
+    which creates a new project in the user's Overleaf account.
+    """
+    try:
+        result = (
+            await OpenInOverleafSubgraph(
+                github_client=github_client,
+                latex_template_name=latex_template_name,
+            )
+            .build_graph()
+            .ainvoke(
+                {
+                    "github_config": GitHubConfig(
+                        github_owner=github_owner,
+                        repository_name=repository_name,
+                        branch_name=branch_name,
+                    )
+                }
+            )
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return HTMLResponse(result["overleaf_html"])
 
 
 @router.post("/compile", response_model=CompileLatexSubgraphResponseBody)

@@ -17,6 +17,7 @@ Run locally:
 import os
 import webbrowser
 from typing import Any, Literal
+from urllib.parse import urlencode
 
 import httpx
 from mcp.server.fastmcp import FastMCP
@@ -1159,6 +1160,51 @@ async def compile_latex(
     return {
         "compile_latex_dispatched": result["compile_latex_dispatched"],
         "paper_url": result["paper_url"],
+    }
+
+
+@mcp.tool()
+def open_in_overleaf(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+) -> dict[str, Any]:
+    """Create a link that opens the paper in Overleaf for editing.
+
+    Returns `overleaf_url`, which must be shown to the user as a clickable
+    link. Opening it in a browser downloads the LaTeX project pushed by
+    `push_latex` (main.tex, bibliography, figures, template assets) from the
+    experiment repository and submits it to Overleaf, creating a new project
+    in the user's Overleaf account (login required; each click creates a new
+    project). Starts the local dashboard API in the background if needed.
+    Requires GH_PERSONAL_ACCESS_TOKEN; private repositories work too.
+    """
+    refresh_environment()
+
+    port = DEFAULT_DASHBOARD_PORT
+    dashboard_status = "already_running"
+    if not is_dashboard_running(port):
+        start_dashboard(port)
+        dashboard_status = "started"
+
+    params = urlencode(
+        {
+            "github_owner": github_owner,
+            "repository_name": repository_name,
+            "branch_name": branch_name,
+            "latex_template_name": latex_template_name,
+        }
+    )
+    overleaf_url = f"{dashboard_url(port)}/airas/v1/latex/overleaf?{params}"
+    return {
+        "overleaf_url": overleaf_url,
+        "dashboard_status": dashboard_status,
+        "note": (
+            "Show this URL to the user as a clickable link. Opening it in a "
+            "browser sends the paper's LaTeX sources to Overleaf and creates "
+            "a new editable project there."
+        ),
     }
 
 
