@@ -5,6 +5,13 @@ from fastapi import APIRouter, Depends
 from langfuse import observe
 
 from airas.container import Container
+from airas.dashboard.api.dependencies import get_github_client
+from airas.dashboard.api.schemas.code import (
+    DispatchCodeGenerationRequestBody,
+    DispatchCodeGenerationResponseBody,
+    FetchExperimentCodeRequestBody,
+    FetchExperimentCodeResponseBody,
+)
 from airas.infra.github_client import GithubClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.executors.fetch_experiment_code_subgraph.fetch_experiment_code_subgraph import (
@@ -12,13 +19,6 @@ from airas.usecases.executors.fetch_experiment_code_subgraph.fetch_experiment_co
 )
 from airas.usecases.generators.dispatch_code_generation_subgraph.dispatch_code_generation_subgraph import (
     DispatchCodeGenerationSubgraph,
-)
-from api.dependencies import get_github_client
-from api.schemas.code import (
-    DispatchCodeGenerationRequestBody,
-    DispatchCodeGenerationResponseBody,
-    FetchExperimentCodeRequestBody,
-    FetchExperimentCodeResponseBody,
 )
 
 router = APIRouter(prefix="/code", tags=["code"])

@@ -5,6 +5,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from langfuse import observe
 
 from airas.container import Container
+from airas.dashboard.api.dependencies import get_github_client, get_langchain_client
+from airas.dashboard.api.schemas.papers import (
+    RetrievePaperSubgraphRequestBody,
+    RetrievePaperSubgraphResponseBody,
+    SearchPaperTitlesRequestBody,
+    SearchPaperTitlesResponseBody,
+    WriteSubgraphRequestBody,
+    WriteSubgraphResponseBody,
+)
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
@@ -20,15 +29,6 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_fr
     SearchPaperTitlesFromQdrantSubgraph,
 )
 from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
-from api.dependencies import get_github_client, get_langchain_client
-from api.schemas.papers import (
-    RetrievePaperSubgraphRequestBody,
-    RetrievePaperSubgraphResponseBody,
-    SearchPaperTitlesRequestBody,
-    SearchPaperTitlesResponseBody,
-    WriteSubgraphRequestBody,
-    WriteSubgraphResponseBody,
-)
 
 router = APIRouter(prefix="/papers", tags=["papers"])
 

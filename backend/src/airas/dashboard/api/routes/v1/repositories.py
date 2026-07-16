@@ -5,15 +5,15 @@ from fastapi import APIRouter, Depends
 from langfuse import observe
 
 from airas.container import Container
+from airas.dashboard.api.dependencies import get_github_client
+from airas.dashboard.api.schemas.repositories import (
+    PrepareRepositorySubgraphRequestBody,
+    PrepareRepositorySubgraphResponseBody,
+)
 from airas.infra.github_client import GithubClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,
-)
-from api.dependencies import get_github_client
-from api.schemas.repositories import (
-    PrepareRepositorySubgraphRequestBody,
-    PrepareRepositorySubgraphResponseBody,
 )
 
 router = APIRouter(prefix="/repositories", tags=["repositories"])

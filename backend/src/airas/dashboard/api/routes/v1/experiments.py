@@ -6,6 +6,25 @@ from langfuse import observe
 
 from airas.container import Container
 from airas.core.types.runner import EphemeralCloudRunnerConfig, StaticRunnerConfig
+from airas.dashboard.api.dependencies import get_github_client, get_langchain_client
+from airas.dashboard.api.schemas.experiments import (
+    AnalyzeExperimentRequestBody,
+    AnalyzeExperimentResponseBody,
+    DispatchDiagramGenerationRequestBody,
+    DispatchDiagramGenerationResponseBody,
+    DispatchExperimentValidationRequestBody,
+    DispatchExperimentValidationResponseBody,
+    DispatchMainExperimentRequestBody,
+    DispatchMainExperimentResponseBody,
+    DispatchSanityCheckRequestBody,
+    DispatchSanityCheckResponseBody,
+    DispatchVisualizationRequestBody,
+    DispatchVisualizationResponseBody,
+    FetchExperimentalResultsRequestBody,
+    FetchExperimentalResultsResponseBody,
+    FetchRunIdsRequestBody,
+    FetchRunIdsResponseBody,
+)
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
@@ -32,25 +51,6 @@ from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph impo
 )
 from airas.usecases.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
     DispatchDiagramGenerationSubgraph,
-)
-from api.dependencies import get_github_client, get_langchain_client
-from api.schemas.experiments import (
-    AnalyzeExperimentRequestBody,
-    AnalyzeExperimentResponseBody,
-    DispatchDiagramGenerationRequestBody,
-    DispatchDiagramGenerationResponseBody,
-    DispatchExperimentValidationRequestBody,
-    DispatchExperimentValidationResponseBody,
-    DispatchMainExperimentRequestBody,
-    DispatchMainExperimentResponseBody,
-    DispatchSanityCheckRequestBody,
-    DispatchSanityCheckResponseBody,
-    DispatchVisualizationRequestBody,
-    DispatchVisualizationResponseBody,
-    FetchExperimentalResultsRequestBody,
-    FetchExperimentalResultsResponseBody,
-    FetchRunIdsRequestBody,
-    FetchRunIdsResponseBody,
 )
 
 router = APIRouter(prefix="/experiments", tags=["experiments"])

@@ -5,13 +5,13 @@ from fastapi import APIRouter, Depends
 from langfuse import observe
 
 from airas.container import Container
+from airas.dashboard.api.schemas.models import (
+    RetrieveModelsSubgraphRequestBody,
+    RetrieveModelsSubgraphResponseBody,
+)
 from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.retrieve.retrieve_models_subgraph.retrieve_models_subgraph import (
     RetrieveModelsSubgraph,
-)
-from api.schemas.models import (
-    RetrieveModelsSubgraphRequestBody,
-    RetrieveModelsSubgraphResponseBody,
 )
 
 router = APIRouter(prefix="/models", tags=["models"])

@@ -21,7 +21,7 @@ repos:
       name: Update OpenAPI schema and frontend client
       entry: .pre-commit-hooks/update-openapi.sh
       language: system
-      files: ^backend/api/
+      files: ^backend/src/airas/dashboard/api/
       pass_filenames: false
 
     - id: biome-check

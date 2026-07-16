@@ -5,9 +5,12 @@ from dependency_injector.wiring import Closing, Provide, inject
 from fastapi import APIRouter, Depends
 
 from airas.container import Container
+from airas.dashboard.api.dependencies import get_current_user_id
+from airas.dashboard.api.schemas.feedback import (
+    CreateFeedbackRequestBody,
+    CreateFeedbackResponseBody,
+)
 from airas.usecases.feedback.feedback_service import FeedbackService
-from api.dependencies import get_current_user_id
-from api.schemas.feedback import CreateFeedbackRequestBody, CreateFeedbackResponseBody
 
 router = APIRouter(prefix="/feedback", tags=["feedback"])
 
