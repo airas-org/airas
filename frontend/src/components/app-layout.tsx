@@ -1,7 +1,6 @@
 import { SiGithub, SiX } from "@icons-pack/react-simple-icons";
 import * as SubframeCore from "@subframe/core";
 import {
-  FeatherBell,
   FeatherCheck,
   FeatherGlobe,
   FeatherPanelLeftClose,
@@ -316,14 +315,6 @@ export function AppLayout() {
                   aria-label="Open X profile"
                 />
               </div>
-              <IconButton
-                variant={
-                  activeSection === "notifications" ? "neutral-secondary" : "neutral-tertiary"
-                }
-                icon={<FeatherBell className="h-4 w-4" />}
-                onClick={() => navigate("/notifications")}
-                aria-label="Open notifications"
-              />
             </>
           }
         />

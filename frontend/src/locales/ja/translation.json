@@ -842,6 +842,12 @@
     "savedTitle": "認証情報を保存しました",
     "fetchError": "認証情報の読み込みに失敗しました",
     "saveError": "認証情報の保存に失敗しました",
-    "storageNote": "変更は即座に反映されます。再起動は不要です。"
+    "storageNote": "変更は即座に反映されます。再起動は不要です。",
+    "categories": {
+      "github": "GitHub",
+      "llm": "LLMプロバイダー",
+      "integrations": "オプション連携",
+      "other": "その他"
+    }
   }
 }

@@ -843,6 +843,12 @@
     "savedTitle": "Credentials saved",
     "fetchError": "Failed to load credentials",
     "saveError": "Failed to save credentials",
-    "storageNote": "Changes take effect immediately; no restart is required."
+    "storageNote": "Changes take effect immediately; no restart is required.",
+    "categories": {
+      "github": "GitHub",
+      "llm": "LLM Providers",
+      "integrations": "Optional Integrations",
+      "other": "Other"
+    }
   }
 }

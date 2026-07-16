@@ -4,7 +4,6 @@ import {
   FeatherBrainCircuit,
   FeatherExternalLink,
   FeatherKey,
-  FeatherMessageSquare,
   FeatherRefreshCw,
   FeatherTarget,
 } from "@subframe/core";
@@ -132,16 +131,6 @@ export function MainSidebar({
           }}
         >
           {t("nav.apiKeys")}
-        </SidebarWithSections.NavItem>
-        <SidebarWithSections.NavItem
-          icon={<FeatherMessageSquare />}
-          selected={getSettingsTab(location.pathname) === "feedback"}
-          onClick={() => {
-            navigate("/settings/feedback");
-            onMobileNavClose();
-          }}
-        >
-          {t("nav.feedback")}
         </SidebarWithSections.NavItem>
       </SidebarWithSections.NavSection>
     </>
