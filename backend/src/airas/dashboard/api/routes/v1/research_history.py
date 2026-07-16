@@ -5,17 +5,17 @@ from fastapi import APIRouter, Depends
 from langfuse import observe
 
 from airas.container import Container
-from airas.infra.github_client import GithubClient
-from airas.infra.langfuse_client import LangfuseClient
-from airas.usecases.github.github_download_subgraph import GithubDownloadSubgraph
-from airas.usecases.github.github_upload_subgraph import GithubUploadSubgraph
-from api.dependencies import get_github_client
-from api.schemas.research_history import (
+from airas.dashboard.api.dependencies import get_github_client
+from airas.dashboard.api.schemas.research_history import (
     GithubDownloadRequest,
     GithubDownloadResponse,
     GithubUploadRequest,
     GithubUploadResponse,
 )
+from airas.infra.github_client import GithubClient
+from airas.infra.langfuse_client import LangfuseClient
+from airas.usecases.github.github_download_subgraph import GithubDownloadSubgraph
+from airas.usecases.github.github_upload_subgraph import GithubUploadSubgraph
 
 router = APIRouter(prefix="/research-history", tags=["research-history"])
 

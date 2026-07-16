@@ -5,15 +5,15 @@ from fastapi import APIRouter, Depends
 from langfuse import observe
 
 from airas.container import Container
+from airas.dashboard.api.dependencies import get_github_client
+from airas.dashboard.api.schemas.github import (
+    PushGitHubRequestBody,
+    PushGitHubResponseBody,
+)
 from airas.infra.github_client import GithubClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.github.push_github_subgraph.push_github_subgraph import (
     PushGitHubSubgraph,
-)
-from api.dependencies import get_github_client
-from api.schemas.github import (
-    PushGitHubRequestBody,
-    PushGitHubResponseBody,
 )
 
 router = APIRouter(prefix="/github", tags=["github"])

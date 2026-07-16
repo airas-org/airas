@@ -5,15 +5,15 @@ from fastapi import APIRouter, Depends
 from langfuse import observe
 
 from airas.container import Container
+from airas.dashboard.api.dependencies import get_langchain_client
+from airas.dashboard.api.schemas.hypotheses import (
+    GenerateHypothesisSubgraphV0RequestBody,
+    GenerateHypothesisSubgraphV0ResponseBody,
+)
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph_v0 import (
     GenerateHypothesisSubgraphV0,
-)
-from api.dependencies import get_langchain_client
-from api.schemas.hypotheses import (
-    GenerateHypothesisSubgraphV0RequestBody,
-    GenerateHypothesisSubgraphV0ResponseBody,
 )
 
 router = APIRouter(prefix="/hypotheses", tags=["hypotheses"])

@@ -5,13 +5,13 @@ from fastapi import APIRouter, Depends
 from langfuse import observe
 
 from airas.container import Container
+from airas.dashboard.api.schemas.datasets import (
+    RetrieveDatasetsSubgraphRequestBody,
+    RetrieveDatasetsSubgraphResponseBody,
+)
 from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.retrieve.retrieve_datasets_subgraph.retrieve_datasets_subgraph import (
     RetrieveDatasetsSubgraph,
-)
-from api.schemas.datasets import (
-    RetrieveDatasetsSubgraphRequestBody,
-    RetrieveDatasetsSubgraphResponseBody,
 )
 
 router = APIRouter(prefix="/datasets", tags=["datasets"])

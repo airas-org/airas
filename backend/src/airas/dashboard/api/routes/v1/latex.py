@@ -5,6 +5,15 @@ from fastapi import APIRouter, Depends
 from langfuse import observe
 
 from airas.container import Container
+from airas.dashboard.api.dependencies import get_github_client, get_langchain_client
+from airas.dashboard.api.schemas.latex import (
+    CompileLatexSubgraphRequestBody,
+    CompileLatexSubgraphResponseBody,
+    GenerateLatexSubgraphRequestBody,
+    GenerateLatexSubgraphResponseBody,
+    PushLatexSubgraphRequestBody,
+    PushLatexSubgraphResponseBody,
+)
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import LangChainClient
 from airas.infra.langfuse_client import LangfuseClient
@@ -16,15 +25,6 @@ from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph 
 )
 from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
     PushLatexSubgraph,
-)
-from api.dependencies import get_github_client, get_langchain_client
-from api.schemas.latex import (
-    CompileLatexSubgraphRequestBody,
-    CompileLatexSubgraphResponseBody,
-    GenerateLatexSubgraphRequestBody,
-    GenerateLatexSubgraphResponseBody,
-    PushLatexSubgraphRequestBody,
-    PushLatexSubgraphResponseBody,
 )
 
 router = APIRouter(prefix="/latex", tags=["latex"])

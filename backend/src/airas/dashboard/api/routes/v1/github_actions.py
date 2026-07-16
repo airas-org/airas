@@ -5,6 +5,15 @@ from fastapi import APIRouter, Depends
 from langfuse import observe
 
 from airas.container import Container
+from airas.dashboard.api.dependencies import get_github_client
+from airas.dashboard.api.schemas.github_actions import (
+    DownloadGithubActionsArtifactsRequestBody,
+    DownloadGithubActionsArtifactsResponseBody,
+    PollGithubActionsRequestBody,
+    PollGithubActionsResponseBody,
+    SetGithubActionsSecretsRequestBody,
+    SetGithubActionsSecretsResponseBody,
+)
 from airas.infra.github_client import GithubClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
@@ -15,15 +24,6 @@ from airas.usecases.github.poll_github_actions_subgraph.poll_github_actions_subg
 )
 from airas.usecases.github.set_github_actions_secrets_subgraph.set_github_actions_secrets_subgraph import (
     SetGithubActionsSecretsSubgraph,
-)
-from api.dependencies import get_github_client
-from api.schemas.github_actions import (
-    DownloadGithubActionsArtifactsRequestBody,
-    DownloadGithubActionsArtifactsResponseBody,
-    PollGithubActionsRequestBody,
-    PollGithubActionsResponseBody,
-    SetGithubActionsSecretsRequestBody,
-    SetGithubActionsSecretsResponseBody,
 )
 
 router = APIRouter(prefix="/github-actions", tags=["github-actions"])

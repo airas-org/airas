@@ -5,13 +5,13 @@ from fastapi import APIRouter, Depends
 from langfuse import observe
 
 from airas.container import Container
+from airas.dashboard.api.schemas.bibfile import (
+    GenerateBibfileSubgraphRequestBody,
+    GenerateBibfileSubgraphResponseBody,
+)
 from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
     GenerateBibfileSubgraph,
-)
-from api.schemas.bibfile import (
-    GenerateBibfileSubgraphRequestBody,
-    GenerateBibfileSubgraphResponseBody,
 )
 
 router = APIRouter(prefix="/bibfile", tags=["bibfile"])

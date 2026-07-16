@@ -5,6 +5,13 @@ from fastapi import APIRouter, Depends
 from langfuse import observe
 
 from airas.container import Container
+from airas.dashboard.api.dependencies import get_github_client
+from airas.dashboard.api.schemas.interactive_repo_agent import (
+    CancelInteractiveRepoAgentRequestBody,
+    CancelInteractiveRepoAgentResponseBody,
+    DispatchInteractiveRepoAgentRequestBody,
+    DispatchInteractiveRepoAgentResponseBody,
+)
 from airas.infra.github_client import GithubClient
 from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.assisted_research.cancel_interactive_repo_agent_subgraph.cancel_interactive_repo_agent_subgraph import (
@@ -12,13 +19,6 @@ from airas.usecases.assisted_research.cancel_interactive_repo_agent_subgraph.can
 )
 from airas.usecases.assisted_research.dispatch_interactive_repo_agent_subgraph.dispatch_interactive_repo_agent_subgraph import (
     DispatchInteractiveRepoAgentSubgraph,
-)
-from api.dependencies import get_github_client
-from api.schemas.interactive_repo_agent import (
-    CancelInteractiveRepoAgentRequestBody,
-    CancelInteractiveRepoAgentResponseBody,
-    DispatchInteractiveRepoAgentRequestBody,
-    DispatchInteractiveRepoAgentResponseBody,
 )
 
 router = APIRouter(prefix="/interactive-repo-agent", tags=["interactive-repo-agent"])

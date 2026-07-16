@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-import api.routes.v1 as routes_v1
+import airas.dashboard.api.routes.v1 as routes_v1
 from airas.container import Container
-from api.routes.v1 import (
+from airas.dashboard.api.routes.v1 import (
     bibfile,
     code,
     datasets,
@@ -88,7 +90,34 @@ def create_app() -> FastAPI:
     for router in v1_routers:
         application.include_router(router, prefix="/airas/v1")
 
+    _mount_dashboard_static(application)
+
     return application
+
+
+class _SpaStaticFiles(StaticFiles):
+    """Static files with SPA fallback: unknown paths serve index.html."""
+
+    async def get_response(self, path, scope):
+        from starlette.exceptions import HTTPException
+
+        try:
+            return await super().get_response(path, scope)
+        except HTTPException as exc:
+            # Unknown API paths should stay 404s; only SPA routes fall back.
+            if exc.status_code == 404 and not path.startswith("airas/"):
+                return await super().get_response("index.html", scope)
+            raise
+
+
+def _mount_dashboard_static(application: FastAPI) -> None:
+    # Present only in wheels built by CI (frontend/dist is copied in);
+    # absent in development checkouts, where the Vite dev server is used.
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+    if (static_dir / "index.html").is_file():
+        application.mount(
+            "/", _SpaStaticFiles(directory=static_dir, html=True), name="dashboard"
+        )
 
 
 # Module-level instance used by uvicorn (api.main:app) and runtime.

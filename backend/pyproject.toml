@@ -104,6 +104,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/airas"]
+# Built frontend assets (copied in by CI before `uv build`); gitignored,
+# so they must be re-included explicitly.
+artifacts = ["src/airas/dashboard/static/"]
 
 [[tool.uv.index]]
 name = "testpypi"
@@ -116,6 +119,8 @@ explicit = true
 mcp = []
 
 [project.scripts]
-airas = "airas.mcp.server:main"
+# `airas` with no arguments runs the MCP server (stdio); `airas dashboard`
+# serves the web dashboard.
+airas = "airas.cli:main"
 # Backwards-compatible alias (documented command before 0.2.2)
 airas-mcp = "airas.mcp.server:main"
