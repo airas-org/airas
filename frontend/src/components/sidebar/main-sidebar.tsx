@@ -5,7 +5,6 @@ import {
   FeatherExternalLink,
   FeatherFileText,
   FeatherKey,
-  FeatherMessageSquare,
   FeatherRefreshCw,
   FeatherTarget,
 } from "@subframe/core";
@@ -110,6 +109,22 @@ export function MainSidebar({
         </div>
       </SidebarWithSections.NavSection>
 
+      {/* --- Settings --- */}
+      <SidebarWithSections.NavSection
+        label={<span className="text-sm font-medium">{t("nav.settings")}</span>}
+      >
+        <SidebarWithSections.NavItem
+          icon={<FeatherKey />}
+          selected={getSettingsTab(location.pathname) === "api-keys"}
+          onClick={() => {
+            navigate("/settings/api-keys");
+            onMobileNavClose();
+          }}
+        >
+          {t("nav.apiKeys")}
+        </SidebarWithSections.NavItem>
+      </SidebarWithSections.NavSection>
+
       {/* --- Support --- */}
       <SidebarWithSections.NavSection
         label={<span className="text-sm font-medium">{t("nav.support")}</span>}
@@ -133,26 +148,6 @@ export function MainSidebar({
           }
         >
           Discord
-        </SidebarWithSections.NavItem>
-        <SidebarWithSections.NavItem
-          icon={<FeatherKey />}
-          selected={getSettingsTab(location.pathname) === "api-keys"}
-          onClick={() => {
-            navigate("/settings/api-keys");
-            onMobileNavClose();
-          }}
-        >
-          {t("nav.apiKeys")}
-        </SidebarWithSections.NavItem>
-        <SidebarWithSections.NavItem
-          icon={<FeatherMessageSquare />}
-          selected={getSettingsTab(location.pathname) === "feedback"}
-          onClick={() => {
-            navigate("/settings/feedback");
-            onMobileNavClose();
-          }}
-        >
-          {t("nav.feedback")}
         </SidebarWithSections.NavItem>
       </SidebarWithSections.NavSection>
     </>
