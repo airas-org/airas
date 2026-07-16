@@ -171,7 +171,8 @@ def get_model_context_info(model_name: str) -> dict[str, int]:
     if model_name in _MODEL_CONTEXT_OVERRIDES:
         return _MODEL_CONTEXT_OVERRIDES[model_name]
     info = litellm.get_model_info(model_name)
+    # litellm may report an explicit None; fall back to 4096 in that case too.
     return {
-        "max_input_tokens": info.get("max_input_tokens", 4096),
-        "max_output_tokens": info.get("max_output_tokens", 4096),
+        "max_input_tokens": info.get("max_input_tokens") or 4096,
+        "max_output_tokens": info.get("max_output_tokens") or 4096,
     }

@@ -1,31 +1,35 @@
+# Run `pre-commit install` once per clone to activate these hooks.
+#
+# The lint hooks invoke the Makefile targets directly so that pre-commit,
+# CI, and manual runs share the exact same tool versions (backend/uv.lock,
+# frontend/package-lock.json) and scope.
 repos:
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.11.8
-  hooks:
-    - id: ruff
-      args: ["--fix", "--show-fixes"]
-      files: ^backend/
-    - id: ruff-format
-      files: ^backend/
-
-- repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.15.0
-  hooks:
-    - id: mypy
-      args: ["--config-file=backend/pyproject.toml"]
-      files: ^backend/
-
 - repo: local
   hooks:
+    - id: make-ruff
+      name: make ruff
+      entry: make ruff
+      language: system
+      files: ^backend/.*\.py$
+      pass_filenames: false
+
+    - id: make-mypy
+      name: make mypy
+      entry: make mypy
+      language: system
+      files: ^backend/.*\.py$
+      pass_filenames: false
+
+    - id: make-biome
+      name: make biome
+      entry: make biome
+      language: system
+      files: ^frontend/.*\.(js|jsx|ts|tsx|json|md)$
+      pass_filenames: false
+
     - id: update-openapi
       name: Update OpenAPI schema and frontend client
       entry: .pre-commit-hooks/update-openapi.sh
       language: system
       files: ^backend/src/airas/dashboard/api/
       pass_filenames: false
-
-    - id: biome-check
-      name: biome check (write)
-      entry: bash -lc 'cd frontend && npx biome check --write'
-      language: system
-      files: ^frontend/.*\.(js|jsx|ts|tsx|json|md)$
