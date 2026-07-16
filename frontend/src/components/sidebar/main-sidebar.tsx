@@ -3,6 +3,7 @@ import {
   FeatherBookOpen,
   FeatherBrainCircuit,
   FeatherExternalLink,
+  FeatherKey,
   FeatherMessageSquare,
   FeatherRefreshCw,
   FeatherTarget,
@@ -121,6 +122,16 @@ export function MainSidebar({
           }
         >
           Discord
+        </SidebarWithSections.NavItem>
+        <SidebarWithSections.NavItem
+          icon={<FeatherKey />}
+          selected={getSettingsTab(location.pathname) === "api-keys"}
+          onClick={() => {
+            navigate("/settings/api-keys");
+            onMobileNavClose();
+          }}
+        >
+          {t("nav.apiKeys")}
         </SidebarWithSections.NavItem>
         <SidebarWithSections.NavItem
           icon={<FeatherMessageSquare />}

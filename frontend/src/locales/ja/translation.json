@@ -24,7 +24,8 @@
     "legal": "利用規約",
     "experimental": "実験的機能",
     "reproduction": "再現実装",
-    "research": "研究"
+    "research": "研究",
+    "apiKeys": "APIキー"
   },
   "userMenu": {
     "developer": "開発者",
@@ -826,5 +827,21 @@
     "next": "次へ",
     "save": "保存",
     "noData": "データがありません"
+  },
+  "credentials": {
+    "pageTitle": "APIキー",
+    "pageSubtitle": "AIRAS が使用する認証情報（LLMプロバイダー、GitHub、オプションのサービス）。このマシンの ~/.airas/credentials.json に保存されます。",
+    "configured": "設定済み",
+    "notConfigured": "未設定",
+    "willBeRemoved": "保存時に削除されます",
+    "placeholder": "値を入力",
+    "replacePlaceholder": "新しい値を入力して置き換え",
+    "clear": "クリア",
+    "save": "保存",
+    "saving": "保存中...",
+    "savedTitle": "認証情報を保存しました",
+    "fetchError": "認証情報の読み込みに失敗しました",
+    "saveError": "認証情報の保存に失敗しました",
+    "storageNote": "変更は即座に反映されます。再起動は不要です。"
   }
 }

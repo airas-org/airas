@@ -1291,6 +1291,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/credentials:
+    get:
+      tags:
+      - credentials
+      summary: List Credentials
+      description: Report which credentials are configured (values are never returned
+        in full for secrets).
+      operationId: list_credentials_airas_v1_credentials_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCredentialsResponseBody'
+    put:
+      tags:
+      - credentials
+      summary: Update Credentials
+      description: 'Merge credential updates into ~/.airas/credentials.json.
+
+
+        An empty-string value removes the credential. Only known credential
+
+        names are accepted.'
+      operationId: update_credentials_airas_v1_credentials_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCredentialsRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateCredentialsResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AnalyzeExperimentLLMMapping:
@@ -1559,6 +1604,28 @@ components:
       - email
       - created_at
       title: CreateFeedbackResponseBody
+    CredentialStatus:
+      properties:
+        name:
+          type: string
+          title: Name
+        is_secret:
+          type: boolean
+          title: Is Secret
+        is_set:
+          type: boolean
+          title: Is Set
+        preview:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Preview
+      type: object
+      required:
+      - name
+      - is_secret
+      - is_set
+      title: CredentialStatus
     DatasetConfig:
       properties:
         description:
@@ -3251,6 +3318,17 @@ components:
               llm_name: anthropic/claude-sonnet-4-5
       type: object
       title: LaTeXGraphLLMMapping
+    ListCredentialsResponseBody:
+      properties:
+        credentials:
+          items:
+            $ref: '#/components/schemas/CredentialStatus'
+          type: array
+          title: Credentials
+      type: object
+      required:
+      - credentials
+      title: ListCredentialsResponseBody
     MetaData:
       properties:
         arxiv_id:
@@ -4869,6 +4947,28 @@ components:
           description: Additional experiment-specific parameters
       type: object
       title: TrainingConfig
+    UpdateCredentialsRequestBody:
+      properties:
+        updates:
+          additionalProperties:
+            type: string
+          type: object
+          title: Updates
+      type: object
+      required:
+      - updates
+      title: UpdateCredentialsRequestBody
+    UpdateCredentialsResponseBody:
+      properties:
+        credentials:
+          items:
+            $ref: '#/components/schemas/CredentialStatus'
+          type: array
+          title: Credentials
+      type: object
+      required:
+      - credentials
+      title: UpdateCredentialsResponseBody
     ValidationError:
       properties:
         loc:
