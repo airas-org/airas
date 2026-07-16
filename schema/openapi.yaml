@@ -4666,6 +4666,13 @@ components:
           - type: string
           - type: 'null'
           title: Year
+        search_mode:
+          type: string
+          enum:
+          - keyword
+          - semantic
+          title: Search Mode
+          default: keyword
       type: object
       required:
       - query

@@ -75,12 +75,14 @@ async def search_openalex(
     query: str,
     max_results: int,
     year: str | None = None,
+    semantic: bool = False,
 ) -> list[PaperSearchResult]:
     response = await asyncio.to_thread(
         openalex_client.search_papers,
         query,
         year=year,
         per_page=max_results,
+        semantic=semantic,
         fields=_FIELDS,
     )
     return [_normalize_work(work) for work in response.get("results", [])]

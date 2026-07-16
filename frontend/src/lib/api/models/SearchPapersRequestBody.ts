@@ -7,5 +7,12 @@ export type SearchPapersRequestBody = {
     sources?: Array<string>;
     max_results_per_source?: number;
     year?: (string | null);
+    search_mode?: SearchPapersRequestBody.search_mode;
 };
+export namespace SearchPapersRequestBody {
+    export enum search_mode {
+        KEYWORD = 'keyword',
+        SEMANTIC = 'semantic',
+    }
+}
 

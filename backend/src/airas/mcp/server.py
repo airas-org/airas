@@ -244,21 +244,41 @@ async def search_papers(
     sources: str = "all",
     max_results_per_source: int = 5,
     year: str | None = None,
+    search_mode: Literal["keyword", "semantic"] = "keyword",
 ) -> dict[str, Any]:
     """Search academic papers across multiple sources in parallel.
 
     Sources: openalex, semantic_scholar, arxiv, airas_db (curated major-ML-
     conference database). Pass a comma-separated subset or "all". `year`
-    filters by publication year ("2024" or "2020-2024"). Results are
-    normalized (title, authors, abstract, doi, arxiv_id, pdf_url, citations,
-    source) and de-duplicated across sources; failures of individual sources
-    are reported in `search_errors` without failing the search. No API keys
-    required (SEMANTIC_SCHOLAR_API_KEY / OPENALEX_API_KEY optionally raise
-    rate limits). Pass promising titles to `retrieve_papers`, or an
-    arxiv_id / doi / pdf_url to `fetch_paper_fulltext`.
+    filters by publication year ("2024" or "2020-2024").
+
+    `search_mode="keyword"` (default) does lexical/relevance search on every
+    source. `search_mode="semantic"` does AI-embedding search that matches by
+    meaning; it is only supported by `openalex` and requires OPENALEX_API_KEY
+    (so pass sources="openalex"). Selecting any other source in semantic mode
+    is an error.
+
+    Results are normalized (title, authors, abstract, doi, arxiv_id, pdf_url,
+    citations, source) and de-duplicated across sources; failures of
+    individual sources are reported in `search_errors` without failing the
+    search. Keyword search needs no API keys (SEMANTIC_SCHOLAR_API_KEY /
+    OPENALEX_API_KEY optionally raise rate limits). Pass promising titles to
+    `retrieve_papers`, or an arxiv_id / doi / pdf_url to
+    `fetch_paper_fulltext`.
     """
     refresh_environment()
     selected_sources = _parse_paper_sources(sources)
+    if search_mode == "semantic":
+        unsupported = sorted(set(selected_sources) - {"openalex"})
+        if unsupported:
+            raise ValueError(
+                f"Semantic search is not supported by: {', '.join(unsupported)}. "
+                "Only 'openalex' supports semantic search."
+            )
+        if not os.getenv("OPENALEX_API_KEY"):
+            raise RuntimeError(
+                f"Semantic search requires OPENALEX_API_KEY. {SETUP_INSTRUCTIONS}"
+            )
     result = (
         await SearchPapersSubgraph(
             openalex_client=_openalex_client(),
@@ -273,6 +293,7 @@ async def search_papers(
                 "sources": selected_sources,
                 "max_results_per_source": max_results_per_source,
                 "year": year,
+                "search_mode": search_mode,
             }
         )
     )

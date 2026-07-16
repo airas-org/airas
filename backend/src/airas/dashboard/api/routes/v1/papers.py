@@ -126,6 +126,7 @@ async def search_papers(
                 "sources": request.sources,
                 "max_results_per_source": request.max_results_per_source,
                 "year": request.year,
+                "search_mode": request.search_mode,
             }
         )
     )

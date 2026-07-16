@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory
@@ -26,11 +26,16 @@ class SearchPaperTitlesResponseBody(BaseModel):
     execution_time: dict[str, list[float]]
 
 
+# Sources that support semantic (AI-embedding) search natively.
+SEMANTIC_SEARCH_SOURCES = ("openalex",)
+
+
 class SearchPapersRequestBody(BaseModel):
     query: str
     sources: list[str] = Field(default_factory=lambda: list(PAPER_SEARCH_SOURCES))
     max_results_per_source: int = Field(default=5, gt=0, le=50)
     year: str | None = None
+    search_mode: Literal["keyword", "semantic"] = "keyword"
 
     @field_validator("sources")
     @classmethod
@@ -44,6 +49,17 @@ class SearchPapersRequestBody(BaseModel):
         if not sources:
             raise ValueError("At least one source must be selected")
         return sources
+
+    @model_validator(mode="after")
+    def _validate_semantic_sources(self) -> "SearchPapersRequestBody":
+        if self.search_mode == "semantic":
+            unsupported = sorted(set(self.sources) - set(SEMANTIC_SEARCH_SOURCES))
+            if unsupported:
+                raise ValueError(
+                    f"Semantic search is not supported by: {', '.join(unsupported)}. "
+                    f"Semantic-capable sources: {', '.join(SEMANTIC_SEARCH_SOURCES)}"
+                )
+        return self
 
 
 class SearchPapersResponseBody(BaseModel):

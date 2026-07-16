@@ -45,6 +45,9 @@ class SearchPapersSubgraphInputState(TypedDict):
     sources: list[str]
     max_results_per_source: int
     year: str | None
+    # "keyword" (default) or "semantic". Semantic search is only supported by
+    # OpenAlex (native AI-embedding search, requires OPENALEX_API_KEY).
+    search_mode: str
 
 
 class SearchPapersSubgraphOutputState(ExecutionTimeState):
@@ -132,10 +135,13 @@ class SearchPapersSubgraph:
 
     @record_execution_time
     async def _search_openalex(self, state: SearchPapersSubgraphState) -> dict:
+        semantic = state.get("search_mode") == "semantic"
         return await self._run_source(
             "openalex",
             state,
-            lambda **kwargs: search_openalex(self.openalex_client, **kwargs),
+            lambda **kwargs: search_openalex(
+                self.openalex_client, semantic=semantic, **kwargs
+            ),
         )
 
     @record_execution_time

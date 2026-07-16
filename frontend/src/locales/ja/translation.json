@@ -872,6 +872,14 @@
       "not_found": "見つかりません"
     },
     "searchError": "検索に失敗しました",
-    "noResults": "論文が見つかりませんでした"
+    "noResults": "論文が見つかりませんでした",
+    "mode": "モード",
+    "modes": {
+      "keyword": "キーワード",
+      "semantic": "意味検索"
+    },
+    "semanticHint": "OpenAlex のみ・AI埋め込み検索（OPENALEX_API_KEY が必要）",
+    "semanticKeyMissingTitle": "OPENALEX_API_KEY が設定されていません",
+    "semanticKeyMissingDescription": "意味検索には OpenAlex の API キーが必要です。APIキーページで OPENALEX_API_KEY を設定してから再度お試しください。"
   }
 }

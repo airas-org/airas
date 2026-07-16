@@ -1,8 +1,10 @@
 import { FeatherAlertTriangle, FeatherExternalLink } from "@subframe/core";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { PaperSearchResult } from "@/lib/api/models/PaperSearchResult";
+import { SearchPapersRequestBody } from "@/lib/api/models/SearchPapersRequestBody";
+import { CredentialsService } from "@/lib/api/services/CredentialsService";
 import { PapersService } from "@/lib/api/services/PapersService";
 import { Alert } from "@/ui/components/Alert";
 import { Badge } from "@/ui/components/Badge";
@@ -11,6 +13,15 @@ import { Checkbox } from "@/ui/components/Checkbox";
 import { TextField } from "@/ui/components/TextField";
 
 const ALL_SOURCES = ["openalex", "semantic_scholar", "arxiv", "airas_db"] as const;
+// Sources that support semantic (AI-embedding) search, and the credential each needs.
+const SEMANTIC_SOURCES = ["openalex"] as const;
+const SEMANTIC_KEY = "OPENALEX_API_KEY";
+
+type SearchMode = SearchPapersRequestBody.search_mode;
+const SEARCH_MODES = [
+  SearchPapersRequestBody.search_mode.KEYWORD,
+  SearchPapersRequestBody.search_mode.SEMANTIC,
+] as const;
 
 type FulltextState =
   | { status: "loading" }
@@ -21,6 +32,9 @@ export function PaperSearchPage() {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [sources, setSources] = useState<string[]>([...ALL_SOURCES]);
+  const [searchMode, setSearchMode] = useState<SearchMode>(
+    SearchPapersRequestBody.search_mode.KEYWORD,
+  );
   const [year, setYear] = useState("");
   const [maxResults, setMaxResults] = useState("5");
   const [searching, setSearching] = useState(false);
@@ -29,13 +43,39 @@ export function PaperSearchPage() {
   const [sourceResults, setSourceResults] = useState<Record<string, number>>({});
   const [searchErrors, setSearchErrors] = useState<Record<string, string>>({});
   const [fulltexts, setFulltexts] = useState<Record<string, FulltextState>>({});
+  // null = still loading credential status.
+  const [semanticKeySet, setSemanticKeySet] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    CredentialsService.listCredentialsAirasV1CredentialsGet()
+      .then((res) => {
+        const cred = res.credentials.find((c) => c.name === SEMANTIC_KEY);
+        setSemanticKeySet(Boolean(cred?.is_set));
+      })
+      .catch(() => setSemanticKeySet(false));
+  }, []);
+
+  // In semantic mode the key must be configured; surface the error immediately.
+  const isSemantic = searchMode === SearchPapersRequestBody.search_mode.SEMANTIC;
+  const semanticKeyMissing = isSemantic && semanticKeySet === false;
+
+  const switchMode = (mode: SearchMode) => {
+    setSearchMode(mode);
+    setError(null);
+    // Semantic search is OpenAlex-only; restrict the source selection.
+    setSources(
+      mode === SearchPapersRequestBody.search_mode.SEMANTIC
+        ? [...SEMANTIC_SOURCES]
+        : [...ALL_SOURCES],
+    );
+  };
 
   const toggleSource = (source: string, checked: boolean) => {
     setSources((prev) => (checked ? [...prev, source] : prev.filter((s) => s !== source)));
   };
 
   const handleSearch = async () => {
-    if (!query.trim() || sources.length === 0) return;
+    if (!query.trim() || sources.length === 0 || semanticKeyMissing) return;
     setSearching(true);
     setError(null);
     setFulltexts({});
@@ -45,6 +85,7 @@ export function PaperSearchPage() {
         sources,
         max_results_per_source: Number(maxResults) || 5,
         year: year.trim() || null,
+        search_mode: searchMode,
       });
       setPapers(res.papers);
       setSourceResults(res.source_results);
@@ -88,6 +129,28 @@ export function PaperSearchPage() {
 
         {/* Search form */}
         <div className="mt-6 rounded-lg border border-border bg-card p-6 flex flex-col gap-4">
+          {/* Mode toggle */}
+          <div className="flex items-center gap-2">
+            <span className="text-caption-bold font-caption-bold text-default-font">
+              {t("paperSearch.mode")}
+            </span>
+            {SEARCH_MODES.map((mode) => (
+              <Button
+                key={mode}
+                variant={searchMode === mode ? "brand-primary" : "neutral-tertiary"}
+                size="small"
+                onClick={() => switchMode(mode)}
+              >
+                {t(`paperSearch.modes.${mode}`)}
+              </Button>
+            ))}
+            {isSemantic && (
+              <span className="text-caption font-caption text-subtext-color">
+                {t("paperSearch.semanticHint")}
+              </span>
+            )}
+          </div>
+
           <div className="flex items-center gap-3">
             <TextField className="flex-1" error={false}>
               <TextField.Input
@@ -101,7 +164,7 @@ export function PaperSearchPage() {
             </TextField>
             <Button
               onClick={handleSearch}
-              disabled={searching || !query.trim() || sources.length === 0}
+              disabled={searching || !query.trim() || sources.length === 0 || semanticKeyMissing}
             >
               {searching ? t("paperSearch.searching") : t("paperSearch.search")}
             </Button>
@@ -110,14 +173,20 @@ export function PaperSearchPage() {
             <span className="text-caption-bold font-caption-bold text-default-font">
               {t("paperSearch.sources")}
             </span>
-            {ALL_SOURCES.map((source) => (
-              <Checkbox
-                key={source}
-                label={t(`paperSearch.sourceNames.${source}`)}
-                checked={sources.includes(source)}
-                onCheckedChange={(checked) => toggleSource(source, checked)}
-              />
-            ))}
+            {ALL_SOURCES.map((source) => {
+              const disabled =
+                isSemantic &&
+                !SEMANTIC_SOURCES.includes(source as (typeof SEMANTIC_SOURCES)[number]);
+              return (
+                <Checkbox
+                  key={source}
+                  label={t(`paperSearch.sourceNames.${source}`)}
+                  checked={sources.includes(source)}
+                  disabled={disabled}
+                  onCheckedChange={(checked) => toggleSource(source, checked)}
+                />
+              );
+            })}
             <div className="flex items-center gap-2 ml-auto">
               <span className="text-caption font-caption text-subtext-color">
                 {t("paperSearch.year")}
@@ -142,6 +211,17 @@ export function PaperSearchPage() {
             </div>
           </div>
         </div>
+
+        {semanticKeyMissing && (
+          <div className="mt-4">
+            <Alert
+              variant="error"
+              icon={<FeatherAlertTriangle />}
+              title={t("paperSearch.semanticKeyMissingTitle")}
+              description={t("paperSearch.semanticKeyMissingDescription")}
+            />
+          </div>
+        )}
 
         {error && (
           <div className="mt-4">

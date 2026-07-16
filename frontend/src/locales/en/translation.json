@@ -873,6 +873,14 @@
       "not_found": "Not found"
     },
     "searchError": "Search failed",
-    "noResults": "No papers found"
+    "noResults": "No papers found",
+    "mode": "Mode",
+    "modes": {
+      "keyword": "Keyword",
+      "semantic": "Semantic"
+    },
+    "semanticHint": "OpenAlex only — AI embedding search (requires OPENALEX_API_KEY)",
+    "semanticKeyMissingTitle": "OPENALEX_API_KEY is not set",
+    "semanticKeyMissingDescription": "Semantic search requires an OpenAlex API key. Set OPENALEX_API_KEY on the API Keys page, then try again."
   }
 }

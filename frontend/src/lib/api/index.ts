@@ -140,7 +140,7 @@ export type { RetrievePaperSubgraphLLMMapping } from './models/RetrievePaperSubg
 export type { RetrievePaperSubgraphRequestBody } from './models/RetrievePaperSubgraphRequestBody';
 export type { RetrievePaperSubgraphResponseBody } from './models/RetrievePaperSubgraphResponseBody';
 export { RunStage } from './models/RunStage';
-export type { SearchPapersRequestBody } from './models/SearchPapersRequestBody';
+export { SearchPapersRequestBody } from './models/SearchPapersRequestBody';
 export type { SearchPapersResponseBody } from './models/SearchPapersResponseBody';
 export type { SearchPaperTitlesFromQdrantLLMMapping } from './models/SearchPaperTitlesFromQdrantLLMMapping';
 export { SearchPaperTitlesRequestBody } from './models/SearchPaperTitlesRequestBody';
