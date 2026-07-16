@@ -664,6 +664,9 @@ paths:
             text/html:
               schema:
                 type: string
+        '404':
+          description: LaTeX project not found in the repository (push_latex has not
+            been run)
         '422':
           description: Validation Error
           content:

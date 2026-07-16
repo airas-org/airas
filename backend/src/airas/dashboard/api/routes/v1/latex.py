@@ -94,7 +94,16 @@ async def push_latex(
     )
 
 
-@router.get("/overleaf", response_class=HTMLResponse)
+@router.get(
+    "/overleaf",
+    response_class=HTMLResponse,
+    responses={
+        404: {
+            "description": "LaTeX project not found in the repository "
+            "(push_latex has not been run)",
+        }
+    },
+)
 @inject
 @observe()
 async def open_in_overleaf(

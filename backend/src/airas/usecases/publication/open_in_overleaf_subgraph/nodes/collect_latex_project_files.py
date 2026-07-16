@@ -37,6 +37,18 @@ def collect_latex_project_files(
             relative_path = repo_path[len(prefix) :]
             if relative_path in _EXCLUDED_FILES:
                 continue
+            # Guard against zip-slip style entries: the paths end up inside the
+            # zip handed to Overleaf, so never pass through empty, absolute, or
+            # parent-escaping paths.
+            if (
+                not relative_path
+                or relative_path.startswith("/")
+                or ".." in relative_path.split("/")
+            ):
+                logger.warning(
+                    f"Skipping suspicious path in repository zip: {info.filename}"
+                )
+                continue
             latex_files[relative_path] = archive.read(info)
 
     if "main.tex" not in latex_files:

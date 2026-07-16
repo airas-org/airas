@@ -80,6 +80,7 @@ export class LatexService {
                 'latex_template_name': latexTemplateName,
             },
             errors: {
+                404: `LaTeX project not found in the repository (push_latex has not been run)`,
                 422: `Validation Error`,
             },
         });
