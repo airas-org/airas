@@ -13,10 +13,11 @@ take effect immediately without restarting anything. It can be edited by
 hand or through the dashboard's settings page.
 """
 
+import contextlib
 import json
 import logging
 import os
-import stat
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -46,14 +47,34 @@ def load_credentials() -> dict[str, str]:
     return {k: v for k, v in raw.items() if isinstance(v, str) and v}
 
 
+# Original os.environ values for keys this process has overridden from the
+# file (None = the variable did not exist). Lets refresh_environment() undo
+# an override once the key is removed from the file, so deletions take
+# effect immediately too.
+_overridden_originals: dict[str, str | None] = {}
+
+
 def refresh_environment() -> None:
-    """Load credentials into os.environ (file values take precedence).
+    """Sync credentials from the file into os.environ (file values win).
 
     Downstream code — LLM clients and subgraphs such as
     set_github_actions_secrets — resolves credentials from the
-    environment, so injecting them here makes every path work.
+    environment, so injecting them here makes every path work. Keys that
+    were previously injected but have since been removed from the file are
+    restored to their original value (or unset).
     """
-    os.environ.update(load_credentials())
+    credentials = load_credentials()
+    for name, value in credentials.items():
+        if name not in _overridden_originals:
+            _overridden_originals[name] = os.environ.get(name)
+        os.environ[name] = value
+    for name in list(_overridden_originals):
+        if name not in credentials:
+            original = _overridden_originals.pop(name)
+            if original is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = original
 
 
 @dataclass(frozen=True)
@@ -101,7 +122,20 @@ def save_credentials(updates: dict[str, str]) -> None:
             existing.pop(name, None)
 
     CREDENTIALS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = CREDENTIALS_PATH.with_suffix(".json.tmp")
-    tmp_path.write_text(json.dumps(existing, indent=2) + "\n")
-    tmp_path.chmod(stat.S_IRUSR | stat.S_IWUSR)
-    tmp_path.replace(CREDENTIALS_PATH)
+    # mkstemp creates the file with 0600 and a unique name, so the secrets
+    # are never readable by other users and concurrent writers cannot
+    # collide on a fixed temp path.
+    fd, tmp_path = tempfile.mkstemp(
+        dir=CREDENTIALS_PATH.parent, prefix=".credentials-", suffix=".tmp"
+    )
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(existing, f, indent=2)
+            f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, CREDENTIALS_PATH)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(tmp_path)
+        raise

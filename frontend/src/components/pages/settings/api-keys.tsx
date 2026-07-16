@@ -25,6 +25,12 @@ export function ApiKeysPage() {
       .finally(() => setLoading(false));
   }, [t]);
 
+  const updateEdit = (name: string, value: string) => {
+    // New edits invalidate the "saved" confirmation.
+    setSaved(false);
+    setEdits((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setSaved(false);
@@ -102,15 +108,13 @@ export function ApiKeysPage() {
                         : t("credentials.placeholder")
                     }
                     value={edits[credential.name] ?? ""}
-                    onChange={(e) =>
-                      setEdits((prev) => ({ ...prev, [credential.name]: e.target.value }))
-                    }
+                    onChange={(e) => updateEdit(credential.name, e.target.value)}
                   />
                   {credential.is_set && !clearedForRemoval && (
                     <Button
                       variant="neutral-tertiary"
                       size="small"
-                      onClick={() => setEdits((prev) => ({ ...prev, [credential.name]: "" }))}
+                      onClick={() => updateEdit(credential.name, "")}
                     >
                       {t("credentials.clear")}
                     </Button>
