@@ -70,22 +70,27 @@ export function ApiKeysPage() {
   const renderCredential = (credential: CredentialStatus) => {
     const edited = credential.name in edits;
     const clearedForRemoval = edited && edits[credential.name] === "";
-    const statusText = clearedForRemoval
+    // Single-line rows: the configured/not-configured state lives in the
+    // input placeholder instead of a separate help-text line.
+    const placeholder = clearedForRemoval
       ? t("credentials.willBeRemoved")
       : credential.is_set
-        ? `${t("credentials.configured")}${credential.preview ? ` (${credential.preview})` : ""}`
-        : t("credentials.notConfigured");
+        ? `${t("credentials.configured")}${credential.preview ? ` (${credential.preview})` : ""} — ${t("credentials.replacePlaceholder")}`
+        : `${t("credentials.notConfigured")} — ${t("credentials.placeholder")}`;
     return (
-      <TextField key={credential.name} label={credential.name} helpText={statusText} error={false}>
-        <div className="flex items-center gap-2 w-full">
+      <div key={credential.name} className="flex items-center gap-3">
+        <span className="w-72 shrink-0 text-caption-bold font-caption-bold text-default-font break-all">
+          {credential.name}
+        </span>
+        <TextField className="flex-1" error={false}>
           <TextField.Input
             type={credential.is_secret ? "password" : "text"}
-            placeholder={
-              credential.is_set ? t("credentials.replacePlaceholder") : t("credentials.placeholder")
-            }
+            placeholder={placeholder}
             value={edits[credential.name] ?? ""}
             onChange={(e) => updateEdit(credential.name, e.target.value)}
           />
+        </TextField>
+        <div className="w-16 shrink-0">
           {credential.is_set && !clearedForRemoval && (
             <Button
               variant="neutral-tertiary"
@@ -96,7 +101,7 @@ export function ApiKeysPage() {
             </Button>
           )}
         </div>
-      </TextField>
+      </div>
     );
   };
 
