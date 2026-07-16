@@ -85,3 +85,28 @@ jobs:
       - name: Publish to PyPI (Trusted Publishing)
         working-directory: backend
         run: uv publish --trusted-publishing always
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: Wait for the new version to appear on PyPI
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          for i in $(seq 1 30); do
+            if curl -sf "https://pypi.org/pypi/airas/${VERSION}/json" > /dev/null; then
+              echo "PyPI serves airas ${VERSION}"
+              exit 0
+            fi
+            echo "Waiting for airas ${VERSION} on PyPI... (attempt ${i}/30)"
+            sleep 10
+          done
+          echo "::error::airas ${VERSION} did not appear on PyPI in time"
+          exit 1
+
+      - name: Publish to MCP Registry
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
