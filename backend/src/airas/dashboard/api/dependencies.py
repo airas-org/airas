@@ -8,6 +8,7 @@ from dependency_injector.wiring import Provide, Provider, inject
 from fastapi import Depends, HTTPException, status
 
 from airas.container import Container
+from airas.core.credentials import refresh_environment
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import (
     PROVIDER_REQUIRED_ENV_VARS as LANGCHAIN_REQUIRED_ENV_VARS,
@@ -25,6 +26,8 @@ from airas.infra.llm_provider_resolver import (
 
 # FastAPI dependencies that resolve credentials from environment variables
 # and assemble clients. Session lifecycle is managed by the Container.
+# ~/.airas/credentials.json (editable from the settings page) is re-read on
+# every resolution and overrides plain environment variables.
 
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
@@ -43,6 +46,7 @@ def get_current_user_id() -> UUID:
 
 def get_github_owner() -> str:
     """Return the GitHub owner configured via environment variable."""
+    refresh_environment()
     if not (owner := os.getenv("GITHUB_OWNER", "")):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -52,6 +56,7 @@ def get_github_owner() -> str:
 
 
 def _resolve_github_token() -> str:
+    refresh_environment()
     token = os.getenv("GH_PERSONAL_ACCESS_TOKEN", "")
     if not token:
         raise HTTPException(
@@ -62,7 +67,8 @@ def _resolve_github_token() -> str:
 
 
 def _resolve_env_keys() -> dict[str, str]:
-    """Read LLM API keys from plain environment variables."""
+    """Read LLM API keys from the environment (credentials file included)."""
+    refresh_environment()
     return {env: val for env in _PROVIDER_ENV_VARS if (val := os.getenv(env, ""))}
 
 
