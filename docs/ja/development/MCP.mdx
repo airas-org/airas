@@ -74,7 +74,6 @@ claude mcp add airas -- uvx airas
 | ツール | 説明 |
 | --- | --- |
 | `prepare_repository` | 実験用リポジトリの作成・初期化 |
-| `set_github_actions_secrets` | ローカル環境変数のLLM APIキーをリポジトリのActionsシークレットに設定 |
 | `dispatch_code_generation` | 実験コード生成をGitHub Actionsで開始（非同期） |
 | `dispatch_experiment` | サニティチェック／本実験の実行を開始（非同期） |
 | `get_workflow_runs` | 直近のワークフロー実行のステータス確認（ノンブロッキング） |
@@ -104,7 +103,7 @@ claude mcp add airas -- uvx airas
 | `upload_research_history` | 研究状態を実験リポジトリに保存 |
 | `download_research_history` | 保存した研究状態を復元し、別セッションで継続 |
 
-典型的なフロー: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → `set_github_actions_secrets` → `dispatch_code_generation` →（`get_workflow_runs` でポーリング）→ `fetch_experiment_code` → `dispatch_experiment` →（ポーリング）→ `fetch_experiment_results` → `analyze_experiment` → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`
+典型的なフロー: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → `dispatch_code_generation` →（`get_workflow_runs` でポーリング）→ `fetch_experiment_code` → `dispatch_experiment` →（ポーリング）→ `fetch_experiment_results` → `analyze_experiment` → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`
 
 時間のかかるステップ（コード生成・実験）はGitHub Actions上で実行され、ツール自体は即座に返ります。完了待ちはせず `get_workflow_runs` で追跡してください。
 
