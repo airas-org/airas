@@ -82,8 +82,6 @@ claude mcp add airas -- uvx airas
 | `fetch_experiment_results` | 実験結果を取得 |
 | `download_workflow_artifacts` | 特定のワークフロー実行のアーティファクトを取得 |
 | `analyze_experiment` | 仮説・実験設計に照らして結果を解析 |
-| `dispatch_visualization` | 指定run IDの結果グラフを生成（非同期） |
-| `dispatch_diagram_generation` | 論文用の手法ダイアグラムを生成（非同期） |
 | `push_files` | 任意のファイルを実験リポジトリにプッシュ |
 
 ### 論文執筆・出版
@@ -103,7 +101,7 @@ claude mcp add airas -- uvx airas
 | `upload_research_history` | 研究状態を実験リポジトリに保存 |
 | `download_research_history` | 保存した研究状態を復元し、別セッションで継続 |
 
-典型的なフロー: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **実験コードを自分で書く**（下記参照）→ `dispatch_experiment` →（`get_workflow_runs` でポーリング）→ `fetch_experiment_results` → `analyze_experiment` → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`
+典型的なフロー: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **実験コードを自分で書く**（下記参照）→ `dispatch_experiment` →（`get_workflow_runs` でポーリング）→ `fetch_experiment_results` → `analyze_experiment` → **図とダイアグラムを自分で作る**（下記参照）→ `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`
 
 ### 実験コードの書き方
 
@@ -115,6 +113,16 @@ MCP ホストは有能なコーディングエージェント（Claude Code、Cu
 4. GPU 規模の実行は `dispatch_experiment` でディスパッチし、エラーと結果は `get_experiment_run_status` / `fetch_experiment_results` で取得する
 
 ヘッドレスなパイプライン（組み込みの全自動研究ワークフロー）は従来どおり GitHub Actions 上でコードをリモート生成しますが、その経路は MCP ツールとしては公開していません。
+
+### 図とダイアグラムの作り方
+
+結果の図と手法ダイアグラムも、GitHub Actions ではなく MCP ホスト自身が作成します:
+
+1. `fetch_experiment_results` で実験結果を取得する（ローカルの clone から直接読んでもよい。run の一覧は `fetch_run_ids` で取得できます）
+2. 結果の図をローカルで生成し（matplotlib など）、clone 内の `.research/results/` 配下に PDF として保存する。手法ダイアグラムは `.research/diagrams/` 配下に保存する
+3. git で commit・push する。`push_latex` と LaTeX ビルドが、この2つのディレクトリ内の `*.pdf` を論文の `images/` ディレクトリに収集します
+
+コード生成と同様に、全自動研究ワークフローは従来どおり GitHub Actions 上で可視化・ダイアグラム生成を実行しますが、その経路は MCP ツールとしては公開していません。
 
 時間のかかるステップ（実験・LaTeX ビルド）はGitHub Actions上で実行され、ツール自体は即座に返ります。完了待ちはせず `get_workflow_runs` で追跡してください。
 

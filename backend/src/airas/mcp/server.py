@@ -70,9 +70,6 @@ from airas.usecases.executors.dispatch_experiment_on_aixs_subgraph.dispatch_expe
 from airas.usecases.executors.dispatch_experiment_on_static_runner_subgraph.dispatch_experiment_on_static_runner_subgraph import (
     DispatchExperimentOnStaticRunnerSubgraph,
 )
-from airas.usecases.executors.dispatch_visualization_subgraph.dispatch_visualization_subgraph import (
-    DispatchVisualizationSubgraph,
-)
 from airas.usecases.executors.fetch_experiment_code_subgraph.fetch_experiment_code_subgraph import (
     FetchExperimentCodeSubgraph,
 )
@@ -81,9 +78,6 @@ from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment
 )
 from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph import (
     FetchRunIdsSubgraph,
-)
-from airas.usecases.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
-    DispatchDiagramGenerationSubgraph,
 )
 from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignSubgraph,
@@ -939,8 +933,8 @@ async def fetch_run_ids(
     """List the experiment run IDs recorded in the experiment repository.
 
     Run IDs identify individual experiment runs defined by the generated
-    code; pass them to `dispatch_experiment` or `dispatch_visualization`.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
+    code; pass them to `dispatch_experiment`, and use them to locate result
+    files when creating figures locally. Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     result = (
         await FetchRunIdsSubgraph(github_client=_github_client())
@@ -956,78 +950,6 @@ async def fetch_run_ids(
         )
     )
     return result["run_ids"]
-
-
-@mcp.tool()
-async def dispatch_visualization(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    run_ids: list[str],
-    runner_label: list[str] | None = None,
-) -> dict[str, Any]:
-    """Start result-visualization generation on GitHub Actions (asynchronous).
-
-    Generates figures for the given experiment `run_ids` (from
-    `fetch_run_ids`). The figures are used by the paper-writing stage.
-    Returns immediately; track with `get_workflow_runs`.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    result = (
-        await DispatchVisualizationSubgraph(
-            github_client=_github_client(),
-            runner_label=runner_label,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "run_ids": run_ids,
-            }
-        )
-    )
-    return {"dispatched": result["dispatched"]}
-
-
-@mcp.tool()
-async def dispatch_diagram_generation(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    github_actions_agent: Literal["claude_code", "open_code"] = "claude_code",
-    diagram_description: str | None = None,
-) -> dict[str, Any]:
-    """Start method-diagram generation on GitHub Actions (asynchronous).
-
-    Generates an explanatory diagram of the proposed method for the paper.
-    `diagram_description` optionally guides what the diagram should show.
-    Returns immediately; track with `get_workflow_runs`.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    result = (
-        await DispatchDiagramGenerationSubgraph(
-            github_client=_github_client(),
-            diagram_description=diagram_description,
-            prompt_path=None,
-            llm_mapping=None,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "github_actions_agent": github_actions_agent,
-            }
-        )
-    )
-    return {"dispatched": result["dispatched"]}
 
 
 @mcp.tool()
