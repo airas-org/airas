@@ -69,15 +69,15 @@ claude mcp add airas -- uvx airas
 | `retrieve_models` | サブ分野ごとの候補モデル一覧を取得。APIキー不要 |
 | `retrieve_datasets` | サブ分野ごとの候補データセット一覧を取得。APIキー不要 |
 
-### 実験実行（GitHub Actions）
+### 実験実行
 
 | ツール | 説明 |
 | --- | --- |
 | `prepare_repository` | 実験用リポジトリの作成・初期化 |
-| `dispatch_code_generation` | 実験コード生成をGitHub Actionsで開始（非同期） |
-| `dispatch_experiment` | サニティチェック／本実験の実行を開始（非同期） |
+| `dispatch_experiment` | サニティチェック／本実験の実行を開始（非同期）。`backend` パラメータで GitHub Actions / AIXS 計算基盤を選択 |
 | `get_workflow_runs` | 直近のワークフロー実行のステータス確認（ノンブロッキング） |
-| `fetch_experiment_code` | 生成された実験コードを取得 |
+| `get_aixs_run_status` | AIXS 実行のステータス確認と stdout/stderr の取得（エラー診断用） |
+| `fetch_experiment_code` | 実験コードを取得 |
 | `fetch_run_ids` | リポジトリに記録された実験run IDの一覧を取得 |
 | `fetch_experiment_results` | 実験結果を取得 |
 | `download_workflow_artifacts` | 特定のワークフロー実行のアーティファクトを取得 |
@@ -103,9 +103,20 @@ claude mcp add airas -- uvx airas
 | `upload_research_history` | 研究状態を実験リポジトリに保存 |
 | `download_research_history` | 保存した研究状態を復元し、別セッションで継続 |
 
-典型的なフロー: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → `dispatch_code_generation` →（`get_workflow_runs` でポーリング）→ `fetch_experiment_code` → `dispatch_experiment` →（ポーリング）→ `fetch_experiment_results` → `analyze_experiment` → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`
+典型的なフロー: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **実験コードを自分で書く**（下記参照）→ `dispatch_experiment` →（`get_workflow_runs` でポーリング）→ `fetch_experiment_results` → `analyze_experiment` → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`
 
-時間のかかるステップ（コード生成・実験）はGitHub Actions上で実行され、ツール自体は即座に返ります。完了待ちはせず `get_workflow_runs` で追跡してください。
+### 実験コードの書き方
+
+MCP ホストは有能なコーディングエージェント（Claude Code、Cursor など）である前提のため、AIRAS は実験コードを代わりに生成しません。`prepare_repository` の後:
+
+1. 実験リポジトリを git でローカルに clone する
+2. リポジトリ内の `AGENTS.md` を読む — コードが満たすべき規約（編集可能ファイル、CLI の形、`sanity` / `pilot` / `full` モード、検証判定行、W&B 規約）が定義されています
+3. 実験を実装し、ローカルで `mode=sanity` を実行して `SANITY_VALIDATION: PASS` が出るまで修正してから commit・push する
+4. GPU 規模の実行は `dispatch_experiment` でディスパッチし、エラーと結果は `get_aixs_run_status` / `fetch_experiment_results` で取得する
+
+ヘッドレスなパイプライン（組み込みの全自動研究ワークフロー）は従来どおり GitHub Actions 上でコードをリモート生成しますが、その経路は MCP ツールとしては公開していません。
+
+時間のかかるステップ（実験・LaTeX ビルド）はGitHub Actions上で実行され、ツール自体は即座に返ります。完了待ちはせず `get_workflow_runs` で追跡してください。
 
 ## 開発
 

@@ -69,15 +69,15 @@ Or add it to your project's `.mcp.json`:
 | `retrieve_models` | List curated candidate models for a subfield; no API key required |
 | `retrieve_datasets` | List curated candidate datasets for a subfield; no API key required |
 
-### Experiment execution (GitHub Actions)
+### Experiment execution
 
 | Tool | Description |
 | --- | --- |
 | `prepare_repository` | Create and initialize an experiment repository |
-| `dispatch_code_generation` | Start experiment-code generation on GitHub Actions (async) |
-| `dispatch_experiment` | Start a sanity-check or main experiment run (async) |
+| `dispatch_experiment` | Start a sanity-check or main experiment run (async) on GitHub Actions or the AIXS compute platform (`backend` parameter) |
 | `get_workflow_runs` | Check the status of recent workflow runs (non-blocking) |
-| `fetch_experiment_code` | Fetch the generated experiment code |
+| `get_aixs_run_status` | Check an AIXS run and fetch its stdout/stderr tails for error diagnosis |
+| `fetch_experiment_code` | Fetch the experiment code from the repository |
 | `fetch_run_ids` | List experiment run IDs recorded in the repository |
 | `fetch_experiment_results` | Fetch experiment results |
 | `download_workflow_artifacts` | Download artifacts of a specific workflow run |
@@ -103,9 +103,20 @@ Or add it to your project's `.mcp.json`:
 | `upload_research_history` | Save research state to the experiment repository |
 | `download_research_history` | Restore research state to continue in a later session |
 
-A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → `dispatch_code_generation` → (poll `get_workflow_runs`) → `fetch_experiment_code` → `dispatch_experiment` → (poll) → `fetch_experiment_results` → `analyze_experiment` → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`.
+A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs`) → `fetch_experiment_results` → `analyze_experiment` → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`.
 
-Long-running steps (code generation, experiments) execute on GitHub Actions and return immediately; track them with `get_workflow_runs` instead of waiting.
+### Writing the experiment code
+
+The MCP host is expected to be a capable coding agent (Claude Code, Cursor, ...), so AIRAS does not generate the experiment code for you. After `prepare_repository`:
+
+1. Clone the experiment repository locally with git.
+2. Read its `AGENTS.md` — it defines the contract the code must satisfy (allowed files, CLI shape, `sanity` / `pilot` / `full` modes, validation verdict lines, W&B conventions).
+3. Implement the experiment, run `mode=sanity` locally until it prints `SANITY_VALIDATION: PASS`, then commit and push.
+4. Dispatch GPU-scale runs with `dispatch_experiment` and fetch errors/results with `get_aixs_run_status` / `fetch_experiment_results`.
+
+Headless pipelines (the built-in autonomous research workflows) still generate code remotely on GitHub Actions; that path is not exposed as an MCP tool.
+
+Long-running steps (experiments, LaTeX builds) execute on GitHub Actions and return immediately; track them with `get_workflow_runs` instead of waiting.
 
 ## Development
 

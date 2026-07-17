@@ -848,6 +848,7 @@
       "github": "GitHub",
       "llm": "LLMプロバイダー",
       "papers": "論文",
+      "compute": "計算基盤 (AIXS)",
       "integrations": "オプション連携",
       "other": "その他"
     }
