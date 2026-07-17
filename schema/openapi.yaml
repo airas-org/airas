@@ -613,6 +613,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/latex/overleaf:
+    get:
+      tags:
+      - latex
+      summary: Open In Overleaf
+      description: 'Serve a page that forwards the paper''s LaTeX project to Overleaf.
+
+
+        Opened in a browser (not called as a JSON API): the page carries the
+
+        zipped LaTeX sources inline and immediately POSTs them to Overleaf,
+
+        which creates a new project in the user''s Overleaf account.'
+      operationId: open_in_overleaf_airas_v1_latex_overleaf_get
+      parameters:
+      - name: github_owner
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Github Owner
+      - name: repository_name
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Repository Name
+      - name: branch_name
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Branch Name
+      - name: latex_template_name
+        in: query
+        required: false
+        schema:
+          enum:
+          - iclr2024
+          - agents4science_2025
+          - mdpi
+          type: string
+          default: mdpi
+          title: Latex Template Name
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '404':
+          description: LaTeX project not found in the repository (push_latex has not
+            been run)
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/latex/compile:
     post:
       tags:
