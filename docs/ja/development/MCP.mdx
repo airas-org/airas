@@ -76,7 +76,7 @@ claude mcp add airas -- uvx airas
 | `prepare_repository` | 実験用リポジトリの作成・初期化 |
 | `dispatch_experiment` | サニティチェック／本実験の実行を開始（非同期）。`backend` パラメータで GitHub Actions / AIXS 計算基盤を選択 |
 | `get_workflow_runs` | 直近のワークフロー実行のステータス確認（ノンブロッキング） |
-| `get_aixs_run_status` | AIXS 実行のステータス確認と stdout/stderr の取得（エラー診断用） |
+| `get_experiment_run_status` | 任意のバックエンドの実行1件のステータス確認と stdout/stderr の取得（エラー診断用） |
 | `fetch_experiment_code` | 実験コードを取得 |
 | `fetch_run_ids` | リポジトリに記録された実験run IDの一覧を取得 |
 | `fetch_experiment_results` | 実験結果を取得 |
@@ -112,7 +112,7 @@ MCP ホストは有能なコーディングエージェント（Claude Code、Cu
 1. 実験リポジトリを git でローカルに clone する
 2. リポジトリ内の `AGENTS.md` を読む — コードが満たすべき規約（編集可能ファイル、CLI の形、`sanity` / `pilot` / `full` モード、検証判定行、W&B 規約）が定義されています
 3. 実験を実装し、ローカルで `mode=sanity` を実行して `SANITY_VALIDATION: PASS` が出るまで修正してから commit・push する
-4. GPU 規模の実行は `dispatch_experiment` でディスパッチし、エラーと結果は `get_aixs_run_status` / `fetch_experiment_results` で取得する
+4. GPU 規模の実行は `dispatch_experiment` でディスパッチし、エラーと結果は `get_experiment_run_status` / `fetch_experiment_results` で取得する
 
 ヘッドレスなパイプライン（組み込みの全自動研究ワークフロー）は従来どおり GitHub Actions 上でコードをリモート生成しますが、その経路は MCP ツールとしては公開していません。
 

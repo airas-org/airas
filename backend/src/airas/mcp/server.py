@@ -566,9 +566,13 @@ async def dispatch_experiment(
       Requires GH_PERSONAL_ACCESS_TOKEN.
     - "aixs": executes on the AIXS compute platform (GPU without GitHub
       Actions limits). `compute_type` picks the machine (e.g. "cpu-general",
-      "gpu-a10"). Returns `aixs_run_id`; track progress and fetch execution
-      errors with `get_aixs_run_status`. Requires AIXS_API_KEY, and W&B API
-      keys must be registered as env vars on the AIXS side.
+      "gpu-a10"). Requires AIXS_API_KEY, and W&B API keys must be registered
+      as env vars on the AIXS side.
+
+    Track progress and fetch execution errors with
+    `get_experiment_run_status`. For "aixs" the returned `execution_id` is
+    passed directly; for "github_actions" the workflow-dispatch API returns
+    no id, so discover the run id with `get_workflow_runs` first.
     """
     if backend == "aixs":
         run_stage = RunStage.SANITY if workflow == "sanity_check" else RunStage.FULL
@@ -593,8 +597,8 @@ async def dispatch_experiment(
         return {
             "dispatched": aixs_result["dispatched"],
             "backend": "aixs",
-            "aixs_run_id": aixs_result["aixs_run_id"],
-            "aixs_run_url": aixs_result["aixs_run_url"],
+            "execution_id": aixs_result["aixs_run_id"],
+            "execution_url": aixs_result["aixs_run_url"],
         }
 
     workflow_file = (
@@ -624,21 +628,62 @@ async def dispatch_experiment(
 
 
 @mcp.tool()
-async def get_aixs_run_status(
-    aixs_run_id: str,
+async def get_experiment_run_status(
+    execution_id: str,
+    backend: Literal["github_actions", "aixs"] = "github_actions",
+    github_owner: str | None = None,
+    repository_name: str | None = None,
     log_tail_lines: int = 200,
 ) -> dict[str, Any]:
-    """Check an AIXS experiment run and fetch its execution logs (non-blocking).
+    """Check one experiment run and fetch its execution logs (non-blocking).
 
-    Use for runs started with `dispatch_experiment(backend="aixs")`. Returns
-    the run status ("pending" / "preprocessing" / "running" / "completed" /
-    "failed" / "cancelled") and, once the run has finished, the last
-    `log_tail_lines` lines of stdout and stderr — use stderr to diagnose
-    execution errors and fix the experiment code locally.
-    Requires AIXS_API_KEY.
+    `execution_id` identifies the run on the selected `backend`: the
+    `execution_id` returned by `dispatch_experiment(backend="aixs")`, or a
+    `workflow_run_id` from `get_workflow_runs` for "github_actions" (pass
+    `github_owner` and `repository_name` in that case).
+
+    Returns the run status and, once the run has finished, the last
+    `log_tail_lines` lines of stdout and stderr where the backend provides
+    them — use stderr to diagnose execution errors and fix the experiment
+    code locally.
     """
+    if backend == "github_actions":
+        if not github_owner or not repository_name:
+            raise ValueError(
+                "github_owner and repository_name are required for the "
+                "github_actions backend"
+            )
+        response = await _github_client().alist_workflow_runs(
+            github_owner=github_owner,
+            repository_name=repository_name,
+        )
+        run_info = next(
+            (
+                r
+                for r in (response or {}).get("workflow_runs", [])
+                if str(r.get("id")) == execution_id
+            ),
+            None,
+        )
+        if run_info is None:
+            raise ValueError(
+                f"Workflow run {execution_id} not found in recent runs of "
+                f"{github_owner}/{repository_name}"
+            )
+        return {
+            "execution_id": execution_id,
+            "backend": backend,
+            "status": run_info.get("status"),
+            "conclusion": run_info.get("conclusion"),
+            "execution_url": run_info.get("html_url"),
+            # Actions job logs are not exposed here; inspect the run page or
+            # use download_workflow_artifacts for outputs.
+            "stdout_tail": None,
+            "stderr_tail": None,
+        }
+
     client = _aixs_client()
-    run = await client.aget_run(aixs_run_id)
+    run = await client.aget_run(execution_id)
     status = run.get("status")
 
     def _tail(text: str) -> str:
@@ -649,16 +694,17 @@ async def get_aixs_run_status(
     stderr_tail: str | None = None
     if status in ("completed", "failed"):
         try:
-            stdout_tail = _tail(await client.aget_run_stdout(aixs_run_id))
+            stdout_tail = _tail(await client.aget_run_stdout(execution_id))
         except Exception as exc:  # logs may not be persisted yet
-            logger.warning(f"Failed to fetch AIXS stdout for {aixs_run_id}: {exc}")
+            logger.warning(f"Failed to fetch stdout for run {execution_id}: {exc}")
         try:
-            stderr_tail = _tail(await client.aget_run_stderr(aixs_run_id))
+            stderr_tail = _tail(await client.aget_run_stderr(execution_id))
         except Exception as exc:
-            logger.warning(f"Failed to fetch AIXS stderr for {aixs_run_id}: {exc}")
+            logger.warning(f"Failed to fetch stderr for run {execution_id}: {exc}")
 
     return {
-        "aixs_run_id": aixs_run_id,
+        "execution_id": execution_id,
+        "backend": backend,
         "status": status,
         "compute_type": run.get("compute_type"),
         "duration_seconds": run.get("duration_seconds"),
