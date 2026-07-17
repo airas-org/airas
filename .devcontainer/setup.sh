@@ -34,14 +34,19 @@ git config --local --unset-all core.hooksPath || true
 
 uv run --project backend pre-commit install --overwrite
 
-# --- Frontend (Node + npm) ---
+# --- Frontend (Node + pnpm) ---
 cd "$FRONTEND"
 
+# Ensure pnpm is available (already baked into dev.Dockerfile; this covers older images)
+if ! command -v pnpm >/dev/null 2>&1; then
+  sudo npm install -g pnpm@11.9.0
+fi
+
 # Prefer deterministic install if lockfile exists
-if [ -f "package-lock.json" ]; then
-  npm ci
+if [ -f "pnpm-lock.yaml" ]; then
+  pnpm install --frozen-lockfile
 else
-  npm install
+  pnpm install
 fi
 
 # --- Load .env into shell profile ---

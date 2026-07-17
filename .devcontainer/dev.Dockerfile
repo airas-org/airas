@@ -20,9 +20,10 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
-# Node.js
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+# Node.js + pnpm
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
+    && npm install -g pnpm@11.9.0 \
     && rm -rf /var/lib/apt/lists/*
 
 # ttyd

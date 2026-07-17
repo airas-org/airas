@@ -25,7 +25,7 @@ repos:
 
     - id: biome
       name: biome (check --write)
-      entry: bash -lc 'cd frontend && npx biome check --write .'
+      entry: bash -lc 'cd frontend && pnpm exec biome check --write .'
       language: system
       files: ^frontend/.*\.(js|jsx|ts|tsx|json|md)$
       pass_filenames: false
