@@ -847,6 +847,7 @@
     "categories": {
       "github": "GitHub",
       "llm": "LLMプロバイダー",
+      "papers": "論文",
       "integrations": "オプション連携",
       "other": "その他"
     }
