@@ -82,6 +82,8 @@ Or add it to your project's `.mcp.json`:
 | `fetch_experiment_results` | Fetch experiment results |
 | `download_workflow_artifacts` | Download artifacts of a specific workflow run |
 | `analyze_experiment` | Analyze results against the hypothesis and design |
+| `render_chart` | Render a Vega-Lite spec to a figure file (PDF/SVG/PNG) locally; no API keys required |
+| `render_diagram` | Render a text diagram (mermaid, graphviz, d2, plantuml, …) via Kroki; no API keys required |
 | `push_files` | Push arbitrary files to the experiment repository |
 
 ### Paper writing & publication
@@ -119,8 +121,10 @@ Headless pipelines (the built-in autonomous research workflows) still generate c
 Result figures and method diagrams are also created by the MCP host itself rather than on GitHub Actions:
 
 1. Fetch the experiment results with `fetch_experiment_results` (or read them from your local clone; `fetch_run_ids` lists the runs).
-2. Generate result figures locally (e.g. with matplotlib) and save them as PDFs under `.research/results/` in the clone. Save method diagrams under `.research/diagrams/`.
+2. Build a Vega-Lite spec from the results and render it with `render_chart`, saving the PDF under `.research/results/` in the clone. For method diagrams, write the diagram as text (mermaid, graphviz, d2, …) and render it with `render_diagram` into `.research/diagrams/`. (Generating figures yourself, e.g. with matplotlib, works too — only the output location matters.)
 3. Commit and push them with git. `push_latex` and the LaTeX build collect every `*.pdf` from those two directories into the paper's `images/` directory.
+
+`render_chart` renders entirely locally. `render_diagram` uses the public https://kroki.io by default; set `KROKI_BASE_URL` to a self-hosted Kroki instance to keep unpublished diagrams on-premises.
 
 As with code generation, the autonomous research workflows still run visualization and diagram generation on GitHub Actions; those paths are not exposed as MCP tools.
 

@@ -14,14 +14,19 @@ Run locally:
     uvx --from "airas[mcp]" airas-mcp
 """
 
+import asyncio
 import logging
 import os
 import webbrowser
+from io import BytesIO
+from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlencode
 
 import httpx
+import vl_convert as vlc
 from mcp.server.fastmcp import FastMCP
+from PIL import Image
 from pydantic import BaseModel
 
 from airas.cli import DEFAULT_DASHBOARD_PORT
@@ -54,6 +59,7 @@ from airas.dashboard.launcher import (
 from airas.infra.aixs_client import AixsClient
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
+from airas.infra.kroki_client import KrokiClient
 from airas.infra.langchain_client import (
     PROVIDER_REQUIRED_ENV_VARS,
     LangChainClient,
@@ -173,6 +179,11 @@ def _aixs_client() -> AixsClient:
     if not os.getenv("AIXS_API_KEY"):
         raise RuntimeError(f"AIXS_API_KEY is not configured. {SETUP_INSTRUCTIONS}")
     return AixsClient(sync_session=_sync_session, async_session=_async_session)
+
+
+def _kroki_client() -> KrokiClient:
+    refresh_environment()
+    return KrokiClient(sync_session=_sync_session, async_session=_async_session)
 
 
 def _arxiv_client() -> ArxivClient:
@@ -949,6 +960,94 @@ async def fetch_run_ids(
         )
     )
     return result["run_ids"]
+
+
+def _resolve_render_output(output_path: str) -> tuple[Path, str]:
+    path = Path(output_path).expanduser()
+    suffix = path.suffix.lower().lstrip(".")
+    if suffix not in ("pdf", "svg", "png"):
+        raise ValueError("output_path must end with .pdf, .svg, or .png")
+    return path, suffix
+
+
+def _png_to_pdf(png: bytes) -> bytes:
+    image = Image.open(BytesIO(png))
+    if image.mode != "RGB":
+        # Flatten transparency onto white instead of the black that a
+        # plain RGB conversion would produce.
+        rgba = image.convert("RGBA")
+        image = Image.new("RGB", rgba.size, (255, 255, 255))
+        image.paste(rgba, mask=rgba.getchannel("A"))
+    buffer = BytesIO()
+    image.save(buffer, format="PDF")
+    return buffer.getvalue()
+
+
+@mcp.tool()
+async def render_chart(
+    vega_lite_spec: dict[str, Any],
+    output_path: str,
+) -> dict[str, Any]:
+    """Render a Vega-Lite spec to a chart file, entirely locally.
+
+    Use this for publication-quality result figures: build a Vega-Lite JSON
+    spec from the experiment results (inline the data under `data.values`)
+    and save the chart as a PDF under `.research/results/` in your local
+    clone of the experiment repository, then commit and push — the LaTeX
+    build collects every `*.pdf` there. `output_path` must end with .pdf,
+    .svg, or .png. Rendering runs in-process (vl-convert); no data leaves
+    the machine and no API keys are required.
+    """
+    path, suffix = _resolve_render_output(output_path)
+    if suffix == "pdf":
+        data = await asyncio.to_thread(vlc.vegalite_to_pdf, vega_lite_spec)
+    elif suffix == "svg":
+        svg = await asyncio.to_thread(vlc.vegalite_to_svg, vega_lite_spec)
+        data = svg.encode("utf-8")
+    else:
+        data = await asyncio.to_thread(vlc.vegalite_to_png, vega_lite_spec)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return {"output_path": str(path), "bytes_written": len(data)}
+
+
+@mcp.tool()
+async def render_diagram(
+    diagram_type: str,
+    diagram_source: str,
+    output_path: str,
+) -> dict[str, Any]:
+    """Render a text diagram (diagram-as-code) to a file via Kroki.
+
+    Use this for method/architecture diagrams: write the diagram source in
+    a text notation (`diagram_type`: "mermaid", "graphviz", "d2",
+    "plantuml", and 20+ more Kroki types) and save the result as a PDF
+    under `.research/diagrams/` in your local clone of the experiment
+    repository, then commit and push — the LaTeX build collects every
+    `*.pdf` there. `output_path` must end with .pdf, .svg, or .png; PDF
+    conversion happens locally from the SVG (vector). Types whose SVG embeds
+    HTML labels (e.g. mermaid) fall back to a raster PDF automatically —
+    prefer "graphviz" / "plantuml" when you want vector text. Rendering uses
+    the public https://kroki.io by default — set KROKI_BASE_URL to a
+    self-hosted instance to keep unpublished diagrams private. No API keys
+    required.
+    """
+    path, suffix = _resolve_render_output(output_path)
+    client = _kroki_client()
+    if suffix == "pdf":
+        svg = await client.arender(diagram_type, diagram_source, "svg")
+        if b"<foreignObject" in svg:
+            # HTML-in-SVG labels (mermaid etc.) are dropped by the local
+            # SVG-to-PDF converter, so rasterize via Kroki's PNG instead.
+            png = await client.arender(diagram_type, diagram_source, "png")
+            data = await asyncio.to_thread(_png_to_pdf, png)
+        else:
+            data = await asyncio.to_thread(vlc.svg_to_pdf, svg.decode("utf-8"))
+    else:
+        data = await client.arender(diagram_type, diagram_source, suffix)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return {"output_path": str(path), "bytes_written": len(data)}
 
 
 @mcp.tool()
