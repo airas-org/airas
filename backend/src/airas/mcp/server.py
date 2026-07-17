@@ -60,6 +60,7 @@ from airas.infra.langchain_client import (
 )
 from airas.infra.llm_provider_resolver import detect_available_providers
 from airas.infra.openalex_client import OpenAlexClient
+from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
@@ -641,27 +642,24 @@ async def get_experiment_run_status(
     them — use stderr to diagnose execution errors and fix the experiment
     code locally.
     """
+    if log_tail_lines <= 0:
+        raise ValueError("log_tail_lines must be a positive integer")
+    log_tail_lines = min(log_tail_lines, 10_000)
+
     if backend == "github_actions":
         if not github_owner or not repository_name:
             raise ValueError(
                 "github_owner and repository_name are required for the "
                 "github_actions backend"
             )
-        response = await _github_client().alist_workflow_runs(
+        run_info = await _github_client().aget_workflow_run(
             github_owner=github_owner,
             repository_name=repository_name,
-        )
-        run_info = next(
-            (
-                r
-                for r in (response or {}).get("workflow_runs", [])
-                if str(r.get("id")) == execution_id
-            ),
-            None,
+            workflow_run_id=int(execution_id),
         )
         if run_info is None:
             raise ValueError(
-                f"Workflow run {execution_id} not found in recent runs of "
+                f"Workflow run {execution_id} not found in "
                 f"{github_owner}/{repository_name}"
             )
         return {
@@ -686,14 +684,15 @@ async def get_experiment_run_status(
 
     stdout_tail: str | None = None
     stderr_tail: str | None = None
-    if status in ("completed", "failed"):
+    if status in ("completed", "failed", "cancelled"):
         try:
             stdout_tail = _tail(await client.aget_run_stdout(execution_id))
-        except Exception as exc:  # logs may not be persisted yet
+        except (HTTPClientFatalError, HTTPClientRetryableError) as exc:
+            # logs may not be persisted (yet) for this run
             logger.warning(f"Failed to fetch stdout for run {execution_id}: {exc}")
         try:
             stderr_tail = _tail(await client.aget_run_stderr(execution_id))
-        except Exception as exc:
+        except (HTTPClientFatalError, HTTPClientRetryableError) as exc:
             logger.warning(f"Failed to fetch stderr for run {execution_id}: {exc}")
 
     return {

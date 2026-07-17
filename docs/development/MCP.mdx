@@ -101,7 +101,7 @@ Or add it to your project's `.mcp.json`:
 | `upload_research_history` | Save research state to the experiment repository |
 | `download_research_history` | Restore research state to continue in a later session |
 
-A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs`) → `fetch_experiment_results` → `analyze_experiment` → **create figures and diagrams yourself** (see below) → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`.
+A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs` for GitHub Actions, or `get_experiment_run_status` for AIXS) → `fetch_experiment_results` → `analyze_experiment` → **create figures and diagrams yourself** (see below) → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`.
 
 ### Writing the experiment code
 
@@ -124,7 +124,7 @@ Result figures and method diagrams are also created by the MCP host itself rathe
 
 As with code generation, the autonomous research workflows still run visualization and diagram generation on GitHub Actions; those paths are not exposed as MCP tools.
 
-Long-running steps (experiments, LaTeX builds) execute on GitHub Actions and return immediately; track them with `get_workflow_runs` instead of waiting.
+Long-running steps return immediately instead of blocking. Experiments run on GitHub Actions or on AIXS depending on `dispatch_experiment`'s `backend` — track them with `get_workflow_runs` or `get_experiment_run_status` respectively. LaTeX builds run on GitHub Actions; track them with `get_workflow_runs`.
 
 ## Development
 

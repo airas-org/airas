@@ -133,7 +133,7 @@ class DispatchExperimentOnAixsSubgraph:
         return {
             "dispatched": True,
             "aixs_run_id": str(run["run_id"]),
-            "aixs_run_url": run.get("run_url", ""),
+            "aixs_run_url": run.get("run_url") or "",
         }
 
     def build_graph(self):

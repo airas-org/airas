@@ -101,7 +101,7 @@ claude mcp add airas -- uvx airas
 | `upload_research_history` | 研究状態を実験リポジトリに保存 |
 | `download_research_history` | 保存した研究状態を復元し、別セッションで継続 |
 
-典型的なフロー: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **実験コードを自分で書く**（下記参照）→ `dispatch_experiment` →（`get_workflow_runs` でポーリング）→ `fetch_experiment_results` → `analyze_experiment` → **図とダイアグラムを自分で作る**（下記参照）→ `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`
+典型的なフロー: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **実験コードを自分で書く**（下記参照）→ `dispatch_experiment` →（GitHub Actions は `get_workflow_runs`、AIXS は `get_experiment_run_status` でポーリング）→ `fetch_experiment_results` → `analyze_experiment` → **図とダイアグラムを自分で作る**（下記参照）→ `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`
 
 ### 実験コードの書き方
 
@@ -124,7 +124,7 @@ MCP ホストは有能なコーディングエージェント（Claude Code、Cu
 
 コード生成と同様に、全自動研究ワークフローは従来どおり GitHub Actions 上で可視化・ダイアグラム生成を実行しますが、その経路は MCP ツールとしては公開していません。
 
-時間のかかるステップ（実験・LaTeX ビルド）はGitHub Actions上で実行され、ツール自体は即座に返ります。完了待ちはせず `get_workflow_runs` で追跡してください。
+時間のかかるステップは完了を待たず、ツール自体は即座に返ります。実験は `dispatch_experiment` の `backend` に応じて GitHub Actions または AIXS 上で実行されます — 追跡はそれぞれ `get_workflow_runs` / `get_experiment_run_status` を使ってください。LaTeX ビルドは GitHub Actions 上で実行され、`get_workflow_runs` で追跡します。
 
 ## 開発
 
