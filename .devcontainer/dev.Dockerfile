@@ -20,10 +20,11 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
-# Node.js + pnpm
+# Node.js + pnpm (via corepack; the version follows frontend/package.json's packageManager field)
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
-    && npm install -g pnpm@11.9.0 \
+    && corepack enable \
     && rm -rf /var/lib/apt/lists/*
 
 # ttyd

@@ -37,9 +37,11 @@ uv run --project backend pre-commit install --overwrite
 # --- Frontend (Node + pnpm) ---
 cd "$FRONTEND"
 
-# Ensure pnpm is available (already baked into dev.Dockerfile; this covers older images)
+# Ensure pnpm is available via corepack (already enabled in dev.Dockerfile; this
+# covers older images). The version follows package.json's packageManager field.
+export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 if ! command -v pnpm >/dev/null 2>&1; then
-  sudo npm install -g pnpm@11.9.0
+  sudo corepack enable
 fi
 
 # Prefer deterministic install if lockfile exists
