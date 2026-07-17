@@ -69,21 +69,19 @@ Or add it to your project's `.mcp.json`:
 | `retrieve_models` | List curated candidate models for a subfield; no API key required |
 | `retrieve_datasets` | List curated candidate datasets for a subfield; no API key required |
 
-### Experiment execution (GitHub Actions)
+### Experiment execution
 
 | Tool | Description |
 | --- | --- |
 | `prepare_repository` | Create and initialize an experiment repository |
-| `dispatch_code_generation` | Start experiment-code generation on GitHub Actions (async) |
-| `dispatch_experiment` | Start a sanity-check or main experiment run (async) |
+| `dispatch_experiment` | Start a sanity-check or main experiment run (async) on GitHub Actions or the AIXS compute platform (`backend` parameter) |
 | `get_workflow_runs` | Check the status of recent workflow runs (non-blocking) |
-| `fetch_experiment_code` | Fetch the generated experiment code |
+| `get_experiment_run_status` | Check one run on any backend and fetch its stdout/stderr tails for error diagnosis |
+| `fetch_experiment_code` | Fetch the experiment code from the repository |
 | `fetch_run_ids` | List experiment run IDs recorded in the repository |
 | `fetch_experiment_results` | Fetch experiment results |
 | `download_workflow_artifacts` | Download artifacts of a specific workflow run |
 | `analyze_experiment` | Analyze results against the hypothesis and design |
-| `dispatch_visualization` | Generate result figures for given run IDs (async) |
-| `dispatch_diagram_generation` | Generate a method diagram for the paper (async) |
 | `push_files` | Push arbitrary files to the experiment repository |
 
 ### Paper writing & publication
@@ -103,9 +101,30 @@ Or add it to your project's `.mcp.json`:
 | `upload_research_history` | Save research state to the experiment repository |
 | `download_research_history` | Restore research state to continue in a later session |
 
-A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → `dispatch_code_generation` → (poll `get_workflow_runs`) → `fetch_experiment_code` → `dispatch_experiment` → (poll) → `fetch_experiment_results` → `analyze_experiment` → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`.
+A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs` for GitHub Actions, or `get_experiment_run_status` for AIXS) → `fetch_experiment_results` → `analyze_experiment` → **create figures and diagrams yourself** (see below) → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`.
 
-Long-running steps (code generation, experiments) execute on GitHub Actions and return immediately; track them with `get_workflow_runs` instead of waiting.
+### Writing the experiment code
+
+The MCP host is expected to be a capable coding agent (Claude Code, Cursor, ...), so AIRAS does not generate the experiment code for you. After `prepare_repository`:
+
+1. Clone the experiment repository locally with git.
+2. Read its `AGENTS.md` — it defines the contract the code must satisfy (allowed files, CLI shape, `sanity` / `pilot` / `full` modes, validation verdict lines, W&B conventions).
+3. Implement the experiment, run `mode=sanity` locally until it prints `SANITY_VALIDATION: PASS`, then commit and push.
+4. Dispatch GPU-scale runs with `dispatch_experiment` and fetch errors/results with `get_experiment_run_status` / `fetch_experiment_results`.
+
+Headless pipelines (the built-in autonomous research workflows) still generate code remotely on GitHub Actions; that path is not exposed as an MCP tool.
+
+### Creating figures and diagrams
+
+Result figures and method diagrams are also created by the MCP host itself rather than on GitHub Actions:
+
+1. Fetch the experiment results with `fetch_experiment_results` (or read them from your local clone; `fetch_run_ids` lists the runs).
+2. Generate result figures locally (e.g. with matplotlib) and save them as PDFs under `.research/results/` in the clone. Save method diagrams under `.research/diagrams/`.
+3. Commit and push them with git. `push_latex` and the LaTeX build collect every `*.pdf` from those two directories into the paper's `images/` directory.
+
+As with code generation, the autonomous research workflows still run visualization and diagram generation on GitHub Actions; those paths are not exposed as MCP tools.
+
+Long-running steps return immediately instead of blocking. Experiments run on GitHub Actions or on AIXS depending on `dispatch_experiment`'s `backend` — track them with `get_workflow_runs` or `get_experiment_run_status` respectively. LaTeX builds run on GitHub Actions; track them with `get_workflow_runs`.
 
 ## Development
 

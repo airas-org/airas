@@ -100,6 +100,9 @@ CREDENTIAL_SPECS: tuple[CredentialSpec, ...] = (
     CredentialSpec("LANGFUSE_SECRET_KEY"),
     CredentialSpec("LANGFUSE_PUBLIC_KEY"),
     CredentialSpec("LANGFUSE_BASE_URL", is_secret=False),
+    # Optional: run experiments on the AIXS compute platform.
+    CredentialSpec("AIXS_API_KEY"),
+    CredentialSpec("AIXS_BASE_URL", is_secret=False),
 )
 
 KNOWN_CREDENTIAL_NAMES = frozenset(spec.name for spec in CREDENTIAL_SPECS)

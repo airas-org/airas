@@ -14,6 +14,7 @@ Run locally:
     uvx --from "airas[mcp]" airas-mcp
 """
 
+import logging
 import os
 import webbrowser
 from typing import Any, Literal
@@ -26,7 +27,7 @@ from pydantic import BaseModel
 from airas.cli import DEFAULT_DASHBOARD_PORT
 from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
 from airas.core.types.experiment_code import ExperimentCode
-from airas.core.types.experiment_history import ExperimentHistory
+from airas.core.types.experiment_history import ExperimentHistory, RunStage
 from airas.core.types.experimental_design import (
     ComputeEnvironment,
     DatasetSubfield,
@@ -41,7 +42,6 @@ from airas.core.types.paper_search import PAPER_SEARCH_SOURCES
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
-from airas.core.types.wandb import WandbConfig
 from airas.dashboard.launcher import (
     dashboard_url,
     has_bundled_ui,
@@ -51,6 +51,7 @@ from airas.dashboard.launcher import (
 from airas.dashboard.launcher import (
     stop_dashboard as stop_dashboard_process,
 )
+from airas.infra.aixs_client import AixsClient
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
 from airas.infra.langchain_client import (
@@ -59,15 +60,16 @@ from airas.infra.langchain_client import (
 )
 from airas.infra.llm_provider_resolver import detect_available_providers
 from airas.infra.openalex_client import OpenAlexClient
+from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
+from airas.usecases.executors.dispatch_experiment_on_aixs_subgraph.dispatch_experiment_on_aixs_subgraph import (
+    DispatchExperimentOnAixsSubgraph,
+)
 from airas.usecases.executors.dispatch_experiment_on_static_runner_subgraph.dispatch_experiment_on_static_runner_subgraph import (
     DispatchExperimentOnStaticRunnerSubgraph,
-)
-from airas.usecases.executors.dispatch_visualization_subgraph.dispatch_visualization_subgraph import (
-    DispatchVisualizationSubgraph,
 )
 from airas.usecases.executors.fetch_experiment_code_subgraph.fetch_experiment_code_subgraph import (
     FetchExperimentCodeSubgraph,
@@ -77,12 +79,6 @@ from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment
 )
 from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph import (
     FetchRunIdsSubgraph,
-)
-from airas.usecases.generators.dispatch_code_generation_subgraph.dispatch_code_generation_subgraph import (
-    DispatchCodeGenerationSubgraph,
-)
-from airas.usecases.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
-    DispatchDiagramGenerationSubgraph,
 )
 from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignSubgraph,
@@ -139,6 +135,8 @@ from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph 
 )
 from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
 
+logger = logging.getLogger(__name__)
+
 mcp = FastMCP("airas")
 
 # BM25 index over the AIRAS papers DB; built lazily on first search and
@@ -168,6 +166,13 @@ def _github_client() -> GithubClient:
         sync_session=_github_sync_session,
         async_session=_github_async_session,
     )
+
+
+def _aixs_client() -> AixsClient:
+    refresh_environment()
+    if not os.getenv("AIXS_API_KEY"):
+        raise RuntimeError(f"AIXS_API_KEY is not configured. {SETUP_INSTRUCTIONS}")
+    return AixsClient(sync_session=_sync_session, async_session=_async_session)
 
 
 def _arxiv_client() -> ArxivClient:
@@ -533,54 +538,6 @@ async def prepare_repository(
 
 
 @mcp.tool()
-async def dispatch_code_generation(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    research_topic: str,
-    research_hypothesis: dict[str, Any],
-    experimental_design: dict[str, Any],
-    wandb_entity: str,
-    wandb_project: str,
-    github_actions_agent: Literal["claude_code", "open_code"] = "open_code",
-) -> dict[str, Any]:
-    """Start experiment-code generation on GitHub Actions (asynchronous).
-
-    Dispatches a workflow in the experiment repository that generates the
-    experiment code with a coding agent. Returns immediately with
-    `dispatched`; track progress with `get_workflow_runs` and fetch the
-    generated code with `fetch_experiment_code` once the run succeeds.
-    Requires GH_PERSONAL_ACCESS_TOKEN and an LLM provider API key.
-    """
-    result = (
-        await DispatchCodeGenerationSubgraph(
-            github_client=_github_client(),
-            llm_mapping=None,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "research_topic": research_topic,
-                "research_hypothesis": ResearchHypothesis.model_validate(
-                    research_hypothesis
-                ),
-                "experimental_design": ExperimentalDesign.model_validate(
-                    experimental_design
-                ),
-                "wandb_config": WandbConfig(entity=wandb_entity, project=wandb_project),
-                "github_actions_agent": github_actions_agent,
-            }
-        )
-    )
-    return {"dispatched": result["dispatched"]}
-
-
-@mcp.tool()
 async def dispatch_experiment(
     github_owner: str,
     repository_name: str,
@@ -588,15 +545,57 @@ async def dispatch_experiment(
     run_id: str,
     workflow: Literal["sanity_check", "main"] = "sanity_check",
     runner_label: list[str] | None = None,
+    backend: Literal["github_actions", "aixs"] = "github_actions",
+    compute_type: str = "gpu-a10",
 ) -> dict[str, Any]:
-    """Start an experiment run on GitHub Actions (asynchronous).
+    """Start an experiment run (asynchronous). The code must already be pushed.
 
     `workflow` selects the stage: "sanity_check" for a quick correctness run,
     "main" for the full experiment. `run_id` identifies the experiment run
-    defined by the generated code. Returns immediately with `dispatched`;
-    track progress with `get_workflow_runs` and collect outputs with
-    `fetch_experiment_results`. Requires GH_PERSONAL_ACCESS_TOKEN.
+    defined by the experiment code (one config/run/{run_id}.yaml).
+
+    `backend` selects where the run executes:
+    - "github_actions" (default): dispatches a workflow in the experiment
+      repository. `runner_label` picks the runner. Track progress with
+      `get_workflow_runs` and collect outputs with `fetch_experiment_results`.
+      Requires GH_PERSONAL_ACCESS_TOKEN.
+    - "aixs": executes on the AIXS compute platform (GPU without GitHub
+      Actions limits). `compute_type` picks the machine (e.g. "cpu-general",
+      "gpu-a10"). Requires AIXS_API_KEY, and W&B API keys must be registered
+      as env vars on the AIXS side.
+
+    Track progress and fetch execution errors with
+    `get_experiment_run_status`. For "aixs" the returned `execution_id` is
+    passed directly; for "github_actions" the workflow-dispatch API returns
+    no id, so discover the run id with `get_workflow_runs` first.
     """
+    if backend == "aixs":
+        run_stage = RunStage.SANITY if workflow == "sanity_check" else RunStage.FULL
+        aixs_result = (
+            await DispatchExperimentOnAixsSubgraph(
+                aixs_client=_aixs_client(),
+                run_stage=run_stage,
+                compute_type=compute_type,
+            )
+            .build_graph()
+            .ainvoke(
+                {
+                    "github_config": GitHubConfig(
+                        github_owner=github_owner,
+                        repository_name=repository_name,
+                        branch_name=branch_name,
+                    ),
+                    "run_id": run_id,
+                }
+            )
+        )
+        return {
+            "dispatched": aixs_result["dispatched"],
+            "backend": "aixs",
+            "execution_id": aixs_result["aixs_run_id"],
+            "execution_url": aixs_result["aixs_run_url"],
+        }
+
     workflow_file = (
         "run_sanity_check.yml"
         if workflow == "sanity_check"
@@ -620,7 +619,91 @@ async def dispatch_experiment(
             }
         )
     )
-    return {"dispatched": result["dispatched"]}
+    return {"dispatched": result["dispatched"], "backend": "github_actions"}
+
+
+@mcp.tool()
+async def get_experiment_run_status(
+    execution_id: str,
+    backend: Literal["github_actions", "aixs"] = "github_actions",
+    github_owner: str | None = None,
+    repository_name: str | None = None,
+    log_tail_lines: int = 200,
+) -> dict[str, Any]:
+    """Check one experiment run and fetch its execution logs (non-blocking).
+
+    `execution_id` identifies the run on the selected `backend`: the
+    `execution_id` returned by `dispatch_experiment(backend="aixs")`, or a
+    `workflow_run_id` from `get_workflow_runs` for "github_actions" (pass
+    `github_owner` and `repository_name` in that case).
+
+    Returns the run status and, once the run has finished, the last
+    `log_tail_lines` lines of stdout and stderr where the backend provides
+    them — use stderr to diagnose execution errors and fix the experiment
+    code locally.
+    """
+    if log_tail_lines <= 0:
+        raise ValueError("log_tail_lines must be a positive integer")
+    log_tail_lines = min(log_tail_lines, 10_000)
+
+    if backend == "github_actions":
+        if not github_owner or not repository_name:
+            raise ValueError(
+                "github_owner and repository_name are required for the "
+                "github_actions backend"
+            )
+        run_info = await _github_client().aget_workflow_run(
+            github_owner=github_owner,
+            repository_name=repository_name,
+            workflow_run_id=int(execution_id),
+        )
+        if run_info is None:
+            raise ValueError(
+                f"Workflow run {execution_id} not found in "
+                f"{github_owner}/{repository_name}"
+            )
+        return {
+            "execution_id": execution_id,
+            "backend": backend,
+            "status": run_info.get("status"),
+            "conclusion": run_info.get("conclusion"),
+            "execution_url": run_info.get("html_url"),
+            # Actions job logs are not exposed here; inspect the run page or
+            # use download_workflow_artifacts for outputs.
+            "stdout_tail": None,
+            "stderr_tail": None,
+        }
+
+    client = _aixs_client()
+    run = await client.aget_run(execution_id)
+    status = run.get("status")
+
+    def _tail(text: str) -> str:
+        lines = text.splitlines()
+        return "\n".join(lines[-log_tail_lines:])
+
+    stdout_tail: str | None = None
+    stderr_tail: str | None = None
+    if status in ("completed", "failed", "cancelled"):
+        try:
+            stdout_tail = _tail(await client.aget_run_stdout(execution_id))
+        except (HTTPClientFatalError, HTTPClientRetryableError) as exc:
+            # logs may not be persisted (yet) for this run
+            logger.warning(f"Failed to fetch stdout for run {execution_id}: {exc}")
+        try:
+            stderr_tail = _tail(await client.aget_run_stderr(execution_id))
+        except (HTTPClientFatalError, HTTPClientRetryableError) as exc:
+            logger.warning(f"Failed to fetch stderr for run {execution_id}: {exc}")
+
+    return {
+        "execution_id": execution_id,
+        "backend": backend,
+        "status": status,
+        "compute_type": run.get("compute_type"),
+        "duration_seconds": run.get("duration_seconds"),
+        "stdout_tail": stdout_tail,
+        "stderr_tail": stderr_tail,
+    }
 
 
 @mcp.tool()
@@ -633,9 +716,9 @@ async def get_workflow_runs(
     """Check the status of recent GitHub Actions runs in the experiment repository (non-blocking).
 
     Returns the most recent dispatched workflow runs with their status and
-    conclusion. Use this to track runs started by `dispatch_code_generation`
-    or `dispatch_experiment` — poll it between other work instead of waiting.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
+    conclusion. Use this to track runs started by `dispatch_experiment`
+    (backend "github_actions") — poll it between other work instead of
+    waiting. Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     response = await _github_client().alist_workflow_runs(
         github_owner=github_owner,
@@ -662,11 +745,10 @@ async def fetch_experiment_code(
     repository_name: str,
     branch_name: str,
 ) -> dict[str, Any]:
-    """Fetch the generated experiment code from the experiment repository.
+    """Fetch the experiment code from the experiment repository.
 
-    Use after a `dispatch_code_generation` run has succeeded. The returned
-    object can be passed to `analyze_experiment` as `experiment_code`.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
+    The returned object can be passed to `analyze_experiment` as
+    `experiment_code`. Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     result = (
         await FetchExperimentCodeSubgraph(github_client=_github_client())
@@ -850,8 +932,8 @@ async def fetch_run_ids(
     """List the experiment run IDs recorded in the experiment repository.
 
     Run IDs identify individual experiment runs defined by the generated
-    code; pass them to `dispatch_experiment` or `dispatch_visualization`.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
+    code; pass them to `dispatch_experiment`, and use them to locate result
+    files when creating figures locally. Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     result = (
         await FetchRunIdsSubgraph(github_client=_github_client())
@@ -867,78 +949,6 @@ async def fetch_run_ids(
         )
     )
     return result["run_ids"]
-
-
-@mcp.tool()
-async def dispatch_visualization(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    run_ids: list[str],
-    runner_label: list[str] | None = None,
-) -> dict[str, Any]:
-    """Start result-visualization generation on GitHub Actions (asynchronous).
-
-    Generates figures for the given experiment `run_ids` (from
-    `fetch_run_ids`). The figures are used by the paper-writing stage.
-    Returns immediately; track with `get_workflow_runs`.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    result = (
-        await DispatchVisualizationSubgraph(
-            github_client=_github_client(),
-            runner_label=runner_label,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "run_ids": run_ids,
-            }
-        )
-    )
-    return {"dispatched": result["dispatched"]}
-
-
-@mcp.tool()
-async def dispatch_diagram_generation(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    github_actions_agent: Literal["claude_code", "open_code"] = "claude_code",
-    diagram_description: str | None = None,
-) -> dict[str, Any]:
-    """Start method-diagram generation on GitHub Actions (asynchronous).
-
-    Generates an explanatory diagram of the proposed method for the paper.
-    `diagram_description` optionally guides what the diagram should show.
-    Returns immediately; track with `get_workflow_runs`.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    result = (
-        await DispatchDiagramGenerationSubgraph(
-            github_client=_github_client(),
-            diagram_description=diagram_description,
-            prompt_path=None,
-            llm_mapping=None,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "github_actions_agent": github_actions_agent,
-            }
-        )
-    )
-    return {"dispatched": result["dispatched"]}
 
 
 @mcp.tool()
