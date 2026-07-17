@@ -12,7 +12,7 @@ fi
 cd ..
 
 echo "Generating frontend API client..."
-cd frontend && npm run generate-api
+cd frontend && pnpm run generate-api
 cd ..
 
 echo "Adding generated files to staging..."
