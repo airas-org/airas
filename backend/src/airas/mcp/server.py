@@ -107,9 +107,6 @@ from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgra
 from airas.usecases.github.push_github_subgraph.push_github_subgraph import (
     PushGitHubSubgraph,
 )
-from airas.usecases.github.set_github_actions_secrets_subgraph.set_github_actions_secrets_subgraph import (
-    SetGithubActionsSecretsSubgraph,
-)
 from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
     CompileLatexSubgraph,
 )
@@ -533,30 +530,6 @@ async def prepare_repository(
         "is_repository_ready": result["is_repository_ready"],
         "is_branch_ready": result["is_branch_ready"],
     }
-
-
-@mcp.tool()
-async def set_github_actions_secrets(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str = "main",
-) -> dict[str, Any]:
-    """Copy required secrets (LLM API keys etc.) from local environment variables to the experiment repository's GitHub Actions secrets.
-
-    Run this after `prepare_repository` so that code generation and
-    experiment workflows can call LLM providers. Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    config = GitHubConfig(
-        github_owner=github_owner,
-        repository_name=repository_name,
-        branch_name=branch_name,
-    )
-    result = (
-        await SetGithubActionsSecretsSubgraph(github_client=_github_client())
-        .build_graph()
-        .ainvoke({"github_config": config})
-    )
-    return {"secrets_set": result["secrets_set"]}
 
 
 @mcp.tool()
