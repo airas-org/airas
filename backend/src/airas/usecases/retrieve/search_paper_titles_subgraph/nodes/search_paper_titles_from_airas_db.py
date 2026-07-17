@@ -106,22 +106,27 @@ class AirasDbPaperSearchIndex:
         logger.info(f"Search index built with {len(self._papers)} papers")
 
     async def search(self, query: str, max_results: int) -> list[str]:
+        return [
+            paper.get("title", "")
+            for paper in await self.search_papers(query, max_results)
+        ]
+
+    async def search_papers(self, query: str, max_results: int) -> list[dict[str, Any]]:
+        """Return the full paper records (not just titles) for the best matches."""
         await self._ensure_loaded()
 
-        if not self._bm25 or not self._titles:
+        if not self._bm25 or not self._papers:
             return []
 
         tokenized_query = self._tokenize_with_stem(query)
         scores = self._bm25.get_scores(tokenized_query)
 
-        scored_papers = [
-            (score, title)
-            for score, title in zip(scores, self._titles, strict=True)
-            if score > 0
+        scored_indices = [
+            (score, index) for index, score in enumerate(scores) if score > 0
         ]
-        scored_papers.sort(key=lambda x: x[0], reverse=True)
+        scored_indices.sort(key=lambda x: x[0], reverse=True)
 
-        return [title for _, title in scored_papers[:max_results]]
+        return [self._papers[index] for _, index in scored_indices[:max_results]]
 
 
 async def search_paper_titles_from_airas_db(

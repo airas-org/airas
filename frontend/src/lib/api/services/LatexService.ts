@@ -51,6 +51,41 @@ export class LatexService {
         });
     }
     /**
+     * Open In Overleaf
+     * Serve a page that forwards the paper's LaTeX project to Overleaf.
+     *
+     * Opened in a browser (not called as a JSON API): the page carries the
+     * zipped LaTeX sources inline and immediately POSTs them to Overleaf,
+     * which creates a new project in the user's Overleaf account.
+     * @param githubOwner
+     * @param repositoryName
+     * @param branchName
+     * @param latexTemplateName
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static openInOverleafAirasV1LatexOverleafGet(
+        githubOwner: string,
+        repositoryName: string,
+        branchName: string,
+        latexTemplateName: 'iclr2024' | 'agents4science_2025' | 'mdpi' = 'mdpi',
+    ): CancelablePromise<string> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/airas/v1/latex/overleaf',
+            query: {
+                'github_owner': githubOwner,
+                'repository_name': repositoryName,
+                'branch_name': branchName,
+                'latex_template_name': latexTemplateName,
+            },
+            errors: {
+                404: `LaTeX project not found in the repository (push_latex has not been run)`,
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Compile Latex
      * @param requestBody
      * @returns CompileLatexSubgraphResponseBody Successful Response

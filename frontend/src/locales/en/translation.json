@@ -25,7 +25,8 @@
     "experimental": "Experimental",
     "reproduction": "Reproduction",
     "research": "Research",
-    "apiKeys": "API Keys"
+    "apiKeys": "API Keys",
+    "paperSearch": "Paper"
   },
   "userMenu": {
     "developer": "Developer",
@@ -843,6 +844,49 @@
     "savedTitle": "Credentials saved",
     "fetchError": "Failed to load credentials",
     "saveError": "Failed to save credentials",
-    "storageNote": "Changes take effect immediately; no restart is required."
+    "storageNote": "Changes take effect immediately; no restart is required.",
+    "categories": {
+      "github": "GitHub",
+      "llm": "LLM Providers",
+      "integrations": "Optional Integrations",
+      "other": "Other"
+    }
+  },
+  "paperSearch": {
+    "pageTitle": "Paper Search",
+    "pageSubtitle": "Search papers across OpenAlex, Semantic Scholar, arXiv, and the AIRAS conference database, and fetch open-access full texts.",
+    "queryPlaceholder": "e.g. diffusion model distillation",
+    "search": "Search",
+    "searching": "Searching...",
+    "sources": "Sources",
+    "sourceNames": {
+      "openalex": "OpenAlex",
+      "semantic_scholar": "Semantic Scholar",
+      "arxiv": "arXiv",
+      "airas_db": "AIRAS DB"
+    },
+    "year": "Year",
+    "maxResults": "Per source",
+    "resultCount": "{{count}} papers",
+    "sourceFailed": "failed",
+    "citations": "{{count}} citations",
+    "fetchFulltext": "Fetch full text",
+    "fetchingFulltext": "Fetching full text...",
+    "fulltextError": "Failed to fetch full text",
+    "fulltextStatus": {
+      "fulltext": "Full text",
+      "abstract_only": "Abstract only",
+      "not_found": "Not found"
+    },
+    "searchError": "Search failed",
+    "noResults": "No papers found",
+    "mode": "Mode",
+    "modes": {
+      "keyword": "Keyword",
+      "semantic": "Semantic"
+    },
+    "semanticHint": "OpenAlex only — AI embedding search (requires OPENALEX_API_KEY)",
+    "semanticKeyMissingTitle": "OPENALEX_API_KEY is not set",
+    "semanticKeyMissingDescription": "Semantic search requires an OpenAlex API key. Set OPENALEX_API_KEY on the API Keys page, then try again."
   }
 }

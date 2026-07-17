@@ -2,8 +2,12 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { FetchPaperFulltextRequestBody } from '../models/FetchPaperFulltextRequestBody';
+import type { FetchPaperFulltextResponseBody } from '../models/FetchPaperFulltextResponseBody';
 import type { RetrievePaperSubgraphRequestBody } from '../models/RetrievePaperSubgraphRequestBody';
 import type { RetrievePaperSubgraphResponseBody } from '../models/RetrievePaperSubgraphResponseBody';
+import type { SearchPapersRequestBody } from '../models/SearchPapersRequestBody';
+import type { SearchPapersResponseBody } from '../models/SearchPapersResponseBody';
 import type { SearchPaperTitlesRequestBody } from '../models/SearchPaperTitlesRequestBody';
 import type { SearchPaperTitlesResponseBody } from '../models/SearchPaperTitlesResponseBody';
 import type { WriteSubgraphRequestBody } from '../models/WriteSubgraphRequestBody';
@@ -24,6 +28,44 @@ export class PapersService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/papers/search',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Search Papers
+     * @param requestBody
+     * @returns SearchPapersResponseBody Successful Response
+     * @throws ApiError
+     */
+    public static searchPapersAirasV1PapersSourceSearchPost(
+        requestBody: SearchPapersRequestBody,
+    ): CancelablePromise<SearchPapersResponseBody> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/airas/v1/papers/source-search',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Fetch Paper Fulltext
+     * @param requestBody
+     * @returns FetchPaperFulltextResponseBody Successful Response
+     * @throws ApiError
+     */
+    public static fetchPaperFulltextAirasV1PapersFulltextPost(
+        requestBody: FetchPaperFulltextRequestBody,
+    ): CancelablePromise<FetchPaperFulltextResponseBody> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/airas/v1/papers/fulltext',
             body: requestBody,
             mediaType: 'application/json',
             errors: {

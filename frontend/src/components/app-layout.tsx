@@ -1,7 +1,6 @@
 import { SiGithub, SiX } from "@icons-pack/react-simple-icons";
 import * as SubframeCore from "@subframe/core";
 import {
-  FeatherBell,
   FeatherCheck,
   FeatherGlobe,
   FeatherPanelLeftClose,
@@ -53,6 +52,7 @@ function getActiveSection(pathname: string): string {
   if (pathname.startsWith("/verification")) return "verification";
   if (pathname.startsWith("/notifications")) return "notifications";
   if (pathname.startsWith("/reproduction")) return "reproduction";
+  if (pathname.startsWith("/paper-search")) return "paper-search";
   if (pathname.startsWith("/papers")) return "papers";
   return "home";
 }
@@ -316,14 +316,6 @@ export function AppLayout() {
                   aria-label="Open X profile"
                 />
               </div>
-              <IconButton
-                variant={
-                  activeSection === "notifications" ? "neutral-secondary" : "neutral-tertiary"
-                }
-                icon={<FeatherBell className="h-4 w-4" />}
-                onClick={() => navigate("/notifications")}
-                aria-label="Open notifications"
-              />
             </>
           }
         />

@@ -62,6 +62,7 @@ class OpenAlexClient(BaseHTTPClient):
         per_page: int = 20,
         page: int = 1,
         sort: str | None = "relevance_score:desc",
+        semantic: bool = False,
         fields: tuple[str, ...] | None = None,
         timeout: float = 30.0,
     ) -> dict[str, Any]:
@@ -103,31 +104,43 @@ class OpenAlexClient(BaseHTTPClient):
         fields = fields or DEFAULT_FIELDS
         per_page = max(1, min(per_page, 200))
 
-        filters = []
-
-        if title or author:
-            if title and title.strip():
-                filters.append(f"display_name.search:{title.strip()}")
-            if author and author.strip():
-                filters.append(f"raw_author_name.search:{author.strip()}")
-        elif query and query.strip():
-            filters.append(f"default.search:{query.strip()}")
-        else:
-            raise ValueError("Either 'query' or 'title' must be provided")
-
-        filters.extend(self._build_year_filters(year))
-
         params: dict[str, Any] = {
             "page": page,
             "per-page": per_page,
             "select": ",".join(fields),
-            "filter": ",".join(filters),
         }
 
-        if sort:
-            params["sort"] = sort
-        if self._key_qs:
-            params["api_key"] = os.getenv("OPENALEX_API_KEY")
+        if semantic:
+            # AI-embedding search (https://api.openalex.org/works?search.semantic=).
+            # This is a paid operation and requires an API key.
+            api_key = os.getenv("OPENALEX_API_KEY")
+            if not api_key:
+                raise ValueError("OpenAlex semantic search requires OPENALEX_API_KEY.")
+            if not (query and query.strip()):
+                raise ValueError("'query' must be provided for semantic search")
+            params["search.semantic"] = query.strip()
+            params["api_key"] = api_key
+            year_filters = self._build_year_filters(year)
+            if year_filters:
+                params["filter"] = ",".join(year_filters)
+        else:
+            filters = []
+            if title or author:
+                if title and title.strip():
+                    filters.append(f"display_name.search:{title.strip()}")
+                if author and author.strip():
+                    filters.append(f"raw_author_name.search:{author.strip()}")
+            elif query and query.strip():
+                filters.append(f"default.search:{query.strip()}")
+            else:
+                raise ValueError("Either 'query' or 'title' must be provided")
+
+            filters.extend(self._build_year_filters(year))
+            params["filter"] = ",".join(filters)
+            if sort:
+                params["sort"] = sort
+            if self._key_qs:
+                params["api_key"] = os.getenv("OPENALEX_API_KEY")
 
         path = "works"
         resp = self.get(path=path, params=params, timeout=timeout)
