@@ -848,6 +848,7 @@
     "categories": {
       "github": "GitHub",
       "llm": "LLM Providers",
+      "papers": "Papers",
       "integrations": "Optional Integrations",
       "other": "Other"
     }
