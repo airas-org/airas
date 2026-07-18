@@ -10,10 +10,12 @@ Each generation step in AIRAS can run in one of two modes:
   template files the backend nodes use — this module is a thin renderer on
   top of them, so the two modes cannot drift apart.
 
-Every step returns a list of prompt steps plus a ``flow`` description. A
-prompt step is either fully rendered (``ready: true``) or a template whose
-documented placeholders the host must substitute (e.g. the refine prompt
-needs the host's own current draft).
+Every step returns a single fully rendered ``prompt``, an
+``output_json_schema`` describing exactly the data format to produce, and a
+``flow`` note on how the output is used next. Steps that loop internally on
+the backend (hypothesis refinement, paper refinement) are intentionally
+single-shot in host mode: the host produces the artifact once, at its best,
+instead of replaying the backend's iteration loop.
 """
 
 import json
@@ -29,10 +31,7 @@ from airas.core.types.experimental_design import (
 )
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.paper import PaperContent
-from airas.core.types.research_hypothesis import (
-    HypothesisEvaluation,
-    ResearchHypothesis,
-)
+from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
 from airas.resources.datasets.prompt_engineering_datasets import (
     PROMPT_ENGINEERING_DATASETS,
@@ -50,14 +49,8 @@ from airas.usecases.generators.generate_experimental_design_subgraph.nodes.gener
 from airas.usecases.generators.generate_experimental_design_subgraph.prompts.generate_experimental_design_prompt import (
     generate_experimental_design_prompt,
 )
-from airas.usecases.generators.generate_hypothesis_subgraph.prompts.evaluate_novelty_and_significance_prompt import (
-    evaluate_novelty_and_significance_prompt,
-)
 from airas.usecases.generators.generate_hypothesis_subgraph.prompts.generate_simple_hypothesis_prompt import (
     generate_simple_hypothesis_prompt,
-)
-from airas.usecases.generators.generate_hypothesis_subgraph.prompts.refine_hypothesis_prompt import (
-    refine_hypothesis_prompt,
 )
 from airas.usecases.generators.generate_queries_subgraph.nodes.generate_queries import (
     LLMOutput as GenerateQueriesOutput,
@@ -69,7 +62,6 @@ from airas.usecases.publication.generate_latex_subgraph.prompts.convert_to_latex
     convert_to_latex_prompt,
 )
 from airas.usecases.writers.write_subgraph.nodes.generate_note import generate_note
-from airas.usecases.writers.write_subgraph.prompts.refine_prompt import refine_prompt
 from airas.usecases.writers.write_subgraph.prompts.section_tips_prompt import (
     section_tips_prompt,
 )
@@ -98,14 +90,8 @@ def _research_queries(inputs: dict[str, Any]) -> dict[str, Any]:
         },
     )
     return {
-        "steps": [
-            {
-                "name": "generate_queries",
-                "ready": True,
-                "prompt": prompt,
-                "output_json_schema": GenerateQueriesOutput.model_json_schema(),
-            }
-        ],
+        "prompt": prompt,
+        "output_json_schema": GenerateQueriesOutput.model_json_schema(),
         "flow": (
             "Produce output matching output_json_schema; the query_list is "
             "what you would pass to search_papers."
@@ -114,79 +100,23 @@ def _research_queries(inputs: dict[str, Any]) -> dict[str, Any]:
 
 
 def _hypothesis(inputs: dict[str, Any]) -> dict[str, Any]:
-    formatted_studies = [
-        ResearchStudy.to_formatted_json(ResearchStudy.model_validate(study))
-        for study in inputs["research_study_list"]
-    ]
-    refinement_rounds = inputs.get("refinement_rounds", 2)
-    generate_message = _render(
+    prompt = _render(
         generate_simple_hypothesis_prompt,
         {
             "research_topic": inputs["research_topic"],
-            "research_study_list": formatted_studies,
-        },
-    )
-    evaluate_message = _render(
-        evaluate_novelty_and_significance_prompt,
-        {
-            "research_topic": inputs["research_topic"],
-            "research_study_list": formatted_studies,
-            "new_hypothesis": "{{ new_hypothesis }}",
-        },
-    )
-    refine_message = _render(
-        refine_hypothesis_prompt,
-        {
-            "research_topic": inputs["research_topic"],
-            "research_study_list": formatted_studies,
-            "current_hypothesis": "{{ current_hypothesis }}",
-            "novelty_reason": "{{ novelty_reason }}",
-            "significance_reason": "{{ significance_reason }}",
-            "evaluated_hypothesis_history": "{{ evaluated_hypothesis_history }}",
+            "research_study_list": [
+                ResearchStudy.to_formatted_json(ResearchStudy.model_validate(study))
+                for study in inputs["research_study_list"]
+            ],
         },
     )
     return {
-        "steps": [
-            {
-                "name": "generate_hypothesis",
-                "ready": True,
-                "prompt": generate_message,
-                "output_json_schema": ResearchHypothesis.model_json_schema(),
-            },
-            {
-                "name": "evaluate_novelty_and_significance",
-                "ready": False,
-                "placeholders": {
-                    "{{ new_hypothesis }}": "the hypothesis to evaluate, as JSON"
-                },
-                "prompt": evaluate_message,
-                "output_json_schema": HypothesisEvaluation.model_json_schema(),
-            },
-            {
-                "name": "refine_hypothesis",
-                "ready": False,
-                "placeholders": {
-                    "{{ current_hypothesis }}": "the latest hypothesis as JSON",
-                    "{{ novelty_reason }}": "novelty_reason from its evaluation",
-                    "{{ significance_reason }}": (
-                        "significance_reason from its evaluation"
-                    ),
-                    "{{ evaluated_hypothesis_history }}": (
-                        "earlier (hypothesis, evaluation) pairs as JSON, "
-                        "oldest first; empty string on the first refinement"
-                    ),
-                },
-                "prompt": refine_message,
-                "output_json_schema": ResearchHypothesis.model_json_schema(),
-            },
-        ],
+        "prompt": prompt,
+        "output_json_schema": ResearchHypothesis.model_json_schema(),
         "flow": (
-            "1) Author a hypothesis with the generate_hypothesis prompt. "
-            "2) Evaluate it with evaluate_novelty_and_significance. "
-            "3) If novelty_score >= 9 and significance_score >= 9, stop. "
-            f"Otherwise refine with refine_hypothesis and re-evaluate, up to "
-            f"{refinement_rounds} refinement round(s). The final hypothesis "
-            "is what you would pass to the experimental_design step."
+            "Produce a single, novel and significant hypothesis matching "
+            "output_json_schema. The result is what you would pass to the "
+            "experimental_design step."
         ),
     }
 
@@ -212,14 +142,8 @@ def _experimental_design(inputs: dict[str, Any]) -> dict[str, Any]:
         },
     )
     return {
-        "steps": [
-            {
-                "name": "generate_experimental_design",
-                "ready": True,
-                "prompt": prompt,
-                "output_json_schema": ExperimentalDesignOutput.model_json_schema(),
-            }
-        ],
+        "prompt": prompt,
+        "output_json_schema": ExperimentalDesignOutput.model_json_schema(),
         "flow": (
             "Produce output matching output_json_schema. The result is the "
             "experimental design used to write the experiment code and, "
@@ -245,14 +169,8 @@ def _experiment_analysis(inputs: dict[str, Any]) -> dict[str, Any]:
         },
     )
     return {
-        "steps": [
-            {
-                "name": "analyze_experiment",
-                "ready": True,
-                "prompt": prompt,
-                "output_json_schema": AnalyzeExperimentOutput.model_json_schema(),
-            }
-        ],
+        "prompt": prompt,
+        "output_json_schema": AnalyzeExperimentOutput.model_json_schema(),
         "flow": (
             "Produce output matching output_json_schema; analysis_report is "
             "the analysis text used by the paper-writing step."
@@ -275,38 +193,14 @@ def _paper_writing(inputs: dict[str, Any]) -> dict[str, Any]:
         ],
         references_bib=inputs["references_bib"],
     )
-    write_message = _render(
-        write_prompt, {"note": note, "tips_dict": section_tips_prompt}
-    )
-    refinement_rounds = inputs.get("writing_refinement_rounds", 2)
+    prompt = _render(write_prompt, {"note": note, "tips_dict": section_tips_prompt})
     return {
-        "steps": [
-            {
-                "name": "write_paper",
-                "ready": True,
-                "prompt": write_message,
-                "output_json_schema": PaperContent.model_json_schema(),
-            },
-            {
-                "name": "refine_paper",
-                "ready": False,
-                "placeholders": {
-                    "{{ content }}": "your current PaperContent draft as JSON"
-                },
-                "prompt": refine_prompt,
-                "prompt_prefix": (
-                    "Prepend the write_paper prompt above, then append this "
-                    "refine prompt with the placeholder substituted."
-                ),
-                "output_json_schema": PaperContent.model_json_schema(),
-            },
-        ],
+        "prompt": prompt,
+        "output_json_schema": PaperContent.model_json_schema(),
         "flow": (
-            "1) Author the full paper with the write_paper prompt. "
-            f"2) Run the refine_paper step {refinement_rounds} time(s): each "
-            "round, substitute {{ content }} with your latest draft and "
-            "produce an improved PaperContent. The final draft is what you "
-            "would pass to generate_latex as paper_content."
+            "Author the full paper in one pass, matching output_json_schema. "
+            "The result is what you would pass to the latex_conversion step "
+            "as paper_content."
         ),
     }
 
@@ -325,14 +219,8 @@ def _latex_conversion(inputs: dict[str, Any]) -> dict[str, Any]:
         },
     )
     return {
-        "steps": [
-            {
-                "name": "convert_to_latex",
-                "ready": True,
-                "prompt": prompt,
-                "output_json_schema": PaperContent.model_json_schema(),
-            }
-        ],
+        "prompt": prompt,
+        "output_json_schema": PaperContent.model_json_schema(),
         "flow": (
             "1) Produce LaTeX-formatted PaperContent matching "
             "output_json_schema. 2) Embed it into the template yourself: "

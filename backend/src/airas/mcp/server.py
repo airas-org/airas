@@ -218,21 +218,19 @@ def get_generation_prompt(step: str, inputs: dict[str, Any]) -> dict[str, Any]:
 
     `step` and the required `inputs` keys:
     - "research_queries": research_topic, num_queries (optional)
-    - "hypothesis": research_topic, research_study_list,
-      refinement_rounds (optional) — generate/evaluate/refine loop
+    - "hypothesis": research_topic, research_study_list
     - "experimental_design": research_hypothesis, compute_environment
       (optional), num_models_to_use / num_datasets_to_use /
       num_comparative_methods (optional)
     - "experiment_analysis": research_hypothesis, experimental_design,
       experiment_code ({"files": {path: content}}), experimental_results
     - "paper_writing": research_hypothesis, experiment_history,
-      experiment_code, research_study_list, references_bib,
-      writing_refinement_rounds (optional)
+      experiment_code, research_study_list, references_bib
     - "latex_conversion": paper_content, figures_dir (optional)
 
-    Returns `steps` (each with a prompt and an output_json_schema to match)
-    and `flow` (how to run multi-step loops). Steps with `ready: false`
-    contain documented placeholders you must substitute.
+    Returns a fully rendered `prompt`, an `output_json_schema` describing
+    exactly the data format to produce in one pass, and a `flow` note on
+    how the output feeds the next step.
     """
     return build_generation_prompt(step, inputs)
 
@@ -404,8 +402,8 @@ async def generate_hypothesis(
     `research_study_list` should be the output of `retrieve_papers`. Higher
     `refinement_rounds` improves quality at the cost of more LLM calls.
     Requires an LLM provider API key — without one, use
-    `get_generation_prompt(step="hypothesis", ...)` and run the
-    generate/evaluate/refine loop yourself.
+    `get_generation_prompt(step="hypothesis", ...)` and author the
+    hypothesis yourself.
     """
     studies = [ResearchStudy.model_validate(study) for study in research_study_list]
     result = (
@@ -1024,7 +1022,7 @@ async def generate_paper(
     structured paper content (title, abstract, sections). Pass the result
     to `generate_latex`. Requires an LLM provider API key — without one, use
     `get_generation_prompt(step="paper_writing", ...)` and author the paper
-    yourself with the same curated prompts.
+    yourself in one pass with the same curated prompt.
     """
     result = (
         await WriteSubgraph(
