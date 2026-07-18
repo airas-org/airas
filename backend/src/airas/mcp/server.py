@@ -68,6 +68,7 @@ from airas.infra.llm_provider_resolver import detect_available_providers
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.infra.semantic_scholar_client import SemanticScholarClient
+from airas.mcp.prompt_registry import build_generation_prompt
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
@@ -207,14 +208,44 @@ def _dump(value: Any) -> Any:
 
 
 @mcp.tool()
+def get_generation_prompt(step: str, inputs: dict[str, Any]) -> dict[str, Any]:
+    """Assemble AIRAS's curated prompt(s) for a generation step so you (the
+    MCP host) can author the artifact yourself — no LLM API key required.
+
+    Generation steps run in one of two modes: the backend-LLM tool
+    (`generate_research_queries` / `analyze_experiment` / `generate_paper`,
+    needs a provider key) or host mode via this tool. Both use the same
+    prompt templates, so quality guidance is identical. Prefer host mode
+    when no LLM provider key is configured, or when your own context (the
+    conversation, code you wrote) should inform the writing.
+
+    `step` and the required `inputs` keys:
+    - "research_queries": research_topic, num_queries (optional)
+    - "experiment_analysis": research_hypothesis, experimental_design,
+      experiment_code ({"files": {path: content}}), experimental_results
+    - "paper_writing": research_hypothesis, experiment_history,
+      experiment_code, research_study_list, references_bib,
+      writing_refinement_rounds (optional)
+
+    Returns `steps` (each with a prompt and an output_json_schema to match)
+    and `flow` (how to run multi-step loops). Steps with `ready: false`
+    contain documented placeholders you must substitute.
+    """
+    return build_generation_prompt(step, inputs)
+
+
+@mcp.tool()
 async def generate_research_queries(
     research_topic: str,
     num_queries: int = 2,
 ) -> list[str]:
-    """Generate academic paper search queries from a research topic.
+    """Generate academic paper search queries from a research topic (backend LLM).
 
     Use this first to turn a free-form research topic into effective
-    search queries, then pass them to `search_papers`.
+    search queries, then pass them to `search_papers`. Requires an LLM
+    provider API key — without one, use
+    `get_generation_prompt(step="research_queries", ...)` and author the
+    queries yourself.
     """
     result = (
         await GenerateQueriesSubgraph(
@@ -809,7 +840,9 @@ async def analyze_experiment(
     (findings, whether the hypothesis is supported, and suggested next
     steps). For `experiment_code`, read the code from your local clone and
     pass `{"files": {"<relative path>": "<content>", ...}}`.
-    Requires an LLM provider API key.
+    Requires an LLM provider API key — without one, use
+    `get_generation_prompt(step="experiment_analysis", ...)` and write the
+    analysis yourself.
     """
     result = (
         await AnalyzeExperimentSubgraph(
@@ -1018,12 +1051,14 @@ async def generate_paper(
     references_bib: str,
     writing_refinement_rounds: int = 2,
 ) -> dict[str, Any]:
-    """Write the paper content from the completed research.
+    """Write the paper content from the completed research (backend LLM).
 
     Takes the hypothesis, experiment history, experiment code, related
     studies, and the BibTeX file (from `generate_bibfile`), and produces
     structured paper content (title, abstract, sections). Pass the result
-    to `generate_latex`. Requires an LLM provider API key.
+    to `generate_latex`. Requires an LLM provider API key — without one, use
+    `get_generation_prompt(step="paper_writing", ...)` and author the paper
+    yourself with the same curated prompts.
     """
     result = (
         await WriteSubgraph(

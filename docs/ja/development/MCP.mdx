@@ -59,7 +59,8 @@ claude mcp add airas -- uvx airas
 
 | ツール | 説明 |
 | --- | --- |
-| `generate_research_queries` | 研究トピックから論文検索クエリを生成 |
+| `get_generation_prompt` | 生成ステップ（research_queries / experiment_analysis / paper_writing）のキュレート済みプロンプトを組み立てて返し、MCPホスト自身が成果物を執筆できるようにする。APIキー不要 |
+| `generate_research_queries` | 研究トピックから論文検索クエリを生成（バックエンドLLM） |
 | `search_papers` | 複数ソース（OpenAlex / Semantic Scholar / arXiv / AIRAS DB）の並列論文検索。結果は正規化・重複排除済み。APIキー不要 |
 | `fetch_paper_fulltext` | arXiv ID / DOI / PDF URL から論文全文を取得（合法なオープンアクセス解決のみ）。APIキー不要 |
 | `retrieve_papers` | arXiv経由で論文を取得し、構造化された研究データを抽出 |
@@ -99,6 +100,8 @@ claude mcp add airas -- uvx airas
 | --- | --- |
 | `upload_research_history` | 研究状態を実験リポジトリに保存 |
 | `download_research_history` | 保存した研究状態を復元し、別セッションで継続 |
+
+生成ステップは**デュアルモード**です: バックエンドLLMで実行する（下記の各ツール、LLMプロバイダーキーが必要）か、`get_generation_prompt` で同じキュレート済みプロンプトを受け取ってホスト自身が執筆する（キー不要）かを選べます。現在ホスト執筆に対応: `research_queries` / `experiment_analysis` / `paper_writing`
 
 典型的なフロー: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **実験コードを自分で書く**（下記参照）→ `dispatch_experiment` →（GitHub Actions は `get_workflow_runs`、AIXS は `get_experiment_run_status` でポーリング）→ `fetch_experiment_results` → `analyze_experiment` → **図とダイアグラムを自分で作る**（下記参照）→ `generate_bibfile` → `generate_paper` → `generate_latex` → **返された LaTeX を clone 内の `.research/latex/{テンプレート}/main.tex` に書いて git で push** → **出口は2つ（片方でも両方でも）**: `compile_latex`（GitHub ActionsでPDFをビルド）/ `open_in_overleaf`（ユーザーが編集できる形でOverleafに引き渡し。`local_path` 指定なら push 不要）→ `upload_research_history`
 
