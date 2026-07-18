@@ -104,7 +104,7 @@ claude mcp add airas -- uvx airas
 | `upload_research_history` | 研究状態を実験リポジトリに保存 |
 | `download_research_history` | 保存した研究状態を復元し、別セッションで継続 |
 
-典型的なフロー: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **実験コードを自分で書く**（下記参照）→ `dispatch_experiment` →（GitHub Actions は `get_workflow_runs`、AIXS は `get_experiment_run_status` でポーリング）→ `fetch_experiment_results` → `analyze_experiment` → **図とダイアグラムを自分で作る**（下記参照）→ `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`
+典型的なフロー: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **実験コードを自分で書く**（下記参照）→ `dispatch_experiment` →（GitHub Actions は `get_workflow_runs`、AIXS は `get_experiment_run_status` でポーリング）→ `fetch_experiment_results` → `analyze_experiment` → **図とダイアグラムを自分で作る**（下記参照）→ `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → **出口は2つ（片方でも両方でも）**: `compile_latex`（GitHub ActionsでPDFをビルド）/ `open_in_overleaf`（ユーザーが編集できる形でOverleafに引き渡し）→ `upload_research_history`
 
 ### 実験コードの書き方
 

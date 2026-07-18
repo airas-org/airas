@@ -1222,9 +1222,13 @@ async def compile_latex(
 ) -> dict[str, Any]:
     """Build the paper PDF on GitHub Actions (asynchronous).
 
-    Dispatches the LaTeX compilation workflow for the sources pushed by
-    `push_latex`. Returns immediately with `paper_url` (when available);
-    track the run with `get_workflow_runs`. Requires GH_PERSONAL_ACCESS_TOKEN.
+    One of the two publication exits after `push_latex` (the other is
+    `open_in_overleaf`; they are independent and can both be used).
+    Dispatches the LaTeX compilation workflow for the pushed sources;
+    figure PDFs under `.research/results/` and `.research/diagrams/` are
+    materialized into `images/` at build time. Returns immediately with
+    `paper_url` (when available); track the run with `get_workflow_runs`.
+    Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     result = (
         await CompileLatexSubgraph(
@@ -1259,6 +1263,8 @@ def open_in_overleaf(
 ) -> dict[str, Any]:
     """Create a link that opens the paper in Overleaf for editing.
 
+    One of the two publication exits after `push_latex` (the other is
+    `compile_latex`; they are independent and can both be used).
     Returns `overleaf_url`, which must be shown to the user as a clickable
     link. Opening it in a browser packages the LaTeX project (main.tex,
     bibliography, template assets, plus every figure PDF under

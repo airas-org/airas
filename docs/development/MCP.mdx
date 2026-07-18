@@ -104,7 +104,7 @@ Or add it to your project's `.mcp.json`:
 | `upload_research_history` | Save research state to the experiment repository |
 | `download_research_history` | Restore research state to continue in a later session |
 
-A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs` for GitHub Actions, or `get_experiment_run_status` for AIXS) → `fetch_experiment_results` → `analyze_experiment` → **create figures and diagrams yourself** (see below) → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`.
+A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs` for GitHub Actions, or `get_experiment_run_status` for AIXS) → `fetch_experiment_results` → `analyze_experiment` → **create figures and diagrams yourself** (see below) → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → **either or both of** `compile_latex` (build the PDF on GitHub Actions) / `open_in_overleaf` (hand the project to the user for editing) → `upload_research_history`.
 
 ### Writing the experiment code
 
