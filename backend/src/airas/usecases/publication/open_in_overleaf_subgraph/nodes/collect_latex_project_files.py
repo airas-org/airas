@@ -19,6 +19,18 @@ _EXCLUDED_FILES = {"template.tex", "template.pdf"}
 _FIGURE_SOURCE_DIRS = (".research/results/", ".research/diagrams/")
 
 
+def _is_safe_local_file(path: Path, containing_dir: Path) -> bool:
+    # Symlinks could point outside the repository (e.g. at secrets) and the
+    # contents end up in the zip handed to Overleaf, so only read regular
+    # files whose real location stays inside the directory being collected.
+    if path.is_symlink() or not path.is_file():
+        return False
+    if not path.resolve().is_relative_to(containing_dir.resolve()):
+        logger.warning(f"Skipping file outside the collected directory: {path}")
+        return False
+    return True
+
+
 def _is_unsafe_relative_path(relative_path: str) -> bool:
     # Guard against zip-slip style entries: the paths end up inside the
     # zip handed to Overleaf, so never pass through empty, absolute, or
@@ -75,7 +87,11 @@ def collect_latex_project_files(
                     )
                     continue
                 latex_files[relative_path] = archive.read(info)
-            elif repo_path.startswith(_FIGURE_SOURCE_DIRS):
+            elif repo_path.startswith(
+                _FIGURE_SOURCE_DIRS
+            ) and repo_path.lower().endswith(".pdf"):
+                # Only figure PDFs are read: these directories can also hold
+                # large experiment artifacts that must not be loaded here.
                 if _is_unsafe_relative_path(repo_path):
                     logger.warning(
                         f"Skipping suspicious path in repository zip: {info.filename}"
@@ -109,7 +125,7 @@ def collect_latex_project_files_local(
     latex_files: dict[str, bytes] = {}
     if latex_dir.is_dir():
         for path in sorted(latex_dir.rglob("*")):
-            if not path.is_file():
+            if not _is_safe_local_file(path, latex_dir):
                 continue
             relative_path = path.relative_to(latex_dir).as_posix()
             if relative_path in _EXCLUDED_FILES:
@@ -121,7 +137,7 @@ def collect_latex_project_files_local(
         if not figure_root.is_dir():
             continue
         for path in sorted(figure_root.rglob("*.pdf")):
-            if not path.is_file():
+            if not _is_safe_local_file(path, figure_root):
                 continue
             repo_path = source_dir + path.relative_to(figure_root).as_posix()
             _merge_figure(latex_files, repo_path, path.read_bytes())

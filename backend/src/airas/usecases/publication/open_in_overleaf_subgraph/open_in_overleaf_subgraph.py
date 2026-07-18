@@ -49,10 +49,14 @@ class OpenInOverleafSubgraphState(
 class OpenInOverleafSubgraph:
     def __init__(
         self,
-        github_client: GithubClient,
+        github_client: GithubClient | None,
         latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
         local_repo_path: str | None = None,
     ):
+        if github_client is None and local_repo_path is None:
+            raise ValueError(
+                "github_client is required unless local_repo_path is provided"
+            )
         self.github_client = github_client
         self.latex_template_name = latex_template_name
         self.local_repo_path = local_repo_path
@@ -67,6 +71,7 @@ class OpenInOverleafSubgraph:
                 latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),
             )
         else:
+            assert self.github_client is not None  # enforced in __init__
             latex_files = collect_latex_project_files(
                 github_config=state["github_config"],
                 latex_template_name=cast(LATEX_TEMPLATE_NAME, self.latex_template_name),

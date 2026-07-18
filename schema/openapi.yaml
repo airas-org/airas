@@ -632,7 +632,9 @@ paths:
 
         the project is read from the working tree on disk instead of GitHub,
 
-        so unpushed changes and locally rendered figures are included.'
+        so unpushed changes and locally rendered figures are included — and no
+
+        GitHub token is required.'
       operationId: open_in_overleaf_airas_v1_latex_overleaf_get
       parameters:
       - name: github_owner

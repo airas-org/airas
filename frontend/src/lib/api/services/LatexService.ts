@@ -60,7 +60,8 @@ export class LatexService {
      *
      * With `local_path` (path to a local clone of the experiment repository)
      * the project is read from the working tree on disk instead of GitHub,
-     * so unpushed changes and locally rendered figures are included.
+     * so unpushed changes and locally rendered figures are included — and no
+     * GitHub token is required.
      * @param githubOwner
      * @param repositoryName
      * @param branchName

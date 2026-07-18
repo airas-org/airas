@@ -1,14 +1,18 @@
 from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse
 from langfuse import observe
 
 from airas.container import Container
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
-from airas.dashboard.api.dependencies import get_github_client, get_langchain_client
+from airas.dashboard.api.dependencies import (
+    get_github_client,
+    get_github_client_or_none,
+    get_langchain_client,
+)
 from airas.dashboard.api.schemas.latex import (
     CompileLatexSubgraphRequestBody,
     CompileLatexSubgraphResponseBody,
@@ -109,7 +113,7 @@ async def open_in_overleaf(
     github_owner: str,
     repository_name: str,
     branch_name: str,
-    github_client: Annotated[GithubClient, Depends(get_github_client)],
+    github_client: Annotated[GithubClient | None, Depends(get_github_client_or_none)],
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
     local_path: str | None = None,
 ) -> HTMLResponse:
@@ -121,8 +125,15 @@ async def open_in_overleaf(
 
     With `local_path` (path to a local clone of the experiment repository)
     the project is read from the working tree on disk instead of GitHub,
-    so unpushed changes and locally rendered figures are included.
+    so unpushed changes and locally rendered figures are included — and no
+    GitHub token is required.
     """
+    if local_path is None and github_client is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="GH_PERSONAL_ACCESS_TOKEN is not configured (required "
+            "unless local_path is provided).",
+        )
     try:
         result = (
             await OpenInOverleafSubgraph(

@@ -968,15 +968,17 @@ def _resolve_render_output(output_path: str) -> tuple[Path, str]:
 
 
 def _png_to_pdf(png: bytes) -> bytes:
-    image = Image.open(BytesIO(png))
-    if image.mode != "RGB":
-        # Flatten transparency onto white instead of the black that a
-        # plain RGB conversion would produce.
-        rgba = image.convert("RGBA")
-        image = Image.new("RGB", rgba.size, (255, 255, 255))
-        image.paste(rgba, mask=rgba.getchannel("A"))
     buffer = BytesIO()
-    image.save(buffer, format="PDF")
+    with Image.open(BytesIO(png)) as image:
+        if image.mode != "RGB":
+            # Flatten transparency onto white instead of the black that a
+            # plain RGB conversion would produce.
+            rgba = image.convert("RGBA")
+            rgb = Image.new("RGB", rgba.size, (255, 255, 255))
+            rgb.paste(rgba, mask=rgba.getchannel("A"))
+        else:
+            rgb = image.copy()
+    rgb.save(buffer, format="PDF")
     return buffer.getvalue()
 
 
