@@ -93,7 +93,6 @@ Or add it to your project's `.mcp.json`:
 | `generate_bibfile` | Generate a BibTeX references file from research studies; no API key required |
 | `generate_paper` | Write structured paper content (title, abstract, sections) from the completed research |
 | `generate_latex` | Convert paper content into a full LaTeX document (templates: mdpi / iclr2024 / agents4science_2025) |
-| `push_latex` | Push the LaTeX source to the experiment repository |
 | `compile_latex` | Build the paper PDF on GitHub Actions (async); figures are picked up from `.research/results/` and `.research/diagrams/` automatically |
 | `open_in_overleaf` | Create a link that opens the paper in Overleaf; pass `local_path` to export the local working tree without pushing |
 
@@ -104,7 +103,7 @@ Or add it to your project's `.mcp.json`:
 | `upload_research_history` | Save research state to the experiment repository |
 | `download_research_history` | Restore research state to continue in a later session |
 
-A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs` for GitHub Actions, or `get_experiment_run_status` for AIXS) → `fetch_experiment_results` → `analyze_experiment` → **create figures and diagrams yourself** (see below) → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → **either or both of** `compile_latex` (build the PDF on GitHub Actions) / `open_in_overleaf` (hand the project to the user for editing) → `upload_research_history`.
+A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs` for GitHub Actions, or `get_experiment_run_status` for AIXS) → `fetch_experiment_results` → `analyze_experiment` → **create figures and diagrams yourself** (see below) → `generate_bibfile` → `generate_paper` → `generate_latex` → **write the returned LaTeX to `.research/latex/{template}/main.tex` in your clone and push it with git** → **either or both of** `compile_latex` (build the PDF on GitHub Actions) / `open_in_overleaf` (hand the project to the user for editing; with `local_path`, no push needed) → `upload_research_history`.
 
 ### Writing the experiment code
 

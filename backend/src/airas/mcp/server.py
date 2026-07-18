@@ -115,9 +115,6 @@ from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph im
 from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
     GenerateLatexSubgraph,
 )
-from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
-    PushLatexSubgraph,
-)
 from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.fetch_paper_fulltext_subgraph import (
     FetchPaperFulltextSubgraph,
 )
@@ -1152,10 +1149,11 @@ async def generate_latex(
     """Convert paper content into a full LaTeX document.
 
     `paper_content` should be the output of `generate_paper`. Available
-    templates: "mdpi", "iclr2024", "agents4science_2025". Push the returned
-    LaTeX to the experiment repository with `push_latex`, then build the PDF
-    with `compile_latex`. Requires an LLM provider API key and
-    GH_PERSONAL_ACCESS_TOKEN.
+    templates: "mdpi", "iclr2024", "agents4science_2025". Write the returned
+    LaTeX to `.research/latex/{template}/main.tex` in your local clone of
+    the experiment repository and push it with git, then build the PDF with
+    `compile_latex` and/or hand it over with `open_in_overleaf`. Requires an
+    LLM provider API key and GH_PERSONAL_ACCESS_TOKEN.
     """
     result = (
         await GenerateLatexSubgraph(
@@ -1175,44 +1173,6 @@ async def generate_latex(
 
 
 @mcp.tool()
-async def push_latex(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    latex_text: str,
-    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-) -> dict[str, Any]:
-    """Push the LaTeX document to the experiment repository.
-
-    Uploads the LaTeX source (from `generate_latex`) as
-    `.research/latex/{template}/main.tex`. Figures need no separate step:
-    `compile_latex` and `open_in_overleaf` pick up every figure PDF under
-    `.research/results/` and `.research/diagrams/` automatically.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    result = (
-        await PushLatexSubgraph(
-            github_client=_github_client(),
-            latex_template_name=latex_template_name,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "latex_text": latex_text,
-            }
-        )
-    )
-    return {
-        "is_upload_successful": result["is_upload_successful"],
-    }
-
-
-@mcp.tool()
 async def compile_latex(
     github_owner: str,
     repository_name: str,
@@ -1222,8 +1182,9 @@ async def compile_latex(
 ) -> dict[str, Any]:
     """Build the paper PDF on GitHub Actions (asynchronous).
 
-    One of the two publication exits after `push_latex` (the other is
-    `open_in_overleaf`; they are independent and can both be used).
+    One of the two publication exits after main.tex has been pushed to
+    `.research/latex/{template}/` (the other is `open_in_overleaf`; they
+    are independent and can both be used).
     Dispatches the LaTeX compilation workflow for the pushed sources;
     figure PDFs under `.research/results/` and `.research/diagrams/` are
     materialized into `images/` at build time. Returns immediately with
@@ -1263,7 +1224,7 @@ def open_in_overleaf(
 ) -> dict[str, Any]:
     """Create a link that opens the paper in Overleaf for editing.
 
-    One of the two publication exits after `push_latex` (the other is
+    One of the two publication exits for the paper (the other is
     `compile_latex`; they are independent and can both be used).
     Returns `overleaf_url`, which must be shown to the user as a clickable
     link. Opening it in a browser packages the LaTeX project (main.tex,
@@ -1273,8 +1234,8 @@ def open_in_overleaf(
     Overleaf account (login required; each click creates a new project).
 
     By default the project is read from the experiment repository on GitHub
-    (push_latex must have run; requires GH_PERSONAL_ACCESS_TOKEN, private
-    repositories work). Pass `local_path` — the absolute path of your local
+    (main.tex must have been pushed; requires GH_PERSONAL_ACCESS_TOKEN,
+    private repositories work). Pass `local_path` — the absolute path of your local
     clone — to read the working tree on disk instead: no push needed, and
     locally rendered figures are included as-is. Starts the local dashboard
     API in the background if needed.

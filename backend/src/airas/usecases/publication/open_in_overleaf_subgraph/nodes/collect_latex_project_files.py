@@ -134,6 +134,7 @@ def collect_latex_project_files_local(
 def _require_main_tex(latex_files: dict[str, bytes], prefix: str, source: str) -> None:
     if "main.tex" not in latex_files:
         raise ValueError(
-            f"main.tex not found under {prefix} in {source}. Run push_latex "
-            "first (or, for a local clone, write main.tex there)."
+            f"main.tex not found under {prefix} in {source}. Write the "
+            "generated LaTeX there first (push it with git, or for a local "
+            "clone just save the file)."
         )
