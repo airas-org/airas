@@ -68,6 +68,7 @@ from airas.infra.llm_provider_resolver import detect_available_providers
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.infra.semantic_scholar_client import SemanticScholarClient
+from airas.mcp.prompt_registry import build_generation_prompt
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
@@ -88,9 +89,6 @@ from airas.usecases.generators.generate_hypothesis_subgraph.generate_hypothesis_
 )
 from airas.usecases.generators.generate_queries_subgraph.generate_queries_subgraph import (
     GenerateQueriesSubgraph,
-)
-from airas.usecases.generators.refine_experimental_design_subgraph.refine_experimental_design_subgraph import (
-    RefineExperimentalDesignSubgraph,
 )
 from airas.usecases.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
     DownloadGithubActionsArtifactsSubgraph,
@@ -207,14 +205,48 @@ def _dump(value: Any) -> Any:
 
 
 @mcp.tool()
+def get_generation_prompt(step: str, inputs: dict[str, Any]) -> dict[str, Any]:
+    """Assemble AIRAS's curated prompt(s) for a generation step so you (the
+    MCP host) can author the artifact yourself — no LLM API key required.
+
+    Generation steps run in one of two modes: the backend-LLM tool
+    (`generate_research_queries` / `analyze_experiment` / `generate_paper`,
+    needs a provider key) or host mode via this tool. Both use the same
+    prompt templates, so quality guidance is identical. Prefer host mode
+    when no LLM provider key is configured, or when your own context (the
+    conversation, code you wrote) should inform the writing.
+
+    `step` and the required `inputs` keys:
+    - "research_queries": research_topic, num_queries (optional)
+    - "hypothesis": research_topic, research_study_list
+    - "experimental_design": research_hypothesis, compute_environment
+      (optional), num_models_to_use / num_datasets_to_use /
+      num_comparative_methods (optional)
+    - "experiment_analysis": research_hypothesis, experimental_design,
+      experiment_code ({"files": {path: content}}), experimental_results
+    - "paper_writing": research_hypothesis, experiment_history,
+      experiment_code, research_study_list, references_bib
+    - "latex_conversion": paper_content, figures_dir (optional)
+
+    Returns a fully rendered `prompt`, an `output_json_schema` describing
+    exactly the data format to produce in one pass, and a `flow` note on
+    how the output feeds the next step.
+    """
+    return build_generation_prompt(step, inputs)
+
+
+@mcp.tool()
 async def generate_research_queries(
     research_topic: str,
     num_queries: int = 2,
 ) -> list[str]:
-    """Generate academic paper search queries from a research topic.
+    """Generate academic paper search queries from a research topic (backend LLM).
 
     Use this first to turn a free-form research topic into effective
-    search queries, then pass them to `search_papers`.
+    search queries, then pass them to `search_papers`. Requires an LLM
+    provider API key — without one, use
+    `get_generation_prompt(step="research_queries", ...)` and author the
+    queries yourself.
     """
     result = (
         await GenerateQueriesSubgraph(
@@ -365,11 +397,13 @@ async def generate_hypothesis(
     research_study_list: list[dict[str, Any]],
     refinement_rounds: int = 1,
 ) -> dict[str, Any]:
-    """Generate a novel research hypothesis from a topic and related studies.
+    """Generate a novel research hypothesis from a topic and related studies (backend LLM).
 
     `research_study_list` should be the output of `retrieve_papers`. Higher
     `refinement_rounds` improves quality at the cost of more LLM calls.
-    Requires an LLM provider API key.
+    Requires an LLM provider API key — without one, use
+    `get_generation_prompt(step="hypothesis", ...)` and author the
+    hypothesis yourself.
     """
     studies = [ResearchStudy.model_validate(study) for study in research_study_list]
     result = (
@@ -399,12 +433,15 @@ async def generate_experimental_design(
     num_datasets_to_use: int = 1,
     num_comparative_methods: int = 1,
 ) -> dict[str, Any]:
-    """Design experiments to test a research hypothesis.
+    """Design experiments to test a research hypothesis (backend LLM).
 
     `research_hypothesis` should be the output of `generate_hypothesis`.
     `compute_environment` optionally describes the hardware the experiments
     will run on (e.g. {"gpu_type": "A100", "gpu_count": 1}); it constrains
-    the design to what is actually runnable. Requires an LLM provider API key.
+    the design to what is actually runnable. Requires an LLM provider API
+    key — without one, use
+    `get_generation_prompt(step="experimental_design", ...)` and author the
+    design yourself.
     """
     env = ComputeEnvironment.model_validate(compute_environment or {})
     result = (
@@ -421,48 +458,6 @@ async def generate_experimental_design(
                 "research_hypothesis": ResearchHypothesis.model_validate(
                     research_hypothesis
                 ),
-            }
-        )
-    )
-    return _dump(result["experimental_design"])
-
-
-@mcp.tool()
-async def refine_experimental_design(
-    research_hypothesis: dict[str, Any],
-    experiment_history: dict[str, Any],
-    design_instruction: str,
-    compute_environment: dict[str, Any] | None = None,
-    num_models_to_use: int = 1,
-    num_datasets_to_use: int = 1,
-    num_comparative_methods: int = 1,
-) -> dict[str, Any]:
-    """Refine an experimental design based on results so far and an instruction.
-
-    Use after experiments have run: `experiment_history` carries the designs
-    and results accumulated so far, and `design_instruction` states what to
-    change (e.g. "add an ablation for the attention variant"). Returns the
-    revised experimental design. Requires an LLM provider API key.
-    """
-    env = ComputeEnvironment.model_validate(compute_environment or {})
-    result = (
-        await RefineExperimentalDesignSubgraph(
-            langchain_client=_langchain_client(),
-            compute_environment=env,
-            num_models_to_use=num_models_to_use,
-            num_datasets_to_use=num_datasets_to_use,
-            num_comparative_methods=num_comparative_methods,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "research_hypothesis": ResearchHypothesis.model_validate(
-                    research_hypothesis
-                ),
-                "experiment_history": ExperimentHistory.model_validate(
-                    experiment_history
-                ),
-                "design_instruction": design_instruction,
             }
         )
     )
@@ -809,7 +804,9 @@ async def analyze_experiment(
     (findings, whether the hypothesis is supported, and suggested next
     steps). For `experiment_code`, read the code from your local clone and
     pass `{"files": {"<relative path>": "<content>", ...}}`.
-    Requires an LLM provider API key.
+    Requires an LLM provider API key — without one, use
+    `get_generation_prompt(step="experiment_analysis", ...)` and write the
+    analysis yourself.
     """
     result = (
         await AnalyzeExperimentSubgraph(
@@ -1018,12 +1015,14 @@ async def generate_paper(
     references_bib: str,
     writing_refinement_rounds: int = 2,
 ) -> dict[str, Any]:
-    """Write the paper content from the completed research.
+    """Write the paper content from the completed research (backend LLM).
 
     Takes the hypothesis, experiment history, experiment code, related
     studies, and the BibTeX file (from `generate_bibfile`), and produces
     structured paper content (title, abstract, sections). Pass the result
-    to `generate_latex`. Requires an LLM provider API key.
+    to `generate_latex`. Requires an LLM provider API key — without one, use
+    `get_generation_prompt(step="paper_writing", ...)` and author the paper
+    yourself in one pass with the same curated prompt.
     """
     result = (
         await WriteSubgraph(
@@ -1056,14 +1055,16 @@ async def generate_latex(
     references_bib: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
 ) -> str:
-    """Convert paper content into a full LaTeX document.
+    """Convert paper content into a full LaTeX document (backend LLM).
 
     `paper_content` should be the output of `generate_paper`. Available
     templates: "mdpi", "iclr2024", "agents4science_2025". Write the returned
     LaTeX to `.research/latex/{template}/main.tex` in your local clone of
     the experiment repository and push it with git, then build the PDF with
     `compile_latex` and/or hand it over with `open_in_overleaf`. Requires an
-    LLM provider API key and GH_PERSONAL_ACCESS_TOKEN.
+    LLM provider API key and GH_PERSONAL_ACCESS_TOKEN — without them, use
+    `get_generation_prompt(step="latex_conversion", ...)` and do the
+    conversion yourself with the template from your local clone.
     """
     result = (
         await GenerateLatexSubgraph(

@@ -59,13 +59,13 @@ Or add it to your project's `.mcp.json`:
 
 | Tool | Description |
 | --- | --- |
-| `generate_research_queries` | Generate paper search queries from a research topic |
+| `get_generation_prompt` | Assemble AIRAS's curated prompts for a generation step (research_queries / hypothesis / experimental_design / experiment_analysis / paper_writing / latex_conversion) so the MCP host can author the artifact itself; no API keys required |
+| `generate_research_queries` | Generate paper search queries from a research topic (backend LLM) |
 | `search_papers` | Multi-source paper search (OpenAlex / Semantic Scholar / arXiv / AIRAS DB) with normalized, de-duplicated results; no API keys required |
 | `fetch_paper_fulltext` | Fetch a paper's full text by arXiv ID, DOI, or PDF URL (legal open-access resolution only); no API keys required |
 | `retrieve_papers` | Fetch papers via arXiv and extract structured research study data |
 | `generate_hypothesis` | Generate a novel research hypothesis from a topic and related studies |
 | `generate_experimental_design` | Design experiments to test a hypothesis |
-| `refine_experimental_design` | Refine a design based on results so far and an instruction |
 | `retrieve_models` | List curated candidate models for a subfield; no API key required |
 | `retrieve_datasets` | List curated candidate datasets for a subfield; no API key required |
 
@@ -99,6 +99,8 @@ Or add it to your project's `.mcp.json`:
 | --- | --- |
 | `upload_research_history` | Save research state to the experiment repository |
 | `download_research_history` | Restore research state to continue in a later session |
+
+Generation steps are dual-mode: run them on the backend LLM (the tools below, requires an LLM provider key) or author them yourself with the same curated prompts via `get_generation_prompt` (no key required). Host-authorable steps: `research_queries`, `hypothesis`, `experimental_design`, `experiment_analysis`, `paper_writing`, `latex_conversion` — every prompt comes with an `output_json_schema` describing exactly the data format to produce.
 
 A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs` for GitHub Actions, or `get_experiment_run_status` for AIXS) → `fetch_experiment_results` → `analyze_experiment` → **create figures and diagrams yourself** (see below) → `generate_bibfile` → `generate_paper` → `generate_latex` → **write the returned LaTeX to `.research/latex/{template}/main.tex` in your clone and push it with git** → **either or both of** `compile_latex` (build the PDF on GitHub Actions) / `open_in_overleaf` (hand the project to the user for editing; with `local_path`, no push needed) → `upload_research_history`.
 
