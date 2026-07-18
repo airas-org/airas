@@ -59,33 +59,29 @@ Or add it to your project's `.mcp.json`:
 
 | Tool | Description |
 | --- | --- |
-| `generate_research_queries` | Generate paper search queries from a research topic |
+| `get_generation_prompt` | Assemble AIRAS's curated prompts for a generation step (research_queries / hypothesis / experimental_design / experiment_analysis / paper_writing / latex_conversion) so the MCP host can author the artifact itself; no API keys required |
+| `generate_research_queries` | Generate paper search queries from a research topic (backend LLM) |
 | `search_papers` | Multi-source paper search (OpenAlex / Semantic Scholar / arXiv / AIRAS DB) with normalized, de-duplicated results; no API keys required |
 | `fetch_paper_fulltext` | Fetch a paper's full text by arXiv ID, DOI, or PDF URL (legal open-access resolution only); no API keys required |
 | `retrieve_papers` | Fetch papers via arXiv and extract structured research study data |
 | `generate_hypothesis` | Generate a novel research hypothesis from a topic and related studies |
 | `generate_experimental_design` | Design experiments to test a hypothesis |
-| `refine_experimental_design` | Refine a design based on results so far and an instruction |
 | `retrieve_models` | List curated candidate models for a subfield; no API key required |
 | `retrieve_datasets` | List curated candidate datasets for a subfield; no API key required |
 
-### Experiment execution (GitHub Actions)
+### Experiment execution
 
 | Tool | Description |
 | --- | --- |
 | `prepare_repository` | Create and initialize an experiment repository |
-| `set_github_actions_secrets` | Copy LLM API keys from local env vars to the repository's Actions secrets |
-| `dispatch_code_generation` | Start experiment-code generation on GitHub Actions (async) |
-| `dispatch_experiment` | Start a sanity-check or main experiment run (async) |
+| `dispatch_experiment` | Start a sanity-check or main experiment run (async) on GitHub Actions or the AIXS compute platform (`backend` parameter) |
 | `get_workflow_runs` | Check the status of recent workflow runs (non-blocking) |
-| `fetch_experiment_code` | Fetch the generated experiment code |
-| `fetch_run_ids` | List experiment run IDs recorded in the repository |
+| `get_experiment_run_status` | Check one run on any backend and fetch its stdout/stderr tails for error diagnosis |
 | `fetch_experiment_results` | Fetch experiment results |
 | `download_workflow_artifacts` | Download artifacts of a specific workflow run |
 | `analyze_experiment` | Analyze results against the hypothesis and design |
-| `dispatch_visualization` | Generate result figures for given run IDs (async) |
-| `dispatch_diagram_generation` | Generate a method diagram for the paper (async) |
-| `push_files` | Push arbitrary files to the experiment repository |
+| `render_chart` | Render a Vega-Lite spec to a figure file (PDF/SVG/PNG) locally; no API keys required |
+| `render_diagram` | Render a text diagram (mermaid, graphviz, d2, plantuml, …) via Kroki; no API keys required |
 
 ### Paper writing & publication
 
@@ -94,8 +90,8 @@ Or add it to your project's `.mcp.json`:
 | `generate_bibfile` | Generate a BibTeX references file from research studies; no API key required |
 | `generate_paper` | Write structured paper content (title, abstract, sections) from the completed research |
 | `generate_latex` | Convert paper content into a full LaTeX document (templates: mdpi / iclr2024 / agents4science_2025) |
-| `push_latex` | Push the LaTeX source and figures to the experiment repository |
-| `compile_latex` | Build the paper PDF on GitHub Actions (async) |
+| `compile_latex` | Build the paper PDF on GitHub Actions (async); figures are picked up from `.research/results/` and `.research/diagrams/` automatically |
+| `open_in_overleaf` | Create a link that opens the paper in Overleaf; pass `local_path` to export the local working tree without pushing |
 
 ### Research history persistence
 
@@ -104,9 +100,34 @@ Or add it to your project's `.mcp.json`:
 | `upload_research_history` | Save research state to the experiment repository |
 | `download_research_history` | Restore research state to continue in a later session |
 
-A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → `set_github_actions_secrets` → `dispatch_code_generation` → (poll `get_workflow_runs`) → `fetch_experiment_code` → `dispatch_experiment` → (poll) → `fetch_experiment_results` → `analyze_experiment` → `generate_bibfile` → `generate_paper` → `generate_latex` → `push_latex` → `compile_latex` → `upload_research_history`.
+Generation steps are dual-mode: run them on the backend LLM (the tools below, requires an LLM provider key) or author them yourself with the same curated prompts via `get_generation_prompt` (no key required). Host-authorable steps: `research_queries`, `hypothesis`, `experimental_design`, `experiment_analysis`, `paper_writing`, `latex_conversion` — every prompt comes with an `output_json_schema` describing exactly the data format to produce.
 
-Long-running steps (code generation, experiments) execute on GitHub Actions and return immediately; track them with `get_workflow_runs` instead of waiting.
+A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs` for GitHub Actions, or `get_experiment_run_status` for AIXS) → `fetch_experiment_results` → `analyze_experiment` → **create figures and diagrams yourself** (see below) → `generate_bibfile` → `generate_paper` → `generate_latex` → **write the returned LaTeX to `.research/latex/{template}/main.tex` in your clone and push it with git** → **either or both of** `compile_latex` (build the PDF on GitHub Actions) / `open_in_overleaf` (hand the project to the user for editing; with `local_path`, no push needed) → `upload_research_history`.
+
+### Writing the experiment code
+
+The MCP host is expected to be a capable coding agent (Claude Code, Cursor, ...), so AIRAS does not generate the experiment code for you. After `prepare_repository`:
+
+1. Clone the experiment repository locally with git.
+2. Read its `AGENTS.md` — it defines the contract the code must satisfy (allowed files, CLI shape, `sanity` / `pilot` / `full` modes, validation verdict lines, W&B conventions).
+3. Implement the experiment, run `mode=sanity` locally until it prints `SANITY_VALIDATION: PASS`, then commit and push.
+4. Dispatch GPU-scale runs with `dispatch_experiment` and fetch errors/results with `get_experiment_run_status` / `fetch_experiment_results`.
+
+Headless pipelines (the built-in autonomous research workflows) still generate code remotely on GitHub Actions; that path is not exposed as an MCP tool.
+
+### Creating figures and diagrams
+
+Result figures and method diagrams are also created by the MCP host itself rather than on GitHub Actions:
+
+1. Fetch the experiment results with `fetch_experiment_results` (or read them from your local clone — run directories live under `.research/results/`).
+2. Build a Vega-Lite spec from the results and render it with `render_chart`, saving the PDF under `.research/results/chart/` in the clone. For method diagrams, write the diagram as text (mermaid, graphviz, d2, …) and render it with `render_diagram` into `.research/results/diagram/`. (Generating figures yourself, e.g. with matplotlib, works too — only the output location matters.)
+3. Commit and push them with git. No copy step is needed: `compile_latex` and `open_in_overleaf` automatically pick up every figure PDF under `.research/results/` and `.research/diagrams/`, exposed to LaTeX as `images/<path relative to that directory>` (e.g. `.research/results/chart/loss.pdf` → `images/chart/loss.pdf`) with the directory structure preserved. Reference figures accordingly in the paper.
+
+`render_chart` renders entirely locally. `render_diagram` uses the public https://kroki.io by default; set `KROKI_BASE_URL` to a self-hosted Kroki instance to keep unpublished diagrams on-premises.
+
+As with code generation, the autonomous research workflows still run visualization and diagram generation on GitHub Actions; those paths are not exposed as MCP tools.
+
+Long-running steps return immediately instead of blocking. Experiments run on GitHub Actions or on AIXS depending on `dispatch_experiment`'s `backend` — track them with `get_workflow_runs` or `get_experiment_run_status` respectively. LaTeX builds run on GitHub Actions; track them with `get_workflow_runs`.
 
 ## Development
 

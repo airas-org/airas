@@ -34,14 +34,21 @@ git config --local --unset-all core.hooksPath || true
 
 uv run --project backend pre-commit install --overwrite
 
-# --- Frontend (Node + npm) ---
+# --- Frontend (Node + pnpm) ---
 cd "$FRONTEND"
 
+# Ensure pnpm is available via corepack (already enabled in dev.Dockerfile; this
+# covers older images). The version follows package.json's packageManager field.
+export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+if ! command -v pnpm >/dev/null 2>&1; then
+  sudo corepack enable
+fi
+
 # Prefer deterministic install if lockfile exists
-if [ -f "package-lock.json" ]; then
-  npm ci
+if [ -f "pnpm-lock.yaml" ]; then
+  pnpm install --frozen-lockfile
 else
-  npm install
+  pnpm install
 fi
 
 # --- Load .env into shell profile ---

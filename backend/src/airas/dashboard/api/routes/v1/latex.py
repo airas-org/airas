@@ -1,14 +1,18 @@
 from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse
 from langfuse import observe
 
 from airas.container import Container
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
-from airas.dashboard.api.dependencies import get_github_client, get_langchain_client
+from airas.dashboard.api.dependencies import (
+    get_github_client,
+    get_github_client_or_none,
+    get_langchain_client,
+)
 from airas.dashboard.api.schemas.latex import (
     CompileLatexSubgraphRequestBody,
     CompileLatexSubgraphResponseBody,
@@ -66,6 +70,9 @@ async def generate_latex(
     )
 
 
+# NOTE: In the local-agent flow main.tex is pushed with git; this endpoint
+# remains for the dashboard UI and E2E and is a removal candidate in the next
+# major release (see issue #913).
 @router.post("/push", response_model=PushLatexSubgraphResponseBody)
 @inject
 @observe()
@@ -89,7 +96,6 @@ async def push_latex(
     )
     return PushLatexSubgraphResponseBody(
         is_upload_successful=result["is_upload_successful"],
-        is_images_prepared=result["is_images_prepared"],
         execution_time=result["execution_time"],
     )
 
@@ -110,20 +116,33 @@ async def open_in_overleaf(
     github_owner: str,
     repository_name: str,
     branch_name: str,
-    github_client: Annotated[GithubClient, Depends(get_github_client)],
+    github_client: Annotated[GithubClient | None, Depends(get_github_client_or_none)],
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+    local_path: str | None = None,
 ) -> HTMLResponse:
     """Serve a page that forwards the paper's LaTeX project to Overleaf.
 
     Opened in a browser (not called as a JSON API): the page carries the
     zipped LaTeX sources inline and immediately POSTs them to Overleaf,
     which creates a new project in the user's Overleaf account.
+
+    With `local_path` (path to a local clone of the experiment repository)
+    the project is read from the working tree on disk instead of GitHub,
+    so unpushed changes and locally rendered figures are included — and no
+    GitHub token is required.
     """
+    if local_path is None and github_client is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="GH_PERSONAL_ACCESS_TOKEN is not configured (required "
+            "unless local_path is provided).",
+        )
     try:
         result = (
             await OpenInOverleafSubgraph(
                 github_client=github_client,
                 latex_template_name=latex_template_name,
+                local_repo_path=local_path,
             )
             .build_graph()
             .ainvoke(

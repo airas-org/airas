@@ -57,10 +57,16 @@ export class LatexService {
      * Opened in a browser (not called as a JSON API): the page carries the
      * zipped LaTeX sources inline and immediately POSTs them to Overleaf,
      * which creates a new project in the user's Overleaf account.
+     *
+     * With `local_path` (path to a local clone of the experiment repository)
+     * the project is read from the working tree on disk instead of GitHub,
+     * so unpushed changes and locally rendered figures are included — and no
+     * GitHub token is required.
      * @param githubOwner
      * @param repositoryName
      * @param branchName
      * @param latexTemplateName
+     * @param localPath
      * @returns string Successful Response
      * @throws ApiError
      */
@@ -69,6 +75,7 @@ export class LatexService {
         repositoryName: string,
         branchName: string,
         latexTemplateName: 'iclr2024' | 'agents4science_2025' | 'mdpi' = 'mdpi',
+        localPath?: (string | null),
     ): CancelablePromise<string> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -78,6 +85,7 @@ export class LatexService {
                 'repository_name': repositoryName,
                 'branch_name': branchName,
                 'latex_template_name': latexTemplateName,
+                'local_path': localPath,
             },
             errors: {
                 404: `LaTeX project not found in the repository (push_latex has not been run)`,

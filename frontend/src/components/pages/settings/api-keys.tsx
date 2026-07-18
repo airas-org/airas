@@ -21,6 +21,14 @@ const CATEGORIES: { key: string; names: string[] }[] = [
     ],
   },
   {
+    key: "papers",
+    names: ["SEMANTIC_SCHOLAR_API_KEY", "OPENALEX_API_KEY"],
+  },
+  {
+    key: "compute",
+    names: ["AIXS_API_KEY", "AIXS_BASE_URL"],
+  },
+  {
     key: "integrations",
     names: ["WANDB_API_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_BASE_URL"],
   },

@@ -11,7 +11,6 @@ from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph 
 )
 
 
-# TODO: Latex関連の各APIのrequest bodyにlatex_template_nameがあるのを取り除き、GenerateLatexSubgraphRequestBodyだけがもつ様に変更する
 class GenerateLatexSubgraphRequestBody(BaseModel):
     references_bib: str
     paper_content: PaperContent
@@ -32,7 +31,6 @@ class PushLatexSubgraphRequestBody(BaseModel):
 
 class PushLatexSubgraphResponseBody(BaseModel):
     is_upload_successful: bool
-    is_images_prepared: bool
     execution_time: dict[str, list[float]]
 
 

@@ -135,3 +135,27 @@ async def get_github_client(
         sync_session=github_sync_session,
         async_session=github_async_session,
     )
+
+
+@inject
+async def get_github_client_or_none(
+    github_sync_session: Annotated[
+        httpx.Client, Depends(Provide[Container.github_sync_session])
+    ],
+    github_async_session: Annotated[
+        httpx.AsyncClient, Depends(Provide[Container.github_async_session])
+    ],
+) -> GithubClient | None:
+    """Like get_github_client, but yields None when no token is configured.
+
+    For endpoints where GitHub access is only one of several modes (e.g. the
+    Overleaf export, which can read from a local clone instead).
+    """
+    refresh_environment()
+    if not os.getenv("GH_PERSONAL_ACCESS_TOKEN", ""):
+        return None
+    return GithubClient(
+        github_token=_resolve_github_token(),
+        sync_session=github_sync_session,
+        async_session=github_async_session,
+    )

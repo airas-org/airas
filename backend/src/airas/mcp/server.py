@@ -14,19 +14,25 @@ Run locally:
     uvx --from "airas[mcp]" airas-mcp
 """
 
+import asyncio
+import logging
 import os
 import webbrowser
+from io import BytesIO
+from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlencode
 
 import httpx
+import vl_convert as vlc
 from mcp.server.fastmcp import FastMCP
+from PIL import Image
 from pydantic import BaseModel
 
 from airas.cli import DEFAULT_DASHBOARD_PORT
 from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
 from airas.core.types.experiment_code import ExperimentCode
-from airas.core.types.experiment_history import ExperimentHistory
+from airas.core.types.experiment_history import ExperimentHistory, RunStage
 from airas.core.types.experimental_design import (
     ComputeEnvironment,
     DatasetSubfield,
@@ -41,7 +47,6 @@ from airas.core.types.paper_search import PAPER_SEARCH_SOURCES
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
-from airas.core.types.wandb import WandbConfig
 from airas.dashboard.launcher import (
     dashboard_url,
     has_bundled_ui,
@@ -51,38 +56,30 @@ from airas.dashboard.launcher import (
 from airas.dashboard.launcher import (
     stop_dashboard as stop_dashboard_process,
 )
+from airas.infra.aixs_client import AixsClient
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
+from airas.infra.kroki_client import KrokiClient
 from airas.infra.langchain_client import (
     PROVIDER_REQUIRED_ENV_VARS,
     LangChainClient,
 )
 from airas.infra.llm_provider_resolver import detect_available_providers
 from airas.infra.openalex_client import OpenAlexClient
+from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.infra.semantic_scholar_client import SemanticScholarClient
+from airas.mcp.prompt_registry import build_generation_prompt
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
+)
+from airas.usecases.executors.dispatch_experiment_on_aixs_subgraph.dispatch_experiment_on_aixs_subgraph import (
+    DispatchExperimentOnAixsSubgraph,
 )
 from airas.usecases.executors.dispatch_experiment_on_static_runner_subgraph.dispatch_experiment_on_static_runner_subgraph import (
     DispatchExperimentOnStaticRunnerSubgraph,
 )
-from airas.usecases.executors.dispatch_visualization_subgraph.dispatch_visualization_subgraph import (
-    DispatchVisualizationSubgraph,
-)
-from airas.usecases.executors.fetch_experiment_code_subgraph.fetch_experiment_code_subgraph import (
-    FetchExperimentCodeSubgraph,
-)
 from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment_results_subgraph import (
     FetchExperimentResultsSubgraph,
-)
-from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph import (
-    FetchRunIdsSubgraph,
-)
-from airas.usecases.generators.dispatch_code_generation_subgraph.dispatch_code_generation_subgraph import (
-    DispatchCodeGenerationSubgraph,
-)
-from airas.usecases.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
-    DispatchDiagramGenerationSubgraph,
 )
 from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignSubgraph,
@@ -93,9 +90,6 @@ from airas.usecases.generators.generate_hypothesis_subgraph.generate_hypothesis_
 from airas.usecases.generators.generate_queries_subgraph.generate_queries_subgraph import (
     GenerateQueriesSubgraph,
 )
-from airas.usecases.generators.refine_experimental_design_subgraph.refine_experimental_design_subgraph import (
-    RefineExperimentalDesignSubgraph,
-)
 from airas.usecases.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
     DownloadGithubActionsArtifactsSubgraph,
 )
@@ -104,20 +98,11 @@ from airas.usecases.github.github_upload_subgraph import GithubUploadSubgraph
 from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,
 )
-from airas.usecases.github.push_github_subgraph.push_github_subgraph import (
-    PushGitHubSubgraph,
-)
-from airas.usecases.github.set_github_actions_secrets_subgraph.set_github_actions_secrets_subgraph import (
-    SetGithubActionsSecretsSubgraph,
-)
 from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
     CompileLatexSubgraph,
 )
 from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
     GenerateLatexSubgraph,
-)
-from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
-    PushLatexSubgraph,
 )
 from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.fetch_paper_fulltext_subgraph import (
     FetchPaperFulltextSubgraph,
@@ -141,6 +126,8 @@ from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph 
     GenerateBibfileSubgraph,
 )
 from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
+
+logger = logging.getLogger(__name__)
 
 mcp = FastMCP("airas")
 
@@ -171,6 +158,18 @@ def _github_client() -> GithubClient:
         sync_session=_github_sync_session,
         async_session=_github_async_session,
     )
+
+
+def _aixs_client() -> AixsClient:
+    refresh_environment()
+    if not os.getenv("AIXS_API_KEY"):
+        raise RuntimeError(f"AIXS_API_KEY is not configured. {SETUP_INSTRUCTIONS}")
+    return AixsClient(sync_session=_sync_session, async_session=_async_session)
+
+
+def _kroki_client() -> KrokiClient:
+    refresh_environment()
+    return KrokiClient(sync_session=_sync_session, async_session=_async_session)
 
 
 def _arxiv_client() -> ArxivClient:
@@ -206,14 +205,48 @@ def _dump(value: Any) -> Any:
 
 
 @mcp.tool()
+def get_generation_prompt(step: str, inputs: dict[str, Any]) -> dict[str, Any]:
+    """Assemble AIRAS's curated prompt(s) for a generation step so you (the
+    MCP host) can author the artifact yourself — no LLM API key required.
+
+    Generation steps run in one of two modes: the backend-LLM tool
+    (`generate_research_queries` / `analyze_experiment` / `generate_paper`,
+    needs a provider key) or host mode via this tool. Both use the same
+    prompt templates, so quality guidance is identical. Prefer host mode
+    when no LLM provider key is configured, or when your own context (the
+    conversation, code you wrote) should inform the writing.
+
+    `step` and the required `inputs` keys:
+    - "research_queries": research_topic, num_queries (optional)
+    - "hypothesis": research_topic, research_study_list
+    - "experimental_design": research_hypothesis, compute_environment
+      (optional), num_models_to_use / num_datasets_to_use /
+      num_comparative_methods (optional)
+    - "experiment_analysis": research_hypothesis, experimental_design,
+      experiment_code ({"files": {path: content}}), experimental_results
+    - "paper_writing": research_hypothesis, experiment_history,
+      experiment_code, research_study_list, references_bib
+    - "latex_conversion": paper_content, figures_dir (optional)
+
+    Returns a fully rendered `prompt`, an `output_json_schema` describing
+    exactly the data format to produce in one pass, and a `flow` note on
+    how the output feeds the next step.
+    """
+    return build_generation_prompt(step, inputs)
+
+
+@mcp.tool()
 async def generate_research_queries(
     research_topic: str,
     num_queries: int = 2,
 ) -> list[str]:
-    """Generate academic paper search queries from a research topic.
+    """Generate academic paper search queries from a research topic (backend LLM).
 
     Use this first to turn a free-form research topic into effective
-    search queries, then pass them to `search_papers`.
+    search queries, then pass them to `search_papers`. Requires an LLM
+    provider API key — without one, use
+    `get_generation_prompt(step="research_queries", ...)` and author the
+    queries yourself.
     """
     result = (
         await GenerateQueriesSubgraph(
@@ -364,11 +397,13 @@ async def generate_hypothesis(
     research_study_list: list[dict[str, Any]],
     refinement_rounds: int = 1,
 ) -> dict[str, Any]:
-    """Generate a novel research hypothesis from a topic and related studies.
+    """Generate a novel research hypothesis from a topic and related studies (backend LLM).
 
     `research_study_list` should be the output of `retrieve_papers`. Higher
     `refinement_rounds` improves quality at the cost of more LLM calls.
-    Requires an LLM provider API key.
+    Requires an LLM provider API key — without one, use
+    `get_generation_prompt(step="hypothesis", ...)` and author the
+    hypothesis yourself.
     """
     studies = [ResearchStudy.model_validate(study) for study in research_study_list]
     result = (
@@ -398,12 +433,15 @@ async def generate_experimental_design(
     num_datasets_to_use: int = 1,
     num_comparative_methods: int = 1,
 ) -> dict[str, Any]:
-    """Design experiments to test a research hypothesis.
+    """Design experiments to test a research hypothesis (backend LLM).
 
     `research_hypothesis` should be the output of `generate_hypothesis`.
     `compute_environment` optionally describes the hardware the experiments
     will run on (e.g. {"gpu_type": "A100", "gpu_count": 1}); it constrains
-    the design to what is actually runnable. Requires an LLM provider API key.
+    the design to what is actually runnable. Requires an LLM provider API
+    key — without one, use
+    `get_generation_prompt(step="experimental_design", ...)` and author the
+    design yourself.
     """
     env = ComputeEnvironment.model_validate(compute_environment or {})
     result = (
@@ -420,48 +458,6 @@ async def generate_experimental_design(
                 "research_hypothesis": ResearchHypothesis.model_validate(
                     research_hypothesis
                 ),
-            }
-        )
-    )
-    return _dump(result["experimental_design"])
-
-
-@mcp.tool()
-async def refine_experimental_design(
-    research_hypothesis: dict[str, Any],
-    experiment_history: dict[str, Any],
-    design_instruction: str,
-    compute_environment: dict[str, Any] | None = None,
-    num_models_to_use: int = 1,
-    num_datasets_to_use: int = 1,
-    num_comparative_methods: int = 1,
-) -> dict[str, Any]:
-    """Refine an experimental design based on results so far and an instruction.
-
-    Use after experiments have run: `experiment_history` carries the designs
-    and results accumulated so far, and `design_instruction` states what to
-    change (e.g. "add an ablation for the attention variant"). Returns the
-    revised experimental design. Requires an LLM provider API key.
-    """
-    env = ComputeEnvironment.model_validate(compute_environment or {})
-    result = (
-        await RefineExperimentalDesignSubgraph(
-            langchain_client=_langchain_client(),
-            compute_environment=env,
-            num_models_to_use=num_models_to_use,
-            num_datasets_to_use=num_datasets_to_use,
-            num_comparative_methods=num_comparative_methods,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "research_hypothesis": ResearchHypothesis.model_validate(
-                    research_hypothesis
-                ),
-                "experiment_history": ExperimentHistory.model_validate(
-                    experiment_history
-                ),
-                "design_instruction": design_instruction,
             }
         )
     )
@@ -536,78 +532,6 @@ async def prepare_repository(
 
 
 @mcp.tool()
-async def set_github_actions_secrets(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str = "main",
-) -> dict[str, Any]:
-    """Copy required secrets (LLM API keys etc.) from local environment variables to the experiment repository's GitHub Actions secrets.
-
-    Run this after `prepare_repository` so that code generation and
-    experiment workflows can call LLM providers. Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    config = GitHubConfig(
-        github_owner=github_owner,
-        repository_name=repository_name,
-        branch_name=branch_name,
-    )
-    result = (
-        await SetGithubActionsSecretsSubgraph(github_client=_github_client())
-        .build_graph()
-        .ainvoke({"github_config": config})
-    )
-    return {"secrets_set": result["secrets_set"]}
-
-
-@mcp.tool()
-async def dispatch_code_generation(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    research_topic: str,
-    research_hypothesis: dict[str, Any],
-    experimental_design: dict[str, Any],
-    wandb_entity: str,
-    wandb_project: str,
-    github_actions_agent: Literal["claude_code", "open_code"] = "open_code",
-) -> dict[str, Any]:
-    """Start experiment-code generation on GitHub Actions (asynchronous).
-
-    Dispatches a workflow in the experiment repository that generates the
-    experiment code with a coding agent. Returns immediately with
-    `dispatched`; track progress with `get_workflow_runs` and fetch the
-    generated code with `fetch_experiment_code` once the run succeeds.
-    Requires GH_PERSONAL_ACCESS_TOKEN and an LLM provider API key.
-    """
-    result = (
-        await DispatchCodeGenerationSubgraph(
-            github_client=_github_client(),
-            llm_mapping=None,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "research_topic": research_topic,
-                "research_hypothesis": ResearchHypothesis.model_validate(
-                    research_hypothesis
-                ),
-                "experimental_design": ExperimentalDesign.model_validate(
-                    experimental_design
-                ),
-                "wandb_config": WandbConfig(entity=wandb_entity, project=wandb_project),
-                "github_actions_agent": github_actions_agent,
-            }
-        )
-    )
-    return {"dispatched": result["dispatched"]}
-
-
-@mcp.tool()
 async def dispatch_experiment(
     github_owner: str,
     repository_name: str,
@@ -615,15 +539,57 @@ async def dispatch_experiment(
     run_id: str,
     workflow: Literal["sanity_check", "main"] = "sanity_check",
     runner_label: list[str] | None = None,
+    backend: Literal["github_actions", "aixs"] = "github_actions",
+    compute_type: str = "gpu-a10",
 ) -> dict[str, Any]:
-    """Start an experiment run on GitHub Actions (asynchronous).
+    """Start an experiment run (asynchronous). The code must already be pushed.
 
     `workflow` selects the stage: "sanity_check" for a quick correctness run,
     "main" for the full experiment. `run_id` identifies the experiment run
-    defined by the generated code. Returns immediately with `dispatched`;
-    track progress with `get_workflow_runs` and collect outputs with
-    `fetch_experiment_results`. Requires GH_PERSONAL_ACCESS_TOKEN.
+    defined by the experiment code (one config/run/{run_id}.yaml).
+
+    `backend` selects where the run executes:
+    - "github_actions" (default): dispatches a workflow in the experiment
+      repository. `runner_label` picks the runner. Track progress with
+      `get_workflow_runs` and collect outputs with `fetch_experiment_results`.
+      Requires GH_PERSONAL_ACCESS_TOKEN.
+    - "aixs": executes on the AIXS compute platform (GPU without GitHub
+      Actions limits). `compute_type` picks the machine (e.g. "cpu-general",
+      "gpu-a10"). Requires AIXS_API_KEY, and W&B API keys must be registered
+      as env vars on the AIXS side.
+
+    Track progress and fetch execution errors with
+    `get_experiment_run_status`. For "aixs" the returned `execution_id` is
+    passed directly; for "github_actions" the workflow-dispatch API returns
+    no id, so discover the run id with `get_workflow_runs` first.
     """
+    if backend == "aixs":
+        run_stage = RunStage.SANITY if workflow == "sanity_check" else RunStage.FULL
+        aixs_result = (
+            await DispatchExperimentOnAixsSubgraph(
+                aixs_client=_aixs_client(),
+                run_stage=run_stage,
+                compute_type=compute_type,
+            )
+            .build_graph()
+            .ainvoke(
+                {
+                    "github_config": GitHubConfig(
+                        github_owner=github_owner,
+                        repository_name=repository_name,
+                        branch_name=branch_name,
+                    ),
+                    "run_id": run_id,
+                }
+            )
+        )
+        return {
+            "dispatched": aixs_result["dispatched"],
+            "backend": "aixs",
+            "execution_id": aixs_result["aixs_run_id"],
+            "execution_url": aixs_result["aixs_run_url"],
+        }
+
     workflow_file = (
         "run_sanity_check.yml"
         if workflow == "sanity_check"
@@ -647,7 +613,91 @@ async def dispatch_experiment(
             }
         )
     )
-    return {"dispatched": result["dispatched"]}
+    return {"dispatched": result["dispatched"], "backend": "github_actions"}
+
+
+@mcp.tool()
+async def get_experiment_run_status(
+    execution_id: str,
+    backend: Literal["github_actions", "aixs"] = "github_actions",
+    github_owner: str | None = None,
+    repository_name: str | None = None,
+    log_tail_lines: int = 200,
+) -> dict[str, Any]:
+    """Check one experiment run and fetch its execution logs (non-blocking).
+
+    `execution_id` identifies the run on the selected `backend`: the
+    `execution_id` returned by `dispatch_experiment(backend="aixs")`, or a
+    `workflow_run_id` from `get_workflow_runs` for "github_actions" (pass
+    `github_owner` and `repository_name` in that case).
+
+    Returns the run status and, once the run has finished, the last
+    `log_tail_lines` lines of stdout and stderr where the backend provides
+    them — use stderr to diagnose execution errors and fix the experiment
+    code locally.
+    """
+    if log_tail_lines <= 0:
+        raise ValueError("log_tail_lines must be a positive integer")
+    log_tail_lines = min(log_tail_lines, 10_000)
+
+    if backend == "github_actions":
+        if not github_owner or not repository_name:
+            raise ValueError(
+                "github_owner and repository_name are required for the "
+                "github_actions backend"
+            )
+        run_info = await _github_client().aget_workflow_run(
+            github_owner=github_owner,
+            repository_name=repository_name,
+            workflow_run_id=int(execution_id),
+        )
+        if run_info is None:
+            raise ValueError(
+                f"Workflow run {execution_id} not found in "
+                f"{github_owner}/{repository_name}"
+            )
+        return {
+            "execution_id": execution_id,
+            "backend": backend,
+            "status": run_info.get("status"),
+            "conclusion": run_info.get("conclusion"),
+            "execution_url": run_info.get("html_url"),
+            # Actions job logs are not exposed here; inspect the run page or
+            # use download_workflow_artifacts for outputs.
+            "stdout_tail": None,
+            "stderr_tail": None,
+        }
+
+    client = _aixs_client()
+    run = await client.aget_run(execution_id)
+    status = run.get("status")
+
+    def _tail(text: str) -> str:
+        lines = text.splitlines()
+        return "\n".join(lines[-log_tail_lines:])
+
+    stdout_tail: str | None = None
+    stderr_tail: str | None = None
+    if status in ("completed", "failed", "cancelled"):
+        try:
+            stdout_tail = _tail(await client.aget_run_stdout(execution_id))
+        except (HTTPClientFatalError, HTTPClientRetryableError) as exc:
+            # logs may not be persisted (yet) for this run
+            logger.warning(f"Failed to fetch stdout for run {execution_id}: {exc}")
+        try:
+            stderr_tail = _tail(await client.aget_run_stderr(execution_id))
+        except (HTTPClientFatalError, HTTPClientRetryableError) as exc:
+            logger.warning(f"Failed to fetch stderr for run {execution_id}: {exc}")
+
+    return {
+        "execution_id": execution_id,
+        "backend": backend,
+        "status": status,
+        "compute_type": run.get("compute_type"),
+        "duration_seconds": run.get("duration_seconds"),
+        "stdout_tail": stdout_tail,
+        "stderr_tail": stderr_tail,
+    }
 
 
 @mcp.tool()
@@ -660,9 +710,9 @@ async def get_workflow_runs(
     """Check the status of recent GitHub Actions runs in the experiment repository (non-blocking).
 
     Returns the most recent dispatched workflow runs with their status and
-    conclusion. Use this to track runs started by `dispatch_code_generation`
-    or `dispatch_experiment` — poll it between other work instead of waiting.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
+    conclusion. Use this to track runs started by `dispatch_experiment`
+    (backend "github_actions") — poll it between other work instead of
+    waiting. Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     response = await _github_client().alist_workflow_runs(
         github_owner=github_owner,
@@ -681,34 +731,6 @@ async def get_workflow_runs(
         }
         for run in runs
     ]
-
-
-@mcp.tool()
-async def fetch_experiment_code(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-) -> dict[str, Any]:
-    """Fetch the generated experiment code from the experiment repository.
-
-    Use after a `dispatch_code_generation` run has succeeded. The returned
-    object can be passed to `analyze_experiment` as `experiment_code`.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    result = (
-        await FetchExperimentCodeSubgraph(github_client=_github_client())
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                )
-            }
-        )
-    )
-    return _dump(result["experiment_code"])
 
 
 @mcp.tool()
@@ -778,9 +800,13 @@ async def analyze_experiment(
     """Analyze experiment results against the hypothesis and design.
 
     Takes the outputs of `generate_hypothesis`, `generate_experimental_design`,
-    `fetch_experiment_code`, and `fetch_experiment_results`, and returns a
-    structured analysis (findings, whether the hypothesis is supported, and
-    suggested next steps). Requires an LLM provider API key.
+    and `fetch_experiment_results`, and returns a structured analysis
+    (findings, whether the hypothesis is supported, and suggested next
+    steps). For `experiment_code`, read the code from your local clone and
+    pass `{"files": {"<relative path>": "<content>", ...}}`.
+    Requires an LLM provider API key — without one, use
+    `get_generation_prompt(step="experiment_analysis", ...)` and write the
+    analysis yourself.
     """
     result = (
         await AnalyzeExperimentSubgraph(
@@ -868,134 +894,96 @@ async def download_research_history(
     return _dump(result["research_history"])
 
 
-@mcp.tool()
-async def fetch_run_ids(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-) -> list[str]:
-    """List the experiment run IDs recorded in the experiment repository.
+def _resolve_render_output(output_path: str) -> tuple[Path, str]:
+    path = Path(output_path).expanduser()
+    suffix = path.suffix.lower().lstrip(".")
+    if suffix not in ("pdf", "svg", "png"):
+        raise ValueError("output_path must end with .pdf, .svg, or .png")
+    return path, suffix
 
-    Run IDs identify individual experiment runs defined by the generated
-    code; pass them to `dispatch_experiment` or `dispatch_visualization`.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    result = (
-        await FetchRunIdsSubgraph(github_client=_github_client())
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                )
-            }
-        )
-    )
-    return result["run_ids"]
+
+def _png_to_pdf(png: bytes) -> bytes:
+    buffer = BytesIO()
+    with Image.open(BytesIO(png)) as image:
+        if image.mode != "RGB":
+            # Flatten transparency onto white instead of the black that a
+            # plain RGB conversion would produce.
+            rgba = image.convert("RGBA")
+            rgb = Image.new("RGB", rgba.size, (255, 255, 255))
+            rgb.paste(rgba, mask=rgba.getchannel("A"))
+        else:
+            rgb = image.copy()
+    rgb.save(buffer, format="PDF")
+    return buffer.getvalue()
 
 
 @mcp.tool()
-async def dispatch_visualization(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    run_ids: list[str],
-    runner_label: list[str] | None = None,
+async def render_chart(
+    vega_lite_spec: dict[str, Any],
+    output_path: str,
 ) -> dict[str, Any]:
-    """Start result-visualization generation on GitHub Actions (asynchronous).
+    """Render a Vega-Lite spec to a chart file, entirely locally.
 
-    Generates figures for the given experiment `run_ids` (from
-    `fetch_run_ids`). The figures are used by the paper-writing stage.
-    Returns immediately; track with `get_workflow_runs`.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
+    Use this for publication-quality result figures: build a Vega-Lite JSON
+    spec from the experiment results (inline the data under `data.values`).
+    When rendering into a local clone of the experiment repository, save
+    the chart as a PDF under `.research/results/chart/`, then commit and
+    push — the LaTeX build collects every `*.pdf` under
+    `.research/results/`. `output_path` must end with .pdf, .svg, or .png.
+    Rendering runs in-process (vl-convert); no data leaves the machine and
+    no API keys are required.
     """
-    result = (
-        await DispatchVisualizationSubgraph(
-            github_client=_github_client(),
-            runner_label=runner_label,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "run_ids": run_ids,
-            }
-        )
-    )
-    return {"dispatched": result["dispatched"]}
+    path, suffix = _resolve_render_output(output_path)
+    if suffix == "pdf":
+        data = await asyncio.to_thread(vlc.vegalite_to_pdf, vega_lite_spec)
+    elif suffix == "svg":
+        svg = await asyncio.to_thread(vlc.vegalite_to_svg, vega_lite_spec)
+        data = svg.encode("utf-8")
+    else:
+        data = await asyncio.to_thread(vlc.vegalite_to_png, vega_lite_spec)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return {"output_path": str(path), "bytes_written": len(data)}
 
 
 @mcp.tool()
-async def dispatch_diagram_generation(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    github_actions_agent: Literal["claude_code", "open_code"] = "claude_code",
-    diagram_description: str | None = None,
+async def render_diagram(
+    diagram_type: str,
+    diagram_source: str,
+    output_path: str,
 ) -> dict[str, Any]:
-    """Start method-diagram generation on GitHub Actions (asynchronous).
+    """Render a text diagram (diagram-as-code) to a file via Kroki.
 
-    Generates an explanatory diagram of the proposed method for the paper.
-    `diagram_description` optionally guides what the diagram should show.
-    Returns immediately; track with `get_workflow_runs`.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
+    Use this for method/architecture diagrams: write the diagram source in
+    a text notation (`diagram_type`: "mermaid", "graphviz", "d2",
+    "plantuml", and 20+ more Kroki types). When rendering into a local
+    clone of the experiment repository, save the result as a PDF under
+    `.research/results/diagram/`, then commit and push — the LaTeX build
+    collects every `*.pdf` under `.research/results/`. `output_path` must
+    end with .pdf, .svg, or .png; PDF conversion happens locally from the
+    SVG (vector). Types whose SVG embeds
+    HTML labels (e.g. mermaid) fall back to a raster PDF automatically —
+    prefer "graphviz" / "plantuml" when you want vector text. Rendering uses
+    the public https://kroki.io by default — set KROKI_BASE_URL to a
+    self-hosted instance to keep unpublished diagrams private. No API keys
+    required.
     """
-    result = (
-        await DispatchDiagramGenerationSubgraph(
-            github_client=_github_client(),
-            diagram_description=diagram_description,
-            prompt_path=None,
-            llm_mapping=None,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "github_actions_agent": github_actions_agent,
-            }
-        )
-    )
-    return {"dispatched": result["dispatched"]}
-
-
-@mcp.tool()
-async def push_files(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    files: dict[str, str],
-) -> dict[str, Any]:
-    """Push files to the experiment repository.
-
-    `files` maps repository paths to file contents (text). Useful for
-    manual fixes to experiment code or configuration between runs.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    result = (
-        await PushGitHubSubgraph(github_client=_github_client())
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "push_files": files,
-            }
-        )
-    )
-    return {"is_file_pushed": result["is_file_pushed"]}
+    path, suffix = _resolve_render_output(output_path)
+    client = _kroki_client()
+    if suffix == "pdf":
+        svg = await client.arender(diagram_type, diagram_source, "svg")
+        if b"<foreignObject" in svg:
+            # HTML-in-SVG labels (mermaid etc.) are dropped by the local
+            # SVG-to-PDF converter, so rasterize via Kroki's PNG instead.
+            png = await client.arender(diagram_type, diagram_source, "png")
+            data = await asyncio.to_thread(_png_to_pdf, png)
+        else:
+            data = await asyncio.to_thread(vlc.svg_to_pdf, svg.decode("utf-8"))
+    else:
+        data = await client.arender(diagram_type, diagram_source, suffix)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return {"output_path": str(path), "bytes_written": len(data)}
 
 
 # --- Paper writing & publication ---
@@ -1027,12 +1015,14 @@ async def generate_paper(
     references_bib: str,
     writing_refinement_rounds: int = 2,
 ) -> dict[str, Any]:
-    """Write the paper content from the completed research.
+    """Write the paper content from the completed research (backend LLM).
 
     Takes the hypothesis, experiment history, experiment code, related
     studies, and the BibTeX file (from `generate_bibfile`), and produces
     structured paper content (title, abstract, sections). Pass the result
-    to `generate_latex`. Requires an LLM provider API key.
+    to `generate_latex`. Requires an LLM provider API key — without one, use
+    `get_generation_prompt(step="paper_writing", ...)` and author the paper
+    yourself in one pass with the same curated prompt.
     """
     result = (
         await WriteSubgraph(
@@ -1065,13 +1055,16 @@ async def generate_latex(
     references_bib: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
 ) -> str:
-    """Convert paper content into a full LaTeX document.
+    """Convert paper content into a full LaTeX document (backend LLM).
 
     `paper_content` should be the output of `generate_paper`. Available
-    templates: "mdpi", "iclr2024", "agents4science_2025". Push the returned
-    LaTeX to the experiment repository with `push_latex`, then build the PDF
-    with `compile_latex`. Requires an LLM provider API key and
-    GH_PERSONAL_ACCESS_TOKEN.
+    templates: "mdpi", "iclr2024", "agents4science_2025". Write the returned
+    LaTeX to `.research/latex/{template}/main.tex` in your local clone of
+    the experiment repository and push it with git, then build the PDF with
+    `compile_latex` and/or hand it over with `open_in_overleaf`. Requires an
+    LLM provider API key and GH_PERSONAL_ACCESS_TOKEN — without them, use
+    `get_generation_prompt(step="latex_conversion", ...)` and do the
+    conversion yourself with the template from your local clone.
     """
     result = (
         await GenerateLatexSubgraph(
@@ -1091,42 +1084,6 @@ async def generate_latex(
 
 
 @mcp.tool()
-async def push_latex(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    latex_text: str,
-    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-) -> dict[str, Any]:
-    """Push the LaTeX document and figures to the experiment repository.
-
-    Uploads the LaTeX source (from `generate_latex`) and prepares the images
-    so that `compile_latex` can build the PDF. Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    result = (
-        await PushLatexSubgraph(
-            github_client=_github_client(),
-            latex_template_name=latex_template_name,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "latex_text": latex_text,
-            }
-        )
-    )
-    return {
-        "is_upload_successful": result["is_upload_successful"],
-        "is_images_prepared": result["is_images_prepared"],
-    }
-
-
-@mcp.tool()
 async def compile_latex(
     github_owner: str,
     repository_name: str,
@@ -1136,9 +1093,14 @@ async def compile_latex(
 ) -> dict[str, Any]:
     """Build the paper PDF on GitHub Actions (asynchronous).
 
-    Dispatches the LaTeX compilation workflow for the sources pushed by
-    `push_latex`. Returns immediately with `paper_url` (when available);
-    track the run with `get_workflow_runs`. Requires GH_PERSONAL_ACCESS_TOKEN.
+    One of the two publication exits after main.tex has been pushed to
+    `.research/latex/{template}/` (the other is `open_in_overleaf`; they
+    are independent and can both be used).
+    Dispatches the LaTeX compilation workflow for the pushed sources;
+    figure PDFs under `.research/results/` and `.research/diagrams/` are
+    materialized into `images/` at build time. Returns immediately with
+    `paper_url` (when available); track the run with `get_workflow_runs`.
+    Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     result = (
         await CompileLatexSubgraph(
@@ -1169,16 +1131,25 @@ def open_in_overleaf(
     repository_name: str,
     branch_name: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+    local_path: str | None = None,
 ) -> dict[str, Any]:
     """Create a link that opens the paper in Overleaf for editing.
 
+    One of the two publication exits for the paper (the other is
+    `compile_latex`; they are independent and can both be used).
     Returns `overleaf_url`, which must be shown to the user as a clickable
-    link. Opening it in a browser downloads the LaTeX project pushed by
-    `push_latex` (main.tex, bibliography, figures, template assets) from the
-    experiment repository and submits it to Overleaf, creating a new project
-    in the user's Overleaf account (login required; each click creates a new
-    project). Starts the local dashboard API in the background if needed.
-    Requires GH_PERSONAL_ACCESS_TOKEN; private repositories work too.
+    link. Opening it in a browser packages the LaTeX project (main.tex,
+    bibliography, template assets, plus every figure PDF under
+    `.research/results/` and `.research/diagrams/` mapped into `images/`)
+    and submits it to Overleaf, creating a new project in the user's
+    Overleaf account (login required; each click creates a new project).
+
+    By default the project is read from the experiment repository on GitHub
+    (main.tex must have been pushed; requires GH_PERSONAL_ACCESS_TOKEN,
+    private repositories work). Pass `local_path` — the absolute path of your local
+    clone — to read the working tree on disk instead: no push needed, and
+    locally rendered figures are included as-is. Starts the local dashboard
+    API in the background if needed.
     """
     refresh_environment()
 
@@ -1188,14 +1159,15 @@ def open_in_overleaf(
         start_dashboard(port)
         dashboard_status = "started"
 
-    params = urlencode(
-        {
-            "github_owner": github_owner,
-            "repository_name": repository_name,
-            "branch_name": branch_name,
-            "latex_template_name": latex_template_name,
-        }
-    )
+    query: dict[str, str] = {
+        "github_owner": github_owner,
+        "repository_name": repository_name,
+        "branch_name": branch_name,
+        "latex_template_name": latex_template_name,
+    }
+    if local_path:
+        query["local_path"] = local_path
+    params = urlencode(query)
     overleaf_url = f"{dashboard_url(port)}/airas/v1/latex/overleaf?{params}"
     return {
         "overleaf_url": overleaf_url,
@@ -1248,6 +1220,46 @@ def open_dashboard(
 def stop_dashboard() -> dict[str, Any]:
     """Stop the AIRAS web dashboard started by `open_dashboard`."""
     return stop_dashboard_process()
+
+
+# --- Prompts (guided workflows for MCP clients) ---
+
+
+@mcp.prompt(title="Start an AIRAS research project")
+def start_research(research_topic: str) -> str:
+    """Kick off an end-to-end automated research project on a topic."""
+    return f"""\
+Run an end-to-end automated research project with the AIRAS MCP tools on \
+this topic: {research_topic}
+
+Follow this flow, checking in with me at each major decision:
+
+1. Discover: generate_research_queries -> search_papers -> retrieve_papers.
+2. Hypothesize & design: generate_hypothesis -> \
+generate_experimental_design (ask me about the compute environment first; \
+retrieve_models / retrieve_datasets list curated candidates).
+3. Set up: prepare_repository, then clone the experiment repository locally.
+4. Write the experiment code yourself in the clone. Read its AGENTS.md \
+for the contract; run mode=sanity locally until it prints \
+SANITY_VALIDATION: PASS, then commit and push.
+5. Run: dispatch_experiment (async). Poll get_workflow_runs or \
+get_experiment_run_status between other work; debug from the stderr tail.
+6. Analyze: fetch_experiment_results -> analyze_experiment (pass the code \
+from the clone as {{"files": {{path: content}}}}).
+7. Figures: build Vega-Lite specs and render_chart into \
+.research/results/chart/, diagrams via render_diagram into \
+.research/results/diagram/ (PDF, unique names), then git push. They are \
+collected into the paper automatically.
+8. Write: generate_bibfile -> generate_paper -> generate_latex; save the \
+LaTeX as .research/latex/{{template}}/main.tex in the clone and push.
+9. Publish: compile_latex (PDF on GitHub Actions) and/or open_in_overleaf \
+(show me the link; local_path exports without pushing).
+10. Persist: upload_research_history.
+
+If an LLM provider key is missing, generation tools fail — in that case \
+call get_generation_prompt(step, inputs) and author the artifact yourself \
+following its prompt, output_json_schema, and flow.
+"""
 
 
 def main() -> None:

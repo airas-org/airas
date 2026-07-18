@@ -848,6 +848,8 @@
     "categories": {
       "github": "GitHub",
       "llm": "LLM Providers",
+      "papers": "Papers",
+      "compute": "Compute (AIXS)",
       "integrations": "Optional Integrations",
       "other": "Other"
     }
