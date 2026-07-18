@@ -1,21 +1,22 @@
 ---
-name: airas-research
-description: Run an end-to-end automated ML research project with the AIRAS MCP tools — from literature search and hypothesis generation to experiments on GitHub Actions/AIXS, figures, and a compiled paper. Use when the user wants to start or continue a research project with AIRAS, run automated research, reproduce/extend a paper experimentally, or asks how to use the airas MCP tools together.
+name: auto-research
+description: Run an end-to-end automated ML research project with the AIRAS MCP tools, using backend LLM API keys for the generation steps (hypothesis, experimental design, analysis, paper writing). Use when the user wants to start or continue automated research with AIRAS and LLM provider API keys (OPENAI_API_KEY etc.) are configured in ~/.airas/credentials.json. If no LLM provider key is available, use the auto-research-claude-code skill instead.
 ---
 
-# AIRAS research workflow
+# AIRAS automated research (backend-LLM mode)
 
-You drive the research; AIRAS provides retrieval, execution infrastructure,
-and curated generation steps as MCP tools (server name: `airas`).
+You drive the research; AIRAS provides retrieval, curated generation steps
+(run on its backend LLM), and execution infrastructure as MCP tools
+(server name: `airas`).
 
 ## Prerequisites
 
 - Credentials live in `~/.airas/credentials.json`, re-read on every tool
   call. The easiest editor is the dashboard: run `open_dashboard` and open
   its API Keys page.
-- `GH_PERSONAL_ACCESS_TOKEN` is required for repository/experiment tools.
-  An LLM provider key (e.g. `OPENAI_API_KEY`) is required only for
-  backend-LLM generation tools — without one, use host mode (below).
+- This mode requires an LLM provider key (e.g. `OPENAI_API_KEY`) for the
+  generation tools, and `GH_PERSONAL_ACCESS_TOKEN` for
+  repository/experiment tools.
 
 ## Flow
 
@@ -40,28 +41,29 @@ and curated generation steps as MCP tools (server name: `airas`).
 6. **Analyze**: `fetch_experiment_results` → `analyze_experiment`
    (pass the experiment code from your clone as
    `{"files": {"<path>": "<content>"}}`).
-7. **Figures**: create them yourself — see the `airas-figures` skill for
-   the conventions (`render_chart` / `render_diagram`, output locations).
+7. **Figures** (see conventions below).
 8. **Write the paper**: `generate_bibfile` → `generate_paper` →
    `generate_latex`. Write the returned LaTeX to
    `.research/latex/{template}/main.tex` in the clone and push with git.
 9. **Publish (two independent exits, use either or both)**:
    `compile_latex` builds the PDF on GitHub Actions; `open_in_overleaf`
    returns a link that creates an editable Overleaf project (pass
-   `local_path` to export the local working tree without pushing —
-   no GitHub token needed).
+   `local_path` to export the local working tree without pushing).
 10. **Persist**: `upload_research_history` saves the state;
     `download_research_history` restores it in a later session.
 
-## Host mode (no LLM API key)
+## Figure conventions
 
-Every generation step is dual-mode. If no LLM provider key is configured
-(or your own conversation context should inform the writing), call
-`get_generation_prompt(step, inputs)` — it returns AIRAS's curated prompt,
-an `output_json_schema` describing exactly the data format to produce, and
-a `flow` note. Author the artifact yourself in one pass. Steps:
-`research_queries`, `hypothesis`, `experimental_design`,
-`experiment_analysis`, `paper_writing`, `latex_conversion`.
+- Result charts: build a Vega-Lite spec (data inline under `data.values`)
+  and `render_chart` it to `.research/results/chart/<name>.pdf` in the
+  clone. Rendering is fully local; no API keys.
+- Method diagrams: write text notation (mermaid / graphviz / d2 / …) and
+  `render_diagram` it to `.research/results/diagram/<name>.pdf`. Uses
+  https://kroki.io by default; `KROKI_BASE_URL` switches to self-hosted.
+- Keep filenames unique, commit and push. `compile_latex` and
+  `open_in_overleaf` collect every PDF under `.research/results/` into the
+  paper's `images/` (structure preserved) — reference them in LaTeX as
+  `images/<path>`, e.g. `images/chart/loss.pdf`.
 
 ## Notes
 
