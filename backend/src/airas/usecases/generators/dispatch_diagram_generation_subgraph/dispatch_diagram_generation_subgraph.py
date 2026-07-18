@@ -70,6 +70,9 @@ class DispatchDiagramGenerationSubgraph:
             "branch_name": github_config.branch_name,
             "github_actions_agent": github_actions_agent,
             "model_name": self.llm_mapping.dispatch_diagram_generation.llm_name,
+            # Align with the local-agent convention: method diagrams live
+            # under .research/results/diagram/ (collected into images/).
+            "output_dir": ".research/results/diagram",
         }
 
         if self.diagram_description is not None:

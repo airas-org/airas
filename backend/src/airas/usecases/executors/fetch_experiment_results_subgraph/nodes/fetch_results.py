@@ -140,17 +140,28 @@ async def _process_comparison_data(
 async def _fetch_diagram_files(
     github_client: GithubClient,
     github_config: GitHubConfig,
-    diagrams_dir: str = ".research/diagrams",
+    diagrams_dirs: tuple[str, ...] = (
+        ".research/results/diagram",  # current convention
+        ".research/diagrams",  # legacy location, kept for older repositories
+    ),
 ) -> list[str]:
-    files = await _fetch_file_paths(
-        github_client,
-        github_config.github_owner,
-        github_config.repository_name,
-        diagrams_dir,
-        github_config.branch_name,
+    per_dir = await asyncio.gather(
+        *(
+            _fetch_file_paths(
+                github_client,
+                github_config.github_owner,
+                github_config.repository_name,
+                diagrams_dir,
+                github_config.branch_name,
+            )
+            for diagrams_dir in diagrams_dirs
+        )
     )
+    files = [f for dir_files in per_dir for f in dir_files]
     if files:
-        logger.info(f"Retrieved {len(files)} diagram files from {diagrams_dir}")
+        logger.info(
+            f"Retrieved {len(files)} diagram files from {', '.join(diagrams_dirs)}"
+        )
     return files
 
 
