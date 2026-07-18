@@ -1,0 +1,15 @@
+{
+  "name": "airas",
+  "description": "Automated ML research tools: the AIRAS MCP server plus research-workflow skills.",
+  "owner": {
+    "name": "airas-org",
+    "url": "https://github.com/airas-org"
+  },
+  "plugins": [
+    {
+      "name": "airas",
+      "source": "./plugins/airas",
+      "description": "AIRAS MCP server and research-workflow skills for automated ML research."
+    }
+  ]
+}
