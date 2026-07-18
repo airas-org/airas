@@ -9,7 +9,6 @@ from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.infra.github_client import GithubClient
-from airas.usecases.github.nodes.dispatch_workflow import dispatch_workflow
 from airas.usecases.publication.push_latex_subgraph.nodes.upload_latex_file import (
     upload_latex_file,
 )
@@ -26,7 +25,6 @@ class PushLatexSubgraphInputState(TypedDict):
 
 class PushLatexSubgraphOutputState(ExecutionTimeState):
     is_upload_successful: bool
-    is_images_prepared: bool
 
 
 class PushLatexSubgraphState(
@@ -37,6 +35,9 @@ class PushLatexSubgraphState(
     pass
 
 
+# NOTE: Figures are no longer copied into the LaTeX directory here. The
+# compile workflow and the Overleaf export materialize every figure PDF from
+# .research/results/ and .research/diagrams/ into images/ at run time.
 class PushLatexSubgraph:
     def __init__(
         self,
@@ -57,24 +58,6 @@ class PushLatexSubgraph:
         )
         return {"is_upload_successful": is_upload_successful}
 
-    @record_execution_time
-    async def _prepare_images_for_latex(
-        self, state: PushLatexSubgraphState
-    ) -> dict[str, bool]:
-        is_images_prepared = await dispatch_workflow(
-            github_client=self.github_client,
-            github_owner=state["github_config"].github_owner,
-            repository_name=state["github_config"].repository_name,
-            branch_name=state["github_config"].branch_name,
-            workflow_file="prepare_images_for_latex.yml",
-            inputs={
-                "branch_name": state["github_config"].branch_name,
-                "subdir": self.latex_template_name,
-            },
-        )
-
-        return {"is_images_prepared": is_images_prepared}
-
     def build_graph(self):
         graph_builder = StateGraph(
             PushLatexSubgraphState,
@@ -83,12 +66,8 @@ class PushLatexSubgraph:
         )
 
         graph_builder.add_node("upload_latex_file", self._upload_latex_file)
-        graph_builder.add_node(
-            "prepare_images_for_latex", self._prepare_images_for_latex
-        )
 
         graph_builder.add_edge(START, "upload_latex_file")
-        graph_builder.add_edge("upload_latex_file", "prepare_images_for_latex")
-        graph_builder.add_edge("prepare_images_for_latex", END)
+        graph_builder.add_edge("upload_latex_file", END)
 
         return graph_builder.compile()

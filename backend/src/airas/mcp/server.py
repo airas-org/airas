@@ -14,14 +14,19 @@ Run locally:
     uvx --from "airas[mcp]" airas-mcp
 """
 
+import asyncio
 import logging
 import os
 import webbrowser
+from io import BytesIO
+from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlencode
 
 import httpx
+import vl_convert as vlc
 from mcp.server.fastmcp import FastMCP
+from PIL import Image
 from pydantic import BaseModel
 
 from airas.cli import DEFAULT_DASHBOARD_PORT
@@ -54,6 +59,7 @@ from airas.dashboard.launcher import (
 from airas.infra.aixs_client import AixsClient
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
+from airas.infra.kroki_client import KrokiClient
 from airas.infra.langchain_client import (
     PROVIDER_REQUIRED_ENV_VARS,
     LangChainClient,
@@ -108,9 +114,6 @@ from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph im
 )
 from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
     GenerateLatexSubgraph,
-)
-from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
-    PushLatexSubgraph,
 )
 from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.fetch_paper_fulltext_subgraph import (
     FetchPaperFulltextSubgraph,
@@ -173,6 +176,11 @@ def _aixs_client() -> AixsClient:
     if not os.getenv("AIXS_API_KEY"):
         raise RuntimeError(f"AIXS_API_KEY is not configured. {SETUP_INSTRUCTIONS}")
     return AixsClient(sync_session=_sync_session, async_session=_async_session)
+
+
+def _kroki_client() -> KrokiClient:
+    refresh_environment()
+    return KrokiClient(sync_session=_sync_session, async_session=_async_session)
 
 
 def _arxiv_client() -> ArxivClient:
@@ -951,6 +959,98 @@ async def fetch_run_ids(
     return result["run_ids"]
 
 
+def _resolve_render_output(output_path: str) -> tuple[Path, str]:
+    path = Path(output_path).expanduser()
+    suffix = path.suffix.lower().lstrip(".")
+    if suffix not in ("pdf", "svg", "png"):
+        raise ValueError("output_path must end with .pdf, .svg, or .png")
+    return path, suffix
+
+
+def _png_to_pdf(png: bytes) -> bytes:
+    buffer = BytesIO()
+    with Image.open(BytesIO(png)) as image:
+        if image.mode != "RGB":
+            # Flatten transparency onto white instead of the black that a
+            # plain RGB conversion would produce.
+            rgba = image.convert("RGBA")
+            rgb = Image.new("RGB", rgba.size, (255, 255, 255))
+            rgb.paste(rgba, mask=rgba.getchannel("A"))
+        else:
+            rgb = image.copy()
+    rgb.save(buffer, format="PDF")
+    return buffer.getvalue()
+
+
+@mcp.tool()
+async def render_chart(
+    vega_lite_spec: dict[str, Any],
+    output_path: str,
+) -> dict[str, Any]:
+    """Render a Vega-Lite spec to a chart file, entirely locally.
+
+    Use this for publication-quality result figures: build a Vega-Lite JSON
+    spec from the experiment results (inline the data under `data.values`).
+    When rendering into a local clone of the experiment repository, save
+    the chart as a PDF under `.research/results/chart/`, then commit and
+    push — the LaTeX build collects every `*.pdf` under
+    `.research/results/`. `output_path` must end with .pdf, .svg, or .png.
+    Rendering runs in-process (vl-convert); no data leaves the machine and
+    no API keys are required.
+    """
+    path, suffix = _resolve_render_output(output_path)
+    if suffix == "pdf":
+        data = await asyncio.to_thread(vlc.vegalite_to_pdf, vega_lite_spec)
+    elif suffix == "svg":
+        svg = await asyncio.to_thread(vlc.vegalite_to_svg, vega_lite_spec)
+        data = svg.encode("utf-8")
+    else:
+        data = await asyncio.to_thread(vlc.vegalite_to_png, vega_lite_spec)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return {"output_path": str(path), "bytes_written": len(data)}
+
+
+@mcp.tool()
+async def render_diagram(
+    diagram_type: str,
+    diagram_source: str,
+    output_path: str,
+) -> dict[str, Any]:
+    """Render a text diagram (diagram-as-code) to a file via Kroki.
+
+    Use this for method/architecture diagrams: write the diagram source in
+    a text notation (`diagram_type`: "mermaid", "graphviz", "d2",
+    "plantuml", and 20+ more Kroki types). When rendering into a local
+    clone of the experiment repository, save the result as a PDF under
+    `.research/results/diagram/`, then commit and push — the LaTeX build
+    collects every `*.pdf` under `.research/results/`. `output_path` must
+    end with .pdf, .svg, or .png; PDF conversion happens locally from the
+    SVG (vector). Types whose SVG embeds
+    HTML labels (e.g. mermaid) fall back to a raster PDF automatically —
+    prefer "graphviz" / "plantuml" when you want vector text. Rendering uses
+    the public https://kroki.io by default — set KROKI_BASE_URL to a
+    self-hosted instance to keep unpublished diagrams private. No API keys
+    required.
+    """
+    path, suffix = _resolve_render_output(output_path)
+    client = _kroki_client()
+    if suffix == "pdf":
+        svg = await client.arender(diagram_type, diagram_source, "svg")
+        if b"<foreignObject" in svg:
+            # HTML-in-SVG labels (mermaid etc.) are dropped by the local
+            # SVG-to-PDF converter, so rasterize via Kroki's PNG instead.
+            png = await client.arender(diagram_type, diagram_source, "png")
+            data = await asyncio.to_thread(_png_to_pdf, png)
+        else:
+            data = await asyncio.to_thread(vlc.svg_to_pdf, svg.decode("utf-8"))
+    else:
+        data = await client.arender(diagram_type, diagram_source, suffix)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return {"output_path": str(path), "bytes_written": len(data)}
+
+
 @mcp.tool()
 async def push_files(
     github_owner: str,
@@ -1051,10 +1151,11 @@ async def generate_latex(
     """Convert paper content into a full LaTeX document.
 
     `paper_content` should be the output of `generate_paper`. Available
-    templates: "mdpi", "iclr2024", "agents4science_2025". Push the returned
-    LaTeX to the experiment repository with `push_latex`, then build the PDF
-    with `compile_latex`. Requires an LLM provider API key and
-    GH_PERSONAL_ACCESS_TOKEN.
+    templates: "mdpi", "iclr2024", "agents4science_2025". Write the returned
+    LaTeX to `.research/latex/{template}/main.tex` in your local clone of
+    the experiment repository and push it with git, then build the PDF with
+    `compile_latex` and/or hand it over with `open_in_overleaf`. Requires an
+    LLM provider API key and GH_PERSONAL_ACCESS_TOKEN.
     """
     result = (
         await GenerateLatexSubgraph(
@@ -1074,42 +1175,6 @@ async def generate_latex(
 
 
 @mcp.tool()
-async def push_latex(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    latex_text: str,
-    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-) -> dict[str, Any]:
-    """Push the LaTeX document and figures to the experiment repository.
-
-    Uploads the LaTeX source (from `generate_latex`) and prepares the images
-    so that `compile_latex` can build the PDF. Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    result = (
-        await PushLatexSubgraph(
-            github_client=_github_client(),
-            latex_template_name=latex_template_name,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "latex_text": latex_text,
-            }
-        )
-    )
-    return {
-        "is_upload_successful": result["is_upload_successful"],
-        "is_images_prepared": result["is_images_prepared"],
-    }
-
-
-@mcp.tool()
 async def compile_latex(
     github_owner: str,
     repository_name: str,
@@ -1119,9 +1184,14 @@ async def compile_latex(
 ) -> dict[str, Any]:
     """Build the paper PDF on GitHub Actions (asynchronous).
 
-    Dispatches the LaTeX compilation workflow for the sources pushed by
-    `push_latex`. Returns immediately with `paper_url` (when available);
-    track the run with `get_workflow_runs`. Requires GH_PERSONAL_ACCESS_TOKEN.
+    One of the two publication exits after main.tex has been pushed to
+    `.research/latex/{template}/` (the other is `open_in_overleaf`; they
+    are independent and can both be used).
+    Dispatches the LaTeX compilation workflow for the pushed sources;
+    figure PDFs under `.research/results/` and `.research/diagrams/` are
+    materialized into `images/` at build time. Returns immediately with
+    `paper_url` (when available); track the run with `get_workflow_runs`.
+    Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     result = (
         await CompileLatexSubgraph(
@@ -1152,16 +1222,25 @@ def open_in_overleaf(
     repository_name: str,
     branch_name: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+    local_path: str | None = None,
 ) -> dict[str, Any]:
     """Create a link that opens the paper in Overleaf for editing.
 
+    One of the two publication exits for the paper (the other is
+    `compile_latex`; they are independent and can both be used).
     Returns `overleaf_url`, which must be shown to the user as a clickable
-    link. Opening it in a browser downloads the LaTeX project pushed by
-    `push_latex` (main.tex, bibliography, figures, template assets) from the
-    experiment repository and submits it to Overleaf, creating a new project
-    in the user's Overleaf account (login required; each click creates a new
-    project). Starts the local dashboard API in the background if needed.
-    Requires GH_PERSONAL_ACCESS_TOKEN; private repositories work too.
+    link. Opening it in a browser packages the LaTeX project (main.tex,
+    bibliography, template assets, plus every figure PDF under
+    `.research/results/` and `.research/diagrams/` mapped into `images/`)
+    and submits it to Overleaf, creating a new project in the user's
+    Overleaf account (login required; each click creates a new project).
+
+    By default the project is read from the experiment repository on GitHub
+    (main.tex must have been pushed; requires GH_PERSONAL_ACCESS_TOKEN,
+    private repositories work). Pass `local_path` — the absolute path of your local
+    clone — to read the working tree on disk instead: no push needed, and
+    locally rendered figures are included as-is. Starts the local dashboard
+    API in the background if needed.
     """
     refresh_environment()
 
@@ -1171,14 +1250,15 @@ def open_in_overleaf(
         start_dashboard(port)
         dashboard_status = "started"
 
-    params = urlencode(
-        {
-            "github_owner": github_owner,
-            "repository_name": repository_name,
-            "branch_name": branch_name,
-            "latex_template_name": latex_template_name,
-        }
-    )
+    query: dict[str, str] = {
+        "github_owner": github_owner,
+        "repository_name": repository_name,
+        "branch_name": branch_name,
+        "latex_template_name": latex_template_name,
+    }
+    if local_path:
+        query["local_path"] = local_path
+    params = urlencode(query)
     overleaf_url = f"{dashboard_url(port)}/airas/v1/latex/overleaf?{params}"
     return {
         "overleaf_url": overleaf_url,
