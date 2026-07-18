@@ -218,11 +218,17 @@ def get_generation_prompt(step: str, inputs: dict[str, Any]) -> dict[str, Any]:
 
     `step` and the required `inputs` keys:
     - "research_queries": research_topic, num_queries (optional)
+    - "hypothesis": research_topic, research_study_list,
+      refinement_rounds (optional) — generate/evaluate/refine loop
+    - "experimental_design": research_hypothesis, compute_environment
+      (optional), num_models_to_use / num_datasets_to_use /
+      num_comparative_methods (optional)
     - "experiment_analysis": research_hypothesis, experimental_design,
       experiment_code ({"files": {path: content}}), experimental_results
     - "paper_writing": research_hypothesis, experiment_history,
       experiment_code, research_study_list, references_bib,
       writing_refinement_rounds (optional)
+    - "latex_conversion": paper_content, figures_dir (optional)
 
     Returns `steps` (each with a prompt and an output_json_schema to match)
     and `flow` (how to run multi-step loops). Steps with `ready: false`
@@ -393,11 +399,13 @@ async def generate_hypothesis(
     research_study_list: list[dict[str, Any]],
     refinement_rounds: int = 1,
 ) -> dict[str, Any]:
-    """Generate a novel research hypothesis from a topic and related studies.
+    """Generate a novel research hypothesis from a topic and related studies (backend LLM).
 
     `research_study_list` should be the output of `retrieve_papers`. Higher
     `refinement_rounds` improves quality at the cost of more LLM calls.
-    Requires an LLM provider API key.
+    Requires an LLM provider API key — without one, use
+    `get_generation_prompt(step="hypothesis", ...)` and run the
+    generate/evaluate/refine loop yourself.
     """
     studies = [ResearchStudy.model_validate(study) for study in research_study_list]
     result = (
@@ -427,12 +435,15 @@ async def generate_experimental_design(
     num_datasets_to_use: int = 1,
     num_comparative_methods: int = 1,
 ) -> dict[str, Any]:
-    """Design experiments to test a research hypothesis.
+    """Design experiments to test a research hypothesis (backend LLM).
 
     `research_hypothesis` should be the output of `generate_hypothesis`.
     `compute_environment` optionally describes the hardware the experiments
     will run on (e.g. {"gpu_type": "A100", "gpu_count": 1}); it constrains
-    the design to what is actually runnable. Requires an LLM provider API key.
+    the design to what is actually runnable. Requires an LLM provider API
+    key — without one, use
+    `get_generation_prompt(step="experimental_design", ...)` and author the
+    design yourself.
     """
     env = ComputeEnvironment.model_validate(compute_environment or {})
     result = (
@@ -1046,14 +1057,16 @@ async def generate_latex(
     references_bib: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
 ) -> str:
-    """Convert paper content into a full LaTeX document.
+    """Convert paper content into a full LaTeX document (backend LLM).
 
     `paper_content` should be the output of `generate_paper`. Available
     templates: "mdpi", "iclr2024", "agents4science_2025". Write the returned
     LaTeX to `.research/latex/{template}/main.tex` in your local clone of
     the experiment repository and push it with git, then build the PDF with
     `compile_latex` and/or hand it over with `open_in_overleaf`. Requires an
-    LLM provider API key and GH_PERSONAL_ACCESS_TOKEN.
+    LLM provider API key and GH_PERSONAL_ACCESS_TOKEN — without them, use
+    `get_generation_prompt(step="latex_conversion", ...)` and do the
+    conversion yourself with the template from your local clone.
     """
     result = (
         await GenerateLatexSubgraph(
