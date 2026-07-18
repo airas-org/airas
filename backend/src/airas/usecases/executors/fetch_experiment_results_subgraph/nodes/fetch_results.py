@@ -142,7 +142,9 @@ async def _fetch_diagram_files(
     github_config: GitHubConfig,
     diagrams_dirs: tuple[str, ...] = (
         ".research/results/diagram",  # current convention
-        ".research/diagrams",  # legacy location, kept for older repositories
+        # Legacy location, kept for older repositories; remove in the next
+        # major release (see issue #913).
+        ".research/diagrams",
     ),
 ) -> list[str]:
     per_dir = await asyncio.gather(

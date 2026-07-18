@@ -77,14 +77,11 @@ Or add it to your project's `.mcp.json`:
 | `dispatch_experiment` | Start a sanity-check or main experiment run (async) on GitHub Actions or the AIXS compute platform (`backend` parameter) |
 | `get_workflow_runs` | Check the status of recent workflow runs (non-blocking) |
 | `get_experiment_run_status` | Check one run on any backend and fetch its stdout/stderr tails for error diagnosis |
-| `fetch_experiment_code` | Fetch the experiment code from the repository |
-| `fetch_run_ids` | List experiment run IDs recorded in the repository |
 | `fetch_experiment_results` | Fetch experiment results |
 | `download_workflow_artifacts` | Download artifacts of a specific workflow run |
 | `analyze_experiment` | Analyze results against the hypothesis and design |
 | `render_chart` | Render a Vega-Lite spec to a figure file (PDF/SVG/PNG) locally; no API keys required |
 | `render_diagram` | Render a text diagram (mermaid, graphviz, d2, plantuml, …) via Kroki; no API keys required |
-| `push_files` | Push arbitrary files to the experiment repository |
 
 ### Paper writing & publication
 
@@ -120,7 +117,7 @@ Headless pipelines (the built-in autonomous research workflows) still generate c
 
 Result figures and method diagrams are also created by the MCP host itself rather than on GitHub Actions:
 
-1. Fetch the experiment results with `fetch_experiment_results` (or read them from your local clone; `fetch_run_ids` lists the runs).
+1. Fetch the experiment results with `fetch_experiment_results` (or read them from your local clone — run directories live under `.research/results/`).
 2. Build a Vega-Lite spec from the results and render it with `render_chart`, saving the PDF under `.research/results/chart/` in the clone. For method diagrams, write the diagram as text (mermaid, graphviz, d2, …) and render it with `render_diagram` into `.research/results/diagram/`. (Generating figures yourself, e.g. with matplotlib, works too — only the output location matters.)
 3. Commit and push them with git. No copy step is needed: `compile_latex` and `open_in_overleaf` automatically pick up every figure PDF under `.research/results/` and `.research/diagrams/`, exposed to LaTeX as `images/<path relative to that directory>` (e.g. `.research/results/chart/loss.pdf` → `images/chart/loss.pdf`) with the directory structure preserved. Reference figures accordingly in the paper.
 

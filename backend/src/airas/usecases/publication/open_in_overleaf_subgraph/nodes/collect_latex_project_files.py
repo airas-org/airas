@@ -16,6 +16,8 @@ _EXCLUDED_FILES = {"template.tex", "template.pdf"}
 # Figure sources are merged into the project's images/ directory at export
 # time (structure preserved), so nothing has to be copied into the LaTeX
 # directory beforehand. Generated LaTeX references figures as images/<path>.
+# The legacy .research/diagrams/ entry is scheduled for removal in the next
+# major release (see issue #913).
 _FIGURE_SOURCE_DIRS = (".research/results/", ".research/diagrams/")
 
 
