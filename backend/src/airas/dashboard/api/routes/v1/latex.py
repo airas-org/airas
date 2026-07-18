@@ -89,7 +89,6 @@ async def push_latex(
     )
     return PushLatexSubgraphResponseBody(
         is_upload_successful=result["is_upload_successful"],
-        is_images_prepared=result["is_images_prepared"],
         execution_time=result["execution_time"],
     )
 
@@ -112,18 +111,24 @@ async def open_in_overleaf(
     branch_name: str,
     github_client: Annotated[GithubClient, Depends(get_github_client)],
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+    local_path: str | None = None,
 ) -> HTMLResponse:
     """Serve a page that forwards the paper's LaTeX project to Overleaf.
 
     Opened in a browser (not called as a JSON API): the page carries the
     zipped LaTeX sources inline and immediately POSTs them to Overleaf,
     which creates a new project in the user's Overleaf account.
+
+    With `local_path` (path to a local clone of the experiment repository)
+    the project is read from the working tree on disk instead of GitHub,
+    so unpushed changes and locally rendered figures are included.
     """
     try:
         result = (
             await OpenInOverleafSubgraph(
                 github_client=github_client,
                 latex_template_name=latex_template_name,
+                local_repo_path=local_path,
             )
             .build_graph()
             .ainvoke(

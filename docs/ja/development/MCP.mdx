@@ -93,8 +93,9 @@ claude mcp add airas -- uvx airas
 | `generate_bibfile` | 研究データからBibTeX参考文献ファイルを生成。APIキー不要 |
 | `generate_paper` | 完了した研究から論文本文（タイトル・アブストラクト・各セクション）を執筆 |
 | `generate_latex` | 論文本文をLaTeX文書に変換（テンプレート: mdpi / iclr2024 / agents4science_2025） |
-| `push_latex` | LaTeXソースと図を実験リポジトリにプッシュ |
-| `compile_latex` | GitHub Actionsで論文PDFをビルド（非同期） |
+| `push_latex` | LaTeXソースを実験リポジトリにプッシュ |
+| `compile_latex` | GitHub Actionsで論文PDFをビルド（非同期）。図は `.research/results/` と `.research/diagrams/` から自動で取り込まれる |
+| `open_in_overleaf` | 論文をOverleafで開くリンクを作成。`local_path` を渡すと push 不要でローカルのワーキングツリーをエクスポート |
 
 ### 研究履歴の永続化
 
@@ -122,7 +123,7 @@ MCP ホストは有能なコーディングエージェント（Claude Code、Cu
 
 1. `fetch_experiment_results` で実験結果を取得する（ローカルの clone から直接読んでもよい。run の一覧は `fetch_run_ids` で取得できます）
 2. 結果から Vega-Lite 仕様を組み立てて `render_chart` でレンダリングし、clone 内の `.research/results/chart/` 配下に PDF として保存する。手法ダイアグラムはテキスト記法（mermaid, graphviz, d2 など）で書き、`render_diagram` で `.research/results/diagram/` 配下にレンダリングする（matplotlib などで自分で図を生成しても構いません — 重要なのは出力先だけです）
-3. git で commit・push する。`push_latex` と LaTeX ビルドが、`.research/results/` 配下（および `.research/diagrams/` 配下）の `*.pdf` を論文の `images/` ディレクトリに収集します
+3. git で commit・push する。コピーの手順は不要です: `compile_latex` と `open_in_overleaf` が `.research/results/` と `.research/diagrams/` 配下の図PDFを自動で取り込み、LaTeX からは `images/<そのディレクトリからの相対パス>` として参照できます（例: `.research/results/chart/loss.pdf` → `images/chart/loss.pdf`。ディレクトリ構造は保持されます）。論文中の図参照はこの規約に合わせてください
 
 `render_chart` は完全にローカルでレンダリングします。`render_diagram` はデフォルトでパブリックの https://kroki.io を使います — 未公開のダイアグラムを外に出したくない場合は `KROKI_BASE_URL` でセルフホストの Kroki インスタンスを指定してください。
 

@@ -31,7 +31,6 @@ class PushLatexSubgraphRequestBody(BaseModel):
 
 class PushLatexSubgraphResponseBody(BaseModel):
     is_upload_successful: bool
-    is_images_prepared: bool
     execution_time: dict[str, list[float]]
 
 

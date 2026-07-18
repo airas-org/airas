@@ -1182,10 +1182,13 @@ async def push_latex(
     latex_text: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
 ) -> dict[str, Any]:
-    """Push the LaTeX document and figures to the experiment repository.
+    """Push the LaTeX document to the experiment repository.
 
-    Uploads the LaTeX source (from `generate_latex`) and prepares the images
-    so that `compile_latex` can build the PDF. Requires GH_PERSONAL_ACCESS_TOKEN.
+    Uploads the LaTeX source (from `generate_latex`) as
+    `.research/latex/{template}/main.tex`. Figures need no separate step:
+    `compile_latex` and `open_in_overleaf` pick up every figure PDF under
+    `.research/results/` and `.research/diagrams/` automatically.
+    Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     result = (
         await PushLatexSubgraph(
@@ -1206,7 +1209,6 @@ async def push_latex(
     )
     return {
         "is_upload_successful": result["is_upload_successful"],
-        "is_images_prepared": result["is_images_prepared"],
     }
 
 
@@ -1253,16 +1255,23 @@ def open_in_overleaf(
     repository_name: str,
     branch_name: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+    local_path: str | None = None,
 ) -> dict[str, Any]:
     """Create a link that opens the paper in Overleaf for editing.
 
     Returns `overleaf_url`, which must be shown to the user as a clickable
-    link. Opening it in a browser downloads the LaTeX project pushed by
-    `push_latex` (main.tex, bibliography, figures, template assets) from the
-    experiment repository and submits it to Overleaf, creating a new project
-    in the user's Overleaf account (login required; each click creates a new
-    project). Starts the local dashboard API in the background if needed.
-    Requires GH_PERSONAL_ACCESS_TOKEN; private repositories work too.
+    link. Opening it in a browser packages the LaTeX project (main.tex,
+    bibliography, template assets, plus every figure PDF under
+    `.research/results/` and `.research/diagrams/` mapped into `images/`)
+    and submits it to Overleaf, creating a new project in the user's
+    Overleaf account (login required; each click creates a new project).
+
+    By default the project is read from the experiment repository on GitHub
+    (push_latex must have run; requires GH_PERSONAL_ACCESS_TOKEN, private
+    repositories work). Pass `local_path` — the absolute path of your local
+    clone — to read the working tree on disk instead: no push needed, and
+    locally rendered figures are included as-is. Starts the local dashboard
+    API in the background if needed.
     """
     refresh_environment()
 
@@ -1272,14 +1281,15 @@ def open_in_overleaf(
         start_dashboard(port)
         dashboard_status = "started"
 
-    params = urlencode(
-        {
-            "github_owner": github_owner,
-            "repository_name": repository_name,
-            "branch_name": branch_name,
-            "latex_template_name": latex_template_name,
-        }
-    )
+    query: dict[str, str] = {
+        "github_owner": github_owner,
+        "repository_name": repository_name,
+        "branch_name": branch_name,
+        "latex_template_name": latex_template_name,
+    }
+    if local_path:
+        query["local_path"] = local_path
+    params = urlencode(query)
     overleaf_url = f"{dashboard_url(port)}/airas/v1/latex/overleaf?{params}"
     return {
         "overleaf_url": overleaf_url,

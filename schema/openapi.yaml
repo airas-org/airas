@@ -625,7 +625,14 @@ paths:
 
         zipped LaTeX sources inline and immediately POSTs them to Overleaf,
 
-        which creates a new project in the user''s Overleaf account.'
+        which creates a new project in the user''s Overleaf account.
+
+
+        With `local_path` (path to a local clone of the experiment repository)
+
+        the project is read from the working tree on disk instead of GitHub,
+
+        so unpushed changes and locally rendered figures are included.'
       operationId: open_in_overleaf_airas_v1_latex_overleaf_get
       parameters:
       - name: github_owner
@@ -657,6 +664,14 @@ paths:
           type: string
           default: mdpi
           title: Latex Template Name
+      - name: local_path
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Local Path
       responses:
         '200':
           description: Successful Response
@@ -4208,9 +4223,6 @@ components:
         is_upload_successful:
           type: boolean
           title: Is Upload Successful
-        is_images_prepared:
-          type: boolean
-          title: Is Images Prepared
         execution_time:
           additionalProperties:
             items:
@@ -4221,7 +4233,6 @@ components:
       type: object
       required:
       - is_upload_successful
-      - is_images_prepared
       - execution_time
       title: PushLatexSubgraphResponseBody
     RefineExperimentalDesignLLMMapping:

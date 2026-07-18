@@ -93,8 +93,9 @@ Or add it to your project's `.mcp.json`:
 | `generate_bibfile` | Generate a BibTeX references file from research studies; no API key required |
 | `generate_paper` | Write structured paper content (title, abstract, sections) from the completed research |
 | `generate_latex` | Convert paper content into a full LaTeX document (templates: mdpi / iclr2024 / agents4science_2025) |
-| `push_latex` | Push the LaTeX source and figures to the experiment repository |
-| `compile_latex` | Build the paper PDF on GitHub Actions (async) |
+| `push_latex` | Push the LaTeX source to the experiment repository |
+| `compile_latex` | Build the paper PDF on GitHub Actions (async); figures are picked up from `.research/results/` and `.research/diagrams/` automatically |
+| `open_in_overleaf` | Create a link that opens the paper in Overleaf; pass `local_path` to export the local working tree without pushing |
 
 ### Research history persistence
 
@@ -122,7 +123,7 @@ Result figures and method diagrams are also created by the MCP host itself rathe
 
 1. Fetch the experiment results with `fetch_experiment_results` (or read them from your local clone; `fetch_run_ids` lists the runs).
 2. Build a Vega-Lite spec from the results and render it with `render_chart`, saving the PDF under `.research/results/chart/` in the clone. For method diagrams, write the diagram as text (mermaid, graphviz, d2, …) and render it with `render_diagram` into `.research/results/diagram/`. (Generating figures yourself, e.g. with matplotlib, works too — only the output location matters.)
-3. Commit and push them with git. `push_latex` and the LaTeX build collect every `*.pdf` under `.research/results/` (and `.research/diagrams/`) into the paper's `images/` directory.
+3. Commit and push them with git. No copy step is needed: `compile_latex` and `open_in_overleaf` automatically pick up every figure PDF under `.research/results/` and `.research/diagrams/`, exposed to LaTeX as `images/<path relative to that directory>` (e.g. `.research/results/chart/loss.pdf` → `images/chart/loss.pdf`) with the directory structure preserved. Reference figures accordingly in the paper.
 
 `render_chart` renders entirely locally. `render_diagram` uses the public https://kroki.io by default; set `KROKI_BASE_URL` to a self-hosted Kroki instance to keep unpublished diagrams on-premises.
 
