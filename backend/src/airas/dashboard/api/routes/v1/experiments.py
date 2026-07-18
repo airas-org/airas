@@ -217,6 +217,9 @@ async def dispatch_main_experiment(
     )
 
 
+# NOTE: In the local-agent flow figures are rendered locally (render_chart /
+# render_diagram); this GHA-dispatch endpoint remains for the dashboard UI and
+# is scheduled for removal in the next major release (see issue #913).
 @router.post(
     "/visualizations/dispatch", response_model=DispatchVisualizationResponseBody
 )
@@ -246,6 +249,8 @@ async def dispatch_visualization(
     )
 
 
+# NOTE: Scheduled for removal in the next major release together with the
+# visualization dispatch above (see issue #913).
 @router.post("/diagrams/dispatch", response_model=DispatchDiagramGenerationResponseBody)
 @inject
 @observe()

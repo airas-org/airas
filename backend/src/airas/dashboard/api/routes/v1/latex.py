@@ -70,6 +70,9 @@ async def generate_latex(
     )
 
 
+# NOTE: In the local-agent flow main.tex is pushed with git; this endpoint
+# remains for the dashboard UI and E2E and is a removal candidate in the next
+# major release (see issue #913).
 @router.post("/push", response_model=PushLatexSubgraphResponseBody)
 @inject
 @observe()

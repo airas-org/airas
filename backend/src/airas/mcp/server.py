@@ -77,14 +77,8 @@ from airas.usecases.executors.dispatch_experiment_on_aixs_subgraph.dispatch_expe
 from airas.usecases.executors.dispatch_experiment_on_static_runner_subgraph.dispatch_experiment_on_static_runner_subgraph import (
     DispatchExperimentOnStaticRunnerSubgraph,
 )
-from airas.usecases.executors.fetch_experiment_code_subgraph.fetch_experiment_code_subgraph import (
-    FetchExperimentCodeSubgraph,
-)
 from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment_results_subgraph import (
     FetchExperimentResultsSubgraph,
-)
-from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph import (
-    FetchRunIdsSubgraph,
 )
 from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignSubgraph,
@@ -105,9 +99,6 @@ from airas.usecases.github.github_download_subgraph import GithubDownloadSubgrap
 from airas.usecases.github.github_upload_subgraph import GithubUploadSubgraph
 from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,
-)
-from airas.usecases.github.push_github_subgraph.push_github_subgraph import (
-    PushGitHubSubgraph,
 )
 from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
     CompileLatexSubgraph,
@@ -748,33 +739,6 @@ async def get_workflow_runs(
 
 
 @mcp.tool()
-async def fetch_experiment_code(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-) -> dict[str, Any]:
-    """Fetch the experiment code from the experiment repository.
-
-    The returned object can be passed to `analyze_experiment` as
-    `experiment_code`. Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    result = (
-        await FetchExperimentCodeSubgraph(github_client=_github_client())
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                )
-            }
-        )
-    )
-    return _dump(result["experiment_code"])
-
-
-@mcp.tool()
 async def fetch_experiment_results(
     github_owner: str,
     repository_name: str,
@@ -841,9 +805,11 @@ async def analyze_experiment(
     """Analyze experiment results against the hypothesis and design.
 
     Takes the outputs of `generate_hypothesis`, `generate_experimental_design`,
-    `fetch_experiment_code`, and `fetch_experiment_results`, and returns a
-    structured analysis (findings, whether the hypothesis is supported, and
-    suggested next steps). Requires an LLM provider API key.
+    and `fetch_experiment_results`, and returns a structured analysis
+    (findings, whether the hypothesis is supported, and suggested next
+    steps). For `experiment_code`, read the code from your local clone and
+    pass `{"files": {"<relative path>": "<content>", ...}}`.
+    Requires an LLM provider API key.
     """
     result = (
         await AnalyzeExperimentSubgraph(
@@ -929,34 +895,6 @@ async def download_research_history(
         )
     )
     return _dump(result["research_history"])
-
-
-@mcp.tool()
-async def fetch_run_ids(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-) -> list[str]:
-    """List the experiment run IDs recorded in the experiment repository.
-
-    Run IDs identify individual experiment runs defined by the generated
-    code; pass them to `dispatch_experiment`, and use them to locate result
-    files when creating figures locally. Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    result = (
-        await FetchRunIdsSubgraph(github_client=_github_client())
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                )
-            }
-        )
-    )
-    return result["run_ids"]
 
 
 def _resolve_render_output(output_path: str) -> tuple[Path, str]:
@@ -1049,36 +987,6 @@ async def render_diagram(
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
     return {"output_path": str(path), "bytes_written": len(data)}
-
-
-@mcp.tool()
-async def push_files(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    files: dict[str, str],
-) -> dict[str, Any]:
-    """Push files to the experiment repository.
-
-    `files` maps repository paths to file contents (text). Useful for
-    manual fixes to experiment code or configuration between runs.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    result = (
-        await PushGitHubSubgraph(github_client=_github_client())
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "push_files": files,
-            }
-        )
-    )
-    return {"is_file_pushed": result["is_file_pushed"]}
 
 
 # --- Paper writing & publication ---

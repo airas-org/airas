@@ -77,14 +77,11 @@ claude mcp add airas -- uvx airas
 | `dispatch_experiment` | サニティチェック／本実験の実行を開始（非同期）。`backend` パラメータで GitHub Actions / AIXS 計算基盤を選択 |
 | `get_workflow_runs` | 直近のワークフロー実行のステータス確認（ノンブロッキング） |
 | `get_experiment_run_status` | 任意のバックエンドの実行1件のステータス確認と stdout/stderr の取得（エラー診断用） |
-| `fetch_experiment_code` | 実験コードを取得 |
-| `fetch_run_ids` | リポジトリに記録された実験run IDの一覧を取得 |
 | `fetch_experiment_results` | 実験結果を取得 |
 | `download_workflow_artifacts` | 特定のワークフロー実行のアーティファクトを取得 |
 | `analyze_experiment` | 仮説・実験設計に照らして結果を解析 |
 | `render_chart` | Vega-Lite仕様を図ファイル（PDF/SVG/PNG）にローカルでレンダリング。APIキー不要 |
 | `render_diagram` | テキスト記法のダイアグラム（mermaid, graphviz, d2, plantuml など）をKroki経由でレンダリング。APIキー不要 |
-| `push_files` | 任意のファイルを実験リポジトリにプッシュ |
 
 ### 論文執筆・出版
 
@@ -120,7 +117,7 @@ MCP ホストは有能なコーディングエージェント（Claude Code、Cu
 
 結果の図と手法ダイアグラムも、GitHub Actions ではなく MCP ホスト自身が作成します:
 
-1. `fetch_experiment_results` で実験結果を取得する（ローカルの clone から直接読んでもよい。run の一覧は `fetch_run_ids` で取得できます）
+1. `fetch_experiment_results` で実験結果を取得する（ローカルの clone から直接読んでもよい。run ごとのディレクトリは `.research/results/` 配下にあります）
 2. 結果から Vega-Lite 仕様を組み立てて `render_chart` でレンダリングし、clone 内の `.research/results/chart/` 配下に PDF として保存する。手法ダイアグラムはテキスト記法（mermaid, graphviz, d2 など）で書き、`render_diagram` で `.research/results/diagram/` 配下にレンダリングする（matplotlib などで自分で図を生成しても構いません — 重要なのは出力先だけです）
 3. git で commit・push する。コピーの手順は不要です: `compile_latex` と `open_in_overleaf` が `.research/results/` と `.research/diagrams/` 配下の図PDFを自動で取り込み、LaTeX からは `images/<そのディレクトリからの相対パス>` として参照できます（例: `.research/results/chart/loss.pdf` → `images/chart/loss.pdf`。ディレクトリ構造は保持されます）。論文中の図参照はこの規約に合わせてください
 
