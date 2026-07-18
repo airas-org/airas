@@ -35,6 +35,7 @@ class FetchPaperReproductionResultsLLMMapping(BaseModel):
 
 class FetchPaperReproductionResultsSubgraphInputState(TypedDict):
     github_config: GitHubConfig
+    repro_id: str
 
 
 class FetchPaperReproductionResultsSubgraphOutputState(ExecutionTimeState):
@@ -73,6 +74,7 @@ class FetchPaperReproductionResultsSubgraph:
             outputs = await fetch_reproduction_outputs(
                 github_client=self.github_client,
                 github_config=state["github_config"],
+                repro_id=state["repro_id"],
             )
         except Exception as exc:
             logger.warning("Failed to fetch reproduction outputs: %s", exc)

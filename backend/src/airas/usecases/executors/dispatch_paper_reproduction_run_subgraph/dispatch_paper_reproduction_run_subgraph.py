@@ -20,6 +20,7 @@ def record_execution_time(f):
 
 class DispatchPaperReproductionRunSubgraphInputState(TypedDict):
     github_config: GitHubConfig
+    repro_id: str
     repo_url: str
 
 
@@ -60,6 +61,7 @@ class DispatchPaperReproductionRunSubgraph:
 
         inputs: dict[str, str] = {
             "branch_name": github_config.branch_name,
+            "repro_id": state["repro_id"],
             "repo_url": state["repo_url"],
             "runner_label": json.dumps(self.runner_label),
         }

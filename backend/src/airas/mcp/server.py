@@ -1532,6 +1532,10 @@ async def dispatch_paper_reproduction_generate(
     succeeds. `model` (required) is forwarded to the workflow as the coding-
     agent model (`model_name`) — call `get_available_llms` to list valid
     models. Requires GH_PERSONAL_ACCESS_TOKEN.
+
+    Returns repro_id, which identifies this reproduction's directory
+    (.reproduction/<repro_id>/) and must be passed to every subsequent
+    reproduction tool.
     """
     result = (
         await DispatchPaperReproductionGenerateSubgraph(
@@ -1556,7 +1560,7 @@ async def dispatch_paper_reproduction_generate(
             }
         )
     )
-    return {"dispatched": result["dispatched"]}
+    return {"dispatched": result["dispatched"], "repro_id": result["repro_id"]}
 
 
 @mcp.tool()
@@ -1564,12 +1568,14 @@ async def dispatch_paper_reproduction_run(
     github_owner: str,
     repository_name: str,
     branch_name: str,
+    repro_id: str,
     repo_url: str = "",
     runner_label: list[str] | None = None,
 ) -> dict[str, Any]:
     """Start a paper-reproduction run on GitHub Actions (asynchronous).
 
     Use after a `dispatch_paper_reproduction_generate` run has succeeded.
+    `repro_id` is the ID returned by `dispatch_paper_reproduction_generate`.
     Returns immediately with `dispatched`; track progress with
     `get_workflow_runs` and collect outputs with
     `fetch_paper_reproduction_results`. Requires GH_PERSONAL_ACCESS_TOKEN.
@@ -1587,6 +1593,7 @@ async def dispatch_paper_reproduction_run(
                     repository_name=repository_name,
                     branch_name=branch_name,
                 ),
+                "repro_id": repro_id,
                 "repo_url": repo_url,
             }
         )
@@ -1599,11 +1606,13 @@ async def fetch_paper_reproduction_results(
     github_owner: str,
     repository_name: str,
     branch_name: str,
+    repro_id: str,
     model: str,
 ) -> dict[str, Any]:
     """Fetch and validate the results of a paper reproduction run.
 
-    Use after a `dispatch_paper_reproduction_run` has succeeded. Returns the
+    Use after a `dispatch_paper_reproduction_run` has succeeded. `repro_id` is
+    the ID returned by `dispatch_paper_reproduction_generate`. Returns the
     self-reported result, a validation verdict, and the reproduced
     figure/table. `model` (required) is the LLM used to judge the
     reproduction — call `get_available_llms` to list valid models. Requires
@@ -1625,6 +1634,7 @@ async def fetch_paper_reproduction_results(
                     repository_name=repository_name,
                     branch_name=branch_name,
                 ),
+                "repro_id": repro_id,
             }
         )
     )
@@ -1642,12 +1652,14 @@ async def dispatch_parameter_tuning_run(
     github_owner: str,
     repository_name: str,
     branch_name: str,
+    repro_id: str,
     repo_url: str = "",
     runner_label: list[str] | None = None,
 ) -> dict[str, Any]:
     """Start a hyperparameter tuning run for a paper reproduction (asynchronous).
 
-    Requires a completed paper reproduction on the branch. Returns immediately
+    Requires a completed paper reproduction on the branch. `repro_id` is the ID
+    returned by `dispatch_paper_reproduction_generate`. Returns immediately
     with `dispatched`; track progress with `get_workflow_runs` and fetch
     results with `fetch_parameter_tuning_results`. Requires
     GH_PERSONAL_ACCESS_TOKEN.
@@ -1665,6 +1677,7 @@ async def dispatch_parameter_tuning_run(
                     repository_name=repository_name,
                     branch_name=branch_name,
                 ),
+                "repro_id": repro_id,
                 "repo_url": repo_url,
             }
         )
@@ -1677,10 +1690,12 @@ async def fetch_parameter_tuning_results(
     github_owner: str,
     repository_name: str,
     branch_name: str,
+    repro_id: str,
 ) -> dict[str, Any]:
     """Fetch the results of a parameter tuning run.
 
-    Use after a `dispatch_parameter_tuning_run` has succeeded. Returns the
+    Use after a `dispatch_parameter_tuning_run` has succeeded. `repro_id` is
+    the ID returned by `dispatch_paper_reproduction_generate`. Returns the
     tuning summary and optimization figure. Requires
     GH_PERSONAL_ACCESS_TOKEN.
     """
@@ -1694,6 +1709,7 @@ async def fetch_parameter_tuning_results(
                     repository_name=repository_name,
                     branch_name=branch_name,
                 ),
+                "repro_id": repro_id,
             }
         )
     )

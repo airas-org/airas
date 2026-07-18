@@ -21,6 +21,7 @@ def record_execution_time(f):
 
 class FetchParameterTuningResultsSubgraphInputState(TypedDict):
     github_config: GitHubConfig
+    repro_id: str
 
 
 class FetchParameterTuningResultsSubgraphOutputState(ExecutionTimeState):
@@ -49,6 +50,7 @@ class FetchParameterTuningResultsSubgraph:
             outputs = await fetch_tuning_outputs(
                 github_client=self.github_client,
                 github_config=state["github_config"],
+                repro_id=state["repro_id"],
             )
         except Exception as exc:
             logger.warning("Failed to fetch tuning outputs: %s", exc)
