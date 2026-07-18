@@ -991,12 +991,13 @@ async def render_chart(
     """Render a Vega-Lite spec to a chart file, entirely locally.
 
     Use this for publication-quality result figures: build a Vega-Lite JSON
-    spec from the experiment results (inline the data under `data.values`)
-    and save the chart as a PDF under `.research/results/` in your local
-    clone of the experiment repository, then commit and push — the LaTeX
-    build collects every `*.pdf` there. `output_path` must end with .pdf,
-    .svg, or .png. Rendering runs in-process (vl-convert); no data leaves
-    the machine and no API keys are required.
+    spec from the experiment results (inline the data under `data.values`).
+    When rendering into a local clone of the experiment repository, save
+    the chart as a PDF under `.research/results/chart/`, then commit and
+    push — the LaTeX build collects every `*.pdf` under
+    `.research/results/`. `output_path` must end with .pdf, .svg, or .png.
+    Rendering runs in-process (vl-convert); no data leaves the machine and
+    no API keys are required.
     """
     path, suffix = _resolve_render_output(output_path)
     if suffix == "pdf":
@@ -1021,11 +1022,12 @@ async def render_diagram(
 
     Use this for method/architecture diagrams: write the diagram source in
     a text notation (`diagram_type`: "mermaid", "graphviz", "d2",
-    "plantuml", and 20+ more Kroki types) and save the result as a PDF
-    under `.research/diagrams/` in your local clone of the experiment
-    repository, then commit and push — the LaTeX build collects every
-    `*.pdf` there. `output_path` must end with .pdf, .svg, or .png; PDF
-    conversion happens locally from the SVG (vector). Types whose SVG embeds
+    "plantuml", and 20+ more Kroki types). When rendering into a local
+    clone of the experiment repository, save the result as a PDF under
+    `.research/results/diagram/`, then commit and push — the LaTeX build
+    collects every `*.pdf` under `.research/results/`. `output_path` must
+    end with .pdf, .svg, or .png; PDF conversion happens locally from the
+    SVG (vector). Types whose SVG embeds
     HTML labels (e.g. mermaid) fall back to a raster PDF automatically —
     prefer "graphviz" / "plantuml" when you want vector text. Rendering uses
     the public https://kroki.io by default — set KROKI_BASE_URL to a
