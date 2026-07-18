@@ -90,9 +90,6 @@ from airas.usecases.generators.generate_hypothesis_subgraph.generate_hypothesis_
 from airas.usecases.generators.generate_queries_subgraph.generate_queries_subgraph import (
     GenerateQueriesSubgraph,
 )
-from airas.usecases.generators.refine_experimental_design_subgraph.refine_experimental_design_subgraph import (
-    RefineExperimentalDesignSubgraph,
-)
 from airas.usecases.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
     DownloadGithubActionsArtifactsSubgraph,
 )
@@ -452,48 +449,6 @@ async def generate_experimental_design(
                 "research_hypothesis": ResearchHypothesis.model_validate(
                     research_hypothesis
                 ),
-            }
-        )
-    )
-    return _dump(result["experimental_design"])
-
-
-@mcp.tool()
-async def refine_experimental_design(
-    research_hypothesis: dict[str, Any],
-    experiment_history: dict[str, Any],
-    design_instruction: str,
-    compute_environment: dict[str, Any] | None = None,
-    num_models_to_use: int = 1,
-    num_datasets_to_use: int = 1,
-    num_comparative_methods: int = 1,
-) -> dict[str, Any]:
-    """Refine an experimental design based on results so far and an instruction.
-
-    Use after experiments have run: `experiment_history` carries the designs
-    and results accumulated so far, and `design_instruction` states what to
-    change (e.g. "add an ablation for the attention variant"). Returns the
-    revised experimental design. Requires an LLM provider API key.
-    """
-    env = ComputeEnvironment.model_validate(compute_environment or {})
-    result = (
-        await RefineExperimentalDesignSubgraph(
-            langchain_client=_langchain_client(),
-            compute_environment=env,
-            num_models_to_use=num_models_to_use,
-            num_datasets_to_use=num_datasets_to_use,
-            num_comparative_methods=num_comparative_methods,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "research_hypothesis": ResearchHypothesis.model_validate(
-                    research_hypothesis
-                ),
-                "experiment_history": ExperimentHistory.model_validate(
-                    experiment_history
-                ),
-                "design_instruction": design_instruction,
             }
         )
     )
