@@ -1,0 +1,11 @@
+{
+  "name": "airas",
+  "description": "Automated research with AIRAS: paper search, hypothesis generation, experiment execution on GitHub Actions/AIXS, figure rendering, and paper writing — bundles the AIRAS MCP server (uvx airas) and research-workflow skills.",
+  "version": "0.3.1",
+  "author": {
+    "name": "airas-org",
+    "url": "https://github.com/airas-org"
+  },
+  "homepage": "https://github.com/airas-org/airas",
+  "license": "MIT"
+}

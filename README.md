@@ -36,7 +36,16 @@ Currently, it focuses on the automation of machine learning research.
 
 Use AIRAS research tools (paper search, retrieval, hypothesis generation, experiment execution, paper writing) directly from an MCP client. No clone, no Docker — only [uv](https://docs.astral.sh/uv/) is required.
 
-### Claude Code
+### Claude Code — plugin (recommended)
+
+The plugin installs the MCP server **and** bundled research-workflow skills (`airas-research`, `airas-figures`) in one step:
+
+```
+/plugin marketplace add airas-org/airas
+/plugin install airas@airas
+```
+
+### Claude Code — MCP server only
 
 ```bash
 claude mcp add airas -- uvx airas
@@ -56,6 +65,8 @@ Add the following to your client's MCP configuration file (e.g. `.mcp.json`):
   }
 }
 ```
+
+The server also exposes an MCP prompt, `start_research`, that walks any MCP client through the full research flow (in Claude Code: `/mcp__airas__start_research`).
 
 See the [MCP documentation](docs/development/MCP.mdx) for the full tool list and configuration options.
 
