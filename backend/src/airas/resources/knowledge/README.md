@@ -6,6 +6,23 @@ a short, actionable quick reference (roughly 50-120 lines) tied to how AIRAS
 actually runs experiments: sanity-check-first execution, GitHub Actions /
 AIXS backends, and Weights & Biases tracking.
 
+## Scope: pipeline knowledge only
+
+This registry deliberately covers **AIRAS-pipeline-specific knowledge** —
+what an agent needs to succeed inside AIRAS's contracts (sanity/main
+workflows, CI runners, results files, W&B conventions).
+
+**Library-specific engineering knowledge** (fine-tuning frameworks,
+distributed training, inference servers, interpretability tooling, ...) is
+intentionally *not* duplicated here. It is served by external skill
+libraries — primarily [AI-Research-SKILLs](https://github.com/Orchestra-Research/AI-Research-SKILLs)
+(Orchestra Research, MIT) — which the experiment template's code-generation
+workflows already install on their runners
+(`npx @orchestra-research/ai-research-skills`). Vendoring those notes here
+would mean tracking ~100 upstream skills for staleness; referencing the
+living upstream does not. Do not add notes that merely restate a library's
+documentation — if it isn't about the AIRAS pipeline, it belongs upstream.
+
 ## File format
 
 One Markdown file per note, grouped in a category directory, with YAML

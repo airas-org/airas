@@ -1280,8 +1280,12 @@ retrieve_models / retrieve_datasets list curated candidates).
 4. Write the experiment code yourself in the clone. Read its AGENTS.md \
 for the contract, and check list_domain_knowledge / get_domain_knowledge \
 for engineering notes relevant to the design (reproducibility, VRAM \
-budgeting, CI constraints, W&B and results conventions). Run mode=sanity \
-locally until it prints SANITY_VALIDATION: PASS, then commit and push.
+budgeting, CI constraints, W&B and results conventions). For \
+library-specific guidance (fine-tuning, distributed training, inference), \
+`npx @orchestra-research/ai-research-skills` installs the \
+AI-Research-SKILLs library the template's codegen workflows already use. \
+Run mode=sanity locally until it prints SANITY_VALIDATION: PASS, then \
+commit and push.
 5. Run: dispatch_experiment (async). Poll get_workflow_runs or \
 get_experiment_run_status between other work; debug from the stderr tail.
 6. Analyze: fetch_experiment_results -> analyze_experiment (pass the code \

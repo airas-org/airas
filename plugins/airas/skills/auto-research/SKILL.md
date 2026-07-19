@@ -31,8 +31,15 @@ You drive the research; AIRAS provides retrieval, curated generation steps
 4. **Write the experiment code yourself** in the clone. Read its
    `AGENTS.md` first — it defines the contract (allowed files, CLI shape,
    `sanity` / `pilot` / `full` modes, validation verdict lines, W&B
-   conventions). Run `mode=sanity` locally until it prints
-   `SANITY_VALIDATION: PASS`, then commit and push.
+   conventions). Check `list_domain_knowledge` / `get_domain_knowledge`
+   for AIRAS engineering notes relevant to the design (reproducibility,
+   VRAM budgeting, CI constraints, results conventions). For
+   library-specific guidance (fine-tuning frameworks, distributed
+   training, inference), the AI-Research-SKILLs library can be installed
+   locally (`npx @orchestra-research/ai-research-skills`) — the
+   template's own code-generation workflows already use it. Run
+   `mode=sanity` locally until it prints `SANITY_VALIDATION: PASS`, then
+   commit and push.
 5. **Run experiments**: `dispatch_experiment` (async;
    `backend="github_actions"` or `"aixs"` with a `compute_type`). Poll
    `get_workflow_runs` (GitHub Actions) or `get_experiment_run_status`
