@@ -74,6 +74,7 @@ from airas.resources.knowledge.loader import (
     list_knowledge_categories,
     list_knowledge_notes,
 )
+from airas.resources.libraries.library_docs import LIBRARY_DOCS
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
@@ -532,6 +533,33 @@ def get_domain_knowledge(name: str) -> dict[str, Any]:
             "available": [n["name"] for n in list_knowledge_notes()],
         }
     return dict(note)
+
+
+@mcp.tool()
+def get_library_docs(library: str | None = None) -> dict[str, Any]:
+    """Look up canonical documentation endpoints for common ML libraries.
+
+    For each library (fine-tuning, post-training, distributed training,
+    inference serving, tracking, ...) returns the official docs URL, the
+    GitHub repository, and — where the project publishes one — its
+    `llms.txt` / `llms-full.txt` endpoint, which serves the current
+    documentation in a machine-readable form. Fetch those endpoints to get
+    up-to-date library guidance while writing experiment code. Call without
+    arguments to list all known libraries; pass `library` for one entry.
+    No API keys required.
+    """
+    if library is None:
+        return {
+            name: {"description": e["description"], "category": e["category"]}
+            for name, e in LIBRARY_DOCS.items()
+        }
+    entry = LIBRARY_DOCS.get(library)
+    if entry is None:
+        return {
+            "error": f"Unknown library: {library!r}.",
+            "available": sorted(LIBRARY_DOCS),
+        }
+    return dict(entry)
 
 
 # --- Experiment repository & execution (GitHub Actions) ---
@@ -1281,11 +1309,10 @@ retrieve_models / retrieve_datasets list curated candidates).
 for the contract, and check list_domain_knowledge / get_domain_knowledge \
 for engineering notes relevant to the design (reproducibility, VRAM \
 budgeting, CI constraints, W&B and results conventions). For \
-library-specific guidance (fine-tuning, distributed training, inference), \
-`npx @orchestra-research/ai-research-skills` installs the \
-AI-Research-SKILLs library the template's codegen workflows already use. \
-Run mode=sanity locally until it prints SANITY_VALIDATION: PASS, then \
-commit and push.
+library-specific guidance, get_library_docs returns each library's \
+official docs and llms.txt endpoints — fetch those for current API \
+usage instead of relying on memory. Run mode=sanity locally until it \
+prints SANITY_VALIDATION: PASS, then commit and push.
 5. Run: dispatch_experiment (async). Poll get_workflow_runs or \
 get_experiment_run_status between other work; debug from the stderr tail.
 6. Analyze: fetch_experiment_results -> analyze_experiment (pass the code \

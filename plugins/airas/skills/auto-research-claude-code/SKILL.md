@@ -47,9 +47,12 @@ schema. Steps: `research_queries`, `hypothesis`, `experimental_design`,
    (no key needed) for AIRAS engineering notes relevant to the design
    (reproducibility, VRAM budgeting, CI constraints, results
    conventions). For library-specific guidance (fine-tuning frameworks,
-   distributed training, inference), the AI-Research-SKILLs library can
-   be installed locally (`npx @orchestra-research/ai-research-skills`) —
-   the template's own code-generation workflows already use it. Run
+   distributed training, inference), `get_library_docs` (no key needed)
+   returns each library's official docs and `llms.txt` endpoints — fetch
+   those for current API usage instead of relying on memory. (The
+   AI-Research-SKILLs library, which the template's code-generation
+   workflows install on their runners, can also be installed locally:
+   `npx @orchestra-research/ai-research-skills`.) Run
    `mode=sanity` locally until it prints `SANITY_VALIDATION: PASS`, then
    commit and push.
 5. **Run experiments**: `dispatch_experiment` (async;

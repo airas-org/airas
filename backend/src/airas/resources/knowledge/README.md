@@ -18,10 +18,14 @@ intentionally *not* duplicated here. It is served by external skill
 libraries — primarily [AI-Research-SKILLs](https://github.com/Orchestra-Research/AI-Research-SKILLs)
 (Orchestra Research, MIT) — which the experiment template's code-generation
 workflows already install on their runners
-(`npx @orchestra-research/ai-research-skills`). Vendoring those notes here
-would mean tracking ~100 upstream skills for staleness; referencing the
-living upstream does not. Do not add notes that merely restate a library's
-documentation — if it isn't about the AIRAS pipeline, it belongs upstream.
+(`npx @orchestra-research/ai-research-skills`). In addition,
+`resources/libraries/library_docs.py` (served by the `get_library_docs`
+MCP tool) maps each common library to its official docs, GitHub, and
+`llms.txt` endpoints so agents can fetch the *current* documentation at
+experiment-writing time. Vendoring those notes here would mean tracking
+~100 upstream skills for staleness; referencing the living upstream does
+not. Do not add notes that merely restate a library's documentation — if
+it isn't about the AIRAS pipeline, it belongs upstream.
 
 ## File format
 
