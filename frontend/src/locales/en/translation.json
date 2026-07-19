@@ -854,15 +854,17 @@
       "other": "Other"
     },
     "sync": {
-      "title": "Sync secrets to an experiment repository",
-      "subtitle": "Copies the credentials above to a GitHub repository's Actions secrets so experiment and LaTeX workflows can use them.",
+      "targetLabel": "Sync target repository",
       "repoPlaceholder": "owner/repository",
       "repoPlaceholderWithOwner": "repository (or owner/repository — defaults to {{owner}})",
-      "button": "Sync to GitHub",
+      "rowButton": "Sync to GitHub",
       "syncing": "Syncing...",
-      "requiresToken": "Set GH_PERSONAL_ACCESS_TOKEN above (and save) to enable syncing.",
-      "successTitle": "Secrets synced to {{repo}}",
-      "errorTitle": "Failed to sync secrets. Check the repository name and token permissions."
+      "rowSynced": "Synced",
+      "rowError": "Sync failed",
+      "requiresToken": "Set GH_PERSONAL_ACCESS_TOKEN (and save) to enable syncing secrets to a repository.",
+      "requiresRepo": "Enter the sync target repository (owner/repository) in the GitHub section.",
+      "requiresValue": "Save a value for this credential first.",
+      "hint": "Each saved secret below can be copied to this repository's Actions secrets with its \"Sync to GitHub\" button."
     }
   },
   "paperSearch": {

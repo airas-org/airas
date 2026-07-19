@@ -45,8 +45,8 @@ export function ApiKeysPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [syncRepo, setSyncRepo] = useState("");
-  const [syncing, setSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState<"success" | "error" | null>(null);
+  const [syncingName, setSyncingName] = useState<string | null>(null);
+  const [syncResults, setSyncResults] = useState<Record<string, "success" | "error">>({});
 
   useEffect(() => {
     CredentialsService.listCredentialsAirasV1CredentialsGet()
@@ -89,6 +89,17 @@ export function ApiKeysPage() {
       : credential.is_set
         ? `${t("credentials.configured")}${credential.preview ? ` (${credential.preview})` : ""} — ${t("credentials.replacePlaceholder")}`
         : `${t("credentials.notConfigured")} — ${t("credentials.placeholder")}`;
+    // GH_PERSONAL_ACCESS_TOKEN is the gate for syncing, not a syncable
+    // secret itself (the experiment workflows use the runner's own token).
+    const syncable = credential.is_secret && credential.name !== "GH_PERSONAL_ACCESS_TOKEN";
+    const syncDisabledReason = !githubTokenSet
+      ? t("credentials.sync.requiresToken")
+      : parsedSync.repo === "" || parsedSync.owner === ""
+        ? t("credentials.sync.requiresRepo")
+        : !credential.is_set
+          ? t("credentials.sync.requiresValue")
+          : undefined;
+    const syncResult = syncResults[credential.name];
     return (
       <div key={credential.name} className="flex items-center gap-3">
         <span className="w-72 shrink-0 text-caption-bold font-caption-bold text-default-font break-all">
@@ -113,6 +124,32 @@ export function ApiKeysPage() {
             </Button>
           )}
         </div>
+        {syncable && (
+          <div className="w-40 shrink-0 flex items-center gap-2" title={syncDisabledReason}>
+            <Button
+              variant="neutral-secondary"
+              size="small"
+              disabled={syncDisabledReason !== undefined || syncingName !== null}
+              onClick={() => handleSyncSecret(credential.name)}
+            >
+              {syncingName === credential.name
+                ? t("credentials.sync.syncing")
+                : t("credentials.sync.rowButton")}
+            </Button>
+            {syncResult === "success" && (
+              <FeatherCheckCircle
+                className="text-success-600"
+                aria-label={t("credentials.sync.rowSynced")}
+              />
+            )}
+            {syncResult === "error" && (
+              <FeatherAlertTriangle
+                className="text-error-600"
+                aria-label={t("credentials.sync.rowError")}
+              />
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -134,9 +171,13 @@ export function ApiKeysPage() {
     ? { owner: syncRepo.split("/")[0].trim(), repo: syncRepo.split("/")[1].trim() }
     : { owner: githubOwner?.preview ?? "", repo: syncRepo.trim() };
 
-  const handleSyncSecrets = async () => {
-    setSyncing(true);
-    setSyncResult(null);
+  const handleSyncSecret = async (name: string) => {
+    setSyncingName(name);
+    setSyncResults((prev) => {
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
     try {
       const res = await GithubActionsService.setGithubActionsSecretsAirasV1GithubActionsSecretsPost(
         {
@@ -145,13 +186,14 @@ export function ApiKeysPage() {
             repository_name: parsedSync.repo,
             branch_name: "main",
           },
+          secret_names: [name],
         },
       );
-      setSyncResult(res.secrets_set ? "success" : "error");
+      setSyncResults((prev) => ({ ...prev, [name]: res.secrets_set ? "success" : "error" }));
     } catch {
-      setSyncResult("error");
+      setSyncResults((prev) => ({ ...prev, [name]: "error" }));
     } finally {
-      setSyncing(false);
+      setSyncingName(null);
     }
   };
 
@@ -198,7 +240,35 @@ export function ApiKeysPage() {
             </h2>
             <div className="mt-2 rounded-lg border border-border bg-card p-6 flex flex-col gap-5">
               {section.items.map(renderCredential)}
+              {section.key === "github" && (
+                <div className="flex items-center gap-3 border-t border-border pt-4">
+                  <span className="w-72 shrink-0 text-caption-bold font-caption-bold text-default-font">
+                    {t("credentials.sync.targetLabel")}
+                  </span>
+                  <TextField className="flex-1" error={false}>
+                    <TextField.Input
+                      type="text"
+                      placeholder={
+                        githubOwner?.preview
+                          ? t("credentials.sync.repoPlaceholderWithOwner", {
+                              owner: githubOwner.preview,
+                            })
+                          : t("credentials.sync.repoPlaceholder")
+                      }
+                      value={syncRepo}
+                      onChange={(e) => setSyncRepo(e.target.value)}
+                      disabled={!githubTokenSet}
+                    />
+                  </TextField>
+                  <div className="w-16 shrink-0" />
+                </div>
+              )}
             </div>
+            {section.key === "github" && (
+              <p className="text-caption font-caption text-subtext-color mt-2">
+                {githubTokenSet ? t("credentials.sync.hint") : t("credentials.sync.requiresToken")}
+              </p>
+            )}
           </div>
         ))}
 
@@ -209,64 +279,6 @@ export function ApiKeysPage() {
           <Button onClick={handleSave} disabled={saving || Object.keys(edits).length === 0}>
             {saving ? t("credentials.saving") : t("credentials.save")}
           </Button>
-        </div>
-
-        <div className="mt-8">
-          <h2 className="text-heading-3 font-heading-3 text-default-font">
-            {t("credentials.sync.title")}
-          </h2>
-          <p className="text-caption font-caption text-subtext-color mt-1">
-            {t("credentials.sync.subtitle")}
-          </p>
-          <div className="mt-2 rounded-lg border border-border bg-card p-6 flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              <TextField className="flex-1" error={false}>
-                <TextField.Input
-                  type="text"
-                  placeholder={
-                    githubOwner?.preview
-                      ? t("credentials.sync.repoPlaceholderWithOwner", {
-                          owner: githubOwner.preview,
-                        })
-                      : t("credentials.sync.repoPlaceholder")
-                  }
-                  value={syncRepo}
-                  onChange={(e) => {
-                    setSyncResult(null);
-                    setSyncRepo(e.target.value);
-                  }}
-                  disabled={!githubTokenSet}
-                />
-              </TextField>
-              <Button
-                onClick={handleSyncSecrets}
-                disabled={!githubTokenSet || syncing || !parsedSync.owner || !parsedSync.repo}
-              >
-                {syncing ? t("credentials.sync.syncing") : t("credentials.sync.button")}
-              </Button>
-            </div>
-            {!githubTokenSet && (
-              <p className="text-caption font-caption text-subtext-color">
-                {t("credentials.sync.requiresToken")}
-              </p>
-            )}
-            {syncResult === "success" && (
-              <Alert
-                variant="success"
-                icon={<FeatherCheckCircle />}
-                title={t("credentials.sync.successTitle", {
-                  repo: `${parsedSync.owner}/${parsedSync.repo}`,
-                })}
-              />
-            )}
-            {syncResult === "error" && (
-              <Alert
-                variant="error"
-                icon={<FeatherAlertTriangle />}
-                title={t("credentials.sync.errorTitle")}
-              />
-            )}
-          </div>
         </div>
       </div>
     </div>
