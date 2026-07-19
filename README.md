@@ -38,7 +38,7 @@ Use AIRAS research tools (paper search, retrieval, hypothesis generation, experi
 
 ### Claude Code — plugin (recommended)
 
-The plugin installs the MCP server **and** bundled research-workflow skills (`airas-research`, `airas-figures`) in one step:
+The plugin installs the MCP server **and** bundled research-workflow skills (`auto-research` for backend-LLM mode with API keys, `auto-research-claude-code` for key-free authoring by Claude Code itself) in one step:
 
 ```
 /plugin marketplace add airas-org/airas
