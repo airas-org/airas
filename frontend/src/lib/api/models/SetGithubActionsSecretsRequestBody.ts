@@ -5,5 +5,6 @@
 import type { GitHubConfig } from './GitHubConfig';
 export type SetGithubActionsSecretsRequestBody = {
     github_config: GitHubConfig;
+    secret_names?: (Array<string> | null);
 };
 

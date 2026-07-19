@@ -70,7 +70,10 @@ async def set_github_actions_secrets(
     config = {"callbacks": [handler]} if handler else {}
 
     result = (
-        await SetGithubActionsSecretsSubgraph(github_client=github_client)
+        await SetGithubActionsSecretsSubgraph(
+            github_client=github_client,
+            secret_names=request.secret_names,
+        )
         .build_graph()
         .ainvoke(request, config=config)
     )
