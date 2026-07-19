@@ -852,6 +852,17 @@
       "compute": "Compute (AIXS)",
       "integrations": "Optional Integrations",
       "other": "Other"
+    },
+    "sync": {
+      "title": "Sync secrets to an experiment repository",
+      "subtitle": "Copies the credentials above to a GitHub repository's Actions secrets so experiment and LaTeX workflows can use them.",
+      "repoPlaceholder": "owner/repository",
+      "repoPlaceholderWithOwner": "repository (or owner/repository — defaults to {{owner}})",
+      "button": "Sync to GitHub",
+      "syncing": "Syncing...",
+      "requiresToken": "Set GH_PERSONAL_ACCESS_TOKEN above (and save) to enable syncing.",
+      "successTitle": "Secrets synced to {{repo}}",
+      "errorTitle": "Failed to sync secrets. Check the repository name and token permissions."
     }
   },
   "paperSearch": {

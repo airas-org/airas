@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { CredentialStatus } from "@/lib/api/models/CredentialStatus";
 import { CredentialsService } from "@/lib/api/services/CredentialsService";
+import { GithubActionsService } from "@/lib/api/services/GithubActionsService";
 import { Alert } from "@/ui/components/Alert";
 import { Button } from "@/ui/components/Button";
 import { TextField } from "@/ui/components/TextField";
@@ -43,6 +44,9 @@ export function ApiKeysPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [syncRepo, setSyncRepo] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<"success" | "error" | null>(null);
 
   useEffect(() => {
     CredentialsService.listCredentialsAirasV1CredentialsGet()
@@ -122,6 +126,35 @@ export function ApiKeysPage() {
   }
 
   const all = credentials ?? [];
+  const isSet = (name: string) => all.some((c) => c.name === name && c.is_set);
+  const githubTokenSet = isSet("GH_PERSONAL_ACCESS_TOKEN");
+  const githubOwner = all.find((c) => c.name === "GITHUB_OWNER");
+  // "owner/repo" also works; a bare name falls back to the GITHUB_OWNER credential.
+  const parsedSync = syncRepo.includes("/")
+    ? { owner: syncRepo.split("/")[0].trim(), repo: syncRepo.split("/")[1].trim() }
+    : { owner: githubOwner?.preview ?? "", repo: syncRepo.trim() };
+
+  const handleSyncSecrets = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await GithubActionsService.setGithubActionsSecretsAirasV1GithubActionsSecretsPost(
+        {
+          github_config: {
+            github_owner: parsedSync.owner,
+            repository_name: parsedSync.repo,
+            branch_name: "main",
+          },
+        },
+      );
+      setSyncResult(res.secrets_set ? "success" : "error");
+    } catch {
+      setSyncResult("error");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const categorizedNames = new Set(CATEGORIES.flatMap((c) => c.names));
   const sections = [
     ...CATEGORIES.map((category) => ({
@@ -176,6 +209,64 @@ export function ApiKeysPage() {
           <Button onClick={handleSave} disabled={saving || Object.keys(edits).length === 0}>
             {saving ? t("credentials.saving") : t("credentials.save")}
           </Button>
+        </div>
+
+        <div className="mt-8">
+          <h2 className="text-heading-3 font-heading-3 text-default-font">
+            {t("credentials.sync.title")}
+          </h2>
+          <p className="text-caption font-caption text-subtext-color mt-1">
+            {t("credentials.sync.subtitle")}
+          </p>
+          <div className="mt-2 rounded-lg border border-border bg-card p-6 flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <TextField className="flex-1" error={false}>
+                <TextField.Input
+                  type="text"
+                  placeholder={
+                    githubOwner?.preview
+                      ? t("credentials.sync.repoPlaceholderWithOwner", {
+                          owner: githubOwner.preview,
+                        })
+                      : t("credentials.sync.repoPlaceholder")
+                  }
+                  value={syncRepo}
+                  onChange={(e) => {
+                    setSyncResult(null);
+                    setSyncRepo(e.target.value);
+                  }}
+                  disabled={!githubTokenSet}
+                />
+              </TextField>
+              <Button
+                onClick={handleSyncSecrets}
+                disabled={!githubTokenSet || syncing || !parsedSync.owner || !parsedSync.repo}
+              >
+                {syncing ? t("credentials.sync.syncing") : t("credentials.sync.button")}
+              </Button>
+            </div>
+            {!githubTokenSet && (
+              <p className="text-caption font-caption text-subtext-color">
+                {t("credentials.sync.requiresToken")}
+              </p>
+            )}
+            {syncResult === "success" && (
+              <Alert
+                variant="success"
+                icon={<FeatherCheckCircle />}
+                title={t("credentials.sync.successTitle", {
+                  repo: `${parsedSync.owner}/${parsedSync.repo}`,
+                })}
+              />
+            )}
+            {syncResult === "error" && (
+              <Alert
+                variant="error"
+                icon={<FeatherAlertTriangle />}
+                title={t("credentials.sync.errorTitle")}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

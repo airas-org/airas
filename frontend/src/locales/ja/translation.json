@@ -851,6 +851,17 @@
       "compute": "計算基盤 (AIXS)",
       "integrations": "オプション連携",
       "other": "その他"
+    },
+    "sync": {
+      "title": "実験リポジトリへのシークレット同期",
+      "subtitle": "上記の認証情報をGitHubリポジトリのActionsシークレットにコピーします。実験やLaTeXのワークフローがこれらを利用できるようになります。",
+      "repoPlaceholder": "owner/リポジトリ名",
+      "repoPlaceholderWithOwner": "リポジトリ名（owner/リポジトリ名 も可 — 省略時は {{owner}}）",
+      "button": "GitHubに同期",
+      "syncing": "同期中...",
+      "requiresToken": "同期するには上の GH_PERSONAL_ACCESS_TOKEN を設定して保存してください。",
+      "successTitle": "{{repo}} にシークレットを同期しました",
+      "errorTitle": "シークレットの同期に失敗しました。リポジトリ名とトークンの権限を確認してください。"
     }
   },
   "paperSearch": {
