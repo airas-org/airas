@@ -1,13 +1,28 @@
 import { FeatherAlertTriangle, FeatherCheckCircle } from "@subframe/core";
+import type { TFunction } from "i18next";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ApiError } from "@/lib/api/core/ApiError";
 import type { CredentialStatus } from "@/lib/api/models/CredentialStatus";
 import { CredentialsService } from "@/lib/api/services/CredentialsService";
 import { GithubActionsService } from "@/lib/api/services/GithubActionsService";
 import { Alert } from "@/ui/components/Alert";
 import { Button } from "@/ui/components/Button";
 import { TextField } from "@/ui/components/TextField";
+
+// Turn a caught request failure into a short " (reason)" suffix so the user
+// sees why a save failed instead of a generic message.
+function describeApiError(error: unknown, t: TFunction): string {
+  if (error instanceof ApiError) {
+    const detail = (error.body as { detail?: unknown } | undefined)?.detail;
+    if (typeof detail === "string" && detail) return `: ${detail}`;
+    if (error.status) return `: ${error.status} ${error.statusText}`.trimEnd();
+    return "";
+  }
+  // No HTTP response at all — the dashboard API is unreachable.
+  return `: ${t("credentials.networkError")}`;
+}
 
 const CATEGORIES: { key: string; names: string[] }[] = [
   { key: "github", names: ["GH_PERSONAL_ACCESS_TOKEN", "GITHUB_OWNER"] },
@@ -72,8 +87,8 @@ export function ApiKeysPage() {
       setCredentials(res.credentials);
       setEdits({});
       setSaved(true);
-    } catch {
-      setError(t("credentials.saveError"));
+    } catch (e) {
+      setError(`${t("credentials.saveError")}${describeApiError(e, t)}`);
     } finally {
       setSaving(false);
     }

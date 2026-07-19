@@ -865,7 +865,8 @@
       "requiresRepo": "Enter the sync target repository (owner/repository) in the GitHub section.",
       "requiresValue": "Save a value for this credential first.",
       "hint": "Each saved secret below can be copied to this repository's Actions secrets with its \"Sync to GitHub\" button."
-    }
+    },
+    "networkError": "the dashboard API is unreachable"
   },
   "paperSearch": {
     "pageTitle": "Paper Search",

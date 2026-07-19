@@ -864,7 +864,8 @@
       "requiresRepo": "GitHubセクションの同期先リポジトリ（owner/リポジトリ名）を入力してください。",
       "requiresValue": "先にこの認証情報の値を保存してください。",
       "hint": "保存済みの各シークレットは「GitHubに同期」ボタンでこのリポジトリのActionsシークレットにコピーできます。"
-    }
+    },
+    "networkError": "ダッシュボードAPIに接続できません"
   },
   "paperSearch": {
     "pageTitle": "論文検索",
