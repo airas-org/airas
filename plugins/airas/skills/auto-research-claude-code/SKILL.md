@@ -59,11 +59,13 @@ schema. Steps: `research_queries`, `hypothesis`, `experimental_design`,
    `get_generation_prompt("latex_conversion", ...)`, embed into
    `template.tex` as its flow describes, save as
    `.research/latex/{template}/main.tex` in the clone and push with git.
-9. **Publish (two independent exits, use either or both)**:
-   `compile_latex` builds the PDF on GitHub Actions; `open_in_overleaf`
-   returns a link that creates an editable Overleaf project (pass
-   `local_path` to export the local working tree without pushing —
-   no GitHub token needed for that variant).
+9. **Publish**: use `open_in_overleaf` — it returns a link that creates an
+   editable Overleaf project (pass `local_path` to export the local
+   working tree without pushing; no GitHub token needed for that variant).
+   In this mode Overleaf is the primary exit: `compile_latex` runs a
+   LaTeX-fixing agent on GitHub Actions that requires an
+   `ANTHROPIC_API_KEY` repository secret, which key-free setups don't
+   have. Only suggest `compile_latex` if the user has set that secret.
 10. **Persist**: `upload_research_history` saves the state;
     `download_research_history` restores it in a later session.
 
