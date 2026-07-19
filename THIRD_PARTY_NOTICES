@@ -1,0 +1,20 @@
+# Third-party notices
+
+This file records external material that AIRAS adapts or redistributes,
+beyond normal package dependencies (which carry their own licenses).
+
+Entries are required whenever content is adapted from externally licensed
+material — including the curated engineering notes under
+`backend/src/airas/resources/knowledge/` (see that directory's README for
+the authoring rules). Notes written originally and merely informed by
+public documentation list their references in their own `sources:`
+frontmatter and need no entry here.
+
+Format per entry:
+
+- <path in this repository>
+  Origin: <project name, URL, version/commit if applicable>
+  License: <license of the original>
+  Changes: <summary of how the material was adapted>
+
+(No entries yet.)

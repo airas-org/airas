@@ -69,6 +69,11 @@ from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.mcp.prompt_registry import build_generation_prompt
+from airas.resources.knowledge.loader import (
+    get_knowledge_note,
+    list_knowledge_categories,
+    list_knowledge_notes,
+)
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
@@ -494,6 +499,39 @@ async def retrieve_datasets(dataset_subfield: DatasetSubfield) -> dict[str, Any]
         .ainvoke({"dataset_subfield": dataset_subfield})
     )
     return result["datasets_dict"]
+
+
+@mcp.tool()
+def list_domain_knowledge(category: str | None = None) -> dict[str, Any]:
+    """List AIRAS's curated engineering notes for running experiments.
+
+    Each note is a short quick reference (reproducibility, VRAM budgeting,
+    CI execution constraints, W&B conventions, results formatting, ...)
+    written for agents working inside the AIRAS pipeline. Returns note
+    names with descriptions, plus available categories; fetch a full note
+    with `get_domain_knowledge`. Consult relevant notes before writing or
+    revising experiment code. No API keys required.
+    """
+    return {
+        "categories": list_knowledge_categories(),
+        "notes": list_knowledge_notes(category=category),
+    }
+
+
+@mcp.tool()
+def get_domain_knowledge(name: str) -> dict[str, Any]:
+    """Fetch one curated AIRAS engineering note in full by its `name`.
+
+    Use `list_domain_knowledge` to discover note names. Returns the note's
+    metadata and Markdown body. No API keys required.
+    """
+    note = get_knowledge_note(name)
+    if note is None:
+        return {
+            "error": f"Unknown knowledge note: {name!r}.",
+            "available": [n["name"] for n in list_knowledge_notes()],
+        }
+    return dict(note)
 
 
 # --- Experiment repository & execution (GitHub Actions) ---
@@ -1240,8 +1278,10 @@ generate_experimental_design (ask me about the compute environment first; \
 retrieve_models / retrieve_datasets list curated candidates).
 3. Set up: prepare_repository, then clone the experiment repository locally.
 4. Write the experiment code yourself in the clone. Read its AGENTS.md \
-for the contract; run mode=sanity locally until it prints \
-SANITY_VALIDATION: PASS, then commit and push.
+for the contract, and check list_domain_knowledge / get_domain_knowledge \
+for engineering notes relevant to the design (reproducibility, VRAM \
+budgeting, CI constraints, W&B and results conventions). Run mode=sanity \
+locally until it prints SANITY_VALIDATION: PASS, then commit and push.
 5. Run: dispatch_experiment (async). Poll get_workflow_runs or \
 get_experiment_run_status between other work; debug from the stderr tail.
 6. Analyze: fetch_experiment_results -> analyze_experiment (pass the code \
