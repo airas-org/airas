@@ -16,6 +16,8 @@ class PollGithubActionsResponseBody(BaseModel):
 
 class SetGithubActionsSecretsRequestBody(BaseModel):
     github_config: GitHubConfig
+    # None syncs the default credential set; a list restricts to those names.
+    secret_names: list[str] | None = None
 
 
 class SetGithubActionsSecretsResponseBody(BaseModel):

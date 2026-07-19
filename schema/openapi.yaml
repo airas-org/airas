@@ -4824,6 +4824,13 @@ components:
       properties:
         github_config:
           $ref: '#/components/schemas/GitHubConfig'
+        secret_names:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Secret Names
       type: object
       required:
       - github_config

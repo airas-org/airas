@@ -37,7 +37,7 @@ class SetGithubActionsSecretsSubgraph:
         self,
         github_client: GithubClient,
         secret_names: list[str]
-        | None = None,  # TODO: no caller passes a custom list; consider removing
+        | None = None,  # None syncs the default set; the dashboard passes one name
     ):
         self.secret_names = secret_names or [
             "OPENAI_API_KEY",

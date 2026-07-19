@@ -851,7 +851,21 @@
       "compute": "計算基盤 (AIXS)",
       "integrations": "オプション連携",
       "other": "その他"
-    }
+    },
+    "sync": {
+      "targetLabel": "同期先リポジトリ",
+      "repoPlaceholder": "owner/リポジトリ名",
+      "repoPlaceholderWithOwner": "リポジトリ名（owner/リポジトリ名 も可 — 省略時は {{owner}}）",
+      "rowButton": "GitHubに同期",
+      "syncing": "同期中...",
+      "rowSynced": "同期済み",
+      "rowError": "同期失敗",
+      "requiresToken": "各シークレットをリポジトリに同期するには GH_PERSONAL_ACCESS_TOKEN を設定して保存してください。",
+      "requiresRepo": "GitHubセクションの同期先リポジトリ（owner/リポジトリ名）を入力してください。",
+      "requiresValue": "先にこの認証情報の値を保存してください。",
+      "hint": "保存済みの各シークレットは「GitHubに同期」ボタンでこのリポジトリのActionsシークレットにコピーできます。"
+    },
+    "networkError": "ダッシュボードAPIに接続できません"
   },
   "paperSearch": {
     "pageTitle": "論文検索",
