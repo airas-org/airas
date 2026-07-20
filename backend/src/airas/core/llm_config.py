@@ -46,11 +46,15 @@ def uniform_llm_mapping(
     turn a single externally-chosen model name into the per-node mapping a
     subgraph requires, without having to name each node field explicitly.
     """
-    # Build a fresh NodeLLMConfig per field so nodes never share a mutable
-    # instance (mutating one node's config must not affect the others).
+    # Build a fresh NodeLLMConfig per field — and a deep copy of params per
+    # field — so nodes never share a mutable instance (mutating one node's
+    # config or params must not affect the others).
     return mapping_cls(
         **{
-            name: NodeLLMConfig(llm_name=model, params=params)
+            name: NodeLLMConfig(
+                llm_name=model,
+                params=params.model_copy(deep=True) if params is not None else None,
+            )
             for name in mapping_cls.model_fields
         }
     )
