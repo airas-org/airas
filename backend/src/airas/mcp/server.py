@@ -242,8 +242,8 @@ def get_available_llms(include_models: bool = False) -> dict[str, Any]:
     its required API key(s) are present. Call this before the LLM-backed
     tools (`generate_research_queries`, `generate_hypothesis`,
     `generate_experimental_design`, `analyze_experiment`, `generate_paper`,
-    `generate_latex`, `retrieve_papers`) to know which will run and which
-    model names you may pass — a tool whose model belongs to an
+    `generate_latex`, `compile_latex`, `retrieve_papers`) to know which will
+    run and which model names you may pass — a tool whose model belongs to an
     unconfigured provider fails fast with the missing key named. This tool
     itself needs no API key.
 
