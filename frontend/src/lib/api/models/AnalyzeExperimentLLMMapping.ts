@@ -4,6 +4,6 @@
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
 export type AnalyzeExperimentLLMMapping = {
-    analyze_experiment?: NodeLLMConfig;
+    analyze_experiment: NodeLLMConfig;
 };
 

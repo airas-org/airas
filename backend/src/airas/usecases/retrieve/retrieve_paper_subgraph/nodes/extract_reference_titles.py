@@ -6,7 +6,7 @@ from jinja2 import Environment
 from pydantic import BaseModel
 
 from airas.core.llm_config import NodeLLMConfig
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.retrieve.retrieve_paper_subgraph.prompt.extract_reference_titles_prompt import (
     extract_reference_titles_prompt,
 )
@@ -31,7 +31,7 @@ def _normalize_title(title: str) -> str:
 async def _extract_references_from_text(
     full_text: str,
     template: str,
-    llm_client: LangChainClient,
+    llm_client: LiteLLMClient,
     llm_config: NodeLLMConfig,
     context_label: str,
 ) -> list[str]:
@@ -45,7 +45,7 @@ async def _extract_references_from_text(
     messages = jinja_template.render(data)
 
     try:
-        output = await llm_client.structured_outputs(
+        output = await llm_client.structured_output(
             message=messages,
             data_model=LLMOutput,
             llm_name=llm_config.llm_name,
@@ -81,7 +81,7 @@ def _deduplicate_titles(reference_titles: list[str]) -> list[str]:
 
 async def extract_reference_titles(
     llm_config: NodeLLMConfig,
-    llm_client: LangChainClient,
+    llm_client: LiteLLMClient,
     arxiv_full_text_list: list[str],
 ) -> list[list[str]]:
     async def _extract_for_paper(paper_idx: int, full_text: str) -> list[str]:

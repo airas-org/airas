@@ -1469,9 +1469,9 @@ components:
       properties:
         analyze_experiment:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.4-2026-03-05
       type: object
+      required:
+      - analyze_experiment
       title: AnalyzeExperimentLLMMapping
     AnalyzeExperimentRequestBody:
       properties:
@@ -1510,15 +1510,6 @@ components:
       - experimental_analysis
       - execution_time
       title: AnalyzeExperimentResponseBody
-    AnthropicParams:
-      properties:
-        provider_type:
-          type: string
-          const: anthropic
-          title: Provider Type
-          default: anthropic
-      type: object
-      title: AnthropicParams
     CancelInteractiveRepoAgentRequestBody:
       properties:
         github_config:
@@ -1548,18 +1539,17 @@ components:
       properties:
         dispatch_code_generation:
           $ref: '#/components/schemas/DispatchCodeGenerationLLMMapping'
-          default:
-            dispatch_code_generation:
-              llm_name: anthropic/claude-sonnet-4-5
       type: object
+      required:
+      - dispatch_code_generation
       title: CodeGenerationGraphLLMMapping
     CompileLatexLLMMapping:
       properties:
         compile_latex:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: anthropic/claude-sonnet-4-5
       type: object
+      required:
+      - compile_latex
       title: CompileLatexLLMMapping
     CompileLatexSubgraphRequestBody:
       properties:
@@ -1840,17 +1830,17 @@ components:
       properties:
         decide_experiment_cycle:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.4-2026-03-05
       type: object
+      required:
+      - decide_experiment_cycle
       title: DecideExperimentCycleLLMMapping
     DispatchCodeGenerationLLMMapping:
       properties:
         dispatch_code_generation:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: anthropic/claude-sonnet-4-5
       type: object
+      required:
+      - dispatch_code_generation
       title: DispatchCodeGenerationLLMMapping
     DispatchCodeGenerationRequestBody:
       properties:
@@ -1905,9 +1895,9 @@ components:
       properties:
         dispatch_diagram_generation:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: anthropic/claude-sonnet-4-5
       type: object
+      required:
+      - dispatch_diagram_generation
       title: DispatchDiagramGenerationLLMMapping
     DispatchDiagramGenerationRequestBody:
       properties:
@@ -1959,9 +1949,9 @@ components:
       properties:
         dispatch_experiment_validation:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: anthropic/claude-sonnet-4-5
       type: object
+      required:
+      - dispatch_experiment_validation
       title: DispatchExperimentValidationLLMMapping
     DispatchExperimentValidationRequestBody:
       properties:
@@ -2748,9 +2738,9 @@ components:
       properties:
         dispatch_experiment_code_generation:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: anthropic/claude-sonnet-4-5
       type: object
+      required:
+      - dispatch_experiment_code_generation
       title: GenerateExperimentCodeLLMMapping
     GenerateExperimentCodeRequestBody:
       properties:
@@ -2843,9 +2833,9 @@ components:
       properties:
         generate_experimental_design:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.4-2026-03-05
       type: object
+      required:
+      - generate_experimental_design
       title: GenerateExperimentalDesignLLMMapping
     GenerateExperimentalDesignSubgraphRequestBody:
       properties:
@@ -2894,17 +2884,15 @@ components:
       properties:
         generate_hypothesis:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.4-2026-03-05
         evaluate_novelty_and_significance:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.2
         refine_hypothesis:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.4-2026-03-05
       type: object
+      required:
+      - generate_hypothesis
+      - evaluate_novelty_and_significance
+      - refine_hypothesis
       title: GenerateHypothesisSubgraphV0LLMMapping
     GenerateHypothesisSubgraphV0RequestBody:
       properties:
@@ -2949,9 +2937,9 @@ components:
       properties:
         convert_to_latex:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.2
       type: object
+      required:
+      - convert_to_latex
       title: GenerateLatexLLMMapping
     GenerateLatexSubgraphRequestBody:
       properties:
@@ -3049,17 +3037,17 @@ components:
       properties:
         generate_queries:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.2
       type: object
+      required:
+      - generate_queries
       title: GenerateQueriesLLMMapping
     GenerateVerificationMethodLLMMapping:
       properties:
         generate_verification_method:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.4-2026-03-05
       type: object
+      required:
+      - generate_verification_method
       title: GenerateVerificationMethodLLMMapping
     GitHubConfig:
       properties:
@@ -3154,21 +3142,6 @@ components:
       - is_github_upload
       - execution_time
       title: GithubUploadResponse
-    GoogleGenAIParams:
-      properties:
-        provider_type:
-          type: string
-          const: google_genai
-          title: Provider Type
-          default: google_genai
-        thinking_budget:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Thinking Budget
-          description: Thinking budget for reasoning (0=off, 1024-32768=fixed, -1=dynamic)
-      type: object
-      title: GoogleGenAIParams
     HTTPValidationError:
       properties:
         detail:
@@ -3485,15 +3458,12 @@ components:
       properties:
         generate_latex:
           $ref: '#/components/schemas/GenerateLatexLLMMapping'
-          default:
-            convert_to_latex:
-              llm_name: gpt-5.2
         compile_latex:
           $ref: '#/components/schemas/CompileLatexLLMMapping'
-          default:
-            compile_latex:
-              llm_name: anthropic/claude-sonnet-4-5
       type: object
+      required:
+      - generate_latex
+      - compile_latex
       title: LaTeXGraphLLMMapping
     ListCredentialsResponseBody:
       properties:
@@ -3808,42 +3778,14 @@ components:
           title: Llm Name
         params:
           anyOf:
-          - oneOf:
-            - $ref: '#/components/schemas/OpenAIParams'
-            - $ref: '#/components/schemas/GoogleGenAIParams'
-            - $ref: '#/components/schemas/AnthropicParams'
-            discriminator:
-              propertyName: provider_type
-              mapping:
-                anthropic: '#/components/schemas/AnthropicParams'
-                google_genai: '#/components/schemas/GoogleGenAIParams'
-                openai: '#/components/schemas/OpenAIParams'
+          - additionalProperties: true
+            type: object
           - type: 'null'
           title: Params
       type: object
       required:
       - llm_name
       title: NodeLLMConfig
-    OpenAIParams:
-      properties:
-        provider_type:
-          type: string
-          const: openai
-          title: Provider Type
-          default: openai
-        reasoning_effort:
-          anyOf:
-          - type: string
-            enum:
-            - none
-            - low
-            - medium
-            - high
-          - type: 'null'
-          title: Reasoning Effort
-          description: Reasoning effort level for reasoning models
-      type: object
-      title: OpenAIParams
     OptunaConfig:
       properties:
         enabled:
@@ -4132,9 +4074,9 @@ components:
       properties:
         propose_verification_policy:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.4-2026-03-05
       type: object
+      required:
+      - propose_verification_policy
       title: ProposeVerificationPolicyLLMMapping
     ProposedMethodSchema:
       properties:
@@ -4241,9 +4183,9 @@ components:
       properties:
         refine_experimental_design:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.4-2026-03-05
       type: object
+      required:
+      - refine_experimental_design
       title: RefineExperimentalDesignLLMMapping
     RefineExperimentalDesignSubgraphRequestBody:
       properties:
@@ -4538,9 +4480,14 @@ components:
         dataset_subfield:
           type: string
           enum:
-          - language_model_fine_tuning_datasets
-          - image_datasets
-          - prompt_engineering_datasets
+          - instruction_tuning
+          - reasoning_evaluation
+          - nlp_tasks
+          - prompt_engineering
+          - code_evaluation
+          - image_recognition
+          - speech
+          - vision_language
           title: Dataset Subfield
       type: object
       required:
@@ -4570,10 +4517,19 @@ components:
         model_subfield:
           type: string
           enum:
-          - transformer_decoder_based_models
-          - image_models
-          - multi_modal_models
-          - llm_api_models
+          - text_generation
+          - text_understanding
+          - sequence_to_sequence
+          - code_generation
+          - text_embedding
+          - reranking
+          - hosted_api
+          - image_recognition
+          - image_generation
+          - vision_language
+          - speech
+          - forecasting
+          - protein
           title: Model Subfield
       type: object
       required:
@@ -4602,25 +4558,21 @@ components:
       properties:
         search_arxiv_id_from_title:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gemini-2.5-flash
         summarize_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.2
         extract_github_url_from_text:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gemini-2.5-flash
         select_experimental_files:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.2
         extract_reference_titles:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gemini-2.5-flash
       type: object
+      required:
+      - search_arxiv_id_from_title
+      - summarize_paper
+      - extract_github_url_from_text
+      - select_experimental_files
+      - extract_reference_titles
       title: RetrievePaperSubgraphLLMMapping
     RetrievePaperSubgraphRequestBody:
       properties:
@@ -4668,9 +4620,9 @@ components:
       properties:
         search_paper_titles_from_qdrant:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gemini/gemini-embedding-001
       type: object
+      required:
+      - search_paper_titles_from_qdrant
       title: SearchPaperTitlesFromQdrantLLMMapping
     SearchPaperTitlesRequestBody:
       properties:
@@ -5291,6 +5243,11 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc
@@ -5537,13 +5494,12 @@ components:
       properties:
         write_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.4-2026-03-05
         refine_paper:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.4-2026-03-05
       type: object
+      required:
+      - write_paper
+      - refine_paper
       title: WriteLLMMapping
     WriteSubgraphRequestBody:
       properties:

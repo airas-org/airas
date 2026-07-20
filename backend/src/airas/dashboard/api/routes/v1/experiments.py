@@ -1,12 +1,9 @@
 from typing import Annotated
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
-from langfuse import observe
 
-from airas.container import Container
 from airas.core.types.runner import EphemeralCloudRunnerConfig, StaticRunnerConfig
-from airas.dashboard.api.dependencies import get_github_client, get_langchain_client
+from airas.dashboard.api.dependencies import get_github_client, get_litellm_client
 from airas.dashboard.api.schemas.experiments import (
     AnalyzeExperimentRequestBody,
     AnalyzeExperimentResponseBody,
@@ -26,8 +23,7 @@ from airas.dashboard.api.schemas.experiments import (
     FetchRunIdsResponseBody,
 )
 from airas.infra.github_client import GithubClient
-from airas.infra.langchain_client import LangChainClient
-from airas.infra.langfuse_client import LangfuseClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
@@ -57,22 +53,14 @@ router = APIRouter(prefix="/experiments", tags=["experiments"])
 
 
 @router.post("/run-ids", response_model=FetchRunIdsResponseBody)
-@inject
-@observe()
 async def fetch_run_ids(
     request: FetchRunIdsRequestBody,
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> FetchRunIdsResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await FetchRunIdsSubgraph(github_client=github_client)
         .build_graph()
-        .ainvoke(request, config=config)
+        .ainvoke(request)
     )
     return FetchRunIdsResponseBody(
         run_ids=result["run_ids"],
@@ -81,22 +69,14 @@ async def fetch_run_ids(
 
 
 @router.post("/results", response_model=FetchExperimentalResultsResponseBody)
-@inject
-@observe()
 async def fetch_experimental_results(
     request: FetchExperimentalResultsRequestBody,
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> FetchExperimentalResultsResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await FetchExperimentResultsSubgraph(github_client=github_client)
         .build_graph()
-        .ainvoke(request, config=config)
+        .ainvoke(request)
     )
     return FetchExperimentalResultsResponseBody(
         experimental_results=result["experimental_results"],
@@ -105,18 +85,10 @@ async def fetch_experimental_results(
 
 
 @router.post("/sanity-checks/dispatch", response_model=DispatchSanityCheckResponseBody)
-@inject
-@observe()
 async def dispatch_sanity_check(
     request: DispatchSanityCheckRequestBody,
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> DispatchSanityCheckResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     if isinstance(request.runner_config, StaticRunnerConfig):
         subgraph = DispatchExperimentOnStaticRunnerSubgraph(
             github_client=github_client,
@@ -138,7 +110,6 @@ async def dispatch_sanity_check(
 
     result = await subgraph.build_graph().ainvoke(
         {"github_config": request.github_config, "run_id": request.run_id},
-        config=config,
     )
     return DispatchSanityCheckResponseBody(
         dispatched=result["dispatched"],
@@ -149,25 +120,17 @@ async def dispatch_sanity_check(
 @router.post(
     "/validations/dispatch", response_model=DispatchExperimentValidationResponseBody
 )
-@inject
-@observe()
 async def dispatch_experiment_validation(
     request: DispatchExperimentValidationRequestBody,
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> DispatchExperimentValidationResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await DispatchExperimentValidationSubgraph(
             github_client=github_client,
             llm_mapping=request.llm_mapping,
         )
         .build_graph()
-        .ainvoke(request, config=config)
+        .ainvoke(request)
     )
     return DispatchExperimentValidationResponseBody(
         dispatched=result["dispatched"],
@@ -176,18 +139,10 @@ async def dispatch_experiment_validation(
 
 
 @router.post("/main-runs/dispatch", response_model=DispatchMainExperimentResponseBody)
-@inject
-@observe()
 async def dispatch_main_experiment(
     request: DispatchMainExperimentRequestBody,
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> DispatchMainExperimentResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     if isinstance(request.runner_config, StaticRunnerConfig):
         subgraph = DispatchExperimentOnStaticRunnerSubgraph(
             github_client=github_client,
@@ -209,7 +164,6 @@ async def dispatch_main_experiment(
 
     result = await subgraph.build_graph().ainvoke(
         {"github_config": request.github_config, "run_id": request.run_id},
-        config=config,
     )
     return DispatchMainExperimentResponseBody(
         dispatched=result["dispatched"],
@@ -223,25 +177,17 @@ async def dispatch_main_experiment(
 @router.post(
     "/visualizations/dispatch", response_model=DispatchVisualizationResponseBody
 )
-@inject
-@observe()
 async def dispatch_visualization(
     request: DispatchVisualizationRequestBody,
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> DispatchVisualizationResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await DispatchVisualizationSubgraph(
             github_client=github_client,
             runner_label=request.runner_label,
         )
         .build_graph()
-        .ainvoke(request, config=config)
+        .ainvoke(request)
     )
     return DispatchVisualizationResponseBody(
         dispatched=result["dispatched"],
@@ -252,18 +198,10 @@ async def dispatch_visualization(
 # NOTE: Scheduled for removal in the next major release together with the
 # visualization dispatch above (see issue #913).
 @router.post("/diagrams/dispatch", response_model=DispatchDiagramGenerationResponseBody)
-@inject
-@observe()
 async def dispatch_diagram_generation(
     request: DispatchDiagramGenerationRequestBody,
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> DispatchDiagramGenerationResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await DispatchDiagramGenerationSubgraph(
             github_client=github_client,
@@ -272,7 +210,7 @@ async def dispatch_diagram_generation(
             llm_mapping=request.llm_mapping,
         )
         .build_graph()
-        .ainvoke(request, config=config)
+        .ainvoke(request)
     )
     return DispatchDiagramGenerationResponseBody(
         dispatched=result["dispatched"],
@@ -281,25 +219,17 @@ async def dispatch_diagram_generation(
 
 
 @router.post("/analyses", response_model=AnalyzeExperimentResponseBody)
-@inject
-@observe()
 async def analyze_experiment(
     request: AnalyzeExperimentRequestBody,
-    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
+    litellm_client: Annotated[LiteLLMClient, Depends(get_litellm_client)],
 ) -> AnalyzeExperimentResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await AnalyzeExperimentSubgraph(
-            langchain_client=langchain_client,
+            litellm_client=litellm_client,
             llm_mapping=request.llm_mapping,
         )
         .build_graph()
-        .ainvoke(request, config=config)
+        .ainvoke(request)
     )
     return AnalyzeExperimentResponseBody(
         experimental_analysis=result["experimental_analysis"],

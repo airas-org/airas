@@ -4,6 +4,6 @@
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
 export type CompileLatexLLMMapping = {
-    compile_latex?: NodeLLMConfig;
+    compile_latex: NodeLLMConfig;
 };
 

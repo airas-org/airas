@@ -46,7 +46,7 @@ from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.runner import ExperimentRunnerConfig
 from airas.core.types.wandb import WandbConfig
 from airas.infra.github_client import GithubClient
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentLLMMapping,
     AnalyzeExperimentSubgraph,
@@ -148,7 +148,7 @@ class ExperimentCycleGraph:
     def __init__(
         self,
         github_client: GithubClient,
-        langchain_client: LangChainClient,
+        litellm_client: LiteLLMClient,
         runner_config: ExperimentRunnerConfig,
         wandb_config: WandbConfig,
         compute_environment: ComputeEnvironment,
@@ -159,7 +159,7 @@ class ExperimentCycleGraph:
         llm_mapping: ExperimentCycleGraphLLMMapping | None = None,
     ):
         self.github_client = github_client
-        self.langchain_client = langchain_client
+        self.litellm_client = litellm_client
         self.runner_config = runner_config
         self.wandb_config = wandb_config
         self.compute_environment = compute_environment
@@ -378,7 +378,7 @@ class ExperimentCycleGraph:
         logger.info("=== Analyze Experiment ===")
         result = (
             await AnalyzeExperimentSubgraph(
-                langchain_client=self.langchain_client,
+                litellm_client=self.litellm_client,
                 llm_mapping=self.llm_mapping.analyze_experiment,
             )
             .build_graph()
@@ -420,7 +420,7 @@ class ExperimentCycleGraph:
         logger.info("=== Decide Next Action ===")
         result = (
             await DecideExperimentCycleSubgraph(
-                langchain_client=self.langchain_client,
+                litellm_client=self.litellm_client,
                 llm_mapping=self.llm_mapping.decide_experiment_cycle,
             )
             .build_graph()
@@ -530,7 +530,7 @@ class ExperimentCycleGraph:
 
         result = (
             await RefineExperimentalDesignSubgraph(
-                langchain_client=self.langchain_client,
+                litellm_client=self.litellm_client,
                 compute_environment=self.compute_environment,
                 num_models_to_use=self.num_experiment_models,
                 num_datasets_to_use=self.num_experiment_datasets,
@@ -663,7 +663,7 @@ if __name__ == "__main__":
 
     graph = ExperimentCycleGraph(
         github_client=MagicMock(),
-        langchain_client=MagicMock(),
+        litellm_client=MagicMock(),
         runner_config=MagicMock(),
         wandb_config=MagicMock(),
         compute_environment=MagicMock(),

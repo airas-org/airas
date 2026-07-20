@@ -14,7 +14,7 @@ from airas.core.types.experiment_history import ExperimentHistory
 from airas.core.types.paper import PaperContent
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.writers.write_subgraph.nodes.generate_note import generate_note
 from airas.usecases.writers.write_subgraph.nodes.refine_paper import refine_paper
 from airas.usecases.writers.write_subgraph.nodes.write_paper import write_paper
@@ -61,13 +61,13 @@ class WriteSubgraphState(
 class WriteSubgraph:
     def __init__(
         self,
-        langchain_client: LangChainClient,
+        litellm_client: LiteLLMClient,
         llm_mapping: WriteLLMMapping | None = None,
         paper_content_refinement_iterations: int = 2,
     ):
         self.llm_mapping = require_llm_mapping(llm_mapping)
         self.paper_content_refinement_iterations = paper_content_refinement_iterations
-        self.langchain_client = langchain_client
+        self.litellm_client = litellm_client
 
     @record_execution_time
     def _initialize(self, state: WriteSubgraphState) -> dict[str, int]:
@@ -90,7 +90,7 @@ class WriteSubgraph:
     async def _write_paper(self, state: WriteSubgraphState) -> dict[str, PaperContent]:
         paper_content = await write_paper(
             llm_config=self.llm_mapping.write_paper,
-            langchain_client=self.langchain_client,
+            litellm_client=self.litellm_client,
             note=state["note"],
         )
         return {"paper_content": paper_content}
@@ -101,7 +101,7 @@ class WriteSubgraph:
     ) -> Command[Literal["refine_paper", "__end__"]]:
         paper_content = await refine_paper(
             llm_config=self.llm_mapping.refine_paper,
-            langchain_client=self.langchain_client,
+            litellm_client=self.litellm_client,
             paper_content=state["paper_content"],
             note=state["note"],
         )

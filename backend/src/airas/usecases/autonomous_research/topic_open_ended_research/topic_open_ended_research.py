@@ -29,7 +29,6 @@ from airas.core.types.wandb import WandbConfig
 from airas.core.utils import to_dict_deep
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
-from airas.infra.langchain_client import LangChainClient
 from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.qdrant_client import QdrantClient
 from airas.usecases.autonomous_research.e2e_research_service_protocol import (
@@ -152,7 +151,6 @@ class TopicOpenEndedResearch:
         self,
         github_client: GithubClient,
         arxiv_client: ArxivClient,
-        langchain_client: LangChainClient,
         litellm_client: LiteLLMClient,
         qdrant_client: QdrantClient | None,
         e2e_service: E2EResearchServiceProtocol,
@@ -183,7 +181,6 @@ class TopicOpenEndedResearch:
         self.collection_name = collection_name
         self.github_client = github_client
         self.arxiv_client = arxiv_client
-        self.langchain_client = langchain_client
         self.e2e_service = e2e_service
         self.compute_environment = compute_environment
         self.runner_config = runner_config
@@ -260,7 +257,7 @@ class TopicOpenEndedResearch:
         logger.info("=== Query Generation ===")
         result = (
             await GenerateQueriesSubgraph(
-                llm_client=self.langchain_client,
+                llm_client=self.litellm_client,
                 num_paper_search_queries=self.num_paper_search_queries,
                 llm_mapping=self.llm_mapping.generate_queries,
             )
@@ -323,7 +320,7 @@ class TopicOpenEndedResearch:
         logger.info("=== Paper Retrieval ===")
         result = (
             await RetrievePaperSubgraph(
-                langchain_client=self.langchain_client,
+                litellm_client=self.litellm_client,
                 arxiv_client=self.arxiv_client,
                 github_client=self.github_client,
                 llm_mapping=self.llm_mapping.retrieve_paper,
@@ -347,7 +344,7 @@ class TopicOpenEndedResearch:
         logger.info("=== Hypothesis Generation ===")
         result = (
             await GenerateHypothesisSubgraphV0(
-                langchain_client=self.langchain_client,
+                litellm_client=self.litellm_client,
                 refinement_rounds=self.hypothesis_refinement_iterations,
                 llm_mapping=self.llm_mapping.generate_hypothesis,
             )
@@ -374,7 +371,7 @@ class TopicOpenEndedResearch:
         logger.info("=== Experimental Design ===")
         result = (
             await GenerateExperimentalDesignSubgraph(
-                langchain_client=self.langchain_client,
+                litellm_client=self.litellm_client,
                 compute_environment=self.compute_environment,
                 num_models_to_use=self.num_experiment_models,
                 llm_mapping=self.llm_mapping.generate_experimental_design,
@@ -400,7 +397,7 @@ class TopicOpenEndedResearch:
         result = (
             await ExperimentCycleGraph(
                 github_client=self.github_client,
-                langchain_client=self.langchain_client,
+                litellm_client=self.litellm_client,
                 runner_config=self.runner_config,
                 wandb_config=self.wandb_config,
                 compute_environment=self.compute_environment,
@@ -502,7 +499,7 @@ class TopicOpenEndedResearch:
         logger.info("=== Paper Writing ===")
         result = (
             await WriteSubgraph(
-                langchain_client=self.langchain_client,
+                litellm_client=self.litellm_client,
                 paper_content_refinement_iterations=self.paper_content_refinement_iterations,
                 llm_mapping=self.llm_mapping.write,
             )
@@ -531,7 +528,7 @@ class TopicOpenEndedResearch:
         result = (
             await LaTeXGraph(
                 github_client=self.github_client,
-                langchain_client=self.langchain_client,
+                litellm_client=self.litellm_client,
                 latex_template_name=self.latex_template_name,
                 github_actions_agent=self.github_actions_agent,
                 llm_mapping=self.llm_mapping.latex,
@@ -628,7 +625,6 @@ if __name__ == "__main__":
     graph = TopicOpenEndedResearch(
         github_client=MagicMock(),
         arxiv_client=MagicMock(),
-        langchain_client=MagicMock(),
         litellm_client=MagicMock(),
         qdrant_client=MagicMock(),
         e2e_service=MagicMock(),

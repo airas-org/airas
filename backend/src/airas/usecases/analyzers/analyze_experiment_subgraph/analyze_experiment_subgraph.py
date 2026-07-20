@@ -16,7 +16,7 @@ from airas.core.types.experimental_analysis import ExperimentalAnalysis
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.research_hypothesis import ResearchHypothesis
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.analyzers.analyze_experiment_subgraph.nodes.analyze_experiment import (
     analyze_experiment,
 )
@@ -53,11 +53,11 @@ class AnalyzeExperimentSubgraphState(
 class AnalyzeExperimentSubgraph:
     def __init__(
         self,
-        langchain_client: LangChainClient,
+        litellm_client: LiteLLMClient,
         llm_mapping: AnalyzeExperimentLLMMapping | None = None,
     ):
         self.llm_mapping = require_llm_mapping(llm_mapping)
-        self.langchain_client = langchain_client
+        self.litellm_client = litellm_client
 
     @record_execution_time
     async def _analyze_experiment(
@@ -65,7 +65,7 @@ class AnalyzeExperimentSubgraph:
     ) -> dict[str, ExperimentalAnalysis]:
         analysis_report = await analyze_experiment(
             llm_config=self.llm_mapping.analyze_experiment,
-            langchain_client=self.langchain_client,
+            litellm_client=self.litellm_client,
             research_hypothesis=state["research_hypothesis"],
             experimental_design=state["experimental_design"],
             experiment_code=state["experiment_code"],

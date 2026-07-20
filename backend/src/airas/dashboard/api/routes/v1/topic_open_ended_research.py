@@ -5,7 +5,6 @@ from typing import Annotated, Any
 
 from dependency_injector.wiring import Closing, Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Request
-from langfuse import observe
 
 from airas.container import Container
 from airas.core.types.e2e import Status
@@ -14,7 +13,6 @@ from airas.dashboard.api.dependencies import (
     get_current_user_id,
     get_github_client,
     get_github_owner,
-    get_langchain_client,
     get_litellm_client,
 )
 from airas.dashboard.api.schemas.topic_open_ended_research import (
@@ -27,8 +25,6 @@ from airas.dashboard.api.schemas.topic_open_ended_research import (
 )
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
-from airas.infra.langchain_client import LangChainClient
-from airas.infra.langfuse_client import LangfuseClient
 from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.autonomous_research.e2e_research_service_protocol import (
     E2EResearchServiceProtocol,
@@ -64,10 +60,8 @@ async def _execute_topic_open_ended_research(
     search_index: AirasDbPaperSearchIndex | None,
     github_client: GithubClient,
     arxiv_client: ArxivClient,
-    langchain_client: LangChainClient,
     litellm_client: LiteLLMClient,
     qdrant_client: Any | None,
-    langfuse_client: LangfuseClient,
     e2e_service: E2EResearchServiceProtocol,
 ) -> None:
     try:
@@ -76,7 +70,6 @@ async def _execute_topic_open_ended_research(
         graph = TopicOpenEndedResearch(
             github_client=github_client,
             arxiv_client=arxiv_client,
-            langchain_client=langchain_client,
             litellm_client=litellm_client,
             qdrant_client=qdrant_client,
             e2e_service=e2e_service,
@@ -104,8 +97,6 @@ async def _execute_topic_open_ended_research(
         logger.info(f"[Task {task_id}] Streaming graph execution")
 
         config = {"recursion_limit": 100}
-        if handler := langfuse_client.create_handler():
-            config["callbacks"] = [handler]
 
         # NOTE:将来的にストリーミング UI に対応するためastreamで実装
         async for chunk in graph.astream(
@@ -149,7 +140,6 @@ async def _execute_topic_open_ended_research(
 
 @router.post("/run", response_model=TopicOpenEndedResearchResponseBody)
 @inject
-@observe()
 async def execute_topic_open_ended_research(
     request: TopicOpenEndedResearchRequestBody,
     fastapi_request: Request,
@@ -157,11 +147,7 @@ async def execute_topic_open_ended_research(
     github_owner: Annotated[str, Depends(get_github_owner)],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
     arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
-    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
     litellm_client: Annotated[LiteLLMClient, Depends(get_litellm_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
     e2e_service: Annotated[
         E2EResearchServiceProtocol,
         Depends(Provide[Container.e2e_research_service]),
@@ -188,10 +174,8 @@ async def execute_topic_open_ended_research(
             search_index=search_index,
             github_client=github_client,
             arxiv_client=arxiv_client,
-            langchain_client=langchain_client,
             litellm_client=litellm_client,
             qdrant_client=qdrant_client,
-            langfuse_client=langfuse_client,
             e2e_service=e2e_service,
         )
     )
@@ -203,7 +187,6 @@ async def execute_topic_open_ended_research(
     "/status/{task_id}", response_model=TopicOpenEndedResearchStatusResponseBody
 )
 @inject
-@observe()
 async def get_topic_open_ended_research_status(
     task_id: uuid.UUID,
     e2e_service: Annotated[
@@ -232,7 +215,6 @@ async def get_topic_open_ended_research_status(
 
 @router.get("", response_model=TopicOpenEndedResearchListResponseBody)
 @inject
-@observe()
 async def list_topic_open_ended_research(
     e2e_service: Annotated[
         E2EResearchServiceProtocol,
@@ -258,7 +240,6 @@ async def list_topic_open_ended_research(
     status_code=200,
 )
 @inject
-@observe()
 async def update_topic_open_ended_research(
     task_id: uuid.UUID,
     request: TopicOpenEndedResearchUpdateRequestBody,

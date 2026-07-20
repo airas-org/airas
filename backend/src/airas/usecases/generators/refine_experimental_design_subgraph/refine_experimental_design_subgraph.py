@@ -14,7 +14,7 @@ from airas.core.logging_utils import setup_logging
 from airas.core.types.experiment_history import ExperimentHistory
 from airas.core.types.experimental_design import ComputeEnvironment, ExperimentalDesign
 from airas.core.types.research_hypothesis import ResearchHypothesis
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.generators.refine_experimental_design_subgraph.nodes.refine_experimental_design import (
     refine_experimental_design,
 )
@@ -49,14 +49,14 @@ class RefineExperimentalDesignState(
 class RefineExperimentalDesignSubgraph:
     def __init__(
         self,
-        langchain_client: LangChainClient,
+        litellm_client: LiteLLMClient,
         compute_environment: ComputeEnvironment,
         llm_mapping: RefineExperimentalDesignLLMMapping | None = None,
         num_models_to_use: int = 2,
         num_datasets_to_use: int = 2,
         num_comparative_methods: int = 2,
     ):
-        self.langchain_client = langchain_client
+        self.litellm_client = litellm_client
         self.llm_mapping = require_llm_mapping(llm_mapping)
         self.compute_environment = compute_environment
         self.num_models_to_use = num_models_to_use
@@ -69,7 +69,7 @@ class RefineExperimentalDesignSubgraph:
     ) -> dict[str, ExperimentalDesign]:
         experimental_design = await refine_experimental_design(
             llm_config=self.llm_mapping.refine_experimental_design,
-            llm_client=self.langchain_client,
+            llm_client=self.litellm_client,
             research_hypothesis=state["research_hypothesis"],
             experiment_history=state["experiment_history"],
             design_instruction=state["design_instruction"],

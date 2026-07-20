@@ -8,7 +8,7 @@ from typing_extensions import TypedDict
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.generators.generate_queries_subgraph.nodes.generate_queries import (
     generate_queries,
 )
@@ -44,7 +44,7 @@ class GenerateQueriesState(
 class GenerateQueriesSubgraph:
     def __init__(
         self,
-        llm_client: LangChainClient,
+        llm_client: LiteLLMClient,
         num_paper_search_queries: Annotated[int, Field(gt=0)] = 2,
         llm_mapping: GenerateQueriesLLMMapping | None = None,
     ):

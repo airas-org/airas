@@ -12,7 +12,7 @@ from airas.core.types.experimental_design import (
     MethodConfig,
 )
 from airas.core.types.research_hypothesis import ResearchHypothesis
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.resources.datasets.language.prompt_engineering import (
     PROMPT_ENGINEERING_DATASETS,
 )
@@ -37,7 +37,7 @@ class LLMOutput(BaseModel):
 
 async def generate_experimental_design(
     llm_config: NodeLLMConfig,
-    llm_client: LangChainClient,
+    llm_client: LiteLLMClient,
     research_hypothesis: ResearchHypothesis,
     compute_environment: ComputeEnvironment,
     num_models_to_use: int,
@@ -62,7 +62,7 @@ async def generate_experimental_design(
         "num_comparative_methods": num_comparative_methods,
     }
     messages = template.render(data)
-    output = await llm_client.structured_outputs(
+    output = await llm_client.structured_output(
         message=messages,
         data_model=LLMOutput,
         llm_name=llm_config.llm_name,
