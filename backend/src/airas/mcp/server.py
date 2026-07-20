@@ -42,6 +42,7 @@ from airas.core.types.experimental_design import (
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
+from airas.core.types.llm_provider import LLMProvider
 from airas.core.types.paper import PaperContent
 from airas.core.types.paper_search import PAPER_SEARCH_SOURCES
 from airas.core.types.research_history import ResearchHistory
@@ -64,6 +65,12 @@ from airas.infra.kroki_client import KrokiClient
 from airas.infra.langchain_client import (
     PROVIDER_REQUIRED_ENV_VARS,
     LangChainClient,
+)
+from airas.infra.litellm_client import (
+    PROVIDER_REQUIRED_ENV_VARS as LITELLM_PROVIDER_REQUIRED_ENV_VARS,
+)
+from airas.infra.litellm_client import (
+    LiteLLMClient,
 )
 from airas.infra.llm_provider_resolver import detect_available_providers
 from airas.infra.openalex_client import OpenAlexClient
@@ -204,8 +211,76 @@ def _langchain_client() -> LangChainClient:
     return LangChainClient()
 
 
+# airas's LLMProvider enum value -> litellm's ``custom_llm_provider`` name.
+# Only GOOGLE diverges (airas "google" vs litellm "gemini"); every other
+# provider's enum value already matches litellm, so we fall back to it.
+_LITELLM_PROVIDER_NAME: dict[LLMProvider, str] = {
+    LLMProvider.GOOGLE: "gemini",
+}
+
+
 def _dump(value: Any) -> Any:
     return value.model_dump() if isinstance(value, BaseModel) else value
+
+
+# --- Capabilities / credentials ---
+
+
+@mcp.tool()
+def get_available_llms(include_models: bool = True) -> dict[str, Any]:
+    """Report which LLMs are usable with the currently configured API keys.
+
+    Reads credentials fresh (so keys added or rotated since the server
+    started are picked up) and, for each known LLM provider, reports whether
+    its required API key(s) are present. Call this before the LLM-backed
+    tools (`generate_research_queries`, `generate_hypothesis`,
+    `generate_experimental_design`, `analyze_experiment`, `generate_paper`,
+    `generate_latex`, `retrieve_papers`) to know which will run and which
+    model names you may pass — a tool whose model belongs to an
+    unconfigured provider fails fast with the missing key named. This tool
+    itself needs no API key.
+
+    When `include_models` is true (default), each configured provider also
+    lists the model names callable with that key (via litellm's model
+    catalog). Set it to false for a lightweight configured/not-configured
+    summary.
+
+    Returns:
+    - `any_provider_configured`: whether at least one provider is usable
+    - `configured_providers`: sorted provider names that are ready
+    - `providers`: per-provider `configured` flag, `required_env_vars`,
+      `missing_env_vars`, and (when configured and requested) `models` /
+      `model_count`
+    - `setup_instructions`: how to add keys, present only when none are set
+    """
+    refresh_environment()
+    available = detect_available_providers(LITELLM_PROVIDER_REQUIRED_ENV_VARS)
+
+    providers: list[dict[str, Any]] = []
+    for provider, required in LITELLM_PROVIDER_REQUIRED_ENV_VARS.items():
+        configured = provider in available
+        entry: dict[str, Any] = {
+            "provider": provider.value,
+            "configured": configured,
+            "required_env_vars": required,
+            "missing_env_vars": [name for name in required if not os.getenv(name)],
+        }
+        if configured and include_models:
+            litellm_name = _LITELLM_PROVIDER_NAME.get(provider, provider.value)
+            try:
+                models = sorted(LiteLLMClient.get_valid_models(provider=litellm_name))
+                entry["model_count"] = len(models)
+                entry["models"] = models
+            except Exception as exc:  # never let catalog lookup fail the tool
+                entry["models_error"] = str(exc)
+        providers.append(entry)
+
+    return {
+        "any_provider_configured": bool(available),
+        "configured_providers": sorted(p.value for p in available),
+        "providers": providers,
+        "setup_instructions": None if available else SETUP_INSTRUCTIONS,
+    }
 
 
 # --- Paper discovery & hypothesis ---
