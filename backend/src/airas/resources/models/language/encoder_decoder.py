@@ -56,4 +56,58 @@ pipe = pipeline("text2text-generation", model="facebook/bart-base")""",
   url = {https://arxiv.org/abs/1910.13461}
 }""",
     },
+    "mt5-base": {
+        "model_parameters": "Unknown",
+        "model_architecture": "Encoder-decoder (sequence-to-sequence) transformer for text-to-text tasks.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/google/mt5-base",
+        "task_type": "text2text-generation",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("text2text-generation", model="google/mt5-base")""",
+        "citation": """@misc{xue2020,
+  title = {mT5: A massively multilingual pre-trained text-to-text transformer},
+  author = {Linting Xue and Noah Constant and Adam Roberts and Mihir Kale and Rami Al-Rfou and Aditya Siddhant and Aditya Barua and Colin Raffel},
+  year = {2020},
+  eprint = {2010.11934},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2010.11934}
+}""",
+    },
+    "pegasus-xsum": {
+        "model_parameters": "Unknown",
+        "model_architecture": "Encoder-decoder (sequence-to-sequence) transformer for text-to-text tasks.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/google/pegasus-xsum",
+        "task_type": "summarization",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("summarization", model="google/pegasus-xsum")""",
+        "citation": """@misc{zhang2019,
+  title = {PEGASUS: Pre-training with Extracted Gap-sentences for Abstractive Summarization},
+  author = {Jingqing Zhang and Yao Zhao and Mohammad Saleh and Peter J. Liu},
+  year = {2019},
+  eprint = {1912.08777},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/1912.08777}
+}""",
+    },
+    "long-t5-base": {
+        "model_parameters": "Unknown",
+        "model_architecture": "Encoder-decoder (sequence-to-sequence) transformer for text-to-text tasks.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/google/long-t5-tglobal-base",
+        "task_type": "text2text-generation",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("text2text-generation", model="google/long-t5-tglobal-base")""",
+        "citation": """@misc{guo2021,
+  title = {LongT5: Efficient Text-To-Text Transformer for Long Sequences},
+  author = {Mandy Guo and Joshua Ainslie and David Uthus and Santiago Ontanon and Jianmo Ni and Yun-Hsuan Sung and Yinfei Yang},
+  year = {2021},
+  eprint = {2112.07916},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2112.07916}
+}""",
+    },
 }

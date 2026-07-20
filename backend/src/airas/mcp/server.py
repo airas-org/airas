@@ -476,6 +476,7 @@ async def retrieve_models(model_subfield: ModelSubfield) -> dict[str, Any]:
     """List AIRAS's hand-curated candidate models for a subfield.
 
     Check here first. Subfields: "transformer_decoder_based_models",
+    "code_generation_models", "text_embedding_models",
     "encoder_language_models", "encoder_decoder_language_models",
     "image_models", "image_generative_models", "multi_modal_models",
     "speech_models", "llm_api_models". Returns a dict

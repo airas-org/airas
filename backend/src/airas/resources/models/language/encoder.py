@@ -110,4 +110,40 @@ pipe = pipeline("fill-mask", model="answerdotai/ModernBERT-base")""",
   url = {https://arxiv.org/abs/2412.13663}
 }""",
     },
+    "xlm-roberta-base": {
+        "model_parameters": "279M",
+        "model_architecture": "Encoder-only (BERT-style) transformer trained with masked language modeling; used for embeddings and fine-tuned classification/token tasks.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/FacebookAI/xlm-roberta-base",
+        "task_type": "fill-mask",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("fill-mask", model="FacebookAI/xlm-roberta-base")""",
+        "citation": """@misc{conneau2019,
+  title = {Unsupervised Cross-lingual Representation Learning at Scale},
+  author = {Alexis Conneau and Kartikay Khandelwal and Naman Goyal and Vishrav Chaudhary and Guillaume Wenzek and Francisco Guzmán and Edouard Grave and Myle Ott and Luke Zettlemoyer and Veselin Stoyanov},
+  year = {2019},
+  eprint = {1911.02116},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/1911.02116}
+}""",
+    },
+    "albert-base-v2": {
+        "model_parameters": "12M",
+        "model_architecture": "Encoder-only (BERT-style) transformer trained with masked language modeling; used for embeddings and fine-tuned classification/token tasks.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/albert/albert-base-v2",
+        "task_type": "fill-mask",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("fill-mask", model="albert/albert-base-v2")""",
+        "citation": """@misc{lan2019,
+  title = {ALBERT: A Lite BERT for Self-supervised Learning of Language Representations},
+  author = {Zhenzhong Lan and Mingda Chen and Sebastian Goodman and Kevin Gimpel and Piyush Sharma and Radu Soricut},
+  year = {2019},
+  eprint = {1909.11942},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/1909.11942}
+}""",
+    },
 }

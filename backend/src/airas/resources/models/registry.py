@@ -3,9 +3,11 @@
 # (language / vision / multimodal / speech / api) mirroring
 # resources/libraries; the subfield API stays stable for retrieve_models.
 from airas.resources.models.api.llm import LLM_API_MODELS
+from airas.resources.models.language.code import CODE_GENERATION_MODELS
 from airas.resources.models.language.decoder import (
     TRANSFORMER_DECODER_BASED_MODELS,
 )
+from airas.resources.models.language.embedding import TEXT_EMBEDDING_MODELS
 from airas.resources.models.language.encoder import ENCODER_LANGUAGE_MODELS
 from airas.resources.models.language.encoder_decoder import (
     ENCODER_DECODER_LANGUAGE_MODELS,
@@ -17,6 +19,8 @@ from airas.resources.models.vision.recognition import IMAGE_MODELS
 
 MODELS_BY_SUBFIELD: dict[str, dict] = {
     "transformer_decoder_based_models": TRANSFORMER_DECODER_BASED_MODELS,
+    "code_generation_models": CODE_GENERATION_MODELS,
+    "text_embedding_models": TEXT_EMBEDDING_MODELS,
     "encoder_language_models": ENCODER_LANGUAGE_MODELS,
     "encoder_decoder_language_models": ENCODER_DECODER_LANGUAGE_MODELS,
     "image_models": IMAGE_MODELS,

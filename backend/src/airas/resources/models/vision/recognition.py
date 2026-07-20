@@ -718,4 +718,58 @@ model.eval()""",
   url = {https://arxiv.org/abs/2303.11331}
 }""",
     },
+    "swinv2-base": {
+        "model_parameters": "Unknown",
+        "model_architecture": "Vision backbone for image classification.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/microsoft/swinv2-base-patch4-window8-256",
+        "task_type": "image-classification",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("image-classification", model="microsoft/swinv2-base-patch4-window8-256")""",
+        "citation": """@misc{liu2021,
+  title = {Swin Transformer V2: Scaling Up Capacity and Resolution},
+  author = {Ze Liu and Han Hu and Yutong Lin and Zhuliang Yao and Zhenda Xie and Yixuan Wei and Jia Ning and Yue Cao and Zheng Zhang and Li Dong and Furu Wei and Baining Guo},
+  year = {2021},
+  eprint = {2111.09883},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2111.09883}
+}""",
+    },
+    "sam-vit-base": {
+        "model_parameters": "94M",
+        "model_architecture": "Vision backbone for image classification.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/facebook/sam-vit-base",
+        "task_type": "mask-generation",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("mask-generation", model="facebook/sam-vit-base")""",
+        "citation": """@misc{kirillov2023,
+  title = {Segment Anything},
+  author = {Alexander Kirillov and Eric Mintun and Nikhila Ravi and Hanzi Mao and Chloe Rolland and Laura Gustafson and Tete Xiao and Spencer Whitehead and Alexander C. Berg and Wan-Yen Lo and Piotr Dollár and Ross Girshick},
+  year = {2023},
+  eprint = {2304.02643},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2304.02643}
+}""",
+    },
+    "depth-anything-base": {
+        "model_parameters": "97M",
+        "model_architecture": "Vision backbone for image classification.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/LiheYoung/depth-anything-base-hf",
+        "task_type": "depth-estimation",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("depth-estimation", model="LiheYoung/depth-anything-base-hf")""",
+        "citation": """@misc{yang2024,
+  title = {Depth Anything: Unleashing the Power of Large-Scale Unlabeled Data},
+  author = {Lihe Yang and Bingyi Kang and Zilong Huang and Xiaogang Xu and Jiashi Feng and Hengshuang Zhao},
+  year = {2024},
+  eprint = {2401.10891},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2401.10891}
+}""",
+    },
 }
