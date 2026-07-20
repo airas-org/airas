@@ -121,7 +121,9 @@ class LiteLLMClient:
         rejected. The real API call surfaces any remaining incompatibility.
         """
         try:
-            litellm.get_model_info(llm_name)
+            # Use the lru_cache'd wrapper to avoid re-fetching the catalog
+            # entry on every structured_output() call.
+            LiteLLMClient.get_model_info(llm_name)
         except Exception:
             # Unknown to the catalog: don't block; let the API call decide.
             return True

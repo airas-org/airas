@@ -52,7 +52,7 @@ class GitHubActionsWorkflowError(WorkflowExecutionError):
 
 
 class CodeGenerationGraphLLMMapping(BaseModel):
-    dispatch_code_generation: DispatchCodeGenerationLLMMapping | None = None
+    dispatch_code_generation: DispatchCodeGenerationLLMMapping
 
 
 class CodeGenerationGraphInputState(TypedDict):
