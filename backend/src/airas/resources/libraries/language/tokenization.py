@@ -1,10 +1,11 @@
-# Tokenization (llm): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# language / tokenization documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 TOKENIZATION_LIBRARIES: dict[str, dict[str, str | None]] = {
     "tokenizers": {
         "description": "Fast tokenizers (BPE, WordPiece, Unigram) with training support",
-        "domain": "llm",
+        "domain": "language",
         "category": "tokenization",
         "official_docs": "https://huggingface.co/docs/tokenizers/main/en/index",
         "github": "https://github.com/huggingface/tokenizers",
@@ -13,7 +14,7 @@ TOKENIZATION_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "sentencepiece": {
         "description": "Language-independent subword tokenizer (BPE, unigram)",
-        "domain": "llm",
+        "domain": "language",
         "category": "tokenization",
         "official_docs": "https://github.com/google/sentencepiece",
         "github": "https://github.com/google/sentencepiece",
@@ -22,7 +23,7 @@ TOKENIZATION_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "tiktoken": {
         "description": "Fast BPE tokenizer for OpenAI models",
-        "domain": "llm",
+        "domain": "language",
         "category": "tokenization",
         "official_docs": "https://github.com/openai/tiktoken",
         "github": "https://github.com/openai/tiktoken",

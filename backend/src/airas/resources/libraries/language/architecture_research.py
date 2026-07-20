@@ -1,10 +1,11 @@
-# Architecture Research (llm): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# language / architecture_research documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 ARCHITECTURE_RESEARCH_LIBRARIES: dict[str, dict[str, str | None]] = {
     "litgpt": {
         "description": "Hackable implementations of 20+ LLM architectures",
-        "domain": "llm",
+        "domain": "language",
         "category": "architecture_research",
         "official_docs": "https://github.com/Lightning-AI/litgpt",
         "github": "https://github.com/Lightning-AI/litgpt",
@@ -13,7 +14,7 @@ ARCHITECTURE_RESEARCH_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "torchtitan": {
         "description": "PyTorch-native pretraining at scale (4D parallelism reference)",
-        "domain": "llm",
+        "domain": "language",
         "category": "architecture_research",
         "official_docs": "https://github.com/pytorch/torchtitan",
         "github": "https://github.com/pytorch/torchtitan",
@@ -22,7 +23,7 @@ ARCHITECTURE_RESEARCH_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "mamba": {
         "description": "Selective state space model architecture reference implementation",
-        "domain": "llm",
+        "domain": "language",
         "category": "architecture_research",
         "official_docs": "https://github.com/state-spaces/mamba",
         "github": "https://github.com/state-spaces/mamba",

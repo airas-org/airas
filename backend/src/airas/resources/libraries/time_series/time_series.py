@@ -1,10 +1,11 @@
-# Time Series (statistics): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# time_series / time_series documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 TIME_SERIES_LIBRARIES: dict[str, dict[str, str | None]] = {
     "darts": {
         "description": "Unified forecasting library (classical to deep models)",
-        "domain": "statistics",
+        "domain": "time_series",
         "category": "time_series",
         "official_docs": "https://unit8co.github.io/darts",
         "github": "https://github.com/unit8co/darts",
@@ -13,7 +14,7 @@ TIME_SERIES_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "sktime": {
         "description": "scikit-learn-compatible time series learning framework",
-        "domain": "statistics",
+        "domain": "time_series",
         "category": "time_series",
         "official_docs": "https://www.sktime.net",
         "github": "https://github.com/sktime/sktime",
@@ -22,7 +23,7 @@ TIME_SERIES_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "statsforecast": {
         "description": "Fast classical forecasting (ARIMA, ETS) at scale",
-        "domain": "statistics",
+        "domain": "time_series",
         "category": "time_series",
         "official_docs": "https://nixtlaverse.nixtla.io/statsforecast",
         "github": "https://github.com/Nixtla/statsforecast",
@@ -31,7 +32,7 @@ TIME_SERIES_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "neuralforecast": {
         "description": "Deep learning forecasting models (NBEATS, NHITS, TFT)",
-        "domain": "statistics",
+        "domain": "time_series",
         "category": "time_series",
         "official_docs": "https://nixtlaverse.nixtla.io/neuralforecast",
         "github": "https://github.com/Nixtla/neuralforecast",
@@ -40,7 +41,7 @@ TIME_SERIES_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "gluonts": {
         "description": "Probabilistic time series modeling",
-        "domain": "statistics",
+        "domain": "time_series",
         "category": "time_series",
         "official_docs": "https://ts.gluon.ai",
         "github": "https://github.com/awslabs/gluonts",

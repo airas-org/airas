@@ -1,6 +1,7 @@
-# Physics (science): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# science / physics documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 PHYSICS_LIBRARIES: dict[str, dict[str, str | None]] = {
     "physicsnemo": {
         "description": "Physics-ML framework (neural operators, PINNs)",

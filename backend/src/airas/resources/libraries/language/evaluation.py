@@ -1,10 +1,11 @@
-# Evaluation (llm): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# language / evaluation documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 EVALUATION_LIBRARIES: dict[str, dict[str, str | None]] = {
     "lm-eval-harness": {
         "description": "Standard few-shot evaluation harness for language models",
-        "domain": "llm",
+        "domain": "language",
         "category": "evaluation",
         "official_docs": "https://github.com/EleutherAI/lm-evaluation-harness",
         "github": "https://github.com/EleutherAI/lm-evaluation-harness",
@@ -13,7 +14,7 @@ EVALUATION_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "lighteval": {
         "description": "Hugging Face LLM evaluation toolkit (multi-backend)",
-        "domain": "llm",
+        "domain": "language",
         "category": "evaluation",
         "official_docs": "https://huggingface.co/docs/lighteval",
         "github": "https://github.com/huggingface/lighteval",
@@ -22,7 +23,7 @@ EVALUATION_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "inspect-ai": {
         "description": "UK AISI framework for LLM safety and capability evaluations",
-        "domain": "llm",
+        "domain": "language",
         "category": "evaluation",
         "official_docs": "https://inspect.aisi.org.uk",
         "github": "https://github.com/UKGovernmentBEIS/inspect_ai",
@@ -31,7 +32,7 @@ EVALUATION_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "bigcode-evaluation-harness": {
         "description": "Code generation benchmark harness (HumanEval, MBPP, MultiPL-E)",
-        "domain": "llm",
+        "domain": "language",
         "category": "evaluation",
         "official_docs": "https://github.com/bigcode-project/bigcode-evaluation-harness",
         "github": "https://github.com/bigcode-project/bigcode-evaluation-harness",

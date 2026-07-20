@@ -1,10 +1,11 @@
-# Audio (perception): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# audio / audio documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 AUDIO_LIBRARIES: dict[str, dict[str, str | None]] = {
     "whisper": {
         "description": "Robust speech recognition model and inference code",
-        "domain": "perception",
+        "domain": "audio",
         "category": "audio",
         "official_docs": "https://github.com/openai/whisper",
         "github": "https://github.com/openai/whisper",
@@ -13,7 +14,7 @@ AUDIO_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "faster-whisper": {
         "description": "CTranslate2-accelerated Whisper inference",
-        "domain": "perception",
+        "domain": "audio",
         "category": "audio",
         "official_docs": "https://github.com/SYSTRAN/faster-whisper",
         "github": "https://github.com/SYSTRAN/faster-whisper",
@@ -22,7 +23,7 @@ AUDIO_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "torchaudio": {
         "description": "Audio I/O, transforms, and models for PyTorch",
-        "domain": "perception",
+        "domain": "audio",
         "category": "audio",
         "official_docs": "https://docs.pytorch.org/audio/stable",
         "github": "https://github.com/pytorch/audio",
@@ -31,7 +32,7 @@ AUDIO_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "espnet": {
         "description": "End-to-end speech processing toolkit (ASR, TTS, translation)",
-        "domain": "perception",
+        "domain": "audio",
         "category": "audio",
         "official_docs": "https://espnet.github.io/espnet",
         "github": "https://github.com/espnet/espnet",
@@ -40,7 +41,7 @@ AUDIO_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "speechbrain": {
         "description": "PyTorch conversational AI toolkit (ASR, speaker, enhancement)",
-        "domain": "perception",
+        "domain": "audio",
         "category": "audio",
         "official_docs": "https://speechbrain.readthedocs.io/en/latest",
         "github": "https://github.com/speechbrain/speechbrain",

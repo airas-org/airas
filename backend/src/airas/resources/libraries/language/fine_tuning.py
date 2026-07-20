@@ -1,10 +1,11 @@
-# Fine Tuning (llm): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# language / fine_tuning documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 FINE_TUNING_LIBRARIES: dict[str, dict[str, str | None]] = {
     "unsloth": {
         "description": "Memory-efficient LLM fine-tuning and RL (2x faster, ~70% less VRAM)",
-        "domain": "llm",
+        "domain": "language",
         "category": "fine_tuning",
         "official_docs": "https://docs.unsloth.ai",
         "github": "https://github.com/unslothai/unsloth",
@@ -13,7 +14,7 @@ FINE_TUNING_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "axolotl": {
         "description": "Config-driven post-training for LLMs (full/LoRA/QLoRA fine-tuning)",
-        "domain": "llm",
+        "domain": "language",
         "category": "fine_tuning",
         "official_docs": "https://docs.axolotl.ai",
         "github": "https://github.com/axolotl-ai-cloud/axolotl",
@@ -22,7 +23,7 @@ FINE_TUNING_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "peft": {
         "description": "Parameter-efficient fine-tuning methods (LoRA, prompt tuning, ...)",
-        "domain": "llm",
+        "domain": "language",
         "category": "fine_tuning",
         "official_docs": "https://huggingface.co/docs/peft",
         "github": "https://github.com/huggingface/peft",
@@ -31,7 +32,7 @@ FINE_TUNING_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "llama-factory": {
         "description": "Unified fine-tuning framework for 100+ LLMs/VLMs with a web UI",
-        "domain": "llm",
+        "domain": "language",
         "category": "fine_tuning",
         "official_docs": "https://llamafactory.readthedocs.io/en/latest",
         "github": "https://github.com/hiyouga/LlamaFactory",

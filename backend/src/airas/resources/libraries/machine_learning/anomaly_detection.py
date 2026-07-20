@@ -1,6 +1,7 @@
-# Anomaly Detection (machine_learning): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# machine_learning / anomaly_detection documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 ANOMALY_DETECTION_LIBRARIES: dict[str, dict[str, str | None]] = {
     "pyod": {
         "description": "Outlier detection toolkit (50+ algorithms)",

@@ -1,6 +1,7 @@
-# Core (foundations): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# foundations / core documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 CORE_LIBRARIES: dict[str, dict[str, str | None]] = {
     "transformers": {
         "description": "Pretrained model library and training utilities (Trainer)",

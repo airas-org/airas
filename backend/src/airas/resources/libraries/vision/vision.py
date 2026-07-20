@@ -1,10 +1,11 @@
-# Vision (perception): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# vision / vision documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 VISION_LIBRARIES: dict[str, dict[str, str | None]] = {
     "timm": {
         "description": "PyTorch image models (backbones, augmentations, training recipes)",
-        "domain": "perception",
+        "domain": "vision",
         "category": "vision",
         "official_docs": "https://huggingface.co/docs/timm",
         "github": "https://github.com/huggingface/pytorch-image-models",
@@ -13,7 +14,7 @@ VISION_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "torchvision": {
         "description": "Vision datasets, transforms, and pretrained models for PyTorch",
-        "domain": "perception",
+        "domain": "vision",
         "category": "vision",
         "official_docs": "https://docs.pytorch.org/vision/stable",
         "github": "https://github.com/pytorch/vision",
@@ -22,7 +23,7 @@ VISION_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "diffusers": {
         "description": "Diffusion model pipelines, schedulers, and training",
-        "domain": "perception",
+        "domain": "vision",
         "category": "vision",
         "official_docs": "https://huggingface.co/docs/diffusers",
         "github": "https://github.com/huggingface/diffusers",
@@ -31,7 +32,7 @@ VISION_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "ultralytics": {
         "description": "YOLO family detection and segmentation training/deployment",
-        "domain": "perception",
+        "domain": "vision",
         "category": "vision",
         "official_docs": "https://docs.ultralytics.com",
         "github": "https://github.com/ultralytics/ultralytics",
@@ -40,7 +41,7 @@ VISION_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "sam2": {
         "description": "Promptable image and video segmentation (Segment Anything 2)",
-        "domain": "perception",
+        "domain": "vision",
         "category": "vision",
         "official_docs": "https://github.com/facebookresearch/sam2",
         "github": "https://github.com/facebookresearch/sam2",
@@ -49,7 +50,7 @@ VISION_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "kornia": {
         "description": "Differentiable computer vision operators for PyTorch",
-        "domain": "perception",
+        "domain": "vision",
         "category": "vision",
         "official_docs": "https://kornia.readthedocs.io/en/latest",
         "github": "https://github.com/kornia/kornia",

@@ -605,11 +605,11 @@ def get_library_docs(
 ) -> dict[str, Any]:
     """Look up canonical documentation endpoints for AI research libraries.
 
-    Covers ~165 libraries organized as domain > category, spanning LLMs,
-    ML systems, statistics, machine learning, decision science, embodied
-    AI (RL/simulation/VLA/world models), perception (vision/VLM/audio),
-    interpretability (mechanistic + XAI), graphs, and the sciences
-    (bioinformatics, medical, chemistry/materials, physics, quantum). For
+    Covers ~165 libraries organized as domain > category (the same shared
+    taxonomy as retrieve_models / retrieve_datasets). Domains: foundations,
+    language, vision, audio, multimodal, reinforcement_learning,
+    time_series, graph, systems, statistics, machine_learning,
+    decision_science, interpretability, science. For
     each library returns the official docs URL, the source repository, and
     — where the project publishes one — its `llms.txt` / `llms-full.txt`
     endpoint, which serves the current documentation in a machine-readable

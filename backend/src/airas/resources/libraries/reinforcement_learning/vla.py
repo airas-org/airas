@@ -1,10 +1,11 @@
-# Vla (embodied_ai): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# reinforcement_learning / vla documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 VLA_LIBRARIES: dict[str, dict[str, str | None]] = {
     "lerobot": {
         "description": "End-to-end robot learning (policies, datasets, simulation)",
-        "domain": "embodied_ai",
+        "domain": "reinforcement_learning",
         "category": "vla",
         "official_docs": "https://huggingface.co/docs/lerobot",
         "github": "https://github.com/huggingface/lerobot",
@@ -13,7 +14,7 @@ VLA_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "openvla": {
         "description": "Open-source vision-language-action model for robot control",
-        "domain": "embodied_ai",
+        "domain": "reinforcement_learning",
         "category": "vla",
         "official_docs": "https://github.com/openvla/openvla",
         "github": "https://github.com/openvla/openvla",
@@ -22,7 +23,7 @@ VLA_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "openpi": {
         "description": "Open-source vision-language-action models (pi0) by Physical Intelligence",
-        "domain": "embodied_ai",
+        "domain": "reinforcement_learning",
         "category": "vla",
         "official_docs": "https://github.com/Physical-Intelligence/openpi",
         "github": "https://github.com/Physical-Intelligence/openpi",

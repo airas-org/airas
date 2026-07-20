@@ -1,10 +1,11 @@
-# Orchestration (llm): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# language / orchestration documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 ORCHESTRATION_LIBRARIES: dict[str, dict[str, str | None]] = {
     "langchain": {
         "description": "LLM application framework (chains, agents, integrations)",
-        "domain": "llm",
+        "domain": "language",
         "category": "orchestration",
         "official_docs": "https://docs.langchain.com",
         "github": "https://github.com/langchain-ai/langchain",
@@ -13,7 +14,7 @@ ORCHESTRATION_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "langgraph": {
         "description": "Stateful multi-actor LLM agent graphs",
-        "domain": "llm",
+        "domain": "language",
         "category": "orchestration",
         "official_docs": "https://langchain-ai.github.io/langgraph",
         "github": "https://github.com/langchain-ai/langgraph",
@@ -22,7 +23,7 @@ ORCHESTRATION_LIBRARIES: dict[str, dict[str, str | None]] = {
     },
     "litellm": {
         "description": "Unified API for 100+ LLM providers",
-        "domain": "llm",
+        "domain": "language",
         "category": "orchestration",
         "official_docs": "https://docs.litellm.ai",
         "github": "https://github.com/BerriAI/litellm",
