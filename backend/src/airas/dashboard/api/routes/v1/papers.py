@@ -1,3 +1,4 @@
+import os
 from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
@@ -5,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from langfuse import observe
 
 from airas.container import Container
+from airas.core.llm_config import uniform_llm_mapping
 from airas.dashboard.api.dependencies import get_github_client, get_langchain_client
 from airas.dashboard.api.schemas.papers import (
     FetchPaperFulltextRequestBody,
@@ -35,6 +37,7 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_fr
     SearchPaperTitlesFromAirasDbSubgraph,
 )
 from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_qdrant_subgraph import (
+    SearchPaperTitlesFromQdrantLLMMapping,
     SearchPaperTitlesFromQdrantSubgraph,
 )
 from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph import (
@@ -43,6 +46,13 @@ from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph impor
 from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
 
 router = APIRouter(prefix="/papers", tags=["papers"])
+
+# The Qdrant paper-title index is a platform resource: its embeddings must be
+# produced with the same model the collection was built with, so this is
+# infrastructure config (env-overridable), not a user-selectable model.
+_QDRANT_EMBEDDING_MODEL = os.getenv(
+    "QDRANT_EMBEDDING_MODEL", "gemini/gemini-embedding-001"
+)
 
 
 @router.post("/search", response_model=SearchPaperTitlesResponseBody)
@@ -68,6 +78,9 @@ async def search_paper_titles(
                 qdrant_client=qdrant_client,
                 collection_name=request.collection_name,
                 papers_per_query=request.max_results_per_query,
+                llm_mapping=uniform_llm_mapping(
+                    SearchPaperTitlesFromQdrantLLMMapping, _QDRANT_EMBEDDING_MODEL
+                ),
             )
             .build_graph()
             .ainvoke({"queries": request.queries})
