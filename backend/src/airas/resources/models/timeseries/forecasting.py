@@ -1,0 +1,73 @@
+# Curated model registry (see resources/models/registry.py for the
+# subfield aggregation). HuggingFace URLs and arXiv citations are verified
+# on entry; add candidates via search_huggingface_hub for un-curated needs.
+TIME_SERIES_MODELS: dict = {
+    "chronos-t5-small": {
+        "model_parameters": "46M",
+        "model_architecture": "Pretrained time-series forecasting model.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/amazon/chronos-t5-small",
+        "task_type": "time-series-forecasting",
+        "dependent_packages": ["transformers", "torch"],
+        "code": "",
+        "citation": """@misc{ansari2024,
+  title = {Chronos: Learning the Language of Time Series},
+  author = {Abdul Fatir Ansari and Lorenzo Stella and Caner Turkmen and Xiyuan Zhang and Pedro Mercado and Huibin Shen and Oleksandr Shchur and Syama Sundar Rangapuram and Sebastian Pineda Arango and Shubham Kapoor and Jasper Zschiegner and Danielle C. Maddix and Hao Wang and Michael W. Mahoney and Kari Torkkola and Andrew Gordon Wilson and Michael Bohlke-Schneider and Yuyang Wang},
+  year = {2024},
+  eprint = {2403.07815},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2403.07815}
+}""",
+    },
+    "timesfm-1.0-200m": {
+        "model_parameters": "Unknown",
+        "model_architecture": "Pretrained time-series forecasting model.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/google/timesfm-1.0-200m",
+        "task_type": "time-series-forecasting",
+        "dependent_packages": ["transformers", "torch"],
+        "code": "",
+        "citation": """@misc{das2023,
+  title = {A decoder-only foundation model for time-series forecasting},
+  author = {Abhimanyu Das and Weihao Kong and Rajat Sen and Yichen Zhou},
+  year = {2023},
+  eprint = {2310.10688},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2310.10688}
+}""",
+    },
+    "patchtst-forecasting": {
+        "model_parameters": "1M",
+        "model_architecture": "Pretrained time-series forecasting model.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/ibm-granite/granite-timeseries-patchtst",
+        "task_type": "time-series-forecasting",
+        "dependent_packages": ["transformers", "torch"],
+        "code": "",
+        "citation": """@misc{nie2022,
+  title = {A Time Series is Worth 64 Words: Long-term Forecasting with Transformers},
+  author = {Yuqi Nie and Nam H. Nguyen and Phanwadee Sinthong and Jayant Kalagnanam},
+  year = {2022},
+  eprint = {2211.14730},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2211.14730}
+}""",
+    },
+    "moirai-1.0-r-small": {
+        "model_parameters": "14M",
+        "model_architecture": "Pretrained time-series forecasting model.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/Salesforce/moirai-1.0-R-small",
+        "task_type": "time-series-forecasting",
+        "dependent_packages": ["transformers", "torch"],
+        "code": "",
+        "citation": """@misc{woo2024,
+  title = {Unified Training of Universal Time Series Forecasting Transformers},
+  author = {Gerald Woo and Chenghao Liu and Akshat Kumar and Caiming Xiong and Silvio Savarese and Doyen Sahoo},
+  year = {2024},
+  eprint = {2402.02592},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2402.02592}
+}""",
+    },
+}

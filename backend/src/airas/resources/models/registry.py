@@ -12,8 +12,11 @@ from airas.resources.models.language.encoder import ENCODER_LANGUAGE_MODELS
 from airas.resources.models.language.encoder_decoder import (
     ENCODER_DECODER_LANGUAGE_MODELS,
 )
+from airas.resources.models.language.reranker import RERANKER_MODELS
 from airas.resources.models.multimodal.vision_language import MULTI_MODAL_MODELS
+from airas.resources.models.science.protein import PROTEIN_MODELS
 from airas.resources.models.speech.recognition import SPEECH_MODELS
+from airas.resources.models.timeseries.forecasting import TIME_SERIES_MODELS
 from airas.resources.models.vision.generative import IMAGE_GENERATIVE_MODELS
 from airas.resources.models.vision.recognition import IMAGE_MODELS
 
@@ -27,5 +30,8 @@ MODELS_BY_SUBFIELD: dict[str, dict] = {
     "image_generative_models": IMAGE_GENERATIVE_MODELS,
     "multi_modal_models": MULTI_MODAL_MODELS,
     "speech_models": SPEECH_MODELS,
+    "time_series_models": TIME_SERIES_MODELS,
+    "reranker_models": RERANKER_MODELS,
+    "protein_models": PROTEIN_MODELS,
     "llm_api_models": LLM_API_MODELS,
 }

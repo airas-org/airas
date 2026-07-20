@@ -34,4 +34,36 @@ ds = load_dataset("google-research-datasets/mbpp")""",
   url = {https://arxiv.org/abs/2108.07732}
 }""",
     },
+    "bigcodebench": {
+        "description": "BigCodeBench The dataset has 2 variants: BigCodeBench-Complete: Code Completion based on the structured docstrings. &nbsp;BigCodeBench-Instruct: Code Generation based on the NL-oriented instructions. The overall statistics of the dataset are as follows: Complete Instruct # Task 1",
+        "huggingface_url": "https://huggingface.co/datasets/bigcode/bigcodebench",
+        "task_type": "text-generation",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("bigcode/bigcodebench")""",
+        "citation": """@misc{zhuo2024,
+  title = {BigCodeBench: Benchmarking Code Generation with Diverse Function Calls and Complex Instructions},
+  author = {Terry Yue Zhuo and Minh Chien Vu and Jenny Chim and Han Hu and Wenhao Yu and Ratnadira Widyasari and Imam Nur Bani Yusuf and Haolan Zhan and Junda He and Indraneil Paul and Simon Brunner and Chen Gong and Thong Hoang and Armel Randy Zebaze and Xiaoheng Hong and Wen-Ding Li and Jean Kaddour and Ming Xu and Zhihan Zhang and Prateek Yadav and Naman Jain and Alex Gu and Zhoujun Cheng and Jiawei Liu and Qian Liu and Zijian Wang and Binyuan Hui and Niklas Muennighoff and David Lo and Daniel Fried and Xiaoning Du and Harm de Vries and Leandro Von Werra},
+  year = {2024},
+  eprint = {2406.15877},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2406.15877}
+}""",
+    },
+    "ds-1000": {
+        "description": "DS-1000 in simplified format 🔥 Check the leaderboard from Eval-Arena on our project page. See testing code and more information (also the original fill-in-the-middle/Insertion format) in the DS-1000 repo. Reformatting credits: Yuhang Lai, Sida Wang",
+        "huggingface_url": "https://huggingface.co/datasets/xlangai/DS-1000",
+        "task_type": "text-generation",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("xlangai/DS-1000")""",
+        "citation": """@misc{lai2022,
+  title = {DS-1000: A Natural and Reliable Benchmark for Data Science Code Generation},
+  author = {Yuhang Lai and Chengxi Li and Yiming Wang and Tianyi Zhang and Ruiqi Zhong and Luke Zettlemoyer and Scott Wen-tau Yih and Daniel Fried and Sida Wang and Tao Yu},
+  year = {2022},
+  eprint = {2211.11501},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2211.11501}
+}""",
+    },
 }

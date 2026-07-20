@@ -830,4 +830,40 @@ pipe = pipeline("text-generation", model="TinyLlama/TinyLlama-1.1B-Chat-v1.0")""
 pipe = pipeline("text-generation", model="openai-community/gpt2")""",
         "citation": "",
     },
+    "phi-3.5-mini": {
+        "model_parameters": "3.8B",
+        "model_architecture": "Decoder-only autoregressive transformer language model.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
+        "task_type": "text-generation",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("text-generation", model="microsoft/Phi-3.5-mini-instruct")""",
+        "citation": """@misc{abdin2024,
+  title = {Phi-3 Technical Report: A Highly Capable Language Model Locally on Your Phone},
+  author = {Marah Abdin and Jyoti Aneja and Hany Awadalla and Ahmed Awadallah and Ammar Ahmad Awan and Nguyen Bach and Amit Bahree and Arash Bakhtiari and Jianmin Bao and Harkirat Behl and Alon Benhaim and Misha Bilenko and Johan Bjorck and Sébastien Bubeck and Martin Cai and Qin Cai and Vishrav Chaudhary and Dong Chen and Dongdong Chen and Weizhu Chen and Yen-Chun Chen and Yi-Ling Chen and Hao Cheng and Parul Chopra and Xiyang Dai and Matthew Dixon and Ronen Eldan and Victor Fragoso and Jianfeng Gao and Mei Gao and Min Gao and Amit Garg and Allie Del Giorno and Abhishek Goswami and Suriya Gunasekar and Emman Haider and Junheng Hao and Russell J. Hewett and Wenxiang Hu and Jamie Huynh and Dan Iter and Sam Ade Jacobs and Mojan Javaheripi and Xin Jin and Nikos Karampatziakis and Piero Kauffmann and Mahoud Khademi and Dongwoo Kim and Young Jin Kim and Lev Kurilenko and James R. Lee and Yin Tat Lee and Yuanzhi Li and Yunsheng Li and Chen Liang and Lars Liden and Xihui Lin and Zeqi Lin and Ce Liu and Liyuan Liu and Mengchen Liu and Weishung Liu and Xiaodong Liu and Chong Luo and Piyush Madan and Ali Mahmoudzadeh and David Majercak and Matt Mazzola and Caio César Teodoro Mendes and Arindam Mitra and Hardik Modi and Anh Nguyen and Brandon Norick and Barun Patra and Daniel Perez-Becker and Thomas Portet and Reid Pryzant and Heyang Qin and Marko Radmilac and Liliang Ren and Gustavo de Rosa and Corby Rosset and Sambudha Roy and Olatunji Ruwase and Olli Saarikivi and Amin Saied and Adil Salim and Michael Santacroce and Shital Shah and Ning Shang and Hiteshi Sharma and Yelong Shen and Swadheen Shukla and Xia Song and Masahiro Tanaka and Andrea Tupini and Praneetha Vaddamanu and Chunyu Wang and Guanhua Wang and Lijuan Wang and Shuohang Wang and Xin Wang and Yu Wang and Rachel Ward and Wen Wen and Philipp Witte and Haiping Wu and Xiaoxia Wu and Michael Wyatt and Bin Xiao and Can Xu and Jiahang Xu and Weijian Xu and Jilong Xue and Sonali Yadav and Fan Yang and Jianwei Yang and Yifan Yang and Ziyi Yang and Donghan Yu and Lu Yuan and Chenruidong Zhang and Cyril Zhang and Jianwen Zhang and Li Lyna Zhang and Yi Zhang and Yue Zhang and Yunan Zhang and Xiren Zhou},
+  year = {2024},
+  eprint = {2404.14219},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2404.14219}
+}""",
+    },
+    "qwen2.5-1.5b": {
+        "model_parameters": "1.5B",
+        "model_architecture": "Decoder-only autoregressive transformer language model.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/Qwen/Qwen2.5-1.5B",
+        "task_type": "text-generation",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("text-generation", model="Qwen/Qwen2.5-1.5B")""",
+        "citation": """@misc{qwen2024,
+  title = {Qwen2.5 Technical Report},
+  author = { Qwen and  : and An Yang and Baosong Yang and Beichen Zhang and Binyuan Hui and Bo Zheng and Bowen Yu and Chengyuan Li and Dayiheng Liu and Fei Huang and Haoran Wei and Huan Lin and Jian Yang and Jianhong Tu and Jianwei Zhang and Jianxin Yang and Jiaxi Yang and Jingren Zhou and Junyang Lin and Kai Dang and Keming Lu and Keqin Bao and Kexin Yang and Le Yu and Mei Li and Mingfeng Xue and Pei Zhang and Qin Zhu and Rui Men and Runji Lin and Tianhao Li and Tianyi Tang and Tingyu Xia and Xingzhang Ren and Xuancheng Ren and Yang Fan and Yang Su and Yichang Zhang and Yu Wan and Yuqiong Liu and Zeyu Cui and Zhenru Zhang and Zihan Qiu},
+  year = {2024},
+  eprint = {2412.15115},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2412.15115}
+}""",
+    },
 }

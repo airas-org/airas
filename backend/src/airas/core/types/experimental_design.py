@@ -14,12 +14,16 @@ ModelSubfield = Literal[
     "image_generative_models",
     "multi_modal_models",
     "speech_models",
+    "time_series_models",
+    "reranker_models",
+    "protein_models",
     "llm_api_models",
 ]
 
 DatasetSubfield = Literal[
     "language_model_fine_tuning_datasets",
     "language_model_evaluation_datasets",
+    "natural_language_processing_datasets",
     "prompt_engineering_datasets",
     "code_evaluation_datasets",
     "image_datasets",

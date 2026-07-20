@@ -479,7 +479,8 @@ async def retrieve_models(model_subfield: ModelSubfield) -> dict[str, Any]:
     "code_generation_models", "text_embedding_models",
     "encoder_language_models", "encoder_decoder_language_models",
     "image_models", "image_generative_models", "multi_modal_models",
-    "speech_models", "llm_api_models". Returns a dict
+    "speech_models", "time_series_models", "reranker_models",
+    "protein_models", "llm_api_models". Returns a dict
     keyed by model name; each value has model_architecture, task_type,
     huggingface_url, dependent_packages, a runnable code snippet, citation,
     and more. If none of these fit the experimental design, fall back to
@@ -499,7 +500,8 @@ async def retrieve_datasets(dataset_subfield: DatasetSubfield) -> dict[str, Any]
     """List AIRAS's hand-curated candidate datasets for a subfield.
 
     Check here first. Subfields: "language_model_fine_tuning_datasets",
-    "language_model_evaluation_datasets", "prompt_engineering_datasets",
+    "language_model_evaluation_datasets",
+    "natural_language_processing_datasets", "prompt_engineering_datasets",
     "code_evaluation_datasets", "image_datasets", "speech_datasets",
     "multimodal_datasets". Returns a dict keyed
     by dataset name; each value has description, task_type, huggingface_url,

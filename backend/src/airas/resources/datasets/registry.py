@@ -9,6 +9,9 @@ from airas.resources.datasets.language.evaluation import (
 from airas.resources.datasets.language.fine_tuning import (
     LANGUAGE_MODEL_FINE_TUNING_DATASETS,
 )
+from airas.resources.datasets.language.nlp_tasks import (
+    NATURAL_LANGUAGE_PROCESSING_DATASETS,
+)
 from airas.resources.datasets.language.prompt_engineering import (
     PROMPT_ENGINEERING_DATASETS,
 )
@@ -19,6 +22,7 @@ from airas.resources.datasets.vision.image import IMAGES_DATASETS
 DATASETS_BY_SUBFIELD: dict[str, dict] = {
     "language_model_fine_tuning_datasets": LANGUAGE_MODEL_FINE_TUNING_DATASETS,
     "language_model_evaluation_datasets": LANGUAGE_MODEL_EVALUATION_DATASETS,
+    "natural_language_processing_datasets": NATURAL_LANGUAGE_PROCESSING_DATASETS,
     "prompt_engineering_datasets": PROMPT_ENGINEERING_DATASETS,
     "code_evaluation_datasets": CODE_EVALUATION_DATASETS,
     "image_datasets": IMAGES_DATASETS,

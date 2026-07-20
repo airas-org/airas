@@ -772,4 +772,76 @@ pipe = pipeline("depth-estimation", model="LiheYoung/depth-anything-base-hf")"""
   url = {https://arxiv.org/abs/2401.10891}
 }""",
     },
+    "grounding-dino-base": {
+        "model_parameters": "233M",
+        "model_architecture": "Vision backbone for image classification.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/IDEA-Research/grounding-dino-base",
+        "task_type": "zero-shot-object-detection",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("zero-shot-object-detection", model="IDEA-Research/grounding-dino-base")""",
+        "citation": """@misc{liu2023,
+  title = {Grounding DINO: Marrying DINO with Grounded Pre-Training for Open-Set Object Detection},
+  author = {Shilong Liu and Zhaoyang Zeng and Tianhe Ren and Feng Li and Hao Zhang and Jie Yang and Qing Jiang and Chunyuan Li and Jianwei Yang and Hang Su and Jun Zhu and Lei Zhang},
+  year = {2023},
+  eprint = {2303.05499},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2303.05499}
+}""",
+    },
+    "trocr-base-printed": {
+        "model_parameters": "333M",
+        "model_architecture": "Vision backbone for image classification.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/microsoft/trocr-base-printed",
+        "task_type": "image-to-text",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("image-to-text", model="microsoft/trocr-base-printed")""",
+        "citation": """@misc{li2021,
+  title = {TrOCR: Transformer-based Optical Character Recognition with Pre-trained Models},
+  author = {Minghao Li and Tengchao Lv and Jingye Chen and Lei Cui and Yijuan Lu and Dinei Florencio and Cha Zhang and Zhoujun Li and Furu Wei},
+  year = {2021},
+  eprint = {2109.10282},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2109.10282}
+}""",
+    },
+    "videomae-base": {
+        "model_parameters": "94M",
+        "model_architecture": "Vision backbone for image classification.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/MCG-NJU/videomae-base",
+        "task_type": "video-classification",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("video-classification", model="MCG-NJU/videomae-base")""",
+        "citation": """@misc{tong2022,
+  title = {VideoMAE: Masked Autoencoders are Data-Efficient Learners for Self-Supervised Video Pre-Training},
+  author = {Zhan Tong and Yibing Song and Jue Wang and Limin Wang},
+  year = {2022},
+  eprint = {2203.12602},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2203.12602}
+}""",
+    },
+    "dpt-large": {
+        "model_parameters": "342M",
+        "model_architecture": "Vision backbone for image classification.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/Intel/dpt-large",
+        "task_type": "depth-estimation",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("depth-estimation", model="Intel/dpt-large")""",
+        "citation": """@misc{ranftl2021,
+  title = {Vision Transformers for Dense Prediction},
+  author = {René Ranftl and Alexey Bochkovskiy and Vladlen Koltun},
+  year = {2021},
+  eprint = {2103.13413},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2103.13413}
+}""",
+    },
 }

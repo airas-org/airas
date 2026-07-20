@@ -114,4 +114,52 @@ ds = load_dataset("ybisk/piqa")""",
   url = {https://arxiv.org/abs/1911.11641}
 }""",
     },
+    "mmlu-pro": {
+        "description": "MMLU-Pro Dataset MMLU-Pro dataset is a more robust and challenging massive multi-task understanding dataset tailored to more rigorously benchmark large language models' capabilities. This dataset contains 12K complex questions across various disciplines. |Github | 🏆Leaderboard | ",
+        "huggingface_url": "https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro",
+        "task_type": "multiple-choice",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("TIGER-Lab/MMLU-Pro")""",
+        "citation": """@misc{wang2024,
+  title = {MMLU-Pro: A More Robust and Challenging Multi-Task Language Understanding Benchmark},
+  author = {Yubo Wang and Xueguang Ma and Ge Zhang and Yuansheng Ni and Abhranil Chandra and Shiguang Guo and Weiming Ren and Aaran Arulraj and Xuan He and Ziyan Jiang and Tianle Li and Max Ku and Kai Wang and Alex Zhuang and Rongqi Fan and Xiang Yue and Wenhu Chen},
+  year = {2024},
+  eprint = {2406.01574},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2406.01574}
+}""",
+    },
+    "bbh": {
+        "description": "BIG-bench Hard dataset homepage: https://github.com/suzgunmirac/BIG-Bench-Hard @article{suzgun2022challenging, title={Challenging BIG-Bench Tasks and Whether Chain-of-Thought Can Solve Them}, author={Suzgun, Mirac and Scales, Nathan and Sch{'a}rli, Nathanael and Gehrmann, Sebast",
+        "huggingface_url": "https://huggingface.co/datasets/lukaemon/bbh",
+        "task_type": "text-generation",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("lukaemon/bbh")""",
+        "citation": """@misc{suzgun2022,
+  title = {Challenging BIG-Bench Tasks and Whether Chain-of-Thought Can Solve Them},
+  author = {Mirac Suzgun and Nathan Scales and Nathanael Schärli and Sebastian Gehrmann and Yi Tay and Hyung Won Chung and Aakanksha Chowdhery and Quoc V. Le and Ed H. Chi and Denny Zhou and Jason Wei},
+  year = {2022},
+  eprint = {2210.09261},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2210.09261}
+}""",
+    },
+    "competition_math": {
+        "description": "The Mathematics Aptitude Test of Heuristics (MATH) dataset consists of problems from mathematics competitions, including the AMC 10, AMC 12, AIME, and more. Each problem in MATH has a full step-by-step solution, which can be used to teach models to generate answer derivations and",
+        "huggingface_url": "https://huggingface.co/datasets/hendrycks/competition_math",
+        "task_type": "text-generation",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("hendrycks/competition_math")""",
+        "citation": """@misc{hendrycks2021,
+  title = {Measuring Mathematical Problem Solving With the MATH Dataset},
+  author = {Dan Hendrycks and Collin Burns and Saurav Kadavath and Akul Arora and Steven Basart and Eric Tang and Dawn Song and Jacob Steinhardt},
+  year = {2021},
+  eprint = {2103.03874},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2103.03874}
+}""",
+    },
 }

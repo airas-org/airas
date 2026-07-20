@@ -184,4 +184,40 @@ pipe = pipeline("image-text-to-text", model="Salesforce/instructblip-vicuna-7b")
   url = {https://arxiv.org/abs/2305.06500}
 }""",
     },
+    "qwen2.5-vl-7b": {
+        "model_parameters": "8.3B",
+        "model_architecture": "Vision-language multimodal model.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct",
+        "task_type": "image-text-to-text",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("image-text-to-text", model="Qwen/Qwen2.5-VL-7B-Instruct")""",
+        "citation": """@misc{bai2025,
+  title = {Qwen2.5-VL Technical Report},
+  author = {Shuai Bai and Keqin Chen and Xuejing Liu and Jialin Wang and Wenbin Ge and Sibo Song and Kai Dang and Peng Wang and Shijie Wang and Jun Tang and Humen Zhong and Yuanzhi Zhu and Mingkun Yang and Zhaohai Li and Jianqiang Wan and Pengfei Wang and Wei Ding and Zheren Fu and Yiheng Xu and Jiabo Ye and Xi Zhang and Tianbao Xie and Zesen Cheng and Hang Zhang and Zhibo Yang and Haiyang Xu and Junyang Lin},
+  year = {2025},
+  eprint = {2502.13923},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2502.13923}
+}""",
+    },
+    "internvl2-8b": {
+        "model_parameters": "8.1B",
+        "model_architecture": "Vision-language multimodal model.",
+        "training_data_sources": "",
+        "huggingface_url": "https://huggingface.co/OpenGVLab/InternVL2-8B",
+        "task_type": "image-text-to-text",
+        "dependent_packages": ["transformers", "torch"],
+        "code": """from transformers import pipeline
+pipe = pipeline("image-text-to-text", model="OpenGVLab/InternVL2-8B")""",
+        "citation": """@misc{chen2024,
+  title = {How Far Are We to GPT-4V? Closing the Gap to Commercial Multimodal Models with Open-Source Suites},
+  author = {Zhe Chen and Weiyun Wang and Hao Tian and Shenglong Ye and Zhangwei Gao and Erfei Cui and Wenwen Tong and Kongzhi Hu and Jiapeng Luo and Zheng Ma and Ji Ma and Jiaqi Wang and Xiaoyi Dong and Hang Yan and Hewei Guo and Conghui He and Botian Shi and Zhenjiang Jin and Chao Xu and Bin Wang and Xingjian Wei and Wei Li and Wenjian Zhang and Bo Zhang and Pinlong Cai and Licheng Wen and Xiangchao Yan and Min Dou and Lewei Lu and Xizhou Zhu and Tong Lu and Dahua Lin and Yu Qiao and Jifeng Dai and Wenhai Wang},
+  year = {2024},
+  eprint = {2404.16821},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2404.16821}
+}""",
+    },
 }
