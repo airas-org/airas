@@ -16,7 +16,7 @@ from airas.infra.langchain_client import LangChainClient
 from airas.resources.datasets.prompt_engineering_datasets import (
     PROMPT_ENGINEERING_DATASETS,
 )
-from airas.resources.models.llm_api_models import LLM_API_MODELS
+from airas.resources.models.api.llm import LLM_API_MODELS
 from airas.usecases.generators.generate_experimental_design_subgraph.prompts.generate_experimental_design_prompt import (
     generate_experimental_design_prompt,
 )

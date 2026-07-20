@@ -6,8 +6,12 @@ from pydantic import BaseModel, Field, HttpUrl
 
 ModelSubfield = Literal[
     "transformer_decoder_based_models",
+    "encoder_language_models",
+    "encoder_decoder_language_models",
     "image_models",
+    "image_generative_models",
     "multi_modal_models",
+    "speech_models",
     "llm_api_models",
 ]
 

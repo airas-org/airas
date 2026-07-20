@@ -36,7 +36,7 @@ from airas.core.types.research_study import ResearchStudy
 from airas.resources.datasets.prompt_engineering_datasets import (
     PROMPT_ENGINEERING_DATASETS,
 )
-from airas.resources.models.llm_api_models import LLM_API_MODELS
+from airas.resources.models.api.llm import LLM_API_MODELS
 from airas.usecases.analyzers.analyze_experiment_subgraph.nodes.analyze_experiment import (
     LLMOutput as AnalyzeExperimentOutput,
 )
