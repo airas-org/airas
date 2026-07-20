@@ -36,8 +36,8 @@ _LATEX_COMPILATION_RECURSION_LIMIT = 10000
 
 
 class LaTeXGraphLLMMapping(BaseModel):
-    generate_latex: GenerateLatexLLMMapping = GenerateLatexLLMMapping()
-    compile_latex: CompileLatexLLMMapping = CompileLatexLLMMapping()
+    generate_latex: GenerateLatexLLMMapping | None = None
+    compile_latex: CompileLatexLLMMapping | None = None
 
 
 class LaTeXGraphInputState(TypedDict):
@@ -70,7 +70,12 @@ class LaTeXGraph:
         self.langchain_client = langchain_client
         self.latex_template_name = latex_template_name
         self.github_actions_agent = github_actions_agent
-        self.llm_mapping = llm_mapping or LaTeXGraphLLMMapping()
+        if llm_mapping is None:
+            raise ValueError(
+                "llm_mapping is required: specify the model(s) explicitly "
+                "(no default model is configured)."
+            )
+        self.llm_mapping = llm_mapping
 
     @record_execution_time
     async def _generate_latex(self, state: LaTeXGraphState) -> dict[str, str]:

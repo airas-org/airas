@@ -53,7 +53,12 @@ class DiagramGenerationGraph:
         self.github_actions_agent = github_actions_agent
         self.diagram_description = diagram_description
         self.prompt_path = prompt_path
-        self.llm_mapping = llm_mapping or DispatchDiagramGenerationLLMMapping()
+        if llm_mapping is None:
+            raise ValueError(
+                "llm_mapping is required: specify the model(s) explicitly "
+                "(no default model is configured)."
+            )
+        self.llm_mapping = llm_mapping
 
     @record_execution_time
     async def _dispatch_diagram_generation(
