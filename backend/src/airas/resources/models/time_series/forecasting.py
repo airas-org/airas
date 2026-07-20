@@ -1,13 +1,16 @@
-# Curated model registry (see resources/models/registry.py for the
-# subfield aggregation). HuggingFace URLs and arXiv citations are verified
-# on entry; add candidates via search_huggingface_hub for un-curated needs.
-TIME_SERIES_MODELS: dict = {
+# Curated model registry — time_series / forecasting. Part of the shared
+# domain>category taxonomy across resources/{libraries,models,datasets}.
+# HuggingFace URLs and arXiv citations are verified on entry; use
+# search_huggingface_hub for un-curated needs.
+FORECASTING_MODELS: dict = {
     "chronos-t5-small": {
+        "description": "",
         "model_parameters": "46M",
         "model_architecture": "Pretrained time-series forecasting model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/amazon/chronos-t5-small",
+        "domain": "time_series",
+        "category": "forecasting",
         "task_type": "time-series-forecasting",
+        "huggingface_url": "https://huggingface.co/amazon/chronos-t5-small",
         "dependent_packages": ["transformers", "torch"],
         "code": "",
         "citation": """@misc{ansari2024,
@@ -18,13 +21,16 @@ TIME_SERIES_MODELS: dict = {
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2403.07815}
 }""",
+        "training_data_sources": "",
     },
     "timesfm-1.0-200m": {
+        "description": "",
         "model_parameters": "Unknown",
         "model_architecture": "Pretrained time-series forecasting model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/google/timesfm-1.0-200m",
+        "domain": "time_series",
+        "category": "forecasting",
         "task_type": "time-series-forecasting",
+        "huggingface_url": "https://huggingface.co/google/timesfm-1.0-200m",
         "dependent_packages": ["transformers", "torch"],
         "code": "",
         "citation": """@misc{das2023,
@@ -35,13 +41,16 @@ TIME_SERIES_MODELS: dict = {
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2310.10688}
 }""",
+        "training_data_sources": "",
     },
     "patchtst-forecasting": {
+        "description": "",
         "model_parameters": "1M",
         "model_architecture": "Pretrained time-series forecasting model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/ibm-granite/granite-timeseries-patchtst",
+        "domain": "time_series",
+        "category": "forecasting",
         "task_type": "time-series-forecasting",
+        "huggingface_url": "https://huggingface.co/ibm-granite/granite-timeseries-patchtst",
         "dependent_packages": ["transformers", "torch"],
         "code": "",
         "citation": """@misc{nie2022,
@@ -52,13 +61,16 @@ TIME_SERIES_MODELS: dict = {
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2211.14730}
 }""",
+        "training_data_sources": "",
     },
     "moirai-1.0-r-small": {
+        "description": "",
         "model_parameters": "14M",
         "model_architecture": "Pretrained time-series forecasting model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Salesforce/moirai-1.0-R-small",
+        "domain": "time_series",
+        "category": "forecasting",
         "task_type": "time-series-forecasting",
+        "huggingface_url": "https://huggingface.co/Salesforce/moirai-1.0-R-small",
         "dependent_packages": ["transformers", "torch"],
         "code": "",
         "citation": """@misc{woo2024,
@@ -69,5 +81,6 @@ TIME_SERIES_MODELS: dict = {
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2402.02592}
 }""",
+        "training_data_sources": "",
     },
 }

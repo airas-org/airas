@@ -1,13 +1,16 @@
-# Curated model registry (see resources/models/registry.py for the
-# subfield aggregation). HuggingFace URLs and arXiv citations are verified
-# on entry; add candidates via search_huggingface_hub for un-curated needs.
-IMAGE_GENERATIVE_MODELS: dict = {
+# Curated model registry — vision / image_generation. Part of the shared
+# domain>category taxonomy across resources/{libraries,models,datasets}.
+# HuggingFace URLs and arXiv citations are verified on entry; use
+# search_huggingface_hub for un-curated needs.
+IMAGE_GENERATION_MODELS: dict = {
     "sdxl-base-1.0": {
+        "description": "",
         "model_parameters": "2.6B",
         "model_architecture": "Diffusion-based image generation model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0",
+        "domain": "vision",
+        "category": "image_generation",
         "task_type": "text-to-image",
+        "huggingface_url": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0",
         "dependent_packages": ["diffusers", "torch"],
         "code": """from diffusers import DiffusionPipeline
 pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-xl-base-1.0")
@@ -20,13 +23,16 @@ image = pipe("a photo of an astronaut riding a horse").images[0]""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2307.01952}
 }""",
+        "training_data_sources": "",
     },
     "ddpm-cifar10": {
+        "description": "",
         "model_parameters": "36M",
         "model_architecture": "Diffusion-based image generation model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/google/ddpm-cifar10-32",
+        "domain": "vision",
+        "category": "image_generation",
         "task_type": "unconditional-image-generation",
+        "huggingface_url": "https://huggingface.co/google/ddpm-cifar10-32",
         "dependent_packages": ["diffusers", "torch"],
         "code": """from diffusers import DDPMPipeline
 pipe = DDPMPipeline.from_pretrained("google/ddpm-cifar10-32")
@@ -39,5 +45,6 @@ image = pipe().images[0]""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2006.11239}
 }""",
+        "training_data_sources": "",
     },
 }

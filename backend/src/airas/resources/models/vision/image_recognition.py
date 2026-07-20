@@ -1,15 +1,16 @@
-IMAGE_MODELS = {
-    # ========================================
-    # Image classification and feature extraction
-    # ========================================
-    ## Vision Transformers
+# Curated model registry — vision / image_recognition. Part of the shared
+# domain>category taxonomy across resources/{libraries,models,datasets}.
+# HuggingFace URLs and arXiv citations are verified on entry; use
+# search_huggingface_hub for un-curated needs.
+IMAGE_RECOGNITION_MODELS: dict = {
     "vit-base": {
+        "description": "",
         "model_parameters": "86M",
         "model_architecture": "Transformer encoder model (BERT-like) that processes images as sequences of fixed-size patches (16x16). Images are linearly embedded with absolute position embeddings and a [CLS] token for classification. Contains 12 transformer encoder layers with 12 attention heads and 768 hidden dimensions.",
-        "training_data_sources": "Pre-trained on ImageNet-21k (14 million images, 21,843 classes), fine-tuned on ImageNet-1k (1 million images, 1,000 classes)",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "image-classification",
         "huggingface_url": "https://huggingface.co/google/vit-base-patch16-224",
-        "input_modalities": ["image"],
-        "image_size": "224x224",
         "dependent_packages": ["transformers", "torch", "PIL", "requests"],
         "code": """from transformers import ViTImageProcessor, ViTForImageClassification
 from PIL import Image
@@ -38,15 +39,18 @@ print("Predicted class:", model.config.id2label[predicted_class_idx])""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2010.11929}
 }""",
-        "task_type": "image-classification",
-    },
-    "deit-base": {
-        "model_parameters": "86M",
-        "model_architecture": "More efficiently trained Vision Transformer (ViT) model with the same architecture as ViT-Base. Uses transformer encoder with 12 layers, 12 attention heads, 768 hidden dimensions. Processes images as sequences of 16x16 patches with linear embeddings and absolute position embeddings.",
-        "training_data_sources": "ImageNet-1k (1 million images, 1,000 classes) - trained without external data",
-        "huggingface_url": "https://huggingface.co/facebook/deit-base-patch16-224",
+        "training_data_sources": "Pre-trained on ImageNet-21k (14 million images, 21,843 classes), fine-tuned on ImageNet-1k (1 million images, 1,000 classes)",
         "input_modalities": ["image"],
         "image_size": "224x224",
+    },
+    "deit-base": {
+        "description": "",
+        "model_parameters": "86M",
+        "model_architecture": "More efficiently trained Vision Transformer (ViT) model with the same architecture as ViT-Base. Uses transformer encoder with 12 layers, 12 attention heads, 768 hidden dimensions. Processes images as sequences of 16x16 patches with linear embeddings and absolute position embeddings.",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "image-classification",
+        "huggingface_url": "https://huggingface.co/facebook/deit-base-patch16-224",
         "dependent_packages": ["transformers", "torch", "PIL", "requests"],
         "code": """from transformers import AutoFeatureExtractor, ViTForImageClassification
 from PIL import Image
@@ -74,15 +78,18 @@ print("Predicted class:", model.config.id2label[predicted_class_idx])""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2012.12877}
 }""",
-        "task_type": "image-classification",
-    },
-    "beit-base": {
-        "model_parameters": "86M",
-        "model_architecture": "Vision Transformer (ViT) with BERT-like architecture pre-trained using masked image modeling. Images are processed as sequences of 16x16 patches. Uses relative position embeddings (similar to T5) instead of absolute position embeddings. Classification performed by mean-pooling final hidden states of patches.",
-        "training_data_sources": "Pre-trained on ImageNet-21k (14 million images, 21,841 classes) using self-supervised learning (predicting visual tokens from DALL-E's VQ-VAE), fine-tuned on ImageNet-1k (1 million images, 1,000 classes)",
-        "huggingface_url": "https://huggingface.co/microsoft/beit-base-patch16-224",
+        "training_data_sources": "ImageNet-1k (1 million images, 1,000 classes) - trained without external data",
         "input_modalities": ["image"],
         "image_size": "224x224",
+    },
+    "beit-base": {
+        "description": "",
+        "model_parameters": "86M",
+        "model_architecture": "Vision Transformer (ViT) with BERT-like architecture pre-trained using masked image modeling. Images are processed as sequences of 16x16 patches. Uses relative position embeddings (similar to T5) instead of absolute position embeddings. Classification performed by mean-pooling final hidden states of patches.",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "image-classification",
+        "huggingface_url": "https://huggingface.co/microsoft/beit-base-patch16-224",
         "dependent_packages": ["transformers", "torch", "PIL", "requests"],
         "code": """from transformers import BeitImageProcessor, BeitForImageClassification
 from PIL import Image
@@ -110,15 +117,18 @@ print("Predicted class:", model.config.id2label[predicted_class_idx])""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2106.08254}
 }""",
-        "task_type": "image-classification",
-    },
-    "dino-vitb16": {
-        "model_parameters": "86M",
-        "model_architecture": "Vision Transformer (ViT) base model trained using self-supervised DINO method. Uses transformer encoder with 12 layers, 12 attention heads, 768 hidden dimensions. Processes images as sequences of 16x16 patches with linear embeddings and absolute position embeddings. Note: This model does not include fine-tuned classification heads - it's a feature extractor.",
-        "training_data_sources": "ImageNet-1k (1 million images) - self-supervised training without labels",
-        "huggingface_url": "https://huggingface.co/facebook/dino-vitb16",
+        "training_data_sources": "Pre-trained on ImageNet-21k (14 million images, 21,841 classes) using self-supervised learning (predicting visual tokens from DALL-E's VQ-VAE), fine-tuned on ImageNet-1k (1 million images, 1,000 classes)",
         "input_modalities": ["image"],
         "image_size": "224x224",
+    },
+    "dino-vitb16": {
+        "description": "",
+        "model_parameters": "86M",
+        "model_architecture": "Vision Transformer (ViT) base model trained using self-supervised DINO method. Uses transformer encoder with 12 layers, 12 attention heads, 768 hidden dimensions. Processes images as sequences of 16x16 patches with linear embeddings and absolute position embeddings. Note: This model does not include fine-tuned classification heads - it's a feature extractor.",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "image-classification",
+        "huggingface_url": "https://huggingface.co/facebook/dino-vitb16",
         "dependent_packages": ["transformers", "torch", "PIL", "requests"],
         "code": """from transformers import ViTImageProcessor, ViTModel
 from PIL import Image
@@ -143,16 +153,18 @@ last_hidden_states = outputs.last_hidden_state""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2104.14294}
 }""",
-        "task_type": "image-classification",
-    },
-    ## CNN Architectures
-    "resnet-50": {
-        "model_parameters": "25.6M",
-        "model_architecture": "ResNet (Residual Network) is a convolutional neural network using residual learning and skip connections. This is ResNet v1.5 with 50 layers (48 convolutional layers, 1 MaxPool layer, and 1 average pool layer). Uses bottleneck blocks with stride = 2 in the 3x3 convolution.",
-        "training_data_sources": "ImageNet-1k",
-        "huggingface_url": "https://huggingface.co/microsoft/resnet-50",
+        "training_data_sources": "ImageNet-1k (1 million images) - self-supervised training without labels",
         "input_modalities": ["image"],
         "image_size": "224x224",
+    },
+    "resnet-50": {
+        "description": "",
+        "model_parameters": "25.6M",
+        "model_architecture": "ResNet (Residual Network) is a convolutional neural network using residual learning and skip connections. This is ResNet v1.5 with 50 layers (48 convolutional layers, 1 MaxPool layer, and 1 average pool layer). Uses bottleneck blocks with stride = 2 in the 3x3 convolution.",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "image-classification",
+        "huggingface_url": "https://huggingface.co/microsoft/resnet-50",
         "dependent_packages": ["transformers", "torch", "datasets", "PIL"],
         "code": """from transformers import AutoImageProcessor, ResNetForImageClassification
 import torch
@@ -181,15 +193,18 @@ print(model.config.id2label[predicted_label])""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/1512.03385}
 }""",
-        "task_type": "image-classification",
-    },
-    "efficientnet-b0": {
-        "model_parameters": "5.3M",
-        "model_architecture": "EfficientNet is a mobile-friendly pure convolutional model (ConvNet) that uses compound scaling method to uniformly scale all dimensions of depth/width/resolution using a compound coefficient. Based on inverted bottleneck residual blocks of MobileNetV2 with squeeze-and-excitation blocks. EfficientNet-B0 is the baseline model discovered through Neural Architecture Search (NAS).",
         "training_data_sources": "ImageNet-1k",
-        "huggingface_url": "https://huggingface.co/google/efficientnet-b0",
         "input_modalities": ["image"],
         "image_size": "224x224",
+    },
+    "efficientnet-b0": {
+        "description": "",
+        "model_parameters": "5.3M",
+        "model_architecture": "EfficientNet is a mobile-friendly pure convolutional model (ConvNet) that uses compound scaling method to uniformly scale all dimensions of depth/width/resolution using a compound coefficient. Based on inverted bottleneck residual blocks of MobileNetV2 with squeeze-and-excitation blocks. EfficientNet-B0 is the baseline model discovered through Neural Architecture Search (NAS).",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "image-classification",
+        "huggingface_url": "https://huggingface.co/google/efficientnet-b0",
         "dependent_packages": ["transformers", "torch", "datasets"],
         "code": """import torch
 from datasets import load_dataset
@@ -218,15 +233,18 @@ print(model.config.id2label[predicted_label])""",
   primaryClass = {cs.LG},
   url = {https://arxiv.org/abs/1905.11946}
 }""",
-        "task_type": "image-classification",
-    },
-    "convnext-base": {
-        "model_parameters": "89M",
-        "model_architecture": "ConvNeXT is a pure convolutional model (ConvNet) inspired by the design of Vision Transformers. Started from ResNet architecture and 'modernized' its design by taking the Swin Transformer as inspiration. Uses depthwise convolutions, inverted bottleneck design, larger kernels (7x7), and GELU activation.",
         "training_data_sources": "ImageNet-1k",
-        "huggingface_url": "https://huggingface.co/facebook/convnext-base-224",
         "input_modalities": ["image"],
         "image_size": "224x224",
+    },
+    "convnext-base": {
+        "description": "",
+        "model_parameters": "89M",
+        "model_architecture": "ConvNeXT is a pure convolutional model (ConvNet) inspired by the design of Vision Transformers. Started from ResNet architecture and 'modernized' its design by taking the Swin Transformer as inspiration. Uses depthwise convolutions, inverted bottleneck design, larger kernels (7x7), and GELU activation.",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "image-classification",
+        "huggingface_url": "https://huggingface.co/facebook/convnext-base-224",
         "dependent_packages": ["transformers", "torch", "datasets"],
         "code": """from transformers import ConvNextImageProcessor, ConvNextForImageClassification
 import torch
@@ -255,15 +273,18 @@ print(model.config.id2label[predicted_label])""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2201.03545}
 }""",
-        "task_type": "image-classification",
-    },
-    "regnet-y-040": {
-        "model_parameters": "21M",
-        "model_architecture": "RegNet is designed through Neural Architecture Search (NAS) using a novel design space exploration methodology. RegNet-Y variant includes Squeeze-and-Excitation blocks for improved feature recalibration. Uses quantized linear function to parameterize network widths and depths. The '040' designation refers to 4.0 GFLOPs computational budget.",
         "training_data_sources": "ImageNet-1k",
-        "huggingface_url": "https://huggingface.co/facebook/regnet-y-040",
         "input_modalities": ["image"],
         "image_size": "224x224",
+    },
+    "regnet-y-040": {
+        "description": "",
+        "model_parameters": "21M",
+        "model_architecture": "RegNet is designed through Neural Architecture Search (NAS) using a novel design space exploration methodology. RegNet-Y variant includes Squeeze-and-Excitation blocks for improved feature recalibration. Uses quantized linear function to parameterize network widths and depths. The '040' designation refers to 4.0 GFLOPs computational budget.",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "image-classification",
+        "huggingface_url": "https://huggingface.co/facebook/regnet-y-040",
         "dependent_packages": ["transformers", "torch", "datasets"],
         "code": """from transformers import AutoImageProcessor, RegNetForImageClassification
 import torch
@@ -292,15 +313,18 @@ print(model.config.id2label[predicted_label])""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2003.13678}
 }""",
-        "task_type": "image-classification",
-    },
-    "mobilenet-v2": {
-        "model_parameters": "3.47M",
-        "model_architecture": "Inverted residual structure with linear bottlenecks. Uses depthwise separable convolutions with expansion layers before and projection (bottleneck) layers after. Contains 19 residual bottleneck layers with ReLU6 activation.",
-        "training_data_sources": "ImageNet-1k dataset (1 million images, 1,000 classes)",
-        "huggingface_url": "https://huggingface.co/google/mobilenet_v2_1.0_224",
+        "training_data_sources": "ImageNet-1k",
         "input_modalities": ["image"],
         "image_size": "224x224",
+    },
+    "mobilenet-v2": {
+        "description": "",
+        "model_parameters": "3.47M",
+        "model_architecture": "Inverted residual structure with linear bottlenecks. Uses depthwise separable convolutions with expansion layers before and projection (bottleneck) layers after. Contains 19 residual bottleneck layers with ReLU6 activation.",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "image-classification",
+        "huggingface_url": "https://huggingface.co/google/mobilenet_v2_1.0_224",
         "dependent_packages": ["transformers", "PIL", "requests", "torch"],
         "code": """from transformers import AutoImageProcessor, AutoModelForImageClassification
 from PIL import Image
@@ -328,15 +352,18 @@ print("Predicted class:", model.config.id2label[predicted_class_idx])""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/1801.04381}
 }""",
-        "task_type": "image-classification",
+        "training_data_sources": "ImageNet-1k dataset (1 million images, 1,000 classes)",
+        "input_modalities": ["image"],
+        "image_size": "224x224",
     },
     "densenet-121": {
+        "description": "",
         "model_parameters": "8.0M",
         "model_architecture": "Densely Connected Convolutional Network with dense blocks where each layer receives feature maps from all preceding layers. Trained with RandAugment recipe (RA). GMACs: 2.9, Activations: 6.9M",
-        "training_data_sources": "ImageNet-1k with RandAugment (RA) training procedure from 'ResNet Strikes Back'",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "image-classification",
         "huggingface_url": "https://huggingface.co/timm/densenet121.ra_in1k",
-        "input_modalities": ["image"],
-        "image_size": "224x224 (train), 288x288 (test)",
         "dependent_packages": ["timm", "torch", "PIL", "urllib"],
         "code": """from urllib.request import urlopen
 from PIL import Image
@@ -365,15 +392,18 @@ top5_probabilities, top5_class_indices = torch.topk(output.softmax(dim=1) * 100,
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/1608.06993}
 }""",
-        "task_type": "image-classification",
+        "training_data_sources": "ImageNet-1k with RandAugment (RA) training procedure from 'ResNet Strikes Back'",
+        "input_modalities": ["image"],
+        "image_size": "224x224 (train), 288x288 (test)",
     },
     "mobilevit-small": {
+        "description": "",
         "model_parameters": "6.0M",
         "model_architecture": "Hybrid CNN-Transformer architecture combining MobileNetV2-style layers with MobileViT blocks. Replaces local processing in convolutions with global processing using transformers. Image data is converted into flattened patches, processed by transformer layers, then unflattened back into feature maps.",
-        "training_data_sources": "ImageNet-1k, trained for 300 epochs with multi-scale sampling (160x160 to 320x320)",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "image-classification",
         "huggingface_url": "https://huggingface.co/apple/mobilevit-small",
-        "input_modalities": ["image"],
-        "image_size": "256x256 (inference), multi-scale training",
         "dependent_packages": ["transformers", "PIL", "requests", "torch"],
         "code": """from transformers import MobileViTFeatureExtractor, MobileViTForImageClassification
 from PIL import Image
@@ -401,15 +431,18 @@ print("Predicted class:", model.config.id2label[predicted_class_idx])""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2110.02178}
 }""",
-        "task_type": "image-classification",
+        "training_data_sources": "ImageNet-1k, trained for 300 epochs with multi-scale sampling (160x160 to 320x320)",
+        "input_modalities": ["image"],
+        "image_size": "256x256 (inference), multi-scale training",
     },
     "efficientformer-l1": {
+        "description": "",
         "model_parameters": "12.3M",
         "model_architecture": "Efficient Vision Transformer designed for mobile devices with extremely low latency. Uses dimension-consistent design and 4D blocks with CONV-BN fusion. Achieves MobileNet-speed with better accuracy. GMACs: 1.3",
-        "training_data_sources": "ImageNet-1k, trained for 1000 epochs on NVIDIA A100 and V100 GPUs",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "image-classification",
         "huggingface_url": "https://huggingface.co/snap-research/efficientformer-l1-300",
-        "input_modalities": ["image"],
-        "image_size": "224x224",
         "dependent_packages": ["transformers", "torch", "PIL", "requests"],
         "code": """import requests
 import torch
@@ -442,15 +475,18 @@ print(f"Predicted class: {top_pred_class}")""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2206.01191}
 }""",
-        "task_type": "image-classification",
-    },
-    "swin-base": {
-        "model_parameters": "88M",
-        "model_architecture": "Hierarchical Vision Transformer using shifted windows. Builds hierarchical feature maps by merging image patches in deeper layers with linear computational complexity. Uses patch size of 4x4 and window size of 7x7",
-        "training_data_sources": "ImageNet-1K",
-        "huggingface_url": "https://huggingface.co/microsoft/swin-base-patch4-window7-224",
+        "training_data_sources": "ImageNet-1k, trained for 1000 epochs on NVIDIA A100 and V100 GPUs",
         "input_modalities": ["image"],
         "image_size": "224x224",
+    },
+    "swin-base": {
+        "description": "",
+        "model_parameters": "88M",
+        "model_architecture": "Hierarchical Vision Transformer using shifted windows. Builds hierarchical feature maps by merging image patches in deeper layers with linear computational complexity. Uses patch size of 4x4 and window size of 7x7",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "image-classification",
+        "huggingface_url": "https://huggingface.co/microsoft/swin-base-patch4-window7-224",
         "dependent_packages": ["transformers", "PIL", "requests", "torch"],
         "code": """from transformers import AutoFeatureExtractor, SwinForImageClassification
 from PIL import Image
@@ -478,18 +514,18 @@ print("Predicted class:", model.config.id2label[predicted_class_idx])""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2103.14030}
 }""",
-        "task_type": "image-classification",
+        "training_data_sources": "ImageNet-1K",
+        "input_modalities": ["image"],
+        "image_size": "224x224",
     },
-    # ========================================
-    # Embedding Models
-    # ========================================
     "dinov2-base": {
+        "description": "",
         "model_parameters": "86.6M",
         "model_architecture": "Vision Transformer (ViT) trained using self-supervised DINOv2 method. Images presented as sequence of fixed-size patches with [CLS] token and absolute position embeddings. Self-distillation with no labels",
-        "training_data_sources": "LVD-142M (curated dataset of 142M images from web sources, ImageNet-22k, ImageNet-1K, Google Landmarks, and fine-grained datasets)",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "image-embeddings",
         "huggingface_url": "https://huggingface.co/facebook/dinov2-base",
-        "input_modalities": ["image"],
-        "image_size": "224x224 (default), supports up to 518x518",
         "dependent_packages": ["transformers", "PIL", "requests", "torch"],
         "code": """from transformers import AutoImageProcessor, AutoModel
 from PIL import Image
@@ -514,19 +550,19 @@ last_hidden_states = outputs.last_hidden_state""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2304.07193}
 }""",
+        "training_data_sources": "LVD-142M (curated dataset of 142M images from web sources, ImageNet-22k, ImageNet-1K, Google Landmarks, and fine-grained datasets)",
+        "input_modalities": ["image"],
+        "image_size": "224x224 (default), supports up to 518x518",
         "pretrained_dataset": "LVD-142M",
-        "task_type": "image-embeddings",
     },
-    # ========================================
-    # Object Detection
-    # ========================================
     "detr-resnet-50": {
+        "description": "",
         "model_parameters": "41.6M",
         "model_architecture": "Encoder-decoder transformer with ResNet-50 convolutional backbone. Features CNN backbone (ResNet-50) for 2D feature extraction, Transformer encoder with 6 layers, width 256, 8 attention heads, Transformer decoder with 6 layers, two detection heads: linear layer for class labels, MLP for bounding boxes, 100 object queries for parallel object detection, bipartite matching loss with Hungarian algorithm",
-        "training_data_sources": "COCO 2017 object detection dataset (118k training images, 5k validation images)",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "object-detection",
         "huggingface_url": "https://huggingface.co/facebook/detr-resnet-50",
-        "input_modalities": ["image"],
-        "image_size": "Shortest side ≥ 800px, longest side ≤ 1333px",
         "dependent_packages": ["transformers", "torch", "PIL", "requests"],
         "code": """from transformers import DetrImageProcessor, DetrForObjectDetection
 import torch
@@ -558,16 +594,19 @@ for score, label, box in zip(results["scores"], results["labels"], results["boxe
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2005.12872}
 }""",
+        "training_data_sources": "COCO 2017 object detection dataset (118k training images, 5k validation images)",
+        "input_modalities": ["image"],
+        "image_size": "Shortest side ≥ 800px, longest side ≤ 1333px",
         "pretrained_dataset": "ImageNet (for ResNet-50 backbone)",
-        "task_type": "object-detection",
     },
     "yolos-tiny": {
+        "description": "",
         "model_parameters": "6.2M",
         "model_architecture": "Vision Transformer (ViT) adapted for object detection with DETR-style loss. Features ViT tiny-sized encoder (pretrained on ImageNet), no convolutional backbone, patch-based image processing, 100 object queries, bipartite matching loss (same as DETR), Transformer encoder-only with detection heads. NOTE: This is YOLOS (You Only Look at One Sequence), not YOLOX.",
-        "training_data_sources": "Pre-trained on ImageNet-1k (200 epochs), fine-tuned on COCO 2017 object detection (300 epochs)",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "object-detection",
         "huggingface_url": "https://huggingface.co/hustvl/yolos-tiny",
-        "input_modalities": ["image"],
-        "image_size": "Variable (patch-based processing)",
         "dependent_packages": ["transformers", "torch", "PIL", "requests"],
         "code": """from transformers import YolosImageProcessor, YolosForObjectDetection
 from PIL import Image
@@ -602,18 +641,18 @@ for score, label, box in zip(results["scores"], results["labels"], results["boxe
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2106.00666}
 }""",
-        "task_type": "object-detection",
+        "training_data_sources": "Pre-trained on ImageNet-1k (200 epochs), fine-tuned on COCO 2017 object detection (300 epochs)",
+        "input_modalities": ["image"],
+        "image_size": "Variable (patch-based processing)",
     },
-    # ========================================
-    # Semantic / Instance / Panoptic Segmentation
-    # ========================================
     "segformer-b0": {
+        "description": "",
         "model_parameters": "3.8M",
         "model_architecture": "Hierarchical Transformer encoder (MiT-B0) with lightweight All-MLP decoder. Mix Transformer (MiT) encoder with 4 stages, hierarchical structure outputting multi-scale features, no positional encoding (uses Mix-FFN instead), efficient self-attention with reduction ratios [64, 16, 4, 1]",
-        "training_data_sources": "Pre-trained on ImageNet-1k, fine-tuned on ADE20K dataset at 512x512 resolution",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "segmentation",
         "huggingface_url": "https://huggingface.co/nvidia/segformer-b0-finetuned-ade-512-512",
-        "input_modalities": ["image"],
-        "image_size": "512x512",
         "dependent_packages": ["transformers", "torch", "PIL", "requests"],
         "code": """from transformers import SegformerImageProcessor, SegformerForSemanticSegmentation
 from PIL import Image
@@ -638,15 +677,18 @@ logits = outputs.logits""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2105.15203}
 }""",
-        "task_type": "segmentation",
+        "training_data_sources": "Pre-trained on ImageNet-1k, fine-tuned on ADE20K dataset at 512x512 resolution",
+        "input_modalities": ["image"],
+        "image_size": "512x512",
     },
     "mask2former-swin": {
+        "description": "",
         "model_parameters": "102M",
         "model_architecture": "Universal segmentation architecture with Swin Transformer backbone. Features Swin-Base hierarchical vision transformer backbone, multi-scale deformable attention Transformer pixel decoder, Transformer decoder with masked attention, 100 object queries, predicts masks and labels for instance, semantic, and panoptic segmentation",
-        "training_data_sources": "COCO 2017 panoptic segmentation dataset",
+        "domain": "vision",
+        "category": "image_recognition",
+        "task_type": "segmentation",
         "huggingface_url": "https://huggingface.co/facebook/mask2former-swin-base-coco-panoptic",
-        "input_modalities": ["image"],
-        "image_size": "Variable (typically 1024x1024)",
         "dependent_packages": ["transformers", "torch", "PIL", "requests"],
         "code": """import requests
 import torch
@@ -679,14 +721,18 @@ predicted_panoptic_map = result["segmentation"]""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2112.01527}
 }""",
-        "task_type": "segmentation",
+        "training_data_sources": "COCO 2017 panoptic segmentation dataset",
+        "input_modalities": ["image"],
+        "image_size": "Variable (typically 1024x1024)",
     },
     "convnextv2-base": {
+        "description": "",
         "model_parameters": "89M",
         "model_architecture": "Vision backbone for image classification.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/facebook/convnextv2-base-22k-224",
+        "domain": "vision",
+        "category": "image_recognition",
         "task_type": "image-classification",
+        "huggingface_url": "https://huggingface.co/facebook/convnextv2-base-22k-224",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("image-classification", model="facebook/convnextv2-base-22k-224")""",
@@ -698,13 +744,16 @@ pipe = pipeline("image-classification", model="facebook/convnextv2-base-22k-224"
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2301.00808}
 }""",
+        "training_data_sources": "",
     },
     "eva02-base": {
+        "description": "",
         "model_parameters": "86M",
         "model_architecture": "Vision backbone for image classification.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/timm/eva02_base_patch14_224.mim_in22k",
+        "domain": "vision",
+        "category": "image_recognition",
         "task_type": "image-classification",
+        "huggingface_url": "https://huggingface.co/timm/eva02_base_patch14_224.mim_in22k",
         "dependent_packages": ["timm", "torch"],
         "code": """import timm
 model = timm.create_model("eva02_base_patch14_224.mim_in22k", pretrained=True)
@@ -717,13 +766,16 @@ model.eval()""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2303.11331}
 }""",
+        "training_data_sources": "",
     },
     "swinv2-base": {
+        "description": "",
         "model_parameters": "Unknown",
         "model_architecture": "Vision backbone for image classification.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/microsoft/swinv2-base-patch4-window8-256",
+        "domain": "vision",
+        "category": "image_recognition",
         "task_type": "image-classification",
+        "huggingface_url": "https://huggingface.co/microsoft/swinv2-base-patch4-window8-256",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("image-classification", model="microsoft/swinv2-base-patch4-window8-256")""",
@@ -735,13 +787,16 @@ pipe = pipeline("image-classification", model="microsoft/swinv2-base-patch4-wind
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2111.09883}
 }""",
+        "training_data_sources": "",
     },
     "sam-vit-base": {
+        "description": "",
         "model_parameters": "94M",
         "model_architecture": "Vision backbone for image classification.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/facebook/sam-vit-base",
+        "domain": "vision",
+        "category": "image_recognition",
         "task_type": "mask-generation",
+        "huggingface_url": "https://huggingface.co/facebook/sam-vit-base",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("mask-generation", model="facebook/sam-vit-base")""",
@@ -753,13 +808,16 @@ pipe = pipeline("mask-generation", model="facebook/sam-vit-base")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2304.02643}
 }""",
+        "training_data_sources": "",
     },
     "depth-anything-base": {
+        "description": "",
         "model_parameters": "97M",
         "model_architecture": "Vision backbone for image classification.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/LiheYoung/depth-anything-base-hf",
+        "domain": "vision",
+        "category": "image_recognition",
         "task_type": "depth-estimation",
+        "huggingface_url": "https://huggingface.co/LiheYoung/depth-anything-base-hf",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("depth-estimation", model="LiheYoung/depth-anything-base-hf")""",
@@ -771,13 +829,16 @@ pipe = pipeline("depth-estimation", model="LiheYoung/depth-anything-base-hf")"""
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2401.10891}
 }""",
+        "training_data_sources": "",
     },
     "grounding-dino-base": {
+        "description": "",
         "model_parameters": "233M",
         "model_architecture": "Vision backbone for image classification.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/IDEA-Research/grounding-dino-base",
+        "domain": "vision",
+        "category": "image_recognition",
         "task_type": "zero-shot-object-detection",
+        "huggingface_url": "https://huggingface.co/IDEA-Research/grounding-dino-base",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("zero-shot-object-detection", model="IDEA-Research/grounding-dino-base")""",
@@ -789,13 +850,16 @@ pipe = pipeline("zero-shot-object-detection", model="IDEA-Research/grounding-din
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2303.05499}
 }""",
+        "training_data_sources": "",
     },
     "trocr-base-printed": {
+        "description": "",
         "model_parameters": "333M",
         "model_architecture": "Vision backbone for image classification.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/microsoft/trocr-base-printed",
+        "domain": "vision",
+        "category": "image_recognition",
         "task_type": "image-to-text",
+        "huggingface_url": "https://huggingface.co/microsoft/trocr-base-printed",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("image-to-text", model="microsoft/trocr-base-printed")""",
@@ -807,13 +871,16 @@ pipe = pipeline("image-to-text", model="microsoft/trocr-base-printed")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2109.10282}
 }""",
+        "training_data_sources": "",
     },
     "videomae-base": {
+        "description": "",
         "model_parameters": "94M",
         "model_architecture": "Vision backbone for image classification.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/MCG-NJU/videomae-base",
+        "domain": "vision",
+        "category": "image_recognition",
         "task_type": "video-classification",
+        "huggingface_url": "https://huggingface.co/MCG-NJU/videomae-base",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("video-classification", model="MCG-NJU/videomae-base")""",
@@ -825,13 +892,16 @@ pipe = pipeline("video-classification", model="MCG-NJU/videomae-base")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2203.12602}
 }""",
+        "training_data_sources": "",
     },
     "dpt-large": {
+        "description": "",
         "model_parameters": "342M",
         "model_architecture": "Vision backbone for image classification.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Intel/dpt-large",
+        "domain": "vision",
+        "category": "image_recognition",
         "task_type": "depth-estimation",
+        "huggingface_url": "https://huggingface.co/Intel/dpt-large",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("depth-estimation", model="Intel/dpt-large")""",
@@ -843,5 +913,6 @@ pipe = pipeline("depth-estimation", model="Intel/dpt-large")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2103.13413}
 }""",
+        "training_data_sources": "",
     },
 }

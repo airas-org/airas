@@ -1,13 +1,16 @@
-# Curated model registry (see resources/models/registry.py for the
-# subfield aggregation). HuggingFace URLs and arXiv citations are verified
-# on entry; add candidates via search_huggingface_hub for un-curated needs.
-ENCODER_LANGUAGE_MODELS: dict = {
+# Curated model registry — language / text_understanding. Part of the shared
+# domain>category taxonomy across resources/{libraries,models,datasets}.
+# HuggingFace URLs and arXiv citations are verified on entry; use
+# search_huggingface_hub for un-curated needs.
+TEXT_UNDERSTANDING_MODELS: dict = {
     "bert-base-uncased": {
+        "description": "",
         "model_parameters": "110M",
         "model_architecture": "Encoder-only (BERT-style) transformer trained with masked language modeling; used for embeddings and fine-tuned classification/token tasks.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/google-bert/bert-base-uncased",
+        "domain": "language",
+        "category": "text_understanding",
         "task_type": "fill-mask",
+        "huggingface_url": "https://huggingface.co/google-bert/bert-base-uncased",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("fill-mask", model="google-bert/bert-base-uncased")""",
@@ -19,13 +22,16 @@ pipe = pipeline("fill-mask", model="google-bert/bert-base-uncased")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/1810.04805}
 }""",
+        "training_data_sources": "",
     },
     "roberta-base": {
+        "description": "",
         "model_parameters": "125M",
         "model_architecture": "Encoder-only (BERT-style) transformer trained with masked language modeling; used for embeddings and fine-tuned classification/token tasks.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/FacebookAI/roberta-base",
+        "domain": "language",
+        "category": "text_understanding",
         "task_type": "fill-mask",
+        "huggingface_url": "https://huggingface.co/FacebookAI/roberta-base",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("fill-mask", model="FacebookAI/roberta-base")""",
@@ -37,13 +43,16 @@ pipe = pipeline("fill-mask", model="FacebookAI/roberta-base")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/1907.11692}
 }""",
+        "training_data_sources": "",
     },
     "deberta-v3-base": {
+        "description": "",
         "model_parameters": "Unknown",
         "model_architecture": "Encoder-only (BERT-style) transformer trained with masked language modeling; used for embeddings and fine-tuned classification/token tasks.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/microsoft/deberta-v3-base",
+        "domain": "language",
+        "category": "text_understanding",
         "task_type": "fill-mask",
+        "huggingface_url": "https://huggingface.co/microsoft/deberta-v3-base",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("fill-mask", model="microsoft/deberta-v3-base")""",
@@ -55,13 +64,16 @@ pipe = pipeline("fill-mask", model="microsoft/deberta-v3-base")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2111.09543}
 }""",
+        "training_data_sources": "",
     },
     "electra-base": {
+        "description": "",
         "model_parameters": "Unknown",
         "model_architecture": "Encoder-only (BERT-style) transformer trained with masked language modeling; used for embeddings and fine-tuned classification/token tasks.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/google/electra-base-discriminator",
+        "domain": "language",
+        "category": "text_understanding",
         "task_type": "fill-mask",
+        "huggingface_url": "https://huggingface.co/google/electra-base-discriminator",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("fill-mask", model="google/electra-base-discriminator")""",
@@ -73,13 +85,16 @@ pipe = pipeline("fill-mask", model="google/electra-base-discriminator")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2003.10555}
 }""",
+        "training_data_sources": "",
     },
     "distilbert-base-uncased": {
+        "description": "",
         "model_parameters": "67M",
         "model_architecture": "Encoder-only (BERT-style) transformer trained with masked language modeling; used for embeddings and fine-tuned classification/token tasks.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/distilbert/distilbert-base-uncased",
+        "domain": "language",
+        "category": "text_understanding",
         "task_type": "fill-mask",
+        "huggingface_url": "https://huggingface.co/distilbert/distilbert-base-uncased",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("fill-mask", model="distilbert/distilbert-base-uncased")""",
@@ -91,13 +106,16 @@ pipe = pipeline("fill-mask", model="distilbert/distilbert-base-uncased")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/1910.01108}
 }""",
+        "training_data_sources": "",
     },
     "modernbert-base": {
+        "description": "",
         "model_parameters": "150M",
         "model_architecture": "Encoder-only (BERT-style) transformer trained with masked language modeling; used for embeddings and fine-tuned classification/token tasks.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/answerdotai/ModernBERT-base",
+        "domain": "language",
+        "category": "text_understanding",
         "task_type": "fill-mask",
+        "huggingface_url": "https://huggingface.co/answerdotai/ModernBERT-base",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("fill-mask", model="answerdotai/ModernBERT-base")""",
@@ -109,13 +127,16 @@ pipe = pipeline("fill-mask", model="answerdotai/ModernBERT-base")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2412.13663}
 }""",
+        "training_data_sources": "",
     },
     "xlm-roberta-base": {
+        "description": "",
         "model_parameters": "279M",
         "model_architecture": "Encoder-only (BERT-style) transformer trained with masked language modeling; used for embeddings and fine-tuned classification/token tasks.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/FacebookAI/xlm-roberta-base",
+        "domain": "language",
+        "category": "text_understanding",
         "task_type": "fill-mask",
+        "huggingface_url": "https://huggingface.co/FacebookAI/xlm-roberta-base",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("fill-mask", model="FacebookAI/xlm-roberta-base")""",
@@ -127,13 +148,16 @@ pipe = pipeline("fill-mask", model="FacebookAI/xlm-roberta-base")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/1911.02116}
 }""",
+        "training_data_sources": "",
     },
     "albert-base-v2": {
+        "description": "",
         "model_parameters": "12M",
         "model_architecture": "Encoder-only (BERT-style) transformer trained with masked language modeling; used for embeddings and fine-tuned classification/token tasks.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/albert/albert-base-v2",
+        "domain": "language",
+        "category": "text_understanding",
         "task_type": "fill-mask",
+        "huggingface_url": "https://huggingface.co/albert/albert-base-v2",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("fill-mask", model="albert/albert-base-v2")""",
@@ -145,5 +169,6 @@ pipe = pipeline("fill-mask", model="albert/albert-base-v2")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/1909.11942}
 }""",
+        "training_data_sources": "",
     },
 }

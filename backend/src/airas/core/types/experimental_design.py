@@ -5,19 +5,22 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field, HttpUrl
 
 ModelSubfield = Literal[
-    "transformer_decoder_based_models",
-    "code_generation_models",
-    "text_embedding_models",
-    "encoder_language_models",
-    "encoder_decoder_language_models",
-    "image_models",
-    "image_generative_models",
-    "multi_modal_models",
-    "speech_models",
-    "time_series_models",
-    "reranker_models",
-    "protein_models",
-    "llm_api_models",
+    # language
+    "text_generation",
+    "text_understanding",
+    "sequence_to_sequence",
+    "code_generation",
+    "text_embedding",
+    "reranking",
+    "hosted_api",
+    # vision
+    "image_recognition",
+    "image_generation",
+    # multimodal / audio / time_series / science
+    "vision_language",
+    "speech",
+    "forecasting",
+    "protein",
 ]
 
 DatasetSubfield = Literal[

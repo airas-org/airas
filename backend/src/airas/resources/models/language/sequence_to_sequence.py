@@ -1,13 +1,16 @@
-# Curated model registry (see resources/models/registry.py for the
-# subfield aggregation). HuggingFace URLs and arXiv citations are verified
-# on entry; add candidates via search_huggingface_hub for un-curated needs.
-ENCODER_DECODER_LANGUAGE_MODELS: dict = {
+# Curated model registry — language / sequence_to_sequence. Part of the shared
+# domain>category taxonomy across resources/{libraries,models,datasets}.
+# HuggingFace URLs and arXiv citations are verified on entry; use
+# search_huggingface_hub for un-curated needs.
+SEQUENCE_TO_SEQUENCE_MODELS: dict = {
     "t5-base": {
+        "description": "",
         "model_parameters": "223M",
         "model_architecture": "Encoder-decoder (sequence-to-sequence) transformer for text-to-text tasks.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/google-t5/t5-base",
+        "domain": "language",
+        "category": "sequence_to_sequence",
         "task_type": "text2text-generation",
+        "huggingface_url": "https://huggingface.co/google-t5/t5-base",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text2text-generation", model="google-t5/t5-base")""",
@@ -19,13 +22,16 @@ pipe = pipeline("text2text-generation", model="google-t5/t5-base")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/1910.10683}
 }""",
+        "training_data_sources": "",
     },
     "flan-t5-base": {
+        "description": "",
         "model_parameters": "248M",
         "model_architecture": "Encoder-decoder (sequence-to-sequence) transformer for text-to-text tasks.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/google/flan-t5-base",
+        "domain": "language",
+        "category": "sequence_to_sequence",
         "task_type": "text2text-generation",
+        "huggingface_url": "https://huggingface.co/google/flan-t5-base",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text2text-generation", model="google/flan-t5-base")""",
@@ -37,13 +43,16 @@ pipe = pipeline("text2text-generation", model="google/flan-t5-base")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2210.11416}
 }""",
+        "training_data_sources": "",
     },
     "bart-base": {
+        "description": "",
         "model_parameters": "139M",
         "model_architecture": "Encoder-decoder (sequence-to-sequence) transformer for text-to-text tasks.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/facebook/bart-base",
+        "domain": "language",
+        "category": "sequence_to_sequence",
         "task_type": "text2text-generation",
+        "huggingface_url": "https://huggingface.co/facebook/bart-base",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text2text-generation", model="facebook/bart-base")""",
@@ -55,13 +64,16 @@ pipe = pipeline("text2text-generation", model="facebook/bart-base")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/1910.13461}
 }""",
+        "training_data_sources": "",
     },
     "mt5-base": {
+        "description": "",
         "model_parameters": "Unknown",
         "model_architecture": "Encoder-decoder (sequence-to-sequence) transformer for text-to-text tasks.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/google/mt5-base",
+        "domain": "language",
+        "category": "sequence_to_sequence",
         "task_type": "text2text-generation",
+        "huggingface_url": "https://huggingface.co/google/mt5-base",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text2text-generation", model="google/mt5-base")""",
@@ -73,13 +85,16 @@ pipe = pipeline("text2text-generation", model="google/mt5-base")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2010.11934}
 }""",
+        "training_data_sources": "",
     },
     "pegasus-xsum": {
+        "description": "",
         "model_parameters": "Unknown",
         "model_architecture": "Encoder-decoder (sequence-to-sequence) transformer for text-to-text tasks.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/google/pegasus-xsum",
+        "domain": "language",
+        "category": "sequence_to_sequence",
         "task_type": "summarization",
+        "huggingface_url": "https://huggingface.co/google/pegasus-xsum",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("summarization", model="google/pegasus-xsum")""",
@@ -91,13 +106,16 @@ pipe = pipeline("summarization", model="google/pegasus-xsum")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/1912.08777}
 }""",
+        "training_data_sources": "",
     },
     "long-t5-base": {
+        "description": "",
         "model_parameters": "Unknown",
         "model_architecture": "Encoder-decoder (sequence-to-sequence) transformer for text-to-text tasks.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/google/long-t5-tglobal-base",
+        "domain": "language",
+        "category": "sequence_to_sequence",
         "task_type": "text2text-generation",
+        "huggingface_url": "https://huggingface.co/google/long-t5-tglobal-base",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text2text-generation", model="google/long-t5-tglobal-base")""",
@@ -109,5 +127,6 @@ pipe = pipeline("text2text-generation", model="google/long-t5-tglobal-base")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2112.07916}
 }""",
+        "training_data_sources": "",
     },
 }

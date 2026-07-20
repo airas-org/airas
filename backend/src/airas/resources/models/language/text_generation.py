@@ -1,20 +1,18 @@
-TRANSFORMER_DECODER_BASED_MODELS = {
-    # Llama 4
+# Curated model registry — language / text_generation. Part of the shared
+# domain>category taxonomy across resources/{libraries,models,datasets}.
+# HuggingFace URLs and arXiv citations are verified on entry; use
+# search_huggingface_hub for un-curated needs.
+TEXT_GENERATION_MODELS: dict = {
     "Llama-4-Scout-17B-16E": {
-        "model_parameters": {
-            "total_parameters": "109b",
-            "active_parameters": "17b",
-        },
+        "description": "",
+        "model_parameters": {"total_parameters": "109b", "active_parameters": "17b"},
         "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
-        "language_distribution": "Multilingual",
-        "input_modalities": ["text", "image"],
-        "output_modalities": ["text"],
+        "huggingface_url": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E",
         "dependent_packages": [],
-        "code": """\
-from transformers import pipeline
+        "code": """from transformers import pipeline
 model_id = "meta-llama/Llama-4-Scout-17B-16E"
 pipe = pipeline(
     "text-generation",
@@ -25,29 +23,27 @@ pipe = pipeline(
 prompt = "Give me a short introduction to large language model."
 output = pipe(prompt, max_new_tokens=150)
 print(output)""",
-        "citation": """\
-@misc{meta2024llama4,
+        "citation": """@misc{meta2024llama4,
   title = {Introducing LLaMA 4: Advancing Multimodal Intelligence},
   author = {Meta AI},
   year = {2024},
   url = {https://ai.meta.com/blog/llama-4-multimodal-intelligence/}
 }""",
-    },
-    "Llama-4-Maverick-17B-128E": {
-        "model_parameters": {
-            "total_parameters": "400b",
-            "active_parameters": "17b",
-        },
-        "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
         "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
-        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text", "image"],
         "output_modalities": ["text"],
+    },
+    "Llama-4-Maverick-17B-128E": {
+        "description": "",
+        "model_parameters": {"total_parameters": "400b", "active_parameters": "17b"},
+        "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
+        "domain": "language",
+        "category": "text_generation",
+        "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
         "dependent_packages": [],
-        "code": """\
-from transformers import pipeline
+        "code": """from transformers import pipeline
 model_id = "meta-llama/Llama-4-Maverick-17B-128E"
 pipe = pipeline(
     "text-generation",
@@ -58,27 +54,27 @@ pipe = pipeline(
 prompt = "Give me a short introduction to large language model."
 output = pipe(prompt, max_new_tokens=150)
 print(output)""",
-        "citation": """\
-@misc{meta2024llama4,
+        "citation": """@misc{meta2024llama4,
   title = {Introducing LLaMA 4: Advancing Multimodal Intelligence},
   author = {Meta AI},
   year = {2024},
   url = {https://ai.meta.com/blog/llama-4-multimodal-intelligence/}
 }""",
+        "training_data_sources": "",
+        "language_distribution": "Multilingual",
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
     },
-    # Qwen 3
     "Qwen3-0.6B": {
+        "description": "",
         "model_parameters": "0.6b",
         "model_architecture": "Transformer",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Qwen/Qwen3-0.6B",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
-        "language_distribution": "Multilingual",
-        "input_modalities": ["text"],
-        "output_modalities": ["text"],
+        "huggingface_url": "https://huggingface.co/Qwen/Qwen3-0.6B",
         "dependent_packages": ["transformers>=4.51.0"],
-        "code": """\
-from transformers import AutoModelForCausalLM, AutoTokenizer
+        "code": """from transformers import AutoModelForCausalLM, AutoTokenizer
 model_name = "Qwen/Qwen3-0.6B"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -105,8 +101,7 @@ generated_ids = model.generate(
 max_new_tokens=32768
 )
 output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
-        "citation": """\
-@misc{qwen3technicalreport,
+        "citation": """@misc{qwen3technicalreport,
     title={Qwen3 Technical Report},
     author={Qwen Team},
     year={2025},
@@ -115,19 +110,21 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
     primaryClass={cs.CL},
     url={https://arxiv.org/abs/2505.09388},
 }""",
-    },
-    "Qwen3-1.7B": {
-        "model_parameters": "1.7b",
-        "model_architecture": "Transformer",
         "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Qwen/Qwen3-1.7B",
-        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
+    },
+    "Qwen3-1.7B": {
+        "description": "",
+        "model_parameters": "1.7b",
+        "model_architecture": "Transformer",
+        "domain": "language",
+        "category": "text_generation",
+        "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/Qwen/Qwen3-1.7B",
         "dependent_packages": ["transformers>=4.51.0"],
-        "code": """\
-from transformers import AutoModelForCausalLM, AutoTokenizer
+        "code": """from transformers import AutoModelForCausalLM, AutoTokenizer
 model_name = "Qwen/Qwen3-1.7B"
 
 # load the tokenizer and the model
@@ -157,8 +154,7 @@ generated_ids = model.generate(
 max_new_tokens=32768
 )
 output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
-        "citation": """\
-@misc{qwen3technicalreport,
+        "citation": """@misc{qwen3technicalreport,
     title={Qwen3 Technical Report},
     author={Qwen Team},
     year={2025},
@@ -167,19 +163,21 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
     primaryClass={cs.CL},
     url={https://arxiv.org/abs/2505.09388},
 }""",
-    },
-    "Qwen3-4B": {
-        "model_parameters": "4b",
-        "model_architecture": "Transformer",
         "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Qwen/Qwen3-4B",
-        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
+    },
+    "Qwen3-4B": {
+        "description": "",
+        "model_parameters": "4b",
+        "model_architecture": "Transformer",
+        "domain": "language",
+        "category": "text_generation",
+        "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/Qwen/Qwen3-4B",
         "dependent_packages": ["transformers>=4.51.0"],
-        "code": """\
-from transformers import AutoModelForCausalLM, AutoTokenizer
+        "code": """from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model_name = "Qwen/Qwen3-4B"
 
@@ -210,8 +208,7 @@ generated_ids = model.generate(
 max_new_tokens=32768
 )
 output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
-        "citation": """\
-@misc{qwen3technicalreport,
+        "citation": """@misc{qwen3technicalreport,
     title={Qwen3 Technical Report},
     author={Qwen Team},
     year={2025},
@@ -220,19 +217,21 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
     primaryClass={cs.CL},
     url={https://arxiv.org/abs/2505.09388},
 }""",
-    },
-    "Qwen3-8B": {
-        "model_parameters": "8b",
-        "model_architecture": "Transformer",
         "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Qwen/Qwen3-8B",
-        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
+    },
+    "Qwen3-8B": {
+        "description": "",
+        "model_parameters": "8b",
+        "model_architecture": "Transformer",
+        "domain": "language",
+        "category": "text_generation",
+        "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/Qwen/Qwen3-8B",
         "dependent_packages": ["transformers>=4.51.0"],
-        "code": """\
-from transformers import AutoModelForCausalLM, AutoTokenizer
+        "code": """from transformers import AutoModelForCausalLM, AutoTokenizer
 model_name = "Qwen/Qwen3-8B"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -259,8 +258,7 @@ generated_ids = model.generate(
 max_new_tokens=32768
 )
 output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
-        "citation": """\
-@misc{qwen3technicalreport,
+        "citation": """@misc{qwen3technicalreport,
     title={Qwen3 Technical Report},
     author={Qwen Team},
     year={2025},
@@ -269,19 +267,21 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
     primaryClass={cs.CL},
     url={https://arxiv.org/abs/2505.09388},
 }""",
-    },
-    "Qwen3-14B": {
-        "model_parameters": "14b",
-        "model_architecture": "Transformer",
         "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Qwen/Qwen3-14B",
-        "task_type": "text-generation",
-        "language_distribution": "",
+        "language_distribution": "Multilingual",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
+    },
+    "Qwen3-14B": {
+        "description": "",
+        "model_parameters": "14b",
+        "model_architecture": "Transformer",
+        "domain": "language",
+        "category": "text_generation",
+        "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/Qwen/Qwen3-14B",
         "dependent_packages": ["transformers>=4.51.0"],
-        "code": """\
-from transformers import AutoModelForCausalLM, AutoTokenizer
+        "code": """from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model_name = "Qwen/Qwen3-14B"
 
@@ -309,8 +309,7 @@ generated_ids = model.generate(
 max_new_tokens=32768
 )
 output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
-        "citation": """\
-@misc{qwen3technicalreport,
+        "citation": """@misc{qwen3technicalreport,
     title={Qwen3 Technical Report},
     author={Qwen Team},
     year={2025},
@@ -319,19 +318,21 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
     primaryClass={cs.CL},
     url={https://arxiv.org/abs/2505.09388},
 }""",
-    },
-    "Qwen3-32B": {
-        "model_parameters": "32.8b",
-        "model_architecture": "Transformer",
         "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Qwen/Qwen3-32B",
-        "task_type": "text-generation",
         "language_distribution": "",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
+    },
+    "Qwen3-32B": {
+        "description": "",
+        "model_parameters": "32.8b",
+        "model_architecture": "Transformer",
+        "domain": "language",
+        "category": "text_generation",
+        "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/Qwen/Qwen3-32B",
         "dependent_packages": ["transformers>=4.51.0"],
-        "code": """\
-from transformers import AutoModelForCausalLM, AutoTokenizer
+        "code": """from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model_name = "Qwen/Qwen3-32B"
 
@@ -362,8 +363,7 @@ generated_ids = model.generate(
 max_new_tokens=32768
 )
 output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
-        "citation": """\
-@misc{qwen3technicalreport,
+        "citation": """@misc{qwen3technicalreport,
     title={Qwen3 Technical Report},
     author={Qwen Team},
     year={2025},
@@ -372,25 +372,22 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
     primaryClass={cs.CL},
     url={https://arxiv.org/abs/2505.09388},
 }""",
-    },
-    # Deepseek
-    "DeepSeek-v3": {
-        "model_parameters": {
-            "total_parameters": "671b",
-            "active_parameters": "37b",
-        },
-        "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
         "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3",
-        "task_type": "text-generation",
-        "language_distribution": "Multilingual",
+        "language_distribution": "",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
+    },
+    "DeepSeek-v3": {
+        "description": "",
+        "model_parameters": {"total_parameters": "671b", "active_parameters": "37b"},
+        "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
+        "domain": "language",
+        "category": "text_generation",
+        "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3",
         "dependent_packages": [],
-        "code": """\
-""",
-        "citation": """\
-@misc{deepseekai2024deepseekv3technicalreport,
+        "code": "",
+        "citation": """@misc{deepseekai2024deepseekv3technicalreport,
     title={DeepSeek-V3 Technical Report},
     author={DeepSeek-AI},
     year={2024},
@@ -399,24 +396,22 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
     primaryClass={cs.CL},
     url={https://arxiv.org/abs/2412.19437},
 }""",
+        "training_data_sources": "",
+        "language_distribution": "Multilingual",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
     },
     "DeepSeek-V3.1": {
-        "model_parameters": {
-            "total_parameters": "671B",
-            "active_parameters": "37B",
-        },
+        "description": "",
+        "model_parameters": {"total_parameters": "671B", "active_parameters": "37B"},
         "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
-        "language_distribution": "Multilingual",
-        "input_modalities": ["text"],
-        "output_modalities": ["text"],
+        "huggingface_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
         "dependent_packages": [],
-        "code": """\
-""",
-        "citation": """\
-@misc{deepseekai2024deepseekv3technicalreport,
+        "code": "",
+        "citation": """@misc{deepseekai2024deepseekv3technicalreport,
     title={DeepSeek-V3 Technical Report},
     author={DeepSeek-AI},
     year={2024},
@@ -425,46 +420,41 @@ output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()""",
     primaryClass={cs.CL},
     url={https://arxiv.org/abs/2412.19437},
 }""",
-    },
-    "DeepSeek-V3.2-Exp": {
-        "model_parameters": {
-            "total_parameters": "671B",
-            "active_parameters": "37B",
-        },
-        "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
         "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
+    },
+    "DeepSeek-V3.2-Exp": {
+        "description": "",
+        "model_parameters": {"total_parameters": "671B", "active_parameters": "37B"},
+        "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
+        "domain": "language",
+        "category": "text_generation",
+        "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
         "dependent_packages": [],
-        "code": """\
-""",
-        "citation": """\
-@misc{deepseekai2024deepseekv32,
+        "code": "",
+        "citation": """@misc{deepseekai2024deepseekv32,
     title={DeepSeek-V3.2-Exp: Boosting Long-Context Efficiency with DeepSeek Sparse Attention},
     author={DeepSeek-AI},
     year={2025},
 }""",
-    },
-    # gpt-oss
-    "gpt-oss-20b": {
-        "model_parameters": {
-            "total_parameters": "21b",
-            "active_parameters": "3.6b",
-        },
-        "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
         "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/openai/gpt-oss-20b",
-        "task_type": "text-generation",
-        "context_length": "",
-        "language_distribution": "multilingual",
+        "language_distribution": "Multilingual",
         "input_modalities": ["text"],
         "output_modalities": ["text"],
+    },
+    "gpt-oss-20b": {
+        "description": "",
+        "model_parameters": {"total_parameters": "21b", "active_parameters": "3.6b"},
+        "model_architecture": "Transformer-based Mixture-of-Experts (MoE) architecture",
+        "domain": "language",
+        "category": "text_generation",
+        "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/openai/gpt-oss-20b",
         "dependent_packages": ["accelerate", "transformers", "kernels"],
-        "code": """\
-from transformers import AutoModelForCausalLM, AutoTokenizer
+        "code": """from transformers import AutoModelForCausalLM, AutoTokenizer
 model_id = "openai/gpt-oss-20b"
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 model = AutoModelForCausalLM.from_pretrained(
@@ -486,8 +476,7 @@ return_dict=True,
 generated = model.generate(**inputs, max_new_tokens=100)
 print(tokenizer.decode(generated[0][inputs["input_ids"].shape[-1]:]))
 """,
-        "citation": """\
-@misc{openai2025gptoss120bgptoss20bmodel,
+        "citation": """@misc{openai2025gptoss120bgptoss20bmodel,
     title={gpt-oss-120b & gpt-oss-20b Model Card},
     author={OpenAI},
     year={2025},
@@ -496,20 +485,22 @@ print(tokenizer.decode(generated[0][inputs["input_ids"].shape[-1]:]))
     primaryClass={cs.CL},
     url={https://arxiv.org/abs/2508.10925},
 }""",
+        "training_data_sources": "",
+        "context_length": "",
+        "language_distribution": "multilingual",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
     },
-    # Genma
     "gemma-3-1b-it": {
+        "description": "",
         "model_parameters": "1b",
         "model_architecture": "Transformer",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/google/gemma-3-1b-it",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
-        "language_distribution": "Multilingual",
-        "input_modalities": ["text", "image"],
-        "output_modalities": ["text"],
+        "huggingface_url": "https://huggingface.co/google/gemma-3-1b-it",
         "dependent_packages": ["transformers"],
-        "code": """\
-from transformers import AutoTokenizer, AutoModelForCausalLM
+        "code": """from transformers import AutoTokenizer, AutoModelForCausalLM
 
 tokenizer = AutoTokenizer.from_pretrained("google/gemma-3-1b-it")
 model = AutoModelForCausalLM.from_pretrained("google/gemma-3-1b-it")
@@ -527,27 +518,28 @@ return_tensors="pt",
 outputs = model.generate(**inputs, max_new_tokens=4000)
 print(tokenizer.decode(outputs[0][inputs["input_ids"].shape[-1]:]))
 """,
-        "citation": """\
-@article{gemma_2025,
+        "citation": """@article{gemma_2025,
 title={Gemma 3},
 url={https://goo.gle/Gemma3Report},
 publisher={Kaggle},
 author={Gemma Team},
 year={2025}
 }""",
-    },
-    "gemma-3-4b-it": {
-        "model_parameters": "4b",
-        "model_architecture": "Transformer",
         "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/google/gemma-3-4b-it",
-        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text", "image"],
         "output_modalities": ["text"],
+    },
+    "gemma-3-4b-it": {
+        "description": "",
+        "model_parameters": "4b",
+        "model_architecture": "Transformer",
+        "domain": "language",
+        "category": "text_generation",
+        "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/google/gemma-3-4b-it",
         "dependent_packages": ["transformers"],
-        "code": """\
-from transformers import AutoTokenizer, AutoModelForCausalLM
+        "code": """from transformers import AutoTokenizer, AutoModelForCausalLM
 
 tokenizer = AutoTokenizer.from_pretrained("google/gemma-3-4b-it")
 model = AutoModelForCausalLM.from_pretrained("google/gemma-3-4b-it")
@@ -565,27 +557,28 @@ return_tensors="pt",
 outputs = model.generate(**inputs, max_new_tokens=4000)
 print(tokenizer.decode(outputs[0][inputs["input_ids"].shape[-1]:]))
 """,
-        "citation": """\
-@article{gemma_2025,
+        "citation": """@article{gemma_2025,
 title={Gemma 3},
 url={https://goo.gle/Gemma3Report},
 publisher={Kaggle},
 author={Gemma Team},
 year={2025}
 }""",
-    },
-    "gemma-3-27b-it": {
-        "model_parameters": "27b",
-        "model_architecture": "Transformer",
         "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/google/gemma-3-27b-it",
-        "task_type": "text-generation",
         "language_distribution": "Multilingual",
         "input_modalities": ["text", "image"],
         "output_modalities": ["text"],
+    },
+    "gemma-3-27b-it": {
+        "description": "",
+        "model_parameters": "27b",
+        "model_architecture": "Transformer",
+        "domain": "language",
+        "category": "text_generation",
+        "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/google/gemma-3-27b-it",
         "dependent_packages": ["transformers"],
-        "code": """\
-from transformers import AutoTokenizer, AutoModelForCausalLM
+        "code": """from transformers import AutoTokenizer, AutoModelForCausalLM
 
 tokenizer = AutoTokenizer.from_pretrained("google/gemma-3-27b-it")
 model = AutoModelForCausalLM.from_pretrained("google/gemma-3-27b-it")
@@ -603,33 +596,33 @@ return_tensors="pt",
 outputs = model.generate(**inputs, max_new_tokens=4000)
 print(tokenizer.decode(outputs[0][inputs["input_ids"].shape[-1]:]))
 """,
-        "citation": """\
-@article{gemma_2025,
+        "citation": """@article{gemma_2025,
 title={Gemma 3},
 url={https://goo.gle/Gemma3Report},
 publisher={Kaggle},
 author={Gemma Team},
 year={2025}
 }""",
+        "training_data_sources": "",
+        "language_distribution": "Multilingual",
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
     },
-    # Mistral
     "Mistral-7B-v0.3": {
+        "description": "",
         "model_parameters": "7.3B",
         "model_architecture": "Transformer decoder with Grouped-Query Attention (GQA), Sliding-Window Attention, Byte-fallback BPE tokenizer, extended vocabulary to 32,768 tokens",
-        "training_data_sources": "Large-scale web data (proprietary, not publicly disclosed in detail)",
-        "huggingface_url": "https://huggingface.co/mistralai/Mistral-7B-v0.3",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
-        "language_distribution": "Primarily English (multilingual capabilities present)",
-        "input_modalities": ["text"],
-        "output_modalities": ["text"],
+        "huggingface_url": "https://huggingface.co/mistralai/Mistral-7B-v0.3",
         "dependent_packages": [
             "transformers",
             "torch",
             "mistral-inference (recommended)",
             "huggingface-hub",
         ],
-        "code": """\
-from transformers import AutoModelForCausalLM, AutoTokenizer
+        "code": """from transformers import AutoModelForCausalLM, AutoTokenizer
 model_id = "mistralai/Mistral-7B-v0.3"
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 model = AutoModelForCausalLM.from_pretrained(model_id)
@@ -638,13 +631,19 @@ inputs = tokenizer("Hello my name is", return_tensors="pt")
 outputs = model.generate(**inputs, max_new_tokens=20)
 print(tokenizer.decode(outputs[0], skip_special_tokens=True))""",
         "citation": "@article{jiang2023mistral, title={Mistral 7B}, author={Albert Q. Jiang and Alexandre Sablayrolles and Arthur Mensch and others}, journal={arXiv preprint arXiv:2310.06825}, year={2023}}",
+        "training_data_sources": "Large-scale web data (proprietary, not publicly disclosed in detail)",
+        "language_distribution": "Primarily English (multilingual capabilities present)",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
     },
     "mistral-7b-v0.3": {
+        "description": "",
         "model_parameters": "7.2B",
         "model_architecture": "Decoder-only autoregressive transformer language model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/mistralai/Mistral-7B-v0.3",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/mistralai/Mistral-7B-v0.3",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="mistralai/Mistral-7B-v0.3")""",
@@ -656,13 +655,16 @@ pipe = pipeline("text-generation", model="mistralai/Mistral-7B-v0.3")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2310.06825}
 }""",
+        "training_data_sources": "",
     },
     "phi-3-mini-4k-instruct": {
+        "description": "",
         "model_parameters": "3.8B",
         "model_architecture": "Decoder-only autoregressive transformer language model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="microsoft/Phi-3-mini-4k-instruct")""",
@@ -674,13 +676,16 @@ pipe = pipeline("text-generation", model="microsoft/Phi-3-mini-4k-instruct")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2404.14219}
 }""",
+        "training_data_sources": "",
     },
     "falcon-7b": {
+        "description": "",
         "model_parameters": "7.2B",
         "model_architecture": "Decoder-only autoregressive transformer language model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/tiiuae/falcon-7b",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/tiiuae/falcon-7b",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="tiiuae/falcon-7b")""",
@@ -692,13 +697,16 @@ pipe = pipeline("text-generation", model="tiiuae/falcon-7b")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2311.16867}
 }""",
+        "training_data_sources": "",
     },
     "pythia-1.4b": {
+        "description": "",
         "model_parameters": "1.5B",
         "model_architecture": "Decoder-only autoregressive transformer language model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/EleutherAI/pythia-1.4b",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/EleutherAI/pythia-1.4b",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="EleutherAI/pythia-1.4b")""",
@@ -710,13 +718,16 @@ pipe = pipeline("text-generation", model="EleutherAI/pythia-1.4b")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2304.01373}
 }""",
+        "training_data_sources": "",
     },
     "olmo-2-1124-7b": {
+        "description": "",
         "model_parameters": "7.3B",
         "model_architecture": "Decoder-only autoregressive transformer language model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/allenai/OLMo-2-1124-7B",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/allenai/OLMo-2-1124-7B",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="allenai/OLMo-2-1124-7B")""",
@@ -728,13 +739,16 @@ pipe = pipeline("text-generation", model="allenai/OLMo-2-1124-7B")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2501.00656}
 }""",
+        "training_data_sources": "",
     },
     "smollm2-1.7b": {
+        "description": "",
         "model_parameters": "1.7B",
         "model_architecture": "Decoder-only autoregressive transformer language model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="HuggingFaceTB/SmolLM2-1.7B")""",
@@ -746,13 +760,16 @@ pipe = pipeline("text-generation", model="HuggingFaceTB/SmolLM2-1.7B")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2502.02737}
 }""",
+        "training_data_sources": "",
     },
     "qwen2.5-7b": {
+        "description": "",
         "model_parameters": "7.6B",
         "model_architecture": "Decoder-only autoregressive transformer language model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Qwen/Qwen2.5-7B",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/Qwen/Qwen2.5-7B",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="Qwen/Qwen2.5-7B")""",
@@ -764,13 +781,16 @@ pipe = pipeline("text-generation", model="Qwen/Qwen2.5-7B")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2412.15115}
 }""",
+        "training_data_sources": "",
     },
     "opt-1.3b": {
+        "description": "",
         "model_parameters": "Unknown",
         "model_architecture": "Decoder-only autoregressive transformer language model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/facebook/opt-1.3b",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/facebook/opt-1.3b",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="facebook/opt-1.3b")""",
@@ -782,13 +802,16 @@ pipe = pipeline("text-generation", model="facebook/opt-1.3b")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2205.01068}
 }""",
+        "training_data_sources": "",
     },
     "bloom-1b7": {
+        "description": "",
         "model_parameters": "1.7B",
         "model_architecture": "Decoder-only autoregressive transformer language model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/bigscience/bloom-1b7",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/bigscience/bloom-1b7",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="bigscience/bloom-1b7")""",
@@ -800,13 +823,16 @@ pipe = pipeline("text-generation", model="bigscience/bloom-1b7")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2211.05100}
 }""",
+        "training_data_sources": "",
     },
     "tinyllama-1.1b": {
+        "description": "",
         "model_parameters": "1.1B",
         "model_architecture": "Decoder-only autoregressive transformer language model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="TinyLlama/TinyLlama-1.1B-Chat-v1.0")""",
@@ -818,24 +844,30 @@ pipe = pipeline("text-generation", model="TinyLlama/TinyLlama-1.1B-Chat-v1.0")""
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2401.02385}
 }""",
+        "training_data_sources": "",
     },
     "gpt2": {
+        "description": "",
         "model_parameters": "137M",
         "model_architecture": "Decoder-only autoregressive transformer language model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/openai-community/gpt2",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/openai-community/gpt2",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="openai-community/gpt2")""",
         "citation": "",
+        "training_data_sources": "",
     },
     "phi-3.5-mini": {
+        "description": "",
         "model_parameters": "3.8B",
         "model_architecture": "Decoder-only autoregressive transformer language model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="microsoft/Phi-3.5-mini-instruct")""",
@@ -847,13 +879,16 @@ pipe = pipeline("text-generation", model="microsoft/Phi-3.5-mini-instruct")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2404.14219}
 }""",
+        "training_data_sources": "",
     },
     "qwen2.5-1.5b": {
+        "description": "",
         "model_parameters": "1.5B",
         "model_architecture": "Decoder-only autoregressive transformer language model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Qwen/Qwen2.5-1.5B",
+        "domain": "language",
+        "category": "text_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/Qwen/Qwen2.5-1.5B",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="Qwen/Qwen2.5-1.5B")""",
@@ -865,5 +900,6 @@ pipe = pipeline("text-generation", model="Qwen/Qwen2.5-1.5B")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2412.15115}
 }""",
+        "training_data_sources": "",
     },
 }

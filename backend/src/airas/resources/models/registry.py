@@ -1,37 +1,35 @@
-# Aggregates all curated model subfields into one lookup, mapping each
-# ModelSubfield to its registry dict. Reorganized into a category tree
-# (language / vision / multimodal / speech / api) mirroring
-# resources/libraries; the subfield API stays stable for retrieve_models.
-from airas.resources.models.api.llm import LLM_API_MODELS
-from airas.resources.models.language.code import CODE_GENERATION_MODELS
-from airas.resources.models.language.decoder import (
-    TRANSFORMER_DECODER_BASED_MODELS,
+# Aggregates curated model categories into MODELS_BY_SUBFIELD, keyed by
+# the shared taxonomy leaf (category). Folders are the shared domains
+# (language / vision / multimodal / audio / time_series / science),
+# mirroring resources/libraries and resources/datasets.
+from airas.resources.models.audio.speech import SPEECH_MODELS
+from airas.resources.models.language.code_generation import CODE_GENERATION_MODELS
+from airas.resources.models.language.hosted_api import HOSTED_API_MODELS
+from airas.resources.models.language.reranking import RERANKING_MODELS
+from airas.resources.models.language.sequence_to_sequence import (
+    SEQUENCE_TO_SEQUENCE_MODELS,
 )
-from airas.resources.models.language.embedding import TEXT_EMBEDDING_MODELS
-from airas.resources.models.language.encoder import ENCODER_LANGUAGE_MODELS
-from airas.resources.models.language.encoder_decoder import (
-    ENCODER_DECODER_LANGUAGE_MODELS,
-)
-from airas.resources.models.language.reranker import RERANKER_MODELS
-from airas.resources.models.multimodal.vision_language import MULTI_MODAL_MODELS
+from airas.resources.models.language.text_embedding import TEXT_EMBEDDING_MODELS
+from airas.resources.models.language.text_generation import TEXT_GENERATION_MODELS
+from airas.resources.models.language.text_understanding import TEXT_UNDERSTANDING_MODELS
+from airas.resources.models.multimodal.vision_language import VISION_LANGUAGE_MODELS
 from airas.resources.models.science.protein import PROTEIN_MODELS
-from airas.resources.models.speech.recognition import SPEECH_MODELS
-from airas.resources.models.timeseries.forecasting import TIME_SERIES_MODELS
-from airas.resources.models.vision.generative import IMAGE_GENERATIVE_MODELS
-from airas.resources.models.vision.recognition import IMAGE_MODELS
+from airas.resources.models.time_series.forecasting import FORECASTING_MODELS
+from airas.resources.models.vision.image_generation import IMAGE_GENERATION_MODELS
+from airas.resources.models.vision.image_recognition import IMAGE_RECOGNITION_MODELS
 
 MODELS_BY_SUBFIELD: dict[str, dict] = {
-    "transformer_decoder_based_models": TRANSFORMER_DECODER_BASED_MODELS,
-    "code_generation_models": CODE_GENERATION_MODELS,
-    "text_embedding_models": TEXT_EMBEDDING_MODELS,
-    "encoder_language_models": ENCODER_LANGUAGE_MODELS,
-    "encoder_decoder_language_models": ENCODER_DECODER_LANGUAGE_MODELS,
-    "image_models": IMAGE_MODELS,
-    "image_generative_models": IMAGE_GENERATIVE_MODELS,
-    "multi_modal_models": MULTI_MODAL_MODELS,
-    "speech_models": SPEECH_MODELS,
-    "time_series_models": TIME_SERIES_MODELS,
-    "reranker_models": RERANKER_MODELS,
-    "protein_models": PROTEIN_MODELS,
-    "llm_api_models": LLM_API_MODELS,
+    "text_generation": TEXT_GENERATION_MODELS,
+    "code_generation": CODE_GENERATION_MODELS,
+    "text_embedding": TEXT_EMBEDDING_MODELS,
+    "text_understanding": TEXT_UNDERSTANDING_MODELS,
+    "sequence_to_sequence": SEQUENCE_TO_SEQUENCE_MODELS,
+    "reranking": RERANKING_MODELS,
+    "hosted_api": HOSTED_API_MODELS,
+    "image_recognition": IMAGE_RECOGNITION_MODELS,
+    "image_generation": IMAGE_GENERATION_MODELS,
+    "vision_language": VISION_LANGUAGE_MODELS,
+    "speech": SPEECH_MODELS,
+    "forecasting": FORECASTING_MODELS,
+    "protein": PROTEIN_MODELS,
 }

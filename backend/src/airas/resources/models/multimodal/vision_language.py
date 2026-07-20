@@ -1,12 +1,16 @@
-MULTI_MODAL_MODELS = {
+# Curated model registry — multimodal / vision_language. Part of the shared
+# domain>category taxonomy across resources/{libraries,models,datasets}.
+# HuggingFace URLs and arXiv citations are verified on entry; use
+# search_huggingface_hub for un-curated needs.
+VISION_LANGUAGE_MODELS: dict = {
     "clip-vit-base": {
+        "description": "",
         "model_parameters": "151M",
         "model_architecture": "ViT-B/32 Transformer for image encoding + Masked self-attention Transformer for text encoding. Uses contrastive learning to maximize similarity of (image, text) pairs",
-        "training_data_sources": "WebImageText (WIT-400M) - approximately 400M image-text pairs collected from the web",
+        "domain": "multimodal",
+        "category": "vision_language",
+        "task_type": "image-classification",
         "huggingface_url": "https://huggingface.co/openai/clip-vit-base-patch32",
-        "input_modalities": ["image", "text"],
-        "output_modalities": ["embeddings"],
-        "image_size": "224x224",
         "dependent_packages": ["transformers", "PIL", "requests", "torch"],
         "code": """from PIL import Image
 import requests
@@ -33,16 +37,19 @@ probs = logits_per_image.softmax(dim=1)""",
   url = {https://arxiv.org/abs/2103.00020}
 }
 """,
-        "task_type": "image-classification",
+        "training_data_sources": "WebImageText (WIT-400M) - approximately 400M image-text pairs collected from the web",
+        "input_modalities": ["image", "text"],
+        "output_modalities": ["embeddings"],
+        "image_size": "224x224",
     },
     "blip-image-captioning": {
+        "description": "",
         "model_parameters": "129M",
         "model_architecture": "Vision-Language Pre-training framework with ViT-B backbone for image encoding + BERT-like text encoder/decoder. Uses bootstrapping with captioner and filter (CapFilt) method",
-        "training_data_sources": "129M image-text pairs from COCO, Visual Genome, Conceptual Captions (CC3M, CC12M), SBU captions, and LAION400M",
+        "domain": "multimodal",
+        "category": "vision_language",
+        "task_type": "image-captioning",
         "huggingface_url": "https://huggingface.co/Salesforce/blip-image-captioning-base",
-        "input_modalities": ["image", "text"],
-        "output_modalities": ["text"],
-        "image_size": "384x384",
         "dependent_packages": ["transformers", "PIL", "requests", "torch"],
         "code": """import requests
 from PIL import Image
@@ -74,14 +81,19 @@ print(processor.decode(out[0], skip_special_tokens=True))""",
   primaryClass = {cs.CV},
   url = {https://arxiv.org/abs/2201.12086}
 }""",
-        "task_type": "image-captioning",
+        "training_data_sources": "129M image-text pairs from COCO, Visual Genome, Conceptual Captions (CC3M, CC12M), SBU captions, and LAION400M",
+        "input_modalities": ["image", "text"],
+        "output_modalities": ["text"],
+        "image_size": "384x384",
     },
     "llava-1.5-7b": {
+        "description": "",
         "model_parameters": "7.1B",
         "model_architecture": "Vision-language multimodal model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/llava-hf/llava-1.5-7b-hf",
+        "domain": "multimodal",
+        "category": "vision_language",
         "task_type": "image-text-to-text",
+        "huggingface_url": "https://huggingface.co/llava-hf/llava-1.5-7b-hf",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("image-text-to-text", model="llava-hf/llava-1.5-7b-hf")""",
@@ -93,13 +105,16 @@ pipe = pipeline("image-text-to-text", model="llava-hf/llava-1.5-7b-hf")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2310.03744}
 }""",
+        "training_data_sources": "",
     },
     "qwen2-vl-7b": {
+        "description": "",
         "model_parameters": "8.3B",
         "model_architecture": "Vision-language multimodal model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct",
+        "domain": "multimodal",
+        "category": "vision_language",
         "task_type": "image-text-to-text",
+        "huggingface_url": "https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("image-text-to-text", model="Qwen/Qwen2-VL-7B-Instruct")""",
@@ -111,13 +126,16 @@ pipe = pipeline("image-text-to-text", model="Qwen/Qwen2-VL-7B-Instruct")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2409.12191}
 }""",
+        "training_data_sources": "",
     },
     "blip2-opt-2.7b": {
+        "description": "",
         "model_parameters": "3.7B",
         "model_architecture": "Vision-language multimodal model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Salesforce/blip2-opt-2.7b",
+        "domain": "multimodal",
+        "category": "vision_language",
         "task_type": "image-text-to-text",
+        "huggingface_url": "https://huggingface.co/Salesforce/blip2-opt-2.7b",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("image-text-to-text", model="Salesforce/blip2-opt-2.7b")""",
@@ -129,13 +147,16 @@ pipe = pipeline("image-text-to-text", model="Salesforce/blip2-opt-2.7b")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2301.12597}
 }""",
+        "training_data_sources": "",
     },
     "siglip-base": {
+        "description": "",
         "model_parameters": "203M",
         "model_architecture": "Vision-language multimodal model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/google/siglip-base-patch16-224",
+        "domain": "multimodal",
+        "category": "vision_language",
         "task_type": "zero-shot-image-classification",
+        "huggingface_url": "https://huggingface.co/google/siglip-base-patch16-224",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("zero-shot-image-classification", model="google/siglip-base-patch16-224")""",
@@ -147,13 +168,16 @@ pipe = pipeline("zero-shot-image-classification", model="google/siglip-base-patc
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2303.15343}
 }""",
+        "training_data_sources": "",
     },
     "idefics2-8b": {
+        "description": "",
         "model_parameters": "8.4B",
         "model_architecture": "Vision-language multimodal model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/HuggingFaceM4/idefics2-8b",
+        "domain": "multimodal",
+        "category": "vision_language",
         "task_type": "image-text-to-text",
+        "huggingface_url": "https://huggingface.co/HuggingFaceM4/idefics2-8b",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("image-text-to-text", model="HuggingFaceM4/idefics2-8b")""",
@@ -165,13 +189,16 @@ pipe = pipeline("image-text-to-text", model="HuggingFaceM4/idefics2-8b")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2405.02246}
 }""",
+        "training_data_sources": "",
     },
     "instructblip-vicuna-7b": {
+        "description": "",
         "model_parameters": "7.9B",
         "model_architecture": "Vision-language multimodal model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Salesforce/instructblip-vicuna-7b",
+        "domain": "multimodal",
+        "category": "vision_language",
         "task_type": "image-text-to-text",
+        "huggingface_url": "https://huggingface.co/Salesforce/instructblip-vicuna-7b",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("image-text-to-text", model="Salesforce/instructblip-vicuna-7b")""",
@@ -183,13 +210,16 @@ pipe = pipeline("image-text-to-text", model="Salesforce/instructblip-vicuna-7b")
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2305.06500}
 }""",
+        "training_data_sources": "",
     },
     "qwen2.5-vl-7b": {
+        "description": "",
         "model_parameters": "8.3B",
         "model_architecture": "Vision-language multimodal model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct",
+        "domain": "multimodal",
+        "category": "vision_language",
         "task_type": "image-text-to-text",
+        "huggingface_url": "https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("image-text-to-text", model="Qwen/Qwen2.5-VL-7B-Instruct")""",
@@ -201,13 +231,16 @@ pipe = pipeline("image-text-to-text", model="Qwen/Qwen2.5-VL-7B-Instruct")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2502.13923}
 }""",
+        "training_data_sources": "",
     },
     "internvl2-8b": {
+        "description": "",
         "model_parameters": "8.1B",
         "model_architecture": "Vision-language multimodal model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/OpenGVLab/InternVL2-8B",
+        "domain": "multimodal",
+        "category": "vision_language",
         "task_type": "image-text-to-text",
+        "huggingface_url": "https://huggingface.co/OpenGVLab/InternVL2-8B",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("image-text-to-text", model="OpenGVLab/InternVL2-8B")""",
@@ -219,5 +252,6 @@ pipe = pipeline("image-text-to-text", model="OpenGVLab/InternVL2-8B")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2404.16821}
 }""",
+        "training_data_sources": "",
     },
 }

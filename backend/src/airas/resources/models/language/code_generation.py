@@ -1,13 +1,16 @@
-# Curated model registry (see resources/models/registry.py for the
-# subfield aggregation). HuggingFace URLs and arXiv citations are verified
-# on entry; add candidates via search_huggingface_hub for un-curated needs.
+# Curated model registry — language / code_generation. Part of the shared
+# domain>category taxonomy across resources/{libraries,models,datasets}.
+# HuggingFace URLs and arXiv citations are verified on entry; use
+# search_huggingface_hub for un-curated needs.
 CODE_GENERATION_MODELS: dict = {
     "starcoder2-7b": {
+        "description": "",
         "model_parameters": "7.2B",
         "model_architecture": "Decoder-only transformer specialized for code generation.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/bigcode/starcoder2-7b",
+        "domain": "language",
+        "category": "code_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/bigcode/starcoder2-7b",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="bigcode/starcoder2-7b")""",
@@ -19,13 +22,16 @@ pipe = pipeline("text-generation", model="bigcode/starcoder2-7b")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2402.19173}
 }""",
+        "training_data_sources": "",
     },
     "deepseek-coder-6.7b": {
+        "description": "",
         "model_parameters": "6.7B",
         "model_architecture": "Decoder-only transformer specialized for code generation.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/deepseek-ai/deepseek-coder-6.7b-base",
+        "domain": "language",
+        "category": "code_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/deepseek-ai/deepseek-coder-6.7b-base",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="deepseek-ai/deepseek-coder-6.7b-base")""",
@@ -37,13 +43,16 @@ pipe = pipeline("text-generation", model="deepseek-ai/deepseek-coder-6.7b-base")
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2401.14196}
 }""",
+        "training_data_sources": "",
     },
     "codegen-2b": {
+        "description": "",
         "model_parameters": "Unknown",
         "model_architecture": "Decoder-only transformer specialized for code generation.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/Salesforce/codegen-2B-mono",
+        "domain": "language",
+        "category": "code_generation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/Salesforce/codegen-2B-mono",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-generation", model="Salesforce/codegen-2B-mono")""",
@@ -55,5 +64,6 @@ pipe = pipeline("text-generation", model="Salesforce/codegen-2B-mono")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2203.13474}
 }""",
+        "training_data_sources": "",
     },
 }

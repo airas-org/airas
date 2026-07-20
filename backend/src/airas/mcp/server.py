@@ -475,12 +475,12 @@ async def generate_experimental_design(
 async def retrieve_models(model_subfield: ModelSubfield) -> dict[str, Any]:
     """List AIRAS's hand-curated candidate models for a subfield.
 
-    Check here first. Subfields: "transformer_decoder_based_models",
-    "code_generation_models", "text_embedding_models",
-    "encoder_language_models", "encoder_decoder_language_models",
-    "image_models", "image_generative_models", "multi_modal_models",
-    "speech_models", "time_series_models", "reranker_models",
-    "protein_models", "llm_api_models". Returns a dict
+    Check here first. Subfields follow the shared domain>category taxonomy:
+    language ("text_generation", "text_understanding",
+    "sequence_to_sequence", "code_generation", "text_embedding",
+    "reranking", "hosted_api"), vision ("image_recognition",
+    "image_generation"), "vision_language", "speech", "forecasting",
+    "protein". Returns a dict
     keyed by model name; each value has model_architecture, task_type,
     huggingface_url, dependent_packages, a runnable code snippet, citation,
     and more. If none of these fit the experimental design, fall back to

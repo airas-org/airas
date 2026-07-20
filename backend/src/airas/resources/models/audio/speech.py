@@ -1,13 +1,16 @@
-# Curated model registry (see resources/models/registry.py for the
-# subfield aggregation). HuggingFace URLs and arXiv citations are verified
-# on entry; add candidates via search_huggingface_hub for un-curated needs.
+# Curated model registry — audio / speech. Part of the shared
+# domain>category taxonomy across resources/{libraries,models,datasets}.
+# HuggingFace URLs and arXiv citations are verified on entry; use
+# search_huggingface_hub for un-curated needs.
 SPEECH_MODELS: dict = {
     "whisper-large-v3": {
+        "description": "",
         "model_parameters": "1.5B",
         "model_architecture": "Speech model for automatic speech recognition.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/openai/whisper-large-v3",
+        "domain": "audio",
+        "category": "speech",
         "task_type": "automatic-speech-recognition",
+        "huggingface_url": "https://huggingface.co/openai/whisper-large-v3",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("automatic-speech-recognition", model="openai/whisper-large-v3")""",
@@ -19,13 +22,16 @@ pipe = pipeline("automatic-speech-recognition", model="openai/whisper-large-v3")
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2212.04356}
 }""",
+        "training_data_sources": "",
     },
     "wav2vec2-base-960h": {
+        "description": "",
         "model_parameters": "94M",
         "model_architecture": "Speech model for automatic speech recognition.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/facebook/wav2vec2-base-960h",
+        "domain": "audio",
+        "category": "speech",
         "task_type": "automatic-speech-recognition",
+        "huggingface_url": "https://huggingface.co/facebook/wav2vec2-base-960h",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("automatic-speech-recognition", model="facebook/wav2vec2-base-960h")""",
@@ -37,13 +43,16 @@ pipe = pipeline("automatic-speech-recognition", model="facebook/wav2vec2-base-96
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2006.11477}
 }""",
+        "training_data_sources": "",
     },
     "hubert-base-ls960": {
+        "description": "",
         "model_parameters": "Unknown",
         "model_architecture": "Speech model for automatic speech recognition.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/facebook/hubert-base-ls960",
+        "domain": "audio",
+        "category": "speech",
         "task_type": "automatic-speech-recognition",
+        "huggingface_url": "https://huggingface.co/facebook/hubert-base-ls960",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("automatic-speech-recognition", model="facebook/hubert-base-ls960")""",
@@ -55,13 +64,16 @@ pipe = pipeline("automatic-speech-recognition", model="facebook/hubert-base-ls96
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2106.07447}
 }""",
+        "training_data_sources": "",
     },
     "whisper-small": {
+        "description": "",
         "model_parameters": "242M",
         "model_architecture": "Speech/audio model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/openai/whisper-small",
+        "domain": "audio",
+        "category": "speech",
         "task_type": "automatic-speech-recognition",
+        "huggingface_url": "https://huggingface.co/openai/whisper-small",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("automatic-speech-recognition", model="openai/whisper-small")""",
@@ -73,13 +85,16 @@ pipe = pipeline("automatic-speech-recognition", model="openai/whisper-small")"""
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2212.04356}
 }""",
+        "training_data_sources": "",
     },
     "mms-1b-all": {
+        "description": "",
         "model_parameters": "965M",
         "model_architecture": "Speech/audio model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/facebook/mms-1b-all",
+        "domain": "audio",
+        "category": "speech",
         "task_type": "automatic-speech-recognition",
+        "huggingface_url": "https://huggingface.co/facebook/mms-1b-all",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("automatic-speech-recognition", model="facebook/mms-1b-all")""",
@@ -91,13 +106,16 @@ pipe = pipeline("automatic-speech-recognition", model="facebook/mms-1b-all")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2305.13516}
 }""",
+        "training_data_sources": "",
     },
     "speecht5-tts": {
+        "description": "",
         "model_parameters": "Unknown",
         "model_architecture": "Speech/audio model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/microsoft/speecht5_tts",
+        "domain": "audio",
+        "category": "speech",
         "task_type": "text-to-speech",
+        "huggingface_url": "https://huggingface.co/microsoft/speecht5_tts",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-to-speech", model="microsoft/speecht5_tts")""",
@@ -109,13 +127,16 @@ pipe = pipeline("text-to-speech", model="microsoft/speecht5_tts")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2110.07205}
 }""",
+        "training_data_sources": "",
     },
     "musicgen-small": {
+        "description": "",
         "model_parameters": "591M",
         "model_architecture": "Speech/audio model.",
-        "training_data_sources": "",
-        "huggingface_url": "https://huggingface.co/facebook/musicgen-small",
+        "domain": "audio",
+        "category": "speech",
         "task_type": "text-to-audio",
+        "huggingface_url": "https://huggingface.co/facebook/musicgen-small",
         "dependent_packages": ["transformers", "torch"],
         "code": """from transformers import pipeline
 pipe = pipeline("text-to-audio", model="facebook/musicgen-small")""",
@@ -127,5 +148,6 @@ pipe = pipeline("text-to-audio", model="facebook/musicgen-small")""",
   archivePrefix = {arXiv},
   url = {https://arxiv.org/abs/2306.05284}
 }""",
+        "training_data_sources": "",
     },
 }
