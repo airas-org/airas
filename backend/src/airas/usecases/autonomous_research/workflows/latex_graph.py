@@ -36,8 +36,8 @@ _LATEX_COMPILATION_RECURSION_LIMIT = 10000
 
 
 class LaTeXGraphLLMMapping(BaseModel):
-    generate_latex: GenerateLatexLLMMapping | None = None
-    compile_latex: CompileLatexLLMMapping | None = None
+    generate_latex: GenerateLatexLLMMapping
+    compile_latex: CompileLatexLLMMapping
 
 
 class LaTeXGraphInputState(TypedDict):
