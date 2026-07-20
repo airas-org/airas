@@ -1178,4 +1178,22 @@ IMAGES_DATASETS = {
     #     "code": "from datasets import load_dataset\n\n# Load the dataset\ndataset = load_dataset(\"huggan/anime-faces\")\n\n# Access an image\nimage = dataset['train'][0]['image']\n\n# Display image\nimage.show()\n\n# For GAN training\nfrom huggingface_hub import from_pretrained_keras\nmodel = from_pretrained_keras(\"merve/anime-faces-generator\")",
     #     "citation": "@misc{anime_faces_dataset,\n  title={Anime-Faces Dataset},\n  author={Getchu.com and nagadomi},\n  note={Scraped from www.getchu.com and processed with lbpcascade_animeface},\n  year={2017}\n}",
     # },
+    "cifar100": {
+        "description": "Dataset Card for CIFAR-100 Dataset Summary The CIFAR-100 dataset consists of 60000 32x32 colour images in 100 classes, with 600 images per class. There are 500 training images and 100 testing images per class. There are 50000 training images and 10000 test images. The 100 classes",
+        "huggingface_url": "https://huggingface.co/datasets/uoft-cs/cifar100",
+        "task_type": "image-classification",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("uoft-cs/cifar100")""",
+        "citation": "",
+    },
+    "food101": {
+        "description": "Dataset Card for Food-101 Dataset Summary This dataset consists of 101 food categories, with 101'000 images. For each class, 250 manually reviewed test images are provided as well as 750 training images. On purpose, the training images were not cleaned, and thus still contain som",
+        "huggingface_url": "https://huggingface.co/datasets/ethz/food101",
+        "task_type": "image-classification",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("ethz/food101")""",
+        "citation": "",
+    },
 }

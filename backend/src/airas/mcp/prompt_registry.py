@@ -33,7 +33,7 @@ from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.paper import PaperContent
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
-from airas.resources.datasets.prompt_engineering_datasets import (
+from airas.resources.datasets.language.prompt_engineering import (
     PROMPT_ENGINEERING_DATASETS,
 )
 from airas.resources.models.api.llm import LLM_API_MODELS

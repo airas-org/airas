@@ -499,7 +499,9 @@ async def retrieve_datasets(dataset_subfield: DatasetSubfield) -> dict[str, Any]
     """List AIRAS's hand-curated candidate datasets for a subfield.
 
     Check here first. Subfields: "language_model_fine_tuning_datasets",
-    "image_datasets", "prompt_engineering_datasets". Returns a dict keyed
+    "language_model_evaluation_datasets", "prompt_engineering_datasets",
+    "code_evaluation_datasets", "image_datasets", "speech_datasets",
+    "multimodal_datasets". Returns a dict keyed
     by dataset name; each value has description, task_type, huggingface_url,
     dependent_packages, a runnable code snippet, citation, and more. If none
     fit the experimental design, fall back to `search_huggingface_hub`

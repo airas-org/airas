@@ -14,7 +14,7 @@ from airas.core.types.experimental_design import (
 )
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.infra.langchain_client import LangChainClient
-from airas.resources.datasets.prompt_engineering_datasets import (
+from airas.resources.datasets.language.prompt_engineering import (
     PROMPT_ENGINEERING_DATASETS,
 )
 from airas.resources.models.api.llm import LLM_API_MODELS
