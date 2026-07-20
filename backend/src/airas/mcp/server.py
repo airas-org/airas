@@ -484,7 +484,8 @@ async def retrieve_papers(paper_titles: list[str], model: str) -> list[dict[str,
     Fetches each paper (via arXiv) and extracts structured research study
     data: abstract, methods, experimental settings, and results. The returned
     objects can be passed to `generate_hypothesis` as `research_study_list`.
-    Requires GH_PERSONAL_ACCESS_TOKEN and an LLM provider API key.
+    `model` (required) is the LLM to use — call `get_available_llms` to list
+    valid models. Requires GH_PERSONAL_ACCESS_TOKEN and an LLM provider API key.
     """
     result = (
         await RetrievePaperSubgraph(
@@ -510,7 +511,8 @@ async def generate_hypothesis(
 
     `research_study_list` should be the output of `retrieve_papers`. Higher
     `refinement_rounds` improves quality at the cost of more LLM calls.
-    Requires an LLM provider API key — without one, use
+    `model` (required) is the LLM to use — call `get_available_llms` to list
+    valid models. Requires an LLM provider API key — without one, use
     `get_generation_prompt(step="hypothesis", ...)` and author the
     hypothesis yourself.
     """
@@ -551,8 +553,9 @@ async def generate_experimental_design(
     `research_hypothesis` should be the output of `generate_hypothesis`.
     `compute_environment` optionally describes the hardware the experiments
     will run on (e.g. {"gpu_type": "A100", "gpu_count": 1}); it constrains
-    the design to what is actually runnable. Requires an LLM provider API
-    key — without one, use
+    the design to what is actually runnable. `model` (required) is the LLM to
+    use — call `get_available_llms` to list valid models. Requires an LLM
+    provider API key — without one, use
     `get_generation_prompt(step="experimental_design", ...)` and author the
     design yourself.
     """
@@ -920,8 +923,9 @@ async def analyze_experiment(
     and `fetch_experiment_results`, and returns a structured analysis
     (findings, whether the hypothesis is supported, and suggested next
     steps). For `experiment_code`, read the code from your local clone and
-    pass `{"files": {"<relative path>": "<content>", ...}}`.
-    Requires an LLM provider API key — without one, use
+    pass `{"files": {"<relative path>": "<content>", ...}}`. `model`
+    (required) is the LLM to use — call `get_available_llms` to list valid
+    models. Requires an LLM provider API key — without one, use
     `get_generation_prompt(step="experiment_analysis", ...)` and write the
     analysis yourself.
     """
@@ -1138,7 +1142,9 @@ async def generate_paper(
     Takes the hypothesis, experiment history, experiment code, related
     studies, and the BibTeX file (from `generate_bibfile`), and produces
     structured paper content (title, abstract, sections). Pass the result
-    to `generate_latex`. Requires an LLM provider API key — without one, use
+    to `generate_latex`. `model` (required) is the LLM to use — call
+    `get_available_llms` to list valid models. Requires an LLM provider API
+    key — without one, use
     `get_generation_prompt(step="paper_writing", ...)` and author the paper
     yourself in one pass with the same curated prompt.
     """
@@ -1181,10 +1187,11 @@ async def generate_latex(
     templates: "mdpi", "iclr2024", "agents4science_2025". Write the returned
     LaTeX to `.research/latex/{template}/main.tex` in your local clone of
     the experiment repository and push it with git, then build the PDF with
-    `compile_latex` and/or hand it over with `open_in_overleaf`. Requires an
-    LLM provider API key and GH_PERSONAL_ACCESS_TOKEN — without them, use
-    `get_generation_prompt(step="latex_conversion", ...)` and do the
-    conversion yourself with the template from your local clone.
+    `compile_latex` and/or hand it over with `open_in_overleaf`. `model`
+    (required) is the LLM to use — call `get_available_llms` to list valid
+    models. Requires an LLM provider API key and GH_PERSONAL_ACCESS_TOKEN —
+    without them, use `get_generation_prompt(step="latex_conversion", ...)`
+    and do the conversion yourself with the template from your local clone.
     """
     result = (
         await GenerateLatexSubgraph(
@@ -1222,7 +1229,9 @@ async def compile_latex(
     figure PDFs under `.research/results/` and `.research/diagrams/` are
     materialized into `images/` at build time. Returns immediately with
     `paper_url` (when available); track the run with `get_workflow_runs`.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
+    `model` (required) is forwarded to the compilation workflow as the
+    coding-agent model (`model_name`) — call `get_available_llms` to list
+    valid models. Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     result = (
         await CompileLatexSubgraph(
