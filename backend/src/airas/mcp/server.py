@@ -252,6 +252,15 @@ def get_available_llms(include_models: bool = True) -> dict[str, Any]:
     catalog). Set it to false for a lightweight configured/not-configured
     summary.
 
+    Scope: this reports the **LiteLLM** view — provider credentials
+    (`LITELLM_PROVIDER_REQUIRED_ENV_VARS`) and litellm's model catalog. That
+    is the target the `model` argument of the generation tools is validated
+    against. During the in-progress LangChain->LiteLLM migration some tools
+    still execute via LangChain, whose provider/model coverage can differ
+    (e.g. a different Bedrock credential variable, or models outside
+    LangChain's older list); treat this listing as the litellm-catalog view,
+    not a guarantee for every backing client. See the `note` field.
+
     Returns:
     - `any_provider_configured`: whether at least one provider is usable
     - `configured_providers`: sorted provider names that are ready
@@ -259,6 +268,7 @@ def get_available_llms(include_models: bool = True) -> dict[str, Any]:
       `missing_env_vars`, and (when configured and requested) `models` /
       `model_count`
     - `setup_instructions`: how to add keys, present only when none are set
+    - `note`: scope caveat for the LangChain->LiteLLM transition
     """
     refresh_environment()
     available = detect_available_providers(LITELLM_PROVIDER_REQUIRED_ENV_VARS)
@@ -287,6 +297,12 @@ def get_available_llms(include_models: bool = True) -> dict[str, Any]:
         "configured_providers": sorted(p.value for p in available),
         "providers": providers,
         "setup_instructions": None if available else SETUP_INSTRUCTIONS,
+        "note": (
+            "Reflects LiteLLM provider credentials and model catalog. Some "
+            "generation tools still run via LangChain during the migration, "
+            "so a listed provider/model is not guaranteed for every backing "
+            "client yet."
+        ),
     }
 
 
