@@ -1,11 +1,14 @@
-# Curated dataset registry (see resources/datasets/registry.py for the
-# subfield aggregation). HuggingFace dataset IDs and arXiv citations are
-# verified on entry; use search_huggingface_hub for un-curated needs.
+# Curated dataset registry — language / code_evaluation. Part of the shared
+# domain>category taxonomy across resources/{libraries,models,datasets}.
+# HuggingFace dataset IDs and arXiv citations are verified on entry;
+# use search_huggingface_hub for un-curated needs.
 CODE_EVALUATION_DATASETS: dict = {
     "humaneval": {
         "description": "Dataset Card for OpenAI HumanEval Dataset Summary The HumanEval dataset released by OpenAI includes 164 programming problems with a function sig- nature, docstring, body, and several unit tests. They were handwritten to ensure not to be included in the training set of code genera",
-        "huggingface_url": "https://huggingface.co/datasets/openai/openai_humaneval",
+        "domain": "language",
+        "category": "code_evaluation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/datasets/openai/openai_humaneval",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("openai/openai_humaneval")""",
@@ -20,8 +23,10 @@ ds = load_dataset("openai/openai_humaneval")""",
     },
     "mbpp": {
         "description": "Dataset Card for Mostly Basic Python Problems (mbpp) Dataset Summary The benchmark consists of around 1,000 crowd-sourced Python programming problems, designed to be solvable by entry level programmers, covering programming fundamentals, standard library functionality, and so on.",
-        "huggingface_url": "https://huggingface.co/datasets/google-research-datasets/mbpp",
+        "domain": "language",
+        "category": "code_evaluation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/datasets/google-research-datasets/mbpp",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("google-research-datasets/mbpp")""",
@@ -36,8 +41,10 @@ ds = load_dataset("google-research-datasets/mbpp")""",
     },
     "bigcodebench": {
         "description": "BigCodeBench The dataset has 2 variants: BigCodeBench-Complete: Code Completion based on the structured docstrings. &nbsp;BigCodeBench-Instruct: Code Generation based on the NL-oriented instructions. The overall statistics of the dataset are as follows: Complete Instruct # Task 1",
-        "huggingface_url": "https://huggingface.co/datasets/bigcode/bigcodebench",
+        "domain": "language",
+        "category": "code_evaluation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/datasets/bigcode/bigcodebench",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("bigcode/bigcodebench")""",
@@ -52,8 +59,10 @@ ds = load_dataset("bigcode/bigcodebench")""",
     },
     "ds-1000": {
         "description": "DS-1000 in simplified format 🔥 Check the leaderboard from Eval-Arena on our project page. See testing code and more information (also the original fill-in-the-middle/Insertion format) in the DS-1000 repo. Reformatting credits: Yuhang Lai, Sida Wang",
-        "huggingface_url": "https://huggingface.co/datasets/xlangai/DS-1000",
+        "domain": "language",
+        "category": "code_evaluation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/datasets/xlangai/DS-1000",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("xlangai/DS-1000")""",

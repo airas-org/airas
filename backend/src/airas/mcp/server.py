@@ -499,11 +499,10 @@ async def retrieve_models(model_subfield: ModelSubfield) -> dict[str, Any]:
 async def retrieve_datasets(dataset_subfield: DatasetSubfield) -> dict[str, Any]:
     """List AIRAS's hand-curated candidate datasets for a subfield.
 
-    Check here first. Subfields: "language_model_fine_tuning_datasets",
-    "language_model_evaluation_datasets",
-    "natural_language_processing_datasets", "prompt_engineering_datasets",
-    "code_evaluation_datasets", "image_datasets", "speech_datasets",
-    "multimodal_datasets". Returns a dict keyed
+    Check here first. Subfields follow the shared domain>category
+    taxonomy: language ("instruction_tuning", "reasoning_evaluation",
+    "nlp_tasks", "prompt_engineering", "code_evaluation"),
+    "image_recognition", "speech", "vision_language". Returns a dict keyed
     by dataset name; each value has description, task_type, huggingface_url,
     dependent_packages, a runnable code snippet, citation, and more. If none
     fit the experimental design, fall back to `search_huggingface_hub`

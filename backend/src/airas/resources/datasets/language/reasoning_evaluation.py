@@ -1,11 +1,14 @@
-# Curated dataset registry (see resources/datasets/registry.py for the
-# subfield aggregation). HuggingFace dataset IDs and arXiv citations are
-# verified on entry; use search_huggingface_hub for un-curated needs.
-LANGUAGE_MODEL_EVALUATION_DATASETS: dict = {
+# Curated dataset registry — language / reasoning_evaluation. Part of the shared
+# domain>category taxonomy across resources/{libraries,models,datasets}.
+# HuggingFace dataset IDs and arXiv citations are verified on entry;
+# use search_huggingface_hub for un-curated needs.
+REASONING_EVALUATION_DATASETS: dict = {
     "mmlu": {
         "description": "Dataset Card for MMLU Dataset Summary Measuring Massive Multitask Language Understanding by Dan Hendrycks, Collin Burns, Steven Basart, Andy Zou, Mantas Mazeika, Dawn Song, and Jacob Steinhardt (ICLR 2021). This is a massive multitask test consisting of multiple-choice questions ",
-        "huggingface_url": "https://huggingface.co/datasets/cais/mmlu",
+        "domain": "language",
+        "category": "reasoning_evaluation",
         "task_type": "multiple-choice",
+        "huggingface_url": "https://huggingface.co/datasets/cais/mmlu",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("cais/mmlu")""",
@@ -20,8 +23,10 @@ ds = load_dataset("cais/mmlu")""",
     },
     "hellaswag": {
         "description": "Dataset Card for 'hellaswag' Dataset Summary HellaSwag: Can a Machine Really Finish Your Sentence? is a new dataset for commonsense NLI. A paper was published at ACL2019. Supported Tasks and Leaderboards More Information Needed Languages More Information Needed Dataset Structure ",
-        "huggingface_url": "https://huggingface.co/datasets/Rowan/hellaswag",
+        "domain": "language",
+        "category": "reasoning_evaluation",
         "task_type": "multiple-choice",
+        "huggingface_url": "https://huggingface.co/datasets/Rowan/hellaswag",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("Rowan/hellaswag")""",
@@ -36,8 +41,10 @@ ds = load_dataset("Rowan/hellaswag")""",
     },
     "gsm8k": {
         "description": "Dataset Card for GSM8K Dataset Summary GSM8K (Grade School Math 8K) is a dataset of 8.5K high quality linguistically diverse grade school math word problems. The dataset was created to support the task of question answering on basic mathematical problems that require multi-step r",
-        "huggingface_url": "https://huggingface.co/datasets/openai/gsm8k",
+        "domain": "language",
+        "category": "reasoning_evaluation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/datasets/openai/gsm8k",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("openai/gsm8k")""",
@@ -52,8 +59,10 @@ ds = load_dataset("openai/gsm8k")""",
     },
     "ai2_arc": {
         "description": "Dataset Card for 'ai2_arc' Dataset Summary A new dataset of 7,787 genuine grade-school level, multiple-choice science questions, assembled to encourage research in advanced question-answering. The dataset is partitioned into a Challenge Set and an Easy Set, where the former conta",
-        "huggingface_url": "https://huggingface.co/datasets/allenai/ai2_arc",
+        "domain": "language",
+        "category": "reasoning_evaluation",
         "task_type": "multiple-choice",
+        "huggingface_url": "https://huggingface.co/datasets/allenai/ai2_arc",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("allenai/ai2_arc")""",
@@ -68,8 +77,10 @@ ds = load_dataset("allenai/ai2_arc")""",
     },
     "truthful_qa": {
         "description": "Dataset Card for truthful_qa Dataset Summary TruthfulQA is a benchmark to measure whether a language model is truthful in generating answers to questions. The benchmark comprises 817 questions that span 38 categories, including health, law, finance and politics. Questions are cra",
-        "huggingface_url": "https://huggingface.co/datasets/truthfulqa/truthful_qa",
+        "domain": "language",
+        "category": "reasoning_evaluation",
         "task_type": "multiple-choice",
+        "huggingface_url": "https://huggingface.co/datasets/truthfulqa/truthful_qa",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("truthfulqa/truthful_qa")""",
@@ -84,8 +95,10 @@ ds = load_dataset("truthfulqa/truthful_qa")""",
     },
     "winogrande": {
         "description": "Dataset Card for 'winogrande' Dataset Summary WinoGrande is a new collection of 44k problems, inspired by Winograd Schema Challenge (Levesque, Davis, and Morgenstern 2011), but adjusted to improve the scale and robustness against the dataset-specific bias. Formulated as a fill-in",
-        "huggingface_url": "https://huggingface.co/datasets/allenai/winogrande",
+        "domain": "language",
+        "category": "reasoning_evaluation",
         "task_type": "multiple-choice",
+        "huggingface_url": "https://huggingface.co/datasets/allenai/winogrande",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("allenai/winogrande")""",
@@ -100,8 +113,10 @@ ds = load_dataset("allenai/winogrande")""",
     },
     "piqa": {
         "description": "To apply eyeshadow without a brush, should I use a cotton swab or a toothpick? Questions requiring this kind of physical commonsense pose a challenge to state-of-the-art natural language understanding systems. The PIQA dataset introduces the task of physical commonsense reasoning",
-        "huggingface_url": "https://huggingface.co/datasets/ybisk/piqa",
+        "domain": "language",
+        "category": "reasoning_evaluation",
         "task_type": "multiple-choice",
+        "huggingface_url": "https://huggingface.co/datasets/ybisk/piqa",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("ybisk/piqa")""",
@@ -116,8 +131,10 @@ ds = load_dataset("ybisk/piqa")""",
     },
     "mmlu-pro": {
         "description": "MMLU-Pro Dataset MMLU-Pro dataset is a more robust and challenging massive multi-task understanding dataset tailored to more rigorously benchmark large language models' capabilities. This dataset contains 12K complex questions across various disciplines. |Github | 🏆Leaderboard | ",
-        "huggingface_url": "https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro",
+        "domain": "language",
+        "category": "reasoning_evaluation",
         "task_type": "multiple-choice",
+        "huggingface_url": "https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("TIGER-Lab/MMLU-Pro")""",
@@ -132,8 +149,10 @@ ds = load_dataset("TIGER-Lab/MMLU-Pro")""",
     },
     "bbh": {
         "description": "BIG-bench Hard dataset homepage: https://github.com/suzgunmirac/BIG-Bench-Hard @article{suzgun2022challenging, title={Challenging BIG-Bench Tasks and Whether Chain-of-Thought Can Solve Them}, author={Suzgun, Mirac and Scales, Nathan and Sch{'a}rli, Nathanael and Gehrmann, Sebast",
-        "huggingface_url": "https://huggingface.co/datasets/lukaemon/bbh",
+        "domain": "language",
+        "category": "reasoning_evaluation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/datasets/lukaemon/bbh",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("lukaemon/bbh")""",
@@ -148,8 +167,10 @@ ds = load_dataset("lukaemon/bbh")""",
     },
     "competition_math": {
         "description": "The Mathematics Aptitude Test of Heuristics (MATH) dataset consists of problems from mathematics competitions, including the AMC 10, AMC 12, AIME, and more. Each problem in MATH has a full step-by-step solution, which can be used to teach models to generate answer derivations and",
-        "huggingface_url": "https://huggingface.co/datasets/hendrycks/competition_math",
+        "domain": "language",
+        "category": "reasoning_evaluation",
         "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/datasets/hendrycks/competition_math",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("hendrycks/competition_math")""",

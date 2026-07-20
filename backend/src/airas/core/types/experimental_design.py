@@ -24,14 +24,16 @@ ModelSubfield = Literal[
 ]
 
 DatasetSubfield = Literal[
-    "language_model_fine_tuning_datasets",
-    "language_model_evaluation_datasets",
-    "natural_language_processing_datasets",
-    "prompt_engineering_datasets",
-    "code_evaluation_datasets",
-    "image_datasets",
-    "speech_datasets",
-    "multimodal_datasets",
+    # language
+    "instruction_tuning",
+    "reasoning_evaluation",
+    "nlp_tasks",
+    "prompt_engineering",
+    "code_evaluation",
+    # vision / audio / multimodal
+    "image_recognition",
+    "speech",
+    "vision_language",
 ]
 
 DataModalities = Literal[

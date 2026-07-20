@@ -1,11 +1,14 @@
-# Curated dataset registry (see resources/datasets/registry.py for the
-# subfield aggregation). HuggingFace dataset IDs and arXiv citations are
-# verified on entry; use search_huggingface_hub for un-curated needs.
-NATURAL_LANGUAGE_PROCESSING_DATASETS: dict = {
+# Curated dataset registry — language / nlp_tasks. Part of the shared
+# domain>category taxonomy across resources/{libraries,models,datasets}.
+# HuggingFace dataset IDs and arXiv citations are verified on entry;
+# use search_huggingface_hub for un-curated needs.
+NLP_TASKS_DATASETS: dict = {
     "squad": {
         "description": "Dataset Card for SQuAD Dataset Summary Stanford Question Answering Dataset (SQuAD) is a reading comprehension dataset, consisting of questions posed by crowdworkers on a set of Wikipedia articles, where the answer to every question is a segment of text, or span, from the correspo",
-        "huggingface_url": "https://huggingface.co/datasets/rajpurkar/squad",
+        "domain": "language",
+        "category": "nlp_tasks",
         "task_type": "question-answering",
+        "huggingface_url": "https://huggingface.co/datasets/rajpurkar/squad",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("rajpurkar/squad")""",
@@ -20,8 +23,10 @@ ds = load_dataset("rajpurkar/squad")""",
     },
     "trivia_qa": {
         "description": "Dataset Card for 'trivia_qa' Dataset Summary TriviaqQA is a reading comprehension dataset containing over 650K question-answer-evidence triples. TriviaqQA includes 95K question-answer pairs authored by trivia enthusiasts and independently gathered evidence documents, six per ques",
-        "huggingface_url": "https://huggingface.co/datasets/mandarjoshi/trivia_qa",
+        "domain": "language",
+        "category": "nlp_tasks",
         "task_type": "question-answering",
+        "huggingface_url": "https://huggingface.co/datasets/mandarjoshi/trivia_qa",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("mandarjoshi/trivia_qa")""",
@@ -36,8 +41,10 @@ ds = load_dataset("mandarjoshi/trivia_qa")""",
     },
     "cnn_dailymail": {
         "description": "Dataset Card for CNN Dailymail Dataset Dataset Summary The CNN / DailyMail Dataset is an English-language dataset containing just over 300k unique news articles as written by journalists at CNN and the Daily Mail. The current version supports both extractive and abstractive summa",
-        "huggingface_url": "https://huggingface.co/datasets/abisee/cnn_dailymail",
+        "domain": "language",
+        "category": "nlp_tasks",
         "task_type": "summarization",
+        "huggingface_url": "https://huggingface.co/datasets/abisee/cnn_dailymail",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("abisee/cnn_dailymail")""",
@@ -45,8 +52,10 @@ ds = load_dataset("abisee/cnn_dailymail")""",
     },
     "xsum": {
         "description": "Dataset Card for 'xsum' Dataset Summary Extreme Summarization (XSum) Dataset. There are three features: document: Input news article. summary: One sentence summary of the article. id: BBC ID of the article. Supported Tasks and Leaderboards More Information Needed Languages More I",
-        "huggingface_url": "https://huggingface.co/datasets/EdinburghNLP/xsum",
+        "domain": "language",
+        "category": "nlp_tasks",
         "task_type": "summarization",
+        "huggingface_url": "https://huggingface.co/datasets/EdinburghNLP/xsum",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("EdinburghNLP/xsum")""",
@@ -61,8 +70,10 @@ ds = load_dataset("EdinburghNLP/xsum")""",
     },
     "multi_nli": {
         "description": "Dataset Card for Multi-Genre Natural Language Inference (MultiNLI) Dataset Summary The Multi-Genre Natural Language Inference (MultiNLI) corpus is a crowd-sourced collection of 433k sentence pairs annotated with textual entailment information. The corpus is modeled on the SNLI co",
-        "huggingface_url": "https://huggingface.co/datasets/nyu-mll/multi_nli",
+        "domain": "language",
+        "category": "nlp_tasks",
         "task_type": "text-classification",
+        "huggingface_url": "https://huggingface.co/datasets/nyu-mll/multi_nli",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("nyu-mll/multi_nli")""",
@@ -77,8 +88,10 @@ ds = load_dataset("nyu-mll/multi_nli")""",
     },
     "glue": {
         "description": "Dataset Card for GLUE Dataset Summary GLUE, the General Language Understanding Evaluation benchmark (https://gluebenchmark.com/) is a collection of resources for training, evaluating, and analyzing natural language understanding systems. Supported Tasks and Leaderboards The leade",
-        "huggingface_url": "https://huggingface.co/datasets/nyu-mll/glue",
+        "domain": "language",
+        "category": "nlp_tasks",
         "task_type": "text-classification",
+        "huggingface_url": "https://huggingface.co/datasets/nyu-mll/glue",
         "dependent_packages": ["datasets"],
         "code": """from datasets import load_dataset
 ds = load_dataset("nyu-mll/glue")""",
