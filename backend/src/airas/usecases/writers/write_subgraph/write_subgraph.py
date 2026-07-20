@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory
@@ -25,8 +25,8 @@ record_execution_time = lambda f: time_node("write_subgraph")(f)  # noqa: E731
 
 
 class WriteLLMMapping(BaseModel):
-    write_paper: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["write_paper"]
-    refine_paper: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["refine_paper"]
+    write_paper: NodeLLMConfig
+    refine_paper: NodeLLMConfig
 
 
 class WriteSubgraphInputState(TypedDict):
@@ -65,7 +65,7 @@ class WriteSubgraph:
         llm_mapping: WriteLLMMapping | None = None,
         paper_content_refinement_iterations: int = 2,
     ):
-        self.llm_mapping = llm_mapping or WriteLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
         self.paper_content_refinement_iterations = paper_content_refinement_iterations
         self.langchain_client = langchain_client
 

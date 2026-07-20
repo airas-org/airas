@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.infra.github_client import GithubClient
@@ -24,7 +24,7 @@ record_execution_time = lambda f: time_node("execute_evaluation_subgraph")(f)  #
 
 
 class ExecuteEvaluationLLMMapping(BaseModel):
-    dispatch_evaluation: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["dispatch_evaluation"]
+    dispatch_evaluation: NodeLLMConfig
 
 
 class ExecuteEvaluationSubgraphInputState(TypedDict):
@@ -54,7 +54,7 @@ class ExecuteEvaluationSubgraph:
         self.github_client = github_client
         self.workflow_file = workflow_file
         self.github_actions_agent = github_actions_agent
-        self.llm_mapping = llm_mapping or ExecuteEvaluationLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _read_run_ids(

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.infra.github_client import GithubClient
@@ -35,9 +35,7 @@ _ARTIFACT_NAME = "tunnel-url"
 
 
 class DispatchInteractiveRepoAgentLLMMapping(BaseModel):
-    dispatch_interactive_repo_agent: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "dispatch_interactive_repo_agent"
-    ]
+    dispatch_interactive_repo_agent: NodeLLMConfig
 
 
 class DispatchInteractiveRepoAgentSubgraphInputState(TypedDict):
@@ -72,7 +70,7 @@ class DispatchInteractiveRepoAgentSubgraph:
         self.session_username = session_username
         self.session_password = session_password
         self.workflow_file = workflow_file
-        self.llm_mapping = llm_mapping or DispatchInteractiveRepoAgentLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _dispatch_interactive_repo_agent(

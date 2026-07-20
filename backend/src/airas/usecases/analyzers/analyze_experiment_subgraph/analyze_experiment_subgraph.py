@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
@@ -28,7 +28,7 @@ record_execution_time = lambda f: time_node("analyze_experiment_subgraph")(f)  #
 
 
 class AnalyzeExperimentLLMMapping(BaseModel):
-    analyze_experiment: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["analyze_experiment"]
+    analyze_experiment: NodeLLMConfig
 
 
 class AnalyzeExperimentSubgraphInputState(TypedDict):
@@ -56,7 +56,7 @@ class AnalyzeExperimentSubgraph:
         langchain_client: LangChainClient,
         llm_mapping: AnalyzeExperimentLLMMapping | None = None,
     ):
-        self.llm_mapping = llm_mapping or AnalyzeExperimentLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
         self.langchain_client = langchain_client
 
     @record_execution_time

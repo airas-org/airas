@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.infra.github_client import GithubClient
@@ -24,9 +24,7 @@ record_execution_time = lambda f: time_node("execute_trial_experiment_subgraph")
 
 
 class ExecuteTrialExperimentLLMMapping(BaseModel):
-    dispatch_trial_experiment: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "dispatch_trial_experiment"
-    ]
+    dispatch_trial_experiment: NodeLLMConfig
 
 
 class ExecuteTrialExperimentSubgraphInputState(TypedDict):
@@ -59,7 +57,7 @@ class ExecuteTrialExperimentSubgraph:
         self.runner_label = runner_label or ["ubuntu-latest"]
         self.workflow_file = workflow_file
         self.github_actions_agent = github_actions_agent
-        self.llm_mapping = llm_mapping or ExecuteTrialExperimentLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _read_run_ids(

@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experiment_history import RunStage
 from airas.core.types.experimental_design import ExperimentalDesign
@@ -24,9 +24,7 @@ def record_execution_time(f):
 
 
 class DispatchExperimentValidationLLMMapping(BaseModel):
-    dispatch_experiment_validation: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "dispatch_experiment_validation"
-    ]
+    dispatch_experiment_validation: NodeLLMConfig
 
 
 class DispatchExperimentValidationSubgraphInputState(TypedDict, total=False):
@@ -62,7 +60,7 @@ class DispatchExperimentValidationSubgraph:
     ):
         self.github_client = github_client
         self.workflow_file = workflow_file
-        self.llm_mapping = llm_mapping or DispatchExperimentValidationLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _dispatch_experiment_validation(

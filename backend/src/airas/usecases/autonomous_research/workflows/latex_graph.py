@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import time_node
+from airas.core.llm_config import require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
@@ -36,8 +37,8 @@ _LATEX_COMPILATION_RECURSION_LIMIT = 10000
 
 
 class LaTeXGraphLLMMapping(BaseModel):
-    generate_latex: GenerateLatexLLMMapping = GenerateLatexLLMMapping()
-    compile_latex: CompileLatexLLMMapping = CompileLatexLLMMapping()
+    generate_latex: GenerateLatexLLMMapping
+    compile_latex: CompileLatexLLMMapping
 
 
 class LaTeXGraphInputState(TypedDict):
@@ -70,7 +71,7 @@ class LaTeXGraph:
         self.langchain_client = langchain_client
         self.latex_template_name = latex_template_name
         self.github_actions_agent = github_actions_agent
-        self.llm_mapping = llm_mapping or LaTeXGraphLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _generate_latex(self, state: LaTeXGraphState) -> dict[str, str]:

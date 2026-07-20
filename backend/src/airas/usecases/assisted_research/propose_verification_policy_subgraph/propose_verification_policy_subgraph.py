@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.infra.litellm_client import LiteLLMClient
 
@@ -37,9 +37,7 @@ class DetailedMethodOutput(BaseModel):
 
 
 class ProposeVerificationPolicyLLMMapping(BaseModel):
-    propose_verification_policy: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "propose_verification_policy"
-    ]
+    propose_verification_policy: NodeLLMConfig
 
 
 class ProposeVerificationPolicySubgraphInputState(TypedDict):
@@ -68,7 +66,7 @@ class ProposeVerificationPolicySubgraph:
         llm_mapping: ProposeVerificationPolicyLLMMapping | None = None,
     ):
         self.litellm_client = litellm_client
-        self.llm_mapping = llm_mapping or ProposeVerificationPolicyLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _generate_policy_options(

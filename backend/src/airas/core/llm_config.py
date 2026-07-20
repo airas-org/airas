@@ -1,3 +1,5 @@
+from typing import TypeVar
+
 from pydantic import BaseModel
 
 from airas.infra.llm_specs import (
@@ -12,63 +14,48 @@ class NodeLLMConfig(BaseModel):
     params: LLMParams | None = None
 
 
-BASE_MODEL_CONFIG = NodeLLMConfig(llm_name="gpt-5.2")
-ADVANCE_MODEL_CONFIG = NodeLLMConfig(llm_name="gpt-5.4-2026-03-05")
-BUDGET_MODEL_CONFIG = NodeLLMConfig(llm_name="gemini-2.5-flash")
-EMBEDDING_MODEL_CONFIG = NodeLLMConfig(llm_name="gemini/gemini-embedding-001")
-AGENT_MODEL_CONFIG = NodeLLMConfig(llm_name="anthropic/claude-sonnet-4-5")
+_MappingT = TypeVar("_MappingT", bound=BaseModel)
 
-DEFAULT_NODE_LLM_CONFIG: dict[str, NodeLLMConfig] = {
-    # retrieve/
-    # GenerateQueriesSubgraph
-    "generate_queries": BASE_MODEL_CONFIG,
-    # SearchPaperTitlesFromQdrantSubgraph
-    "search_paper_titles_from_qdrant": EMBEDDING_MODEL_CONFIG,
-    # RetrievePaperSubgraph
-    "search_arxiv_id_from_title": BUDGET_MODEL_CONFIG,
-    "summarize_paper": BASE_MODEL_CONFIG,
-    "extract_github_url_from_text": BUDGET_MODEL_CONFIG,
-    "select_experimental_files": BASE_MODEL_CONFIG,
-    "extract_reference_titles": BUDGET_MODEL_CONFIG,
-    # generators/
-    # GenerateHypothesisV0Subgraph
-    "generate_hypothesis": ADVANCE_MODEL_CONFIG,
-    "evaluate_novelty_and_significance": BASE_MODEL_CONFIG,
-    "refine_hypothesis": ADVANCE_MODEL_CONFIG,
-    # GenerateExperimentalDesignSubgraph
-    "generate_experimental_design": ADVANCE_MODEL_CONFIG,
-    # RefineExperimentalDesignSubgraph
-    "refine_experimental_design": ADVANCE_MODEL_CONFIG,
-    # DispatchCodeGenerationSubgraph
-    "dispatch_code_generation": AGENT_MODEL_CONFIG,
-    # executors/
-    # DispatchExperimentValidationSubgraph
-    "dispatch_experiment_validation": AGENT_MODEL_CONFIG,
-    # analyzers/
-    "analyze_experiment": ADVANCE_MODEL_CONFIG,
-    # DecideExperimentCycleSubgraph
-    "decide_experiment_cycle": ADVANCE_MODEL_CONFIG,
-    # writes/
-    # WriterSubgraph
-    "write_paper": ADVANCE_MODEL_CONFIG,
-    "refine_paper": ADVANCE_MODEL_CONFIG,
-    # publication/
-    # GenerateLatexSubgraph
-    "convert_to_latex": BASE_MODEL_CONFIG,
-    # CompileLatexSubgraph
-    "compile_latex": AGENT_MODEL_CONFIG,
-    # GenerateHtmlSubgraph
-    "convert_to_html": BASE_MODEL_CONFIG,
-    # DispatchDiagramGenerationSubgraph
-    "dispatch_diagram_generation": AGENT_MODEL_CONFIG,
-    # assisted_research/
-    # DispatchInteractiveRepoAgentSubgraph
-    "dispatch_interactive_repo_agent": AGENT_MODEL_CONFIG,
-    # verification/
-    # ProposeVerificationPolicySubgraph
-    "propose_verification_policy": ADVANCE_MODEL_CONFIG,
-    # GenerateVerificationMethodSubgraph
-    "generate_verification_method": ADVANCE_MODEL_CONFIG,
-    # GenerateExperimentCodeSubgraph
-    "dispatch_experiment_code_generation": AGENT_MODEL_CONFIG,
-}
+
+def require_llm_mapping(llm_mapping: _MappingT | None) -> _MappingT:
+    """Return ``llm_mapping``, or raise a uniform error when it is ``None``.
+
+    Every subgraph requires its model selection to be supplied externally
+    (there are no in-code defaults). Centralizing the guard here keeps the
+    message identical across all subgraphs and gives a single place to
+    evolve the wording or add hints.
+    """
+    if llm_mapping is None:
+        raise ValueError(
+            "llm_mapping is required: specify the model(s) explicitly "
+            "(no default model is configured). To use one model for every "
+            "node, pass uniform_llm_mapping(<SubgraphLLMMapping>, model)."
+        )
+    return llm_mapping
+
+
+def uniform_llm_mapping(
+    mapping_cls: type[_MappingT],
+    model: str,
+    params: LLMParams | None = None,
+) -> _MappingT:
+    """Build a subgraph LLM mapping whose every node uses the same model.
+
+    There are intentionally no in-code per-node model defaults: model
+    selection is supplied externally (MCP tool arguments, dashboard API
+    requests, autonomous-research entry points). This helper lets a caller
+    turn a single externally-chosen model name into the per-node mapping a
+    subgraph requires, without having to name each node field explicitly.
+    """
+    # Build a fresh NodeLLMConfig per field — and a deep copy of params per
+    # field — so nodes never share a mutable instance (mutating one node's
+    # config or params must not affect the others).
+    return mapping_cls(
+        **{
+            name: NodeLLMConfig(
+                llm_name=model,
+                params=params.model_copy(deep=True) if params is not None else None,
+            )
+            for name in mapping_cls.model_fields
+        }
+    )

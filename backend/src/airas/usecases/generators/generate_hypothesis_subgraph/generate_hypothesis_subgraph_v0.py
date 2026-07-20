@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.research_hypothesis import EvaluatedHypothesis, ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
@@ -28,11 +28,9 @@ record_execution_time = lambda f: time_node("generate_hypothesis_subgraph")(f)  
 
 
 class GenerateHypothesisSubgraphV0LLMMapping(BaseModel):
-    generate_hypothesis: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["generate_hypothesis"]
-    evaluate_novelty_and_significance: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "evaluate_novelty_and_significance"
-    ]
-    refine_hypothesis: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["refine_hypothesis"]
+    generate_hypothesis: NodeLLMConfig
+    evaluate_novelty_and_significance: NodeLLMConfig
+    refine_hypothesis: NodeLLMConfig
 
 
 class GenerateHypothesisSubgraphV0InputState(TypedDict):
@@ -59,7 +57,7 @@ class GenerateHypothesisSubgraphV0:
         refinement_rounds: int = 2,
     ):
         self.langchain_client = langchain_client
-        self.llm_mapping = llm_mapping or GenerateHypothesisSubgraphV0LLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
         self.refinement_rounds = refinement_rounds
 
     @record_execution_time

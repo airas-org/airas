@@ -25,6 +25,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
+from airas.core.llm_config import require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import (
@@ -166,7 +167,7 @@ class ExperimentCycleGraph:
         self.num_experiment_models = num_experiment_models
         self.num_experiment_datasets = num_experiment_datasets
         self.num_comparison_methods = num_comparison_methods
-        self.llm_mapping = llm_mapping or ExperimentCycleGraphLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     # =======================================================================
     # Code Generation Pipeline (shared by initial and redesign paths)

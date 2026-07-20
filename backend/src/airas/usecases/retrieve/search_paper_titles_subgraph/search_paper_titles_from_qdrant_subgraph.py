@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.qdrant_client import QdrantClient
@@ -36,9 +36,7 @@ class SearchPaperTitlesFromQdrantState(
 
 
 class SearchPaperTitlesFromQdrantLLMMapping(BaseModel):
-    search_paper_titles_from_qdrant: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "search_paper_titles_from_qdrant"
-    ]
+    search_paper_titles_from_qdrant: NodeLLMConfig
 
 
 class SearchPaperTitlesFromQdrantSubgraph:
@@ -54,7 +52,7 @@ class SearchPaperTitlesFromQdrantSubgraph:
         self.qdrant_client = qdrant_client
         self.collection_name = collection_name
         self.papers_per_query = papers_per_query
-        self.llm_mapping = llm_mapping or SearchPaperTitlesFromQdrantLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _search_paper_titles(
