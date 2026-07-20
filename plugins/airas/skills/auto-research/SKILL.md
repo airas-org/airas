@@ -31,11 +31,8 @@ You drive the research; AIRAS provides retrieval, curated generation steps
 4. **Write the experiment code yourself** in the clone. Read its
    `AGENTS.md` first — it defines the contract (allowed files, CLI shape,
    `sanity` / `pilot` / `full` modes, validation verdict lines, W&B
-   conventions). Check `list_domain_knowledge` / `get_domain_knowledge`
-   for AIRAS engineering notes relevant to the design (reproducibility,
-   VRAM budgeting, CI constraints, results conventions). For
-   library-specific guidance (fine-tuning frameworks, distributed
-   training, inference), `get_library_docs` returns each library's
+   conventions). For library-specific guidance (fine-tuning frameworks,
+   distributed training, inference), `get_library_docs` returns each library's
    official docs and `llms.txt` endpoints — fetch those for current API
    usage instead of relying on memory. (The AI-Research-SKILLs library,
    which the template's code-generation workflows install on their

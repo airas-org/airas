@@ -101,7 +101,7 @@ See [CLA.md](https://github.com/airas-org/airas/blob/main/README.md#contribution
 
 ## Related projects
 
-- [AI-Research-SKILLs](https://github.com/Orchestra-Research/AI-Research-SKILLs) (Orchestra Research, MIT) — a library of library-specific ML engineering skills. AIRAS's experiment template installs it on code-generation runners so agents get framework-level guidance (fine-tuning, distributed training, inference) alongside AIRAS's own pipeline-specific knowledge notes (`list_domain_knowledge` MCP tool).
+- [AI-Research-SKILLs](https://github.com/Orchestra-Research/AI-Research-SKILLs) (Orchestra Research, MIT) — a library of library-specific ML engineering skills. AIRAS's experiment template installs it on code-generation runners so agents get framework-level guidance (fine-tuning, distributed training, inference); AIRAS's `get_library_docs` MCP tool complements it by pointing agents at each library's living documentation (`llms.txt` endpoints).
 
 ## Citation
 
