@@ -110,6 +110,26 @@ class LiteLLMClient:
             )
             raise
 
+    @staticmethod
+    def supports_structured_output(llm_name: str) -> bool:
+        """Whether ``llm_name`` can honor a ``response_format`` JSON schema.
+
+        Backed by litellm's model catalog. A model absent from the catalog
+        (e.g. a just-released model litellm has not indexed yet) is treated
+        as capable, so external model selection is not blocked by catalog
+        lag — only models litellm *knows* cannot do structured output are
+        rejected. The real API call surfaces any remaining incompatibility.
+        """
+        try:
+            litellm.get_model_info(llm_name)
+        except Exception:
+            # Unknown to the catalog: don't block; let the API call decide.
+            return True
+        try:
+            return bool(litellm.supports_response_schema(model=llm_name))
+        except Exception:
+            return True
+
     @_LLM_RETRY
     async def structured_output(
         self,
@@ -119,6 +139,16 @@ class LiteLLMClient:
         params: dict[str, Any] | None = None,
         web_search: bool = False,
     ) -> Any:
+        # Fail fast (before any API call) when the selected model cannot
+        # produce structured output, which this path requires. ValueError is
+        # not in the retry policy's retryable set, so it propagates at once.
+        if not self.supports_structured_output(llm_name):
+            raise ValueError(
+                f"Model '{llm_name}' does not support structured output "
+                "(response_format / JSON schema), which is required here. "
+                "Select a model that supports structured output."
+            )
+
         litellm_kwargs = params.copy() if params else {}
         messages = [{"role": "user", "content": message}]
 
