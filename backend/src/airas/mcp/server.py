@@ -475,12 +475,13 @@ async def generate_experimental_design(
 async def retrieve_models(model_subfield: ModelSubfield) -> dict[str, Any]:
     """List AIRAS's hand-curated candidate models for a subfield.
 
-    Subfields: "transformer_decoder_based_models", "image_models",
-    "multi_modal_models", "llm_api_models". Returns vetted model
-    configurations (architecture, parameters, dependencies, a runnable
-    code snippet, citation) ready to drop into an experimental design.
-    This is the curated shortlist; use `search_huggingface_hub` for
-    broader, up-to-date discovery beyond it. No API keys required.
+    Check here first. Subfields: "transformer_decoder_based_models",
+    "image_models", "multi_modal_models", "llm_api_models". Returns a dict
+    keyed by model name; each value has model_architecture, task_type,
+    huggingface_url, dependent_packages, a runnable code snippet, citation,
+    and more. If none of these fit the experimental design, fall back to
+    `search_huggingface_hub` (kind="models"), which returns the same shape
+    from the live Hub. No API keys required.
     """
     result = (
         await RetrieveModelsSubgraph()
@@ -494,11 +495,13 @@ async def retrieve_models(model_subfield: ModelSubfield) -> dict[str, Any]:
 async def retrieve_datasets(dataset_subfield: DatasetSubfield) -> dict[str, Any]:
     """List AIRAS's hand-curated candidate datasets for a subfield.
 
-    Subfields: "language_model_fine_tuning_datasets", "image_datasets",
-    "prompt_engineering_datasets". Returns vetted dataset configurations
-    ready to drop into an experimental design. This is the curated
-    shortlist; use `search_huggingface_hub` for broader, up-to-date
-    discovery beyond it. No API keys required.
+    Check here first. Subfields: "language_model_fine_tuning_datasets",
+    "image_datasets", "prompt_engineering_datasets". Returns a dict keyed
+    by dataset name; each value has description, task_type, huggingface_url,
+    dependent_packages, a runnable code snippet, citation, and more. If none
+    fit the experimental design, fall back to `search_huggingface_hub`
+    (kind="datasets"), which returns the same shape from the live Hub.
+    No API keys required.
     """
     result = (
         await RetrieveDatasetsSubgraph()
@@ -506,6 +509,36 @@ async def retrieve_datasets(dataset_subfield: DatasetSubfield) -> dict[str, Any]
         .ainvoke({"dataset_subfield": dataset_subfield})
     )
     return result["datasets_dict"]
+
+
+def _hf_hub_entry(item: dict[str, Any], kind: HF_RESOURCE_TYPE) -> dict[str, Any]:
+    """Map one Hugging Face Hub API record to the curated-resource shape."""
+    library = item.get("library_name")
+    card = item.get("cardData") or {}
+    tags = item.get("tags") or []
+    if kind == "models":
+        task_type = item.get("pipeline_tag")
+        packages = [library] if library else []
+    else:
+        task_type = card.get("task_categories") or card.get("task_ids") or []
+        packages = ["datasets"]
+    return {
+        # curated-compatible core fields (same keys as retrieve_models /
+        # retrieve_datasets); code/citation are left empty for Hub results —
+        # read the model/dataset card at huggingface_url for usage details.
+        "description": item.get("description", ""),
+        "model_architecture": "",
+        "task_type": task_type,
+        "dependent_packages": packages,
+        "code": "",
+        "citation": "",
+        # discovery metadata beyond the curated schema
+        "downloads": item.get("downloads"),
+        "likes": item.get("likes"),
+        "tags": tags,
+        "last_modified": item.get("lastModified"),
+        "source": "huggingface_hub",
+    }
 
 
 @mcp.tool()
@@ -516,18 +549,22 @@ async def search_huggingface_hub(
     limit: int = 10,
     sort: str = "downloads",
 ) -> dict[str, Any]:
-    """Search the live Hugging Face Hub for candidate models or datasets.
+    """Live Hugging Face Hub fallback for `retrieve_models`/`retrieve_datasets`.
 
-    Complements the curated `retrieve_models` / `retrieve_datasets`
-    shortlists with broad, always-current discovery straight from the Hub.
-    `kind` is "models" or "datasets"; `query` is a free-text search;
-    `task` filters by pipeline tag for models (e.g. "text-generation",
-    "image-classification", "automatic-speech-recognition") or by a tag
-    for datasets; results are ranked by `sort` ("downloads", "likes",
-    "trendingScore", "lastModified"). Returns each hit's id, downloads,
-    likes, tags, and last-modified date. Prefer the curated tools for
-    vetted defaults with runnable code snippets; use this to go wider or
-    find newer releases. HF_TOKEN is optional (only for gated resources).
+    Use this only when the curated tools (`retrieve_models` /
+    `retrieve_datasets`) have no suitable candidate for the experimental
+    design — check them first, then come here to go wider or find newer
+    releases. Returns the same shape as the curated tools: a dict keyed by
+    resource id, each value carrying the curated-compatible fields
+    (description, task_type, huggingface_url, dependent_packages; code and
+    citation are empty for Hub results — read the card at huggingface_url),
+    plus discovery metadata (downloads, likes, tags, last_modified).
+
+    `kind` is "models" or "datasets"; `query` is free-text search; `task`
+    filters by pipeline tag for models (e.g. "text-generation",
+    "image-classification", "automatic-speech-recognition") or by tag for
+    datasets; `sort` ranks results ("downloads", "likes", "trendingScore",
+    "lastModified"). HF_TOKEN is optional (only for gated resources).
     """
     client = _hugging_face_client()
     results = await client.asearch(
@@ -537,22 +574,21 @@ async def search_huggingface_hub(
         sort=sort,
         filter=task if kind == "datasets" else None,
         pipeline_tag=task if kind == "models" else None,
+        full=True,
     )
     items = results if isinstance(results, list) else results.get("items", results)
-    trimmed = [
-        {
-            "id": it.get("id") or it.get("modelId"),
-            "downloads": it.get("downloads"),
-            "likes": it.get("likes"),
-            "pipeline_tag": it.get("pipeline_tag"),
-            "tags": it.get("tags"),
-            "last_modified": it.get("lastModified"),
-            "url": f"https://huggingface.co/{'datasets/' if kind == 'datasets' else ''}{it.get('id') or it.get('modelId')}",
-        }
-        for it in (items or [])
-        if isinstance(it, dict)
-    ]
-    return {"kind": kind, "count": len(trimmed), "results": trimmed}
+    out: dict[str, Any] = {}
+    for it in items or []:
+        if not isinstance(it, dict):
+            continue
+        rid = it.get("id") or it.get("modelId")
+        if not rid:
+            continue
+        prefix = "datasets/" if kind == "datasets" else ""
+        entry = _hf_hub_entry(it, kind)
+        entry["huggingface_url"] = f"https://huggingface.co/{prefix}{rid}"
+        out[rid] = entry
+    return out
 
 
 @mcp.tool()

@@ -67,8 +67,8 @@ claude mcp add airas -- uvx airas
 | `generate_hypothesis` | トピックと関連研究から新規の研究仮説を生成 |
 | `generate_experimental_design` | 仮説を検証する実験を設計 |
 | `retrieve_models` | サブ分野ごとの候補モデル一覧を取得。APIキー不要 |
-| `retrieve_datasets` | サブ分野ごとの AIRAS 厳選候補データセット一覧を取得。APIキー不要 |
-| `search_huggingface_hub` | Hugging Face Hub をライブ検索し、タスク/クエリで候補モデル・データセットをDL数等で順位付け取得。厳選ショートリストを補完。APIキー不要 |
+| `retrieve_datasets` | まず参照: サブ分野ごとの AIRAS 厳選候補データセット一覧。APIキー不要 |
+| `search_huggingface_hub` | 厳選側に該当がない場合のフォールバック: Hugging Face Hub をライブ検索し、厳選ツールと同じ形式で候補を返す。APIキー不要 |
 | `get_library_docs` | AI研究ライブラリ約165件の公式ドキュメント / ソースリポジトリ / `llms.txt` エンドポイントを検索（`domain` / `category` で絞り込み可）。APIキー不要 |
 
 ### 実験実行

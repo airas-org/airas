@@ -66,9 +66,9 @@ Or add it to your project's `.mcp.json`:
 | `retrieve_papers` | Fetch papers via arXiv and extract structured research study data |
 | `generate_hypothesis` | Generate a novel research hypothesis from a topic and related studies |
 | `generate_experimental_design` | Design experiments to test a hypothesis |
-| `retrieve_models` | List AIRAS's hand-curated candidate models for a subfield (vetted defaults with runnable code); no API key required |
-| `retrieve_datasets` | List AIRAS's hand-curated candidate datasets for a subfield; no API key required |
-| `search_huggingface_hub` | Search the live Hugging Face Hub for candidate models/datasets by task/query, ranked by downloads etc.; complements the curated shortlists; no API key required |
+| `retrieve_models` | Check first: AIRAS's hand-curated candidate models for a subfield (vetted defaults with runnable code); no API key required |
+| `retrieve_datasets` | Check first: AIRAS's hand-curated candidate datasets for a subfield; no API key required |
+| `search_huggingface_hub` | Fallback when the curated tools have no fit: live Hugging Face Hub search for models/datasets by task/query, returned in the same shape as the curated tools; no API key required |
 | `get_library_docs` | Look up canonical documentation endpoints (official docs / source repo / `llms.txt`) for ~165 AI research libraries, filterable by `domain` / `category`; no API key required |
 
 ### Experiment execution
