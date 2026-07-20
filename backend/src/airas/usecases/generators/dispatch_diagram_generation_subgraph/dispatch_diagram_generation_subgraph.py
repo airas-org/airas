@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.infra.github_client import GithubClient
@@ -18,9 +18,7 @@ record_execution_time = lambda f: time_node("dispatch_diagram_generation_subgrap
 
 
 class DispatchDiagramGenerationLLMMapping(BaseModel):
-    dispatch_diagram_generation: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "dispatch_diagram_generation"
-    ]
+    dispatch_diagram_generation: NodeLLMConfig
 
 
 class DispatchDiagramGenerationSubgraphInputState(TypedDict):
@@ -53,7 +51,12 @@ class DispatchDiagramGenerationSubgraph:
         self.workflow_file = workflow_file
         self.diagram_description = diagram_description
         self.prompt_path = prompt_path
-        self.llm_mapping = llm_mapping or DispatchDiagramGenerationLLMMapping()
+        if llm_mapping is None:
+            raise ValueError(
+                "llm_mapping is required: specify the model(s) explicitly "
+                "(no default model is configured)."
+            )
+        self.llm_mapping = llm_mapping
 
     @record_execution_time
     async def _dispatch_diagram_generation(

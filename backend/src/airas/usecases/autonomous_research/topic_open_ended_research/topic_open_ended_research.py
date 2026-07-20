@@ -199,7 +199,12 @@ class TopicOpenEndedResearch:
         self.paper_content_refinement_iterations = paper_content_refinement_iterations
         self.latex_template_name = latex_template_name
         self.github_actions_agent = github_actions_agent
-        self.llm_mapping = llm_mapping or TopicOpenEndedResearchLLMMapping()
+        if llm_mapping is None:
+            raise ValueError(
+                "llm_mapping is required: specify the model(s) explicitly "
+                "(no default model is configured)."
+            )
+        self.llm_mapping = llm_mapping
 
     @record_execution_time
     def _create_record(self, state: TopicOpenEndedResearchState) -> dict[str, Any]:

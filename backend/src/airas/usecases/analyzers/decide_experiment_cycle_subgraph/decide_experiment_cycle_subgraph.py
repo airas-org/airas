@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experiment_history import (
     ExperimentCycleDecision,
@@ -24,9 +24,7 @@ record_execution_time = lambda f: time_node("decide_experiment_cycle_subgraph")(
 
 
 class DecideExperimentCycleLLMMapping(BaseModel):
-    decide_experiment_cycle: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "decide_experiment_cycle"
-    ]
+    decide_experiment_cycle: NodeLLMConfig
 
 
 class DecideExperimentCycleSubgraphInputState(TypedDict):
@@ -52,7 +50,12 @@ class DecideExperimentCycleSubgraph:
         llm_mapping: DecideExperimentCycleLLMMapping | None = None,
     ):
         self.langchain_client = langchain_client
-        self.llm_mapping = llm_mapping or DecideExperimentCycleLLMMapping()
+        if llm_mapping is None:
+            raise ValueError(
+                "llm_mapping is required: specify the model(s) explicitly "
+                "(no default model is configured)."
+            )
+        self.llm_mapping = llm_mapping
 
     @record_execution_time
     async def _decide_experiment_cycle(

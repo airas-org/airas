@@ -87,7 +87,12 @@ class VisualizationGraph:
         self.github_client = github_client
         self.wandb_config = wandb_config
         self.github_actions_agent = github_actions_agent
-        self.llm_mapping = llm_mapping or DispatchExperimentValidationLLMMapping()
+        if llm_mapping is None:
+            raise ValueError(
+                "llm_mapping is required: specify the model(s) explicitly "
+                "(no default model is configured)."
+            )
+        self.llm_mapping = llm_mapping
 
     def _validate_github_actions_completion(
         self,

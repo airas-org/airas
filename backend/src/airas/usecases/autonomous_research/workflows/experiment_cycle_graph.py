@@ -166,7 +166,12 @@ class ExperimentCycleGraph:
         self.num_experiment_models = num_experiment_models
         self.num_experiment_datasets = num_experiment_datasets
         self.num_comparison_methods = num_comparison_methods
-        self.llm_mapping = llm_mapping or ExperimentCycleGraphLLMMapping()
+        if llm_mapping is None:
+            raise ValueError(
+                "llm_mapping is required: specify the model(s) explicitly "
+                "(no default model is configured)."
+            )
+        self.llm_mapping = llm_mapping
 
     # =======================================================================
     # Code Generation Pipeline (shared by initial and redesign paths)

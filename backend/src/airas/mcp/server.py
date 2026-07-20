@@ -31,6 +31,10 @@ from pydantic import BaseModel
 
 from airas.cli import DEFAULT_DASHBOARD_PORT
 from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
+
+# LLM mapping classes + helper for building per-node model selection from a
+# single externally-supplied model name (no in-code default model exists).
+from airas.core.llm_config import uniform_llm_mapping
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory, RunStage
 from airas.core.types.experimental_design import (
@@ -77,6 +81,7 @@ from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableEr
 from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.mcp.prompt_registry import build_generation_prompt
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
+    AnalyzeExperimentLLMMapping,
     AnalyzeExperimentSubgraph,
 )
 from airas.usecases.executors.dispatch_experiment_on_aixs_subgraph.dispatch_experiment_on_aixs_subgraph import (
@@ -89,12 +94,15 @@ from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment
     FetchExperimentResultsSubgraph,
 )
 from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
+    GenerateExperimentalDesignLLMMapping,
     GenerateExperimentalDesignSubgraph,
 )
 from airas.usecases.generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph_v0 import (
     GenerateHypothesisSubgraphV0,
+    GenerateHypothesisSubgraphV0LLMMapping,
 )
 from airas.usecases.generators.generate_queries_subgraph.generate_queries_subgraph import (
+    GenerateQueriesLLMMapping,
     GenerateQueriesSubgraph,
 )
 from airas.usecases.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
@@ -106,9 +114,11 @@ from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgra
     PrepareRepositorySubgraph,
 )
 from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
+    CompileLatexLLMMapping,
     CompileLatexSubgraph,
 )
 from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
+    GenerateLatexLLMMapping,
     GenerateLatexSubgraph,
 )
 from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.fetch_paper_fulltext_subgraph import (
@@ -122,6 +132,7 @@ from airas.usecases.retrieve.retrieve_models_subgraph.retrieve_models_subgraph i
 )
 from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
+    RetrievePaperSubgraphLLMMapping,
 )
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
@@ -132,7 +143,10 @@ from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph impor
 from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
     GenerateBibfileSubgraph,
 )
-from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
+from airas.usecases.writers.write_subgraph.write_subgraph import (
+    WriteLLMMapping,
+    WriteSubgraph,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -313,6 +327,7 @@ def get_generation_prompt(step: str, inputs: dict[str, Any]) -> dict[str, Any]:
 @mcp.tool()
 async def generate_research_queries(
     research_topic: str,
+    model: str,
     num_queries: int = 2,
 ) -> list[str]:
     """Generate academic paper search queries from a research topic (backend LLM).
@@ -327,6 +342,7 @@ async def generate_research_queries(
         await GenerateQueriesSubgraph(
             llm_client=_langchain_client(),
             num_paper_search_queries=num_queries,
+            llm_mapping=uniform_llm_mapping(GenerateQueriesLLMMapping, model),
         )
         .build_graph()
         .ainvoke({"research_topic": research_topic})
@@ -445,7 +461,7 @@ async def fetch_paper_fulltext(
 
 
 @mcp.tool()
-async def retrieve_papers(paper_titles: list[str]) -> list[dict[str, Any]]:
+async def retrieve_papers(paper_titles: list[str], model: str) -> list[dict[str, Any]]:
     """Retrieve full paper information for the given titles.
 
     Fetches each paper (via arXiv) and extracts structured research study
@@ -458,7 +474,7 @@ async def retrieve_papers(paper_titles: list[str]) -> list[dict[str, Any]]:
             langchain_client=_langchain_client(),
             arxiv_client=_arxiv_client(),
             github_client=_github_client(),
-            llm_mapping=None,
+            llm_mapping=uniform_llm_mapping(RetrievePaperSubgraphLLMMapping, model),
         )
         .build_graph()
         .ainvoke({"paper_titles": paper_titles})
@@ -470,6 +486,7 @@ async def retrieve_papers(paper_titles: list[str]) -> list[dict[str, Any]]:
 async def generate_hypothesis(
     research_topic: str,
     research_study_list: list[dict[str, Any]],
+    model: str,
     refinement_rounds: int = 1,
 ) -> dict[str, Any]:
     """Generate a novel research hypothesis from a topic and related studies (backend LLM).
@@ -485,6 +502,9 @@ async def generate_hypothesis(
         await GenerateHypothesisSubgraphV0(
             langchain_client=_langchain_client(),
             refinement_rounds=refinement_rounds,
+            llm_mapping=uniform_llm_mapping(
+                GenerateHypothesisSubgraphV0LLMMapping, model
+            ),
         )
         .build_graph()
         .ainvoke(
@@ -503,6 +523,7 @@ async def generate_hypothesis(
 @mcp.tool()
 async def generate_experimental_design(
     research_hypothesis: dict[str, Any],
+    model: str,
     compute_environment: dict[str, Any] | None = None,
     num_models_to_use: int = 1,
     num_datasets_to_use: int = 1,
@@ -526,6 +547,9 @@ async def generate_experimental_design(
             num_models_to_use=num_models_to_use,
             num_datasets_to_use=num_datasets_to_use,
             num_comparative_methods=num_comparative_methods,
+            llm_mapping=uniform_llm_mapping(
+                GenerateExperimentalDesignLLMMapping, model
+            ),
         )
         .build_graph()
         .ainvoke(
@@ -871,6 +895,7 @@ async def analyze_experiment(
     experimental_design: dict[str, Any],
     experiment_code: dict[str, Any],
     experimental_results: dict[str, Any],
+    model: str,
 ) -> dict[str, Any]:
     """Analyze experiment results against the hypothesis and design.
 
@@ -886,7 +911,7 @@ async def analyze_experiment(
     result = (
         await AnalyzeExperimentSubgraph(
             langchain_client=_langchain_client(),
-            llm_mapping=None,
+            llm_mapping=uniform_llm_mapping(AnalyzeExperimentLLMMapping, model),
         )
         .build_graph()
         .ainvoke(
@@ -1088,6 +1113,7 @@ async def generate_paper(
     experiment_code: dict[str, Any],
     research_study_list: list[dict[str, Any]],
     references_bib: str,
+    model: str,
     writing_refinement_rounds: int = 2,
 ) -> dict[str, Any]:
     """Write the paper content from the completed research (backend LLM).
@@ -1103,6 +1129,7 @@ async def generate_paper(
         await WriteSubgraph(
             langchain_client=_langchain_client(),
             paper_content_refinement_iterations=writing_refinement_rounds,
+            llm_mapping=uniform_llm_mapping(WriteLLMMapping, model),
         )
         .build_graph()
         .ainvoke(
@@ -1128,6 +1155,7 @@ async def generate_paper(
 async def generate_latex(
     paper_content: dict[str, Any],
     references_bib: str,
+    model: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
 ) -> str:
     """Convert paper content into a full LaTeX document (backend LLM).
@@ -1146,6 +1174,7 @@ async def generate_latex(
             langchain_client=_langchain_client(),
             github_client=_github_client(),
             latex_template_name=latex_template_name,
+            llm_mapping=uniform_llm_mapping(GenerateLatexLLMMapping, model),
         )
         .build_graph()
         .ainvoke(
@@ -1163,6 +1192,7 @@ async def compile_latex(
     github_owner: str,
     repository_name: str,
     branch_name: str,
+    model: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
     github_actions_agent: Literal["claude_code", "open_code"] = "claude_code",
 ) -> dict[str, Any]:
@@ -1182,6 +1212,7 @@ async def compile_latex(
             github_client=_github_client(),
             latex_template_name=latex_template_name,
             github_actions_agent=github_actions_agent,
+            llm_mapping=uniform_llm_mapping(CompileLatexLLMMapping, model),
         )
         .build_graph()
         .ainvoke(
@@ -1331,7 +1362,14 @@ LaTeX as .research/latex/{{template}}/main.tex in the clone and push.
 (show me the link; local_path exports without pushing).
 10. Persist: upload_research_history.
 
-If an LLM provider key is missing, generation tools fail — in that case \
+Every backend-LLM generation tool (generate_research_queries, \
+generate_hypothesis, generate_experimental_design, analyze_experiment, \
+generate_paper, generate_latex, compile_latex, retrieve_papers) now takes a \
+required `model` argument — there is no default. Call get_available_llms \
+first to see which models the configured API keys allow, and pass one; a \
+model that cannot do a step's required structured output is rejected up front.
+
+If no LLM provider key is configured, generation tools fail — in that case \
 call get_generation_prompt(step, inputs) and author the artifact yourself \
 following its prompt, output_json_schema, and flow.
 """

@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig
 from airas.core.logging_utils import setup_logging
 from airas.core.types.arxiv import ArxivInfo
 from airas.core.types.research_study import LLMExtractedInfo, MetaData, ResearchStudy
@@ -62,19 +62,11 @@ record_execution_time = lambda f: time_node("retrieve_paper_subgraph")(f)  # noq
 
 
 class RetrievePaperSubgraphLLMMapping(BaseModel):
-    search_arxiv_id_from_title: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "search_arxiv_id_from_title"
-    ]
-    summarize_paper: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["summarize_paper"]
-    extract_github_url_from_text: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "extract_github_url_from_text"
-    ]
-    select_experimental_files: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "select_experimental_files"
-    ]
-    extract_reference_titles: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "extract_reference_titles"
-    ]
+    search_arxiv_id_from_title: NodeLLMConfig
+    summarize_paper: NodeLLMConfig
+    extract_github_url_from_text: NodeLLMConfig
+    select_experimental_files: NodeLLMConfig
+    extract_reference_titles: NodeLLMConfig
 
 
 class RetrievePaperSubgraphInputState(TypedDict):
@@ -111,7 +103,12 @@ class RetrievePaperSubgraph:
         self.langchain_client = langchain_client
         self.arxiv_client = arxiv_client
         self.github_client = github_client
-        self.llm_mapping = llm_mapping or RetrievePaperSubgraphLLMMapping()
+        if llm_mapping is None:
+            raise ValueError(
+                "llm_mapping is required: specify the model(s) explicitly "
+                "(no default model is configured)."
+            )
+        self.llm_mapping = llm_mapping
 
     @record_execution_time
     async def _search_arxiv_id_from_title(
