@@ -12,7 +12,7 @@ from airas.core.types.experiment_history import (
     ExperimentHistory,
 )
 from airas.core.types.research_hypothesis import ResearchHypothesis
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.analyzers.decide_experiment_cycle_subgraph.nodes.decide_experiment_cycle import (
     decide_experiment_cycle,
 )
@@ -46,10 +46,10 @@ class DecideExperimentCycleSubgraphState(
 class DecideExperimentCycleSubgraph:
     def __init__(
         self,
-        langchain_client: LangChainClient,
+        litellm_client: LiteLLMClient,
         llm_mapping: DecideExperimentCycleLLMMapping | None = None,
     ):
-        self.langchain_client = langchain_client
+        self.litellm_client = litellm_client
         self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
@@ -58,7 +58,7 @@ class DecideExperimentCycleSubgraph:
     ) -> dict[str, ExperimentCycleDecision]:
         decision = await decide_experiment_cycle(
             llm_config=self.llm_mapping.decide_experiment_cycle,
-            llm_client=self.langchain_client,
+            llm_client=self.litellm_client,
             research_hypothesis=state["research_hypothesis"],
             experiment_history=state["experiment_history"],
         )

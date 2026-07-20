@@ -7,7 +7,7 @@ from airas.core.types.research_hypothesis import (
     ResearchHypothesis,
 )
 from airas.core.types.research_study import ResearchStudy
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.generators.generate_hypothesis_subgraph.prompts.evaluate_novelty_and_significance_prompt import (
     evaluate_novelty_and_significance_prompt,
 )
@@ -18,7 +18,7 @@ async def evaluate_novelty_and_significance(
     research_study_list: list[ResearchStudy],
     research_hypothesis: ResearchHypothesis,
     llm_config: NodeLLMConfig,
-    llm_client: LangChainClient,
+    llm_client: LiteLLMClient,
 ) -> EvaluatedHypothesis:
     env = Environment()
 
@@ -32,7 +32,7 @@ async def evaluate_novelty_and_significance(
         "new_hypothesis": research_hypothesis.to_formatted_json(),
     }
     messages = template.render(data)
-    output = await llm_client.structured_outputs(
+    output = await llm_client.structured_output(
         message=messages,
         data_model=HypothesisEvaluation,
         llm_name=llm_config.llm_name,

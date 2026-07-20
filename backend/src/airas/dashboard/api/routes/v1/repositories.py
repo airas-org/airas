@@ -1,17 +1,13 @@
 from typing import Annotated
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
-from langfuse import observe
 
-from airas.container import Container
 from airas.dashboard.api.dependencies import get_github_client
 from airas.dashboard.api.schemas.repositories import (
     PrepareRepositorySubgraphRequestBody,
     PrepareRepositorySubgraphResponseBody,
 )
 from airas.infra.github_client import GithubClient
-from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,
 )
@@ -20,24 +16,16 @@ router = APIRouter(prefix="/repositories", tags=["repositories"])
 
 
 @router.post("", response_model=PrepareRepositorySubgraphResponseBody)
-@inject
-@observe()
 async def prepare_repository(
     request: PrepareRepositorySubgraphRequestBody,
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> PrepareRepositorySubgraphResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await PrepareRepositorySubgraph(
             github_client=github_client, is_github_repo_private=request.is_private
         )
         .build_graph()
-        .ainvoke(request, config=config)
+        .ainvoke(request)
     )
     return PrepareRepositorySubgraphResponseBody(
         is_repository_ready=result["is_repository_ready"],

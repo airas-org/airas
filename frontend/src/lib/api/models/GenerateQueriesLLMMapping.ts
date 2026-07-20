@@ -4,6 +4,6 @@
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
 export type GenerateQueriesLLMMapping = {
-    generate_queries?: NodeLLMConfig;
+    generate_queries: NodeLLMConfig;
 };
 

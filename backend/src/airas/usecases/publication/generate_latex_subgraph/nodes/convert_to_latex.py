@@ -4,7 +4,7 @@ from jinja2 import Environment
 
 from airas.core.llm_config import NodeLLMConfig
 from airas.core.types.paper import PaperContent
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.publication.generate_latex_subgraph.prompts.convert_to_latex_prompt import (
     convert_to_latex_prompt,
 )
@@ -14,7 +14,7 @@ logger = getLogger(__name__)
 
 async def convert_to_latex(
     llm_config: NodeLLMConfig,
-    langchain_client: LangChainClient,
+    litellm_client: LiteLLMClient,
     paper_content: PaperContent,
     references_bib: str,
     latex_template_text: str | None = None,
@@ -37,7 +37,7 @@ async def convert_to_latex(
     template = env.from_string(convert_to_latex_prompt)
     messages = template.render(data)
 
-    output = await langchain_client.structured_outputs(
+    output = await litellm_client.structured_output(
         message=messages,
         data_model=PaperContent,
         llm_name=llm_config.llm_name,

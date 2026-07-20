@@ -4,6 +4,6 @@
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
 export type GenerateExperimentCodeLLMMapping = {
-    dispatch_experiment_code_generation?: NodeLLMConfig;
+    dispatch_experiment_code_generation: NodeLLMConfig;
 };
 

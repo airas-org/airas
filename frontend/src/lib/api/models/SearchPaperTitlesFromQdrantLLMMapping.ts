@@ -4,6 +4,6 @@
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
 export type SearchPaperTitlesFromQdrantLLMMapping = {
-    search_paper_titles_from_qdrant?: NodeLLMConfig;
+    search_paper_titles_from_qdrant: NodeLLMConfig;
 };
 

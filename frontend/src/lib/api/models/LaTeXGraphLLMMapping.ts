@@ -5,7 +5,7 @@
 import type { CompileLatexLLMMapping } from './CompileLatexLLMMapping';
 import type { GenerateLatexLLMMapping } from './GenerateLatexLLMMapping';
 export type LaTeXGraphLLMMapping = {
-    generate_latex?: GenerateLatexLLMMapping;
-    compile_latex?: CompileLatexLLMMapping;
+    generate_latex: GenerateLatexLLMMapping;
+    compile_latex: CompileLatexLLMMapping;
 };
 

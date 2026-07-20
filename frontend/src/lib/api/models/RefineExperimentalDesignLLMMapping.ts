@@ -4,6 +4,6 @@
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
 export type RefineExperimentalDesignLLMMapping = {
-    refine_experimental_design?: NodeLLMConfig;
+    refine_experimental_design: NodeLLMConfig;
 };
 

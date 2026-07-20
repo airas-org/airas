@@ -66,10 +66,6 @@ from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
 from airas.infra.hugging_face_client import HF_RESOURCE_TYPE, HuggingFaceClient
 from airas.infra.kroki_client import KrokiClient
-from airas.infra.langchain_client import (
-    PROVIDER_REQUIRED_ENV_VARS,
-    LangChainClient,
-)
 from airas.infra.litellm_client import (
     PROVIDER_REQUIRED_ENV_VARS as LITELLM_PROVIDER_REQUIRED_ENV_VARS,
 )
@@ -216,13 +212,13 @@ def _semantic_scholar_client() -> SemanticScholarClient:
     )
 
 
-def _langchain_client() -> LangChainClient:
+def _litellm_client() -> LiteLLMClient:
     refresh_environment()
-    if not detect_available_providers(PROVIDER_REQUIRED_ENV_VARS):
+    if not detect_available_providers(LITELLM_PROVIDER_REQUIRED_ENV_VARS):
         raise RuntimeError(
             f"No LLM provider API keys are configured. {SETUP_INSTRUCTIONS}"
         )
-    return LangChainClient()
+    return LiteLLMClient()
 
 
 # airas's LLMProvider enum value -> litellm's ``custom_llm_provider`` name.
@@ -260,13 +256,10 @@ def get_available_llms(include_models: bool = False) -> dict[str, Any]:
     it only when you need to choose a specific model.
 
     Scope: this reports the **LiteLLM** view — provider credentials
-    (`LITELLM_PROVIDER_REQUIRED_ENV_VARS`) and litellm's model catalog. The
-    generation tools' `model` argument is moving to this litellm view, but
-    during the in-progress LangChain->LiteLLM migration several tools still
-    execute via LangChain and validate against its own model list, so a
-    listed provider/model is not yet guaranteed to be accepted by every
-    tool (e.g. a different Bedrock credential variable, or models outside
-    LangChain's older list). See the `note` field.
+    (`LITELLM_PROVIDER_REQUIRED_ENV_VARS`) and litellm's model catalog. Every
+    generation tool executes via litellm and accepts any model name litellm
+    can route to the configured providers, so a listed provider/model is
+    usable by all of them.
 
     Returns:
     - `any_provider_configured`: whether at least one provider is usable
@@ -275,7 +268,6 @@ def get_available_llms(include_models: bool = False) -> dict[str, Any]:
       `missing_env_vars`, and (when configured and requested) `models` /
       `model_count`
     - `setup_instructions`: how to add keys, present only when none are set
-    - `note`: scope caveat for the LangChain->LiteLLM transition
     """
     refresh_environment()
     available = detect_available_providers(LITELLM_PROVIDER_REQUIRED_ENV_VARS)
@@ -304,12 +296,6 @@ def get_available_llms(include_models: bool = False) -> dict[str, Any]:
         "configured_providers": sorted(p.value for p in available),
         "providers": providers,
         "setup_instructions": None if available else SETUP_INSTRUCTIONS,
-        "note": (
-            "Reflects LiteLLM provider credentials and model catalog. Some "
-            "generation tools still run via LangChain during the migration, "
-            "so a listed provider/model is not guaranteed for every backing "
-            "client yet."
-        ),
     }
 
 
@@ -364,7 +350,7 @@ async def generate_research_queries(
     """
     result = (
         await GenerateQueriesSubgraph(
-            llm_client=_langchain_client(),
+            llm_client=_litellm_client(),
             num_paper_search_queries=num_queries,
             llm_mapping=uniform_llm_mapping(GenerateQueriesLLMMapping, model),
         )
@@ -496,7 +482,7 @@ async def retrieve_papers(paper_titles: list[str], model: str) -> list[dict[str,
     """
     result = (
         await RetrievePaperSubgraph(
-            langchain_client=_langchain_client(),
+            litellm_client=_litellm_client(),
             arxiv_client=_arxiv_client(),
             github_client=_github_client(),
             llm_mapping=uniform_llm_mapping(RetrievePaperSubgraphLLMMapping, model),
@@ -526,7 +512,7 @@ async def generate_hypothesis(
     studies = [ResearchStudy.model_validate(study) for study in research_study_list]
     result = (
         await GenerateHypothesisSubgraphV0(
-            langchain_client=_langchain_client(),
+            litellm_client=_litellm_client(),
             refinement_rounds=refinement_rounds,
             llm_mapping=uniform_llm_mapping(
                 GenerateHypothesisSubgraphV0LLMMapping, model
@@ -569,7 +555,7 @@ async def generate_experimental_design(
     env = ComputeEnvironment.model_validate(compute_environment or {})
     result = (
         await GenerateExperimentalDesignSubgraph(
-            langchain_client=_langchain_client(),
+            litellm_client=_litellm_client(),
             compute_environment=env,
             num_models_to_use=num_models_to_use,
             num_datasets_to_use=num_datasets_to_use,
@@ -1082,7 +1068,7 @@ async def analyze_experiment(
     """
     result = (
         await AnalyzeExperimentSubgraph(
-            langchain_client=_langchain_client(),
+            litellm_client=_litellm_client(),
             llm_mapping=uniform_llm_mapping(AnalyzeExperimentLLMMapping, model),
         )
         .build_graph()
@@ -1301,7 +1287,7 @@ async def generate_paper(
     """
     result = (
         await WriteSubgraph(
-            langchain_client=_langchain_client(),
+            litellm_client=_litellm_client(),
             paper_content_refinement_iterations=writing_refinement_rounds,
             llm_mapping=uniform_llm_mapping(WriteLLMMapping, model),
         )
@@ -1346,7 +1332,7 @@ async def generate_latex(
     """
     result = (
         await GenerateLatexSubgraph(
-            langchain_client=_langchain_client(),
+            litellm_client=_litellm_client(),
             github_client=_github_client(),
             latex_template_name=latex_template_name,
             llm_mapping=uniform_llm_mapping(GenerateLatexLLMMapping, model),

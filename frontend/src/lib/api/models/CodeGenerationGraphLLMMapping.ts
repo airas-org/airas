@@ -4,6 +4,6 @@
 /* eslint-disable */
 import type { DispatchCodeGenerationLLMMapping } from './DispatchCodeGenerationLLMMapping';
 export type CodeGenerationGraphLLMMapping = {
-    dispatch_code_generation?: DispatchCodeGenerationLLMMapping;
+    dispatch_code_generation: DispatchCodeGenerationLLMMapping;
 };
 

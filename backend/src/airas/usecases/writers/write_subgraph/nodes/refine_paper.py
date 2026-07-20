@@ -2,7 +2,7 @@ from jinja2 import Environment
 
 from airas.core.llm_config import NodeLLMConfig
 from airas.core.types.paper import PaperContent
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.writers.write_subgraph.prompts.refine_prompt import refine_prompt
 from airas.usecases.writers.write_subgraph.prompts.section_tips_prompt import (
     section_tips_prompt,
@@ -12,7 +12,7 @@ from airas.usecases.writers.write_subgraph.prompts.write_prompt import write_pro
 
 async def refine_paper(
     llm_config: NodeLLMConfig,
-    langchain_client: LangChainClient,
+    litellm_client: LiteLLMClient,
     paper_content: PaperContent,
     note: str,
 ) -> PaperContent:
@@ -28,7 +28,7 @@ async def refine_paper(
 
     messages = rendered_system_prompt + refine_message
 
-    output = await langchain_client.structured_outputs(
+    output = await litellm_client.structured_output(
         message=messages,
         data_model=PaperContent,
         llm_name=llm_config.llm_name,

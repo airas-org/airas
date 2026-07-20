@@ -4,7 +4,7 @@
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
 export type WriteLLMMapping = {
-    write_paper?: NodeLLMConfig;
-    refine_paper?: NodeLLMConfig;
+    write_paper: NodeLLMConfig;
+    refine_paper: NodeLLMConfig;
 };
 

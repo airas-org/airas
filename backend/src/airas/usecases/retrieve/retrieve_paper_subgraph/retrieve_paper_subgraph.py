@@ -11,7 +11,7 @@ from airas.core.types.arxiv import ArxivInfo
 from airas.core.types.research_study import LLMExtractedInfo, MetaData, ResearchStudy
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.extract_code_structure import (
     RepositoryCodeStructure,
     extract_repository_code_structure,
@@ -95,12 +95,12 @@ class RetrievePaperSubgraphState(
 class RetrievePaperSubgraph:
     def __init__(
         self,
-        langchain_client: LangChainClient,
+        litellm_client: LiteLLMClient,
         arxiv_client: ArxivClient,
         github_client: GithubClient,
         llm_mapping: RetrievePaperSubgraphLLMMapping | None = None,
     ):
-        self.langchain_client = langchain_client
+        self.litellm_client = litellm_client
         self.arxiv_client = arxiv_client
         self.github_client = github_client
         self.llm_mapping = require_llm_mapping(llm_mapping)
@@ -111,7 +111,7 @@ class RetrievePaperSubgraph:
     ) -> dict[str, list[str]]:
         arxiv_id_list = await search_arxiv_id_from_title(
             llm_config=self.llm_mapping.search_arxiv_id_from_title,
-            llm_client=self.langchain_client,
+            llm_client=self.litellm_client,
             prompt_template=openai_websearch_arxiv_ids_prompt,
             paper_titles=state["paper_titles"],
         )
@@ -142,7 +142,7 @@ class RetrievePaperSubgraph:
     ) -> dict[str, list[PaperSummary]]:
         paper_summary_list = await summarize_paper(
             llm_config=self.llm_mapping.summarize_paper,
-            llm_client=self.langchain_client,
+            llm_client=self.litellm_client,
             prompt_template=summarize_paper_prompt,
             arxiv_full_text_list=state.get("arxiv_full_text_list", []),
         )
@@ -157,7 +157,7 @@ class RetrievePaperSubgraph:
             prompt_template=extract_github_url_from_text_prompt,
             arxiv_full_text_list=state.get("arxiv_full_text_list", []),
             paper_summary_list=state.get("paper_summary_list", []),
-            llm_client=self.langchain_client,
+            llm_client=self.litellm_client,
             github_client=self.github_client,
         )
         return {"github_url_list": github_url_list}
@@ -213,7 +213,7 @@ class RetrievePaperSubgraph:
             experimental_code_list,
         ) = await select_experimental_contents(
             llm_config=self.llm_mapping.select_experimental_files,
-            llm_client=self.langchain_client,
+            llm_client=self.litellm_client,
             prompt_template=select_experimental_files_prompt,
             paper_summary_list=paper_summary_list,
             repository_contents_list=repository_contents_list,
@@ -229,7 +229,7 @@ class RetrievePaperSubgraph:
     ) -> dict[str, list[list[str]]]:
         reference_title_list = await extract_reference_titles(
             llm_config=self.llm_mapping.extract_reference_titles,
-            llm_client=self.langchain_client,
+            llm_client=self.litellm_client,
             arxiv_full_text_list=state.get("arxiv_full_text_list", []),
         )
         return {"reference_title_list": reference_title_list}

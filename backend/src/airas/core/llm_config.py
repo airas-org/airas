@@ -1,17 +1,17 @@
-from typing import TypeVar
+from copy import deepcopy
+from typing import Any, TypeVar
 
 from pydantic import BaseModel
-
-from airas.infra.llm_specs import (
-    LLMParams,
-)
 
 
 class NodeLLMConfig(BaseModel):
     # Use str instead of LLM_MODEL to allow model names compatible with
     # litellm and opencode rather than our custom defined literals.
     llm_name: str
-    params: LLMParams | None = None
+    # Free-form litellm completion kwargs (temperature, reasoning_effort,
+    # thinking_budget, ...). litellm.drop_params discards unsupported keys per
+    # model, so provider-specific params can be passed uniformly.
+    params: dict[str, Any] | None = None
 
 
 _MappingT = TypeVar("_MappingT", bound=BaseModel)
@@ -37,7 +37,7 @@ def require_llm_mapping(llm_mapping: _MappingT | None) -> _MappingT:
 def uniform_llm_mapping(
     mapping_cls: type[_MappingT],
     model: str,
-    params: LLMParams | None = None,
+    params: dict[str, Any] | None = None,
 ) -> _MappingT:
     """Build a subgraph LLM mapping whose every node uses the same model.
 
@@ -54,7 +54,7 @@ def uniform_llm_mapping(
         **{
             name: NodeLLMConfig(
                 llm_name=model,
-                params=params.model_copy(deep=True) if params is not None else None,
+                params=deepcopy(params) if params is not None else None,
             )
             for name in mapping_cls.model_fields
         }

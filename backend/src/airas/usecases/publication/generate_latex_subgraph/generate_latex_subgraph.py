@@ -10,7 +10,7 @@ from airas.core.logging_utils import setup_logging
 from airas.core.types.latex import LATEX_TEMPLATE_NAME, LATEX_TEMPLATE_REPOSITORY_INFO
 from airas.core.types.paper import PaperContent
 from airas.infra.github_client import GithubClient
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.github.nodes.retrieve_github_repository_file import (
     retrieve_github_repository_file,
 )
@@ -54,13 +54,13 @@ class GenerateLatexSubgraphState(
 class GenerateLatexSubgraph:
     def __init__(
         self,
-        langchain_client: LangChainClient,
+        litellm_client: LiteLLMClient,
         github_client: GithubClient,
         latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
         llm_mapping: GenerateLatexLLMMapping | None = None,
     ):
         self.llm_mapping = require_llm_mapping(llm_mapping)
-        self.langchain_client = langchain_client
+        self.litellm_client = litellm_client
         self.github_client = github_client
         self.latex_template_name = latex_template_name
 
@@ -91,7 +91,7 @@ class GenerateLatexSubgraph:
     ) -> dict[str, PaperContent]:
         latex_paper_content = await convert_to_latex(
             llm_config=self.llm_mapping.convert_to_latex,
-            langchain_client=self.langchain_client,
+            litellm_client=self.litellm_client,
             paper_content=state["paper_content"],
             references_bib=state["references_bib"],
             latex_template_text=state["latex_template_text"],

@@ -1,10 +1,7 @@
 from typing import Annotated
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
-from langfuse import observe
 
-from airas.container import Container
 from airas.dashboard.api.dependencies import get_github_client
 from airas.dashboard.api.schemas.interactive_repo_agent import (
     CancelInteractiveRepoAgentRequestBody,
@@ -13,7 +10,6 @@ from airas.dashboard.api.schemas.interactive_repo_agent import (
     DispatchInteractiveRepoAgentResponseBody,
 )
 from airas.infra.github_client import GithubClient
-from airas.infra.langfuse_client import LangfuseClient
 from airas.usecases.assisted_research.cancel_interactive_repo_agent_subgraph.cancel_interactive_repo_agent_subgraph import (
     CancelInteractiveRepoAgentSubgraph,
 )
@@ -25,18 +21,10 @@ router = APIRouter(prefix="/interactive-repo-agent", tags=["interactive-repo-age
 
 
 @router.post("/dispatch", response_model=DispatchInteractiveRepoAgentResponseBody)
-@inject
-@observe(capture_input=False)
 async def dispatch_interactive_repo_agent(
     request: DispatchInteractiveRepoAgentRequestBody,
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> DispatchInteractiveRepoAgentResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await DispatchInteractiveRepoAgentSubgraph(
             github_client=github_client,
@@ -49,7 +37,6 @@ async def dispatch_interactive_repo_agent(
                 "github_config": request.github_config,
                 "github_actions_agent": request.github_actions_agent,
             },
-            config=config,
         )
     )
     return DispatchInteractiveRepoAgentResponseBody(
@@ -64,19 +51,11 @@ async def dispatch_interactive_repo_agent(
     "/{workflow_run_id}/cancel",
     response_model=CancelInteractiveRepoAgentResponseBody,
 )
-@inject
-@observe()
 async def cancel_interactive_repo_agent(
     workflow_run_id: int,
     request: CancelInteractiveRepoAgentRequestBody,
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> CancelInteractiveRepoAgentResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await CancelInteractiveRepoAgentSubgraph(github_client=github_client)
         .build_graph()
@@ -85,7 +64,6 @@ async def cancel_interactive_repo_agent(
                 "github_config": request.github_config,
                 "workflow_run_id": workflow_run_id,
             },
-            config=config,
         )
     )
     return CancelInteractiveRepoAgentResponseBody(

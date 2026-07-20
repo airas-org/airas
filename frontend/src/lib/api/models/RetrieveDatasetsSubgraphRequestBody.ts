@@ -7,9 +7,14 @@ export type RetrieveDatasetsSubgraphRequestBody = {
 };
 export namespace RetrieveDatasetsSubgraphRequestBody {
     export enum dataset_subfield {
-        LANGUAGE_MODEL_FINE_TUNING_DATASETS = 'language_model_fine_tuning_datasets',
-        IMAGE_DATASETS = 'image_datasets',
-        PROMPT_ENGINEERING_DATASETS = 'prompt_engineering_datasets',
+        INSTRUCTION_TUNING = 'instruction_tuning',
+        REASONING_EVALUATION = 'reasoning_evaluation',
+        NLP_TASKS = 'nlp_tasks',
+        PROMPT_ENGINEERING = 'prompt_engineering',
+        CODE_EVALUATION = 'code_evaluation',
+        IMAGE_RECOGNITION = 'image_recognition',
+        SPEECH = 'speech',
+        VISION_LANGUAGE = 'vision_language',
     }
 }
 
