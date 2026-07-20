@@ -241,7 +241,7 @@ def _dump(value: Any) -> Any:
 
 
 @mcp.tool()
-def get_available_llms(include_models: bool = True) -> dict[str, Any]:
+def get_available_llms(include_models: bool = False) -> dict[str, Any]:
     """Report which LLMs are usable with the currently configured API keys.
 
     Reads credentials fresh (so keys added or rotated since the server
@@ -254,19 +254,19 @@ def get_available_llms(include_models: bool = True) -> dict[str, Any]:
     unconfigured provider fails fast with the missing key named. This tool
     itself needs no API key.
 
-    When `include_models` is true (default), each configured provider also
-    lists the model names callable with that key (via litellm's model
-    catalog). Set it to false for a lightweight configured/not-configured
-    summary.
+    Set `include_models` to true to also list, per configured provider, the
+    model names in litellm's catalog. It defaults to false because some
+    providers return hundreds of models, which bloats the response; request
+    it only when you need to choose a specific model.
 
     Scope: this reports the **LiteLLM** view — provider credentials
-    (`LITELLM_PROVIDER_REQUIRED_ENV_VARS`) and litellm's model catalog. That
-    is the target the `model` argument of the generation tools is validated
-    against. During the in-progress LangChain->LiteLLM migration some tools
-    still execute via LangChain, whose provider/model coverage can differ
-    (e.g. a different Bedrock credential variable, or models outside
-    LangChain's older list); treat this listing as the litellm-catalog view,
-    not a guarantee for every backing client. See the `note` field.
+    (`LITELLM_PROVIDER_REQUIRED_ENV_VARS`) and litellm's model catalog. The
+    generation tools' `model` argument is moving to this litellm view, but
+    during the in-progress LangChain->LiteLLM migration several tools still
+    execute via LangChain and validate against its own model list, so a
+    listed provider/model is not yet guaranteed to be accepted by every
+    tool (e.g. a different Bedrock credential variable, or models outside
+    LangChain's older list). See the `note` field.
 
     Returns:
     - `any_provider_configured`: whether at least one provider is usable
@@ -356,9 +356,10 @@ async def generate_research_queries(
     """Generate academic paper search queries from a research topic (backend LLM).
 
     Use this first to turn a free-form research topic into effective
-    search queries, then pass them to `search_papers`. Requires an LLM
-    provider API key — without one, use
-    `get_generation_prompt(step="research_queries", ...)` and author the
+    search queries, then pass them to `search_papers`. `model` is required
+    (the LLM to use) — call `get_available_llms` to see which models the
+    configured keys allow. Requires an LLM provider API key — without one,
+    use `get_generation_prompt(step="research_queries", ...)` and author the
     queries yourself.
     """
     result = (
