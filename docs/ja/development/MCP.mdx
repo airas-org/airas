@@ -68,6 +68,7 @@ claude mcp add airas -- uvx airas
 | `generate_experimental_design` | 仮説を検証する実験を設計 |
 | `retrieve_models` | サブ分野ごとの候補モデル一覧を取得。APIキー不要 |
 | `retrieve_datasets` | サブ分野ごとの候補データセット一覧を取得。APIキー不要 |
+| `get_library_docs` | AI研究ライブラリ約165件の公式ドキュメント / ソースリポジトリ / `llms.txt` エンドポイントを検索（`domain` / `category` で絞り込み可）。APIキー不要 |
 
 ### 実験実行
 
@@ -110,8 +111,9 @@ MCP ホストは有能なコーディングエージェント（Claude Code、Cu
 
 1. 実験リポジトリを git でローカルに clone する
 2. リポジトリ内の `AGENTS.md` を読む — コードが満たすべき規約（編集可能ファイル、CLI の形、`sanity` / `pilot` / `full` モード、検証判定行、W&B 規約）が定義されています
-3. 実験を実装し、ローカルで `mode=sanity` を実行して `SANITY_VALIDATION: PASS` が出るまで修正してから commit・push する
-4. GPU 規模の実行は `dispatch_experiment` でディスパッチし、エラーと結果は `get_experiment_run_status` / `fetch_experiment_results` で取得する
+3. 設計が依存する各ライブラリについて `get_library_docs` を呼び、返される `llms.txt`（またはドキュメント）を取得して、記憶に頼らず最新のAPIをもとに実装する
+4. 実験を実装し、ローカルで `mode=sanity` を実行して `SANITY_VALIDATION: PASS` が出るまで修正してから commit・push する
+5. GPU 規模の実行は `dispatch_experiment` でディスパッチし、エラーと結果は `get_experiment_run_status` / `fetch_experiment_results` で取得する
 
 ヘッドレスなパイプライン（組み込みの全自動研究ワークフロー）は従来どおり GitHub Actions 上でコードをリモート生成しますが、その経路は MCP ツールとしては公開していません。
 

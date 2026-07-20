@@ -68,6 +68,7 @@ Or add it to your project's `.mcp.json`:
 | `generate_experimental_design` | Design experiments to test a hypothesis |
 | `retrieve_models` | List curated candidate models for a subfield; no API key required |
 | `retrieve_datasets` | List curated candidate datasets for a subfield; no API key required |
+| `get_library_docs` | Look up canonical documentation endpoints (official docs / source repo / `llms.txt`) for ~165 AI research libraries, filterable by `domain` / `category`; no API key required |
 
 ### Experiment execution
 
@@ -110,8 +111,9 @@ The MCP host is expected to be a capable coding agent (Claude Code, Cursor, ...)
 
 1. Clone the experiment repository locally with git.
 2. Read its `AGENTS.md` — it defines the contract the code must satisfy (allowed files, CLI shape, `sanity` / `pilot` / `full` modes, validation verdict lines, W&B conventions).
-3. Implement the experiment, run `mode=sanity` locally until it prints `SANITY_VALIDATION: PASS`, then commit and push.
-4. Dispatch GPU-scale runs with `dispatch_experiment` and fetch errors/results with `get_experiment_run_status` / `fetch_experiment_results`.
+3. For any library the design relies on, call `get_library_docs` and fetch the returned `llms.txt` (or docs) to work from current APIs rather than memory.
+4. Implement the experiment, run `mode=sanity` locally until it prints `SANITY_VALIDATION: PASS`, then commit and push.
+5. Dispatch GPU-scale runs with `dispatch_experiment` and fetch errors/results with `get_experiment_run_status` / `fetch_experiment_results`.
 
 Headless pipelines (the built-in autonomous research workflows) still generate code remotely on GitHub Actions; that path is not exposed as an MCP tool.
 
