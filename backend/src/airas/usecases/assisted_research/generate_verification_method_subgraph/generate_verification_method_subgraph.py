@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.infra.litellm_client import LiteLLMClient
 
@@ -64,12 +64,7 @@ class GenerateVerificationMethodSubgraph:
         llm_mapping: GenerateVerificationMethodLLMMapping | None = None,
     ):
         self.litellm_client = litellm_client
-        if llm_mapping is None:
-            raise ValueError(
-                "llm_mapping is required: specify the model(s) explicitly "
-                "(no default model is configured)."
-            )
-        self.llm_mapping = llm_mapping
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _generate_verification_method(

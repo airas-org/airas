@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
@@ -56,12 +56,7 @@ class DispatchCodeGenerationSubgraph:
         self.github_client = github_client
         self.workflow_file = workflow_file
         self.prompt_path = prompt_path
-        if llm_mapping is None:
-            raise ValueError(
-                "llm_mapping is required: specify the model(s) explicitly "
-                "(no default model is configured)."
-            )
-        self.llm_mapping = llm_mapping
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _dispatch_code_generation(

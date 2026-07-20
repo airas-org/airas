@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
+from airas.core.llm_config import require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.e2e import Status, StepType
 from airas.core.types.experiment_code import ExperimentCode
@@ -150,12 +151,7 @@ class HypothesisDrivenResearch:
         self.paper_content_refinement_iterations = paper_content_refinement_iterations
         self.latex_template_name = latex_template_name
         self.github_actions_agent = github_actions_agent
-        if llm_mapping is None:
-            raise ValueError(
-                "llm_mapping is required: specify the model(s) explicitly "
-                "(no default model is configured)."
-            )
-        self.llm_mapping = llm_mapping
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     def _create_record(self, state: HypothesisDrivenResearchState) -> dict[str, Any]:

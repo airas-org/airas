@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experimental_design import ComputeEnvironment, ExperimentalDesign
 from airas.core.types.research_hypothesis import ResearchHypothesis
@@ -50,12 +50,7 @@ class GenerateExperimentalDesignSubgraph:
         num_comparative_methods: int = 2,
     ):
         self.langchain_client = langchain_client
-        if llm_mapping is None:
-            raise ValueError(
-                "llm_mapping is required: specify the model(s) explicitly "
-                "(no default model is configured)."
-            )
-        self.llm_mapping = llm_mapping
+        self.llm_mapping = require_llm_mapping(llm_mapping)
         self.compute_environment = compute_environment
         self.num_models_to_use = num_models_to_use
         self.num_datasets_to_use = num_datasets_to_use

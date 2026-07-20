@@ -17,6 +17,22 @@ class NodeLLMConfig(BaseModel):
 _MappingT = TypeVar("_MappingT", bound=BaseModel)
 
 
+def require_llm_mapping(llm_mapping: _MappingT | None) -> _MappingT:
+    """Return ``llm_mapping``, or raise a uniform error when it is ``None``.
+
+    Every subgraph requires its model selection to be supplied externally
+    (there are no in-code defaults). Centralizing the guard here keeps the
+    message identical across all subgraphs and gives a single place to
+    evolve the wording or add hints.
+    """
+    if llm_mapping is None:
+        raise ValueError(
+            "llm_mapping is required: specify the model(s) explicitly "
+            "(no default model is configured)."
+        )
+    return llm_mapping
+
+
 def uniform_llm_mapping(
     mapping_cls: type[_MappingT],
     model: str,

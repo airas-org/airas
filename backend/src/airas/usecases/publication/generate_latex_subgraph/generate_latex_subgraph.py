@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.latex import LATEX_TEMPLATE_NAME, LATEX_TEMPLATE_REPOSITORY_INFO
 from airas.core.types.paper import PaperContent
@@ -59,12 +59,7 @@ class GenerateLatexSubgraph:
         latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
         llm_mapping: GenerateLatexLLMMapping | None = None,
     ):
-        if llm_mapping is None:
-            raise ValueError(
-                "llm_mapping is required: specify the model(s) explicitly "
-                "(no default model is configured)."
-            )
-        self.llm_mapping = llm_mapping
+        self.llm_mapping = require_llm_mapping(llm_mapping)
         self.langchain_client = langchain_client
         self.github_client = github_client
         self.latex_template_name = latex_template_name

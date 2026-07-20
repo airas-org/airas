@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.arxiv import ArxivInfo
 from airas.core.types.research_study import LLMExtractedInfo, MetaData, ResearchStudy
@@ -103,12 +103,7 @@ class RetrievePaperSubgraph:
         self.langchain_client = langchain_client
         self.arxiv_client = arxiv_client
         self.github_client = github_client
-        if llm_mapping is None:
-            raise ValueError(
-                "llm_mapping is required: specify the model(s) explicitly "
-                "(no default model is configured)."
-            )
-        self.llm_mapping = llm_mapping
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _search_arxiv_id_from_title(

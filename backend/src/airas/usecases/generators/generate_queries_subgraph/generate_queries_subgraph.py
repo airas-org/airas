@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.infra.langchain_client import LangChainClient
 from airas.usecases.generators.generate_queries_subgraph.nodes.generate_queries import (
@@ -50,12 +50,7 @@ class GenerateQueriesSubgraph:
     ):
         self.num_paper_search_queries = num_paper_search_queries
         self.llm_client = llm_client
-        if llm_mapping is None:
-            raise ValueError(
-                "llm_mapping is required: specify the model(s) explicitly "
-                "(no default model is configured)."
-            )
-        self.llm_mapping = llm_mapping
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _generate_queries(
