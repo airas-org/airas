@@ -503,11 +503,12 @@ def get_library_docs(
 ) -> dict[str, Any]:
     """Look up canonical documentation endpoints for AI research libraries.
 
-    Covers ~120 libraries across the research stack: fine-tuning,
+    Covers ~125 libraries across the research stack: fine-tuning,
     post-training, distributed training, inference serving, GPU computing,
     interpretability, RL and simulation, vision/audio, JAX, RAG, structured
-    output, evaluation, data processing, statistics, mathematical
-    optimization, causal inference, time series, and more. For each library
+    output, evaluation, data processing, statistics, Bayesian inference,
+    mathematical optimization, causal inference, time series, quantum
+    computing, and more. For each library
     returns the official docs URL, the GitHub repository, and — where the
     project publishes one — its `llms.txt` / `llms-full.txt` endpoint, which
     serves the current documentation in a machine-readable form. Fetch those
