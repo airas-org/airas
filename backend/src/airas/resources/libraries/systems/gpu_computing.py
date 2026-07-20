@@ -1,6 +1,7 @@
-# Gpu Computing (systems): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# systems / gpu_computing documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 GPU_COMPUTING_LIBRARIES: dict[str, dict[str, str | None]] = {
     "triton-lang": {
         "description": "Python DSL for writing custom GPU kernels",

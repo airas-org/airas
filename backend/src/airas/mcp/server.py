@@ -59,6 +59,7 @@ from airas.dashboard.launcher import (
 from airas.infra.aixs_client import AixsClient
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
+from airas.infra.hugging_face_client import HF_RESOURCE_TYPE, HuggingFaceClient
 from airas.infra.kroki_client import KrokiClient
 from airas.infra.langchain_client import (
     PROVIDER_REQUIRED_ENV_VARS,
@@ -180,6 +181,11 @@ def _arxiv_client() -> ArxivClient:
 def _openalex_client() -> OpenAlexClient:
     refresh_environment()  # OPENALEX_API_KEY is optional
     return OpenAlexClient(sync_session=_sync_session, async_session=_async_session)
+
+
+def _hugging_face_client() -> HuggingFaceClient:
+    refresh_environment()  # HF_TOKEN is optional for public resources
+    return HuggingFaceClient(sync_session=_sync_session, async_session=_async_session)
 
 
 def _semantic_scholar_client() -> SemanticScholarClient:
@@ -467,11 +473,19 @@ async def generate_experimental_design(
 
 @mcp.tool()
 async def retrieve_models(model_subfield: ModelSubfield) -> dict[str, Any]:
-    """List curated candidate models for experiments in the given subfield.
+    """List AIRAS's hand-curated candidate models for a subfield.
 
-    Subfields: "transformer_decoder_based_models", "image_models",
-    "multi_modal_models", "llm_api_models". Returns model configurations
-    usable in an experimental design. No API keys required.
+    Check here first. Subfields follow the shared domain>category taxonomy:
+    language ("text_generation", "text_understanding",
+    "sequence_to_sequence", "code_generation", "text_embedding",
+    "reranking", "hosted_api"), vision ("image_recognition",
+    "image_generation"), "vision_language", "speech", "forecasting",
+    "protein". Returns a dict
+    keyed by model name; each value has model_architecture, task_type,
+    huggingface_url, dependent_packages, a runnable code snippet, citation,
+    and more. If none of these fit the experimental design, fall back to
+    `search_huggingface_hub` (kind="models"), which returns the same shape
+    from the live Hub. No API keys required.
     """
     result = (
         await RetrieveModelsSubgraph()
@@ -483,11 +497,17 @@ async def retrieve_models(model_subfield: ModelSubfield) -> dict[str, Any]:
 
 @mcp.tool()
 async def retrieve_datasets(dataset_subfield: DatasetSubfield) -> dict[str, Any]:
-    """List curated candidate datasets for experiments in the given subfield.
+    """List AIRAS's hand-curated candidate datasets for a subfield.
 
-    Subfields: "language_model_fine_tuning_datasets", "image_datasets",
-    "prompt_engineering_datasets". Returns dataset configurations usable in
-    an experimental design. No API keys required.
+    Check here first. Subfields follow the shared domain>category
+    taxonomy: language ("instruction_tuning", "reasoning_evaluation",
+    "nlp_tasks", "prompt_engineering", "code_evaluation"),
+    "image_recognition", "speech", "vision_language". Returns a dict keyed
+    by dataset name; each value has description, task_type, huggingface_url,
+    dependent_packages, a runnable code snippet, citation, and more. If none
+    fit the experimental design, fall back to `search_huggingface_hub`
+    (kind="datasets"), which returns the same shape from the live Hub.
+    No API keys required.
     """
     result = (
         await RetrieveDatasetsSubgraph()
@@ -495,6 +515,86 @@ async def retrieve_datasets(dataset_subfield: DatasetSubfield) -> dict[str, Any]
         .ainvoke({"dataset_subfield": dataset_subfield})
     )
     return result["datasets_dict"]
+
+
+def _hf_hub_entry(item: dict[str, Any], kind: HF_RESOURCE_TYPE) -> dict[str, Any]:
+    """Map one Hugging Face Hub API record to the curated-resource shape."""
+    library = item.get("library_name")
+    card = item.get("cardData") or {}
+    tags = item.get("tags") or []
+    if kind == "models":
+        task_type = item.get("pipeline_tag")
+        packages = [library] if library else []
+    else:
+        task_type = card.get("task_categories") or card.get("task_ids") or []
+        packages = ["datasets"]
+    return {
+        # curated-compatible core fields (same keys as retrieve_models /
+        # retrieve_datasets); code/citation are left empty for Hub results —
+        # read the model/dataset card at huggingface_url for usage details.
+        "description": item.get("description", ""),
+        "model_architecture": "",
+        "task_type": task_type,
+        "dependent_packages": packages,
+        "code": "",
+        "citation": "",
+        # discovery metadata beyond the curated schema
+        "downloads": item.get("downloads"),
+        "likes": item.get("likes"),
+        "tags": tags,
+        "last_modified": item.get("lastModified"),
+        "source": "huggingface_hub",
+    }
+
+
+@mcp.tool()
+async def search_huggingface_hub(
+    kind: HF_RESOURCE_TYPE = "models",
+    query: str = "",
+    task: str | None = None,
+    limit: int = 10,
+    sort: str = "downloads",
+) -> dict[str, Any]:
+    """Live Hugging Face Hub fallback for `retrieve_models`/`retrieve_datasets`.
+
+    Use this only when the curated tools (`retrieve_models` /
+    `retrieve_datasets`) have no suitable candidate for the experimental
+    design — check them first, then come here to go wider or find newer
+    releases. Returns the same shape as the curated tools: a dict keyed by
+    resource id, each value carrying the curated-compatible fields
+    (description, task_type, huggingface_url, dependent_packages; code and
+    citation are empty for Hub results — read the card at huggingface_url),
+    plus discovery metadata (downloads, likes, tags, last_modified).
+
+    `kind` is "models" or "datasets"; `query` is free-text search; `task`
+    filters by pipeline tag for models (e.g. "text-generation",
+    "image-classification", "automatic-speech-recognition") or by tag for
+    datasets; `sort` ranks results ("downloads", "likes", "trendingScore",
+    "lastModified"). HF_TOKEN is optional (only for gated resources).
+    """
+    client = _hugging_face_client()
+    results = await client.asearch(
+        search_type=kind,
+        search_query=query,
+        limit=limit,
+        sort=sort,
+        filter=task if kind == "datasets" else None,
+        pipeline_tag=task if kind == "models" else None,
+        full=True,
+    )
+    items = results if isinstance(results, list) else results.get("items", results)
+    out: dict[str, Any] = {}
+    for it in items or []:
+        if not isinstance(it, dict):
+            continue
+        rid = it.get("id") or it.get("modelId")
+        if not rid:
+            continue
+        prefix = "datasets/" if kind == "datasets" else ""
+        entry = _hf_hub_entry(it, kind)
+        entry["huggingface_url"] = f"https://huggingface.co/{prefix}{rid}"
+        out[rid] = entry
+    return out
 
 
 @mcp.tool()
@@ -505,11 +605,11 @@ def get_library_docs(
 ) -> dict[str, Any]:
     """Look up canonical documentation endpoints for AI research libraries.
 
-    Covers ~165 libraries organized as domain > category, spanning LLMs,
-    ML systems, statistics, machine learning, decision science, embodied
-    AI (RL/simulation/VLA/world models), perception (vision/VLM/audio),
-    interpretability (mechanistic + XAI), graphs, and the sciences
-    (bioinformatics, medical, chemistry/materials, physics, quantum). For
+    Covers ~165 libraries organized as domain > category (the same shared
+    taxonomy as retrieve_models / retrieve_datasets). Domains: foundations,
+    language, vision, audio, multimodal, reinforcement_learning,
+    time_series, graph, systems, statistics, machine_learning,
+    decision_science, interpretability, science. For
     each library returns the official docs URL, the source repository, and
     — where the project publishes one — its `llms.txt` / `llms-full.txt`
     endpoint, which serves the current documentation in a machine-readable

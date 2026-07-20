@@ -1,6 +1,7 @@
-# Causal Inference (statistics): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# statistics / causal_inference documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 CAUSAL_INFERENCE_LIBRARIES: dict[str, dict[str, str | None]] = {
     "dowhy": {
         "description": "Causal inference with explicit assumptions and refutation tests",

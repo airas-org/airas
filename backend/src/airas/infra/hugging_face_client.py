@@ -101,14 +101,25 @@ class HuggingFaceClient(BaseHTTPClient):
         search_query: str = "",
         limit: int = 10,
         sort: str = "downloads",
+        filter: str | None = None,
+        pipeline_tag: str | None = None,
+        full: bool = False,
         timeout: float = 30.0,
     ) -> dict[str, Any]:
-        params = {
+        params: dict[str, Any] = {
             "limit": limit,
             "sort": sort,
         }
         if search_query:
             params["search"] = search_query
+        if filter:
+            params["filter"] = filter
+        if pipeline_tag:
+            # pipeline_tag is a models-only filter on the HF Hub API
+            params["pipeline_tag"] = pipeline_tag
+        if full:
+            # richer metadata (tags, library_name, cardData, description)
+            params["full"] = "true"
 
         response = await self.aget(
             path=f"/{search_type}", params=params, timeout=timeout

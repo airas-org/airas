@@ -1,6 +1,7 @@
-# Model Compression (systems): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# systems / model_compression documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 MODEL_COMPRESSION_LIBRARIES: dict[str, dict[str, str | None]] = {
     "bitsandbytes": {
         "description": "8-bit/4-bit quantization and optimizers for PyTorch",

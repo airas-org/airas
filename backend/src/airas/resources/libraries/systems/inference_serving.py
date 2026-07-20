@@ -1,6 +1,7 @@
-# Inference Serving (systems): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# systems / inference_serving documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 INFERENCE_SERVING_LIBRARIES: dict[str, dict[str, str | None]] = {
     "vllm": {
         "description": "High-throughput LLM serving (PagedAttention, continuous batching)",

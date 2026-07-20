@@ -1,0 +1,186 @@
+# Curated dataset registry — language / reasoning_evaluation. Part of the shared
+# domain>category taxonomy across resources/{libraries,models,datasets}.
+# HuggingFace dataset IDs and arXiv citations are verified on entry;
+# use search_huggingface_hub for un-curated needs.
+REASONING_EVALUATION_DATASETS: dict = {
+    "mmlu": {
+        "description": "Dataset Card for MMLU Dataset Summary Measuring Massive Multitask Language Understanding by Dan Hendrycks, Collin Burns, Steven Basart, Andy Zou, Mantas Mazeika, Dawn Song, and Jacob Steinhardt (ICLR 2021). This is a massive multitask test consisting of multiple-choice questions ",
+        "domain": "language",
+        "category": "reasoning_evaluation",
+        "task_type": "multiple-choice",
+        "huggingface_url": "https://huggingface.co/datasets/cais/mmlu",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("cais/mmlu")""",
+        "citation": """@misc{hendrycks2020,
+  title = {Measuring Massive Multitask Language Understanding},
+  author = {Dan Hendrycks and Collin Burns and Steven Basart and Andy Zou and Mantas Mazeika and Dawn Song and Jacob Steinhardt},
+  year = {2020},
+  eprint = {2009.03300},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2009.03300}
+}""",
+    },
+    "hellaswag": {
+        "description": "Dataset Card for 'hellaswag' Dataset Summary HellaSwag: Can a Machine Really Finish Your Sentence? is a new dataset for commonsense NLI. A paper was published at ACL2019. Supported Tasks and Leaderboards More Information Needed Languages More Information Needed Dataset Structure ",
+        "domain": "language",
+        "category": "reasoning_evaluation",
+        "task_type": "multiple-choice",
+        "huggingface_url": "https://huggingface.co/datasets/Rowan/hellaswag",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("Rowan/hellaswag")""",
+        "citation": """@misc{zellers2019,
+  title = {HellaSwag: Can a Machine Really Finish Your Sentence?},
+  author = {Rowan Zellers and Ari Holtzman and Yonatan Bisk and Ali Farhadi and Yejin Choi},
+  year = {2019},
+  eprint = {1905.07830},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/1905.07830}
+}""",
+    },
+    "gsm8k": {
+        "description": "Dataset Card for GSM8K Dataset Summary GSM8K (Grade School Math 8K) is a dataset of 8.5K high quality linguistically diverse grade school math word problems. The dataset was created to support the task of question answering on basic mathematical problems that require multi-step r",
+        "domain": "language",
+        "category": "reasoning_evaluation",
+        "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/datasets/openai/gsm8k",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("openai/gsm8k")""",
+        "citation": """@misc{cobbe2021,
+  title = {Training Verifiers to Solve Math Word Problems},
+  author = {Karl Cobbe and Vineet Kosaraju and Mohammad Bavarian and Mark Chen and Heewoo Jun and Lukasz Kaiser and Matthias Plappert and Jerry Tworek and Jacob Hilton and Reiichiro Nakano and Christopher Hesse and John Schulman},
+  year = {2021},
+  eprint = {2110.14168},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2110.14168}
+}""",
+    },
+    "ai2_arc": {
+        "description": "Dataset Card for 'ai2_arc' Dataset Summary A new dataset of 7,787 genuine grade-school level, multiple-choice science questions, assembled to encourage research in advanced question-answering. The dataset is partitioned into a Challenge Set and an Easy Set, where the former conta",
+        "domain": "language",
+        "category": "reasoning_evaluation",
+        "task_type": "multiple-choice",
+        "huggingface_url": "https://huggingface.co/datasets/allenai/ai2_arc",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("allenai/ai2_arc")""",
+        "citation": """@misc{clark2018,
+  title = {Think you have Solved Question Answering? Try ARC, the AI2 Reasoning Challenge},
+  author = {Peter Clark and Isaac Cowhey and Oren Etzioni and Tushar Khot and Ashish Sabharwal and Carissa Schoenick and Oyvind Tafjord},
+  year = {2018},
+  eprint = {1803.05457},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/1803.05457}
+}""",
+    },
+    "truthful_qa": {
+        "description": "Dataset Card for truthful_qa Dataset Summary TruthfulQA is a benchmark to measure whether a language model is truthful in generating answers to questions. The benchmark comprises 817 questions that span 38 categories, including health, law, finance and politics. Questions are cra",
+        "domain": "language",
+        "category": "reasoning_evaluation",
+        "task_type": "multiple-choice",
+        "huggingface_url": "https://huggingface.co/datasets/truthfulqa/truthful_qa",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("truthfulqa/truthful_qa")""",
+        "citation": """@misc{lin2021,
+  title = {TruthfulQA: Measuring How Models Mimic Human Falsehoods},
+  author = {Stephanie Lin and Jacob Hilton and Owain Evans},
+  year = {2021},
+  eprint = {2109.07958},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2109.07958}
+}""",
+    },
+    "winogrande": {
+        "description": "Dataset Card for 'winogrande' Dataset Summary WinoGrande is a new collection of 44k problems, inspired by Winograd Schema Challenge (Levesque, Davis, and Morgenstern 2011), but adjusted to improve the scale and robustness against the dataset-specific bias. Formulated as a fill-in",
+        "domain": "language",
+        "category": "reasoning_evaluation",
+        "task_type": "multiple-choice",
+        "huggingface_url": "https://huggingface.co/datasets/allenai/winogrande",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("allenai/winogrande")""",
+        "citation": """@misc{sakaguchi2019,
+  title = {WinoGrande: An Adversarial Winograd Schema Challenge at Scale},
+  author = {Keisuke Sakaguchi and Ronan Le Bras and Chandra Bhagavatula and Yejin Choi},
+  year = {2019},
+  eprint = {1907.10641},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/1907.10641}
+}""",
+    },
+    "piqa": {
+        "description": "To apply eyeshadow without a brush, should I use a cotton swab or a toothpick? Questions requiring this kind of physical commonsense pose a challenge to state-of-the-art natural language understanding systems. The PIQA dataset introduces the task of physical commonsense reasoning",
+        "domain": "language",
+        "category": "reasoning_evaluation",
+        "task_type": "multiple-choice",
+        "huggingface_url": "https://huggingface.co/datasets/ybisk/piqa",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("ybisk/piqa")""",
+        "citation": """@misc{bisk2019,
+  title = {PIQA: Reasoning about Physical Commonsense in Natural Language},
+  author = {Yonatan Bisk and Rowan Zellers and Ronan Le Bras and Jianfeng Gao and Yejin Choi},
+  year = {2019},
+  eprint = {1911.11641},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/1911.11641}
+}""",
+    },
+    "mmlu-pro": {
+        "description": "MMLU-Pro Dataset MMLU-Pro dataset is a more robust and challenging massive multi-task understanding dataset tailored to more rigorously benchmark large language models' capabilities. This dataset contains 12K complex questions across various disciplines. |Github | 🏆Leaderboard | ",
+        "domain": "language",
+        "category": "reasoning_evaluation",
+        "task_type": "multiple-choice",
+        "huggingface_url": "https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("TIGER-Lab/MMLU-Pro")""",
+        "citation": """@misc{wang2024,
+  title = {MMLU-Pro: A More Robust and Challenging Multi-Task Language Understanding Benchmark},
+  author = {Yubo Wang and Xueguang Ma and Ge Zhang and Yuansheng Ni and Abhranil Chandra and Shiguang Guo and Weiming Ren and Aaran Arulraj and Xuan He and Ziyan Jiang and Tianle Li and Max Ku and Kai Wang and Alex Zhuang and Rongqi Fan and Xiang Yue and Wenhu Chen},
+  year = {2024},
+  eprint = {2406.01574},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2406.01574}
+}""",
+    },
+    "bbh": {
+        "description": "BIG-bench Hard dataset homepage: https://github.com/suzgunmirac/BIG-Bench-Hard @article{suzgun2022challenging, title={Challenging BIG-Bench Tasks and Whether Chain-of-Thought Can Solve Them}, author={Suzgun, Mirac and Scales, Nathan and Sch{'a}rli, Nathanael and Gehrmann, Sebast",
+        "domain": "language",
+        "category": "reasoning_evaluation",
+        "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/datasets/lukaemon/bbh",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("lukaemon/bbh")""",
+        "citation": """@misc{suzgun2022,
+  title = {Challenging BIG-Bench Tasks and Whether Chain-of-Thought Can Solve Them},
+  author = {Mirac Suzgun and Nathan Scales and Nathanael Schärli and Sebastian Gehrmann and Yi Tay and Hyung Won Chung and Aakanksha Chowdhery and Quoc V. Le and Ed H. Chi and Denny Zhou and Jason Wei},
+  year = {2022},
+  eprint = {2210.09261},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2210.09261}
+}""",
+    },
+    "competition_math": {
+        "description": "The Mathematics Aptitude Test of Heuristics (MATH) dataset consists of problems from mathematics competitions, including the AMC 10, AMC 12, AIME, and more. Each problem in MATH has a full step-by-step solution, which can be used to teach models to generate answer derivations and",
+        "domain": "language",
+        "category": "reasoning_evaluation",
+        "task_type": "text-generation",
+        "huggingface_url": "https://huggingface.co/datasets/hendrycks/competition_math",
+        "dependent_packages": ["datasets"],
+        "code": """from datasets import load_dataset
+ds = load_dataset("hendrycks/competition_math")""",
+        "citation": """@misc{hendrycks2021,
+  title = {Measuring Mathematical Problem Solving With the MATH Dataset},
+  author = {Dan Hendrycks and Collin Burns and Saurav Kadavath and Akul Arora and Steven Basart and Eric Tang and Dawn Song and Jacob Steinhardt},
+  year = {2021},
+  eprint = {2103.03874},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2103.03874}
+}""",
+    },
+}

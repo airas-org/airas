@@ -1,6 +1,7 @@
-# Experiment Tracking (systems): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# systems / experiment_tracking documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 EXPERIMENT_TRACKING_LIBRARIES: dict[str, dict[str, str | None]] = {
     "wandb": {
         "description": "Experiment tracking, sweeps, and artifact management",
