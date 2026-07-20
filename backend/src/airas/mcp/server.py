@@ -499,22 +499,24 @@ async def retrieve_datasets(dataset_subfield: DatasetSubfield) -> dict[str, Any]
 
 @mcp.tool()
 def get_library_docs(
-    library: str | None = None, category: str | None = None
+    library: str | None = None,
+    domain: str | None = None,
+    category: str | None = None,
 ) -> dict[str, Any]:
     """Look up canonical documentation endpoints for AI research libraries.
 
-    Covers ~125 libraries across the research stack: fine-tuning,
-    post-training, distributed training, inference serving, GPU computing,
-    interpretability, RL and simulation, vision/audio, JAX, RAG, structured
-    output, evaluation, data processing, statistics, Bayesian inference,
-    mathematical optimization, causal inference, time series, quantum
-    computing, and more. For each library
-    returns the official docs URL, the GitHub repository, and — where the
-    project publishes one — its `llms.txt` / `llms-full.txt` endpoint, which
-    serves the current documentation in a machine-readable form. Fetch those
-    endpoints to get up-to-date library guidance while writing experiment
-    code. Pass `library` for one entry; `category` to list one category;
-    no arguments to list everything. No API keys required.
+    Covers ~165 libraries organized as domain > category, spanning LLMs,
+    ML systems, statistics, machine learning, decision science, embodied
+    AI (RL/simulation/VLA/world models), perception (vision/VLM/audio),
+    interpretability (mechanistic + XAI), graphs, and the sciences
+    (bioinformatics, medical, chemistry/materials, physics, quantum). For
+    each library returns the official docs URL, the source repository, and
+    — where the project publishes one — its `llms.txt` / `llms-full.txt`
+    endpoint, which serves the current documentation in a machine-readable
+    form. Fetch those endpoints to get up-to-date library guidance while
+    writing experiment code. Pass `library` for one entry; `domain` or
+    `category` to filter the listing; no arguments to list everything.
+    No API keys required.
     """
     if library is not None:
         entry = LIBRARY_DOCS.get(library)
@@ -525,14 +527,22 @@ def get_library_docs(
             }
         return dict(entry)
     listing = {
-        name: {"description": e["description"], "category": e["category"]}
+        name: {
+            "description": e["description"],
+            "domain": e["domain"],
+            "category": e["category"],
+        }
         for name, e in LIBRARY_DOCS.items()
-        if category is None or e["category"] == category
+        if (domain is None or e["domain"] == domain)
+        and (category is None or e["category"] == category)
     }
     if not listing:
         return {
-            "error": f"Unknown category: {category!r}.",
-            "available": sorted({e["category"] for e in LIBRARY_DOCS.values()}),
+            "error": f"No libraries match domain={domain!r}, category={category!r}.",
+            "available_domains": sorted({e["domain"] for e in LIBRARY_DOCS.values()}),
+            "available_categories": sorted(
+                {e["category"] for e in LIBRARY_DOCS.values()}
+            ),
         }
     return listing
 
