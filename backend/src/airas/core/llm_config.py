@@ -28,7 +28,8 @@ def require_llm_mapping(llm_mapping: _MappingT | None) -> _MappingT:
     if llm_mapping is None:
         raise ValueError(
             "llm_mapping is required: specify the model(s) explicitly "
-            "(no default model is configured)."
+            "(no default model is configured). To use one model for every "
+            "node, pass uniform_llm_mapping(<SubgraphLLMMapping>, model)."
         )
     return llm_mapping
 
