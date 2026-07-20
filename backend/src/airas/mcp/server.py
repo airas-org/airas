@@ -69,6 +69,7 @@ from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.mcp.prompt_registry import build_generation_prompt
+from airas.resources.libraries.library_docs import LIBRARY_DOCS
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
@@ -494,6 +495,56 @@ async def retrieve_datasets(dataset_subfield: DatasetSubfield) -> dict[str, Any]
         .ainvoke({"dataset_subfield": dataset_subfield})
     )
     return result["datasets_dict"]
+
+
+@mcp.tool()
+def get_library_docs(
+    library: str | None = None,
+    domain: str | None = None,
+    category: str | None = None,
+) -> dict[str, Any]:
+    """Look up canonical documentation endpoints for AI research libraries.
+
+    Covers ~165 libraries organized as domain > category, spanning LLMs,
+    ML systems, statistics, machine learning, decision science, embodied
+    AI (RL/simulation/VLA/world models), perception (vision/VLM/audio),
+    interpretability (mechanistic + XAI), graphs, and the sciences
+    (bioinformatics, medical, chemistry/materials, physics, quantum). For
+    each library returns the official docs URL, the source repository, and
+    — where the project publishes one — its `llms.txt` / `llms-full.txt`
+    endpoint, which serves the current documentation in a machine-readable
+    form. Fetch those endpoints to get up-to-date library guidance while
+    writing experiment code. Pass `library` for one entry; `domain` or
+    `category` to filter the listing; no arguments to list everything.
+    No API keys required.
+    """
+    if library is not None:
+        entry = LIBRARY_DOCS.get(library)
+        if entry is None:
+            return {
+                "error": f"Unknown library: {library!r}.",
+                "available": sorted(LIBRARY_DOCS),
+            }
+        return dict(entry)
+    listing = {
+        name: {
+            "description": e["description"],
+            "domain": e["domain"],
+            "category": e["category"],
+        }
+        for name, e in LIBRARY_DOCS.items()
+        if (domain is None or e["domain"] == domain)
+        and (category is None or e["category"] == category)
+    }
+    if not listing:
+        return {
+            "error": f"No libraries match domain={domain!r}, category={category!r}.",
+            "available_domains": sorted({e["domain"] for e in LIBRARY_DOCS.values()}),
+            "available_categories": sorted(
+                {e["category"] for e in LIBRARY_DOCS.values()}
+            ),
+        }
+    return listing
 
 
 # --- Experiment repository & execution (GitHub Actions) ---
@@ -1240,8 +1291,11 @@ generate_experimental_design (ask me about the compute environment first; \
 retrieve_models / retrieve_datasets list curated candidates).
 3. Set up: prepare_repository, then clone the experiment repository locally.
 4. Write the experiment code yourself in the clone. Read its AGENTS.md \
-for the contract; run mode=sanity locally until it prints \
-SANITY_VALIDATION: PASS, then commit and push.
+for the contract. For library-specific guidance, get_library_docs \
+returns each library's official docs and llms.txt endpoints — fetch \
+those for current API usage instead of relying on memory. Run \
+mode=sanity locally until it prints SANITY_VALIDATION: PASS, then \
+commit and push.
 5. Run: dispatch_experiment (async). Poll get_workflow_runs or \
 get_experiment_run_status between other work; debug from the stderr tail.
 6. Analyze: fetch_experiment_results -> analyze_experiment (pass the code \
