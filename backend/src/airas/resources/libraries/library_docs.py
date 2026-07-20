@@ -198,20 +198,4 @@ LIBRARY_DOCS: dict[str, dict[str, str | None]] = {
         "llms_txt": None,
         "llms_full_txt": None,
     },
-    "modal": {
-        "description": "Serverless GPU compute for running ML workloads from Python",
-        "category": "infrastructure",
-        "official_docs": "https://modal.com/docs",
-        "github": "https://github.com/modal-labs/modal-client",
-        "llms_txt": "https://modal.com/llms.txt",
-        "llms_full_txt": "https://modal.com/llms-full.txt",
-    },
-    "skypilot": {
-        "description": "Run ML workloads on any cloud with automatic cost optimization",
-        "category": "infrastructure",
-        "official_docs": "https://docs.skypilot.co/en/latest",
-        "github": "https://github.com/skypilot-org/skypilot",
-        "llms_txt": "https://docs.skypilot.co/llms.txt",
-        "llms_full_txt": None,
-    },
 }
