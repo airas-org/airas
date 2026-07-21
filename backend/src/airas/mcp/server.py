@@ -1646,9 +1646,11 @@ async def fetch_paper_reproduction_results(
     return {
         "result": result.get("result"),
         "validation": result.get("validation"),
+        "parameter_check": result.get("parameter_check"),
         "final_status": result.get("final_status"),
         "repro_md": result.get("repro_md"),
         "repro_png_base64": result.get("repro_png_base64"),
+        "execution_time": result.get("execution_time"),
     }
 
 

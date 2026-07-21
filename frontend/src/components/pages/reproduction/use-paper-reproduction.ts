@@ -11,8 +11,6 @@ import {
   PaperReproductionService,
 } from "@/lib/api";
 
-// Matches DEFAULT_NODE_LLM_CONFIG's entries for these two nodes in
-// components/features/llm-config/constants.ts (kept local to avoid touching shared config).
 const DEFAULT_GENERATE_LLM_CONFIG: NodeLLMConfig = {
   llm_name: "anthropic/claude-sonnet-4-5",
   params: { provider_type: "anthropic" },
