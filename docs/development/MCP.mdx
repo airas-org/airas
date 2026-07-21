@@ -30,7 +30,7 @@ chmod 600 ~/.airas/credentials.json
 | Key | Required | Purpose |
 | --- | --- | --- |
 | `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` | At least one | LLM calls (query generation, paper extraction, hypothesis generation, paper writing) |
-| `GH_PERSONAL_ACCESS_TOKEN` | For repository / experiment / publication tools | GitHub API access (`repo` + `workflow` scopes) |
+| `GH_PERSONAL_ACCESS_TOKEN` | For repository / experiment / paper-reproduction / publication tools | GitHub API access (`repo` + `workflow` scopes) |
 
 If a tool is called before its credential is configured, it returns an error pointing at this file.
 
@@ -102,7 +102,21 @@ Or add it to your project's `.mcp.json`:
 | `upload_research_history` | Save research state to the experiment repository |
 | `download_research_history` | Restore research state to continue in a later session |
 
+### Paper reproduction (GitHub Actions)
+
+| Tool | Description |
+| --- | --- |
+| `dispatch_paper_reproduction_generate` | Generate stage: an agent picks a figure/table from the paper (guided by `instruction`) and writes Hydra config + `src/main.py` under `.reproduction/<repro_id>/`, returning `repro_id` (async, does not run it) |
+| `dispatch_paper_reproduction_run` | Run stage: agentless `python -m src.main` via Hydra, producing the figure/table + result.json (async) |
+| `fetch_paper_reproduction_results` | Fetch results and validate them on the AIRAS side (deterministic pitfall/parameter checks + LLM judge) |
+| `dispatch_parameter_tuning_run` | Sweep the config's `optuna.search_space` with Optuna (TPE), reusing `src/main.py` via Hydra overrides — no code generation (async) |
+| `fetch_parameter_tuning_results` | Fetch the results (best parameters, optimization figure) of a completed tuning run |
+
 Generation steps are dual-mode: run them on the backend LLM (the tools below, requires an LLM provider key) or author them yourself with the same curated prompts via `get_generation_prompt` (no key required). Host-authorable steps: `research_queries`, `hypothesis`, `experimental_design`, `experiment_analysis`, `paper_writing`, `latex_conversion` — every prompt comes with an `output_json_schema` describing exactly the data format to produce.
+
+A typical paper-reproduction flow: `prepare_repository` (once, to create a runner repository from
+airas-template) → `set_github_actions_secrets` → `dispatch_paper_reproduction_generate` (returns
+`repro_id`; every later reproduction tool requires it) → (poll `get_workflow_runs`) → `dispatch_paper_reproduction_run` → (poll) → `fetch_paper_reproduction_results` → (optionally) `dispatch_parameter_tuning_run` (poll) → `fetch_parameter_tuning_results`. Each reproduction lives in its own `.reproduction/<repro_id>/` directory, so one branch can hold multiple reproductions.
 
 A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs` for GitHub Actions, or `get_experiment_run_status` for AIXS) → `fetch_experiment_results` → `analyze_experiment` → **create figures and diagrams yourself** (see below) → `generate_bibfile` → `generate_paper` → `generate_latex` → **write the returned LaTeX to `.research/latex/{template}/main.tex` in your clone and push it with git** → **either or both of** `compile_latex` (build the PDF on GitHub Actions) / `open_in_overleaf` (hand the project to the user for editing; with `local_path`, no push needed) → `upload_research_history`.
 

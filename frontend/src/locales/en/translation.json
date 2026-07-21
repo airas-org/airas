@@ -814,7 +814,62 @@
   },
   "reproduction": {
     "title": "Reproduction",
-    "comingSoon": "Coming soon"
+    "description": "Generate and run code that reproduces a figure or table from a paper, then validate the results.",
+    "form": {
+      "ownerNotSet": "GitHub owner is not configured. Set GITHUB_OWNER in Settings > API Keys.",
+      "repositoryName": "Repository Name",
+      "branchName": "Branch Name",
+      "paperUrl": "Paper URL",
+      "instruction": "Instruction (optional)",
+      "instructionHelp": "Specify which figure/table to reproduce and how.",
+      "instructionPlaceholder": "e.g. Reproduce Figure 2",
+      "advanced": "Advanced Settings",
+      "repoUrl": "Reference Repository URL (optional)",
+      "repoUrlHelp": "Optionally provide a repository to reference, such as the paper's official implementation.",
+      "githubActionsAgent": "Coding Agent",
+      "reproId": "Reproduction ID",
+      "generateModel": "Code Generation Model",
+      "resultsModel": "Validation Model"
+    },
+    "steps": {
+      "configure": "1. Configuration",
+      "generate": "2. Code Generation",
+      "generateHelp": "Dispatches a GitHub Actions workflow that reads the paper and generates reproduction code. This can take tens of minutes.",
+      "run": "3. Reproduction Run",
+      "runHelp": "Runs the generated code. Start this after code generation has succeeded. Results are fetched automatically on completion.",
+      "results": "4. Results",
+      "tuning": "5. Parameter Tuning (optional)",
+      "tuningHelp": "After a completed reproduction, you can run hyperparameter tuning."
+    },
+    "actions": {
+      "startGenerate": "Start Code Generation",
+      "startRun": "Start Run",
+      "fetchResults": "Fetch Results",
+      "startTuning": "Start Tuning",
+      "fetchTuningResults": "Fetch Tuning Results"
+    },
+    "status": {
+      "idle": "Not started",
+      "dispatching": "Dispatching",
+      "running": "Running",
+      "succeeded": "Succeeded",
+      "failed": "Failed"
+    },
+    "results": {
+      "finalStatus": "Final Status",
+      "validation": "Validation",
+      "parameterCheck": "Parameter Check",
+      "result": "Result",
+      "reproMd": "Reproduction Report",
+      "reproImage": "Reproduced Figure",
+      "tuningFigure": "Tuning Figure"
+    },
+    "errors": {
+      "dispatchFailed": "Failed to dispatch the workflow.",
+      "workflowFailed": "The workflow failed ({{conclusion}}).",
+      "resultsFailed": "Failed to fetch results.",
+      "missingReproId": "Run code generation first — no reproduction ID is available."
+    }
   },
   "common": {
     "loading": "Loading...",

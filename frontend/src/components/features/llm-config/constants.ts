@@ -72,6 +72,8 @@ export const DEFAULT_NODE_LLM_CONFIG = {
   refine_paper: DEFAULT_MODEL,
   convert_to_latex: DEFAULT_MODEL,
   compile_latex: GITHUB_ACTIONS_MODEL,
+  dispatch_paper_reproduction_generate: GITHUB_ACTIONS_MODEL,
+  judge_reproduction: DEFAULT_MODEL,
 } as const;
 
 export const SUBGRAPH_NODE_CONFIGS = {

@@ -35,6 +35,13 @@ export { DispatchInteractiveRepoAgentRequestBody } from './models/DispatchIntera
 export type { DispatchInteractiveRepoAgentResponseBody } from './models/DispatchInteractiveRepoAgentResponseBody';
 export type { DispatchMainExperimentRequestBody } from './models/DispatchMainExperimentRequestBody';
 export type { DispatchMainExperimentResponseBody } from './models/DispatchMainExperimentResponseBody';
+export type { DispatchPaperReproductionGenerateLLMMapping } from './models/DispatchPaperReproductionGenerateLLMMapping';
+export { DispatchPaperReproductionGenerateRequestBody } from './models/DispatchPaperReproductionGenerateRequestBody';
+export type { DispatchPaperReproductionGenerateResponseBody } from './models/DispatchPaperReproductionGenerateResponseBody';
+export type { DispatchPaperReproductionRunRequestBody } from './models/DispatchPaperReproductionRunRequestBody';
+export type { DispatchPaperReproductionRunResponseBody } from './models/DispatchPaperReproductionRunResponseBody';
+export type { DispatchParameterTuningRunRequestBody } from './models/DispatchParameterTuningRunRequestBody';
+export type { DispatchParameterTuningRunResponseBody } from './models/DispatchParameterTuningRunResponseBody';
 export type { DispatchSanityCheckRequestBody } from './models/DispatchSanityCheckRequestBody';
 export type { DispatchSanityCheckResponseBody } from './models/DispatchSanityCheckResponseBody';
 export type { DispatchVisualizationRequestBody } from './models/DispatchVisualizationRequestBody';
@@ -63,6 +70,11 @@ export type { FetchExperimentCodeRequestBody } from './models/FetchExperimentCod
 export type { FetchExperimentCodeResponseBody } from './models/FetchExperimentCodeResponseBody';
 export type { FetchPaperFulltextRequestBody } from './models/FetchPaperFulltextRequestBody';
 export { FetchPaperFulltextResponseBody } from './models/FetchPaperFulltextResponseBody';
+export type { FetchPaperReproductionResultsLLMMapping } from './models/FetchPaperReproductionResultsLLMMapping';
+export type { FetchPaperReproductionResultsRequestBody } from './models/FetchPaperReproductionResultsRequestBody';
+export type { FetchPaperReproductionResultsResponseBody } from './models/FetchPaperReproductionResultsResponseBody';
+export type { FetchParameterTuningResultsRequestBody } from './models/FetchParameterTuningResultsRequestBody';
+export type { FetchParameterTuningResultsResponseBody } from './models/FetchParameterTuningResultsResponseBody';
 export type { FetchRunIdsRequestBody } from './models/FetchRunIdsRequestBody';
 export type { FetchRunIdsResponseBody } from './models/FetchRunIdsResponseBody';
 export type { GenerateBibfileSubgraphRequestBody } from './models/GenerateBibfileSubgraphRequestBody';
@@ -183,6 +195,7 @@ export { HypothesisDrivenResearchService } from './services/HypothesisDrivenRese
 export { InteractiveRepoAgentService } from './services/InteractiveRepoAgentService';
 export { LatexService } from './services/LatexService';
 export { ModelsService } from './services/ModelsService';
+export { PaperReproductionService } from './services/PaperReproductionService';
 export { PapersService } from './services/PapersService';
 export { RepositoriesService } from './services/RepositoriesService';
 export { ResearchHistoryService } from './services/ResearchHistoryService';

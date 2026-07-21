@@ -922,6 +922,131 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/paper-reproduction/generate/dispatch:
+    post:
+      tags:
+      - paper-reproduction
+      summary: Dispatch Paper Reproduction Generate
+      operationId: dispatch_paper_reproduction_generate_airas_v1_paper_reproduction_generate_dispatch_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DispatchPaperReproductionGenerateRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DispatchPaperReproductionGenerateResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/paper-reproduction/run/dispatch:
+    post:
+      tags:
+      - paper-reproduction
+      summary: Dispatch Paper Reproduction Run
+      operationId: dispatch_paper_reproduction_run_airas_v1_paper_reproduction_run_dispatch_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DispatchPaperReproductionRunRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DispatchPaperReproductionRunResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/paper-reproduction/results:
+    post:
+      tags:
+      - paper-reproduction
+      summary: Fetch Paper Reproduction Results
+      operationId: fetch_paper_reproduction_results_airas_v1_paper_reproduction_results_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchPaperReproductionResultsRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchPaperReproductionResultsResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/paper-reproduction/parameter-tuning/dispatch:
+    post:
+      tags:
+      - paper-reproduction
+      summary: Dispatch Parameter Tuning Run
+      operationId: dispatch_parameter_tuning_run_airas_v1_paper_reproduction_parameter_tuning_dispatch_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DispatchParameterTuningRunRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DispatchParameterTuningRunResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/paper-reproduction/parameter-tuning/results:
+    post:
+      tags:
+      - paper-reproduction
+      summary: Fetch Parameter Tuning Results
+      operationId: fetch_parameter_tuning_results_airas_v1_paper_reproduction_parameter_tuning_results_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchParameterTuningResultsRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchParameterTuningResultsResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/topic_open_ended_research/run:
     post:
       tags:
@@ -2107,6 +2232,152 @@ components:
       - dispatched
       - execution_time
       title: DispatchMainExperimentResponseBody
+    DispatchPaperReproductionGenerateLLMMapping:
+      properties:
+        dispatch_paper_reproduction_generate:
+          $ref: '#/components/schemas/NodeLLMConfig'
+      type: object
+      required:
+      - dispatch_paper_reproduction_generate
+      title: DispatchPaperReproductionGenerateLLMMapping
+    DispatchPaperReproductionGenerateRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfigRequest'
+        paper_url:
+          type: string
+          title: Paper Url
+        instruction:
+          type: string
+          title: Instruction
+        repo_url:
+          type: string
+          title: Repo Url
+          default: ''
+        github_actions_agent:
+          type: string
+          enum:
+          - claude_code
+          - open_code
+          title: Github Actions Agent
+          default: claude_code
+        runner_label:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Runner Label
+        llm_mapping:
+          $ref: '#/components/schemas/DispatchPaperReproductionGenerateLLMMapping'
+      type: object
+      required:
+      - github_config
+      - paper_url
+      - instruction
+      - llm_mapping
+      title: DispatchPaperReproductionGenerateRequestBody
+    DispatchPaperReproductionGenerateResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        repro_id:
+          type: string
+          title: Repro Id
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - repro_id
+      - execution_time
+      title: DispatchPaperReproductionGenerateResponseBody
+    DispatchPaperReproductionRunRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfigRequest'
+        repro_id:
+          type: string
+          title: Repro Id
+        repo_url:
+          type: string
+          title: Repo Url
+          default: ''
+        runner_label:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Runner Label
+      type: object
+      required:
+      - github_config
+      - repro_id
+      title: DispatchPaperReproductionRunRequestBody
+    DispatchPaperReproductionRunResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - execution_time
+      title: DispatchPaperReproductionRunResponseBody
+    DispatchParameterTuningRunRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfigRequest'
+        repro_id:
+          type: string
+          title: Repro Id
+        repo_url:
+          type: string
+          title: Repo Url
+          default: ''
+        runner_label:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Runner Label
+      type: object
+      required:
+      - github_config
+      - repro_id
+      title: DispatchParameterTuningRunRequestBody
+    DispatchParameterTuningRunResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - execution_time
+      title: DispatchParameterTuningRunResponseBody
     DispatchSanityCheckRequestBody:
       properties:
         github_config:
@@ -2679,6 +2950,127 @@ components:
       - resolved_from
       - execution_time
       title: FetchPaperFulltextResponseBody
+    FetchPaperReproductionResultsLLMMapping:
+      properties:
+        judge_reproduction:
+          $ref: '#/components/schemas/NodeLLMConfig'
+      type: object
+      required:
+      - judge_reproduction
+      title: FetchPaperReproductionResultsLLMMapping
+    FetchPaperReproductionResultsRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfigRequest'
+        repro_id:
+          type: string
+          title: Repro Id
+        llm_mapping:
+          $ref: '#/components/schemas/FetchPaperReproductionResultsLLMMapping'
+      type: object
+      required:
+      - github_config
+      - repro_id
+      - llm_mapping
+      title: FetchPaperReproductionResultsRequestBody
+    FetchPaperReproductionResultsResponseBody:
+      properties:
+        result:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Result
+        validation:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Validation
+        parameter_check:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Parameter Check
+        final_status:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Final Status
+        repro_md:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Repro Md
+        repro_png_base64:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Repro Png Base64
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - result
+      - validation
+      - parameter_check
+      - final_status
+      - repro_md
+      - repro_png_base64
+      - execution_time
+      title: FetchPaperReproductionResultsResponseBody
+    FetchParameterTuningResultsRequestBody:
+      properties:
+        github_config:
+          $ref: '#/components/schemas/GitHubConfigRequest'
+        repro_id:
+          type: string
+          title: Repro Id
+      type: object
+      required:
+      - github_config
+      - repro_id
+      title: FetchParameterTuningResultsRequestBody
+    FetchParameterTuningResultsResponseBody:
+      properties:
+        result:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Result
+        tuning_figure_png_base64:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tuning Figure Png Base64
+        final_status:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Final Status
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - result
+      - tuning_figure_png_base64
+      - final_status
+      - execution_time
+      title: FetchParameterTuningResultsResponseBody
     FetchRunIdsRequestBody:
       properties:
         github_config:
