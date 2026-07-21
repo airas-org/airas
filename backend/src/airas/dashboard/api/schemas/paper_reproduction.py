@@ -1,4 +1,3 @@
-import re
 from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel
@@ -11,21 +10,11 @@ from airas.usecases.executors.fetch_paper_reproduction_results_subgraph.fetch_pa
 from airas.usecases.generators.dispatch_paper_reproduction_generate_subgraph.dispatch_paper_reproduction_generate_subgraph import (
     DispatchPaperReproductionGenerateLLMMapping,
 )
+from airas.usecases.generators.dispatch_paper_reproduction_generate_subgraph.repro_id import (
+    validate_repro_id,
+)
 
-# repro_id is interpolated into a GitHub Actions workflow_dispatch input (e.g.
-# `.reproduction/${{ inputs.repro_id }}`) and, on the fetch side, a GitHub Contents API path
-# segment. Restrict it to generate_repro_id's own output charset and reject "."/".." outright so a
-# crafted value can't escape the .reproduction/<repro_id>/ directory.
-_REPRO_ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
-
-
-def _validate_repro_id(value: str) -> str:
-    if value in (".", "..") or not _REPRO_ID_RE.fullmatch(value):
-        raise ValueError(f"invalid repro_id: {value!r}")
-    return value
-
-
-ReproId = Annotated[str, AfterValidator(_validate_repro_id)]
+ReproId = Annotated[str, AfterValidator(validate_repro_id)]
 
 
 class DispatchPaperReproductionGenerateRequestBody(BaseModel):
@@ -65,6 +54,7 @@ class FetchPaperReproductionResultsRequestBody(BaseModel):
 class FetchPaperReproductionResultsResponseBody(BaseModel):
     result: dict | None
     validation: dict | None
+    parameter_check: dict | None
     final_status: dict | None
     repro_md: str | None
     repro_png_base64: str | None

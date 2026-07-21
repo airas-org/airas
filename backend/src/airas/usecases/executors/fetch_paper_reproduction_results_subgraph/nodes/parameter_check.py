@@ -50,7 +50,6 @@ def cross_check_parameters(
         paper_params = []
 
     paper_by_key: dict[str, Any] = {}
-    paper_raw_name: dict[str, str] = {}
     for p in paper_params:
         if not isinstance(
             p, dict
@@ -61,7 +60,6 @@ def cross_check_parameters(
             key and key not in paper_by_key
         ):  # duplicate keys aren't expected; keep the first
             paper_by_key[key] = p.get("value")
-            paper_raw_name[key] = str(p.get("name", "")).strip()
 
     matched: list[dict] = []
     mismatched: list[dict] = []

@@ -857,6 +857,7 @@
     "results": {
       "finalStatus": "最終ステータス",
       "validation": "検証結果",
+      "parameterCheck": "パラメータ比較結果",
       "result": "実行結果",
       "reproMd": "再現レポート",
       "reproImage": "再現図表",

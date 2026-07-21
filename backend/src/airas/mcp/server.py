@@ -108,6 +108,9 @@ from airas.usecases.generators.dispatch_paper_reproduction_generate_subgraph.dis
     DispatchPaperReproductionGenerateLLMMapping,
     DispatchPaperReproductionGenerateSubgraph,
 )
+from airas.usecases.generators.dispatch_paper_reproduction_generate_subgraph.repro_id import (
+    validate_repro_id,
+)
 from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignLLMMapping,
     GenerateExperimentalDesignSubgraph,
@@ -1580,6 +1583,7 @@ async def dispatch_paper_reproduction_run(
     `get_workflow_runs` and collect outputs with
     `fetch_paper_reproduction_results`. Requires GH_PERSONAL_ACCESS_TOKEN.
     """
+    validate_repro_id(repro_id)
     result = (
         await DispatchPaperReproductionRunSubgraph(
             github_client=_github_client(),
@@ -1618,6 +1622,7 @@ async def fetch_paper_reproduction_results(
     reproduction — call `get_available_llms` to list valid models. Requires
     GH_PERSONAL_ACCESS_TOKEN and an LLM provider API key.
     """
+    validate_repro_id(repro_id)
     result = (
         await FetchPaperReproductionResultsSubgraph(
             github_client=_github_client(),
@@ -1664,6 +1669,7 @@ async def dispatch_parameter_tuning_run(
     results with `fetch_parameter_tuning_results`. Requires
     GH_PERSONAL_ACCESS_TOKEN.
     """
+    validate_repro_id(repro_id)
     result = (
         await DispatchParameterTuningRunSubgraph(
             github_client=_github_client(),
@@ -1699,6 +1705,7 @@ async def fetch_parameter_tuning_results(
     tuning summary and optimization figure. Requires
     GH_PERSONAL_ACCESS_TOKEN.
     """
+    validate_repro_id(repro_id)
     result = (
         await FetchParameterTuningResultsSubgraph(github_client=_github_client())
         .build_graph()

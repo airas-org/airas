@@ -52,6 +52,7 @@ class FetchPaperReproductionResultsSubgraphInputState(TypedDict):
 class FetchPaperReproductionResultsSubgraphOutputState(ExecutionTimeState):
     result: dict | None
     validation: dict | None
+    parameter_check: dict | None
     final_status: dict | None
     repro_md: str | None
     repro_png_base64: str | None
@@ -94,6 +95,7 @@ class FetchPaperReproductionResultsSubgraph:
             return {
                 "result": None,
                 "validation": None,
+                "parameter_check": None,
                 "repro_md": None,
                 "repro_png_base64": None,
                 "main_py": None,
@@ -129,6 +131,7 @@ class FetchPaperReproductionResultsSubgraph:
         if not isinstance(result, dict):
             return {
                 "validation": None,
+                "parameter_check": None,
                 "final_status": {"status": "failed", "run_error": "result_missing"},
             }
 
@@ -137,6 +140,7 @@ class FetchPaperReproductionResultsSubgraph:
             # Early exit (target_not_found/gpu_required): nothing to validate.
             return {
                 "validation": None,
+                "parameter_check": None,
                 "final_status": {"status": "failed", "run_error": run_error},
             }
 
@@ -174,6 +178,7 @@ class FetchPaperReproductionResultsSubgraph:
             logger.exception("judge_reproduction failed")
             return {
                 "validation": None,
+                "parameter_check": param_check,
                 "final_status": {"status": "failed", "validation_error": str(exc)},
             }
         severity = validation.get("severity")
@@ -181,6 +186,7 @@ class FetchPaperReproductionResultsSubgraph:
         status = "failed" if severity == "critical" else "passed"
         return {
             "validation": validation,
+            "parameter_check": param_check,
             "final_status": {
                 "status": status,
                 "validation_severity": severity,

@@ -18,8 +18,8 @@ const DEFAULT_GENERATE_LLM_CONFIG: NodeLLMConfig = {
   params: { provider_type: "anthropic" },
 };
 const DEFAULT_JUDGE_LLM_CONFIG: NodeLLMConfig = {
-  llm_name: "claude-sonnet-4-5",
-  params: { provider_type: "anthropic" },
+  llm_name: "gpt-5.2",
+  params: { provider_type: "openai", reasoning_effort: null },
 };
 
 // The backend requires an explicit model per node (no in-code default), so a "use default"

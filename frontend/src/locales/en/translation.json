@@ -858,6 +858,7 @@
     "results": {
       "finalStatus": "Final Status",
       "validation": "Validation",
+      "parameterCheck": "Parameter Check",
       "result": "Result",
       "reproMd": "Reproduction Report",
       "reproImage": "Reproduced Figure",

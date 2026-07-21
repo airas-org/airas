@@ -11,7 +11,12 @@ Content-Type: application/json
     "paper_url": "https://arxiv.org/abs/2601.12345",
     "instruction": "Reproduce the main result reported in the paper.",
     "repo_url": "",
-    "github_actions_agent": "claude_code"
+    "github_actions_agent": "claude_code",
+    "llm_mapping": {
+        "dispatch_paper_reproduction_generate": {
+            "llm_name": "anthropic/claude-sonnet-4-5"
+        }
+    }
 }
 
 ###
@@ -43,7 +48,12 @@ Content-Type: application/json
         "repository_name": "airas-api-test-2",
         "branch_name": "develop-2"
     },
-    "repro_id": "2601.12345-20260101-000000"
+    "repro_id": "2601.12345-20260101-000000",
+    "llm_mapping": {
+        "judge_reproduction": {
+            "llm_name": "gpt-5.2"
+        }
+    }
 }
 
 ###

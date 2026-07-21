@@ -389,6 +389,10 @@ export function ReproductionPage() {
               value={reproductionResults.result}
             />
             <JsonBlock
+              label={t("reproduction.results.parameterCheck")}
+              value={reproductionResults.parameter_check}
+            />
+            <JsonBlock
               label={t("reproduction.results.reproMd")}
               value={reproductionResults.repro_md}
             />

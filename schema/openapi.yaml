@@ -2987,6 +2987,12 @@ components:
             type: object
           - type: 'null'
           title: Validation
+        parameter_check:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Parameter Check
         final_status:
           anyOf:
           - additionalProperties: true
@@ -3014,6 +3020,7 @@ components:
       required:
       - result
       - validation
+      - parameter_check
       - final_status
       - repro_md
       - repro_png_base64

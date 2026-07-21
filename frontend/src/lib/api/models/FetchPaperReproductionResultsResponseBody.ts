@@ -5,6 +5,7 @@
 export type FetchPaperReproductionResultsResponseBody = {
     result: (Record<string, any> | null);
     validation: (Record<string, any> | null);
+    parameter_check: (Record<string, any> | null);
     final_status: (Record<string, any> | null);
     repro_md: (string | null);
     repro_png_base64: (string | null);
