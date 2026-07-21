@@ -4,6 +4,6 @@
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
 export type FetchPaperReproductionResultsLLMMapping = {
-    judge_reproduction?: NodeLLMConfig;
+    judge_reproduction: NodeLLMConfig;
 };
 

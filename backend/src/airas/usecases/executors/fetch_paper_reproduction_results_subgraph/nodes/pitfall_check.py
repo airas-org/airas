@@ -16,9 +16,13 @@ import re
 _SEED_RE = re.compile(
     r"(random_state\s*=|seed\s*=|manual_seed\(|set_seed\(|np\.random\.seed\(|random\.seed\()"
 )
+# Matches both real training/evaluation loops and AI-agent/LLM API calls (any provider).
 _TRAIN_RE = re.compile(
     r"(\.fit\(|\.train\(|optimizer\.step\(|for\s+epoch|\.backward\(\)"
-    r"|messages\.create\(|claude\s+-p|[\"']claude[\"']|import\s+anthropic)"
+    r"|messages\.create\(|chat\.completions\.create\(|responses\.create\("
+    r"|litellm\.completion\(|import\s+litellm"
+    r"|import\s+anthropic|import\s+openai|import\s+google\.generativeai"
+    r"|claude\s+-p|[\"']claude[\"'])"
 )
 _HARDCODE_RE = re.compile(
     r"\b(accuracy|accuracies|acc|loss|losses|result|results|score|scores)\w*\s*=\s*\[\s*[\d.]+",

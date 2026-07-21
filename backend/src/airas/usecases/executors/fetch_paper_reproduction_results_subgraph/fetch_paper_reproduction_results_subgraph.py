@@ -144,6 +144,7 @@ class FetchPaperReproductionResultsSubgraph:
                 "final_status": {"status": "failed", "validation_error": str(exc)},
             }
         severity = validation.get("severity")
+        # "warning" is treated as passed; only "critical" fails.
         status = "failed" if severity == "critical" else "passed"
         return {
             "validation": validation,

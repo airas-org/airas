@@ -1,15 +1,12 @@
 from typing import Annotated
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
-from langfuse import observe
 
-from airas.container import Container
 from airas.core.types.github import GitHubConfig
 from airas.dashboard.api.dependencies import (
     get_github_client,
     get_github_owner,
-    get_langchain_client,
+    get_litellm_client,
 )
 from airas.dashboard.api.schemas.github import GitHubConfigRequest
 from airas.dashboard.api.schemas.paper_reproduction import (
@@ -25,8 +22,7 @@ from airas.dashboard.api.schemas.paper_reproduction import (
     FetchParameterTuningResultsResponseBody,
 )
 from airas.infra.github_client import GithubClient
-from airas.infra.langchain_client import LangChainClient
-from airas.infra.langfuse_client import LangfuseClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.executors.dispatch_paper_reproduction_run_subgraph.dispatch_paper_reproduction_run_subgraph import (
     DispatchPaperReproductionRunSubgraph,
 )
@@ -61,19 +57,11 @@ def _build_github_config(
     "/generate/dispatch",
     response_model=DispatchPaperReproductionGenerateResponseBody,
 )
-@inject
-@observe()
 async def dispatch_paper_reproduction_generate(
     request: DispatchPaperReproductionGenerateRequestBody,
     github_owner: Annotated[str, Depends(get_github_owner)],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> DispatchPaperReproductionGenerateResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await DispatchPaperReproductionGenerateSubgraph(
             github_client=github_client,
@@ -90,8 +78,7 @@ async def dispatch_paper_reproduction_generate(
                 "instruction": request.instruction,
                 "repo_url": request.repo_url,
                 "github_actions_agent": request.github_actions_agent,
-            },
-            config=config,
+            }
         )
     )
     return DispatchPaperReproductionGenerateResponseBody(
@@ -105,19 +92,11 @@ async def dispatch_paper_reproduction_generate(
     "/run/dispatch",
     response_model=DispatchPaperReproductionRunResponseBody,
 )
-@inject
-@observe()
 async def dispatch_paper_reproduction_run(
     request: DispatchPaperReproductionRunRequestBody,
     github_owner: Annotated[str, Depends(get_github_owner)],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> DispatchPaperReproductionRunResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await DispatchPaperReproductionRunSubgraph(
             github_client=github_client,
@@ -131,8 +110,7 @@ async def dispatch_paper_reproduction_run(
                 ),
                 "repro_id": request.repro_id,
                 "repo_url": request.repo_url,
-            },
-            config=config,
+            }
         )
     )
     return DispatchPaperReproductionRunResponseBody(
@@ -145,24 +123,16 @@ async def dispatch_paper_reproduction_run(
     "/results",
     response_model=FetchPaperReproductionResultsResponseBody,
 )
-@inject
-@observe()
 async def fetch_paper_reproduction_results(
     request: FetchPaperReproductionResultsRequestBody,
     github_owner: Annotated[str, Depends(get_github_owner)],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
+    litellm_client: Annotated[LiteLLMClient, Depends(get_litellm_client)],
 ) -> FetchPaperReproductionResultsResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await FetchPaperReproductionResultsSubgraph(
             github_client=github_client,
-            langchain_client=langchain_client,
+            litellm_client=litellm_client,
             llm_mapping=request.llm_mapping,
         )
         .build_graph()
@@ -172,8 +142,7 @@ async def fetch_paper_reproduction_results(
                     github_owner, request.github_config
                 ),
                 "repro_id": request.repro_id,
-            },
-            config=config,
+            }
         )
     )
     return FetchPaperReproductionResultsResponseBody(
@@ -190,19 +159,11 @@ async def fetch_paper_reproduction_results(
     "/parameter-tuning/dispatch",
     response_model=DispatchParameterTuningRunResponseBody,
 )
-@inject
-@observe()
 async def dispatch_parameter_tuning_run(
     request: DispatchParameterTuningRunRequestBody,
     github_owner: Annotated[str, Depends(get_github_owner)],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> DispatchParameterTuningRunResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await DispatchParameterTuningRunSubgraph(
             github_client=github_client,
@@ -216,8 +177,7 @@ async def dispatch_parameter_tuning_run(
                 ),
                 "repro_id": request.repro_id,
                 "repo_url": request.repo_url,
-            },
-            config=config,
+            }
         )
     )
     return DispatchParameterTuningRunResponseBody(
@@ -230,19 +190,11 @@ async def dispatch_parameter_tuning_run(
     "/parameter-tuning/results",
     response_model=FetchParameterTuningResultsResponseBody,
 )
-@inject
-@observe()
 async def fetch_parameter_tuning_results(
     request: FetchParameterTuningResultsRequestBody,
     github_owner: Annotated[str, Depends(get_github_owner)],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> FetchParameterTuningResultsResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await FetchParameterTuningResultsSubgraph(github_client=github_client)
         .build_graph()
@@ -252,8 +204,7 @@ async def fetch_parameter_tuning_results(
                     github_owner, request.github_config
                 ),
                 "repro_id": request.repro_id,
-            },
-            config=config,
+            }
         )
     )
     return FetchParameterTuningResultsResponseBody(

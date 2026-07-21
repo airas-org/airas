@@ -2236,9 +2236,9 @@ components:
       properties:
         dispatch_paper_reproduction_generate:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: anthropic/claude-sonnet-4-5
       type: object
+      required:
+      - dispatch_paper_reproduction_generate
       title: DispatchPaperReproductionGenerateLLMMapping
     DispatchPaperReproductionGenerateRequestBody:
       properties:
@@ -2955,9 +2955,9 @@ components:
       properties:
         judge_reproduction:
           $ref: '#/components/schemas/NodeLLMConfig'
-          default:
-            llm_name: gpt-5.4-2026-03-05
       type: object
+      required:
+      - judge_reproduction
       title: FetchPaperReproductionResultsLLMMapping
     FetchPaperReproductionResultsRequestBody:
       properties:

@@ -4,6 +4,6 @@
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
 export type DispatchPaperReproductionGenerateLLMMapping = {
-    dispatch_paper_reproduction_generate?: NodeLLMConfig;
+    dispatch_paper_reproduction_generate: NodeLLMConfig;
 };
 
