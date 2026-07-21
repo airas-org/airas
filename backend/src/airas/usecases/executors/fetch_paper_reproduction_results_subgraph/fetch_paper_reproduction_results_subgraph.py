@@ -80,6 +80,7 @@ class FetchPaperReproductionResultsSubgraph:
             logger.warning("Failed to fetch reproduction outputs: %s", exc)
             return {
                 "result": None,
+                "validation": None,
                 "repro_md": None,
                 "repro_png_base64": None,
                 "main_py": None,
