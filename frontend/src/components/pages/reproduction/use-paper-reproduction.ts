@@ -159,7 +159,9 @@ export function usePaperReproduction() {
                 github_actions_agent: params.githubActionsAgent,
               },
             );
-          setReproId(res.repro_id);
+          if (res.dispatched && mountedRef.current) {
+            setReproId(res.repro_id);
+          }
           return res;
         },
         githubConfig,

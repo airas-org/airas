@@ -11,6 +11,17 @@ logger = logging.getLogger(__name__)
 _IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg")
 
 
+def _validate_dir_path(dir_path: str) -> None:
+    segments = dir_path.split("/")
+    if dir_path.startswith("/") or any(seg in ("", ".", "..") for seg in segments):
+        raise GithubClientFatalError(f"Invalid dir_path: '{dir_path}'")
+
+
+def _validate_file_name(name: str) -> None:
+    if name != os.path.basename(name) or name in ("", ".", ".."):
+        raise GithubClientFatalError(f"Invalid file name: '{name}'")
+
+
 async def fetch_repository_files(
     github_client: GithubClient,
     github_config: GitHubConfig,
@@ -39,10 +50,16 @@ async def fetch_repository_files(
         (``.`` in the name becomes ``_``).
 
     Raises:
-        GithubClientFatalError: If ``dir_path`` is missing or not a directory,
-            or (when ``ignore_missing`` is False) a requested file is missing
-            or cannot be fetched/decoded.
+        GithubClientFatalError: If ``dir_path``/``file_names`` contain ``.``/``..``
+            segments or an absolute path (guards against path traversal via
+            caller-supplied values such as ``repro_id``), if ``dir_path`` is
+            missing or not a directory, or (when ``ignore_missing`` is False) a
+            requested file is missing or cannot be fetched/decoded.
     """
+    _validate_dir_path(dir_path)
+    for name in file_names:
+        _validate_file_name(name)
+
     listing = await github_client.aget_repository_content(
         github_owner=github_config.github_owner,
         repository_name=github_config.repository_name,
@@ -86,7 +103,7 @@ async def fetch_repository_files(
         if suffix == ".json":
             try:
                 result[name.removesuffix(".json")] = json.loads(raw.decode("utf-8"))
-            except Exception as exc:
+            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
                 if ignore_missing:
                     logger.warning(f"Failed to parse {dir_path}/{name}: {exc}")
                 else:

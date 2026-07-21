@@ -1,0 +1,80 @@
+### Dispatch paper reproduction generate
+
+POST http://127.0.0.1:8000/airas/v1/paper-reproduction/generate/dispatch
+Content-Type: application/json
+
+{
+    "github_config": {
+        "repository_name": "airas-api-test-2",
+        "branch_name": "develop-2"
+    },
+    "paper_url": "https://arxiv.org/abs/2601.12345",
+    "instruction": "Reproduce the main result reported in the paper.",
+    "repo_url": "",
+    "github_actions_agent": "claude_code"
+}
+
+###
+
+### Dispatch paper reproduction run
+# repro_id comes from the response of "generate/dispatch" above.
+
+POST http://127.0.0.1:8000/airas/v1/paper-reproduction/run/dispatch
+Content-Type: application/json
+
+{
+    "github_config": {
+        "repository_name": "airas-api-test-2",
+        "branch_name": "develop-2"
+    },
+    "repro_id": "2601.12345-20260101-000000",
+    "repo_url": ""
+}
+
+###
+
+### Fetch paper reproduction results
+
+POST http://127.0.0.1:8000/airas/v1/paper-reproduction/results
+Content-Type: application/json
+
+{
+    "github_config": {
+        "repository_name": "airas-api-test-2",
+        "branch_name": "develop-2"
+    },
+    "repro_id": "2601.12345-20260101-000000"
+}
+
+###
+
+### Dispatch parameter tuning run
+
+POST http://127.0.0.1:8000/airas/v1/paper-reproduction/parameter-tuning/dispatch
+Content-Type: application/json
+
+{
+    "github_config": {
+        "repository_name": "airas-api-test-2",
+        "branch_name": "develop-2"
+    },
+    "repro_id": "2601.12345-20260101-000000",
+    "repo_url": ""
+}
+
+###
+
+### Fetch parameter tuning results
+
+POST http://127.0.0.1:8000/airas/v1/paper-reproduction/parameter-tuning/results
+Content-Type: application/json
+
+{
+    "github_config": {
+        "repository_name": "airas-api-test-2",
+        "branch_name": "develop-2"
+    },
+    "repro_id": "2601.12345-20260101-000000"
+}
+
+###
