@@ -90,7 +90,7 @@ class FetchPaperReproductionResultsSubgraph:
                 repro_id=state["repro_id"],
             )
         except Exception as exc:
-            logger.warning("Failed to fetch reproduction outputs: %s", exc)
+            logger.exception("Failed to fetch reproduction outputs")
             return {
                 "result": None,
                 "validation": None,
@@ -171,7 +171,7 @@ class FetchPaperReproductionResultsSubgraph:
                 evidence=evidence,
             )
         except Exception as exc:
-            logger.warning("judge_reproduction failed: %s", exc)
+            logger.exception("judge_reproduction failed")
             return {
                 "validation": None,
                 "final_status": {"status": "failed", "validation_error": str(exc)},

@@ -7,7 +7,12 @@ import {
 } from "@subframe/core";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DispatchPaperReproductionGenerateRequestBody, type GitHubConfig } from "@/lib/api";
+import { NodeLLMSelector } from "@/components/features/llm-config";
+import {
+  DispatchPaperReproductionGenerateRequestBody,
+  type GitHubConfig,
+  type NodeLLMConfig,
+} from "@/lib/api";
 import { CredentialsService } from "@/lib/api/services/CredentialsService";
 import { Accordion } from "@/ui/components/Accordion";
 import { Badge } from "@/ui/components/Badge";
@@ -118,6 +123,8 @@ export function ReproductionPage() {
     useState<DispatchPaperReproductionGenerateRequestBody.github_actions_agent>(
       DispatchPaperReproductionGenerateRequestBody.github_actions_agent.CLAUDE_CODE,
     );
+  const [generateLlmConfig, setGenerateLlmConfig] = useState<NodeLLMConfig | null>(null);
+  const [resultsLlmConfig, setResultsLlmConfig] = useState<NodeLLMConfig | null>(null);
 
   const {
     generateStatus,
@@ -285,6 +292,14 @@ export function ReproductionPage() {
                 Open Code
               </Select.Item>
             </Select>
+            <div className="w-full">
+              <NodeLLMSelector
+                nodeKey="dispatch_paper_reproduction_generate"
+                label={t("reproduction.form.generateModel")}
+                value={generateLlmConfig}
+                onChange={setGenerateLlmConfig}
+              />
+            </div>
           </div>
         </Accordion>
       </StepCard>
@@ -311,6 +326,7 @@ export function ReproductionPage() {
               instruction: instruction.trim(),
               repoUrl: repoUrl.trim(),
               githubActionsAgent,
+              llmConfig: generateLlmConfig,
             })
           }
         >
@@ -329,7 +345,7 @@ export function ReproductionPage() {
         </span>
         <Button
           disabled={!isRepoConfigValid || generateStatus !== "succeeded" || isBusy}
-          onClick={() => startRun(githubConfig, repoUrl.trim())}
+          onClick={() => startRun(githubConfig, repoUrl.trim(), resultsLlmConfig)}
         >
           {t("reproduction.actions.startRun")}
         </Button>
@@ -340,13 +356,21 @@ export function ReproductionPage() {
         icon={<FeatherBarChart3 className="text-body font-body text-default-font" />}
         title={t("reproduction.steps.results")}
       >
+        <div className="w-full max-w-xs">
+          <NodeLLMSelector
+            nodeKey="judge_reproduction"
+            label={t("reproduction.form.resultsModel")}
+            value={resultsLlmConfig}
+            onChange={setResultsLlmConfig}
+          />
+        </div>
         <Button
           variant="neutral-secondary"
           disabled={
             !isRepoConfigValid || ["idle", "dispatching", "running"].includes(runStatus) || isBusy
           }
           loading={isFetchingResults}
-          onClick={() => fetchResults(githubConfig)}
+          onClick={() => fetchResults(githubConfig, resultsLlmConfig)}
         >
           {t("reproduction.actions.fetchResults")}
         </Button>

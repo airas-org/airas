@@ -826,7 +826,9 @@
       "repoUrl": "参照リポジトリURL（任意）",
       "repoUrlHelp": "論文の公式実装など、参考にするリポジトリを指定できます。",
       "githubActionsAgent": "コーディングエージェント",
-      "reproId": "再現ID"
+      "reproId": "再現ID",
+      "generateModel": "コード生成モデル",
+      "resultsModel": "検証モデル"
     },
     "steps": {
       "configure": "1. 設定",

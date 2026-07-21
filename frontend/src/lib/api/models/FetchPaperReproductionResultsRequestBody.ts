@@ -7,6 +7,6 @@ import type { GitHubConfigRequest } from './GitHubConfigRequest';
 export type FetchPaperReproductionResultsRequestBody = {
     github_config: GitHubConfigRequest;
     repro_id: string;
-    llm_mapping?: (FetchPaperReproductionResultsLLMMapping | null);
+    llm_mapping: FetchPaperReproductionResultsLLMMapping;
 };
 

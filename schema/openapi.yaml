@@ -2269,14 +2269,13 @@ components:
           - type: 'null'
           title: Runner Label
         llm_mapping:
-          anyOf:
-          - $ref: '#/components/schemas/DispatchPaperReproductionGenerateLLMMapping'
-          - type: 'null'
+          $ref: '#/components/schemas/DispatchPaperReproductionGenerateLLMMapping'
       type: object
       required:
       - github_config
       - paper_url
       - instruction
+      - llm_mapping
       title: DispatchPaperReproductionGenerateRequestBody
     DispatchPaperReproductionGenerateResponseBody:
       properties:
@@ -2967,13 +2966,12 @@ components:
           type: string
           title: Repro Id
         llm_mapping:
-          anyOf:
-          - $ref: '#/components/schemas/FetchPaperReproductionResultsLLMMapping'
-          - type: 'null'
+          $ref: '#/components/schemas/FetchPaperReproductionResultsLLMMapping'
       type: object
       required:
       - github_config
       - repro_id
+      - llm_mapping
       title: FetchPaperReproductionResultsRequestBody
     FetchPaperReproductionResultsResponseBody:
       properties:

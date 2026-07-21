@@ -46,8 +46,9 @@ async def fetch_repository_files(
         - ``repro.png`` → ``{"repro_png_base64": "<base64>"}``
 
         Rules: ``.json`` is parsed; ``.png``/``.jpg``/``.jpeg`` become base64
-        (key ends with ``_base64``); other extensions become UTF-8 text
-        (``.`` in the name becomes ``_``).
+        (key ends with ``_base64``); other extensions become UTF-8 text. In every
+        case, remaining ``.`` characters in the name become ``_`` (e.g.
+        ``foo.bar.json`` → ``foo_bar``).
 
     Raises:
         GithubClientFatalError: If ``dir_path``/``file_names`` contain ``.``/``..``
@@ -102,7 +103,8 @@ async def fetch_repository_files(
         suffix = os.path.splitext(name)[1].lower()
         if suffix == ".json":
             try:
-                result[name.removesuffix(".json")] = json.loads(raw.decode("utf-8"))
+                key = name.removesuffix(".json").replace(".", "_")
+                result[key] = json.loads(raw.decode("utf-8"))
             except (UnicodeDecodeError, json.JSONDecodeError) as exc:
                 if ignore_missing:
                     logger.warning(f"Failed to parse {dir_path}/{name}: {exc}")

@@ -53,7 +53,7 @@ class FetchParameterTuningResultsSubgraph:
                 repro_id=state["repro_id"],
             )
         except Exception as exc:
-            logger.warning("Failed to fetch tuning outputs: %s", exc)
+            logger.exception("Failed to fetch tuning outputs")
             return {
                 "result": None,
                 "tuning_figure_png_base64": None,

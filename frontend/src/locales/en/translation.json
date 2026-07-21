@@ -827,7 +827,9 @@
       "repoUrl": "Reference Repository URL (optional)",
       "repoUrlHelp": "Optionally provide a repository to reference, such as the paper's official implementation.",
       "githubActionsAgent": "Coding Agent",
-      "reproId": "Reproduction ID"
+      "reproId": "Reproduction ID",
+      "generateModel": "Code Generation Model",
+      "resultsModel": "Validation Model"
     },
     "steps": {
       "configure": "1. Configuration",

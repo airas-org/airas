@@ -7,8 +7,29 @@ import {
   type GitHubConfig,
   type GitHubConfigRequest,
   GithubActionsService,
+  type NodeLLMConfig,
   PaperReproductionService,
 } from "@/lib/api";
+
+// Matches DEFAULT_NODE_LLM_CONFIG's entries for these two nodes in
+// components/features/llm-config/constants.ts (kept local to avoid touching shared config).
+const DEFAULT_GENERATE_LLM_CONFIG: NodeLLMConfig = {
+  llm_name: "anthropic/claude-sonnet-4-5",
+  params: { provider_type: "anthropic" },
+};
+const DEFAULT_JUDGE_LLM_CONFIG: NodeLLMConfig = {
+  llm_name: "claude-sonnet-4-5",
+  params: { provider_type: "anthropic" },
+};
+
+// The backend requires an explicit model per node (no in-code default), so a "use default"
+// selection in the UI is resolved to a concrete model here before the request is sent.
+function resolveNodeLLMConfig(
+  config: NodeLLMConfig | null,
+  defaultConfig: NodeLLMConfig,
+): NodeLLMConfig {
+  return config ?? defaultConfig;
+}
 
 // Request bodies resolve the owner server-side; polling still needs the full config.
 function toGitHubConfigRequest(githubConfig: GitHubConfig): GitHubConfigRequest {
@@ -25,6 +46,7 @@ export interface GenerateParams {
   instruction: string;
   repoUrl: string;
   githubActionsAgent: DispatchPaperReproductionGenerateRequestBody.github_actions_agent;
+  llmConfig: NodeLLMConfig | null;
 }
 
 export function usePaperReproduction() {
@@ -91,7 +113,7 @@ export function usePaperReproduction() {
   );
 
   const fetchResults = useCallback(
-    async (githubConfig: GitHubConfig) => {
+    async (githubConfig: GitHubConfig, llmConfig: NodeLLMConfig | null) => {
       if (reproId === null) {
         setError(t("reproduction.errors.missingReproId"));
         return;
@@ -101,7 +123,13 @@ export function usePaperReproduction() {
       try {
         const results =
           await PaperReproductionService.fetchPaperReproductionResultsAirasV1PaperReproductionResultsPost(
-            { github_config: toGitHubConfigRequest(githubConfig), repro_id: reproId },
+            {
+              github_config: toGitHubConfigRequest(githubConfig),
+              repro_id: reproId,
+              llm_mapping: {
+                judge_reproduction: resolveNodeLLMConfig(llmConfig, DEFAULT_JUDGE_LLM_CONFIG),
+              },
+            },
           );
         if (!mountedRef.current) return;
         setReproductionResults(results);
@@ -157,6 +185,12 @@ export function usePaperReproduction() {
                 instruction: params.instruction,
                 repo_url: params.repoUrl,
                 github_actions_agent: params.githubActionsAgent,
+                llm_mapping: {
+                  dispatch_paper_reproduction_generate: resolveNodeLLMConfig(
+                    params.llmConfig,
+                    DEFAULT_GENERATE_LLM_CONFIG,
+                  ),
+                },
               },
             );
           if (res.dispatched && mountedRef.current) {
@@ -172,7 +206,7 @@ export function usePaperReproduction() {
   );
 
   const startRun = useCallback(
-    async (githubConfig: GitHubConfig, repoUrl: string) => {
+    async (githubConfig: GitHubConfig, repoUrl: string, llmConfig: NodeLLMConfig | null) => {
       if (reproId === null) {
         setError(t("reproduction.errors.missingReproId"));
         return;
@@ -193,7 +227,7 @@ export function usePaperReproduction() {
         setRunStatus,
       );
       if (succeeded) {
-        await fetchResults(githubConfig);
+        await fetchResults(githubConfig, llmConfig);
       }
     },
     [runWorkflowStep, fetchResults, t, reproId],

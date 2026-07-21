@@ -11,7 +11,7 @@ export type DispatchPaperReproductionGenerateRequestBody = {
     repo_url?: string;
     github_actions_agent?: DispatchPaperReproductionGenerateRequestBody.github_actions_agent;
     runner_label?: (Array<string> | null);
-    llm_mapping?: (DispatchPaperReproductionGenerateLLMMapping | null);
+    llm_mapping: DispatchPaperReproductionGenerateLLMMapping;
 };
 export namespace DispatchPaperReproductionGenerateRequestBody {
     export enum github_actions_agent {
