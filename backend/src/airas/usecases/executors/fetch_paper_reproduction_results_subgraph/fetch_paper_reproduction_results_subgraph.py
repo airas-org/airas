@@ -16,8 +16,19 @@ from airas.usecases.executors.fetch_paper_reproduction_results_subgraph.nodes.fe
 from airas.usecases.executors.fetch_paper_reproduction_results_subgraph.nodes.judge_reproduction import (
     judge_reproduction,
 )
+from airas.usecases.executors.fetch_paper_reproduction_results_subgraph.nodes.parameter_check import (
+    cross_check_parameters,
+)
+from airas.usecases.executors.fetch_paper_reproduction_results_subgraph.nodes.parameter_check import (
+    format_evidence as format_parameter_evidence,
+)
+from airas.usecases.executors.fetch_paper_reproduction_results_subgraph.nodes.parse_reproduction_config import (
+    parse_reproduction_config,
+)
 from airas.usecases.executors.fetch_paper_reproduction_results_subgraph.nodes.pitfall_check import (
-    format_evidence,
+    format_evidence as format_pitfall_evidence,
+)
+from airas.usecases.executors.fetch_paper_reproduction_results_subgraph.nodes.pitfall_check import (
     run_pitfall_checklist,
 )
 
@@ -55,6 +66,8 @@ class FetchPaperReproductionResultsSubgraphState(
     main_py: str | None
     run_log: str | None
     paper_txt: str | None
+    paper_extraction: dict | None
+    reproduction_yaml: str | None
 
 
 class FetchPaperReproductionResultsSubgraph:
@@ -86,6 +99,8 @@ class FetchPaperReproductionResultsSubgraph:
                 "main_py": None,
                 "run_log": None,
                 "paper_txt": None,
+                "paper_extraction": None,
+                "reproduction_yaml": None,
                 "final_status": {"status": "failed", "fetch_error": str(exc)},
             }
         return {
@@ -95,6 +110,8 @@ class FetchPaperReproductionResultsSubgraph:
             "main_py": outputs.get("main_py"),
             "run_log": outputs.get("run_log"),
             "paper_txt": outputs.get("paper_txt"),
+            "paper_extraction": outputs.get("paper_extraction"),
+            "reproduction_yaml": outputs.get("reproduction_yaml"),
         }
 
     def _route_after_fetch(
@@ -130,13 +147,28 @@ class FetchPaperReproductionResultsSubgraph:
             repro_md=state.get("repro_md"),
             repro_png_base64=state.get("repro_png_base64"),
         )
+        paper_extraction = state.get("paper_extraction")
+        if not isinstance(
+            paper_extraction, dict
+        ):  # agent-authored, not schema-validated
+            paper_extraction = {}
+        param_check = cross_check_parameters(
+            reported_params=parse_reproduction_config(state.get("reproduction_yaml")),
+            paper_params=paper_extraction.get("parameters") or [],
+        )
+        evidence = "\n\n".join(
+            (
+                format_pitfall_evidence(checklist),
+                format_parameter_evidence(param_check),
+            )
+        )
         try:
             validation = await judge_reproduction(
                 llm_config=self.llm_mapping.judge_reproduction,
                 litellm_client=self.litellm_client,
                 paper_text=state.get("paper_txt"),
                 result=result,
-                evidence=format_evidence(checklist),
+                evidence=evidence,
             )
         except Exception as exc:
             logger.warning("judge_reproduction failed: %s", exc)

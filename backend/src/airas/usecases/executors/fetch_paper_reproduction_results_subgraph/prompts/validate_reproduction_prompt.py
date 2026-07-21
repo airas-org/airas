@@ -1,20 +1,22 @@
-# TODO: 今はパラメーター/メトリクスの突合もこのプロンプト経由で LLM に任せているが、
-# 論文テキストと result.json からそれぞれ抽出して決定ロジックで突合する方が信頼性が高い。
 validate_reproduction_prompt = """\
 You are an independent auditor reviewing a paper-reproduction result. You are given the paper's text,
-the reproduction's self-reported result.json, and a pre-computed deterministic pitfall checklist.
-Deliver a final verdict.
+the reproduction's self-reported result.json, and pre-computed deterministic checks: a pitfall
+checklist and a parameter cross-check. Deliver a final verdict.
 
 # What to check
-- Cross-check result.json's self-declared `parameters` against the paper text. Treat a value declared
-  `source: "paper"` that does not match the paper as a likely false declaration (concern). `"assumed"`
-  / `"substituted"` mismatches are fine if explained in `summary`.
-- Cross-check result.json's `metrics` against the paper's reported values. Judge primarily whether the
-  paper's claim (direction / relative magnitude of the improvement) holds — not whether absolute numbers
-  match (a scaled-down/substituted reproduction legitimately shifts absolute values).
+- Use the parameter cross-check as the primary signal for false declarations: a `MISMATCH` entry with
+  `source: "paper"` (or no source) is a likely false declaration (concern). `"assumed"` /
+  `"substituted"` mismatches are fine if explained in `summary`. An `unverifiable` entry only means the
+  reproduction agent's own paper extraction had no matching entry for it — check the paper text yourself
+  before treating it as a concern. When an entry has a `note` (the reproduction agent's own pointer to
+  where in the paper it read the value, e.g. a table/section), use it to judge plausibility faster, but
+  still verify against the paper text yourself rather than trusting the note blindly.
+- Cross-check result.json's `metrics` against the paper's reported values yourself. Judge primarily
+  whether the paper's claim (direction / relative magnitude of the improvement) holds — not whether
+  absolute numbers match (a scaled-down/substituted reproduction legitimately shifts absolute values).
 - Watch for: reverse-engineered parameters, hardcoded/mocked results, experiment not actually run,
-  transcribed baseline values, undisclosed scale reduction. Use the pitfall checklist as input, but do
-  not merely repeat it — focus on qualitative issues it cannot catch.
+  transcribed baseline values, undisclosed scale reduction. Use the pre-computed checks as input, but do
+  not merely repeat them — focus on qualitative issues they cannot catch.
 
 # reproduction_level
 - "high"    = the paper's claim clearly holds (direction matches, improvement of comparable magnitude)
@@ -32,6 +34,6 @@ Return `severity`, `reproduction_level`, and `text` (2-5 sentences stating the b
 # Reproduction result.json (self-reported)
 {{ result }}
 
-# Pre-computed pitfall checklist (deterministic — do not repeat, use as input)
+# Pre-computed deterministic checks (do not repeat, use as input)
 {{ evidence }}
 """

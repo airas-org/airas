@@ -108,7 +108,7 @@ Or add it to your project's `.mcp.json`:
 | --- | --- |
 | `dispatch_paper_reproduction_generate` | Generate stage: an agent picks a figure/table from the paper (guided by `instruction`) and writes Hydra config + `src/main.py` under `.reproduction/<repro_id>/`, returning `repro_id` (async, does not run it) |
 | `dispatch_paper_reproduction_run` | Run stage: agentless `python -m src.main` via Hydra, producing the figure/table + result.json (async) |
-| `fetch_paper_reproduction_results` | Fetch results and validate them on the AIRAS side (deterministic pitfall checklist + LLM judge) |
+| `fetch_paper_reproduction_results` | Fetch results and validate them on the AIRAS side (deterministic pitfall/parameter checks + LLM judge) |
 | `dispatch_parameter_tuning_run` | Sweep the config's `optuna.search_space` with Optuna (TPE), reusing `src/main.py` via Hydra overrides — no code generation (async) |
 | `fetch_parameter_tuning_results` | Fetch the results (best parameters, optimization figure) of a completed tuning run |
 

@@ -1,12 +1,10 @@
 """Deterministic (non-LLM) pitfall checks over the reproduction code / log.
 
-Ported from the paper-reproduction template's mechanical_check.py, keeping the static-analysis
-checklist that must stay mechanical for auditability (random seed fixed, evidence of training,
-no hardcoded result arrays, no undisclosed scale reduction, execution log present, required
-deliverable present). The paper-vs-reproduction value cross-check is left to the judge LLM.
-
-TODO: 今はパラメーター/メトリクスの突合も judge LLM に任せているが、論文テキストと
-result.json からそれぞれ抽出して決定ロジックで突合する方が信頼性が高い。
+A static-analysis checklist that must stay mechanical for auditability (random seed fixed, evidence
+of training, no hardcoded result arrays, no undisclosed scale reduction, execution log present,
+required deliverable present). The paper-vs-reproduction parameter cross-check is done
+deterministically in parameter_check.py; metrics and everything else qualitative is left to the
+judge LLM.
 """
 
 from __future__ import annotations
