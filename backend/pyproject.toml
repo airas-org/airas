@@ -12,7 +12,7 @@ keywords = ["AI", "Automation", "Research"]
 dependencies = [
     "langchain-community==0.4.1",
     "langchain==1.0.8",
-    "langgraph==1.0.3",
+    "langgraph==1.0.10rc1",
     "openai>=1.35.13",
     "pypdf>=4.3.1",
     "semanticscholar>=0.8.4",
