@@ -170,6 +170,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.pnpm-store/
+scratch/
 dist
 dist-ssr
 *.local
@@ -188,6 +190,7 @@ dist-ssr
 .serena/*
 .claude/CLAUDE.local.md
 .claude/settings.local.json
+.claude/skills/
 
 
 # Built dashboard frontend copied into the wheel by CI
