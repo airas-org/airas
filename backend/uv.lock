@@ -171,7 +171,7 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.4" },
     { name = "langgraph", specifier = "==1.0.3" },
     { name = "litellm", specifier = "==1.84.0" },
-    { name = "mcp", extras = ["cli"], specifier = ">=1.6.0" },
+    { name = "mcp", extras = ["cli"], specifier = ">=1.6.0,<2" },
     { name = "nltk", specifier = ">=3.9.2" },
     { name = "openai", specifier = ">=1.35.13" },
     { name = "pandas", specifier = ">=2.3.0" },
