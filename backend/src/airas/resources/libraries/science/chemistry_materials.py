@@ -1,6 +1,7 @@
-# Chemistry Materials (science): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# science / chemistry_materials documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 CHEMISTRY_MATERIALS_LIBRARIES: dict[str, dict[str, str | None]] = {
     "rdkit": {
         "description": "Cheminformatics toolkit (molecules, descriptors, reactions)",

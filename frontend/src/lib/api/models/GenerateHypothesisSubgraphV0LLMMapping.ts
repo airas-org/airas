@@ -4,8 +4,8 @@
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
 export type GenerateHypothesisSubgraphV0LLMMapping = {
-    generate_hypothesis?: NodeLLMConfig;
-    evaluate_novelty_and_significance?: NodeLLMConfig;
-    refine_hypothesis?: NodeLLMConfig;
+    generate_hypothesis: NodeLLMConfig;
+    evaluate_novelty_and_significance: NodeLLMConfig;
+    refine_hypothesis: NodeLLMConfig;
 };
 

@@ -11,8 +11,6 @@ from airas.infra.arxiv_client import ArxivClient
 from airas.infra.email_feedback_notifier import EmailFeedbackNotifier
 from airas.infra.github_client import GithubClient
 from airas.infra.hugging_face_client import HuggingFaceClient
-from airas.infra.langchain_client import LangChainClient
-from airas.infra.langfuse_client import LangfuseClient
 from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.qdrant_client import QdrantClient
@@ -99,18 +97,8 @@ class Container(containers.DeclarativeContainer):
     github_sync_session = providers.Resource(init_github_sync_session)
     github_async_session = providers.Resource(init_github_async_session)
 
-    # --- LangChain Client ---
-    langchain_client: providers.Factory[LangChainClient] = providers.Factory(
-        LangChainClient
-    )
-
     # --- LiteLLM Client ---
     litellm_client: providers.Factory[LiteLLMClient] = providers.Factory(LiteLLMClient)
-
-    # --- Observability ---
-    langfuse_client: providers.Factory[LangfuseClient] = providers.Factory(
-        LangfuseClient
-    )
 
     # --- Code & Experiment Platforms ---
     # NOTE: github_client in the container uses GH_PERSONAL_ACCESS_TOKEN as fallback.

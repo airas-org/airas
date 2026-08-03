@@ -5,6 +5,7 @@ from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import time_node
+from airas.core.llm_config import require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import (
     GitHubActionsAgent,
@@ -53,7 +54,7 @@ class DiagramGenerationGraph:
         self.github_actions_agent = github_actions_agent
         self.diagram_description = diagram_description
         self.prompt_path = prompt_path
-        self.llm_mapping = llm_mapping or DispatchDiagramGenerationLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _dispatch_diagram_generation(

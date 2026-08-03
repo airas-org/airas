@@ -31,6 +31,10 @@ from pydantic import BaseModel
 
 from airas.cli import DEFAULT_DASHBOARD_PORT
 from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
+
+# LLM mapping classes + helper for building per-node model selection from a
+# single externally-supplied model name (no in-code default model exists).
+from airas.core.llm_config import uniform_llm_mapping
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory, RunStage
 from airas.core.types.experimental_design import (
@@ -42,6 +46,7 @@ from airas.core.types.experimental_design import (
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
+from airas.core.types.llm_provider import LLMProvider
 from airas.core.types.paper import PaperContent
 from airas.core.types.paper_search import PAPER_SEARCH_SOURCES
 from airas.core.types.research_history import ResearchHistory
@@ -59,10 +64,13 @@ from airas.dashboard.launcher import (
 from airas.infra.aixs_client import AixsClient
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
+from airas.infra.hugging_face_client import HF_RESOURCE_TYPE, HuggingFaceClient
 from airas.infra.kroki_client import KrokiClient
-from airas.infra.langchain_client import (
-    PROVIDER_REQUIRED_ENV_VARS,
-    LangChainClient,
+from airas.infra.litellm_client import (
+    PROVIDER_REQUIRED_ENV_VARS as LITELLM_PROVIDER_REQUIRED_ENV_VARS,
+)
+from airas.infra.litellm_client import (
+    LiteLLMClient,
 )
 from airas.infra.llm_provider_resolver import detect_available_providers
 from airas.infra.openalex_client import OpenAlexClient
@@ -71,6 +79,7 @@ from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.mcp.prompt_registry import build_generation_prompt
 from airas.resources.libraries.library_docs import LIBRARY_DOCS
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
+    AnalyzeExperimentLLMMapping,
     AnalyzeExperimentSubgraph,
 )
 from airas.usecases.executors.dispatch_experiment_on_aixs_subgraph.dispatch_experiment_on_aixs_subgraph import (
@@ -83,12 +92,15 @@ from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment
     FetchExperimentResultsSubgraph,
 )
 from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
+    GenerateExperimentalDesignLLMMapping,
     GenerateExperimentalDesignSubgraph,
 )
 from airas.usecases.generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph_v0 import (
     GenerateHypothesisSubgraphV0,
+    GenerateHypothesisSubgraphV0LLMMapping,
 )
 from airas.usecases.generators.generate_queries_subgraph.generate_queries_subgraph import (
+    GenerateQueriesLLMMapping,
     GenerateQueriesSubgraph,
 )
 from airas.usecases.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
@@ -100,9 +112,11 @@ from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgra
     PrepareRepositorySubgraph,
 )
 from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
+    CompileLatexLLMMapping,
     CompileLatexSubgraph,
 )
 from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
+    GenerateLatexLLMMapping,
     GenerateLatexSubgraph,
 )
 from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.fetch_paper_fulltext_subgraph import (
@@ -116,6 +130,7 @@ from airas.usecases.retrieve.retrieve_models_subgraph.retrieve_models_subgraph i
 )
 from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
+    RetrievePaperSubgraphLLMMapping,
 )
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
@@ -126,7 +141,10 @@ from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph impor
 from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
     GenerateBibfileSubgraph,
 )
-from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
+from airas.usecases.writers.write_subgraph.write_subgraph import (
+    WriteLLMMapping,
+    WriteSubgraph,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -182,6 +200,11 @@ def _openalex_client() -> OpenAlexClient:
     return OpenAlexClient(sync_session=_sync_session, async_session=_async_session)
 
 
+def _hugging_face_client() -> HuggingFaceClient:
+    refresh_environment()  # HF_TOKEN is optional for public resources
+    return HuggingFaceClient(sync_session=_sync_session, async_session=_async_session)
+
+
 def _semantic_scholar_client() -> SemanticScholarClient:
     refresh_environment()  # SEMANTIC_SCHOLAR_API_KEY is optional
     return SemanticScholarClient(
@@ -189,17 +212,91 @@ def _semantic_scholar_client() -> SemanticScholarClient:
     )
 
 
-def _langchain_client() -> LangChainClient:
+def _litellm_client() -> LiteLLMClient:
     refresh_environment()
-    if not detect_available_providers(PROVIDER_REQUIRED_ENV_VARS):
+    if not detect_available_providers(LITELLM_PROVIDER_REQUIRED_ENV_VARS):
         raise RuntimeError(
             f"No LLM provider API keys are configured. {SETUP_INSTRUCTIONS}"
         )
-    return LangChainClient()
+    return LiteLLMClient()
+
+
+# airas's LLMProvider enum value -> litellm's ``custom_llm_provider`` name.
+# Only GOOGLE diverges (airas "google" vs litellm "gemini"); every other
+# provider's enum value already matches litellm, so we fall back to it.
+_LITELLM_PROVIDER_NAME: dict[LLMProvider, str] = {
+    LLMProvider.GOOGLE: "gemini",
+}
 
 
 def _dump(value: Any) -> Any:
     return value.model_dump() if isinstance(value, BaseModel) else value
+
+
+# --- Capabilities / credentials ---
+
+
+@mcp.tool()
+def get_available_llms(include_models: bool = False) -> dict[str, Any]:
+    """Report which LLMs are usable with the currently configured API keys.
+
+    Reads credentials fresh (so keys added or rotated since the server
+    started are picked up) and, for each known LLM provider, reports whether
+    its required API key(s) are present. Call this before the LLM-backed
+    tools (`generate_research_queries`, `generate_hypothesis`,
+    `generate_experimental_design`, `analyze_experiment`, `generate_paper`,
+    `generate_latex`, `compile_latex`, `retrieve_papers`) to know which will
+    run and which model names you may pass — a tool whose model belongs to an
+    unconfigured provider fails fast with the missing key named. This tool
+    itself needs no API key.
+
+    Set `include_models` to true to also list, per configured provider, the
+    model names in litellm's catalog. It defaults to false because some
+    providers return hundreds of models, which bloats the response; request
+    it only when you need to choose a specific model.
+
+    Scope: this reports the **LiteLLM** view — provider credentials
+    (`LITELLM_PROVIDER_REQUIRED_ENV_VARS`) and litellm's model catalog. Every
+    generation tool executes via litellm and accepts any model name litellm
+    can route to the configured providers, so a listed provider/model is
+    usable by all of them.
+
+    Returns:
+    - `any_provider_configured`: whether at least one provider is usable
+    - `configured_providers`: sorted provider names that are ready
+    - `providers`: per-provider `configured` flag, `required_env_vars`,
+      `missing_env_vars`, and (when configured and requested) `models` /
+      `model_count`
+    - `setup_instructions`: how to add keys, present only when none are set
+    """
+    refresh_environment()
+    available = detect_available_providers(LITELLM_PROVIDER_REQUIRED_ENV_VARS)
+
+    providers: list[dict[str, Any]] = []
+    for provider, required in LITELLM_PROVIDER_REQUIRED_ENV_VARS.items():
+        configured = provider in available
+        entry: dict[str, Any] = {
+            "provider": provider.value,
+            "configured": configured,
+            "required_env_vars": required,
+            "missing_env_vars": [name for name in required if not os.getenv(name)],
+        }
+        if configured and include_models:
+            litellm_name = _LITELLM_PROVIDER_NAME.get(provider, provider.value)
+            try:
+                models = sorted(LiteLLMClient.get_valid_models(provider=litellm_name))
+                entry["model_count"] = len(models)
+                entry["models"] = models
+            except Exception as exc:  # never let catalog lookup fail the tool
+                entry["models_error"] = str(exc)
+        providers.append(entry)
+
+    return {
+        "any_provider_configured": bool(available),
+        "configured_providers": sorted(p.value for p in available),
+        "providers": providers,
+        "setup_instructions": None if available else SETUP_INSTRUCTIONS,
+    }
 
 
 # --- Paper discovery & hypothesis ---
@@ -239,20 +336,23 @@ def get_generation_prompt(step: str, inputs: dict[str, Any]) -> dict[str, Any]:
 @mcp.tool()
 async def generate_research_queries(
     research_topic: str,
+    model: str,
     num_queries: int = 2,
 ) -> list[str]:
     """Generate academic paper search queries from a research topic (backend LLM).
 
     Use this first to turn a free-form research topic into effective
-    search queries, then pass them to `search_papers`. Requires an LLM
-    provider API key — without one, use
-    `get_generation_prompt(step="research_queries", ...)` and author the
+    search queries, then pass them to `search_papers`. `model` is required
+    (the LLM to use) — call `get_available_llms` to see which models the
+    configured keys allow. Requires an LLM provider API key — without one,
+    use `get_generation_prompt(step="research_queries", ...)` and author the
     queries yourself.
     """
     result = (
         await GenerateQueriesSubgraph(
-            llm_client=_langchain_client(),
+            llm_client=_litellm_client(),
             num_paper_search_queries=num_queries,
+            llm_mapping=uniform_llm_mapping(GenerateQueriesLLMMapping, model),
         )
         .build_graph()
         .ainvoke({"research_topic": research_topic})
@@ -371,20 +471,21 @@ async def fetch_paper_fulltext(
 
 
 @mcp.tool()
-async def retrieve_papers(paper_titles: list[str]) -> list[dict[str, Any]]:
+async def retrieve_papers(paper_titles: list[str], model: str) -> list[dict[str, Any]]:
     """Retrieve full paper information for the given titles.
 
     Fetches each paper (via arXiv) and extracts structured research study
     data: abstract, methods, experimental settings, and results. The returned
     objects can be passed to `generate_hypothesis` as `research_study_list`.
-    Requires GH_PERSONAL_ACCESS_TOKEN and an LLM provider API key.
+    `model` (required) is the LLM to use — call `get_available_llms` to list
+    valid models. Requires GH_PERSONAL_ACCESS_TOKEN and an LLM provider API key.
     """
     result = (
         await RetrievePaperSubgraph(
-            langchain_client=_langchain_client(),
+            litellm_client=_litellm_client(),
             arxiv_client=_arxiv_client(),
             github_client=_github_client(),
-            llm_mapping=None,
+            llm_mapping=uniform_llm_mapping(RetrievePaperSubgraphLLMMapping, model),
         )
         .build_graph()
         .ainvoke({"paper_titles": paper_titles})
@@ -396,21 +497,26 @@ async def retrieve_papers(paper_titles: list[str]) -> list[dict[str, Any]]:
 async def generate_hypothesis(
     research_topic: str,
     research_study_list: list[dict[str, Any]],
+    model: str,
     refinement_rounds: int = 1,
 ) -> dict[str, Any]:
     """Generate a novel research hypothesis from a topic and related studies (backend LLM).
 
     `research_study_list` should be the output of `retrieve_papers`. Higher
     `refinement_rounds` improves quality at the cost of more LLM calls.
-    Requires an LLM provider API key — without one, use
+    `model` (required) is the LLM to use — call `get_available_llms` to list
+    valid models. Requires an LLM provider API key — without one, use
     `get_generation_prompt(step="hypothesis", ...)` and author the
     hypothesis yourself.
     """
     studies = [ResearchStudy.model_validate(study) for study in research_study_list]
     result = (
         await GenerateHypothesisSubgraphV0(
-            langchain_client=_langchain_client(),
+            litellm_client=_litellm_client(),
             refinement_rounds=refinement_rounds,
+            llm_mapping=uniform_llm_mapping(
+                GenerateHypothesisSubgraphV0LLMMapping, model
+            ),
         )
         .build_graph()
         .ainvoke(
@@ -429,6 +535,7 @@ async def generate_hypothesis(
 @mcp.tool()
 async def generate_experimental_design(
     research_hypothesis: dict[str, Any],
+    model: str,
     compute_environment: dict[str, Any] | None = None,
     num_models_to_use: int = 1,
     num_datasets_to_use: int = 1,
@@ -439,19 +546,23 @@ async def generate_experimental_design(
     `research_hypothesis` should be the output of `generate_hypothesis`.
     `compute_environment` optionally describes the hardware the experiments
     will run on (e.g. {"gpu_type": "A100", "gpu_count": 1}); it constrains
-    the design to what is actually runnable. Requires an LLM provider API
-    key — without one, use
+    the design to what is actually runnable. `model` (required) is the LLM to
+    use — call `get_available_llms` to list valid models. Requires an LLM
+    provider API key — without one, use
     `get_generation_prompt(step="experimental_design", ...)` and author the
     design yourself.
     """
     env = ComputeEnvironment.model_validate(compute_environment or {})
     result = (
         await GenerateExperimentalDesignSubgraph(
-            langchain_client=_langchain_client(),
+            litellm_client=_litellm_client(),
             compute_environment=env,
             num_models_to_use=num_models_to_use,
             num_datasets_to_use=num_datasets_to_use,
             num_comparative_methods=num_comparative_methods,
+            llm_mapping=uniform_llm_mapping(
+                GenerateExperimentalDesignLLMMapping, model
+            ),
         )
         .build_graph()
         .ainvoke(
@@ -467,11 +578,19 @@ async def generate_experimental_design(
 
 @mcp.tool()
 async def retrieve_models(model_subfield: ModelSubfield) -> dict[str, Any]:
-    """List curated candidate models for experiments in the given subfield.
+    """List AIRAS's hand-curated candidate models for a subfield.
 
-    Subfields: "transformer_decoder_based_models", "image_models",
-    "multi_modal_models", "llm_api_models". Returns model configurations
-    usable in an experimental design. No API keys required.
+    Check here first. Subfields follow the shared domain>category taxonomy:
+    language ("text_generation", "text_understanding",
+    "sequence_to_sequence", "code_generation", "text_embedding",
+    "reranking", "hosted_api"), vision ("image_recognition",
+    "image_generation"), "vision_language", "speech", "forecasting",
+    "protein". Returns a dict
+    keyed by model name; each value has model_architecture, task_type,
+    huggingface_url, dependent_packages, a runnable code snippet, citation,
+    and more. If none of these fit the experimental design, fall back to
+    `search_huggingface_hub` (kind="models"), which returns the same shape
+    from the live Hub. No API keys required.
     """
     result = (
         await RetrieveModelsSubgraph()
@@ -483,11 +602,17 @@ async def retrieve_models(model_subfield: ModelSubfield) -> dict[str, Any]:
 
 @mcp.tool()
 async def retrieve_datasets(dataset_subfield: DatasetSubfield) -> dict[str, Any]:
-    """List curated candidate datasets for experiments in the given subfield.
+    """List AIRAS's hand-curated candidate datasets for a subfield.
 
-    Subfields: "language_model_fine_tuning_datasets", "image_datasets",
-    "prompt_engineering_datasets". Returns dataset configurations usable in
-    an experimental design. No API keys required.
+    Check here first. Subfields follow the shared domain>category
+    taxonomy: language ("instruction_tuning", "reasoning_evaluation",
+    "nlp_tasks", "prompt_engineering", "code_evaluation"),
+    "image_recognition", "speech", "vision_language". Returns a dict keyed
+    by dataset name; each value has description, task_type, huggingface_url,
+    dependent_packages, a runnable code snippet, citation, and more. If none
+    fit the experimental design, fall back to `search_huggingface_hub`
+    (kind="datasets"), which returns the same shape from the live Hub.
+    No API keys required.
     """
     result = (
         await RetrieveDatasetsSubgraph()
@@ -495,6 +620,86 @@ async def retrieve_datasets(dataset_subfield: DatasetSubfield) -> dict[str, Any]
         .ainvoke({"dataset_subfield": dataset_subfield})
     )
     return result["datasets_dict"]
+
+
+def _hf_hub_entry(item: dict[str, Any], kind: HF_RESOURCE_TYPE) -> dict[str, Any]:
+    """Map one Hugging Face Hub API record to the curated-resource shape."""
+    library = item.get("library_name")
+    card = item.get("cardData") or {}
+    tags = item.get("tags") or []
+    if kind == "models":
+        task_type = item.get("pipeline_tag")
+        packages = [library] if library else []
+    else:
+        task_type = card.get("task_categories") or card.get("task_ids") or []
+        packages = ["datasets"]
+    return {
+        # curated-compatible core fields (same keys as retrieve_models /
+        # retrieve_datasets); code/citation are left empty for Hub results —
+        # read the model/dataset card at huggingface_url for usage details.
+        "description": item.get("description", ""),
+        "model_architecture": "",
+        "task_type": task_type,
+        "dependent_packages": packages,
+        "code": "",
+        "citation": "",
+        # discovery metadata beyond the curated schema
+        "downloads": item.get("downloads"),
+        "likes": item.get("likes"),
+        "tags": tags,
+        "last_modified": item.get("lastModified"),
+        "source": "huggingface_hub",
+    }
+
+
+@mcp.tool()
+async def search_huggingface_hub(
+    kind: HF_RESOURCE_TYPE = "models",
+    query: str = "",
+    task: str | None = None,
+    limit: int = 10,
+    sort: str = "downloads",
+) -> dict[str, Any]:
+    """Live Hugging Face Hub fallback for `retrieve_models`/`retrieve_datasets`.
+
+    Use this only when the curated tools (`retrieve_models` /
+    `retrieve_datasets`) have no suitable candidate for the experimental
+    design — check them first, then come here to go wider or find newer
+    releases. Returns the same shape as the curated tools: a dict keyed by
+    resource id, each value carrying the curated-compatible fields
+    (description, task_type, huggingface_url, dependent_packages; code and
+    citation are empty for Hub results — read the card at huggingface_url),
+    plus discovery metadata (downloads, likes, tags, last_modified).
+
+    `kind` is "models" or "datasets"; `query` is free-text search; `task`
+    filters by pipeline tag for models (e.g. "text-generation",
+    "image-classification", "automatic-speech-recognition") or by tag for
+    datasets; `sort` ranks results ("downloads", "likes", "trendingScore",
+    "lastModified"). HF_TOKEN is optional (only for gated resources).
+    """
+    client = _hugging_face_client()
+    results = await client.asearch(
+        search_type=kind,
+        search_query=query,
+        limit=limit,
+        sort=sort,
+        filter=task if kind == "datasets" else None,
+        pipeline_tag=task if kind == "models" else None,
+        full=True,
+    )
+    items = results if isinstance(results, list) else results.get("items", results)
+    out: dict[str, Any] = {}
+    for it in items or []:
+        if not isinstance(it, dict):
+            continue
+        rid = it.get("id") or it.get("modelId")
+        if not rid:
+            continue
+        prefix = "datasets/" if kind == "datasets" else ""
+        entry = _hf_hub_entry(it, kind)
+        entry["huggingface_url"] = f"https://huggingface.co/{prefix}{rid}"
+        out[rid] = entry
+    return out
 
 
 @mcp.tool()
@@ -505,11 +710,11 @@ def get_library_docs(
 ) -> dict[str, Any]:
     """Look up canonical documentation endpoints for AI research libraries.
 
-    Covers ~165 libraries organized as domain > category, spanning LLMs,
-    ML systems, statistics, machine learning, decision science, embodied
-    AI (RL/simulation/VLA/world models), perception (vision/VLM/audio),
-    interpretability (mechanistic + XAI), graphs, and the sciences
-    (bioinformatics, medical, chemistry/materials, physics, quantum). For
+    Covers ~165 libraries organized as domain > category (the same shared
+    taxonomy as retrieve_models / retrieve_datasets). Domains: foundations,
+    language, vision, audio, multimodal, reinforcement_learning,
+    time_series, graph, systems, statistics, machine_learning,
+    decision_science, interpretability, science. For
     each library returns the official docs URL, the source repository, and
     — where the project publishes one — its `llms.txt` / `llms-full.txt`
     endpoint, which serves the current documentation in a machine-readable
@@ -847,6 +1052,7 @@ async def analyze_experiment(
     experimental_design: dict[str, Any],
     experiment_code: dict[str, Any],
     experimental_results: dict[str, Any],
+    model: str,
 ) -> dict[str, Any]:
     """Analyze experiment results against the hypothesis and design.
 
@@ -854,15 +1060,16 @@ async def analyze_experiment(
     and `fetch_experiment_results`, and returns a structured analysis
     (findings, whether the hypothesis is supported, and suggested next
     steps). For `experiment_code`, read the code from your local clone and
-    pass `{"files": {"<relative path>": "<content>", ...}}`.
-    Requires an LLM provider API key — without one, use
+    pass `{"files": {"<relative path>": "<content>", ...}}`. `model`
+    (required) is the LLM to use — call `get_available_llms` to list valid
+    models. Requires an LLM provider API key — without one, use
     `get_generation_prompt(step="experiment_analysis", ...)` and write the
     analysis yourself.
     """
     result = (
         await AnalyzeExperimentSubgraph(
-            langchain_client=_langchain_client(),
-            llm_mapping=None,
+            litellm_client=_litellm_client(),
+            llm_mapping=uniform_llm_mapping(AnalyzeExperimentLLMMapping, model),
         )
         .build_graph()
         .ainvoke(
@@ -1064,6 +1271,7 @@ async def generate_paper(
     experiment_code: dict[str, Any],
     research_study_list: list[dict[str, Any]],
     references_bib: str,
+    model: str,
     writing_refinement_rounds: int = 2,
 ) -> dict[str, Any]:
     """Write the paper content from the completed research (backend LLM).
@@ -1071,14 +1279,17 @@ async def generate_paper(
     Takes the hypothesis, experiment history, experiment code, related
     studies, and the BibTeX file (from `generate_bibfile`), and produces
     structured paper content (title, abstract, sections). Pass the result
-    to `generate_latex`. Requires an LLM provider API key — without one, use
+    to `generate_latex`. `model` (required) is the LLM to use — call
+    `get_available_llms` to list valid models. Requires an LLM provider API
+    key — without one, use
     `get_generation_prompt(step="paper_writing", ...)` and author the paper
     yourself in one pass with the same curated prompt.
     """
     result = (
         await WriteSubgraph(
-            langchain_client=_langchain_client(),
+            litellm_client=_litellm_client(),
             paper_content_refinement_iterations=writing_refinement_rounds,
+            llm_mapping=uniform_llm_mapping(WriteLLMMapping, model),
         )
         .build_graph()
         .ainvoke(
@@ -1104,6 +1315,7 @@ async def generate_paper(
 async def generate_latex(
     paper_content: dict[str, Any],
     references_bib: str,
+    model: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
 ) -> str:
     """Convert paper content into a full LaTeX document (backend LLM).
@@ -1112,16 +1324,18 @@ async def generate_latex(
     templates: "mdpi", "iclr2024", "agents4science_2025". Write the returned
     LaTeX to `.research/latex/{template}/main.tex` in your local clone of
     the experiment repository and push it with git, then build the PDF with
-    `compile_latex` and/or hand it over with `open_in_overleaf`. Requires an
-    LLM provider API key and GH_PERSONAL_ACCESS_TOKEN — without them, use
-    `get_generation_prompt(step="latex_conversion", ...)` and do the
-    conversion yourself with the template from your local clone.
+    `compile_latex` and/or hand it over with `open_in_overleaf`. `model`
+    (required) is the LLM to use — call `get_available_llms` to list valid
+    models. Requires an LLM provider API key and GH_PERSONAL_ACCESS_TOKEN —
+    without them, use `get_generation_prompt(step="latex_conversion", ...)`
+    and do the conversion yourself with the template from your local clone.
     """
     result = (
         await GenerateLatexSubgraph(
-            langchain_client=_langchain_client(),
+            litellm_client=_litellm_client(),
             github_client=_github_client(),
             latex_template_name=latex_template_name,
+            llm_mapping=uniform_llm_mapping(GenerateLatexLLMMapping, model),
         )
         .build_graph()
         .ainvoke(
@@ -1139,6 +1353,7 @@ async def compile_latex(
     github_owner: str,
     repository_name: str,
     branch_name: str,
+    model: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
     github_actions_agent: Literal["claude_code", "open_code"] = "claude_code",
 ) -> dict[str, Any]:
@@ -1151,13 +1366,16 @@ async def compile_latex(
     figure PDFs under `.research/results/` and `.research/diagrams/` are
     materialized into `images/` at build time. Returns immediately with
     `paper_url` (when available); track the run with `get_workflow_runs`.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
+    `model` (required) is forwarded to the compilation workflow as the
+    coding-agent model (`model_name`) — call `get_available_llms` to list
+    valid models. Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     result = (
         await CompileLatexSubgraph(
             github_client=_github_client(),
             latex_template_name=latex_template_name,
             github_actions_agent=github_actions_agent,
+            llm_mapping=uniform_llm_mapping(CompileLatexLLMMapping, model),
         )
         .build_graph()
         .ainvoke(
@@ -1310,7 +1528,14 @@ LaTeX as .research/latex/{{template}}/main.tex in the clone and push.
 (show me the link; local_path exports without pushing).
 10. Persist: upload_research_history.
 
-If an LLM provider key is missing, generation tools fail — in that case \
+Every backend-LLM generation tool (generate_research_queries, \
+generate_hypothesis, generate_experimental_design, analyze_experiment, \
+generate_paper, generate_latex, compile_latex, retrieve_papers) now takes a \
+required `model` argument — there is no default. Call get_available_llms \
+first to see which models the configured API keys allow, and pass one; a \
+model that cannot do a step's required structured output is rejected up front.
+
+If no LLM provider key is configured, generation tools fail — in that case \
 call get_generation_prompt(step, inputs) and author the artifact yourself \
 following its prompt, output_json_schema, and flow.
 """

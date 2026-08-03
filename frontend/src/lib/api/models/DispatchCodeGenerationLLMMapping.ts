@@ -4,6 +4,6 @@
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
 export type DispatchCodeGenerationLLMMapping = {
-    dispatch_code_generation?: NodeLLMConfig;
+    dispatch_code_generation: NodeLLMConfig;
 };
 

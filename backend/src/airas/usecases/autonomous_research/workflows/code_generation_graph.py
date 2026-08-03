@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import time_node
+from airas.core.llm_config import require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.github import (
@@ -52,9 +53,7 @@ class GitHubActionsWorkflowError(WorkflowExecutionError):
 
 
 class CodeGenerationGraphLLMMapping(BaseModel):
-    dispatch_code_generation: DispatchCodeGenerationLLMMapping = (
-        DispatchCodeGenerationLLMMapping()
-    )
+    dispatch_code_generation: DispatchCodeGenerationLLMMapping
 
 
 class CodeGenerationGraphInputState(TypedDict):
@@ -81,7 +80,7 @@ class CodeGenerationGraph:
         self.wandb_config = wandb_config
         self.github_actions_agent = github_actions_agent
         self.prompt_path = prompt_path
-        self.llm_mapping = llm_mapping or CodeGenerationGraphLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     def _validate_github_actions_completion(
         self,

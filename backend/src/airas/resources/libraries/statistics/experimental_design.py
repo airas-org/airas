@@ -1,6 +1,7 @@
-# Experimental Design (statistics): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# statistics / experimental_design documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 EXPERIMENTAL_DESIGN_LIBRARIES: dict[str, dict[str, str | None]] = {
     "ax": {
         "description": "Adaptive experimentation platform for A/B tests and Bayesian optimization",

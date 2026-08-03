@@ -1,11 +1,12 @@
+import os
 from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from langfuse import observe
 
 from airas.container import Container
-from airas.dashboard.api.dependencies import get_github_client, get_langchain_client
+from airas.core.llm_config import uniform_llm_mapping
+from airas.dashboard.api.dependencies import get_github_client, get_litellm_client
 from airas.dashboard.api.schemas.papers import (
     FetchPaperFulltextRequestBody,
     FetchPaperFulltextResponseBody,
@@ -20,8 +21,6 @@ from airas.dashboard.api.schemas.papers import (
 )
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
-from airas.infra.langchain_client import LangChainClient
-from airas.infra.langfuse_client import LangfuseClient
 from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
@@ -35,6 +34,7 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_fr
     SearchPaperTitlesFromAirasDbSubgraph,
 )
 from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_qdrant_subgraph import (
+    SearchPaperTitlesFromQdrantLLMMapping,
     SearchPaperTitlesFromQdrantSubgraph,
 )
 from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph import (
@@ -44,9 +44,15 @@ from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
 
 router = APIRouter(prefix="/papers", tags=["papers"])
 
+# The Qdrant paper-title index is a platform resource: its embeddings must be
+# produced with the same model the collection was built with, so this is
+# infrastructure config (env-overridable), not a user-selectable model.
+_QDRANT_EMBEDDING_MODEL = os.getenv(
+    "QDRANT_EMBEDDING_MODEL", "gemini/gemini-embedding-001"
+)
+
 
 @router.post("/search", response_model=SearchPaperTitlesResponseBody)
-@observe()
 async def search_paper_titles(
     request: SearchPaperTitlesRequestBody,
     fastapi_request: Request,
@@ -68,6 +74,9 @@ async def search_paper_titles(
                 qdrant_client=qdrant_client,
                 collection_name=request.collection_name,
                 papers_per_query=request.max_results_per_query,
+                llm_mapping=uniform_llm_mapping(
+                    SearchPaperTitlesFromQdrantLLMMapping, _QDRANT_EMBEDDING_MODEL
+                ),
             )
             .build_graph()
             .ainvoke({"queries": request.queries})
@@ -97,7 +106,6 @@ async def search_paper_titles(
 
 @router.post("/source-search", response_model=SearchPapersResponseBody)
 @inject
-@observe()
 async def search_papers(
     request: SearchPapersRequestBody,
     fastapi_request: Request,
@@ -140,7 +148,6 @@ async def search_papers(
 
 @router.post("/fulltext", response_model=FetchPaperFulltextResponseBody)
 @inject
-@observe()
 async def fetch_paper_fulltext(
     request: FetchPaperFulltextRequestBody,
     semantic_scholar_client: Annotated[
@@ -176,28 +183,21 @@ async def fetch_paper_fulltext(
 
 @router.post("/retrieval", response_model=RetrievePaperSubgraphResponseBody)
 @inject
-@observe()
 async def get_paper_title(
     request: RetrievePaperSubgraphRequestBody,
-    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
+    litellm_client: Annotated[LiteLLMClient, Depends(get_litellm_client)],
     arxiv_client: Annotated[ArxivClient, Depends(Provide[Container.arxiv_client])],
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
 ) -> RetrievePaperSubgraphResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await RetrievePaperSubgraph(
-            langchain_client=langchain_client,
+            litellm_client=litellm_client,
             arxiv_client=arxiv_client,
             github_client=github_client,
             llm_mapping=request.llm_mapping,
         )
         .build_graph()
-        .ainvoke(request.model_dump(), config=config)
+        .ainvoke(request.model_dump())
     )
     return RetrievePaperSubgraphResponseBody(
         research_study_list=[
@@ -208,26 +208,18 @@ async def get_paper_title(
 
 
 @router.post("/generations", response_model=WriteSubgraphResponseBody)
-@inject
-@observe()
 async def generate_paper(
     request: WriteSubgraphRequestBody,
-    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
+    litellm_client: Annotated[LiteLLMClient, Depends(get_litellm_client)],
 ) -> WriteSubgraphResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await WriteSubgraph(
-            langchain_client=langchain_client,
+            litellm_client=litellm_client,
             paper_content_refinement_iterations=request.writing_refinement_rounds,
             llm_mapping=request.llm_mapping,
         )
         .build_graph()
-        .ainvoke(request, config=config)
+        .ainvoke(request)
     )
     return WriteSubgraphResponseBody(
         paper_content=result["paper_content"],

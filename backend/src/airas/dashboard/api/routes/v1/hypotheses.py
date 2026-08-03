@@ -1,17 +1,13 @@
 from typing import Annotated
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
-from langfuse import observe
 
-from airas.container import Container
-from airas.dashboard.api.dependencies import get_langchain_client
+from airas.dashboard.api.dependencies import get_litellm_client
 from airas.dashboard.api.schemas.hypotheses import (
     GenerateHypothesisSubgraphV0RequestBody,
     GenerateHypothesisSubgraphV0ResponseBody,
 )
-from airas.infra.langchain_client import LangChainClient
-from airas.infra.langfuse_client import LangfuseClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph_v0 import (
     GenerateHypothesisSubgraphV0,
 )
@@ -20,26 +16,18 @@ router = APIRouter(prefix="/hypotheses", tags=["hypotheses"])
 
 
 @router.post("/generations", response_model=GenerateHypothesisSubgraphV0ResponseBody)
-@inject
-@observe()
 async def generate_hypotheses(
     request: GenerateHypothesisSubgraphV0RequestBody,
-    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
+    litellm_client: Annotated[LiteLLMClient, Depends(get_litellm_client)],
 ) -> GenerateHypothesisSubgraphV0ResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await GenerateHypothesisSubgraphV0(
-            langchain_client=langchain_client,
+            litellm_client=litellm_client,
             refinement_rounds=request.refinement_rounds,
             llm_mapping=request.llm_mapping,
         )
         .build_graph()
-        .ainvoke(request, config=config)
+        .ainvoke(request)
     )
     return GenerateHypothesisSubgraphV0ResponseBody(
         research_hypothesis=result["research_hypothesis"],

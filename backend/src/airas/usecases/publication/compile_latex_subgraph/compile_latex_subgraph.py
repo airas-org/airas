@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
@@ -18,7 +18,7 @@ record_execution_time = lambda f: time_node("compile_latex_subgraph")(f)  # noqa
 
 
 class CompileLatexLLMMapping(BaseModel):
-    compile_latex: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["compile_latex"]
+    compile_latex: NodeLLMConfig
 
 
 class CompileLatexSubgraphInputState(TypedDict):
@@ -53,7 +53,7 @@ class CompileLatexSubgraph:
         self.paper_name = paper_name
         self.workflow_file = workflow_file
         self.github_actions_agent = github_actions_agent
-        self.llm_mapping = llm_mapping or CompileLatexLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _compile_latex(self, state: CompileLatexSubgraphState) -> dict:

@@ -10,10 +10,6 @@ from fastapi import Depends, HTTPException, status
 from airas.container import Container
 from airas.core.credentials import refresh_environment
 from airas.infra.github_client import GithubClient
-from airas.infra.langchain_client import (
-    PROVIDER_REQUIRED_ENV_VARS as LANGCHAIN_REQUIRED_ENV_VARS,
-)
-from airas.infra.langchain_client import LangChainClient
 from airas.infra.litellm_client import (
     PROVIDER_REQUIRED_ENV_VARS as LITELLM_REQUIRED_ENV_VARS,
 )
@@ -83,24 +79,6 @@ def _create_key_fn(keys: dict[str, str]) -> Callable[[str], str | None]:
         return keys.get(env_var)
 
     return _resolve
-
-
-@inject
-def get_langchain_client(
-    langchain_client_factory: Annotated[
-        Callable[..., LangChainClient],
-        Depends(Provider[Container.langchain_client]),
-    ],
-) -> LangChainClient:
-    """Create a LangChainClient via Container with env-provided API keys."""
-    keys = _resolve_env_keys()
-    available = detect_available_providers(LANGCHAIN_REQUIRED_ENV_VARS, keys)
-    if not available:
-        raise _NO_LLM_PROVIDERS
-    return langchain_client_factory(
-        get_api_key=_create_key_fn(keys),
-        available_providers=available,
-    )
 
 
 @inject

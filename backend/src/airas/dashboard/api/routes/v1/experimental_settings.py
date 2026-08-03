@@ -1,19 +1,15 @@
 from typing import Annotated
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
-from langfuse import observe
 
-from airas.container import Container
-from airas.dashboard.api.dependencies import get_langchain_client
+from airas.dashboard.api.dependencies import get_litellm_client
 from airas.dashboard.api.schemas.experimental_settings import (
     GenerateExperimentalDesignSubgraphRequestBody,
     GenerateExperimentalDesignSubgraphResponseBody,
     RefineExperimentalDesignSubgraphRequestBody,
     RefineExperimentalDesignSubgraphResponseBody,
 )
-from airas.infra.langchain_client import LangChainClient
-from airas.infra.langfuse_client import LangfuseClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignSubgraph,
 )
@@ -27,21 +23,13 @@ router = APIRouter(prefix="/experimental_settings", tags=["experimental_settings
 @router.post(
     "/generations", response_model=GenerateExperimentalDesignSubgraphResponseBody
 )
-@inject
-@observe()
 async def generate_experimental_design(
     request: GenerateExperimentalDesignSubgraphRequestBody,
-    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
+    litellm_client: Annotated[LiteLLMClient, Depends(get_litellm_client)],
 ) -> GenerateExperimentalDesignSubgraphResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await GenerateExperimentalDesignSubgraph(
-            langchain_client=langchain_client,
+            litellm_client=litellm_client,
             compute_environment=request.compute_environment,
             num_models_to_use=request.num_models_to_use,
             num_datasets_to_use=request.num_datasets_to_use,
@@ -49,7 +37,7 @@ async def generate_experimental_design(
             llm_mapping=request.llm_mapping,
         )
         .build_graph()
-        .ainvoke(request, config=config)
+        .ainvoke(request)
     )
     return GenerateExperimentalDesignSubgraphResponseBody(
         experimental_design=result["experimental_design"],
@@ -60,21 +48,13 @@ async def generate_experimental_design(
 @router.post(
     "/refinements", response_model=RefineExperimentalDesignSubgraphResponseBody
 )
-@inject
-@observe()
 async def refine_experimental_design(
     request: RefineExperimentalDesignSubgraphRequestBody,
-    langchain_client: Annotated[LangChainClient, Depends(get_langchain_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
+    litellm_client: Annotated[LiteLLMClient, Depends(get_litellm_client)],
 ) -> RefineExperimentalDesignSubgraphResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = (
         await RefineExperimentalDesignSubgraph(
-            langchain_client=langchain_client,
+            litellm_client=litellm_client,
             compute_environment=request.compute_environment,
             num_models_to_use=request.num_models_to_use,
             num_datasets_to_use=request.num_datasets_to_use,
@@ -82,7 +62,7 @@ async def refine_experimental_design(
             llm_mapping=request.llm_mapping,
         )
         .build_graph()
-        .ainvoke(request, config=config)
+        .ainvoke(request)
     )
     return RefineExperimentalDesignSubgraphResponseBody(
         experimental_design=result["experimental_design"],

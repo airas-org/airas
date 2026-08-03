@@ -6,11 +6,11 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.research_hypothesis import EvaluatedHypothesis, ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.generators.generate_hypothesis_subgraph.nodes.evaluate_novelty_and_significance import (
     evaluate_novelty_and_significance,
 )
@@ -28,11 +28,9 @@ record_execution_time = lambda f: time_node("generate_hypothesis_subgraph")(f)  
 
 
 class GenerateHypothesisSubgraphV0LLMMapping(BaseModel):
-    generate_hypothesis: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["generate_hypothesis"]
-    evaluate_novelty_and_significance: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "evaluate_novelty_and_significance"
-    ]
-    refine_hypothesis: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG["refine_hypothesis"]
+    generate_hypothesis: NodeLLMConfig
+    evaluate_novelty_and_significance: NodeLLMConfig
+    refine_hypothesis: NodeLLMConfig
 
 
 class GenerateHypothesisSubgraphV0InputState(TypedDict):
@@ -54,12 +52,12 @@ class GenerateHypothesisSubgraphV0State(
 class GenerateHypothesisSubgraphV0:
     def __init__(
         self,
-        langchain_client: LangChainClient,
+        litellm_client: LiteLLMClient,
         llm_mapping: GenerateHypothesisSubgraphV0LLMMapping | None = None,
         refinement_rounds: int = 2,
     ):
-        self.langchain_client = langchain_client
-        self.llm_mapping = llm_mapping or GenerateHypothesisSubgraphV0LLMMapping()
+        self.litellm_client = litellm_client
+        self.llm_mapping = require_llm_mapping(llm_mapping)
         self.refinement_rounds = refinement_rounds
 
     @record_execution_time
@@ -77,7 +75,7 @@ class GenerateHypothesisSubgraphV0:
     ) -> dict[str, ResearchHypothesis]:
         research_hypothesis = await generate_hypothesis(
             llm_config=self.llm_mapping.generate_hypothesis,
-            llm_client=self.langchain_client,
+            llm_client=self.litellm_client,
             research_topic=state["research_topic"],
             research_study_list=state["research_study_list"],
         )
@@ -92,7 +90,7 @@ class GenerateHypothesisSubgraphV0:
             research_study_list=state["research_study_list"],
             research_hypothesis=state.get("research_hypothesis"),
             llm_config=self.llm_mapping.evaluate_novelty_and_significance,
-            llm_client=self.langchain_client,
+            llm_client=self.litellm_client,
         )
         return {
             "evaluated_hypothesis_history": state["evaluated_hypothesis_history"]
@@ -118,7 +116,7 @@ class GenerateHypothesisSubgraphV0:
     ) -> dict[str, ResearchHypothesis | int]:
         refined_hypothesis = await refine_hypothesis(
             llm_config=self.llm_mapping.refine_hypothesis,
-            llm_client=self.langchain_client,
+            llm_client=self.litellm_client,
             research_topic=state["research_topic"],
             evaluated_hypothesis_history=state["evaluated_hypothesis_history"],
             research_study_list=state["research_study_list"],

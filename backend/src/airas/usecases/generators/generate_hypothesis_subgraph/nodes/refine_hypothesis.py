@@ -6,7 +6,7 @@ from airas.core.types.research_hypothesis import (
     ResearchHypothesis,
 )
 from airas.core.types.research_study import ResearchStudy
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.generators.generate_hypothesis_subgraph.prompts.refine_hypothesis_prompt import (
     refine_hypothesis_prompt,
 )
@@ -14,7 +14,7 @@ from airas.usecases.generators.generate_hypothesis_subgraph.prompts.refine_hypot
 
 async def refine_hypothesis(
     llm_config: NodeLLMConfig,
-    llm_client: LangChainClient,
+    llm_client: LiteLLMClient,
     research_topic: str,
     evaluated_hypothesis_history: list[EvaluatedHypothesis],
     research_study_list: list[ResearchStudy],
@@ -43,7 +43,7 @@ async def refine_hypothesis(
         ],
     }
     messages = template.render(data)
-    output = await llm_client.structured_outputs(
+    output = await llm_client.structured_output(
         message=messages,
         data_model=ResearchHypothesis,
         llm_name=llm_config.llm_name,

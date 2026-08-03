@@ -1,6 +1,7 @@
-# Mathematical Optimization (decision_science): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# decision_science / mathematical_optimization documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 MATHEMATICAL_OPTIMIZATION_LIBRARIES: dict[str, dict[str, str | None]] = {
     "cvxpy": {
         "description": "Modeling language for convex optimization",

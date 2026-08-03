@@ -5,7 +5,7 @@ from jinja2 import Environment
 from airas.core.llm_config import NodeLLMConfig
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.generators.generate_hypothesis_subgraph.prompts.generate_hypothesis_prompt import (
     generate_hypothesis_prompt,  # noqa: F401
 )
@@ -18,7 +18,7 @@ logger = getLogger(__name__)
 
 async def generate_hypothesis(
     llm_config: NodeLLMConfig,
-    llm_client: LangChainClient,
+    llm_client: LiteLLMClient,
     research_topic: str,
     research_study_list: list[ResearchStudy],
 ) -> ResearchHypothesis:
@@ -35,7 +35,7 @@ async def generate_hypothesis(
         ],
     }
     messages = template.render(data)
-    output = await llm_client.structured_outputs(
+    output = await llm_client.structured_output(
         message=messages,
         data_model=ResearchHypothesis,
         llm_name=llm_config.llm_name,

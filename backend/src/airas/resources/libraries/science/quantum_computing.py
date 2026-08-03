@@ -1,6 +1,7 @@
-# Quantum Computing (science): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# science / quantum_computing documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 QUANTUM_COMPUTING_LIBRARIES: dict[str, dict[str, str | None]] = {
     "qiskit": {
         "description": "IBM SDK for quantum circuits, transpilation, and primitives",

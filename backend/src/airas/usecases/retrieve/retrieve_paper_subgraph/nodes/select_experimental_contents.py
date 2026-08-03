@@ -34,7 +34,7 @@ from jinja2 import Environment
 from pydantic import BaseModel, Field
 
 from airas.core.llm_config import NodeLLMConfig
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.extract_code_structure import (
     RepositoryCodeStructure,
 )
@@ -90,7 +90,7 @@ async def _select_files_from_study(
     contents: RepositoryContents,
     code_structure: RepositoryCodeStructure,
     template: str,
-    llm_client: LangChainClient,
+    llm_client: LiteLLMClient,
     llm_config: NodeLLMConfig,
 ) -> tuple[str, str]:
     if not contents.files:
@@ -109,7 +109,7 @@ async def _select_files_from_study(
     )
 
     try:
-        response = await llm_client.structured_outputs(
+        response = await llm_client.structured_output(
             llm_name=llm_config.llm_name,
             message=message,
             data_model=SelectedFiles,
@@ -132,7 +132,7 @@ async def _select_files_from_study(
 
 async def select_experimental_contents(
     llm_config: NodeLLMConfig,
-    llm_client: LangChainClient,
+    llm_client: LiteLLMClient,
     prompt_template: str,
     paper_summary_list: list[PaperSummary],
     repository_contents_list: list[RepositoryContents],

@@ -1,6 +1,7 @@
-# Decision Making (decision_science): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# decision_science / decision_making documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 DECISION_MAKING_LIBRARIES: dict[str, dict[str, str | None]] = {
     "obp": {
         "description": "Off-policy evaluation and bandit algorithms (Open Bandit Pipeline)",
