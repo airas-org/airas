@@ -10,3 +10,4 @@ class LLMProvider(str, Enum):
     BEDROCK = "bedrock"
     AZURE = "azure"
     VERCEL_AI_GATEWAY = "vercel_ai_gateway"
+    RIKYU = "rikyu"

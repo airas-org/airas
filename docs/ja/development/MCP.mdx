@@ -29,10 +29,51 @@ chmod 600 ~/.airas/credentials.json
 
 | キー | 必須 | 用途 |
 | --- | --- | --- |
-| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `VERCEL_AI_GATEWAY_API_KEY` | いずれか1つ | LLM呼び出し（クエリ生成・論文抽出・仮説生成・論文執筆） |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `VERCEL_AI_GATEWAY_API_KEY` / `RIKYU_API_KEY` | いずれか1つ | LLM呼び出し（クエリ生成・論文抽出・仮説生成・論文執筆） |
 | `GH_PERSONAL_ACCESS_TOKEN` | リポジトリ・実験・出版系ツール使用時 | GitHub APIアクセス（`repo` + `workflow` スコープ） |
 
 認証情報が未設定のままツールを呼ぶと、このファイルを案内するエラーが返ります。
+
+### OpenAI互換エンドポイント（理究）
+
+理研R-CCSの理究APIはOpenAI互換で、認証情報は1つだけです：
+
+```json
+{
+  "RIKYU_API_KEY": "..."
+}
+```
+
+モデル名は `rikyu/<model>` の形式で指定します。`<model>` はエンドポイント自身が返すモデルIDです：
+
+```bash
+curl -H "Authorization: Bearer $RIKYU_API_KEY" \
+  https://api.rikyu.r-ccs.riken.jp/v1/models
+```
+
+base URLは `https://api.rikyu.r-ccs.riken.jp/v1` がデフォルトです。別のホストを指す場合は、認証情報ファイルに `RIKYU_API_BASE` を手動で追加してください。将来別のOpenAI互換エンドポイントを追加する場合も同様に、固有のプロバイダー名とキーを与えます（`backend/src/airas/infra/llm_provider_resolver.py` の `RIKYU_*` の配線を参照）。こうすることで、キー名から接続先と課金先が常に辿れます。
+
+同じキーでコーディングエージェントからも利用できます。ローカルの [opencode](https://opencode.ai) から使う場合は、`~/.config/opencode/opencode.json` にカスタムプロバイダーとして宣言します（実験リポジトリ側には同等の設定が `.opencode/opencode.jsonc` に含まれており、ワークフローがリポジトリシークレットからキーを渡します）：
+
+```json
+{
+  "provider": {
+    "rikyu": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Rikyu (RIKEN R-CCS)",
+      "options": {
+        "baseURL": "https://api.rikyu.r-ccs.riken.jp/v1",
+        "apiKey": "{env:RIKYU_API_KEY}"
+      },
+      "models": {
+        "kimi-k3": { "name": "Kimi K3" }
+      }
+    }
+  }
+}
+```
+
+選択したいモデルIDごとに `models` へ1エントリを追加し、`opencode run --model rikyu/<model>` で実行します（ノード内LLMと同じ名前です）。コーディングエージェント用途ではエンドポイント側がツールコールに対応している必要があります（vLLMの場合はツールコールパーサーの有効化が必要）。対応していないモデルでも、ノード内LLMとしては利用できます。
 
 ### 2. サーバーの登録（Claude Code）
 

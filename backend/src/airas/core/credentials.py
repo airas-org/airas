@@ -93,11 +93,8 @@ CREDENTIAL_SPECS: tuple[CredentialSpec, ...] = (
     CredentialSpec("GEMINI_API_KEY"),
     CredentialSpec("OPENROUTER_API_KEY"),
     CredentialSpec("AWS_BEARER_TOKEN_BEDROCK"),
-    # One key for every model reachable through Vercel AI Gateway. litellm
-    # routes `vercel_ai_gateway/<provider>/<model>` with it; opencode reads
-    # the same value as AI_GATEWAY_API_KEY (mapped in the template repo's
-    # workflows).
     CredentialSpec("VERCEL_AI_GATEWAY_API_KEY"),
+    CredentialSpec("RIKYU_API_KEY"),
     # Optional: raise rate limits for the paper-search sources.
     CredentialSpec("SEMANTIC_SCHOLAR_API_KEY"),
     CredentialSpec("OPENALEX_API_KEY"),

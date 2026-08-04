@@ -34,6 +34,7 @@ const CATEGORIES: { key: string; names: string[] }[] = [
       "GEMINI_API_KEY",
       "OPENROUTER_API_KEY",
       "VERCEL_AI_GATEWAY_API_KEY",
+      "RIKYU_API_KEY",
       "AWS_BEARER_TOKEN_BEDROCK",
     ],
   },

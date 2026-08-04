@@ -1,12 +1,22 @@
-# TODO: Expose a guard/eligibility check (e.g. check_model_available(provider, available_providers))
-#       so that the backend can reject unsupported model requests early and the frontend
-#       can filter the model selector based on the user's available providers.
-
 from __future__ import annotations
 
 import os
 
 from airas.core.types.llm_provider import LLMProvider
+
+# ---------------------------------------------------------------------------
+# Rikyu (RIKEN R-CCS) — an OpenAI-compatible endpoint, addressed as
+# "rikyu/<model>". It gets its own provider name and env vars rather than a
+# generic OPENAI_COMPATIBLE_* pair: a generic pair is effectively a singleton,
+# and a credential named RIKYU_API_KEY says which host it reaches and which
+# project is billed. Should a second such endpoint appear, generalize these
+# into a table then.
+# ---------------------------------------------------------------------------
+RIKYU_KEY_ENV = "RIKYU_API_KEY"
+RIKYU_BASE_URL_ENV = "RIKYU_API_BASE"
+# Used when RIKYU_API_BASE is unset, so only the key has to be configured.
+RIKYU_DEFAULT_BASE_URL = "https://api.rikyu.r-ccs.riken.jp/v1"
+
 
 # ---------------------------------------------------------------------------
 # Provider -> primary API-key env-var name
@@ -18,6 +28,7 @@ PROVIDER_PRIMARY_KEY: dict[LLMProvider, str] = {
     LLMProvider.OPENROUTER: "OPENROUTER_API_KEY",
     LLMProvider.AZURE: "AZURE_API_KEY",
     LLMProvider.VERCEL_AI_GATEWAY: "VERCEL_AI_GATEWAY_API_KEY",
+    LLMProvider.RIKYU: "RIKYU_API_KEY",
 }
 
 
@@ -35,6 +46,11 @@ _MODEL_PREFIX_TO_PROVIDER: list[tuple[str, LLMProvider]] = [
     # segment (e.g. "vercel_ai_gateway/anthropic/claude-sonnet-4"), so this
     # entry must be matched before the vendor-prefix rules further down.
     ("vercel_ai_gateway/", LLMProvider.VERCEL_AI_GATEWAY),
+    # Rikyu (OpenAI-compatible endpoint). What follows the prefix is the
+    # model ID the endpoint itself reports via GET /v1/models, so it can be
+    # a bare name ("rikyu/kimi-k3") or carry a vendor path; either way this
+    # must win over the vendor rules below.
+    ("rikyu/", LLMProvider.RIKYU),
     # Bare model names (no prefix)
     ("gemini-", LLMProvider.GOOGLE),
     ("gemini-embedding-", LLMProvider.GOOGLE),

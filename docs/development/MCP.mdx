@@ -29,10 +29,51 @@ chmod 600 ~/.airas/credentials.json
 
 | Key | Required | Purpose |
 | --- | --- | --- |
-| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `VERCEL_AI_GATEWAY_API_KEY` | At least one | LLM calls (query generation, paper extraction, hypothesis generation, paper writing) |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `VERCEL_AI_GATEWAY_API_KEY` / `RIKYU_API_KEY` | At least one | LLM calls (query generation, paper extraction, hypothesis generation, paper writing) |
 | `GH_PERSONAL_ACCESS_TOKEN` | For repository / experiment / publication tools | GitHub API access (`repo` + `workflow` scopes) |
 
 If a tool is called before its credential is configured, it returns an error pointing at this file.
+
+### OpenAI-compatible endpoints (Rikyu)
+
+RIKEN R-CCS's Rikyu API speaks the OpenAI API, and is reached with one credential:
+
+```json
+{
+  "RIKYU_API_KEY": "..."
+}
+```
+
+Address its models as `rikyu/<model>`, where `<model>` is an ID the endpoint itself reports:
+
+```bash
+curl -H "Authorization: Bearer $RIKYU_API_KEY" \
+  https://api.rikyu.r-ccs.riken.jp/v1/models
+```
+
+The base URL defaults to `https://api.rikyu.r-ccs.riken.jp/v1`; add `RIKYU_API_BASE` to the credentials file by hand to point at a different host. A future OpenAI-compatible endpoint would get its own provider name and key the same way (see the `RIKYU_*` wiring in `backend/src/airas/infra/llm_provider_resolver.py`), so a key always says which host it reaches and which project is billed.
+
+The same key reaches the coding agent. To use the endpoint from a local [opencode](https://opencode.ai), declare it as a custom provider in `~/.config/opencode/opencode.json` (the experiment repository ships the equivalent block in `.opencode/opencode.jsonc`, and its workflows pass the key through from repository secrets):
+
+```json
+{
+  "provider": {
+    "rikyu": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Rikyu (RIKEN R-CCS)",
+      "options": {
+        "baseURL": "https://api.rikyu.r-ccs.riken.jp/v1",
+        "apiKey": "{env:RIKYU_API_KEY}"
+      },
+      "models": {
+        "kimi-k3": { "name": "Kimi K3" }
+      }
+    }
+  }
+}
+```
+
+Register one entry under `models` per model ID you want to select, then run `opencode run --model rikyu/<model>` — the same name the node LLMs use. Coding-agent use requires the endpoint to serve tool calls (on vLLM, a tool-call parser must be enabled); a model that only handles plain completions still works for node LLM calls.
 
 ### 2. Register the server (Claude Code)
 

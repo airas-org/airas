@@ -5,7 +5,8 @@ such as Claude Code and Claude Desktop.
 
 Credentials are read from ~/.airas/credentials.json (see credentials.py):
 - LLM providers: OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY /
-  OPENROUTER_API_KEY / VERCEL_AI_GATEWAY_API_KEY (at least one)
+  OPENROUTER_API_KEY / VERCEL_AI_GATEWAY_API_KEY / RIKYU_API_KEY
+  (at least one)
 - GitHub (repository/experiment tools): GH_PERSONAL_ACCESS_TOKEN
 
 The file is re-read on every tool call, so keys can be added or rotated
@@ -73,7 +74,11 @@ from airas.infra.litellm_client import (
 from airas.infra.litellm_client import (
     LiteLLMClient,
 )
-from airas.infra.llm_provider_resolver import detect_available_providers
+from airas.infra.llm_provider_resolver import (
+    RIKYU_BASE_URL_ENV,
+    RIKYU_DEFAULT_BASE_URL,
+    detect_available_providers,
+)
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.infra.semantic_scholar_client import SemanticScholarClient
@@ -226,10 +231,12 @@ def _litellm_client() -> LiteLLMClient:
 
 
 # airas's LLMProvider enum value -> litellm's ``custom_llm_provider`` name.
-# Only GOOGLE diverges (airas "google" vs litellm "gemini"); every other
-# provider's enum value already matches litellm, so we fall back to it.
+# Only GOOGLE and RIKYU diverge (airas "google" vs litellm "gemini"; "rikyu"
+# is an airas name for litellm's generic OpenAI-compatible route); every
+# other provider's enum value already matches litellm, so we fall back to it.
 _LITELLM_PROVIDER_NAME: dict[LLMProvider, str] = {
     LLMProvider.GOOGLE: "gemini",
+    LLMProvider.RIKYU: "hosted_vllm",
 }
 
 
@@ -286,13 +293,29 @@ def get_available_llms(include_models: bool = False) -> dict[str, Any]:
             "missing_env_vars": [name for name in required if not os.getenv(name)],
         }
         if configured and include_models:
-            litellm_name = _LITELLM_PROVIDER_NAME.get(provider, provider.value)
-            try:
-                models = sorted(LiteLLMClient.get_valid_models(provider=litellm_name))
-                entry["model_count"] = len(models)
-                entry["models"] = models
-            except Exception as exc:  # never let catalog lookup fail the tool
-                entry["models_error"] = str(exc)
+            if provider is LLMProvider.RIKYU:
+                # litellm's catalog has no entries for this endpoint, so an
+                # empty list here would read as "configured but no models".
+                # Refuse explicitly and point at the endpoint's own listing.
+                base_url = (
+                    os.getenv(RIKYU_BASE_URL_ENV, "").strip() or RIKYU_DEFAULT_BASE_URL
+                ).rstrip("/")
+                entry["models_error"] = (
+                    f"litellm's catalog cannot list '{provider.value}' models. "
+                    f"Query the endpoint itself — GET {base_url}/models with "
+                    "'Authorization: Bearer $RIKYU_API_KEY' — and pass a "
+                    f"model as '{provider.value}/<model ID>'."
+                )
+            else:
+                litellm_name = _LITELLM_PROVIDER_NAME.get(provider, provider.value)
+                try:
+                    models = sorted(
+                        LiteLLMClient.get_valid_models(provider=litellm_name)
+                    )
+                    entry["model_count"] = len(models)
+                    entry["models"] = models
+                except Exception as exc:  # never let catalog lookup fail the tool
+                    entry["models_error"] = str(exc)
         providers.append(entry)
 
     return {
