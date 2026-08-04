@@ -180,10 +180,14 @@ path = f"v1/byo-computes/{byo_uuid}/credential/status"
         # omitting the field entirely.
         if inputs_from_runs:
             body["inputs_from_runs"] = inputs_from_runs
-        if time_limit is not None:
-            body["time_limit"] = time_limit
-        if resource_count is not None:
-            body["resource_count"] = resource_count
+if (time_limit is not None or resource_count is not None) and not (
+    compute_id and compute_id.startswith("byo:")
+):
+    raise ValueError('time_limit/resource_count require compute_id="byo:<uuid>"')
+if time_limit is not None:
+    body["time_limit"] = time_limit
+if resource_count is not None:
+    body["resource_count"] = resource_count
         resp = await self.apost(path=path, json=body, timeout=60.0)
         raise_for_status(resp, path=path)
         return self._parser.parse(resp, as_="json")
