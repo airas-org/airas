@@ -5,8 +5,40 @@
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 
 from airas.core.types.llm_provider import LLMProvider
+
+
+# ---------------------------------------------------------------------------
+# OpenAI-compatible endpoints
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class OpenAICompatibleEndpoint:
+    """An OpenAI-compatible API that airas addresses under its own name.
+
+    Each endpoint gets a named provider rather than sharing one generic pair
+    of env vars: a generic pair is effectively a singleton and collides as
+    soon as a second such endpoint exists, and a credential named
+    ``RIKYU_API_KEY`` says which host it reaches and which project is billed
+    — which a generic name cannot. The implementation stays generic: adding
+    the next endpoint is one entry here plus its prefix below.
+    """
+
+    key_env: str
+    base_url_env: str
+    # Used when *base_url_env* is unset, so only the key has to be configured.
+    default_base_url: str
+
+
+OPENAI_COMPATIBLE_ENDPOINTS: dict[LLMProvider, OpenAICompatibleEndpoint] = {
+    LLMProvider.RIKYU: OpenAICompatibleEndpoint(
+        key_env="RIKYU_API_KEY",
+        base_url_env="RIKYU_API_BASE",
+        default_base_url="https://api.rikyu.r-ccs.riken.jp/v1",
+    ),
+}
+
 
 # ---------------------------------------------------------------------------
 # Provider -> primary API-key env-var name
@@ -18,6 +50,7 @@ PROVIDER_PRIMARY_KEY: dict[LLMProvider, str] = {
     LLMProvider.OPENROUTER: "OPENROUTER_API_KEY",
     LLMProvider.AZURE: "AZURE_API_KEY",
     LLMProvider.VERCEL_AI_GATEWAY: "VERCEL_AI_GATEWAY_API_KEY",
+    LLMProvider.RIKYU: "RIKYU_API_KEY",
 }
 
 
@@ -35,6 +68,11 @@ _MODEL_PREFIX_TO_PROVIDER: list[tuple[str, LLMProvider]] = [
     # segment (e.g. "vercel_ai_gateway/anthropic/claude-sonnet-4"), so this
     # entry must be matched before the vendor-prefix rules further down.
     ("vercel_ai_gateway/", LLMProvider.VERCEL_AI_GATEWAY),
+    # OpenAI-compatible endpoints (see OPENAI_COMPATIBLE_ENDPOINTS). What
+    # follows the prefix is the model ID the endpoint itself reports via
+    # GET /v1/models, so it can be a bare name ("rikyu/kimi-k3") or carry a
+    # vendor path; either way this must win over the vendor rules below.
+    ("rikyu/", LLMProvider.RIKYU),
     # Bare model names (no prefix)
     ("gemini-", LLMProvider.GOOGLE),
     ("gemini-embedding-", LLMProvider.GOOGLE),

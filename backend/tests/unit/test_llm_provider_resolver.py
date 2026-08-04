@@ -3,6 +3,7 @@ import pytest
 from airas.core.types.llm_provider import LLMProvider
 from airas.infra.litellm_client import PROVIDER_REQUIRED_ENV_VARS
 from airas.infra.llm_provider_resolver import (
+    OPENAI_COMPATIBLE_ENDPOINTS,
     PROVIDER_PRIMARY_KEY,
     detect_available_providers,
     infer_provider,
@@ -19,6 +20,11 @@ from airas.infra.llm_provider_resolver import (
         ("vercel_ai_gateway/openai/gpt-5", LLMProvider.VERCEL_AI_GATEWAY),
         ("vercel_ai_gateway/google/gemini-2.5-pro", LLMProvider.VERCEL_AI_GATEWAY),
         ("vercel_ai_gateway/moonshotai/kimi-k2", LLMProvider.VERCEL_AI_GATEWAY),
+        # OpenAI-compatible endpoints: what follows the prefix is the
+        # endpoint's own model ID, which may itself look like a vendor path.
+        ("rikyu/kimi-k3", LLMProvider.RIKYU),
+        ("rikyu/moonshotai/kimi-k3", LLMProvider.RIKYU),
+        ("rikyu/gpt-oss-120b", LLMProvider.RIKYU),
         # Other explicit litellm-style prefixes stay unaffected.
         ("gemini/gemini-2.5-pro", LLMProvider.GOOGLE),
         ("openrouter/openai/gpt-5-nano", LLMProvider.OPENROUTER),
@@ -48,6 +54,28 @@ def test_vercel_gateway_is_available_when_its_key_is_set() -> None:
         PROVIDER_REQUIRED_ENV_VARS, {"VERCEL_AI_GATEWAY_API_KEY": "vck-test"}
     )
     assert available == {LLMProvider.VERCEL_AI_GATEWAY}
+
+
+def test_openai_compatible_endpoint_needs_only_its_key() -> None:
+    """The base URL has a default, so the key alone configures the endpoint."""
+    available = detect_available_providers(
+        PROVIDER_REQUIRED_ENV_VARS, {"RIKYU_API_KEY": "sk-test"}
+    )
+    assert available == {LLMProvider.RIKYU}
+
+
+def test_openai_compatible_endpoints_are_wired_consistently() -> None:
+    """Each endpoint's key must be the one the rest of the code looks up.
+
+    The table, the availability check and the dashboard's key resolution are
+    three separate maps; a drift between them routes requests to an endpoint
+    with no credential.
+    """
+    for provider, endpoint in OPENAI_COMPATIBLE_ENDPOINTS.items():
+        assert PROVIDER_PRIMARY_KEY[provider] == endpoint.key_env
+        assert PROVIDER_REQUIRED_ENV_VARS[provider] == [endpoint.key_env]
+        assert infer_provider(f"{provider.value}/some-model") is provider
+        assert endpoint.default_base_url.startswith("https://")
 
 
 def test_primary_keys_are_declared_as_required() -> None:

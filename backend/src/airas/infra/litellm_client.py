@@ -20,7 +20,11 @@ import litellm
 from litellm import get_valid_models
 
 from airas.core.types.llm_provider import LLMProvider
-from airas.infra.llm_provider_resolver import detect_available_providers
+from airas.infra.llm_provider_resolver import (
+    OPENAI_COMPATIBLE_ENDPOINTS,
+    detect_available_providers,
+    infer_provider,
+)
 from airas.infra.retry_policy import make_llm_retry_policy
 
 logger = logging.getLogger(__name__)
@@ -36,7 +40,17 @@ PROVIDER_REQUIRED_ENV_VARS: dict[LLMProvider, list[str]] = {
     LLMProvider.BEDROCK: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"],
     LLMProvider.AZURE: ["AZURE_API_KEY", "AZURE_API_BASE"],
     LLMProvider.VERCEL_AI_GATEWAY: ["VERCEL_AI_GATEWAY_API_KEY"],
+    # Only the key: the base URL has a default, so an endpoint counts as
+    # configured once its key is present (see OPENAI_COMPATIBLE_ENDPOINTS).
+    LLMProvider.RIKYU: ["RIKYU_API_KEY"],
 }
+
+# litellm has no provider per institutional endpoint, so an airas name like
+# "rikyu/kimi-k3" is rewritten onto litellm's generic OpenAI-compatible route
+# and paired with an explicit api_base. `openai/` is deliberately not used:
+# with no key passed it silently falls back to OPENAI_API_KEY, which would
+# send one vendor's credential to another's host.
+LITELLM_OPENAI_COMPATIBLE_PREFIX = "hosted_vllm/"
 
 # TODO: Define LLMParams
 
@@ -56,6 +70,35 @@ class LiteLLMClient:
         litellm.drop_params = True
         if logger.isEnabledFor(logging.DEBUG):
             os.environ["LITELLM_LOG"] = "DEBUG"
+
+    def _resolve_call_target(self, llm_name: str) -> tuple[str, dict[str, Any]]:
+        """Map an airas model name to litellm's model name + connection kwargs.
+
+        Every model litellm already knows how to route passes through
+        untouched. Models on an OpenAI-compatible endpoint carry a provider
+        name litellm has never heard of, so the route and the host have to be
+        supplied here.
+        """
+        api_key = self._get_api_key(llm_name)
+        provider = infer_provider(llm_name)
+        endpoint = (
+            OPENAI_COMPATIBLE_ENDPOINTS.get(provider) if provider is not None else None
+        )
+        if endpoint is None:
+            return llm_name, {"api_key": api_key}
+
+        assert provider is not None  # narrowed by the lookup above
+        model_id = llm_name.removeprefix(f"{provider.value}/")
+        api_base = (
+            os.getenv(endpoint.base_url_env, "").strip() or endpoint.default_base_url
+        )
+        return LITELLM_OPENAI_COMPATIBLE_PREFIX + model_id, {
+            # Self-hosted callers build the client without a key resolver, so
+            # read the env directly rather than sending an unauthenticated
+            # request that the endpoint would reject.
+            "api_key": api_key or os.getenv(endpoint.key_env) or None,
+            "api_base": api_base.rstrip("/"),
+        }
 
     @_LLM_RETRY
     async def generate(
@@ -86,13 +129,13 @@ class LiteLLMClient:
                 "Proceeding without max_tokens limit."
             )
 
-        api_key = self._get_api_key(llm_name)
+        model, connection = self._resolve_call_target(llm_name)
 
         try:
             response = await litellm.acompletion(
-                model=llm_name,
+                model=model,
                 messages=messages,
-                api_key=api_key,
+                **connection,
                 **litellm_kwargs,
             )  # TODO: timeoutを延長する
             content = response.choices[0].message.content
@@ -172,14 +215,14 @@ class LiteLLMClient:
                 "Proceeding without max_tokens limit."
             )
 
-        api_key = self._get_api_key(llm_name)
+        model, connection = self._resolve_call_target(llm_name)
 
         try:
             response = await litellm.acompletion(
-                model=llm_name,
+                model=model,
                 messages=messages,
                 response_format=data_model,
-                api_key=api_key,
+                **connection,
                 **litellm_kwargs,
             )  # TODO: timeoutを延長する
 
@@ -221,11 +264,11 @@ class LiteLLMClient:
                 f"Failed to get model info for {model}: {e}. Proceeding without model metadata."
             )
 
-        api_key = self._get_api_key(model)
+        litellm_model, connection = self._resolve_call_target(model)
 
         try:
             response = await litellm.aembedding(
-                model=model, input=texts, api_key=api_key
+                model=litellm_model, input=texts, **connection
             )
             data = getattr(response, "data", None)
             if not data:
@@ -291,6 +334,9 @@ if __name__ == "__main__":
         "openrouter",
         "azure",
         "vercel_ai_gateway",
+        # litellm's route for OpenAI-compatible endpoints; airas addresses
+        # those per endpoint, e.g. "rikyu/<model>".
+        "hosted_vllm",
     ]
 
     for provider_name in provider_names:

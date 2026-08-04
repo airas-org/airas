@@ -5,7 +5,8 @@ such as Claude Code and Claude Desktop.
 
 Credentials are read from ~/.airas/credentials.json (see credentials.py):
 - LLM providers: OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY /
-  OPENROUTER_API_KEY / VERCEL_AI_GATEWAY_API_KEY (at least one)
+  OPENROUTER_API_KEY / VERCEL_AI_GATEWAY_API_KEY / RIKYU_API_KEY
+  (at least one)
 - GitHub (repository/experiment tools): GH_PERSONAL_ACCESS_TOKEN
 
 The file is re-read on every tool call, so keys can be added or rotated
@@ -73,7 +74,10 @@ from airas.infra.litellm_client import (
 from airas.infra.litellm_client import (
     LiteLLMClient,
 )
-from airas.infra.llm_provider_resolver import detect_available_providers
+from airas.infra.llm_provider_resolver import (
+    OPENAI_COMPATIBLE_ENDPOINTS,
+    detect_available_providers,
+)
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.infra.semantic_scholar_client import SemanticScholarClient
@@ -226,10 +230,13 @@ def _litellm_client() -> LiteLLMClient:
 
 
 # airas's LLMProvider enum value -> litellm's ``custom_llm_provider`` name.
-# Only GOOGLE diverges (airas "google" vs litellm "gemini"); every other
-# provider's enum value already matches litellm, so we fall back to it.
+# Only GOOGLE and the OpenAI-compatible endpoints diverge (airas "google" vs
+# litellm "gemini"; endpoints such as "rikyu" are airas names for litellm's
+# generic OpenAI-compatible route); every other provider's enum value already
+# matches litellm, so we fall back to it.
 _LITELLM_PROVIDER_NAME: dict[LLMProvider, str] = {
     LLMProvider.GOOGLE: "gemini",
+    **{provider: "hosted_vllm" for provider in OPENAI_COMPATIBLE_ENDPOINTS},
 }
 
 
