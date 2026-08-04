@@ -90,8 +90,17 @@ async def collect_run_outputs(
     semaphore = asyncio.Semaphore(MAX_CONCURRENT_DOWNLOADS)
 
     async def download(item: dict) -> tuple[str, bytes]:
+        # The path is guaranteed by the filter above; the URL is not, and a
+        # bare KeyError from inside the gather would not say which file.
+        path = item["path"]
+        url = item.get("download_url")
+        if not url:
+            raise ValueError(
+                f"AIXS listed {path} for run {execution_id} without a "
+                "download_url, so it cannot be imported."
+            )
         async with semaphore:
-            return item["path"], await aixs_client.adownload(item["download_url"])
+            return path, await aixs_client.adownload(url)
 
     logger.info(
         f"Downloading {len(results)} output files ({total_bytes} bytes) "

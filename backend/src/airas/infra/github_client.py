@@ -60,13 +60,18 @@ MAX_BLOB_BYTES = 40 * 1024 * 1024
 MAX_CONCURRENT_BLOBS = 5
 
 
-def _blob_payload(content: str | bytes) -> tuple[str, str]:
-    """Return the (content, encoding) pair the GitHub blob API expects."""
+def _blob_payload(file_path: str, content: str | bytes) -> tuple[str, str]:
+    """Return the (content, encoding) pair the GitHub blob API expects.
+
+    `file_path` only names the file in the size error — a batch commit is
+    otherwise left saying that something was too large.
+    """
     # https://docs.github.com/en/rest/git/blobs#create-a-blob
     raw = content.encode("utf-8") if isinstance(content, str) else content
     if len(raw) > MAX_BLOB_BYTES:
         raise GithubClientFatalError(
-            f"Blob is too large to commit: {len(raw)} bytes (limit {MAX_BLOB_BYTES})"
+            f"Blob is too large to commit: {file_path} is {len(raw)} bytes "
+            f"(limit {MAX_BLOB_BYTES})"
         )
     if isinstance(content, bytes):
         return base64.b64encode(content).decode("ascii"), "base64"
@@ -625,7 +630,7 @@ class GithubClient(BaseHTTPClient):
             # Create blobs for all files
             tree_entries = []
             for file_path, content in files.items():
-                blob_content, encoding = _blob_payload(content)
+                blob_content, encoding = _blob_payload(file_path, content)
                 blob_sha = self.create_blob(
                     github_owner, repository_name, blob_content, encoding=encoding
                 )
@@ -1285,15 +1290,15 @@ class GithubClient(BaseHTTPClient):
             items = list(files.items())
             semaphore = asyncio.Semaphore(MAX_CONCURRENT_BLOBS)
 
-            async def create_blob(content: str | bytes) -> str:
-                blob_content, encoding = _blob_payload(content)
+            async def create_blob(file_path: str, content: str | bytes) -> str:
+                blob_content, encoding = _blob_payload(file_path, content)
                 async with semaphore:
                     return await self._acreate_blob(
                         github_owner, repository_name, blob_content, encoding=encoding
                     )
 
             blob_shas = await asyncio.gather(
-                *(create_blob(content) for _, content in items)
+                *(create_blob(file_path, content) for file_path, content in items)
             )
 
             # Create tree entries

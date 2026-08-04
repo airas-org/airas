@@ -264,11 +264,26 @@ async def test_acommit_pairs_paths_with_their_own_blob(
 
 
 async def test_acommit_rejects_oversized_blob(async_client: GithubClient):
-    with pytest.raises(GithubClientFatalError, match="too large"):
+    # The error must name the offending file, not just the batch.
+    with pytest.raises(GithubClientFatalError, match=r"too large.*results/big\.bin"):
         await async_client.acommit_multiple_files(
             OWNER,
             REPO,
             BRANCH,
-            files={"big.bin": b"\x00" * (MAX_BLOB_BYTES + 1)},
+            files={
+                "notes.md": "small\n",
+                ".research/results/big.bin": b"\x00" * (MAX_BLOB_BYTES + 1),
+            },
+            commit_message="Too big",
+        )
+
+
+def test_commit_rejects_oversized_blob(sync_client: GithubClient):
+    with pytest.raises(GithubClientFatalError, match=r"too large.*results/big\.bin"):
+        sync_client.commit_multiple_files(
+            OWNER,
+            REPO,
+            BRANCH,
+            files={".research/results/big.bin": b"\x00" * (MAX_BLOB_BYTES + 1)},
             commit_message="Too big",
         )

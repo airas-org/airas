@@ -146,6 +146,16 @@ async def test_collect_fails_when_no_results_files():
         await collect_run_outputs(client, "run-uuid")
 
 
+async def test_collect_fails_when_download_url_missing():
+    entry = _output(FIGURE)
+    del entry["download_url"]
+    client = FakeAixsClient(outputs={"outputs": [entry], "truncated": False})
+
+    # Names the file rather than surfacing a bare KeyError from the gather.
+    with pytest.raises(ValueError, match=r"figure\.pdf.*download_url"):
+        await collect_run_outputs(client, "run-uuid")
+
+
 async def test_collect_fails_when_batch_too_large():
     client = FakeAixsClient(
         outputs={
