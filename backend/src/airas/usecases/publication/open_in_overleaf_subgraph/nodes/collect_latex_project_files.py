@@ -3,6 +3,7 @@ import logging
 import zipfile
 from pathlib import Path
 
+from airas.core.research_paths import LEGACY_DIAGRAM_DIR, RESULTS_DIR
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.infra.github_client import GithubClient
@@ -18,7 +19,7 @@ _EXCLUDED_FILES = {"template.tex", "template.pdf"}
 # directory beforehand. Generated LaTeX references figures as images/<path>.
 # The legacy .research/diagrams/ entry is scheduled for removal in the next
 # major release (see issue #913).
-_FIGURE_SOURCE_DIRS = (".research/results/", ".research/diagrams/")
+_FIGURE_SOURCE_DIRS = (f"{RESULTS_DIR}/", f"{LEGACY_DIAGRAM_DIR}/")
 
 
 def _is_safe_local_file(path: Path, containing_dir: Path) -> bool:

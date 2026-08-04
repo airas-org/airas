@@ -92,6 +92,9 @@ from airas.usecases.executors.dispatch_experiment_on_static_runner_subgraph.disp
 from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment_results_subgraph import (
     FetchExperimentResultsSubgraph,
 )
+from airas.usecases.executors.import_run_outputs_subgraph.import_run_outputs_subgraph import (
+    ImportRunOutputsSubgraph,
+)
 from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignLLMMapping,
     GenerateExperimentalDesignSubgraph,
@@ -794,7 +797,7 @@ async def dispatch_experiment(
     repository_name: str,
     branch_name: str,
     run_id: str,
-    workflow: Literal["sanity_check", "main"] = "sanity_check",
+    run_stage: Literal["sanity", "pilot", "full"] = "sanity",
     runner_label: list[str] | None = None,
     backend: Literal["github_actions", "aixs"] = "github_actions",
     compute_type: str = "gpu-a10",
@@ -805,9 +808,11 @@ async def dispatch_experiment(
 ) -> dict[str, Any]:
     """Start an experiment run (asynchronous). The code must already be pushed.
 
-    `workflow` selects the stage: "sanity_check" for a quick correctness run,
-    "main" for the full experiment. `run_id` identifies the experiment run
-    defined by the experiment code (one config/run/{run_id}.yaml).
+    `run_stage` selects the stage, in increasing scale: "sanity" for a quick
+    correctness run, "pilot" for a small preliminary one, "full" for the real
+    experiment. `run_id` identifies the experiment run defined by the
+    experiment code (one config/run/{run_id}.yaml). Pass the same stage to
+    `import_run_outputs` to collect an AIXS run's results afterwards.
 
     `backend` selects where the run executes:
     - "github_actions" (default): dispatches a workflow in the experiment
@@ -820,7 +825,10 @@ async def dispatch_experiment(
       `list_computes`; it defaults to AIXS_COMPUTE_ID, and without either the
       run goes to AIXS-managed compute. `compute_type` sets the resource
       request in both cases (e.g. "cpu-general", "gpu-a10"). The W&B API key
-      must be registered as an env var on the AIXS side.
+      must be registered as an env var on the AIXS side. AIXS keeps the run's
+      results on its own side, so call `import_run_outputs` once the run
+      finishes — before `fetch_experiment_results`, which reads the
+      repository.
 
     `inputs_from_runs`, `time_limit` and `resource_count` apply to "aixs"
     only. `inputs_from_runs` takes `execution_id`s of earlier completed runs
@@ -835,8 +843,11 @@ async def dispatch_experiment(
     passed directly; for "github_actions" the workflow-dispatch API returns
     no id, so discover the run id with `get_workflow_runs` first.
     """
+    # Both backends record the stage: AIXS in the run's experiment id, GitHub
+    # Actions as run_experiment.yml's `mode` input.
+    stage = RunStage(run_stage)
+
     if backend == "aixs":
-        run_stage = RunStage.SANITY if workflow == "sanity_check" else RunStage.FULL
         # Resolve the client first: it is what loads the stored credentials
         # into the environment that AIXS_COMPUTE_ID is read from.
         client = _aixs_client()
@@ -845,7 +856,7 @@ async def dispatch_experiment(
             await DispatchExperimentOnAixsSubgraph(
                 aixs_client=client,
                 compute_id=resolved_compute_id,
-                run_stage=run_stage,
+                run_stage=stage,
                 compute_type=compute_type,
                 inputs_from_runs=inputs_from_runs,
                 time_limit=time_limit,
@@ -871,16 +882,11 @@ async def dispatch_experiment(
             "execution_url": aixs_result["aixs_run_url"],
         }
 
-    workflow_file = (
-        "run_sanity_check.yml"
-        if workflow == "sanity_check"
-        else "run_main_experiment.yml"
-    )
     result = (
         await DispatchExperimentOnStaticRunnerSubgraph(
             github_client=_github_client(),
-            workflow_file=workflow_file,
             runner_label=runner_label or ["ubuntu-latest"],
+            run_stage=stage,
         )
         .build_graph()
         .ainvoke(
@@ -1040,6 +1046,87 @@ async def fetch_experiment_results(
         )
     )
     return _dump(result["experimental_results"])
+
+
+# Stages that re-run the experiment and so write the file names the full run
+# owns. A visualization run is additive: it renders figures from an earlier
+# run's outputs rather than producing its own metrics.
+_PROVISIONAL_RUN_STAGES = frozenset({RunStage.SANITY, RunStage.PILOT})
+
+
+@mcp.tool()
+async def import_run_outputs(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    run_id: str,
+    run_stage: Literal["sanity", "pilot", "full", "visualization"] = "full",
+    execution_id: str | None = None,
+    confirm_overwrite: bool = False,
+) -> dict[str, Any]:
+    """Copy an AIXS run's result files into the experiment repository.
+
+    Only needed for `backend="aixs"`: AIXS pulls the repository to run it but
+    never pushes back, so its results and figures stay in AIXS's storage.
+    This commits everything the run wrote under `.research/results/` to
+    `branch_name` at the same paths, after which `fetch_experiment_results`,
+    `analyze_experiment` and `compile_latex` work as they do for
+    "github_actions". A "github_actions" run needs none of this.
+
+    Call it once the run has finished — `get_experiment_run_status` must
+    report a terminal status, since outputs are collected at the end.
+
+    `run_id` and `run_stage` identify which run to import, and are the same
+    values `dispatch_experiment` was called with.
+
+    A repository path holds one run's results regardless of stage, so
+    importing a provisional stage ("sanity" or "pilot") replaces the full
+    run's results at the paths they share, and requires
+    `confirm_overwrite=True`. "full" is therefore the default, and
+    "visualization" needs no confirmation because such a run adds figures
+    derived from an earlier run rather than re-running the experiment.
+
+    Pass `execution_id` (the id `dispatch_experiment` returned) to import one
+    specific run instead — necessary for older runs, which age out of the
+    lookup.
+
+    File contents are downloaded and committed inside airas and are never
+    returned. Requires AIXS_API_KEY and GH_PERSONAL_ACCESS_TOKEN.
+    """
+    stage = RunStage(run_stage)
+    if stage in _PROVISIONAL_RUN_STAGES and not confirm_overwrite:
+        raise ValueError(
+            f"A {stage.value} run re-runs the experiment and writes the same "
+            f"file names as the full run of '{run_id}', so importing it would "
+            "replace the full run's results at those paths. Pass "
+            "confirm_overwrite=True to do it anyway."
+        )
+
+    result = (
+        await ImportRunOutputsSubgraph(
+            aixs_client=_aixs_client(),
+            github_client=_github_client(),
+            run_stage=stage,
+            execution_id=execution_id,
+        )
+        .build_graph()
+        .ainvoke(
+            {
+                "github_config": GitHubConfig(
+                    github_owner=github_owner,
+                    repository_name=repository_name,
+                    branch_name=branch_name,
+                ),
+                "run_id": run_id,
+            }
+        )
+    )
+    return {
+        "imported": result["imported"],
+        "execution_id": result["execution_id"],
+        "imported_paths": result["imported_paths"],
+        "total_bytes": result["total_bytes"],
+    }
 
 
 @mcp.tool()

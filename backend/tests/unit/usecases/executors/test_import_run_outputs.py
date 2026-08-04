@@ -1,0 +1,290 @@
+"""Guards around importing AIXS run outputs into the repository."""
+
+import base64
+import json
+
+import httpx
+import pytest
+
+from airas.core.types.experiment_history import RunStage
+from airas.core.types.github import GitHubConfig
+from airas.infra.github_client import GithubClient
+from airas.usecases.executors.import_run_outputs_subgraph.import_run_outputs_subgraph import (
+    ImportRunOutputsSubgraph,
+)
+from airas.usecases.executors.import_run_outputs_subgraph.nodes.collect_run_outputs import (
+    MAX_TOTAL_BYTES,
+    _is_importable,
+    collect_run_outputs,
+)
+from airas.usecases.executors.import_run_outputs_subgraph.nodes.resolve_execution_id import (
+    resolve_execution_id,
+)
+
+GITHUB_CONFIG = GitHubConfig(
+    github_owner="airas-org",
+    repository_name="experiment-repo",
+    branch_name="main",
+)
+
+FIGURE = ".research/results/run-1/figure.pdf"
+METRICS = ".research/results/run-1/metrics.json"
+
+
+class FakeAixsClient:
+    """Stands in for AixsClient; records what was downloaded."""
+
+    def __init__(self, outputs: dict | None = None, runs: list | None = None):
+        self._outputs = outputs or {}
+        self._runs = runs or []
+        self.downloaded: list[str] = []
+
+    async def aget_run_outputs(self, run_id: str) -> dict:
+        return self._outputs
+
+    async def adownload(self, url: str) -> bytes:
+        self.downloaded.append(url)
+        return f"content-of:{url}".encode()
+
+    async def aregister_repository(self, git_url: str) -> dict:
+        return {"id": "repo-uuid"}
+
+    async def alist_runs(self, repository_id: str) -> list:
+        return self._runs
+
+
+def _output(path: str, size_bytes: int = 10) -> dict:
+    return {
+        "path": path,
+        "size_bytes": size_bytes,
+        "last_modified": "2026-08-04T00:00:00Z",
+        "download_url": f"https://s3.example/{path}?sig=abc",
+    }
+
+
+# --------------------------------------------------
+# Path filtering — output paths come from untrusted experiment code
+# --------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        METRICS,
+        FIGURE,
+        ".research/results/metrics.json",
+        ".research/results/a/b/c/deep.png",
+    ],
+)
+def test_importable_paths(path: str):
+    assert _is_importable(path) is True
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "",
+        "wandb/run-1/output.log",  # outside the results directory
+        ".research/latex/main.tex",  # a different part of the repo
+        ".research/results/../../etc/passwd",  # escapes via ..
+        "/etc/passwd",  # absolute
+        "/.research/results/x.png",
+        "..",
+        ".research/results/",  # normpath strips the trailing slash
+        r".research\results\x.png",  # backslash separators
+    ],
+)
+def test_rejected_paths(path: str):
+    assert _is_importable(path) is False
+
+
+# --------------------------------------------------
+# collect_run_outputs
+# --------------------------------------------------
+
+
+async def test_collect_downloads_only_results_files():
+    client = FakeAixsClient(
+        outputs={
+            "outputs": [
+                _output(METRICS),
+                _output(FIGURE),
+                _output("wandb/debug.log"),
+                _output("checkpoints/model.pt"),
+            ],
+            "truncated": False,
+        }
+    )
+
+    collected = await collect_run_outputs(client, "run-uuid")
+
+    assert set(collected) == {METRICS, FIGURE}
+    assert len(client.downloaded) == 2
+    assert (
+        collected[FIGURE] == f"content-of:https://s3.example/{FIGURE}?sig=abc".encode()
+    )
+
+
+async def test_collect_fails_when_listing_truncated():
+    client = FakeAixsClient(
+        outputs={"outputs": [_output(METRICS)], "truncated": True},
+    )
+
+    with pytest.raises(ValueError, match="truncated"):
+        await collect_run_outputs(client, "run-uuid")
+
+    # Nothing is imported from a partial listing.
+    assert client.downloaded == []
+
+
+async def test_collect_fails_when_no_results_files():
+    client = FakeAixsClient(
+        outputs={"outputs": [_output("wandb/debug.log")], "truncated": False},
+    )
+
+    with pytest.raises(ValueError, match="no files under"):
+        await collect_run_outputs(client, "run-uuid")
+
+
+async def test_collect_fails_when_download_url_missing():
+    entry = _output(FIGURE)
+    del entry["download_url"]
+    client = FakeAixsClient(outputs={"outputs": [entry], "truncated": False})
+
+    # Names the file rather than surfacing a bare KeyError from the gather.
+    with pytest.raises(ValueError, match=r"figure\.pdf.*download_url"):
+        await collect_run_outputs(client, "run-uuid")
+
+
+async def test_collect_fails_when_batch_too_large():
+    client = FakeAixsClient(
+        outputs={
+            "outputs": [_output(FIGURE, size_bytes=MAX_TOTAL_BYTES + 1)],
+            "truncated": False,
+        }
+    )
+
+    with pytest.raises(ValueError, match="import limit"):
+        await collect_run_outputs(client, "run-uuid")
+
+
+# --------------------------------------------------
+# resolve_execution_id
+# --------------------------------------------------
+
+
+def _run(experiment_id: str, run_id: str, status: str = "completed") -> dict:
+    return {"experiment_id": experiment_id, "run_id": run_id, "status": status}
+
+
+async def test_resolve_picks_newest_completed_run_for_the_mode():
+    client = FakeAixsClient(
+        runs=[
+            # Newest first, as AIXS lists them.
+            _run("run_1_full", "newest", status="running"),
+            _run("run_1_full", "wanted"),
+            _run("run_1_full", "older"),
+            _run("run_1_sanity", "sanity-run"),
+        ]
+    )
+
+    execution_id = await resolve_execution_id(client, GITHUB_CONFIG, "run-1", "full")
+
+    assert execution_id == "wanted"
+
+
+async def test_resolve_does_not_cross_modes():
+    client = FakeAixsClient(runs=[_run("run_1_sanity", "sanity-run")])
+
+    with pytest.raises(ValueError, match="run_1_full"):
+        await resolve_execution_id(client, GITHUB_CONFIG, "run-1", "full")
+
+
+async def test_resolve_error_points_at_execution_id():
+    client = FakeAixsClient(runs=[])
+
+    with pytest.raises(ValueError, match="execution_id"):
+        await resolve_execution_id(client, GITHUB_CONFIG, "run-1", "full")
+
+
+# --------------------------------------------------
+# Whole subgraph
+# --------------------------------------------------
+
+
+def _github_client_capturing(blobs: list[dict]) -> GithubClient:
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if request.method == "GET" and "/branches/" in path:
+            return httpx.Response(
+                200,
+                json={
+                    "commit": {"sha": "c" * 40, "commit": {"tree": {"sha": "t" * 40}}}
+                },
+            )
+        if path.endswith("/git/blobs"):
+            blobs.append(json.loads(request.content))
+            return httpx.Response(201, json={"sha": f"blob{len(blobs)}"})
+        if path.endswith("/git/trees"):
+            return httpx.Response(201, json={"sha": "n" * 40})
+        if path.endswith("/git/commits"):
+            return httpx.Response(201, json={"sha": "d" * 40})
+        if "/git/refs/" in path:
+            return httpx.Response(200, json={})
+        raise AssertionError(f"Unexpected request: {request.method} {path}")
+
+    return GithubClient(
+        github_token="test-token",
+        async_session=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+    )
+
+
+async def test_subgraph_commits_downloaded_outputs_as_binary():
+    aixs_client = FakeAixsClient(
+        outputs={
+            "outputs": [_output(METRICS), _output(FIGURE), _output("wandb/debug.log")],
+            "truncated": False,
+        },
+        runs=[_run("run_1_full", "aixs-run-uuid")],
+    )
+    blobs: list[dict] = []
+
+    result = await (
+        ImportRunOutputsSubgraph(
+            aixs_client=aixs_client,
+            github_client=_github_client_capturing(blobs),
+            run_stage=RunStage.FULL,
+        )
+        .build_graph()
+        .ainvoke({"github_config": GITHUB_CONFIG, "run_id": "run-1"})
+    )
+
+    assert result["imported"] is True
+    assert result["execution_id"] == "aixs-run-uuid"
+    assert result["imported_paths"] == sorted([METRICS, FIGURE])
+    assert result["total_bytes"] > 0
+
+    # Downloaded bytes reach GitHub base64-encoded, byte-for-byte.
+    assert len(blobs) == 2
+    assert all(blob["encoding"] == "base64" for blob in blobs)
+    committed = {base64.b64decode(blob["content"]) for blob in blobs}
+    assert f"content-of:https://s3.example/{FIGURE}?sig=abc".encode() in committed
+
+
+async def test_subgraph_uses_explicit_execution_id_without_lookup():
+    aixs_client = FakeAixsClient(
+        outputs={"outputs": [_output(METRICS)], "truncated": False},
+        runs=[],  # a lookup would fail
+    )
+
+    result = await (
+        ImportRunOutputsSubgraph(
+            aixs_client=aixs_client,
+            github_client=_github_client_capturing([]),
+            execution_id="explicit-run-uuid",
+        )
+        .build_graph()
+        .ainvoke({"github_config": GITHUB_CONFIG, "run_id": "run-1"})
+    )
+
+    assert result["execution_id"] == "explicit-run-uuid"

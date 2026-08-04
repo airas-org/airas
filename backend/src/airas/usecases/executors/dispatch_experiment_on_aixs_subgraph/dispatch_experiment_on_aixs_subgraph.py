@@ -6,6 +6,7 @@ from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
+from airas.core.research_paths import RESULTS_DIR
 from airas.core.types.experiment_history import RunStage
 from airas.core.types.github import GitHubConfig
 from airas.infra.aixs_client import AixsClient
@@ -13,8 +14,24 @@ from airas.infra.aixs_client import AixsClient
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# The CLI contract defined by airas-template's AGENTS.md.
-_ENTRY_POINT_TEMPLATE = "uv run python -u -m src.main run={run_id} results_dir=.research/results mode={mode}"
+# The CLI contract defined by airas-template's AGENTS.md. AIXS captures the
+# run's whole working directory, so outputs come back under RESULTS_DIR too
+# and can be copied into the repository as-is.
+ENTRY_POINT_TEMPLATE = (
+    "uv run python -u -m src.main run={run_id} "
+    f"results_dir={RESULTS_DIR} " + "mode={mode}"
+)
+
+
+def aixs_experiment_id(run_id: str, mode: str) -> str:
+    """Build the AIXS `experiment_id` for one run of an experiment.
+
+    Importing a run's outputs looks the run up by this value, so dispatch
+    and import must derive it identically — keep it defined here only.
+    Note it is not unique per run: re-dispatching the same run_id and mode
+    produces the same id.
+    """
+    return re.sub(r"[^a-z0-9_]", "_", f"{run_id}_{mode}".lower())
 
 
 def record_execution_time(f):
@@ -142,16 +159,16 @@ class DispatchExperimentOnAixsSubgraph:
 
         mode = self.run_stage.value
         analyzed_experiment = {
-            "id": re.sub(r"[^a-z0-9_]", "_", f"{run_id}_{mode}".lower()),
+            "id": aixs_experiment_id(run_id, mode),
             "title": f"{run_id} ({mode})",
             "description": (
                 f"AIRAS experiment run '{run_id}' in {mode} mode, following the "
                 "airas-template CLI contract."
             ),
-            "entry_point": _ENTRY_POINT_TEMPLATE.format(run_id=run_id, mode=mode),
+            "entry_point": ENTRY_POINT_TEMPLATE.format(run_id=run_id, mode=mode),
             "language": "Python",
             "inputs": "config/run/*.yaml (Hydra run configs)",
-            "outputs": ".research/results and W&B metrics",
+            "outputs": f"{RESULTS_DIR} and W&B metrics",
             "required_env_vars": self.required_env_vars,
         }
 
