@@ -12,8 +12,10 @@ class UnexpectedContentTypeError(RuntimeError): ...
 
 
 class ResponseParser:
+    # JSON is an object for most endpoints but an array for listings, so the
+    # caller's own annotation is what narrows it.
     @overload
-    def parse(self, response: Response, *, as_: Literal["json"]) -> dict: ...
+    def parse(self, response: Response, *, as_: Literal["json"]) -> Any: ...
     @overload
     def parse(self, response: Response, *, as_: Literal["text", "xml"]) -> str: ...
     @overload
@@ -36,7 +38,7 @@ class ResponseParser:
 
         raise ValueError(f"Unsupported 'as_' parameter: {as_!r}")
 
-    def _to_json(self, response: Response) -> dict:
+    def _to_json(self, response: Response) -> Any:
         if "application/json" not in response.headers.get("Content-Type", ""):
             raise UnexpectedContentTypeError("Expected JSON response")
         return response.json() if response.text.strip() else {}

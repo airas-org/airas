@@ -121,12 +121,14 @@ class AixsClient(BaseHTTPClient):
         observation but is rate-limited to protect the cluster's login node,
         and `cached` in the response says which you got.
         """
-if not compute_id.startswith("byo:"):
-    raise ValueError('compute_id must start with "byo:" (e.g. "byo:<uuid>")')
-byo_uuid = compute_id.removeprefix("byo:")
-if not byo_uuid or "/" in byo_uuid:
-    raise ValueError(f"Invalid BYO compute_id: {compute_id!r}")
-path = f"v1/byo-computes/{byo_uuid}/credential/status"
+        if not compute_id.startswith("byo:"):
+            raise ValueError('compute_id must start with "byo:" (e.g. "byo:<uuid>")')
+        byo_uuid = compute_id.removeprefix("byo:")
+
+        if not byo_uuid or "/" in byo_uuid:
+            raise ValueError(f"Invalid BYO compute_id: {compute_id!r}")
+
+        path = f"v1/byo-computes/{byo_uuid}/credential/status"
         resp = await self.aget(
             path=path,
             params={"refresh": "true"} if refresh else None,
@@ -136,6 +138,20 @@ path = f"v1/byo-computes/{byo_uuid}/credential/status"
         return self._parser.parse(resp, as_="json")
 
     # --- runs ---
+
+    @AIXS_RETRY
+    async def alist_runs(self, repository_id: str) -> list[dict[str, Any]]:
+        """List a repository's runs, newest first.
+
+        Each entry carries `run_id`, `experiment_id` and `status`, which is
+        what a caller needs to find the run that produced a given
+        experiment's outputs. AIXS caps the list, so runs that have aged out
+        can only be addressed by their id directly.
+        """
+        path = f"v1/repositories/{repository_id}/runs"
+        resp = await self.aget(path=path, timeout=60.0)
+        raise_for_status(resp, path=path)
+        return self._parser.parse(resp, as_="json")
 
     async def astart_run(
         self,
@@ -180,14 +196,18 @@ path = f"v1/byo-computes/{byo_uuid}/credential/status"
         # omitting the field entirely.
         if inputs_from_runs:
             body["inputs_from_runs"] = inputs_from_runs
-if (time_limit is not None or resource_count is not None) and not (
-    compute_id and compute_id.startswith("byo:")
-):
-    raise ValueError('time_limit/resource_count require compute_id="byo:<uuid>"')
-if time_limit is not None:
-    body["time_limit"] = time_limit
-if resource_count is not None:
-    body["resource_count"] = resource_count
+        if (time_limit is not None or resource_count is not None) and not (
+            compute_id and compute_id.startswith("byo:")
+        ):
+            raise ValueError(
+                'time_limit/resource_count require compute_id="byo:<uuid>"'
+            )
+
+        if time_limit is not None:
+            body["time_limit"] = time_limit
+        if resource_count is not None:
+            body["resource_count"] = resource_count
+
         resp = await self.apost(path=path, json=body, timeout=60.0)
         raise_for_status(resp, path=path)
         return self._parser.parse(resp, as_="json")

@@ -7,6 +7,7 @@ from typing_extensions import TypedDict
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
+from airas.core.research_paths import DIAGRAM_DIR
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.infra.github_client import GithubClient
 from airas.usecases.github.nodes.dispatch_workflow import dispatch_workflow
@@ -69,8 +70,8 @@ class DispatchDiagramGenerationSubgraph:
             "github_actions_agent": github_actions_agent,
             "model_name": self.llm_mapping.dispatch_diagram_generation.llm_name,
             # Align with the local-agent convention: method diagrams live
-            # under .research/results/diagram/ (collected into images/).
-            "output_dir": ".research/results/diagram",
+            # under DIAGRAM_DIR (collected into images/).
+            "output_dir": DIAGRAM_DIR,
         }
 
         if self.diagram_description is not None:

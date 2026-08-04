@@ -53,6 +53,25 @@ GITHUB_RETRY = retry(
 # TODO: Raise exceptions for all error cases; let the caller handle failures.
 # TODO: Use an Enum for HTTP status codes and extract retry logic into a mixin for reuse across API clients.
 
+# The blob API accepts up to 100 MB, and base64 inflates the payload by 4/3.
+# Fail loudly before GitHub answers with an opaque 4xx.
+MAX_BLOB_BYTES = 40 * 1024 * 1024
+# Blob creation is one POST per file; keep a batch commit from spraying the API.
+MAX_CONCURRENT_BLOBS = 5
+
+
+def _blob_payload(content: str | bytes) -> tuple[str, str]:
+    """Return the (content, encoding) pair the GitHub blob API expects."""
+    # https://docs.github.com/en/rest/git/blobs#create-a-blob
+    raw = content.encode("utf-8") if isinstance(content, str) else content
+    if len(raw) > MAX_BLOB_BYTES:
+        raise GithubClientFatalError(
+            f"Blob is too large to commit: {len(raw)} bytes (limit {MAX_BLOB_BYTES})"
+        )
+    if isinstance(content, bytes):
+        return base64.b64encode(content).decode("ascii"), "base64"
+    return content, "utf-8"
+
 
 class GithubClient(BaseHTTPClient):
     def __init__(
@@ -586,10 +605,14 @@ class GithubClient(BaseHTTPClient):
         github_owner: str,
         repository_name: str,
         branch_name: str,
-        files: dict[str, str],  # path -> content
+        files: dict[str, str | bytes],  # path -> content
         commit_message: str,
     ) -> bool:
-        """Commit multiple files in a single commit using Git Data API"""
+        """Commit multiple files in a single commit using Git Data API.
+
+        `str` content is sent as UTF-8 text; `bytes` content is base64-encoded,
+        so text and binary files can share one commit.
+        """
         try:
             # Get current branch info
             branch_info = self.get_branch(github_owner, repository_name, branch_name)
@@ -602,7 +625,10 @@ class GithubClient(BaseHTTPClient):
             # Create blobs for all files
             tree_entries = []
             for file_path, content in files.items():
-                blob_sha = self.create_blob(github_owner, repository_name, content)
+                blob_content, encoding = _blob_payload(content)
+                blob_sha = self.create_blob(
+                    github_owner, repository_name, blob_content, encoding=encoding
+                )
                 tree_entries.append(
                     {
                         "path": file_path,
@@ -1235,9 +1261,14 @@ class GithubClient(BaseHTTPClient):
         github_owner: str,
         repository_name: str,
         branch_name: str,
-        files: dict[str, str],  # path -> content
+        files: dict[str, str | bytes],  # path -> content
         commit_message: str,
     ) -> bool:
+        """Commit multiple files in a single commit using Git Data API.
+
+        `str` content is sent as UTF-8 text; `bytes` content is base64-encoded,
+        so text and binary files can share one commit.
+        """
         try:
             # Get current branch info
             branch_info = await self.aget_branch(
@@ -1249,26 +1280,32 @@ class GithubClient(BaseHTTPClient):
             current_commit_sha = branch_info["commit"]["sha"]
             base_tree_sha = branch_info["commit"]["commit"]["tree"]["sha"]
 
-            # Create blobs for all files
-            blob_tasks = []
-            for _, content in files.items():
-                blob_tasks.append(
-                    self._acreate_blob(github_owner, repository_name, content)
-                )
+            # Create blobs for all files. Pin the iteration order once so the
+            # blob shas cannot drift out of step with the paths below.
+            items = list(files.items())
+            semaphore = asyncio.Semaphore(MAX_CONCURRENT_BLOBS)
 
-            blob_shas = await asyncio.gather(*blob_tasks)
+            async def create_blob(content: str | bytes) -> str:
+                blob_content, encoding = _blob_payload(content)
+                async with semaphore:
+                    return await self._acreate_blob(
+                        github_owner, repository_name, blob_content, encoding=encoding
+                    )
+
+            blob_shas = await asyncio.gather(
+                *(create_blob(content) for _, content in items)
+            )
 
             # Create tree entries
-            tree_entries = []
-            for i, (file_path, _) in enumerate(files.items()):
-                tree_entries.append(
-                    {
-                        "path": file_path,
-                        "mode": "100644",
-                        "type": "blob",
-                        "sha": blob_shas[i],
-                    }
-                )
+            tree_entries = [
+                {
+                    "path": file_path,
+                    "mode": "100644",
+                    "type": "blob",
+                    "sha": blob_sha,
+                }
+                for (file_path, _), blob_sha in zip(items, blob_shas, strict=True)
+            ]
 
             # Create tree
             tree_sha = await self._acreate_tree(
@@ -1293,6 +1330,7 @@ class GithubClient(BaseHTTPClient):
             logger.error(f"Failed to commit multiple files: {e}")
             raise GithubClientFatalError(f"Failed to commit multiple files: {e}") from e
 
+    @GITHUB_RETRY
     async def _acreate_blob(
         self,
         github_owner: str,
@@ -1315,6 +1353,7 @@ class GithubClient(BaseHTTPClient):
                 self._raise_for_status(response, path)
                 raise GithubClientFatalError(f"Failed to create blob: {response.text}")
 
+    @GITHUB_RETRY
     async def _acreate_tree(
         self,
         github_owner: str,
@@ -1337,6 +1376,7 @@ class GithubClient(BaseHTTPClient):
                 self._raise_for_status(response, path)
                 raise GithubClientFatalError(f"Failed to create tree: {response.text}")
 
+    @GITHUB_RETRY
     async def _acreate_commit(
         self,
         github_owner: str,
@@ -1363,6 +1403,7 @@ class GithubClient(BaseHTTPClient):
                     f"Failed to create commit: {response.text}"
                 )
 
+    @GITHUB_RETRY
     async def _aupdate_ref(
         self,
         github_owner: str,

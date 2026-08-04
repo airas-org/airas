@@ -4,6 +4,7 @@ import json
 import logging
 from typing import Any
 
+from airas.core.research_paths import DIAGRAM_DIR, LEGACY_DIAGRAM_DIR, RESULTS_DIR
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import GitHubConfig
 from airas.infra.github_client import GithubClient
@@ -140,12 +141,7 @@ async def _process_comparison_data(
 async def _fetch_diagram_files(
     github_client: GithubClient,
     github_config: GitHubConfig,
-    diagrams_dirs: tuple[str, ...] = (
-        ".research/results/diagram",  # current convention
-        # Legacy location, kept for older repositories; remove in the next
-        # major release (see issue #913).
-        ".research/diagrams",
-    ),
+    diagrams_dirs: tuple[str, ...] = (DIAGRAM_DIR, LEGACY_DIAGRAM_DIR),
 ) -> list[str]:
     per_dir = await asyncio.gather(
         *(
@@ -171,7 +167,7 @@ async def fetch_results(
     github_client: GithubClient,
     github_config: GitHubConfig,
     run_ids: list[str],
-    results_dir: str = ".research/results",
+    results_dir: str = RESULTS_DIR,
 ) -> ExperimentalResults:
     if not run_ids:
         raise ValueError("run_ids must not be empty")

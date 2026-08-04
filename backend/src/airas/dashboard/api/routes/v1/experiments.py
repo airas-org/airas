@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
+from airas.core.types.experiment_history import RunStage
 from airas.core.types.runner import EphemeralCloudRunnerConfig, StaticRunnerConfig
 from airas.dashboard.api.dependencies import get_github_client, get_litellm_client
 from airas.dashboard.api.schemas.experiments import (
@@ -92,13 +93,13 @@ async def dispatch_sanity_check(
     if isinstance(request.runner_config, StaticRunnerConfig):
         subgraph = DispatchExperimentOnStaticRunnerSubgraph(
             github_client=github_client,
-            workflow_file="run_sanity_check.yml",
             runner_label=request.runner_config.runner_label,
+            run_stage=RunStage.SANITY,
         )
     elif isinstance(request.runner_config, EphemeralCloudRunnerConfig):
         subgraph = DispatchExperimentOnEphemeralCloudSubgraph(
             github_client=github_client,
-            target_workflow="run_sanity_check.yml",
+            run_stage=RunStage.SANITY,
             cloud_provider=request.runner_config.cloud_provider,
             gpu_instance_type=request.runner_config.gpu_instance_type,
             max_instance_hours=request.runner_config.max_instance_hours,
@@ -146,13 +147,13 @@ async def dispatch_main_experiment(
     if isinstance(request.runner_config, StaticRunnerConfig):
         subgraph = DispatchExperimentOnStaticRunnerSubgraph(
             github_client=github_client,
-            workflow_file="run_main_experiment.yml",
             runner_label=request.runner_config.runner_label,
+            run_stage=RunStage.FULL,
         )
     elif isinstance(request.runner_config, EphemeralCloudRunnerConfig):
         subgraph = DispatchExperimentOnEphemeralCloudSubgraph(
             github_client=github_client,
-            target_workflow="run_main_experiment.yml",
+            run_stage=RunStage.FULL,
             cloud_provider=request.runner_config.cloud_provider,
             gpu_instance_type=request.runner_config.gpu_instance_type,
             max_instance_hours=request.runner_config.max_instance_hours,
