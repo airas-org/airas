@@ -58,3 +58,11 @@ def test_primary_keys_are_declared_as_required() -> None:
     """
     for provider, primary_key in PROVIDER_PRIMARY_KEY.items():
         assert primary_key in PROVIDER_REQUIRED_ENV_VARS[provider]
+
+
+def test_dashboard_reads_all_required_provider_env_vars() -> None:
+    """Guard the dashboard's env-var list against provider table changes."""
+    from airas.dashboard.api import dependencies as dashboard_deps
+
+    expected = {name for names in PROVIDER_REQUIRED_ENV_VARS.values() for name in names}
+    assert set(dashboard_deps._PROVIDER_ENV_VARS) == expected
