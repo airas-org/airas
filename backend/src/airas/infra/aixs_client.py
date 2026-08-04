@@ -121,8 +121,12 @@ class AixsClient(BaseHTTPClient):
         observation but is rate-limited to protect the cluster's login node,
         and `cached` in the response says which you got.
         """
-        byo_uuid = compute_id.removeprefix("byo:")
-        path = f"v1/byo-computes/{byo_uuid}/credential/status"
+if not compute_id.startswith("byo:"):
+    raise ValueError('compute_id must start with "byo:" (e.g. "byo:<uuid>")')
+byo_uuid = compute_id.removeprefix("byo:")
+if not byo_uuid or "/" in byo_uuid:
+    raise ValueError(f"Invalid BYO compute_id: {compute_id!r}")
+path = f"v1/byo-computes/{byo_uuid}/credential/status"
         resp = await self.aget(
             path=path,
             params={"refresh": "true"} if refresh else None,
