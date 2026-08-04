@@ -1,19 +1,20 @@
-"""How OpenAI-compatible endpoints (e.g. `rikyu/<model>`) reach litellm.
+"""How the Rikyu endpoint (`rikyu/<model>`) reaches litellm.
 
-litellm has no provider per institutional endpoint, so the client rewrites
-the model name and supplies the host itself. These tests pin that mapping,
-since getting it wrong sends research traffic to the wrong host — or to a
-vendor default with the wrong key.
+litellm has no provider for Rikyu, so the client rewrites the model name
+onto litellm's generic OpenAI-compatible route and supplies the host itself.
+These tests pin that mapping, since getting it wrong sends research traffic
+to the wrong host — or to a vendor default with the wrong key.
 """
 
-from airas.core.types.llm_provider import LLMProvider
 from airas.infra.litellm_client import (
     LITELLM_OPENAI_COMPATIBLE_PREFIX,
     LiteLLMClient,
 )
-from airas.infra.llm_provider_resolver import OPENAI_COMPATIBLE_ENDPOINTS
-
-RIKYU = OPENAI_COMPATIBLE_ENDPOINTS[LLMProvider.RIKYU]
+from airas.infra.llm_provider_resolver import (
+    RIKYU_BASE_URL_ENV,
+    RIKYU_DEFAULT_BASE_URL,
+    RIKYU_KEY_ENV,
+)
 
 
 def test_vendor_models_pass_through_untouched() -> None:
@@ -26,7 +27,7 @@ def test_vendor_models_pass_through_untouched() -> None:
 
 
 def test_endpoint_model_is_routed_to_its_default_base_url(monkeypatch) -> None:
-    monkeypatch.delenv(RIKYU.base_url_env, raising=False)
+    monkeypatch.delenv(RIKYU_BASE_URL_ENV, raising=False)
     client = LiteLLMClient(
         get_api_key=lambda _: "sk-endpoint", available_providers=set()
     )
@@ -37,12 +38,12 @@ def test_endpoint_model_is_routed_to_its_default_base_url(monkeypatch) -> None:
     assert model == f"{LITELLM_OPENAI_COMPATIBLE_PREFIX}kimi-k3"
     assert connection == {
         "api_key": "sk-endpoint",
-        "api_base": RIKYU.default_base_url,
+        "api_base": RIKYU_DEFAULT_BASE_URL,
     }
 
 
 def test_base_url_env_overrides_the_default(monkeypatch) -> None:
-    monkeypatch.setenv(RIKYU.base_url_env, "https://staging.example.org/v1/")
+    monkeypatch.setenv(RIKYU_BASE_URL_ENV, "https://staging.example.org/v1/")
     client = LiteLLMClient(
         get_api_key=lambda _: "sk-endpoint", available_providers=set()
     )
@@ -55,7 +56,7 @@ def test_base_url_env_overrides_the_default(monkeypatch) -> None:
 
 def test_key_falls_back_to_the_environment(monkeypatch) -> None:
     """Self-hosted callers construct the client without a key resolver."""
-    monkeypatch.setenv(RIKYU.key_env, "sk-from-env")
+    monkeypatch.setenv(RIKYU_KEY_ENV, "sk-from-env")
     client = LiteLLMClient(available_providers=set())
 
     _, connection = client._resolve_call_target("rikyu/kimi-k3")

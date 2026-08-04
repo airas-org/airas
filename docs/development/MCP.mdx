@@ -51,7 +51,7 @@ curl -H "Authorization: Bearer $RIKYU_API_KEY" \
   https://api.rikyu.r-ccs.riken.jp/v1/models
 ```
 
-The base URL defaults to `https://api.rikyu.r-ccs.riken.jp/v1`; add `RIKYU_API_BASE` to the credentials file by hand to point at a different host. Other OpenAI-compatible endpoints get their own provider name and key the same way — one entry in `OPENAI_COMPATIBLE_ENDPOINTS` (`backend/src/airas/infra/llm_provider_resolver.py`) — so a key always says which host it reaches and which project is billed.
+The base URL defaults to `https://api.rikyu.r-ccs.riken.jp/v1`; add `RIKYU_API_BASE` to the credentials file by hand to point at a different host. A future OpenAI-compatible endpoint would get its own provider name and key the same way (see the `RIKYU_*` wiring in `backend/src/airas/infra/llm_provider_resolver.py`), so a key always says which host it reaches and which project is billed.
 
 The same key reaches the coding agent. To use the endpoint from a local [opencode](https://opencode.ai), declare it as a custom provider in `~/.config/opencode/opencode.json` (the experiment repository ships the equivalent block in `.opencode/opencode.jsonc`, and its workflows pass the key through from repository secrets):
 

@@ -51,7 +51,7 @@ curl -H "Authorization: Bearer $RIKYU_API_KEY" \
   https://api.rikyu.r-ccs.riken.jp/v1/models
 ```
 
-base URLは `https://api.rikyu.r-ccs.riken.jp/v1` がデフォルトです。別のホストを指す場合は、認証情報ファイルに `RIKYU_API_BASE` を手動で追加してください。他のOpenAI互換エンドポイントも同様に、固有のプロバイダー名とキーを与えて追加します（`backend/src/airas/infra/llm_provider_resolver.py` の `OPENAI_COMPATIBLE_ENDPOINTS` に1エントリ）。こうすることで、キー名から接続先と課金先が常に辿れます。
+base URLは `https://api.rikyu.r-ccs.riken.jp/v1` がデフォルトです。別のホストを指す場合は、認証情報ファイルに `RIKYU_API_BASE` を手動で追加してください。将来別のOpenAI互換エンドポイントを追加する場合も同様に、固有のプロバイダー名とキーを与えます（`backend/src/airas/infra/llm_provider_resolver.py` の `RIKYU_*` の配線を参照）。こうすることで、キー名から接続先と課金先が常に辿れます。
 
 同じキーでコーディングエージェントからも利用できます。ローカルの [opencode](https://opencode.ai) から使う場合は、`~/.config/opencode/opencode.json` にカスタムプロバイダーとして宣言します（実験リポジトリ側には同等の設定が `.opencode/opencode.jsonc` に含まれており、ワークフローがリポジトリシークレットからキーを渡します）：
 

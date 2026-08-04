@@ -21,7 +21,9 @@ from litellm import get_valid_models
 
 from airas.core.types.llm_provider import LLMProvider
 from airas.infra.llm_provider_resolver import (
-    OPENAI_COMPATIBLE_ENDPOINTS,
+    RIKYU_BASE_URL_ENV,
+    RIKYU_DEFAULT_BASE_URL,
+    RIKYU_KEY_ENV,
     detect_available_providers,
     infer_provider,
 )
@@ -40,16 +42,16 @@ PROVIDER_REQUIRED_ENV_VARS: dict[LLMProvider, list[str]] = {
     LLMProvider.BEDROCK: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"],
     LLMProvider.AZURE: ["AZURE_API_KEY", "AZURE_API_BASE"],
     LLMProvider.VERCEL_AI_GATEWAY: ["VERCEL_AI_GATEWAY_API_KEY"],
-    # Only the key: the base URL has a default, so an endpoint counts as
-    # configured once its key is present (see OPENAI_COMPATIBLE_ENDPOINTS).
+    # Only the key: the base URL has a default (RIKYU_DEFAULT_BASE_URL), so
+    # the endpoint counts as configured once its key is present.
     LLMProvider.RIKYU: ["RIKYU_API_KEY"],
 }
 
-# litellm has no provider per institutional endpoint, so an airas name like
-# "rikyu/kimi-k3" is rewritten onto litellm's generic OpenAI-compatible route
-# and paired with an explicit api_base. `openai/` is deliberately not used:
-# with no key passed it silently falls back to OPENAI_API_KEY, which would
-# send one vendor's credential to another's host.
+# litellm has no provider for Rikyu, so "rikyu/kimi-k3" is rewritten onto
+# litellm's generic OpenAI-compatible route and paired with an explicit
+# api_base. `openai/` is deliberately not used: with no key passed it silently
+# falls back to OPENAI_API_KEY, which would send one vendor's credential to
+# another's host.
 LITELLM_OPENAI_COMPATIBLE_PREFIX = "hosted_vllm/"
 
 # TODO: Define LLMParams
@@ -75,28 +77,20 @@ class LiteLLMClient:
         """Map an airas model name to litellm's model name + connection kwargs.
 
         Every model litellm already knows how to route passes through
-        untouched. Models on an OpenAI-compatible endpoint carry a provider
-        name litellm has never heard of, so the route and the host have to be
-        supplied here.
+        untouched. Rikyu models carry a provider name litellm has never heard
+        of, so the route and the host have to be supplied here.
         """
         api_key = self._get_api_key(llm_name)
-        provider = infer_provider(llm_name)
-        endpoint = (
-            OPENAI_COMPATIBLE_ENDPOINTS.get(provider) if provider is not None else None
-        )
-        if endpoint is None:
+        if infer_provider(llm_name) is not LLMProvider.RIKYU:
             return llm_name, {"api_key": api_key}
 
-        assert provider is not None  # narrowed by the lookup above
-        model_id = llm_name.removeprefix(f"{provider.value}/")
-        api_base = (
-            os.getenv(endpoint.base_url_env, "").strip() or endpoint.default_base_url
-        )
+        model_id = llm_name.removeprefix(f"{LLMProvider.RIKYU.value}/")
+        api_base = os.getenv(RIKYU_BASE_URL_ENV, "").strip() or RIKYU_DEFAULT_BASE_URL
         return LITELLM_OPENAI_COMPATIBLE_PREFIX + model_id, {
             # Self-hosted callers build the client without a key resolver, so
             # read the env directly rather than sending an unauthenticated
             # request that the endpoint would reject.
-            "api_key": api_key or os.getenv(endpoint.key_env) or None,
+            "api_key": api_key or os.getenv(RIKYU_KEY_ENV) or None,
             "api_base": api_base.rstrip("/"),
         }
 

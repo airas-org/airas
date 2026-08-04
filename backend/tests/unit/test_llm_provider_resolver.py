@@ -3,8 +3,9 @@ import pytest
 from airas.core.types.llm_provider import LLMProvider
 from airas.infra.litellm_client import PROVIDER_REQUIRED_ENV_VARS
 from airas.infra.llm_provider_resolver import (
-    OPENAI_COMPATIBLE_ENDPOINTS,
     PROVIDER_PRIMARY_KEY,
+    RIKYU_DEFAULT_BASE_URL,
+    RIKYU_KEY_ENV,
     detect_available_providers,
     infer_provider,
 )
@@ -64,18 +65,17 @@ def test_openai_compatible_endpoint_needs_only_its_key() -> None:
     assert available == {LLMProvider.RIKYU}
 
 
-def test_openai_compatible_endpoints_are_wired_consistently() -> None:
-    """Each endpoint's key must be the one the rest of the code looks up.
+def test_rikyu_is_wired_consistently() -> None:
+    """Rikyu's key must be the one the rest of the code looks up.
 
-    The table, the availability check and the dashboard's key resolution are
-    three separate maps; a drift between them routes requests to an endpoint
-    with no credential.
+    The routing constants, the availability check and the dashboard's key
+    resolution are separate maps; a drift between them routes requests to
+    the endpoint with no credential.
     """
-    for provider, endpoint in OPENAI_COMPATIBLE_ENDPOINTS.items():
-        assert PROVIDER_PRIMARY_KEY[provider] == endpoint.key_env
-        assert PROVIDER_REQUIRED_ENV_VARS[provider] == [endpoint.key_env]
-        assert infer_provider(f"{provider.value}/some-model") is provider
-        assert endpoint.default_base_url.startswith("https://")
+    assert PROVIDER_PRIMARY_KEY[LLMProvider.RIKYU] == RIKYU_KEY_ENV
+    assert PROVIDER_REQUIRED_ENV_VARS[LLMProvider.RIKYU] == [RIKYU_KEY_ENV]
+    assert infer_provider("rikyu/some-model") is LLMProvider.RIKYU
+    assert RIKYU_DEFAULT_BASE_URL.startswith("https://")
 
 
 def test_primary_keys_are_declared_as_required() -> None:

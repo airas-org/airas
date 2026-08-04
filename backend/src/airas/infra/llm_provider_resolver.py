@@ -1,43 +1,21 @@
-# TODO: Expose a guard/eligibility check (e.g. check_model_available(provider, available_providers))
-#       so that the backend can reject unsupported model requests early and the frontend
-#       can filter the model selector based on the user's available providers.
-
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
 
 from airas.core.types.llm_provider import LLMProvider
 
-
 # ---------------------------------------------------------------------------
-# OpenAI-compatible endpoints
+# Rikyu (RIKEN R-CCS) — an OpenAI-compatible endpoint, addressed as
+# "rikyu/<model>". It gets its own provider name and env vars rather than a
+# generic OPENAI_COMPATIBLE_* pair: a generic pair is effectively a singleton,
+# and a credential named RIKYU_API_KEY says which host it reaches and which
+# project is billed. Should a second such endpoint appear, generalize these
+# into a table then.
 # ---------------------------------------------------------------------------
-@dataclass(frozen=True)
-class OpenAICompatibleEndpoint:
-    """An OpenAI-compatible API that airas addresses under its own name.
-
-    Each endpoint gets a named provider rather than sharing one generic pair
-    of env vars: a generic pair is effectively a singleton and collides as
-    soon as a second such endpoint exists, and a credential named
-    ``RIKYU_API_KEY`` says which host it reaches and which project is billed
-    — which a generic name cannot. The implementation stays generic: adding
-    the next endpoint is one entry here plus its prefix below.
-    """
-
-    key_env: str
-    base_url_env: str
-    # Used when *base_url_env* is unset, so only the key has to be configured.
-    default_base_url: str
-
-
-OPENAI_COMPATIBLE_ENDPOINTS: dict[LLMProvider, OpenAICompatibleEndpoint] = {
-    LLMProvider.RIKYU: OpenAICompatibleEndpoint(
-        key_env="RIKYU_API_KEY",
-        base_url_env="RIKYU_API_BASE",
-        default_base_url="https://api.rikyu.r-ccs.riken.jp/v1",
-    ),
-}
+RIKYU_KEY_ENV = "RIKYU_API_KEY"
+RIKYU_BASE_URL_ENV = "RIKYU_API_BASE"
+# Used when RIKYU_API_BASE is unset, so only the key has to be configured.
+RIKYU_DEFAULT_BASE_URL = "https://api.rikyu.r-ccs.riken.jp/v1"
 
 
 # ---------------------------------------------------------------------------
@@ -68,10 +46,10 @@ _MODEL_PREFIX_TO_PROVIDER: list[tuple[str, LLMProvider]] = [
     # segment (e.g. "vercel_ai_gateway/anthropic/claude-sonnet-4"), so this
     # entry must be matched before the vendor-prefix rules further down.
     ("vercel_ai_gateway/", LLMProvider.VERCEL_AI_GATEWAY),
-    # OpenAI-compatible endpoints (see OPENAI_COMPATIBLE_ENDPOINTS). What
-    # follows the prefix is the model ID the endpoint itself reports via
-    # GET /v1/models, so it can be a bare name ("rikyu/kimi-k3") or carry a
-    # vendor path; either way this must win over the vendor rules below.
+    # Rikyu (OpenAI-compatible endpoint). What follows the prefix is the
+    # model ID the endpoint itself reports via GET /v1/models, so it can be
+    # a bare name ("rikyu/kimi-k3") or carry a vendor path; either way this
+    # must win over the vendor rules below.
     ("rikyu/", LLMProvider.RIKYU),
     # Bare model names (no prefix)
     ("gemini-", LLMProvider.GOOGLE),
