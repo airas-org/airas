@@ -4,7 +4,8 @@ Exposes AIRAS research subgraphs as MCP tools for use from MCP clients
 such as Claude Code and Claude Desktop.
 
 Credentials are read from ~/.airas/credentials.json (see credentials.py):
-- LLM providers: OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY (at least one)
+- LLM providers: OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY /
+  OPENROUTER_API_KEY / VERCEL_AI_GATEWAY_API_KEY (at least one)
 - GitHub (repository/experiment tools): GH_PERSONAL_ACCESS_TOKEN
 
 The file is re-read on every tool call, so keys can be added or rotated

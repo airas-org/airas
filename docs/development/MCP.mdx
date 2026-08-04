@@ -29,7 +29,7 @@ chmod 600 ~/.airas/credentials.json
 
 | Key | Required | Purpose |
 | --- | --- | --- |
-| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` | At least one | LLM calls (query generation, paper extraction, hypothesis generation, paper writing) |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `VERCEL_AI_GATEWAY_API_KEY` | At least one | LLM calls (query generation, paper extraction, hypothesis generation, paper writing) |
 | `GH_PERSONAL_ACCESS_TOKEN` | For repository / experiment / publication tools | GitHub API access (`repo` + `workflow` scopes) |
 
 If a tool is called before its credential is configured, it returns an error pointing at this file.

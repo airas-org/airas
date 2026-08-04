@@ -31,6 +31,10 @@ _MODEL_PREFIX_TO_PROVIDER: list[tuple[str, LLMProvider]] = [
     ("bedrock/", LLMProvider.BEDROCK),
     ("azure/", LLMProvider.AZURE),
     ("openrouter/", LLMProvider.OPENROUTER),
+    # Gateway models keep their upstream vendor prefix after the gateway
+    # segment (e.g. "vercel_ai_gateway/anthropic/claude-sonnet-4"), so this
+    # entry must be matched before the vendor-prefix rules further down.
+    ("vercel_ai_gateway/", LLMProvider.VERCEL_AI_GATEWAY),
     # Bare model names (no prefix)
     ("gemini-", LLMProvider.GOOGLE),
     ("gemini-embedding-", LLMProvider.GOOGLE),
