@@ -103,6 +103,8 @@ CREDENTIAL_SPECS: tuple[CredentialSpec, ...] = (
     # Optional: run experiments on the AIXS compute platform.
     CredentialSpec("AIXS_API_KEY"),
     CredentialSpec("AIXS_BASE_URL", is_secret=False),
+    # Default cluster for dispatch_experiment(backend="aixs"), as "byo:<uuid>".
+    CredentialSpec("AIXS_COMPUTE_ID", is_secret=False),
 )
 
 KNOWN_CREDENTIAL_NAMES = frozenset(spec.name for spec in CREDENTIAL_SPECS)

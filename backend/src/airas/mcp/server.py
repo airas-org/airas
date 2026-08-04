@@ -797,6 +797,10 @@ async def dispatch_experiment(
     runner_label: list[str] | None = None,
     backend: Literal["github_actions", "aixs"] = "github_actions",
     compute_type: str = "gpu-a10",
+    compute_id: str | None = None,
+    inputs_from_runs: list[str] | None = None,
+    time_limit: str | None = None,
+    resource_count: int | None = None,
 ) -> dict[str, Any]:
     """Start an experiment run (asynchronous). The code must already be pushed.
 
@@ -810,9 +814,20 @@ async def dispatch_experiment(
       `get_workflow_runs` and collect outputs with `fetch_experiment_results`.
       Requires GH_PERSONAL_ACCESS_TOKEN.
     - "aixs": executes on the AIXS compute platform (GPU without GitHub
-      Actions limits). `compute_type` picks the machine (e.g. "cpu-general",
-      "gpu-a10"). Requires AIXS_API_KEY, and W&B API keys must be registered
-      as env vars on the AIXS side.
+      Actions limits). `compute_id` picks the machine — normally a cluster
+      you registered, "byo:<uuid>" from the AIXS MCP server's
+      `list_computes`; it defaults to AIXS_COMPUTE_ID, and without either the
+      run goes to AIXS-managed compute. `compute_type` sets the resource
+      request in both cases (e.g. "cpu-general", "gpu-a10"). The W&B API key
+      must be registered as an env var on the AIXS side.
+
+    `inputs_from_runs`, `time_limit` and `resource_count` apply to "aixs"
+    only. `inputs_from_runs` takes `execution_id`s of earlier completed runs
+    and restores their outputs into this run's working directory at the paths
+    they were written to, so a run can consume what a previous one produced.
+    `time_limit` (e.g. "24:00:00") and `resource_count` request per-run
+    resources from a registered cluster; accepted values are in its
+    `run_profile` from `list_computes`.
 
     Track progress and fetch execution errors with
     `get_experiment_run_status`. For "aixs" the returned `execution_id` is
@@ -821,11 +836,19 @@ async def dispatch_experiment(
     """
     if backend == "aixs":
         run_stage = RunStage.SANITY if workflow == "sanity_check" else RunStage.FULL
+        # Resolve the client first: it is what loads the stored credentials
+        # into the environment that AIXS_COMPUTE_ID is read from.
+        client = _aixs_client()
+        resolved_compute_id = compute_id or os.getenv("AIXS_COMPUTE_ID") or None
         aixs_result = (
             await DispatchExperimentOnAixsSubgraph(
-                aixs_client=_aixs_client(),
+                aixs_client=client,
+                compute_id=resolved_compute_id,
                 run_stage=run_stage,
                 compute_type=compute_type,
+                inputs_from_runs=inputs_from_runs,
+                time_limit=time_limit,
+                resource_count=resource_count,
             )
             .build_graph()
             .ainvoke(
@@ -842,6 +865,7 @@ async def dispatch_experiment(
         return {
             "dispatched": aixs_result["dispatched"],
             "backend": "aixs",
+            "compute_id": resolved_compute_id,
             "execution_id": aixs_result["aixs_run_id"],
             "execution_url": aixs_result["aixs_run_url"],
         }
