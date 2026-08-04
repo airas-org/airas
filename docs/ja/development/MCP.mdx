@@ -29,7 +29,7 @@ chmod 600 ~/.airas/credentials.json
 
 | キー | 必須 | 用途 |
 | --- | --- | --- |
-| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` | いずれか1つ | LLM呼び出し（クエリ生成・論文抽出・仮説生成・論文執筆） |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `VERCEL_AI_GATEWAY_API_KEY` | いずれか1つ | LLM呼び出し（クエリ生成・論文抽出・仮説生成・論文執筆） |
 | `GH_PERSONAL_ACCESS_TOKEN` | リポジトリ・実験・出版系ツール使用時 | GitHub APIアクセス（`repo` + `workflow` スコープ） |
 
 認証情報が未設定のままツールを呼ぶと、このファイルを案内するエラーが返ります。

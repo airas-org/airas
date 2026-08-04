@@ -33,6 +33,7 @@ const CATEGORIES: { key: string; names: string[] }[] = [
       "ANTHROPIC_API_KEY",
       "GEMINI_API_KEY",
       "OPENROUTER_API_KEY",
+      "VERCEL_AI_GATEWAY_API_KEY",
       "AWS_BEARER_TOKEN_BEDROCK",
     ],
   },

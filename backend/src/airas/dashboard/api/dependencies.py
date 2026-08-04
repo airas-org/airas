@@ -27,7 +27,14 @@ from airas.infra.llm_provider_resolver import (
 
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
-_PROVIDER_ENV_VARS = ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY")
+# Every env var any known provider needs. Derived from the provider table so
+# adding a provider there is enough — a hand-maintained list silently hid
+# providers whose keys were never read (their models resolved to no API key).
+_PROVIDER_ENV_VARS: tuple[str, ...] = tuple(
+    dict.fromkeys(
+        name for names in LITELLM_REQUIRED_ENV_VARS.values() for name in names
+    )
+)
 
 _NO_LLM_PROVIDERS = HTTPException(
     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
