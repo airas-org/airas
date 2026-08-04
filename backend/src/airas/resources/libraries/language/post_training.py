@@ -30,4 +30,13 @@ POST_TRAINING_LIBRARIES: dict[str, dict[str, str | None]] = {
         "llms_txt": None,
         "llms_full_txt": None,
     },
+    "nemo-rl": {
+        "description": "NVIDIA post-training library scaling GRPO, DPO and SFT via Ray",
+        "domain": "language",
+        "category": "post_training",
+        "official_docs": "https://docs.nvidia.com/nemo/rl/latest",
+        "github": "https://github.com/NVIDIA-NeMo/RL",
+        "llms_txt": "https://docs.nvidia.com/llms.txt",
+        "llms_full_txt": None,
+    },
 }
