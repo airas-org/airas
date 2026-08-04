@@ -25,7 +25,7 @@ SIMULATION_LIBRARIES: dict[str, dict[str, str | None]] = {
         "description": "Python physics simulation for robotics and RL",
         "domain": "reinforcement_learning",
         "category": "simulation",
-        "official_docs": "https://pybullet.org",
+        "official_docs": "https://github.com/bulletphysics/bullet3/blob/master/docs/pybullet_quickstart_guide/PyBulletQuickstartGuide.md.html",
         "github": "https://github.com/bulletphysics/bullet3",
         "llms_txt": None,
         "llms_full_txt": None,
