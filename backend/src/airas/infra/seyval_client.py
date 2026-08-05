@@ -12,11 +12,10 @@ logger = getLogger(__name__)
 
 SEYVAL_RETRY = make_retry_policy()
 
-# Seyval deploys `develop` to the dev environment and `main` to production
-# (api.airas.io). The endpoints this client uses are only on the dev
-# deployment until Seyval releases them to main.
-# TODO(seyval-prod): switch to "https://api.airas.io" once Seyval main ships them.
-DEFAULT_SEYVAL_BASE_URL = "https://api.dev.airas.io"
+# Seyval deploys `main` to production and `develop` to the dev environment
+# (api.dev.seyval.dev), which SEYVAL_BASE_URL can point at to try endpoints
+# that have not been released to main yet.
+DEFAULT_SEYVAL_BASE_URL = "https://api.seyval.dev"
 
 
 class SeyvalClient(BaseHTTPClient):
