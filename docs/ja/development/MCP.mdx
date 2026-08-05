@@ -34,6 +34,21 @@ chmod 600 ~/.airas/credentials.json
 
 認証情報が未設定のままツールを呼ぶと、このファイルを案内するエラーが返ります。
 
+### Seyval 計算基盤
+
+`dispatch_experiment(backend="seyval")` と `import_run_outputs` は Seyval 上で動作し、専用のキーが必要です：
+
+```json
+{
+  "SEYVAL_API_KEY": "seyval_pat_...",
+  "SEYVAL_COMPUTE_ID": "byo:<uuid>"
+}
+```
+
+`SEYVAL_COMPUTE_ID` は任意で、デフォルトのクラスタを指定します。未設定の場合は Seyval 管理の計算資源で実行されます。`SEYVAL_BASE_URL` で API のホストを上書きできます。
+
+Seyval は以前 AIXS という名称でした。旧名で設定している場合は、`AIXS_API_KEY` / `AIXS_BASE_URL` / `AIXS_COMPUTE_ID` を `SEYVAL_*` にリネームし、キーを `seyval_pat_` 形式で再発行し、`backend="aixs"` の代わりに `backend="seyval"` を渡してください。旧名は読み込まれません。
+
 ### OpenAI互換エンドポイント（理究）
 
 理研R-CCSの理究APIはOpenAI互換で、認証情報は1つだけです：
@@ -117,7 +132,7 @@ claude mcp add airas -- uvx airas
 | ツール | 説明 |
 | --- | --- |
 | `prepare_repository` | 実験用リポジトリの作成・初期化 |
-| `dispatch_experiment` | サニティチェック／本実験の実行を開始（非同期）。`backend` パラメータで GitHub Actions / AIXS 計算基盤を選択 |
+| `dispatch_experiment` | サニティチェック／本実験の実行を開始（非同期）。`backend` パラメータで GitHub Actions / Seyval 計算基盤を選択 |
 | `get_workflow_runs` | 直近のワークフロー実行のステータス確認（ノンブロッキング） |
 | `get_experiment_run_status` | 任意のバックエンドの実行1件のステータス確認と stdout/stderr の取得（エラー診断用） |
 | `fetch_experiment_results` | 実験結果を取得 |
@@ -145,7 +160,7 @@ claude mcp add airas -- uvx airas
 
 生成ステップは**デュアルモード**です: バックエンドLLMで実行する（下記の各ツール、LLMプロバイダーキーが必要）か、`get_generation_prompt` で同じキュレート済みプロンプトを受け取ってホスト自身が執筆する（キー不要）かを選べます。ホスト執筆対応ステップ: `research_queries` / `hypothesis` / `experimental_design` / `experiment_analysis` / `paper_writing` / `latex_conversion` — 各プロンプトには**作成すべきデータ形式を正確に示す `output_json_schema`** が付属します
 
-典型的なフロー: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **実験コードを自分で書く**（下記参照）→ `dispatch_experiment` →（GitHub Actions は `get_workflow_runs`、AIXS は `get_experiment_run_status` でポーリング）→ `fetch_experiment_results` → `analyze_experiment` → **図とダイアグラムを自分で作る**（下記参照）→ `generate_bibfile` → `generate_paper` → `generate_latex` → **返された LaTeX を clone 内の `.research/latex/{テンプレート}/main.tex` に書いて git で push** → **出口は2つ（片方でも両方でも）**: `compile_latex`（GitHub ActionsでPDFをビルド）/ `open_in_overleaf`（ユーザーが編集できる形でOverleafに引き渡し。`local_path` 指定なら push 不要）→ `upload_research_history`
+典型的なフロー: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **実験コードを自分で書く**（下記参照）→ `dispatch_experiment` →（GitHub Actions は `get_workflow_runs`、Seyval は `get_experiment_run_status` でポーリング）→ `fetch_experiment_results` → `analyze_experiment` → **図とダイアグラムを自分で作る**（下記参照）→ `generate_bibfile` → `generate_paper` → `generate_latex` → **返された LaTeX を clone 内の `.research/latex/{テンプレート}/main.tex` に書いて git で push** → **出口は2つ（片方でも両方でも）**: `compile_latex`（GitHub ActionsでPDFをビルド）/ `open_in_overleaf`（ユーザーが編集できる形でOverleafに引き渡し。`local_path` 指定なら push 不要）→ `upload_research_history`
 
 ### 実験コードの書き方
 
@@ -171,7 +186,7 @@ MCP ホストは有能なコーディングエージェント（Claude Code、Cu
 
 コード生成と同様に、全自動研究ワークフローは従来どおり GitHub Actions 上で可視化・ダイアグラム生成を実行しますが、その経路は MCP ツールとしては公開していません。
 
-時間のかかるステップは完了を待たず、ツール自体は即座に返ります。実験は `dispatch_experiment` の `backend` に応じて GitHub Actions または AIXS 上で実行されます — 追跡はそれぞれ `get_workflow_runs` / `get_experiment_run_status` を使ってください。LaTeX ビルドは GitHub Actions 上で実行され、`get_workflow_runs` で追跡します。
+時間のかかるステップは完了を待たず、ツール自体は即座に返ります。実験は `dispatch_experiment` の `backend` に応じて GitHub Actions または Seyval 上で実行されます — 追跡はそれぞれ `get_workflow_runs` / `get_experiment_run_status` を使ってください。LaTeX ビルドは GitHub Actions 上で実行され、`get_workflow_runs` で追跡します。
 
 ## 開発
 

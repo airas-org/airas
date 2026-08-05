@@ -102,11 +102,11 @@ CREDENTIAL_SPECS: tuple[CredentialSpec, ...] = (
     CredentialSpec("LANGFUSE_SECRET_KEY"),
     CredentialSpec("LANGFUSE_PUBLIC_KEY"),
     CredentialSpec("LANGFUSE_BASE_URL", is_secret=False),
-    # Optional: run experiments on the AIXS compute platform.
-    CredentialSpec("AIXS_API_KEY"),
-    CredentialSpec("AIXS_BASE_URL", is_secret=False),
-    # Default cluster for dispatch_experiment(backend="aixs"), as "byo:<uuid>".
-    CredentialSpec("AIXS_COMPUTE_ID", is_secret=False),
+    # Optional: run experiments on the Seyval compute platform.
+    CredentialSpec("SEYVAL_API_KEY"),
+    CredentialSpec("SEYVAL_BASE_URL", is_secret=False),
+    # Default cluster for dispatch_experiment(backend="seyval"), as "byo:<uuid>".
+    CredentialSpec("SEYVAL_COMPUTE_ID", is_secret=False),
 )
 
 KNOWN_CREDENTIAL_NAMES = frozenset(spec.name for spec in CREDENTIAL_SPECS)

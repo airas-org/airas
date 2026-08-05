@@ -44,7 +44,7 @@ const CATEGORIES: { key: string; names: string[] }[] = [
   },
   {
     key: "compute",
-    names: ["AIXS_API_KEY", "AIXS_BASE_URL"],
+    names: ["SEYVAL_API_KEY", "SEYVAL_BASE_URL"],
   },
   {
     key: "integrations",

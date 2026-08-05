@@ -10,23 +10,23 @@ from airas.infra.retry_policy import make_retry_policy, raise_for_status
 
 logger = getLogger(__name__)
 
-AIXS_RETRY = make_retry_policy()
+SEYVAL_RETRY = make_retry_policy()
 
-# AIXS deploys `develop` to the dev environment and `main` to production
+# Seyval deploys `develop` to the dev environment and `main` to production
 # (api.airas.io). The endpoints this client uses are only on the dev
-# deployment until AIXS releases them to main.
-# TODO(aixs-prod): switch to "https://api.airas.io" once AIXS main ships them.
-DEFAULT_AIXS_BASE_URL = "https://api.dev.airas.io"
+# deployment until Seyval releases them to main.
+# TODO(seyval-prod): switch to "https://api.airas.io" once Seyval main ships them.
+DEFAULT_SEYVAL_BASE_URL = "https://api.dev.airas.io"
 
 
-class AixsClient(BaseHTTPClient):
-    """Client for the AIXS agent compute platform.
+class SeyvalClient(BaseHTTPClient):
+    """Client for the Seyval agent compute platform.
 
-    AIXS executes code from a registered GitHub repository on managed or
+    Seyval executes code from a registered GitHub repository on managed or
     BYO compute. The ownership chain is repository -> commit -> run: a repo
     is registered once (cloned server-side), `pull` refreshes it and lists
     branches with commit hashes, an analysis record ties a commit to runs,
-    and a run executes one entry command. Auth is a Bearer `aixs_pat_` key.
+    and a run executes one entry command. Auth is a Bearer `seyval_pat_` key.
     """
 
     def __init__(
@@ -38,10 +38,10 @@ class AixsClient(BaseHTTPClient):
         sync_session: httpx.Client | None = None,
         async_session: httpx.AsyncClient | None = None,
     ):
-        key = api_key or os.getenv("AIXS_API_KEY", "")
+        key = api_key or os.getenv("SEYVAL_API_KEY", "")
         super().__init__(
             base_url=(
-                base_url or os.getenv("AIXS_BASE_URL") or DEFAULT_AIXS_BASE_URL
+                base_url or os.getenv("SEYVAL_BASE_URL") or DEFAULT_SEYVAL_BASE_URL
             ).rstrip("/"),
             default_headers={"Authorization": f"Bearer {key}"} if key else {},
             sync_session=sync_session,
@@ -61,7 +61,7 @@ class AixsClient(BaseHTTPClient):
         raise_for_status(resp, path=path)
         return self._parser.parse(resp, as_="json")
 
-    @AIXS_RETRY
+    @SEYVAL_RETRY
     async def alist_repositories(self) -> list[dict[str, Any]]:
         path = "v1/repositories"
         resp = await self.aget(path=path, timeout=30.0)
@@ -90,7 +90,7 @@ class AixsClient(BaseHTTPClient):
         raise_for_status(resp, path=path)
         return self._parser.parse(resp, as_="json")
 
-    @AIXS_RETRY
+    @SEYVAL_RETRY
     async def alist_analyses(
         self, repository_id: str, branch: str | None = None
     ) -> list[dict[str, Any]]:
@@ -106,14 +106,14 @@ class AixsClient(BaseHTTPClient):
 
     # --- computes ---
 
-    @AIXS_RETRY
+    @SEYVAL_RETRY
     async def aget_byo_compute_status(
         self, compute_id: str, refresh: bool = False
     ) -> dict[str, Any]:
         """Observe a registered cluster's node congestion and storage usage.
 
         Indicative only — for the authoritative "would a job start now?"
-        answer, ask the cluster's own scheduler through AIXS's availability
+        answer, ask the cluster's own scheduler through Seyval's availability
         check. Partial failures are not errors: whatever could not be read
         is explained in `warnings`.
 
@@ -139,13 +139,13 @@ class AixsClient(BaseHTTPClient):
 
     # --- runs ---
 
-    @AIXS_RETRY
+    @SEYVAL_RETRY
     async def alist_runs(self, repository_id: str) -> list[dict[str, Any]]:
         """List a repository's runs, newest first.
 
         Each entry carries `run_id`, `experiment_id` and `status`, which is
         what a caller needs to find the run that produced a given
-        experiment's outputs. AIXS caps the list, so runs that have aged out
+        experiment's outputs. Seyval caps the list, so runs that have aged out
         can only be addressed by their id directly.
         """
         path = f"v1/repositories/{repository_id}/runs"
@@ -192,7 +192,7 @@ class AixsClient(BaseHTTPClient):
             body["compute_id"] = compute_id
         if analysis_id is not None:
             body["analysis_id"] = analysis_id
-        # AIXS rejects an empty list, and "no inputs" is expressed by
+        # Seyval rejects an empty list, and "no inputs" is expressed by
         # omitting the field entirely.
         if inputs_from_runs:
             body["inputs_from_runs"] = inputs_from_runs
@@ -212,30 +212,30 @@ class AixsClient(BaseHTTPClient):
         raise_for_status(resp, path=path)
         return self._parser.parse(resp, as_="json")
 
-    @AIXS_RETRY
+    @SEYVAL_RETRY
     async def aget_run(self, run_id: str) -> dict[str, Any]:
         path = f"v1/runs/{run_id}"
         resp = await self.aget(path=path, timeout=30.0)
         raise_for_status(resp, path=path)
         return self._parser.parse(resp, as_="json")
 
-    @AIXS_RETRY
+    @SEYVAL_RETRY
     async def aget_run_outputs(self, run_id: str) -> dict[str, Any]:
         """Get a run's output files, each with a ready-to-use `download_url`.
 
         Paths are relative to the run's working directory, so an experiment
         following the airas-template contract exposes its results under
         `.research/results`. `truncated` is true when the run wrote more
-        files than AIXS lists. Available wherever the run executed.
+        files than Seyval lists. Available wherever the run executed.
         """
         path = f"v1/runs/{run_id}/outputs"
         resp = await self.aget(path=path, timeout=60.0)
         raise_for_status(resp, path=path)
         return self._parser.parse(resp, as_="json")
 
-    @AIXS_RETRY
+    @SEYVAL_RETRY
     async def adownload(self, url: str) -> bytes:
-        """Download a URL handed out by AIXS: an output file's `download_url`,
+        """Download a URL handed out by Seyval: an output file's `download_url`,
         or the `stdout_url` / `stderr_url` of a finished run.
 
         These URLs are pre-authorized and expire, so the API key is
@@ -245,17 +245,17 @@ class AixsClient(BaseHTTPClient):
         raise_for_status(resp, path=url.split("?", 1)[0])
         return resp.content
 
-    # AIXS has these two endpoints slated for removal in favour of the
+    # Seyval has these two endpoints slated for removal in favour of the
     # `stdout_url` / `stderr_url` it returns for a finished run. They stay
     # because they also serve runs that have no such URL yet.
-    @AIXS_RETRY
+    @SEYVAL_RETRY
     async def aget_run_stdout(self, run_id: str) -> str:
         path = f"v1/runs/{run_id}/stdout"
         resp = await self.aget(path=path, timeout=60.0)
         raise_for_status(resp, path=path)
         return resp.text
 
-    @AIXS_RETRY
+    @SEYVAL_RETRY
     async def aget_run_stderr(self, run_id: str) -> str:
         path = f"v1/runs/{run_id}/stderr"
         resp = await self.aget(path=path, timeout=60.0)

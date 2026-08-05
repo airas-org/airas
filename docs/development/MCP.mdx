@@ -34,6 +34,21 @@ chmod 600 ~/.airas/credentials.json
 
 If a tool is called before its credential is configured, it returns an error pointing at this file.
 
+### Seyval compute platform
+
+`dispatch_experiment(backend="seyval")` and `import_run_outputs` run against Seyval, which takes its own key:
+
+```json
+{
+  "SEYVAL_API_KEY": "seyval_pat_...",
+  "SEYVAL_COMPUTE_ID": "byo:<uuid>"
+}
+```
+
+`SEYVAL_COMPUTE_ID` is optional and names the default cluster; without it, runs go to Seyval-managed compute. `SEYVAL_BASE_URL` overrides the API host.
+
+Seyval was previously called AIXS. If you configured it under the old names, rename `AIXS_API_KEY` / `AIXS_BASE_URL` / `AIXS_COMPUTE_ID` to `SEYVAL_*`, reissue the key so it is a `seyval_pat_` one, and pass `backend="seyval"` instead of `backend="aixs"`. The old names are no longer read.
+
 ### OpenAI-compatible endpoints (Rikyu)
 
 RIKEN R-CCS's Rikyu API speaks the OpenAI API, and is reached with one credential:
@@ -117,7 +132,7 @@ Or add it to your project's `.mcp.json`:
 | Tool | Description |
 | --- | --- |
 | `prepare_repository` | Create and initialize an experiment repository |
-| `dispatch_experiment` | Start a sanity-check or main experiment run (async) on GitHub Actions or the AIXS compute platform (`backend` parameter) |
+| `dispatch_experiment` | Start a sanity-check or main experiment run (async) on GitHub Actions or the Seyval compute platform (`backend` parameter) |
 | `get_workflow_runs` | Check the status of recent workflow runs (non-blocking) |
 | `get_experiment_run_status` | Check one run on any backend and fetch its stdout/stderr tails for error diagnosis |
 | `fetch_experiment_results` | Fetch experiment results |
@@ -145,7 +160,7 @@ Or add it to your project's `.mcp.json`:
 
 Generation steps are dual-mode: run them on the backend LLM (the tools below, requires an LLM provider key) or author them yourself with the same curated prompts via `get_generation_prompt` (no key required). Host-authorable steps: `research_queries`, `hypothesis`, `experimental_design`, `experiment_analysis`, `paper_writing`, `latex_conversion` — every prompt comes with an `output_json_schema` describing exactly the data format to produce.
 
-A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs` for GitHub Actions, or `get_experiment_run_status` for AIXS) → `fetch_experiment_results` → `analyze_experiment` → **create figures and diagrams yourself** (see below) → `generate_bibfile` → `generate_paper` → `generate_latex` → **write the returned LaTeX to `.research/latex/{template}/main.tex` in your clone and push it with git** → **either or both of** `compile_latex` (build the PDF on GitHub Actions) / `open_in_overleaf` (hand the project to the user for editing; with `local_path`, no push needed) → `upload_research_history`.
+A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs` for GitHub Actions, or `get_experiment_run_status` for Seyval) → `fetch_experiment_results` → `analyze_experiment` → **create figures and diagrams yourself** (see below) → `generate_bibfile` → `generate_paper` → `generate_latex` → **write the returned LaTeX to `.research/latex/{template}/main.tex` in your clone and push it with git** → **either or both of** `compile_latex` (build the PDF on GitHub Actions) / `open_in_overleaf` (hand the project to the user for editing; with `local_path`, no push needed) → `upload_research_history`.
 
 ### Writing the experiment code
 
@@ -171,7 +186,7 @@ Result figures and method diagrams are also created by the MCP host itself rathe
 
 As with code generation, the autonomous research workflows still run visualization and diagram generation on GitHub Actions; those paths are not exposed as MCP tools.
 
-Long-running steps return immediately instead of blocking. Experiments run on GitHub Actions or on AIXS depending on `dispatch_experiment`'s `backend` — track them with `get_workflow_runs` or `get_experiment_run_status` respectively. LaTeX builds run on GitHub Actions; track them with `get_workflow_runs`.
+Long-running steps return immediately instead of blocking. Experiments run on GitHub Actions or on Seyval depending on `dispatch_experiment`'s `backend` — track them with `get_workflow_runs` or `get_experiment_run_status` respectively. LaTeX builds run on GitHub Actions; track them with `get_workflow_runs`.
 
 ## Development
 

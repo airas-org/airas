@@ -1,4 +1,4 @@
-"""Guards around importing AIXS run outputs into the repository."""
+"""Guards around importing Seyval run outputs into the repository."""
 
 import base64
 import json
@@ -31,8 +31,8 @@ FIGURE = ".research/results/run-1/figure.pdf"
 METRICS = ".research/results/run-1/metrics.json"
 
 
-class FakeAixsClient:
-    """Stands in for AixsClient; records what was downloaded."""
+class FakeSeyvalClient:
+    """Stands in for SeyvalClient; records what was downloaded."""
 
     def __init__(self, outputs: dict | None = None, runs: list | None = None):
         self._outputs = outputs or {}
@@ -104,7 +104,7 @@ def test_rejected_paths(path: str):
 
 
 async def test_collect_downloads_only_results_files():
-    client = FakeAixsClient(
+    client = FakeSeyvalClient(
         outputs={
             "outputs": [
                 _output(METRICS),
@@ -126,7 +126,7 @@ async def test_collect_downloads_only_results_files():
 
 
 async def test_collect_fails_when_listing_truncated():
-    client = FakeAixsClient(
+    client = FakeSeyvalClient(
         outputs={"outputs": [_output(METRICS)], "truncated": True},
     )
 
@@ -138,7 +138,7 @@ async def test_collect_fails_when_listing_truncated():
 
 
 async def test_collect_fails_when_no_results_files():
-    client = FakeAixsClient(
+    client = FakeSeyvalClient(
         outputs={"outputs": [_output("wandb/debug.log")], "truncated": False},
     )
 
@@ -149,7 +149,7 @@ async def test_collect_fails_when_no_results_files():
 async def test_collect_fails_when_download_url_missing():
     entry = _output(FIGURE)
     del entry["download_url"]
-    client = FakeAixsClient(outputs={"outputs": [entry], "truncated": False})
+    client = FakeSeyvalClient(outputs={"outputs": [entry], "truncated": False})
 
     # Names the file rather than surfacing a bare KeyError from the gather.
     with pytest.raises(ValueError, match=r"figure\.pdf.*download_url"):
@@ -157,7 +157,7 @@ async def test_collect_fails_when_download_url_missing():
 
 
 async def test_collect_fails_when_batch_too_large():
-    client = FakeAixsClient(
+    client = FakeSeyvalClient(
         outputs={
             "outputs": [_output(FIGURE, size_bytes=MAX_TOTAL_BYTES + 1)],
             "truncated": False,
@@ -178,9 +178,9 @@ def _run(experiment_id: str, run_id: str, status: str = "completed") -> dict:
 
 
 async def test_resolve_picks_newest_completed_run_for_the_mode():
-    client = FakeAixsClient(
+    client = FakeSeyvalClient(
         runs=[
-            # Newest first, as AIXS lists them.
+            # Newest first, as Seyval lists them.
             _run("run_1_full", "newest", status="running"),
             _run("run_1_full", "wanted"),
             _run("run_1_full", "older"),
@@ -194,14 +194,14 @@ async def test_resolve_picks_newest_completed_run_for_the_mode():
 
 
 async def test_resolve_does_not_cross_modes():
-    client = FakeAixsClient(runs=[_run("run_1_sanity", "sanity-run")])
+    client = FakeSeyvalClient(runs=[_run("run_1_sanity", "sanity-run")])
 
     with pytest.raises(ValueError, match="run_1_full"):
         await resolve_execution_id(client, GITHUB_CONFIG, "run-1", "full")
 
 
 async def test_resolve_error_points_at_execution_id():
-    client = FakeAixsClient(runs=[])
+    client = FakeSeyvalClient(runs=[])
 
     with pytest.raises(ValueError, match="execution_id"):
         await resolve_execution_id(client, GITHUB_CONFIG, "run-1", "full")
@@ -240,18 +240,18 @@ def _github_client_capturing(blobs: list[dict]) -> GithubClient:
 
 
 async def test_subgraph_commits_downloaded_outputs_as_binary():
-    aixs_client = FakeAixsClient(
+    seyval_client = FakeSeyvalClient(
         outputs={
             "outputs": [_output(METRICS), _output(FIGURE), _output("wandb/debug.log")],
             "truncated": False,
         },
-        runs=[_run("run_1_full", "aixs-run-uuid")],
+        runs=[_run("run_1_full", "seyval-run-uuid")],
     )
     blobs: list[dict] = []
 
     result = await (
         ImportRunOutputsSubgraph(
-            aixs_client=aixs_client,
+            seyval_client=seyval_client,
             github_client=_github_client_capturing(blobs),
             run_stage=RunStage.FULL,
         )
@@ -260,7 +260,7 @@ async def test_subgraph_commits_downloaded_outputs_as_binary():
     )
 
     assert result["imported"] is True
-    assert result["execution_id"] == "aixs-run-uuid"
+    assert result["execution_id"] == "seyval-run-uuid"
     assert result["imported_paths"] == sorted([METRICS, FIGURE])
     assert result["total_bytes"] > 0
 
@@ -272,14 +272,14 @@ async def test_subgraph_commits_downloaded_outputs_as_binary():
 
 
 async def test_subgraph_uses_explicit_execution_id_without_lookup():
-    aixs_client = FakeAixsClient(
+    seyval_client = FakeSeyvalClient(
         outputs={"outputs": [_output(METRICS)], "truncated": False},
         runs=[],  # a lookup would fail
     )
 
     result = await (
         ImportRunOutputsSubgraph(
-            aixs_client=aixs_client,
+            seyval_client=seyval_client,
             github_client=_github_client_capturing([]),
             execution_id="explicit-run-uuid",
         )

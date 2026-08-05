@@ -8,8 +8,8 @@ from airas.core.logging_utils import setup_logging
 from airas.core.research_paths import RESULTS_DIR
 from airas.core.types.experiment_history import RunStage
 from airas.core.types.github import GitHubConfig
-from airas.infra.aixs_client import AixsClient
 from airas.infra.github_client import GithubClient
+from airas.infra.seyval_client import SeyvalClient
 from airas.usecases.executors.import_run_outputs_subgraph.nodes.collect_run_outputs import (
     collect_run_outputs,
 )
@@ -46,10 +46,10 @@ class ImportRunOutputsSubgraphState(
 
 
 class ImportRunOutputsSubgraph:
-    """Copy an AIXS run's result files into the experiment repository.
+    """Copy a Seyval run's result files into the experiment repository.
 
-    AIXS pulls the repository to run it but never pushes back: outputs are
-    captured from the run's working directory into AIXS's own storage. This
+    Seyval pulls the repository to run it but never pushes back: outputs are
+    captured from the run's working directory into Seyval's own storage. This
     subgraph closes that loop by downloading the files under the results
     directory and committing them at the same paths, which is where
     `fetch_experiment_results` and the LaTeX build already look.
@@ -60,12 +60,12 @@ class ImportRunOutputsSubgraph:
 
     def __init__(
         self,
-        aixs_client: AixsClient,
+        seyval_client: SeyvalClient,
         github_client: GithubClient,
         run_stage: RunStage | None = None,
         execution_id: str | None = None,
     ):
-        self.aixs_client = aixs_client
+        self.seyval_client = seyval_client
         self.github_client = github_client
         self.run_stage = run_stage or RunStage.FULL
         self.execution_id = execution_id
@@ -78,7 +78,7 @@ class ImportRunOutputsSubgraph:
             return {"execution_id": self.execution_id}
 
         execution_id = await resolve_execution_id(
-            self.aixs_client,
+            self.seyval_client,
             state["github_config"],
             state["run_id"],
             self.run_stage.value,
@@ -89,7 +89,7 @@ class ImportRunOutputsSubgraph:
     async def _collect_run_outputs(
         self, state: ImportRunOutputsSubgraphState
     ) -> dict[str, dict[str, bytes]]:
-        outputs = await collect_run_outputs(self.aixs_client, state["execution_id"])
+        outputs = await collect_run_outputs(self.seyval_client, state["execution_id"])
         return {"outputs": outputs}
 
     @record_execution_time
@@ -109,7 +109,7 @@ class ImportRunOutputsSubgraph:
             branch_name=github_config.branch_name,
             files=files,
             commit_message=(
-                f"Import AIXS run outputs for {state['run_id']} "
+                f"Import Seyval run outputs for {state['run_id']} "
                 f"({self.run_stage.value}) from run {execution_id}"
             ),
         )
