@@ -39,4 +39,13 @@ BIOINFORMATICS_LIBRARIES: dict[str, dict[str, str | None]] = {
         "llms_txt": None,
         "llms_full_txt": None,
     },
+    "bionemo-recipes": {
+        "description": "TransformerEngine-optimized checkpoints and FSDP training recipes for biomolecular models (protein, single-cell, genome); works with HF Accelerate, PyTorch Lightning, and vanilla PyTorch. Note: the PyPI package `bionemo` is an unrelated deprecated service client",
+        "domain": "science",
+        "category": "bioinformatics",
+        "official_docs": "https://nvidia-bionemo.github.io/bionemo-recipes/",
+        "github": "https://github.com/NVIDIA-BioNeMo/bionemo-recipes",
+        "llms_txt": None,
+        "llms_full_txt": None,
+    },
 }
