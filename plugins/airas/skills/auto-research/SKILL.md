@@ -41,7 +41,7 @@ You drive the research; AIRAS provides retrieval, curated generation steps
    `mode=sanity` locally until it prints `SANITY_VALIDATION: PASS`, then
    commit and push.
 5. **Run experiments**: `dispatch_experiment` (async;
-   `backend="github_actions"` or `"aixs"` with a `compute_type`). Poll
+   `backend="github_actions"` or `"seyval"` with a `compute_type`). Poll
    `get_workflow_runs` (GitHub Actions) or `get_experiment_run_status`
    (either backend; returns stdout/stderr tails for debugging). Fix code
    locally and re-dispatch as needed.

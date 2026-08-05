@@ -63,7 +63,6 @@ from airas.dashboard.launcher import (
 from airas.dashboard.launcher import (
     stop_dashboard as stop_dashboard_process,
 )
-from airas.infra.aixs_client import AixsClient
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
 from airas.infra.hugging_face_client import HF_RESOURCE_TYPE, HuggingFaceClient
@@ -82,14 +81,15 @@ from airas.infra.llm_provider_resolver import (
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.infra.semantic_scholar_client import SemanticScholarClient
+from airas.infra.seyval_client import SeyvalClient
 from airas.mcp.prompt_registry import build_generation_prompt
 from airas.resources.libraries.library_docs import LIBRARY_DOCS
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentLLMMapping,
     AnalyzeExperimentSubgraph,
 )
-from airas.usecases.executors.dispatch_experiment_on_aixs_subgraph.dispatch_experiment_on_aixs_subgraph import (
-    DispatchExperimentOnAixsSubgraph,
+from airas.usecases.executors.dispatch_experiment_on_seyval_subgraph.dispatch_experiment_on_seyval_subgraph import (
+    DispatchExperimentOnSeyvalSubgraph,
 )
 from airas.usecases.executors.dispatch_experiment_on_static_runner_subgraph.dispatch_experiment_on_static_runner_subgraph import (
     DispatchExperimentOnStaticRunnerSubgraph,
@@ -188,11 +188,11 @@ def _github_client() -> GithubClient:
     )
 
 
-def _aixs_client() -> AixsClient:
+def _seyval_client() -> SeyvalClient:
     refresh_environment()
-    if not os.getenv("AIXS_API_KEY"):
-        raise RuntimeError(f"AIXS_API_KEY is not configured. {SETUP_INSTRUCTIONS}")
-    return AixsClient(sync_session=_sync_session, async_session=_async_session)
+    if not os.getenv("SEYVAL_API_KEY"):
+        raise RuntimeError(f"SEYVAL_API_KEY is not configured. {SETUP_INSTRUCTIONS}")
+    return SeyvalClient(sync_session=_sync_session, async_session=_async_session)
 
 
 def _kroki_client() -> KrokiClient:
@@ -822,7 +822,7 @@ async def dispatch_experiment(
     run_id: str,
     run_stage: Literal["sanity", "pilot", "full"] = "sanity",
     runner_label: list[str] | None = None,
-    backend: Literal["github_actions", "aixs"] = "github_actions",
+    backend: Literal["github_actions", "seyval"] = "github_actions",
     compute_type: str = "gpu-a10",
     compute_id: str | None = None,
     inputs_from_runs: list[str] | None = None,
@@ -835,25 +835,25 @@ async def dispatch_experiment(
     correctness run, "pilot" for a small preliminary one, "full" for the real
     experiment. `run_id` identifies the experiment run defined by the
     experiment code (one config/run/{run_id}.yaml). Pass the same stage to
-    `import_run_outputs` to collect an AIXS run's results afterwards.
+    `import_run_outputs` to collect a Seyval run's results afterwards.
 
     `backend` selects where the run executes:
     - "github_actions" (default): dispatches a workflow in the experiment
       repository. `runner_label` picks the runner. Track progress with
       `get_workflow_runs` and collect outputs with `fetch_experiment_results`.
       Requires GH_PERSONAL_ACCESS_TOKEN.
-    - "aixs": executes on the AIXS compute platform (GPU without GitHub
+    - "seyval": executes on the Seyval compute platform (GPU without GitHub
       Actions limits). `compute_id` picks the machine — normally a cluster
-      you registered, "byo:<uuid>" from the AIXS MCP server's
-      `list_computes`; it defaults to AIXS_COMPUTE_ID, and without either the
-      run goes to AIXS-managed compute. `compute_type` sets the resource
+      you registered, "byo:<uuid>" from the Seyval MCP server's
+      `list_computes`; it defaults to SEYVAL_COMPUTE_ID, and without either the
+      run goes to Seyval-managed compute. `compute_type` sets the resource
       request in both cases (e.g. "cpu-general", "gpu-a10"). The W&B API key
-      must be registered as an env var on the AIXS side. AIXS keeps the run's
+      must be registered as an env var on the Seyval side. Seyval keeps the run's
       results on its own side, so call `import_run_outputs` once the run
       finishes — before `fetch_experiment_results`, which reads the
       repository.
 
-    `inputs_from_runs`, `time_limit` and `resource_count` apply to "aixs"
+    `inputs_from_runs`, `time_limit` and `resource_count` apply to "seyval"
     only. `inputs_from_runs` takes `execution_id`s of earlier completed runs
     and restores their outputs into this run's working directory at the paths
     they were written to, so a run can consume what a previous one produced.
@@ -862,22 +862,22 @@ async def dispatch_experiment(
     `run_profile` from `list_computes`.
 
     Track progress and fetch execution errors with
-    `get_experiment_run_status`. For "aixs" the returned `execution_id` is
+    `get_experiment_run_status`. For "seyval" the returned `execution_id` is
     passed directly; for "github_actions" the workflow-dispatch API returns
     no id, so discover the run id with `get_workflow_runs` first.
     """
-    # Both backends record the stage: AIXS in the run's experiment id, GitHub
+    # Both backends record the stage: Seyval in the run's experiment id, GitHub
     # Actions as run_experiment.yml's `mode` input.
     stage = RunStage(run_stage)
 
-    if backend == "aixs":
+    if backend == "seyval":
         # Resolve the client first: it is what loads the stored credentials
-        # into the environment that AIXS_COMPUTE_ID is read from.
-        client = _aixs_client()
-        resolved_compute_id = compute_id or os.getenv("AIXS_COMPUTE_ID") or None
-        aixs_result = (
-            await DispatchExperimentOnAixsSubgraph(
-                aixs_client=client,
+        # into the environment that SEYVAL_COMPUTE_ID is read from.
+        client = _seyval_client()
+        resolved_compute_id = compute_id or os.getenv("SEYVAL_COMPUTE_ID") or None
+        seyval_result = (
+            await DispatchExperimentOnSeyvalSubgraph(
+                seyval_client=client,
                 compute_id=resolved_compute_id,
                 run_stage=stage,
                 compute_type=compute_type,
@@ -898,11 +898,11 @@ async def dispatch_experiment(
             )
         )
         return {
-            "dispatched": aixs_result["dispatched"],
-            "backend": "aixs",
+            "dispatched": seyval_result["dispatched"],
+            "backend": "seyval",
             "compute_id": resolved_compute_id,
-            "execution_id": aixs_result["aixs_run_id"],
-            "execution_url": aixs_result["aixs_run_url"],
+            "execution_id": seyval_result["seyval_run_id"],
+            "execution_url": seyval_result["seyval_run_url"],
         }
 
     result = (
@@ -929,7 +929,7 @@ async def dispatch_experiment(
 @mcp.tool()
 async def get_experiment_run_status(
     execution_id: str,
-    backend: Literal["github_actions", "aixs"] = "github_actions",
+    backend: Literal["github_actions", "seyval"] = "github_actions",
     github_owner: str | None = None,
     repository_name: str | None = None,
     log_tail_lines: int = 200,
@@ -937,7 +937,7 @@ async def get_experiment_run_status(
     """Check one experiment run and fetch its execution logs (non-blocking).
 
     `execution_id` identifies the run on the selected `backend`: the
-    `execution_id` returned by `dispatch_experiment(backend="aixs")`, or a
+    `execution_id` returned by `dispatch_experiment(backend="seyval")`, or a
     `workflow_run_id` from `get_workflow_runs` for "github_actions" (pass
     `github_owner` and `repository_name` in that case).
 
@@ -978,7 +978,7 @@ async def get_experiment_run_status(
             "stderr_tail": None,
         }
 
-    client = _aixs_client()
+    client = _seyval_client()
     run = await client.aget_run(execution_id)
     status = run.get("status")
 
@@ -1087,10 +1087,10 @@ async def import_run_outputs(
     execution_id: str | None = None,
     confirm_overwrite: bool = False,
 ) -> dict[str, Any]:
-    """Copy an AIXS run's result files into the experiment repository.
+    """Copy a Seyval run's result files into the experiment repository.
 
-    Only needed for `backend="aixs"`: AIXS pulls the repository to run it but
-    never pushes back, so its results and figures stay in AIXS's storage.
+    Only needed for `backend="seyval"`: Seyval pulls the repository to run it but
+    never pushes back, so its results and figures stay in Seyval's storage.
     This commits everything the run wrote under `.research/results/` to
     `branch_name` at the same paths, after which `fetch_experiment_results`,
     `analyze_experiment` and `compile_latex` work as they do for
@@ -1114,7 +1114,7 @@ async def import_run_outputs(
     lookup.
 
     File contents are downloaded and committed inside airas and are never
-    returned. Requires AIXS_API_KEY and GH_PERSONAL_ACCESS_TOKEN.
+    returned. Requires SEYVAL_API_KEY and GH_PERSONAL_ACCESS_TOKEN.
     """
     stage = RunStage(run_stage)
     if stage in _PROVISIONAL_RUN_STAGES and not confirm_overwrite:
@@ -1127,7 +1127,7 @@ async def import_run_outputs(
 
     result = (
         await ImportRunOutputsSubgraph(
-            aixs_client=_aixs_client(),
+            seyval_client=_seyval_client(),
             github_client=_github_client(),
             run_stage=stage,
             execution_id=execution_id,
