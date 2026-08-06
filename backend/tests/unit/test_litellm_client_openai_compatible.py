@@ -90,7 +90,7 @@ class TestLLMTimeout:
 
         assert resolve_llm_timeout() == 90.0
 
-    @pytest.mark.parametrize("value", ["", "   ", "soon", "0", "-1"])
+@pytest.mark.parametrize("value", ["", "   ", "soon", "0", "-1", "nan", "inf", "-inf"])
     def test_an_unusable_value_falls_back_rather_than_failing(self, value, monkeypatch):
         """A bad env var must not take down every LLM call in the process."""
         monkeypatch.setenv(LLM_TIMEOUT_ENV, value)
