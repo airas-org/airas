@@ -42,11 +42,15 @@ def has_bundled_ui() -> bool:
     return (static_dir / "index.html").is_file()
 
 
-def start_dashboard(port: int, timeout: float = 30.0) -> int:
+def start_dashboard(port: int, timeout: float = 120.0) -> int:
     """Spawn `airas dashboard` in the background and wait until it is healthy.
 
     Returns the child PID. Raises RuntimeError if the process dies or does
-    not become healthy in time.
+    not become healthy in time. A process that is still alive when the wait
+    runs out is left running rather than terminated: cold starts have been
+    seen to log `Application startup complete` well past the old 30s wait,
+    and killing one throws away the work, so retrying the call is what the
+    caller should do — the retry finds it already healthy.
     """
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     with open(LOG_FILE, "ab") as log:
@@ -84,10 +88,10 @@ def start_dashboard(port: int, timeout: float = 30.0) -> int:
             )
         time.sleep(0.3)
 
-    proc.terminate()
-    PID_FILE.unlink(missing_ok=True)
     raise RuntimeError(
-        f"Dashboard did not become healthy within {timeout}s. See {LOG_FILE}."
+        f"Dashboard did not answer /health within {timeout}s, but the process "
+        f"(pid {proc.pid}) is still starting and has been left running. Retry "
+        f"this call — it will reuse the process once it is up. See {LOG_FILE}."
     )
 
 
