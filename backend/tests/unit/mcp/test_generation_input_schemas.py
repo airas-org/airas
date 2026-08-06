@@ -42,6 +42,18 @@ def test_an_unknown_step_names_the_ones_that_exist():
         get_input_json_schema("hypotheses")
 
 
+def test_a_generation_step_error_does_not_offer_a_non_step():
+    """research_history has a schema but is not something to generate.
+
+    Listing it among the available steps would send the caller straight
+    into a second error.
+    """
+    with pytest.raises(ValueError, match="Unknown step") as excinfo:
+        build_generation_prompt("research_history", {})
+
+    assert "research_history" not in str(excinfo.value).split("Available:")[1]
+
+
 def test_the_published_schema_is_the_one_that_validates():
     """Publishing a second, hand-written schema would let the two drift."""
     schema = get_input_json_schema("hypothesis")
@@ -161,3 +173,24 @@ class TestResearchHistoryKeys:
         )
 
         assert history.research_topic == "t"
+
+    @pytest.mark.asyncio
+    async def test_the_shape_is_published_where_the_client_already_looks(self):
+        """A `dict[str, Any]` parameter publishes nothing the caller can use.
+
+        The tool listing said `additionalProperties: true` with no
+        properties at all, so a client had no way to learn the shape
+        without a second call it had no reason to make.
+        """
+        from airas.mcp.server import mcp
+
+        tool = {t.name: t for t in await mcp.list_tools()}["upload_research_history"]
+        published = tool.inputSchema["$defs"]["_ResearchHistoryInput"]
+
+        assert published["additionalProperties"] is False
+        assert "additional_data" in published["properties"]
+        assert "experiment_history" in published["properties"]
+
+    def test_a_non_object_is_named_rather_than_raising_a_type_error(self):
+        with pytest.raises(ValueError, match="JSON object"):
+            _reject_unknown_history_keys(["research_topic"])

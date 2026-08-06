@@ -297,14 +297,21 @@ def get_input_json_schema(step: str) -> dict[str, Any]:
     """The JSON Schema of the `inputs` a step expects."""
     if model := _EXTRA_INPUT_SCHEMAS.get(step):
         return model.model_json_schema()
-    _require_known_step(step)
+    if step not in _STEP_BUILDERS:
+        # Lists the non-step schemas too, because this is the one place they
+        # can be asked for. The generation path below must not: offering
+        # research_history as an "available step" would send the caller
+        # straight into a second error.
+        raise ValueError(
+            f"No input schema for '{step}'. Available: {', '.join(_KNOWN_SCHEMAS)}"
+        )
     return _STEP_BUILDERS[step][0].model_json_schema()
 
 
 def _require_known_step(step: str) -> None:
     if step not in _STEP_BUILDERS:
         raise ValueError(
-            f"Unknown step '{step}'. Available: {', '.join(_KNOWN_SCHEMAS)}"
+            f"Unknown step '{step}'. Available: {', '.join(GENERATION_STEPS)}"
         )
 
 
