@@ -41,10 +41,13 @@ be configured, but the preamble is yours to write. Start `main.tex` with:
 
 ```latex
 \documentclass[11pt]{article}
-\usepackage{luatexja-fontspec}
-\setmainjfont{IPAexMincho}
-\setsansjfont{IPAexGothic}
+\usepackage{luatexja}
 ```
+
+That one package is enough — it brings its own Japanese fonts, so there
+is nothing to name and nothing to install beyond the TeX packages below.
+Reach for `luatexja-fontspec` and `\setmainjfont` only if a specific
+typeface is actually wanted.
 
 If `verify_latex` reports that lualatex is missing, install it:
 `apt-get install texlive-luatex texlive-lang-japanese`.

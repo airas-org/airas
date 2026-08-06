@@ -27,6 +27,28 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && corepack enable \
     && rm -rf /var/lib/apt/lists/*
 
+# LaTeX, for verify_latex. Without it the tool refuses to run rather than
+# reporting a paper as sound without having built it, so a container that
+# skips this layer simply cannot check a paper before it is published.
+#
+# texlive-latex-extra and texlive-science carry what the bundled templates
+# load (mdpi in particular pulls in a long list). texlive-luatex and
+# texlive-lang-japanese are what a Japanese paper needs: pdflatex raises
+# `LaTeX Error: Unicode character` for every CJK character and drops it
+# from the PDF, so verify_latex builds those with lualatex instead. The
+# IPAex fonts the preamble asks for ship with the language package.
+#
+# This is the largest layer in the image by some margin (~2 GB installed).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    texlive-latex-recommended \
+    texlive-latex-extra \
+    texlive-fonts-recommended \
+    texlive-science \
+    texlive-luatex \
+    texlive-lang-japanese \
+    texlive-binaries \
+    && rm -rf /var/lib/apt/lists/*
+
 # ttyd
 RUN DPKG_ARCH=$(dpkg --print-architecture) && \
     if [ "$DPKG_ARCH" = "amd64" ]; then TTYD_ARCH="x86_64"; else TTYD_ARCH="aarch64"; fi && \
