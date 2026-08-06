@@ -38,6 +38,14 @@ class LatexBuildReport(BaseModel):
         default_factory=list,
         description="Figure paths the document includes but the project lacks",
     )
+    pdf_path: Optional[str] = Field(
+        default=None,
+        description=(
+            "Where the built PDF was written, when an output path was "
+            "requested. The build directory is temporary, so without one "
+            "the PDF is discarded after the report is produced"
+        ),
+    )
     errors: list[str] = Field(
         default_factory=list, description="LaTeX errors, in the order emitted"
     )

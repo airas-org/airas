@@ -1673,6 +1673,7 @@ async def verify_latex(
     branch_name: str = "",
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
     local_path: str | None = None,
+    output_path: str | None = None,
 ) -> dict[str, Any]:
     """Compile the paper locally and report whether it is actually sound.
 
@@ -1700,8 +1701,17 @@ async def verify_latex(
     Pass `local_path` — the absolute path of your local clone — to check the
     working tree with no push and no API keys. Otherwise pass
     `github_owner`/`repository_name`/`branch_name` to check what was pushed
-    (requires GH_PERSONAL_ACCESS_TOKEN). Requires a local TeX distribution;
-    `pdflatex` must be on PATH.
+    (requires GH_PERSONAL_ACCESS_TOKEN).
+
+    Pass `output_path` to keep the PDF this build produced — the build
+    directory is temporary otherwise, and `pdf_path` in the result says
+    where it landed. For a Japanese paper that is the only way to get a PDF
+    at all: `compile_latex` runs pdflatex on GitHub Actions, which cannot
+    typeset CJK.
+
+    Requires a local TeX distribution. A Japanese document is built with
+    lualatex (`texlive-luatex`, `texlive-lang-japanese`); everything else
+    with pdflatex.
     """
     refresh_environment()
 
@@ -1726,7 +1736,9 @@ async def verify_latex(
             _github_client(),
         )
 
-    report = await asyncio.to_thread(verify_latex_build, latex_files)
+    report = await asyncio.to_thread(
+        verify_latex_build, latex_files, "main.tex", output_path
+    )
     return report.model_dump()
 
 

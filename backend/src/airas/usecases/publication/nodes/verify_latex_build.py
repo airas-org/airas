@@ -52,6 +52,18 @@ _PDFLATEX_TIMEOUT_SECONDS = 180.0
 _BIBTEX_TIMEOUT_SECONDS = 60.0
 _LOG_TAIL_CHARS = 4000
 
+# pdflatex has no way to typeset CJK: every Japanese character raises
+# `LaTeX Error: Unicode character` and the PDF comes out with the text
+# missing. LuaTeX handles it natively, so the engine follows the document
+# rather than the other way round — a paper drafted in Japanese should not
+# have to be rewritten to be checkable.
+_LUALATEX_ENGINE = "lualatex"
+_PDFLATEX_ENGINE = "pdflatex"
+
+# CJK ideographs, hiragana, katakana, and the fullwidth punctuation that
+# comes with them. Latin text with a stray “ or — stays on pdflatex.
+_CJK = re.compile(r"[぀-ヿ㐀-䶿一-鿿＀-ﾟ]")
+
 _UNDEFINED_CITATION = re.compile(r"Citation [`'\"]([^`'\"]+)['\"] on page")
 _UNDEFINED_REFERENCE = re.compile(r"Reference [`'\"]([^`'\"]+)['\"] on page")
 _MISSING_FILE = re.compile(r"File [`'\"]([^`'\"]+)['\"] not found")
@@ -113,6 +125,21 @@ def _parse_log(log: str) -> tuple[list[str], list[str], list[str], list[str]]:
     return citations, references, missing_files, errors
 
 
+def _save_pdf(pdf_path: Path, output_path: str | Path | None) -> str | None:
+    """Copy the built PDF out of the scratch directory, if asked."""
+    if output_path is None:
+        return None
+    destination = Path(output_path).expanduser()
+    # A directory is the natural thing to pass when checking several
+    # templates, so accept it and keep the document's own name.
+    if destination.is_dir() or not destination.suffix:
+        destination = destination / pdf_path.name
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(pdf_path, destination)
+    logger.info(f"Wrote the verified PDF to {destination}")
+    return str(destination)
+
+
 def _page_count(pdf_path: Path) -> int | None:
     try:
         from pypdf import PdfReader
@@ -123,23 +150,35 @@ def _page_count(pdf_path: Path) -> int | None:
         return None
 
 
+def select_engine(main_tex: str) -> str:
+    """The TeX engine that can typeset this document.
+
+    Chosen from the source rather than configured, because getting it wrong
+    is not a preference but a failure: pdflatex turns every Japanese
+    character into `LaTeX Error: Unicode character` and drops it from the
+    PDF, and asking the author to declare the engine just moves the
+    mistake somewhere it is easier to forget.
+    """
+    return _LUALATEX_ENGINE if _CJK.search(main_tex) else _PDFLATEX_ENGINE
+
+
 def verify_latex_build(
     latex_files: dict[str, bytes],
     main_tex_name: str = "main.tex",
+    output_path: str | Path | None = None,
 ) -> LatexBuildReport:
     """Build `latex_files` in a scratch directory and report the result.
 
-    Runs the same pdflatex/bibtex/pdflatex/pdflatex sequence the CI LaTeX
-    agent uses, so the findings match what that agent would see.
-    """
-    if shutil.which("pdflatex") is None:
-        raise LatexToolchainMissingError(
-            "pdflatex was not found on PATH. Install a TeX distribution "
-            "(e.g. `apt-get install texlive-latex-recommended "
-            "texlive-latex-extra texlive-fonts-recommended texlive-science`) "
-            "to verify the paper locally, or push and use compile_latex."
-        )
+    Runs the same engine/bibtex/engine/engine sequence the CI LaTeX agent
+    uses, so the findings match what that agent would see. The engine is
+    lualatex for a document containing CJK and pdflatex otherwise.
 
+    The build happens in a temporary directory that is deleted afterwards,
+    so pass `output_path` to keep the PDF. It is worth keeping: this is the
+    one build whose result has been inspected, and for a Japanese paper it
+    is currently the only way to get a PDF at all — the GitHub Actions
+    workflow runs pdflatex, which cannot typeset CJK.
+    """
     stem = Path(main_tex_name).stem
 
     with tempfile.TemporaryDirectory(prefix="airas-latex-") as tmp:
@@ -150,15 +189,31 @@ def verify_latex_build(
         if not main_tex_path.is_file():
             raise ValueError(f"{main_tex_name} is not present in the collected project")
 
+        source = main_tex_path.read_text(errors="replace")
+        engine = select_engine(source)
+        if shutil.which(engine) is None:
+            raise LatexToolchainMissingError(
+                f"{engine} was not found on PATH. "
+                + (
+                    "This document contains Japanese, which needs LuaTeX: "
+                    "`apt-get install texlive-luatex texlive-lang-japanese`."
+                    if engine == _LUALATEX_ENGINE
+                    else "Install a TeX distribution (e.g. `apt-get install "
+                    "texlive-latex-recommended texlive-latex-extra "
+                    "texlive-fonts-recommended texlive-science`)."
+                )
+                + " Or push and use compile_latex."
+            )
+
         pdflatex = [
-            "pdflatex",
+            engine,
             "-interaction=nonstopmode",
             "-halt-on-error=0",
             "-no-shell-escape",
             main_tex_name,
         ]
 
-        needs_bibtex = _needs_bibtex(main_tex_path.read_text(errors="replace"))
+        needs_bibtex = _needs_bibtex(source)
         if needs_bibtex and shutil.which("bibtex") is None:
             raise LatexToolchainMissingError(
                 "The document has a bibliography but bibtex was not found on "
@@ -196,6 +251,9 @@ def verify_latex_build(
         pdf_path = build_dir / f"{stem}.pdf"
         compiled = pdf_path.is_file()
         page_count = _page_count(pdf_path) if compiled else None
+        # Kept even when the report is not clean: a PDF with one unresolved
+        # citation is still the fastest way to see what is wrong with it.
+        saved_pdf = _save_pdf(pdf_path, output_path) if compiled else None
 
         # Three things to drop from the raw "File ... not found" list.
         # graphicx probes for a graphic under several extensions and names
@@ -226,6 +284,7 @@ def verify_latex_build(
         undefined_references=references,
         missing_figures=missing_figures,
         errors=errors,
+        pdf_path=saved_pdf,
         log_tail=log[-_LOG_TAIL_CHARS:],
     )
     logger.info(
