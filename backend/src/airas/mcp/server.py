@@ -128,6 +128,11 @@ from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph 
     GenerateLatexLLMMapping,
     GenerateLatexSubgraph,
 )
+from airas.usecases.publication.nodes.verify_latex_build import verify_latex_build
+from airas.usecases.publication.open_in_overleaf_subgraph.nodes.collect_latex_project_files import (
+    collect_latex_project_files,
+    collect_latex_project_files_local,
+)
 from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.fetch_paper_fulltext_subgraph import (
     FetchPaperFulltextSubgraph,
 )
@@ -487,9 +492,14 @@ async def fetch_paper_fulltext(
     (no open-access PDF found, abstract returned instead), or "not_found".
 
     A paper can run to 80k+ characters, so the text is capped at `max_chars`
-    (default 40000) and `total_chars` reports the full length with
-    `truncated` saying whether anything was cut. Raise the cap deliberately;
-    reading a few uncapped papers is enough to exhaust a context window.
+    — **characters, not tokens**, default 40000 — with `total_chars`
+    reporting the full length and `truncated` saying whether anything was
+    cut. There is no paging: raising the cap re-fetches the paper from the
+    start. Neither MCP nor this server imposes a size limit; the cap exists
+    because reading a few uncapped papers exhausts a context window, and
+    because a client may divert an oversized result to a file. The default
+    assumes English prose at roughly four characters per token — lower it
+    explicitly for CJK text, where a character is closer to a token.
     No API keys required.
     """
     if not (arxiv_id or doi or pdf_url):
@@ -1518,10 +1528,14 @@ async def compile_latex(
     One of the two publication exits after main.tex has been pushed to
     `.research/latex/{template}/` (the other is `open_in_overleaf`; they
     are independent and can both be used).
-    Dispatches the LaTeX compilation workflow for the pushed sources;
-    figure PDFs under `.research/results/` and `.research/diagrams/` are
-    materialized into `images/` at build time. Returns immediately with
-    `paper_url` (when available); track the run with `get_workflow_runs`.
+    Dispatches the LaTeX compilation workflow for the pushed sources.
+    The workflow materializes every PDF under `.research/results/` and
+    `.research/diagrams/` into the template's `images/` with the directory
+    structure preserved, so figures need only be pushed, not pre-staged.
+    Returns as soon as the dispatch is accepted, which is not a
+    compile result — `paper_url` is where the PDF will land if the run
+    succeeds, so track the run with `get_workflow_runs`, and use
+    `verify_latex` to find out whether the document is actually sound.
     `model` (required) is forwarded to the compilation workflow as the
     coding-agent model (`model_name`) — call `get_available_llms` to list
     valid models. Requires GH_PERSONAL_ACCESS_TOKEN.
@@ -1548,6 +1562,63 @@ async def compile_latex(
         "compile_latex_dispatched": result["compile_latex_dispatched"],
         "paper_url": result["paper_url"],
     }
+
+
+@mcp.tool()
+async def verify_latex(
+    github_owner: str = "",
+    repository_name: str = "",
+    branch_name: str = "",
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+    local_path: str | None = None,
+) -> dict[str, Any]:
+    """Compile the paper locally and report whether it is actually sound.
+
+    Use this before `open_in_overleaf` or `compile_latex` — those produce a
+    link and a dispatch receipt, neither of which tells you the document
+    built. This one builds it and answers the questions that decide whether
+    the paper is publishable: did a PDF come out (`compiled`, `page_count`),
+    do any citations render as `?` (`undefined_citations` — the usual cause
+    is writing main.tex without also writing the generated bibliography to
+    `.research/latex/{template}/references.bib`, whose shipped version is a
+    single placeholder entry), do any `\\ref`s render as `??`
+    (`undefined_references`), and is any figure referenced but absent
+    (`missing_figures`). `ok` is true only when all of those are clean.
+
+    It compiles exactly the file set `open_in_overleaf` would export, so a
+    clean report means the exported project compiles as-is.
+
+    Pass `local_path` — the absolute path of your local clone — to check the
+    working tree with no push and no API keys. Otherwise pass
+    `github_owner`/`repository_name`/`branch_name` to check what was pushed
+    (requires GH_PERSONAL_ACCESS_TOKEN). Requires a local TeX distribution;
+    `pdflatex` must be on PATH.
+    """
+    refresh_environment()
+
+    if local_path:
+        latex_files = await asyncio.to_thread(
+            collect_latex_project_files_local, local_path, latex_template_name
+        )
+    else:
+        if not (github_owner and repository_name and branch_name):
+            raise ValueError(
+                "Provide local_path, or all of github_owner, repository_name "
+                "and branch_name."
+            )
+        latex_files = await asyncio.to_thread(
+            collect_latex_project_files,
+            GitHubConfig(
+                github_owner=github_owner,
+                repository_name=repository_name,
+                branch_name=branch_name,
+            ),
+            latex_template_name,
+            _github_client(),
+        )
+
+    report = await asyncio.to_thread(verify_latex_build, latex_files)
+    return report.model_dump()
 
 
 @mcp.tool()

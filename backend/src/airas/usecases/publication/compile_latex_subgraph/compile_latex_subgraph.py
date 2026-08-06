@@ -76,10 +76,14 @@ class CompileLatexSubgraph:
 
         if success:
             logger.info(f"Workflow {self.workflow_file} dispatched successfully")
+            # compile_latex.yml moves the PDF to .research/<paper_name>.pdf,
+            # not into the template subdirectory it was built in. The URL is
+            # where the file will land if the run succeeds; dispatch only
+            # means the request was accepted, so it can still 404.
             paper_url = (
                 f"https://github.com/{github_config.github_owner}/"
                 f"{github_config.repository_name}/blob/{github_config.branch_name}/"
-                f".research/latex/{self.latex_template_name}/{self.paper_name}.pdf"
+                f".research/{self.paper_name}.pdf"
             )
             return {"compile_latex_dispatched": True, "paper_url": paper_url}
         else:
