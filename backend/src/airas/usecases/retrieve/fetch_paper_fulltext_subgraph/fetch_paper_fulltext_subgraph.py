@@ -21,16 +21,32 @@ record_execution_time = lambda f: time_node(subgraph_name)(f)  # noqa: E731
 FulltextStatus = Literal["fulltext", "abstract_only", "not_found"]
 
 
+def _truncate(text: str, max_chars: Optional[int]) -> dict:
+    """Cap `text`, reporting the full length so the caller can page on."""
+    total_chars = len(text)
+    if max_chars is None or max_chars <= 0 or total_chars <= max_chars:
+        return {"text": text, "total_chars": total_chars, "truncated": False}
+    logger.info(f"Truncating extracted text from {total_chars} to {max_chars} chars")
+    return {
+        "text": text[:max_chars],
+        "total_chars": total_chars,
+        "truncated": True,
+    }
+
+
 class FetchPaperFulltextSubgraphInputState(TypedDict):
     arxiv_id: Optional[str]
     doi: Optional[str]
     pdf_url: Optional[str]
+    max_chars: Optional[int]
 
 
 class FetchPaperFulltextSubgraphOutputState(ExecutionTimeState):
     text: str
     status: FulltextStatus
     resolved_from: Optional[str]
+    total_chars: int
+    truncated: bool
 
 
 class FetchPaperFulltextSubgraphState(
@@ -47,6 +63,12 @@ class FetchPaperFulltextSubgraph:
     via Semantic Scholar by DOI. When no PDF can be fetched, the abstract
     (when the DOI lookup provided one) is returned with status
     `abstract_only`, or `not_found` when nothing is available.
+
+    A DOI that Semantic Scholar cannot resolve to an open-access PDF falls
+    back to an explicitly supplied `pdf_url` before giving up on the
+    abstract: sources such as bioRxiv host their own PDF and are absent from
+    Semantic Scholar's open-access index, so the same paper that returns
+    `abstract_only` by DOI returns full text by URL.
     """
 
     def __init__(self, semantic_scholar_client: SemanticScholarClient):
@@ -105,19 +127,43 @@ class FetchPaperFulltextSubgraph:
         self, state: FetchPaperFulltextSubgraphState
     ) -> dict:
         resolved_pdf_url = state.get("resolved_pdf_url")
+        supplied_pdf_url = (state.get("pdf_url") or "").strip()
 
-        if resolved_pdf_url:
-            text = await download_pdf_text(resolved_pdf_url)
+        attempts = [(resolved_pdf_url, state.get("resolved_from"))]
+        if supplied_pdf_url and supplied_pdf_url != resolved_pdf_url:
+            attempts.append((supplied_pdf_url, "pdf_url"))
+
+        for candidate_url, resolved_from in attempts:
+            if not candidate_url:
+                continue
+            text = await download_pdf_text(candidate_url)
             if text:
-                return {"text": text, "status": "fulltext"}
+                return self._as_fulltext(text, resolved_from, state)
+            logger.info(f"No text extracted from {candidate_url}")
 
         if fallback_abstract := state.get("fallback_abstract"):
             return {
-                "text": fallback_abstract,
+                **_truncate(fallback_abstract, state.get("max_chars")),
                 "status": "abstract_only",
                 "resolved_from": "semantic_scholar_abstract",
             }
-        return {"text": "", "status": "not_found", "resolved_from": None}
+        return {
+            "text": "",
+            "status": "not_found",
+            "resolved_from": None,
+            "total_chars": 0,
+            "truncated": False,
+        }
+
+    @staticmethod
+    def _as_fulltext(
+        text: str, resolved_from: Optional[str], state: FetchPaperFulltextSubgraphState
+    ) -> dict:
+        return {
+            **_truncate(text, state.get("max_chars")),
+            "status": "fulltext",
+            "resolved_from": resolved_from,
+        }
 
     def build_graph(self):
         graph_builder = StateGraph(

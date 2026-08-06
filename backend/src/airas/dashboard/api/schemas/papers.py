@@ -70,16 +70,23 @@ class SearchPapersResponseBody(BaseModel):
 
 
 class FetchPaperFulltextRequestBody(BaseModel):
-    # Exactly one identifier is enough; they are tried in this order.
+    # One identifier is enough. They are tried arxiv_id, pdf_url, doi, and
+    # supplying both a doi and a pdf_url is worthwhile: the pdf_url is the
+    # fallback when the doi resolves to no open-access PDF.
     arxiv_id: str | None = None
     doi: str | None = None
     pdf_url: str | None = None
+    # Uncapped by default, unlike the MCP tool: that cap exists to protect a
+    # model's context window, and nothing here is feeding one.
+    max_chars: int | None = None
 
 
 class FetchPaperFulltextResponseBody(BaseModel):
     text: str
     status: Literal["fulltext", "abstract_only", "not_found"]
     resolved_from: str | None
+    total_chars: int
+    truncated: bool
     execution_time: dict[str, list[float]]
 
 
