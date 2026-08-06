@@ -129,8 +129,7 @@ You drive the research; AIRAS provides retrieval, curated generation steps
 
 - Long-running tools return immediately; never block waiting. Poll between
   other work.
-- All repository writes go through your local clone and git; there are no
-  file-upload tools.
+- Most repository writes go through your local clone and git; the exception is `upload_research_history`, which commits `.research/research_history.json` via an MCP tool. There are no general-purpose file-upload tools.
 - Several tools report a problem instead of raising it, and those are the
   ones that quietly produce a worthless paper. Check them rather than
   assuming success: `search_papers` returns `search_errors` per source;
