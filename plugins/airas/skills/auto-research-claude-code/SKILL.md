@@ -165,8 +165,7 @@ shape from a validation error. The two that catch people out:
 
 - Long-running tools return immediately; never block waiting. Poll between
   other work.
-- All repository writes go through your local clone and git; there are no
-  file-upload tools.
+- Most repository writes go through your local clone and git; the exception is `upload_research_history`, which commits `.research/research_history.json` via an MCP tool. There are no general-purpose file-upload tools.
 - When a step fails, go back only as far as the failure requires: a failed
   experiment run means fixing code and re-dispatching (step 5), not
   re-deriving the hypothesis. Re-run a generation step only when its
