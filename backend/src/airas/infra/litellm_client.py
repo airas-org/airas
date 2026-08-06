@@ -54,7 +54,40 @@ PROVIDER_REQUIRED_ENV_VARS: dict[LLMProvider, list[str]] = {
 # another's host.
 LITELLM_OPENAI_COMPATIBLE_PREFIX = "hosted_vllm/"
 
+# litellm's own 600s default is too short for the reasoning models served over
+# the Rikyu endpoint. Measured on `rikyu/kimi-k3`: a single call spent ~194s
+# emitting its reasoning trace before the first answer token and ~284s in
+# total, and that was for a prompt far smaller than the ones the generation
+# subgraphs send. Queueing on the shared endpoint has separately been observed
+# to add ~2min before the first token. Below this bound the call is killed
+# mid-reasoning and the work is simply lost, so the default is generous;
+# set AIRAS_LLM_TIMEOUT (seconds) to tighten or loosen it per deployment.
+LLM_TIMEOUT_ENV = "AIRAS_LLM_TIMEOUT"
+DEFAULT_LLM_TIMEOUT_SECONDS = 1800.0
+
 # TODO: Define LLMParams
+
+
+def resolve_llm_timeout() -> float:
+    """Seconds to allow one LLM call, from AIRAS_LLM_TIMEOUT or the default."""
+    raw = os.getenv(LLM_TIMEOUT_ENV, "").strip()
+    if not raw:
+        return DEFAULT_LLM_TIMEOUT_SECONDS
+    try:
+        timeout = float(raw)
+    except ValueError:
+        logger.warning(
+            f"{LLM_TIMEOUT_ENV}={raw!r} is not a number; "
+            f"using {DEFAULT_LLM_TIMEOUT_SECONDS}s."
+        )
+        return DEFAULT_LLM_TIMEOUT_SECONDS
+    if timeout <= 0:
+        logger.warning(
+            f"{LLM_TIMEOUT_ENV}={raw!r} must be positive; "
+            f"using {DEFAULT_LLM_TIMEOUT_SECONDS}s."
+        )
+        return DEFAULT_LLM_TIMEOUT_SECONDS
+    return timeout
 
 
 class LiteLLMClient:
@@ -103,6 +136,8 @@ class LiteLLMClient:
         web_search: bool = False,
     ) -> str:
         litellm_kwargs = params.copy() if params else {}
+        # setdefault so an explicit per-call timeout in `params` still wins.
+        litellm_kwargs.setdefault("timeout", resolve_llm_timeout())
         messages = [{"role": "user", "content": message}]
 
         if web_search:
@@ -131,7 +166,7 @@ class LiteLLMClient:
                 messages=messages,
                 **connection,
                 **litellm_kwargs,
-            )  # TODO: timeoutを延長する
+            )
             content = response.choices[0].message.content
 
             if content is None:
@@ -189,6 +224,8 @@ class LiteLLMClient:
             )
 
         litellm_kwargs = params.copy() if params else {}
+        # setdefault so an explicit per-call timeout in `params` still wins.
+        litellm_kwargs.setdefault("timeout", resolve_llm_timeout())
         messages = [{"role": "user", "content": message}]
 
         if web_search:
@@ -218,7 +255,7 @@ class LiteLLMClient:
                 response_format=data_model,
                 **connection,
                 **litellm_kwargs,
-            )  # TODO: timeoutを延長する
+            )
 
             content = response.choices[0].message.content
 
