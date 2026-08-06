@@ -22,7 +22,18 @@ FulltextStatus = Literal["fulltext", "abstract_only", "not_found"]
 
 
 def _truncate(text: str, max_chars: Optional[int]) -> dict:
-    """Cap `text`, reporting the full length so the caller can page on."""
+    """Cap `text` at `max_chars` characters, reporting what was cut.
+
+    Characters, not tokens. The constraint being protected is a token
+    budget, so this is a proxy calibrated on English prose at roughly four
+    characters per token; CJK text runs closer to one, where the same cap
+    admits several times the tokens it is meant to.
+
+    There is no paging: the discarded tail is only recoverable by asking
+    again with a larger cap, which re-downloads and re-extracts the PDF.
+    `total_chars` and `truncated` are here so the caller knows the tail
+    exists, not so it can fetch it in pieces.
+    """
     total_chars = len(text)
     if max_chars is None or max_chars <= 0 or total_chars <= max_chars:
         return {"text": text, "total_chars": total_chars, "truncated": False}
