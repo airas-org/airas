@@ -18,6 +18,44 @@ You drive the research; AIRAS provides retrieval, curated generation steps
   generation tools, and `GH_PERSONAL_ACCESS_TOKEN` for
   repository/experiment tools.
 
+## Write in Japanese
+
+The people reviewing this work will not always have the domain knowledge
+to judge a claim — about protein-ligand scoring, say — on sight. A
+plausible-sounding mistake is only catchable if they can read it
+comfortably, so **every artifact a human is meant to check should be
+Japanese**: the hypothesis, the experimental design, the analysis report,
+and the paper itself, through to the PDF. The backend generation prompts
+are written to produce English, so in this mode that means editing what
+comes back — or switching to `auto-research-claude-code`, where you author
+the artifacts yourself and the language is simply yours to choose.
+
+Two things stay English because they are identifiers rather than prose:
+`primary_metric` / `supporting_metrics`, which are parsed downstream to
+compute the GAP, and BibTeX citation keys.
+
+A Japanese paper needs LuaTeX — pdflatex raises `LaTeX Error: Unicode
+character` for every Japanese character and leaves the text out of the
+PDF. `verify_latex` picks the engine from the document, so nothing has to
+be configured, but the preamble is yours to write. Start `main.tex` with:
+
+```latex
+\documentclass[11pt]{article}
+\usepackage{luatexja-fontspec}
+\setmainjfont{IPAexMincho}
+\setsansjfont{IPAexGothic}
+```
+
+If `verify_latex` reports that lualatex is missing, install it:
+`apt-get install texlive-luatex texlive-lang-japanese`.
+
+The bundled templates (`iclr2024`, `mdpi`, `agents4science_2025`) are
+English conference styles with no CJK support, so a Japanese paper does
+not use them — write your own preamble as above and keep the structure
+(title, abstract, numbered sections, figures, bibliography). Translate to
+English only when the user asks; treat that as a rendering rather than a
+rewrite, since no claim, number or citation should change on the way.
+
 ## Flow
 
 1. **Discover**: `generate_research_queries` → `search_papers` →
