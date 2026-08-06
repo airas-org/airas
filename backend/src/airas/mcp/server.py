@@ -82,7 +82,7 @@ from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.infra.seyval_client import SeyvalClient
-from airas.mcp.prompt_registry import build_generation_prompt, get_input_json_schema
+from airas.mcp.prompt_registry import build_generation_prompt
 from airas.resources.libraries.library_docs import LIBRARY_DOCS
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentLLMMapping,
@@ -358,33 +358,11 @@ def get_generation_prompt(step: str, inputs: dict[str, Any]) -> dict[str, Any]:
       experiment_code, research_study_list, references_bib
     - "latex_conversion": paper_content, figures_dir (optional)
 
-    Returns a fully rendered `prompt`, an `input_json_schema` describing the
-    exact shape of `inputs` for this step, an `output_json_schema` describing
+    Returns a fully rendered `prompt`, an `output_json_schema` describing
     exactly the data format to produce in one pass, and a `flow` note on
-    how the output feeds the next step. Call `get_input_schema` first if you
-    are assembling an input by hand — `research_study_list` entries in
-    particular are `ResearchStudy` objects, not `search_papers` rows, and
-    share no key names with them.
+    how the output feeds the next step.
     """
     return build_generation_prompt(step, inputs)
-
-
-@mcp.tool()
-def get_input_schema(step: str) -> dict[str, Any]:
-    """The JSON Schema of the `inputs` a `get_generation_prompt` step takes.
-
-    Use before assembling an input by hand, so the shape is known up front
-    instead of being discovered through a validation error. The steps are
-    the same as `get_generation_prompt`'s. No API keys required.
-
-    Assembling `research_study_list` from `search_papers` output is the
-    common case and needs a translation: a search row's `authors`,
-    `citations` and `arxiv_id` live under `meta_data` on a `ResearchStudy`,
-    and only `title` is required — a study with just `title` and `abstract`
-    is valid, so nothing has to be invented for papers whose full text was
-    not retrieved.
-    """
-    return get_input_json_schema(step)
 
 
 @mcp.tool()
@@ -846,8 +824,6 @@ async def prepare_repository(
 
     Sets up the repository (from the AIRAS experiment template) and the
     working branch. Run this once before `dispatch_code_generation`.
-    Returns `html_url` and `clone_url` alongside the readiness flags, so the
-    next step — cloning it locally — needs nothing reconstructed by hand.
     Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     config = GitHubConfig(
@@ -866,8 +842,6 @@ async def prepare_repository(
     return {
         "is_repository_ready": result["is_repository_ready"],
         "is_branch_ready": result["is_branch_ready"],
-        "html_url": result["html_url"],
-        "clone_url": result["clone_url"],
     }
 
 
@@ -885,7 +859,6 @@ async def dispatch_experiment(
     inputs_from_runs: list[str] | None = None,
     time_limit: str | None = None,
     resource_count: int | None = None,
-    required_env_vars: list[str] | None = None,
 ) -> dict[str, Any]:
     """Start an experiment run (asynchronous). The code must already be pushed.
 
@@ -905,16 +878,11 @@ async def dispatch_experiment(
       you registered, "byo:<uuid>" from the Seyval MCP server's
       `list_computes`; it defaults to SEYVAL_COMPUTE_ID, and without either the
       run goes to Seyval-managed compute. `compute_type` sets the resource
-      request in both cases (e.g. "cpu-general", "gpu-a10"). Seyval keeps the run's
+      request in both cases (e.g. "cpu-general", "gpu-a10"). The W&B API key
+      must be registered as an env var on the Seyval side. Seyval keeps the run's
       results on its own side, so call `import_run_outputs` once the run
       finishes — before `fetch_experiment_results`, which reads the
       repository.
-
-    `required_env_vars` lists the env vars Seyval must have registered before
-    it will start the run, and defaults to `["WANDB_API_KEY"]`. Seyval
-    rejects the run outright when one is missing, so pass `[]` for an
-    experiment that does not use Weights & Biases rather than registering a
-    dummy key.
 
     `inputs_from_runs`, `time_limit` and `resource_count` apply to "seyval"
     only. `inputs_from_runs` takes `execution_id`s of earlier completed runs
@@ -947,7 +915,6 @@ async def dispatch_experiment(
                 inputs_from_runs=inputs_from_runs,
                 time_limit=time_limit,
                 resource_count=resource_count,
-                required_env_vars=required_env_vars,
             )
             .build_graph()
             .ainvoke(
