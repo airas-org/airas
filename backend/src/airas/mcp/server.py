@@ -82,7 +82,7 @@ from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.infra.seyval_client import SeyvalClient
-from airas.mcp.prompt_registry import build_generation_prompt
+from airas.mcp.prompt_registry import build_generation_prompt, get_input_json_schema
 from airas.resources.libraries.library_docs import LIBRARY_DOCS
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentLLMMapping,
@@ -358,11 +358,35 @@ def get_generation_prompt(step: str, inputs: dict[str, Any]) -> dict[str, Any]:
       experiment_code, research_study_list, references_bib
     - "latex_conversion": paper_content, figures_dir (optional)
 
-    Returns a fully rendered `prompt`, an `output_json_schema` describing
+    Returns a fully rendered `prompt`, an `input_json_schema` describing the
+    exact shape of `inputs` for this step, an `output_json_schema` describing
     exactly the data format to produce in one pass, and a `flow` note on
-    how the output feeds the next step.
+    how the output feeds the next step. Call `get_input_schema` first if you
+    are assembling an input by hand — `research_study_list` entries in
+    particular are `ResearchStudy` objects, not `search_papers` rows, and
+    share no key names with them.
     """
     return build_generation_prompt(step, inputs)
+
+
+@mcp.tool()
+def get_input_schema(step: str) -> dict[str, Any]:
+    """The JSON Schema of an input a tool takes.
+
+    Use before assembling one by hand, so the shape is known up front
+    instead of being discovered through a validation error — or, worse, not
+    discovered at all. `step` is any of `get_generation_prompt`'s steps, or
+    `research_history` for what `upload_research_history` accepts. No API
+    keys required.
+
+    Assembling `research_study_list` from `search_papers` output is the
+    common case and needs a translation: a search row's `authors`,
+    `citations` and `arxiv_id` live under `meta_data` on a `ResearchStudy`,
+    and only `title` is required — a study with just `title` and `abstract`
+    is valid, so nothing has to be invented for papers whose full text was
+    not retrieved.
+    """
+    return get_input_json_schema(step)
 
 
 @mcp.tool()
@@ -1259,6 +1283,33 @@ async def analyze_experiment(
 # --- Research history persistence (GitHub) ---
 
 
+def _reject_unknown_history_keys(research_history: dict[str, Any]) -> None:
+    """Refuse a key the model would drop, instead of dropping it.
+
+    ResearchHistory leaves pydantic's default `extra="ignore"` in place, so
+    an undeclared top-level key vanishes during validation and the upload
+    still reports success. A caller who passed eight keys and had six
+    silently discarded learns nothing until a later session restores an
+    empty-looking history.
+
+    The strictness belongs here rather than on the model: the same model
+    parses `.research/research_history.json` back out of the repository,
+    where a file written by hand — which the skills instruct agents to
+    do — must not make the whole restore fail.
+    """
+    unknown = sorted(set(research_history) - set(ResearchHistory.model_fields))
+    if not unknown:
+        return
+    raise ValueError(
+        f"research_history has {len(unknown)} key(s) that would be discarded "
+        f"without warning: {', '.join(unknown)}. Accepted fields are "
+        f"{', '.join(ResearchHistory.model_fields)}. Anything that does not "
+        "map onto one of them belongs under `additional_data`, which takes "
+        "an arbitrary dict; call get_input_schema('research_history') for "
+        "the full shape."
+    )
+
+
 @mcp.tool()
 async def upload_research_history(
     github_owner: str,
@@ -1272,7 +1323,17 @@ async def upload_research_history(
     AIRAS persists research state in the GitHub repository, so uploading the
     accumulated history lets you resume work in a later session with
     `download_research_history`. Requires GH_PERSONAL_ACCESS_TOKEN.
+
+    `research_history` accepts only the declared fields — `research_topic`,
+    `queries`, `research_study_list`, `research_hypothesis`,
+    `experiment_history`, `experiment_code`, `paper_content`,
+    `references_bib`, `latex_text`, `paper_url`, `full_html`,
+    `github_pages_url`, `paper_review_scores` — plus `additional_data`, a
+    free-form dict for anything the schema has no home for. Call
+    `get_input_schema("research_history")` for the full shape. Any other
+    top-level key is rejected rather than dropped.
     """
+    _reject_unknown_history_keys(research_history)
     result = (
         await GithubUploadSubgraph(_github_client())
         .build_graph()
