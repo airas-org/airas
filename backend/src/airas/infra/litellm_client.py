@@ -11,6 +11,7 @@ To view available models in your environment, run:
 
 import json
 import logging
+import math
 import os
 from collections.abc import Callable
 from functools import lru_cache
@@ -81,10 +82,14 @@ def resolve_llm_timeout() -> float:
             f"using {DEFAULT_LLM_TIMEOUT_SECONDS}s."
         )
         return DEFAULT_LLM_TIMEOUT_SECONDS
-    if timeout <= 0:
+    # float() accepts "inf" and "nan", and both slip past a `<= 0` test:
+    # inf disables the timeout the caller asked for, and nan makes every
+    # comparison false further down. Neither is what someone setting this
+    # variable meant, so treat them like any other unusable value.
+    if not math.isfinite(timeout) or timeout <= 0:
         logger.warning(
-            f"{LLM_TIMEOUT_ENV}={raw!r} must be positive; "
-            f"using {DEFAULT_LLM_TIMEOUT_SECONDS}s."
+            f"{LLM_TIMEOUT_ENV}={raw!r} must be a positive, finite number of "
+            f"seconds; using {DEFAULT_LLM_TIMEOUT_SECONDS}s."
         )
         return DEFAULT_LLM_TIMEOUT_SECONDS
     return timeout
