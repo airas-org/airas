@@ -33,7 +33,18 @@ class GithubClientError(RuntimeError): ...
 class GithubClientRetryableError(GithubClientError): ...
 
 
-class GithubClientFatalError(GithubClientError): ...
+class GithubClientFatalError(GithubClientError):
+    """A request that will not succeed on retry.
+
+    Carries `status_code` so callers can tell "this does not exist" (404,
+    often a legitimate absence) apart from "you may not read this" (403) —
+    treating the two alike turns a permission problem into silently missing
+    data.
+    """
+
+    def __init__(self, message: str, status_code: int | None = None):
+        super().__init__(message)
+        self.status_code = status_code
 
 
 DEFAULT_MAX_RETRIES = 10
@@ -191,14 +202,19 @@ class GithubClient(BaseHTTPClient):
                 return self._parser.parse(response, as_=as_)
             case 404:
                 logger.warning(f"Resource not found (404): {path}")
-                raise GithubClientFatalError(f"Resource not found (404): {path}")
+                raise GithubClientFatalError(
+                    f"Resource not found (404): {path}", status_code=404
+                )
             case 403:
                 logger.error(f"Access forbidden (403): {path}")
-                raise GithubClientFatalError(f"Access forbidden (403): {path}")
+                raise GithubClientFatalError(
+                    f"Access forbidden (403): {path}", status_code=403
+                )
             case _:
                 self._raise_for_status(response, path)
                 raise GithubClientFatalError(
-                    f"Unexpected response: {response.status_code}"
+                    f"Unexpected response: {response.status_code}",
+                    status_code=response.status_code,
                 )
 
     @GITHUB_RETRY
@@ -1251,14 +1267,19 @@ class GithubClient(BaseHTTPClient):
                     return response.content
             case 404:
                 logger.warning(f"Resource not found (404): {path}")
-                raise GithubClientFatalError(f"Resource not found (404): {path}")
+                raise GithubClientFatalError(
+                    f"Resource not found (404): {path}", status_code=404
+                )
             case 403:
                 logger.error(f"Access forbidden (403): {path}")
-                raise GithubClientFatalError(f"Access forbidden (403): {path}")
+                raise GithubClientFatalError(
+                    f"Access forbidden (403): {path}", status_code=403
+                )
             case _:
                 self._raise_for_status(response, path)
                 raise GithubClientFatalError(
-                    f"Unexpected response: {response.status_code}"
+                    f"Unexpected response: {response.status_code}",
+                    status_code=response.status_code,
                 )
 
     async def acommit_multiple_files(

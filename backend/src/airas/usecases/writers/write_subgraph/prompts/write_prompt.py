@@ -48,14 +48,15 @@ The paper should contain the following sections with specific requirements:
 - You must include **all figures provided in the context**, regardless of perceived relevance. Do not omit any
 - Place **method diagram figures** (listed under "Method Diagrams" in the note) in the **Method section**, not the Results section
 - Place **experimental result figures** (listed under "Result Figures" in the "Experimental Results" section of the note) in the **Results section** only
-- Each figure may be referred to multiple times in the text, but the **actual image (filename)** must be embedded **exactly once**, in the appropriate location
-- If image filenames (e.g., figure1.pdf) are listed in the Figures: section of the note, refer to them by filename only and do not describe their content unless explicitly provided in the note
+- Each figure may be referred to multiple times in the text, but the **actual image (path)** must be embedded **exactly once**, in the appropriate location
+- If image paths (e.g., run-1/figure1.pdf) are listed in the Figures: section of the note, refer to them by path only and do not describe their content unless explicitly provided in the note
 - Do not invent or assume the existence of any figures or visual content. If no figure is provided, you must not fabricate or imply the existence of one
 - In the figure captions, please specify whether a higher value or a lower value indicates better performance.
 
 ## Figure Definition and Reference Standards (Pandoc/Quarto Format)
-- Define figures using Pandoc/Quarto syntax: `![Caption text](images/filename.pdf){% raw %}{#fig:label}{% endraw %}`
-  - Example: `![Cumulative accuracy over the first 200 GSM8K examples; higher values indicate better performance.](images/comparative-1-llama8b-gsm8k_accuracy.pdf){% raw %}{#fig:gsm8k-baseline}{% endraw %}`
+- Define figures using Pandoc/Quarto syntax: `![Caption text](images/<path>){% raw %}{#fig:label}{% endraw %}`, where `<path>` is the figure's path from the note prefixed with `images/`
+  - The note lists each figure by a path that may contain directories. Copy that path verbatim and prefix it with `images/`; do not reduce it to the bare filename, because two runs can produce the same filename and only the full path resolves
+  - Example: a figure listed as `comparative-1/llama8b-gsm8k_accuracy.pdf` becomes `![Cumulative accuracy over the first 200 GSM8K examples; higher values indicate better performance.](images/comparative-1/llama8b-gsm8k_accuracy.pdf){% raw %}{#fig:gsm8k-baseline}{% endraw %}`
 - Use descriptive labels (e.g., `{% raw %}#fig:gsm8k-baseline{% endraw %}`, `{% raw %}#fig:svamp-proposed{% endraw %}`) that relate to the figure content
 - Reference figures in the body text using `@fig:label` format
   - Example: "As shown in @fig:gsm8k-baseline, the baseline achieves..."
