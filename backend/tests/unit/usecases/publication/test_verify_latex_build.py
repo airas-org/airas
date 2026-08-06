@@ -12,13 +12,17 @@ from pathlib import Path
 
 import pytest
 
-from airas.usecases.publication.nodes.verify_latex_build import verify_latex_build
+from airas.usecases.publication.nodes.verify_latex_build import (
+    select_engine,
+    verify_latex_build,
+)
 
-# Every document here ends in \bibliography{references}, so bibtex runs too.
-pytestmark = pytest.mark.skipif(
+# Most documents here end in \bibliography{references}, so bibtex runs too.
+requires_tex = pytest.mark.skipif(
     shutil.which("pdflatex") is None or shutil.which("bibtex") is None,
     reason="requires a local TeX distribution (pdflatex and bibtex)",
 )
+pytestmark = requires_tex
 
 BIB = b"""
 @article{known2020,
@@ -188,3 +192,46 @@ def test_a_missing_package_is_an_error_not_a_missing_figure():
     assert report.missing_figures == []
     assert any("not found" in error for error in report.errors)
     assert not report.ok
+
+
+class TestEngineSelection:
+    """pdflatex cannot typeset Japanese, so the engine follows the document.
+
+    A paper drafted in Japanese is checked in Japanese — asking the author
+    to declare the engine would just move the mistake somewhere easier to
+    forget, and getting it wrong is not a preference but a silent loss:
+    pdflatex raises `LaTeX Error: Unicode character` per character and
+    leaves the text out of the PDF.
+    """
+
+    def test_japanese_selects_lualatex(self):
+        assert select_engine("\\section{はじめに}") == "lualatex"
+
+    def test_latin_stays_on_pdflatex(self):
+        # Curly quotes and dashes are not CJK; they must not switch engines.
+        assert select_engine("A “quoted” em—dash paper.") == "pdflatex"
+
+    @pytest.mark.skipif(
+        shutil.which("lualatex") is None
+        or subprocess.run(["kpsewhich", "luatexja.sty"], capture_output=True).returncode
+        != 0,
+        reason="requires texlive-luatex and texlive-lang-japanese",
+    )
+    def test_a_japanese_paper_compiles_and_is_reported_sound(self):
+        report = verify_latex_build(
+            {
+                "main.tex": (
+                    "\\documentclass[11pt]{article}\n"
+                    "\\usepackage{luatexja-fontspec}\n"
+                    "\\setmainjfont{IPAexMincho}\n"
+                    "\\title{集約スコアは系ごとの失敗を隠蔽する}\n"
+                    "\\begin{document}\\maketitle\n"
+                    "\\section{はじめに}本研究では、集約指標の妥当性を検証する。\n"
+                    "\\end{document}\n"
+                ).encode()
+            }
+        )
+
+        assert report.ok
+        assert report.page_count == 1
+        assert report.errors == []
