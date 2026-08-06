@@ -48,7 +48,7 @@ The paper should contain the following sections with specific requirements:
 - You must include **all figures provided in the context**, regardless of perceived relevance. Do not omit any
 - Place **method diagram figures** (listed under "Method Diagrams" in the note) in the **Method section**, not the Results section
 - Place **experimental result figures** (listed under "Result Figures" in the "Experimental Results" section of the note) in the **Results section** only
-- Each figure may be referred to multiple times in the text, but the **actual image (filename)** must be embedded **exactly once**, in the appropriate location
+- Each figure may be referred to multiple times in the text, but the **actual image (path)** must be embedded **exactly once**, in the appropriate location
 - If image paths (e.g., run-1/figure1.pdf) are listed in the Figures: section of the note, refer to them by path only and do not describe their content unless explicitly provided in the note
 - Do not invent or assume the existence of any figures or visual content. If no figure is provided, you must not fabricate or imply the existence of one
 - In the figure captions, please specify whether a higher value or a lower value indicates better performance.

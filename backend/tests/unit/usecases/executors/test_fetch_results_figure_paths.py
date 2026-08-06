@@ -10,6 +10,7 @@ nothing downstream notices.
 import pytest
 
 from airas.core.types.github import GitHubConfig
+from airas.infra.github_client import GithubClientFatalError
 from airas.usecases.executors.fetch_experiment_results_subgraph.nodes.fetch_results import (
     _fetch_figure_paths,
     _image_prefix,
@@ -34,19 +35,30 @@ def _dir(name: str) -> dict:
 
 
 class FakeGithubClient:
-    """Serves a fixed directory tree through the contents API shape."""
+    """Serves a fixed directory tree through the contents API shape.
 
-    def __init__(self, tree: dict[str, list[dict]]):
+    Absence and refusal are raised the way GithubClient raises them: the
+    same exception type, told apart only by `status_code`.
+    """
+
+    def __init__(self, tree: dict[str, list[dict]], forbidden: set[str] | None = None):
         self._tree = tree
+        self._forbidden = forbidden or set()
         self.requested: list[str] = []
 
     async def aget_repository_content(
         self, github_owner: str, repository_name: str, file_path: str, branch_name: str
     ):
         self.requested.append(file_path)
+        if file_path in self._forbidden:
+            raise GithubClientFatalError(
+                f"Access forbidden (403): {file_path}", status_code=403
+            )
         if file_path in self._tree:
             return self._tree[file_path]
-        raise FileNotFoundError(file_path)
+        raise GithubClientFatalError(
+            f"Resource not found (404): {file_path}", status_code=404
+        )
 
 
 @pytest.mark.asyncio
@@ -190,3 +202,25 @@ async def test_missing_directory_yields_no_files():
     )
 
     assert files == []
+
+
+@pytest.mark.asyncio
+async def test_a_refused_directory_is_not_reported_as_an_empty_one():
+    """A token without access must not read as "this run produced nothing".
+
+    404 and 403 arrive as the same exception type; swallowing both turns a
+    permission problem into a paper written with no figures and no warning.
+    """
+    client = FakeGithubClient(
+        {f"{RESULTS_DIR}/run-1": [_file("accuracy.pdf")]},
+        forbidden={f"{RESULTS_DIR}/run-1"},
+    )
+
+    with pytest.raises(GithubClientFatalError):
+        await _fetch_figure_paths(
+            client,
+            GITHUB_CONFIG.github_owner,
+            GITHUB_CONFIG.repository_name,
+            f"{RESULTS_DIR}/run-1",
+            GITHUB_CONFIG.branch_name,
+        )

@@ -4,10 +4,10 @@ import json
 import logging
 from typing import Any
 
-from airas.core.research_paths import DIAGRAM_DIR, LEGACY_DIAGRAM_DIR, RESULTS_DIR
+from airas.core.research_paths import LEGACY_DIAGRAM_DIR, RESULTS_DIR
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import GitHubConfig
-from airas.infra.github_client import GithubClient
+from airas.infra.github_client import GithubClient, GithubClientFatalError
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,18 @@ def _decode_base64_content(content: str) -> str:
     except Exception as e:
         logger.error(f"Failed to decode base64 content: {e}")
         raise
+
+
+def _is_absent(error: Exception) -> bool:
+    """True for "this path does not exist", false for every other failure.
+
+    A results directory that was never written is an ordinary outcome, but a
+    403 from a token without access is not: reporting both as "no results"
+    is how a permission problem turns into a paper with no figures and no
+    complaint. github_client already logs the response, so nothing is
+    re-logged here.
+    """
+    return getattr(error, "status_code", None) == 404
 
 
 async def _fetch_json(
@@ -34,11 +46,17 @@ async def _fetch_json(
             file_path=file_path,
             branch_name=branch_name,
         )
+    except GithubClientFatalError as e:
+        if _is_absent(e):
+            return None
+        raise
+
+    try:
         if resp and "content" in resp:
             content_str = _decode_base64_content(resp["content"])
             return json.loads(content_str)
-    except (json.JSONDecodeError, Exception) as e:
-        logger.error(f"Failed to fetch or parse JSON at {file_path}: {e}")
+    except (json.JSONDecodeError, ValueError) as e:
+        logger.error(f"Failed to parse JSON at {file_path}: {e}")
     return None
 
 
@@ -73,9 +91,10 @@ async def _fetch_figure_paths(
             file_path=dir_path,
             branch_name=branch_name,
         )
-    except Exception as e:
-        logger.error(f"Failed to list files in {dir_path}: {e}")
-        return []
+    except GithubClientFatalError as e:
+        if _is_absent(e):
+            return []
+        raise
 
     if not isinstance(resp, list):
         return []
@@ -202,8 +221,15 @@ async def _fetch_diagram_files(
     github_client: GithubClient,
     github_config: GitHubConfig,
     results_dir: str = RESULTS_DIR,
-    diagrams_dirs: tuple[str, ...] = (DIAGRAM_DIR, LEGACY_DIAGRAM_DIR),
+    diagrams_dirs: tuple[str, ...] | None = None,
 ) -> list[str]:
+    # Derived from results_dir rather than the module constant, so a caller
+    # that relocates the results directory does not leave the diagram lookup
+    # pointing at the default one. The legacy directory sits outside
+    # results_dir by definition and stays fixed.
+    if diagrams_dirs is None:
+        diagrams_dirs = (f"{results_dir}/diagram", LEGACY_DIAGRAM_DIR)
+
     per_dir = await asyncio.gather(
         *(
             _fetch_figure_paths(

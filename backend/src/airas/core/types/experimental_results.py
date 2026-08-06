@@ -23,7 +23,7 @@ class ExperimentalResults(BaseModel):
     diagram_figures: Optional[list[str]] = Field(
         default=None,
         description=(
-            "Method diagram paths, relative the same way as result_figures "
+            "Method diagram paths, relative in the same way as result_figures "
             "(e.g. diagram/architecture.pdf)"
         ),
     )
