@@ -66,7 +66,10 @@ from airas.usecases.generators.generate_queries_subgraph.prompt.generate_queries
 from airas.usecases.publication.generate_latex_subgraph.prompts.convert_to_latex_prompt import (
     convert_to_latex_prompt,
 )
-from airas.usecases.writers.write_subgraph.nodes.generate_note import generate_note
+from airas.usecases.writers.write_subgraph.nodes.generate_note import (
+    generate_note,
+    unmatched_citation_titles,
+)
 from airas.usecases.writers.write_subgraph.prompts.section_tips_prompt import (
     section_tips_prompt,
 )
@@ -226,7 +229,7 @@ def _paper_writing(inputs: _PaperWritingInputs) -> dict[str, Any]:
         references_bib=inputs.references_bib,
     )
     prompt = _render(write_prompt, {"note": note, "tips_dict": section_tips_prompt})
-    return {
+    result: dict[str, Any] = {
         "prompt": prompt,
         "output_json_schema": PaperContent.model_json_schema(),
         "flow": (
@@ -235,6 +238,22 @@ def _paper_writing(inputs: _PaperWritingInputs) -> dict[str, Any]:
             "as paper_content."
         ),
     }
+    # The prompt tells the writer not to cite these, and says so nowhere the
+    # caller can see. Unattended, that finishes a paper with the citations
+    # quietly missing.
+    unmatched = unmatched_citation_titles(
+        inputs.research_study_list, inputs.references_bib
+    )
+    if unmatched:
+        result["warnings"] = [
+            f"{len(unmatched)} of {len(inputs.research_study_list)} studies have "
+            "no entry in references_bib, so the prompt marks them 'do not cite' "
+            "and they will be missing from the paper: "
+            + "; ".join(unmatched)
+            + ". Titles are matched by title, so pass generate_bibfile's output "
+            "verbatim rather than a shortened version."
+        ]
+    return result
 
 
 def _latex_conversion(inputs: _LatexConversionInputs) -> dict[str, Any]:

@@ -6,6 +6,8 @@ You are an AI researcher. You will conduct experiments to demonstrate the superi
 {% if compute_environment %}
 {%- if compute_environment.os %}OS: {{ compute_environment.os }}
 {% endif %}
+{%- if compute_environment.arch %}CPU architecture: {{ compute_environment.arch }} (a dependency without a wheel for this architecture cannot be installed, however well it resolves elsewhere)
+{% endif %}
 {%- if compute_environment.cpu_cores %}CPU: {{ compute_environment.cpu_cores }} cores
 {% endif %}
 {%- if compute_environment.ram_gb %}RAM: {{ compute_environment.ram_gb }} GB
@@ -46,15 +48,20 @@ You are an AI researcher. You will conduct experiments to demonstrate the superi
       - Relevant visualizations: ONLY figures appropriate for this metric type (e.g., confusion matrix for classification, error distribution for regression, learning curves, etc.)
   - Ensure metrics are appropriate for the task - avoid exact string matching for numerical/generation tasks, and avoid classification metrics for non-classification tasks
   - The primary metric specified in the hypothesis ({{ research_hypothesis.primary_metric }}) MUST be included with the EXACT same name.
+{%- if research_hypothesis.supporting_metrics %}
+  - The hypothesis also names these supporting metrics, which MUST each be included with the EXACT same name: {{ research_hypothesis.supporting_metrics | join(", ") }}. They are reported alongside the primary metric, not combined with it.
+{%- endif %}
 - models_to_use：
   - Select exactly {{ num_models_to_use }} deep learning or machine learning models to be used in the experiment and output them in a list format.
   - Each model name should clearly indicate its number of parameters.
   - Refer to the provided "# MODEL LIST" for guidance, although models not included in the list are also acceptable.
-  - Return an empty list ONLY if the research's PRIMARY PURPOSE is proposing a completely new model architecture itself (not just a training method, optimizer, or augmentation technique). Otherwise, you MUST select existing models.
+  - If the requested count above is 0, return an empty list. A count of 0 is a deliberate instruction (for example, research that evaluates an existing artifact rather than training anything); do not override it by selecting models anyway.
+  - If the requested count is nonzero, you MUST select existing models, with one exception: return an empty list if the research's PRIMARY PURPOSE is proposing a completely new model architecture itself (not just a training method, optimizer, or augmentation technique).
 - datasets_to_use：
   - Select exactly {{ num_datasets_to_use }} datasets to be used in the experiment and output them in a list format.
   - Refer to the provided "# DATASET LIST" for guidance, although datasets not included in the list are also acceptable.
-  - Return an empty list ONLY if the research's PRIMARY PURPOSE is proposing a completely new dataset itself. Otherwise, you MUST select existing datasets.
+  - If the requested count above is 0, return an empty list. A count of 0 is a deliberate instruction; do not override it by selecting datasets anyway.
+  - If the requested count is nonzero, you MUST select existing datasets, with one exception: return an empty list if the research's PRIMARY PURPOSE is proposing a completely new dataset itself.
 - proposed_method：
   - Output a MethodConfig object with the following fields:
     * method_name: Name of the proposed method (e.g., "Adaptive Diffusion Sampler")

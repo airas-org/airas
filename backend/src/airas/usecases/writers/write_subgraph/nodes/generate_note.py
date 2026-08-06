@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from typing import Any
+from typing import Any, Optional
 
 from jinja2 import Template
 
@@ -25,25 +25,79 @@ def _normalize(text: str) -> str:
     return _NORMALIZE_RE.sub("", text).lower()
 
 
+# A study whose title does not match a bib entry is rendered as "do not
+# cite", so the same paper titled one way in the bib and another way in the
+# study drops a citation from the finished paper without a word. The one
+# mismatch worth resolving is the dropped subtitle — "DiffDock" for
+# "DiffDock: Diffusion Steps, Twists, and Turns for Molecular Docking" —
+# because "Name: what it does" is how these titles are written. Matching on
+# anything looser would cite the wrong paper, which is worse than not
+# citing it, so the short form has to name exactly one entry.
+_MIN_ALIAS_LENGTH = 4
+
+
+def _main_title(text: str) -> str:
+    return text.split(":", 1)[0]
+
+
+def _build_bib_map(parsed_references: dict[str, Any]) -> dict[str, str]:
+    """Normalized title (and unambiguous subtitle-free alias) -> citation key."""
+    bib_map: dict[str, str] = {}
+    aliases: dict[str, list[str]] = {}
+    for entry in parsed_references.values():
+        title, key = entry.get("title"), entry.get("ID")
+        if not title or not key:
+            continue
+        bib_map[_normalize(title)] = key
+        alias = _normalize(_main_title(title))
+        if len(alias) >= _MIN_ALIAS_LENGTH:
+            aliases.setdefault(alias, []).append(key)
+
+    for alias, keys in aliases.items():
+        if alias not in bib_map and len(set(keys)) == 1:
+            bib_map[alias] = keys[0]
+    return bib_map
+
+
+def _resolve_citation_key(title: str, bib_map: dict[str, str]) -> Optional[str]:
+    return bib_map.get(_normalize(title)) or bib_map.get(_normalize(_main_title(title)))
+
+
 def _map_studies_to_bibtex(
     research_study_list: list[ResearchStudy], references_bib: str
 ) -> list[dict[str, Any]]:
-    parsed_references = parse_bibtex_to_dict(references_bib)
+    bib_map = _build_bib_map(parse_bibtex_to_dict(references_bib))
 
-    # { normalized_title: citation_key }
-    bib_map = {
-        _normalize(entry.get("title", "")): entry.get("ID")
-        for entry in parsed_references.values()
-        if entry.get("title") and entry.get("ID")
-    }
-
-    return [
+    mapped = [
         {
             "title": study.title,
-            "citation_key": bib_map.get(_normalize(study.title)),
+            "citation_key": _resolve_citation_key(study.title, bib_map),
             "content": study.llm_extracted_info,
         }
         for study in research_study_list
+    ]
+
+    unmatched = [study["title"] for study in mapped if not study["citation_key"]]
+    if unmatched:
+        logger.warning(
+            "%d of %d studies have no matching entry in references.bib and "
+            "will be marked 'do not cite': %s. Pass generate_bibfile's output "
+            "verbatim as references_bib rather than a shortened version.",
+            len(unmatched),
+            len(mapped),
+            "; ".join(unmatched),
+        )
+    return mapped
+
+
+def unmatched_citation_titles(
+    research_study_list: list[ResearchStudy], references_bib: str
+) -> list[str]:
+    """Studies the note will instruct the writer not to cite."""
+    return [
+        study["title"]
+        for study in _map_studies_to_bibtex(research_study_list, references_bib)
+        if not study["citation_key"]
     ]
 
 

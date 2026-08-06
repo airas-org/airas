@@ -848,6 +848,8 @@ async def prepare_repository(
 
     Sets up the repository (from the AIRAS experiment template) and the
     working branch. Run this once before `dispatch_code_generation`.
+    Returns `html_url` and `clone_url` alongside the readiness flags, so the
+    next step — cloning it locally — needs nothing reconstructed by hand.
     Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     config = GitHubConfig(
@@ -866,6 +868,8 @@ async def prepare_repository(
     return {
         "is_repository_ready": result["is_repository_ready"],
         "is_branch_ready": result["is_branch_ready"],
+        "html_url": result["html_url"],
+        "clone_url": result["clone_url"],
     }
 
 
@@ -883,6 +887,7 @@ async def dispatch_experiment(
     inputs_from_runs: list[str] | None = None,
     time_limit: str | None = None,
     resource_count: int | None = None,
+    required_env_vars: list[str] | None = None,
 ) -> dict[str, Any]:
     """Start an experiment run (asynchronous). The code must already be pushed.
 
@@ -902,11 +907,16 @@ async def dispatch_experiment(
       you registered, "byo:<uuid>" from the Seyval MCP server's
       `list_computes`; it defaults to SEYVAL_COMPUTE_ID, and without either the
       run goes to Seyval-managed compute. `compute_type` sets the resource
-      request in both cases (e.g. "cpu-general", "gpu-a10"). The W&B API key
-      must be registered as an env var on the Seyval side. Seyval keeps the run's
+      request in both cases (e.g. "cpu-general", "gpu-a10"). Seyval keeps the run's
       results on its own side, so call `import_run_outputs` once the run
       finishes — before `fetch_experiment_results`, which reads the
       repository.
+
+    `required_env_vars` lists the env vars Seyval must have registered before
+    it will start the run, and defaults to `["WANDB_API_KEY"]`. Seyval
+    rejects the run outright when one is missing, so pass `[]` for an
+    experiment that does not use Weights & Biases rather than registering a
+    dummy key.
 
     `inputs_from_runs`, `time_limit` and `resource_count` apply to "seyval"
     only. `inputs_from_runs` takes `execution_id`s of earlier completed runs
@@ -939,6 +949,7 @@ async def dispatch_experiment(
                 inputs_from_runs=inputs_from_runs,
                 time_limit=time_limit,
                 resource_count=resource_count,
+                required_env_vars=required_env_vars,
             )
             .build_graph()
             .ainvoke(
