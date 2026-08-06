@@ -235,3 +235,44 @@ class TestEngineSelection:
         assert report.ok
         assert report.page_count == 1
         assert report.errors == []
+
+
+class TestKeepingThePdf:
+    """The build directory is temporary, so the PDF has to be asked for.
+
+    For a Japanese paper this is the only way to get one: compile_latex
+    runs pdflatex on GitHub Actions, which cannot typeset CJK.
+    """
+
+    def test_the_pdf_is_discarded_unless_a_path_is_given(self):
+        report = verify_latex_build({"main.tex": _document("Text.")})
+
+        assert report.compiled
+        assert report.pdf_path is None
+
+    def test_an_explicit_path_receives_the_verified_build(self, tmp_path):
+        destination = tmp_path / "out" / "paper.pdf"
+
+        report = verify_latex_build(
+            {"main.tex": _document("Text.")}, output_path=destination
+        )
+
+        assert report.pdf_path == str(destination)
+        assert destination.is_file() and destination.stat().st_size > 0
+
+    def test_a_directory_keeps_the_document_name(self, tmp_path):
+        report = verify_latex_build(
+            {"main.tex": _document("Text.")}, output_path=tmp_path
+        )
+
+        assert report.pdf_path == str(tmp_path / "main.pdf")
+
+    def test_a_flawed_paper_still_yields_its_pdf(self, tmp_path):
+        """Seeing the '?' in place is faster than reading about it."""
+        report = verify_latex_build(
+            {"main.tex": _document("Cited \\cite{never_added}."), "references.bib": BIB},
+            output_path=tmp_path / "paper.pdf",
+        )
+
+        assert not report.ok
+        assert report.pdf_path is not None

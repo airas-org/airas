@@ -125,6 +125,21 @@ def _parse_log(log: str) -> tuple[list[str], list[str], list[str], list[str]]:
     return citations, references, missing_files, errors
 
 
+def _save_pdf(pdf_path: Path, output_path: str | Path | None) -> str | None:
+    """Copy the built PDF out of the scratch directory, if asked."""
+    if output_path is None:
+        return None
+    destination = Path(output_path).expanduser()
+    # A directory is the natural thing to pass when checking several
+    # templates, so accept it and keep the document's own name.
+    if destination.is_dir() or not destination.suffix:
+        destination = destination / pdf_path.name
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(pdf_path, destination)
+    logger.info(f"Wrote the verified PDF to {destination}")
+    return str(destination)
+
+
 def _page_count(pdf_path: Path) -> int | None:
     try:
         from pypdf import PdfReader
@@ -150,12 +165,19 @@ def select_engine(main_tex: str) -> str:
 def verify_latex_build(
     latex_files: dict[str, bytes],
     main_tex_name: str = "main.tex",
+    output_path: str | Path | None = None,
 ) -> LatexBuildReport:
     """Build `latex_files` in a scratch directory and report the result.
 
     Runs the same engine/bibtex/engine/engine sequence the CI LaTeX agent
     uses, so the findings match what that agent would see. The engine is
     lualatex for a document containing CJK and pdflatex otherwise.
+
+    The build happens in a temporary directory that is deleted afterwards,
+    so pass `output_path` to keep the PDF. It is worth keeping: this is the
+    one build whose result has been inspected, and for a Japanese paper it
+    is currently the only way to get a PDF at all — the GitHub Actions
+    workflow runs pdflatex, which cannot typeset CJK.
     """
     stem = Path(main_tex_name).stem
 
@@ -229,6 +251,9 @@ def verify_latex_build(
         pdf_path = build_dir / f"{stem}.pdf"
         compiled = pdf_path.is_file()
         page_count = _page_count(pdf_path) if compiled else None
+        # Kept even when the report is not clean: a PDF with one unresolved
+        # citation is still the fastest way to see what is wrong with it.
+        saved_pdf = _save_pdf(pdf_path, output_path) if compiled else None
 
         # Three things to drop from the raw "File ... not found" list.
         # graphicx probes for a graphic under several extensions and names
@@ -259,6 +284,7 @@ def verify_latex_build(
         undefined_references=references,
         missing_figures=missing_figures,
         errors=errors,
+        pdf_path=saved_pdf,
         log_tail=log[-_LOG_TAIL_CHARS:],
     )
     logger.info(

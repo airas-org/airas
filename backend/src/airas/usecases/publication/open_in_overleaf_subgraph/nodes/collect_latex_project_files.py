@@ -7,6 +7,7 @@ from airas.core.research_paths import LEGACY_DIAGRAM_DIR, RESULTS_DIR
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.infra.github_client import GithubClient
+from airas.usecases.publication.nodes.verify_latex_build import select_engine
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,23 @@ _EXCLUDED_FILES = {"template.tex", "template.pdf"}
 # The legacy .research/diagrams/ entry is scheduled for removal in the next
 # major release (see issue #913).
 _FIGURE_SOURCE_DIRS = (f"{RESULTS_DIR}/", f"{LEGACY_DIAGRAM_DIR}/")
+
+# Overleaf drives the build with latexmk and defaults it to pdfLaTeX, which
+# cannot typeset CJK — a Japanese paper would arrive there and come out with
+# its text missing. latexmk reads this file, so shipping it means the export
+# compiles on arrival instead of requiring the reader to find the compiler
+# setting. `$pdf_mode = 4` is latexmk's own name for "use lualatex".
+_LATEXMKRC = "latexmkrc"
+_LUALATEX_LATEXMKRC = b"$pdf_mode = 4;\n"
+
+
+def _add_engine_hint(latex_files: dict[str, bytes]) -> None:
+    """Tell latexmk which engine this document needs, if it is not the default."""
+    main_tex = latex_files.get("main.tex")
+    if main_tex is None or _LATEXMKRC in latex_files:
+        return
+    if select_engine(main_tex.decode("utf-8", errors="replace")) == "lualatex":
+        latex_files[_LATEXMKRC] = _LUALATEX_LATEXMKRC
 
 
 def _is_safe_local_file(path: Path, containing_dir: Path) -> bool:
@@ -105,6 +123,7 @@ def collect_latex_project_files(
     for repo_path, content in figure_entries:
         _merge_figure(latex_files, repo_path, content)
 
+    _add_engine_hint(latex_files)
     _require_main_tex(latex_files, prefix, source=github_config.repository_name)
     logger.info(f"Collected {len(latex_files)} LaTeX project files from {prefix}")
     return latex_files
@@ -145,6 +164,7 @@ def collect_latex_project_files_local(
             repo_path = source_dir + path.relative_to(figure_root).as_posix()
             _merge_figure(latex_files, repo_path, path.read_bytes())
 
+    _add_engine_hint(latex_files)
     _require_main_tex(latex_files, prefix, source=str(root))
     logger.info(f"Collected {len(latex_files)} LaTeX project files from {latex_dir}")
     return latex_files
