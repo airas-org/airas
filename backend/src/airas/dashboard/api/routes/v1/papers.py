@@ -170,6 +170,7 @@ async def fetch_paper_fulltext(
                 "arxiv_id": request.arxiv_id,
                 "doi": request.doi,
                 "pdf_url": request.pdf_url,
+                "max_chars": request.max_chars,
             }
         )
     )
@@ -177,6 +178,8 @@ async def fetch_paper_fulltext(
         text=result["text"],
         status=result["status"],
         resolved_from=result["resolved_from"],
+        total_chars=result["total_chars"],
+        truncated=result["truncated"],
         execution_time=result["execution_time"],
     )
 

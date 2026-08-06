@@ -471,14 +471,26 @@ async def fetch_paper_fulltext(
     arxiv_id: str | None = None,
     doi: str | None = None,
     pdf_url: str | None = None,
+    max_chars: int | None = 40000,
 ) -> dict[str, Any]:
     """Fetch the full text of a paper by arXiv ID, DOI, or direct PDF URL.
 
-    Provide one identifier (tried in that order). arXiv IDs are fetched from
-    arXiv; DOIs are resolved to an open-access PDF via Semantic Scholar.
+    Identifiers are tried in the order arXiv ID, then PDF URL, then DOI, and
+    passing several is useful rather than wasteful: arXiv IDs are fetched
+    straight from arXiv, DOIs are resolved to an open-access PDF through
+    Semantic Scholar, and a DOI that resolves to nothing falls back to the
+    `pdf_url` you supplied. Pass both whenever `search_papers` gave you both
+    — a DOI alone returns only the abstract for any paper Semantic Scholar's
+    open-access index does not cover, bioRxiv among them.
+
     Returns the extracted text with `status`: "fulltext", "abstract_only"
-    (no legal open-access PDF found, abstract returned instead), or
-    "not_found". No API keys required.
+    (no open-access PDF found, abstract returned instead), or "not_found".
+
+    A paper can run to 80k+ characters, so the text is capped at `max_chars`
+    (default 40000) and `total_chars` reports the full length with
+    `truncated` saying whether anything was cut. Raise the cap deliberately;
+    reading a few uncapped papers is enough to exhaust a context window.
+    No API keys required.
     """
     if not (arxiv_id or doi or pdf_url):
         raise ValueError("One of arxiv_id, doi, or pdf_url must be provided.")
@@ -488,12 +500,21 @@ async def fetch_paper_fulltext(
             semantic_scholar_client=_semantic_scholar_client(),
         )
         .build_graph()
-        .ainvoke({"arxiv_id": arxiv_id, "doi": doi, "pdf_url": pdf_url})
+        .ainvoke(
+            {
+                "arxiv_id": arxiv_id,
+                "doi": doi,
+                "pdf_url": pdf_url,
+                "max_chars": max_chars,
+            }
+        )
     )
     return {
         "text": result["text"],
         "status": result["status"],
         "resolved_from": result["resolved_from"],
+        "total_chars": result["total_chars"],
+        "truncated": result["truncated"],
     }
 
 
