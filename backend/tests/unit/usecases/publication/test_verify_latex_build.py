@@ -14,8 +14,10 @@ import pytest
 
 from airas.usecases.publication.nodes.verify_latex_build import verify_latex_build
 
+# Every document here ends in \bibliography{references}, so bibtex runs too.
 pytestmark = pytest.mark.skipif(
-    shutil.which("pdflatex") is None, reason="requires a local TeX distribution"
+    shutil.which("pdflatex") is None or shutil.which("bibtex") is None,
+    reason="requires a local TeX distribution (pdflatex and bibtex)",
 )
 
 BIB = b"""
@@ -137,3 +139,52 @@ def test_dangling_reference_is_reported():
 def test_missing_main_tex_is_rejected():
     with pytest.raises(ValueError, match="main.tex"):
         verify_latex_build({"references.bib": BIB})
+
+
+def test_the_document_cannot_read_files_outside_the_build_directory(tmp_path):
+    """The .tex comes out of a repository, so it is not trusted input.
+
+    TeX can open any path the process can, and `log_tail` is handed back to
+    the caller — so a document that reads a file and echoes it to the log is
+    an exfiltration primitive. (Reading it into the *page* is not, since the
+    PDF never leaves the build directory; the log is the channel that does.)
+    """
+    secret = tmp_path / "secret.txt"
+    secret.write_text("SUPERSECRETVALUE")
+
+    report = verify_latex_build(
+        {
+            "main.tex": (
+                "\\documentclass{article}\n"
+                "\\newread\\leak\n"
+                f"\\openin\\leak={secret}\n"
+                "\\read\\leak to \\stolen\n"
+                "\\closein\\leak\n"
+                "\\begin{document}\n"
+                "\\typeout{LEAKED: \\stolen}\n"
+                "text\n"
+                "\\end{document}\n"
+            ).encode(),
+        }
+    )
+
+    assert "SUPERSECRETVALUE" not in report.log_tail
+    # The read is refused outright rather than silently returning nothing.
+    assert not report.compiled
+    assert not report.ok
+
+
+def test_a_missing_package_is_an_error_not_a_missing_figure():
+    report = verify_latex_build(
+        {
+            "main.tex": (
+                "\\documentclass{article}\n"
+                "\\usepackage{a-package-that-does-not-exist}\n"
+                "\\begin{document}text\\end{document}\n"
+            ).encode(),
+        }
+    )
+
+    assert report.missing_figures == []
+    assert any("not found" in error for error in report.errors)
+    assert not report.ok

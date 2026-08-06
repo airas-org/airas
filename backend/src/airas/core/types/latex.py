@@ -19,7 +19,7 @@ class LatexBuildReport(BaseModel):
     ok: bool = Field(
         description=(
             "True only if a PDF was produced with no undefined citation, no "
-            "undefined reference, and no missing figure"
+            "undefined reference, no missing figure, and no LaTeX error"
         )
     )
     compiled: bool = Field(description="Whether a PDF file was produced at all")

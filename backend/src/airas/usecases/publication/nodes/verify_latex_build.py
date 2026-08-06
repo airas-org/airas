@@ -6,8 +6,18 @@ you a link was produced. Neither answers the question that actually matters
 when no human opens the PDF: did it build, are the citations resolved, are
 the figures there.
 
-The input is the same file map the Overleaf export sends, so a clean report
-here means the exported project compiles as-is.
+What this shares with the Overleaf export is its *input*: the same file map
+the export sends, so the thing being checked is the thing being shipped,
+not a rehearsal of it. The *toolchain* is not shared. This runs whatever TeX
+distribution is installed here, through a fixed pdflatex/bibtex/pdflatex
+sequence; Overleaf runs its own TeX Live image through latexmk, and can be
+set to biber or to a different engine entirely.
+
+So the two verdicts are not symmetric. `ok=False` is worth trusting: a
+citation that renders as '?', a figure that renders as a box and a `!` in
+the log are properties of the document, and travel. `ok=True` is not proof
+that Overleaf will build it — a package missing *here* fails here and
+compiles there, which is the likely direction of disagreement.
 """
 
 import logging
@@ -31,6 +41,13 @@ _UNWRAPPED_LOG_ENV = {
     "half_error_line": "238",
 }
 
+# The .tex being compiled comes out of a repository, so it is not trusted
+# input. TeX can read and write arbitrary paths, and this tool hands the log
+# tail back to the caller — `\input{/etc/passwd}` would be enough. Paranoid
+# mode confines reads and writes to the build directory and TEXMF, and shell
+# escape is refused outright rather than left to the distribution's default.
+_SANDBOX_ENV = {"openin_any": "p", "openout_any": "p"}
+
 _PDFLATEX_TIMEOUT_SECONDS = 180.0
 _BIBTEX_TIMEOUT_SECONDS = 60.0
 _LOG_TAIL_CHARS = 4000
@@ -39,6 +56,11 @@ _UNDEFINED_CITATION = re.compile(r"Citation [`'\"]([^`'\"]+)['\"] on page")
 _UNDEFINED_REFERENCE = re.compile(r"Reference [`'\"]([^`'\"]+)['\"] on page")
 _MISSING_FILE = re.compile(r"File [`'\"]([^`'\"]+)['\"] not found")
 _ERROR_LINE = re.compile(r"^! (.+)$", re.MULTILINE)
+
+# Extensions that a "File ... not found" can carry without it being a figure.
+# A missing figure is usually reported with no extension at all, so this has
+# to be a denylist: an allowlist of image formats would discard the real ones.
+_NON_FIGURE_SUFFIXES = {".sty", ".cls", ".bib", ".bst", ".tex", ".def", ".cfg"}
 
 
 class LatexToolchainMissingError(RuntimeError):
@@ -60,7 +82,7 @@ def _write_project(latex_files: dict[str, bytes], build_dir: Path) -> None:
 
 
 def _run(command: list[str], cwd: Path, timeout: float) -> subprocess.CompletedProcess:
-    env = {**os.environ, **_UNWRAPPED_LOG_ENV}
+    env = {**os.environ, **_UNWRAPPED_LOG_ENV, **_SANDBOX_ENV}
     return subprocess.run(
         command,
         cwd=cwd,
@@ -132,12 +154,22 @@ def verify_latex_build(
             "pdflatex",
             "-interaction=nonstopmode",
             "-halt-on-error=0",
+            "-no-shell-escape",
             main_tex_name,
         ]
 
+        needs_bibtex = _needs_bibtex(main_tex_path.read_text(errors="replace"))
+        if needs_bibtex and shutil.which("bibtex") is None:
+            raise LatexToolchainMissingError(
+                "The document has a bibliography but bibtex was not found on "
+                "PATH. Install it (it ships with texlive-binaries) — without "
+                "it every citation would be reported as undefined whether or "
+                "not the bibliography is sound."
+            )
+
         try:
             _run(pdflatex, build_dir, _PDFLATEX_TIMEOUT_SECONDS)
-            if _needs_bibtex(main_tex_path.read_text(errors="replace")):
+            if needs_bibtex:
                 bibtex_result = _run(
                     ["bibtex", stem], build_dir, _BIBTEX_TIMEOUT_SECONDS
                 )
@@ -153,7 +185,7 @@ def verify_latex_build(
             _run(pdflatex, build_dir, _PDFLATEX_TIMEOUT_SECONDS)
         except subprocess.TimeoutExpired as e:
             raise TimeoutError(
-                f"LaTeX build exceeded {_PDFLATEX_TIMEOUT_SECONDS:.0f}s. The "
+                f"{Path(e.cmd[0]).name} timed out after {e.timeout:.0f}s. The "
                 "document may be stuck on an unclosed environment."
             ) from e
 
@@ -165,15 +197,19 @@ def verify_latex_build(
         compiled = pdf_path.is_file()
         page_count = _page_count(pdf_path) if compiled else None
 
-        # Two kinds of false positive to drop. graphicx probes for a graphic
-        # under several extensions and names one probe with the unexpanded
-        # macro `\Gin@base`, which is not a path anyone can supply. And a
-        # "not found" for a file the project does ship is just that probing.
+        # Three things to drop from the raw "File ... not found" list.
+        # graphicx probes for a graphic under several extensions and names
+        # one probe with the unexpanded macro `\Gin@base`, which is not a
+        # path anyone can supply. A "not found" for a file the project does
+        # ship is that same probing. And a missing package or class is not a
+        # figure — it is already reported through `errors`, where LaTeX
+        # raises it as `! LaTeX Error: File 'foo.sty' not found`.
         project_paths = set(latex_files)
         missing_figures = [
             name
             for name in missing_files
             if "\\" not in name
+            and Path(name).suffix.lower() not in _NON_FIGURE_SUFFIXES
             and name not in project_paths
             and not any(path.startswith(f"{name}.") for path in project_paths)
         ]
