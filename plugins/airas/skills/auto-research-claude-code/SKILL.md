@@ -200,8 +200,10 @@ rewrite, since no claim, number or citation should change on the way.
 
 - Long-running tools return immediately; never block waiting. Poll between
   other work.
-- All repository writes go through your local clone and git; there are no
-  file-upload tools.
+- Repository writes go through your local clone and git, with one
+  exception: `upload_research_history` commits
+  `.research/research_history.json` itself. There is no general-purpose
+  file-upload tool.
 - When a step fails, go back only as far as the failure requires: a failed
   experiment run means fixing code and re-dispatching (step 5), not
   re-deriving the hypothesis. Re-run a generation step only when its

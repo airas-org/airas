@@ -167,8 +167,10 @@ rewrite, since no claim, number or citation should change on the way.
 
 - Long-running tools return immediately; never block waiting. Poll between
   other work.
-- All repository writes go through your local clone and git; there are no
-  file-upload tools.
+- Repository writes go through your local clone and git, with one
+  exception: `upload_research_history` commits
+  `.research/research_history.json` itself. There is no general-purpose
+  file-upload tool.
 - Several tools report a problem instead of raising it, and those are the
   ones that quietly produce a worthless paper. Check them rather than
   assuming success: `search_papers` returns `search_errors` per source;
