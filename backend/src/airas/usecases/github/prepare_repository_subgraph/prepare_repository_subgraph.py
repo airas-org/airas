@@ -146,7 +146,7 @@ class PrepareRepositorySubgraph:
         return {"is_branch_created": is_branch_created}
 
     @record_execution_time
-    def _finalize_state(self, state: PrepareRepositoryState) -> dict[str, object]:
+    def _finalize_state(self, state: PrepareRepositoryState) -> dict[str, bool | str]:
         is_repository_ready = state.get("is_repository_from_template", False)
         is_branch_ready = state.get("is_branch_already_exists", False) or state.get(
             "is_branch_created", False

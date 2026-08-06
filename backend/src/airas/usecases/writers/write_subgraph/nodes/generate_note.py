@@ -63,7 +63,7 @@ def _resolve_citation_key(title: str, bib_map: dict[str, str]) -> Optional[str]:
     return bib_map.get(_normalize(title)) or bib_map.get(_normalize(_main_title(title)))
 
 
-def _map_studies_to_bibtex(
+def map_studies_to_bibtex(
     research_study_list: list[ResearchStudy], references_bib: str
 ) -> list[dict[str, Any]]:
     bib_map = _build_bib_map(parse_bibtex_to_dict(references_bib))
@@ -90,15 +90,14 @@ def _map_studies_to_bibtex(
     return mapped
 
 
-def unmatched_citation_titles(
-    research_study_list: list[ResearchStudy], references_bib: str
-) -> list[str]:
-    """Studies the note will instruct the writer not to cite."""
-    return [
-        study["title"]
-        for study in _map_studies_to_bibtex(research_study_list, references_bib)
-        if not study["citation_key"]
-    ]
+def unmatched_citation_titles(mapped_studies: list[dict[str, Any]]) -> list[str]:
+    """Studies the note will instruct the writer not to cite.
+
+    Takes an already-built mapping rather than rebuilding one, so a caller
+    that also needs the note parses the bibliography once and logs the
+    mismatch once.
+    """
+    return [study["title"] for study in mapped_studies if not study["citation_key"]]
 
 
 def generate_note(
@@ -107,8 +106,10 @@ def generate_note(
     experiment_code: ExperimentCode,
     research_study_list: list[ResearchStudy],
     references_bib: str,
+    mapped_studies: list[dict[str, Any]] | None = None,
 ) -> str:
-    mapped_studies = _map_studies_to_bibtex(research_study_list, references_bib)
+    if mapped_studies is None:
+        mapped_studies = map_studies_to_bibtex(research_study_list, references_bib)
 
     # Find the final cycle (complete) for main results
     final_cycle = next(

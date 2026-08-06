@@ -124,13 +124,13 @@ analysis you can write on the run output below.
 {% endif %}
 
 {% if experimental_results.stdout %}
-## Run Output (stdout)
-{{ experimental_results.stdout }}
+## Run Output (stdout, last 2000 characters)
+{{ experimental_results.stdout[-2000:] }}
 {% endif %}
 
 {% if experimental_results.stderr %}
-## Run Errors (stderr)
-{{ experimental_results.stderr }}
+## Run Errors (stderr, last 2000 characters)
+{{ experimental_results.stderr[-2000:] }}
 {% endif %}
 {% else %}
 No experimental results available yet.

@@ -12,6 +12,7 @@ from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
 from airas.mcp.prompt_registry import build_generation_prompt
 from airas.usecases.writers.write_subgraph.nodes.generate_note import (
+    map_studies_to_bibtex,
     unmatched_citation_titles,
 )
 
@@ -79,7 +80,9 @@ def test_expected_result_reaches_the_prompt_that_asks_about_it():
 
 
 def test_a_shortened_title_still_finds_its_citation_key():
-    unmatched = unmatched_citation_titles([ResearchStudy(title="DiffDock")], BIB)
+    unmatched = unmatched_citation_titles(
+        map_studies_to_bibtex([ResearchStudy(title="DiffDock")], BIB)
+    )
 
     assert unmatched == []
 
@@ -87,7 +90,9 @@ def test_a_shortened_title_still_finds_its_citation_key():
 def test_a_study_missing_from_the_bibliography_is_reported():
     studies = [ResearchStudy(title="PoseBusters"), ResearchStudy(title="DiffDock")]
 
-    assert unmatched_citation_titles(studies, BIB) == ["PoseBusters"]
+    assert unmatched_citation_titles(map_studies_to_bibtex(studies, BIB)) == [
+        "PoseBusters"
+    ]
 
 
 def test_the_paper_prompt_warns_about_studies_it_will_not_cite():
@@ -119,3 +124,20 @@ def test_no_warning_when_every_study_is_citable():
     )
 
     assert "warnings" not in result
+
+
+def test_a_long_run_log_does_not_take_over_the_prompt():
+    """A training run's stdout can dwarf everything else in the prompt.
+
+    The tail is what is kept rather than the head: a run prints its final
+    metrics at the end, and its dataset-download chatter at the start.
+    """
+    prompt = _analysis_prompt(
+        {
+            "metrics_data": {"run-1": {"lddt_pli": 0.648}},
+            "stdout": "downloading shard\n" * 5000 + "FINAL lddt_pli 0.648",
+        }
+    )
+
+    assert "FINAL lddt_pli 0.648" in prompt
+    assert prompt.count("downloading shard") < 200

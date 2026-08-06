@@ -68,6 +68,7 @@ from airas.usecases.publication.generate_latex_subgraph.prompts.convert_to_latex
 )
 from airas.usecases.writers.write_subgraph.nodes.generate_note import (
     generate_note,
+    map_studies_to_bibtex,
     unmatched_citation_titles,
 )
 from airas.usecases.writers.write_subgraph.prompts.section_tips_prompt import (
@@ -221,12 +222,18 @@ def _experiment_analysis(inputs: _ExperimentAnalysisInputs) -> dict[str, Any]:
 
 
 def _paper_writing(inputs: _PaperWritingInputs) -> dict[str, Any]:
+    # Built once and handed to both readers: the note renders it, and the
+    # warning below reports what it could not resolve.
+    mapped_studies = map_studies_to_bibtex(
+        inputs.research_study_list, inputs.references_bib
+    )
     note = generate_note(
         research_hypothesis=inputs.research_hypothesis,
         experiment_history=inputs.experiment_history,
         experiment_code=inputs.experiment_code,
         research_study_list=inputs.research_study_list,
         references_bib=inputs.references_bib,
+        mapped_studies=mapped_studies,
     )
     prompt = _render(write_prompt, {"note": note, "tips_dict": section_tips_prompt})
     result: dict[str, Any] = {
@@ -241,9 +248,7 @@ def _paper_writing(inputs: _PaperWritingInputs) -> dict[str, Any]:
     # The prompt tells the writer not to cite these, and says so nowhere the
     # caller can see. Unattended, that finishes a paper with the citations
     # quietly missing.
-    unmatched = unmatched_citation_titles(
-        inputs.research_study_list, inputs.references_bib
-    )
+    unmatched = unmatched_citation_titles(mapped_studies)
     if unmatched:
         result["warnings"] = [
             f"{len(unmatched)} of {len(inputs.research_study_list)} studies have "
