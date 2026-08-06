@@ -100,6 +100,12 @@ class DatasetConfig(BaseModel):
 
 class ComputeEnvironment(BaseModel):
     os: str | None = None
+    # CPU architecture, as `uname -m` reports it (e.g. "x86_64", "aarch64").
+    # This decides whether a dependency has a wheel at all, so an experiment
+    # designed without it can resolve locally and have nothing to install on
+    # the target. Worth stating even when the rest of the environment is not
+    # known.
+    arch: str | None = None
     cpu_cores: int | None = None
     ram_gb: int | None = None
     gpu_type: str | None = None

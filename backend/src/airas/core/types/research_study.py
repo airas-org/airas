@@ -47,17 +47,33 @@ class MetaData(BaseModel):
 
 
 class ResearchStudy(BaseModel):
+    """One prior study, as the generation prompts consume it.
+
+    Only `title` is required. The rest default to empty so a study can be
+    assembled by hand from a `search_papers` row — which is the documented
+    path whenever `retrieve_papers` is unavailable — without inventing a
+    full text or a reference list that the caller does not have.
+    """
+
     title: str = Field(..., description="")
-    full_text: str = Field(..., description="")
+    abstract: Optional[str] = Field(
+        None,
+        description=(
+            "The study's abstract. Populated directly from a search result; "
+            "the only summary available when no full text was retrieved."
+        ),
+    )
+    full_text: str = Field(default="", description="")
     references: list[str] = Field(
-        ..., description=""
+        default_factory=list, description=""
     )  # TODO: Consider how much information to obtain from the cited papers.
-    meta_data: MetaData = Field(..., description="")
-    llm_extracted_info: LLMExtractedInfo
+    meta_data: MetaData = Field(default_factory=MetaData, description="")
+    llm_extracted_info: LLMExtractedInfo = Field(default_factory=LLMExtractedInfo)
 
     def to_formatted_json(self) -> str:
         data_dict = {
             "Title": self.title,
+            "Abstract": self.abstract,
             "Main Contributions": self.llm_extracted_info.main_contributions,
             "Methods": self.llm_extracted_info.methodology,
             "Experimental Setup": self.llm_extracted_info.experimental_setup,
