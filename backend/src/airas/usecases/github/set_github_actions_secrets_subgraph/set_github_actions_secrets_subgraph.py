@@ -44,6 +44,8 @@ class SetGithubActionsSecretsSubgraph:
             "GEMINI_API_KEY",
             "ANTHROPIC_API_KEY",
             "OPENROUTER_API_KEY",
+            "VERCEL_AI_GATEWAY_API_KEY",
+            "RIKYU_API_KEY",
             "AWS_BEARER_TOKEN_BEDROCK",
             "WANDB_API_KEY",
             "HF_TOKEN",

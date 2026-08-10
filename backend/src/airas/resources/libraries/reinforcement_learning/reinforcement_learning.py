@@ -48,4 +48,13 @@ REINFORCEMENT_LEARNING_LIBRARIES: dict[str, dict[str, str | None]] = {
         "llms_txt": None,
         "llms_full_txt": None,
     },
+    "nemo-gym": {
+        "description": "LLM agent environments: harnesses, verifiers, eval and rollout collection",
+        "domain": "reinforcement_learning",
+        "category": "reinforcement_learning",
+        "official_docs": "https://docs.nvidia.com/nemo/gym",
+        "github": "https://github.com/NVIDIA-NeMo/Gym",
+        "llms_txt": "https://docs.nvidia.com/nemo/gym/llms.txt",
+        "llms_full_txt": "https://docs.nvidia.com/nemo/gym/llms-full.txt",
+    },
 }

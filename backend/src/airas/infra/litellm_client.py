@@ -11,6 +11,7 @@ To view available models in your environment, run:
 
 import json
 import logging
+import math
 import os
 from collections.abc import Callable
 from functools import lru_cache
@@ -20,7 +21,13 @@ import litellm
 from litellm import get_valid_models
 
 from airas.core.types.llm_provider import LLMProvider
-from airas.infra.llm_provider_resolver import detect_available_providers
+from airas.infra.llm_provider_resolver import (
+    RIKYU_BASE_URL_ENV,
+    RIKYU_DEFAULT_BASE_URL,
+    RIKYU_KEY_ENV,
+    detect_available_providers,
+    infer_provider,
+)
 from airas.infra.retry_policy import make_llm_retry_policy
 
 logger = logging.getLogger(__name__)
@@ -36,9 +43,56 @@ PROVIDER_REQUIRED_ENV_VARS: dict[LLMProvider, list[str]] = {
     LLMProvider.BEDROCK: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"],
     LLMProvider.AZURE: ["AZURE_API_KEY", "AZURE_API_BASE"],
     LLMProvider.VERCEL_AI_GATEWAY: ["VERCEL_AI_GATEWAY_API_KEY"],
+    # Only the key: the base URL has a default (RIKYU_DEFAULT_BASE_URL), so
+    # the endpoint counts as configured once its key is present.
+    LLMProvider.RIKYU: ["RIKYU_API_KEY"],
 }
 
+# litellm has no provider for Rikyu, so "rikyu/kimi-k3" is rewritten onto
+# litellm's generic OpenAI-compatible route and paired with an explicit
+# api_base. `openai/` is deliberately not used: with no key passed it silently
+# falls back to OPENAI_API_KEY, which would send one vendor's credential to
+# another's host.
+LITELLM_OPENAI_COMPATIBLE_PREFIX = "hosted_vllm/"
+
+# litellm's own 600s default is too short for the reasoning models served over
+# the Rikyu endpoint. Measured on `rikyu/kimi-k3`: a single call spent ~194s
+# emitting its reasoning trace before the first answer token and ~284s in
+# total, and that was for a prompt far smaller than the ones the generation
+# subgraphs send. Queueing on the shared endpoint has separately been observed
+# to add ~2min before the first token. Below this bound the call is killed
+# mid-reasoning and the work is simply lost, so the default is generous;
+# set AIRAS_LLM_TIMEOUT (seconds) to tighten or loosen it per deployment.
+LLM_TIMEOUT_ENV = "AIRAS_LLM_TIMEOUT"
+DEFAULT_LLM_TIMEOUT_SECONDS = 1800.0
+
 # TODO: Define LLMParams
+
+
+def resolve_llm_timeout() -> float:
+    """Seconds to allow one LLM call, from AIRAS_LLM_TIMEOUT or the default."""
+    raw = os.getenv(LLM_TIMEOUT_ENV, "").strip()
+    if not raw:
+        return DEFAULT_LLM_TIMEOUT_SECONDS
+    try:
+        timeout = float(raw)
+    except ValueError:
+        logger.warning(
+            f"{LLM_TIMEOUT_ENV}={raw!r} is not a number; "
+            f"using {DEFAULT_LLM_TIMEOUT_SECONDS}s."
+        )
+        return DEFAULT_LLM_TIMEOUT_SECONDS
+    # float() accepts "inf" and "nan", and both slip past a `<= 0` test:
+    # inf disables the timeout the caller asked for, and nan makes every
+    # comparison false further down. Neither is what someone setting this
+    # variable meant, so treat them like any other unusable value.
+    if not math.isfinite(timeout) or timeout <= 0:
+        logger.warning(
+            f"{LLM_TIMEOUT_ENV}={raw!r} must be a positive, finite number of "
+            f"seconds; using {DEFAULT_LLM_TIMEOUT_SECONDS}s."
+        )
+        return DEFAULT_LLM_TIMEOUT_SECONDS
+    return timeout
 
 
 class LiteLLMClient:
@@ -57,6 +111,27 @@ class LiteLLMClient:
         if logger.isEnabledFor(logging.DEBUG):
             os.environ["LITELLM_LOG"] = "DEBUG"
 
+    def _resolve_call_target(self, llm_name: str) -> tuple[str, dict[str, Any]]:
+        """Map an airas model name to litellm's model name + connection kwargs.
+
+        Every model litellm already knows how to route passes through
+        untouched. Rikyu models carry a provider name litellm has never heard
+        of, so the route and the host have to be supplied here.
+        """
+        api_key = self._get_api_key(llm_name)
+        if infer_provider(llm_name) is not LLMProvider.RIKYU:
+            return llm_name, {"api_key": api_key}
+
+        model_id = llm_name.removeprefix(f"{LLMProvider.RIKYU.value}/")
+        api_base = os.getenv(RIKYU_BASE_URL_ENV, "").strip() or RIKYU_DEFAULT_BASE_URL
+        return LITELLM_OPENAI_COMPATIBLE_PREFIX + model_id, {
+            # Self-hosted callers build the client without a key resolver, so
+            # read the env directly rather than sending an unauthenticated
+            # request that the endpoint would reject.
+            "api_key": api_key or os.getenv(RIKYU_KEY_ENV) or None,
+            "api_base": api_base.rstrip("/"),
+        }
+
     @_LLM_RETRY
     async def generate(
         self,
@@ -70,6 +145,8 @@ class LiteLLMClient:
         # the selected provider); it is not a real litellm/provider completion kwarg. Most
         # providers silently ignore it, but OpenAI's API rejects unknown top-level parameters.
         litellm_kwargs.pop("provider_type", None)
+        # setdefault so an explicit per-call timeout in `params` still wins.
+        litellm_kwargs.setdefault("timeout", resolve_llm_timeout())
         messages = [{"role": "user", "content": message}]
 
         if web_search:
@@ -90,15 +167,15 @@ class LiteLLMClient:
                 "Proceeding without max_tokens limit."
             )
 
-        api_key = self._get_api_key(llm_name)
+        model, connection = self._resolve_call_target(llm_name)
 
         try:
             response = await litellm.acompletion(
-                model=llm_name,
+                model=model,
                 messages=messages,
-                api_key=api_key,
+                **connection,
                 **litellm_kwargs,
-            )  # TODO: timeoutを延長する
+            )
             content = response.choices[0].message.content
 
             if content is None:
@@ -160,6 +237,8 @@ class LiteLLMClient:
         # the selected provider); it is not a real litellm/provider completion kwarg. Most
         # providers silently ignore it, but OpenAI's API rejects unknown top-level parameters.
         litellm_kwargs.pop("provider_type", None)
+        # setdefault so an explicit per-call timeout in `params` still wins.
+        litellm_kwargs.setdefault("timeout", resolve_llm_timeout())
         messages = [{"role": "user", "content": message}]
 
         if web_search:
@@ -180,16 +259,16 @@ class LiteLLMClient:
                 "Proceeding without max_tokens limit."
             )
 
-        api_key = self._get_api_key(llm_name)
+        model, connection = self._resolve_call_target(llm_name)
 
         try:
             response = await litellm.acompletion(
-                model=llm_name,
+                model=model,
                 messages=messages,
                 response_format=data_model,
-                api_key=api_key,
+                **connection,
                 **litellm_kwargs,
-            )  # TODO: timeoutを延長する
+            )
 
             content = response.choices[0].message.content
 
@@ -229,11 +308,11 @@ class LiteLLMClient:
                 f"Failed to get model info for {model}: {e}. Proceeding without model metadata."
             )
 
-        api_key = self._get_api_key(model)
+        litellm_model, connection = self._resolve_call_target(model)
 
         try:
             response = await litellm.aembedding(
-                model=model, input=texts, api_key=api_key
+                model=litellm_model, input=texts, **connection
             )
             data = getattr(response, "data", None)
             if not data:
@@ -299,6 +378,9 @@ if __name__ == "__main__":
         "openrouter",
         "azure",
         "vercel_ai_gateway",
+        # litellm's route for OpenAI-compatible endpoints; airas addresses
+        # those per endpoint, e.g. "rikyu/<model>".
+        "hosted_vllm",
     ]
 
     for provider_name in provider_names:

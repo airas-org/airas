@@ -4,7 +4,9 @@ Exposes AIRAS research subgraphs as MCP tools for use from MCP clients
 such as Claude Code and Claude Desktop.
 
 Credentials are read from ~/.airas/credentials.json (see credentials.py):
-- LLM providers: OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY (at least one)
+- LLM providers: OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY /
+  OPENROUTER_API_KEY / VERCEL_AI_GATEWAY_API_KEY / RIKYU_API_KEY
+  (at least one)
 - GitHub (repository/experiment tools): GH_PERSONAL_ACCESS_TOKEN
 
 The file is re-read on every tool call, so keys can be added or rotated
@@ -27,7 +29,7 @@ import httpx
 import vl_convert as vlc
 from mcp.server.fastmcp import FastMCP
 from PIL import Image
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from airas.cli import DEFAULT_DASHBOARD_PORT
 from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
@@ -61,7 +63,6 @@ from airas.dashboard.launcher import (
 from airas.dashboard.launcher import (
     stop_dashboard as stop_dashboard_process,
 )
-from airas.infra.aixs_client import AixsClient
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
 from airas.infra.hugging_face_client import HF_RESOURCE_TYPE, HuggingFaceClient
@@ -72,18 +73,23 @@ from airas.infra.litellm_client import (
 from airas.infra.litellm_client import (
     LiteLLMClient,
 )
-from airas.infra.llm_provider_resolver import detect_available_providers
+from airas.infra.llm_provider_resolver import (
+    RIKYU_BASE_URL_ENV,
+    RIKYU_DEFAULT_BASE_URL,
+    detect_available_providers,
+)
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.infra.semantic_scholar_client import SemanticScholarClient
-from airas.mcp.prompt_registry import build_generation_prompt
+from airas.infra.seyval_client import SeyvalClient
+from airas.mcp.prompt_registry import build_generation_prompt, get_input_json_schema
 from airas.resources.libraries.library_docs import LIBRARY_DOCS
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentLLMMapping,
     AnalyzeExperimentSubgraph,
 )
-from airas.usecases.executors.dispatch_experiment_on_aixs_subgraph.dispatch_experiment_on_aixs_subgraph import (
-    DispatchExperimentOnAixsSubgraph,
+from airas.usecases.executors.dispatch_experiment_on_seyval_subgraph.dispatch_experiment_on_seyval_subgraph import (
+    DispatchExperimentOnSeyvalSubgraph,
 )
 from airas.usecases.executors.dispatch_experiment_on_static_runner_subgraph.dispatch_experiment_on_static_runner_subgraph import (
     DispatchExperimentOnStaticRunnerSubgraph,
@@ -103,6 +109,9 @@ from airas.usecases.executors.fetch_paper_reproduction_results_subgraph.fetch_pa
 )
 from airas.usecases.executors.fetch_parameter_tuning_results_subgraph.fetch_parameter_tuning_results_subgraph import (
     FetchParameterTuningResultsSubgraph,
+)
+from airas.usecases.executors.import_run_outputs_subgraph.import_run_outputs_subgraph import (
+    ImportRunOutputsSubgraph,
 )
 from airas.usecases.generators.dispatch_paper_reproduction_generate_subgraph.dispatch_paper_reproduction_generate_subgraph import (
     DispatchPaperReproductionGenerateLLMMapping,
@@ -138,6 +147,11 @@ from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph im
 from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
     GenerateLatexLLMMapping,
     GenerateLatexSubgraph,
+)
+from airas.usecases.publication.nodes.verify_latex_build import verify_latex_build
+from airas.usecases.publication.open_in_overleaf_subgraph.nodes.collect_latex_project_files import (
+    collect_latex_project_files,
+    collect_latex_project_files_local,
 )
 from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.fetch_paper_fulltext_subgraph import (
     FetchPaperFulltextSubgraph,
@@ -199,11 +213,11 @@ def _github_client() -> GithubClient:
     )
 
 
-def _aixs_client() -> AixsClient:
+def _seyval_client() -> SeyvalClient:
     refresh_environment()
-    if not os.getenv("AIXS_API_KEY"):
-        raise RuntimeError(f"AIXS_API_KEY is not configured. {SETUP_INSTRUCTIONS}")
-    return AixsClient(sync_session=_sync_session, async_session=_async_session)
+    if not os.getenv("SEYVAL_API_KEY"):
+        raise RuntimeError(f"SEYVAL_API_KEY is not configured. {SETUP_INSTRUCTIONS}")
+    return SeyvalClient(sync_session=_sync_session, async_session=_async_session)
 
 
 def _kroki_client() -> KrokiClient:
@@ -242,10 +256,12 @@ def _litellm_client() -> LiteLLMClient:
 
 
 # airas's LLMProvider enum value -> litellm's ``custom_llm_provider`` name.
-# Only GOOGLE diverges (airas "google" vs litellm "gemini"); every other
-# provider's enum value already matches litellm, so we fall back to it.
+# Only GOOGLE and RIKYU diverge (airas "google" vs litellm "gemini"; "rikyu"
+# is an airas name for litellm's generic OpenAI-compatible route); every
+# other provider's enum value already matches litellm, so we fall back to it.
 _LITELLM_PROVIDER_NAME: dict[LLMProvider, str] = {
     LLMProvider.GOOGLE: "gemini",
+    LLMProvider.RIKYU: "hosted_vllm",
 }
 
 
@@ -302,13 +318,29 @@ def get_available_llms(include_models: bool = False) -> dict[str, Any]:
             "missing_env_vars": [name for name in required if not os.getenv(name)],
         }
         if configured and include_models:
-            litellm_name = _LITELLM_PROVIDER_NAME.get(provider, provider.value)
-            try:
-                models = sorted(LiteLLMClient.get_valid_models(provider=litellm_name))
-                entry["model_count"] = len(models)
-                entry["models"] = models
-            except Exception as exc:  # never let catalog lookup fail the tool
-                entry["models_error"] = str(exc)
+            if provider is LLMProvider.RIKYU:
+                # litellm's catalog has no entries for this endpoint, so an
+                # empty list here would read as "configured but no models".
+                # Refuse explicitly and point at the endpoint's own listing.
+                base_url = (
+                    os.getenv(RIKYU_BASE_URL_ENV, "").strip() or RIKYU_DEFAULT_BASE_URL
+                ).rstrip("/")
+                entry["models_error"] = (
+                    f"litellm's catalog cannot list '{provider.value}' models. "
+                    f"Query the endpoint itself — GET {base_url}/models with "
+                    "'Authorization: Bearer $RIKYU_API_KEY' — and pass a "
+                    f"model as '{provider.value}/<model ID>'."
+                )
+            else:
+                litellm_name = _LITELLM_PROVIDER_NAME.get(provider, provider.value)
+                try:
+                    models = sorted(
+                        LiteLLMClient.get_valid_models(provider=litellm_name)
+                    )
+                    entry["model_count"] = len(models)
+                    entry["models"] = models
+                except Exception as exc:  # never let catalog lookup fail the tool
+                    entry["models_error"] = str(exc)
         providers.append(entry)
 
     return {
@@ -346,11 +378,35 @@ def get_generation_prompt(step: str, inputs: dict[str, Any]) -> dict[str, Any]:
       experiment_code, research_study_list, references_bib
     - "latex_conversion": paper_content, figures_dir (optional)
 
-    Returns a fully rendered `prompt`, an `output_json_schema` describing
+    Returns a fully rendered `prompt`, an `input_json_schema` describing the
+    exact shape of `inputs` for this step, an `output_json_schema` describing
     exactly the data format to produce in one pass, and a `flow` note on
-    how the output feeds the next step.
+    how the output feeds the next step. Call `get_input_schema` first if you
+    are assembling an input by hand — `research_study_list` entries in
+    particular are `ResearchStudy` objects, not `search_papers` rows, and
+    share no key names with them.
     """
     return build_generation_prompt(step, inputs)
+
+
+@mcp.tool()
+def get_input_schema(step: str) -> dict[str, Any]:
+    """The JSON Schema of an input a tool takes.
+
+    Use before assembling one by hand, so the shape is known up front
+    instead of being discovered through a validation error — or, worse, not
+    discovered at all. `step` is any of `get_generation_prompt`'s steps, or
+    `research_history` for what `upload_research_history` accepts. No API
+    keys required.
+
+    Assembling `research_study_list` from `search_papers` output is the
+    common case and needs a translation: a search row's `authors`,
+    `citations` and `arxiv_id` live under `meta_data` on a `ResearchStudy`,
+    and only `title` is required — a study with just `title` and `abstract`
+    is valid, so nothing has to be invented for papers whose full text was
+    not retrieved.
+    """
+    return get_input_json_schema(step)
 
 
 @mcp.tool()
@@ -464,14 +520,31 @@ async def fetch_paper_fulltext(
     arxiv_id: str | None = None,
     doi: str | None = None,
     pdf_url: str | None = None,
+    max_chars: int | None = 40000,
 ) -> dict[str, Any]:
     """Fetch the full text of a paper by arXiv ID, DOI, or direct PDF URL.
 
-    Provide one identifier (tried in that order). arXiv IDs are fetched from
-    arXiv; DOIs are resolved to an open-access PDF via Semantic Scholar.
+    Identifiers are tried in the order arXiv ID, then PDF URL, then DOI, and
+    passing several is useful rather than wasteful: arXiv IDs are fetched
+    straight from arXiv, DOIs are resolved to an open-access PDF through
+    Semantic Scholar, and a DOI that resolves to nothing falls back to the
+    `pdf_url` you supplied. Pass both whenever `search_papers` gave you both
+    — a DOI alone returns only the abstract for any paper Semantic Scholar's
+    open-access index does not cover, bioRxiv among them.
+
     Returns the extracted text with `status`: "fulltext", "abstract_only"
-    (no legal open-access PDF found, abstract returned instead), or
-    "not_found". No API keys required.
+    (no open-access PDF found, abstract returned instead), or "not_found".
+
+    A paper can run to 80k+ characters, so the text is capped at `max_chars`
+    — **characters, not tokens**, default 40000 — with `total_chars`
+    reporting the full length and `truncated` saying whether anything was
+    cut. There is no paging: raising the cap re-fetches the paper from the
+    start. Neither MCP nor this server imposes a size limit; the cap exists
+    because reading a few uncapped papers exhausts a context window, and
+    because a client may divert an oversized result to a file. The default
+    assumes English prose at roughly four characters per token — lower it
+    explicitly for CJK text, where a character is closer to a token.
+    No API keys required.
     """
     if not (arxiv_id or doi or pdf_url):
         raise ValueError("One of arxiv_id, doi, or pdf_url must be provided.")
@@ -481,12 +554,21 @@ async def fetch_paper_fulltext(
             semantic_scholar_client=_semantic_scholar_client(),
         )
         .build_graph()
-        .ainvoke({"arxiv_id": arxiv_id, "doi": doi, "pdf_url": pdf_url})
+        .ainvoke(
+            {
+                "arxiv_id": arxiv_id,
+                "doi": doi,
+                "pdf_url": pdf_url,
+                "max_chars": max_chars,
+            }
+        )
     )
     return {
         "text": result["text"],
         "status": result["status"],
         "resolved_from": result["resolved_from"],
+        "total_chars": result["total_chars"],
+        "truncated": result["truncated"],
     }
 
 
@@ -786,6 +868,8 @@ async def prepare_repository(
 
     Sets up the repository (from the AIRAS experiment template) and the
     working branch. Run this once before `dispatch_code_generation`.
+    Returns `html_url` and `clone_url` alongside the readiness flags, so the
+    next step — cloning it locally — needs nothing reconstructed by hand.
     Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     config = GitHubConfig(
@@ -804,6 +888,8 @@ async def prepare_repository(
     return {
         "is_repository_ready": result["is_repository_ready"],
         "is_branch_ready": result["is_branch_ready"],
+        "html_url": result["html_url"],
+        "clone_url": result["clone_url"],
     }
 
 
@@ -813,39 +899,77 @@ async def dispatch_experiment(
     repository_name: str,
     branch_name: str,
     run_id: str,
-    workflow: Literal["sanity_check", "main"] = "sanity_check",
+    run_stage: Literal["sanity", "pilot", "full"] = "sanity",
     runner_label: list[str] | None = None,
-    backend: Literal["github_actions", "aixs"] = "github_actions",
+    backend: Literal["github_actions", "seyval"] = "github_actions",
     compute_type: str = "gpu-a10",
+    compute_id: str | None = None,
+    inputs_from_runs: list[str] | None = None,
+    time_limit: str | None = None,
+    resource_count: int | None = None,
+    required_env_vars: list[str] | None = None,
 ) -> dict[str, Any]:
     """Start an experiment run (asynchronous). The code must already be pushed.
 
-    `workflow` selects the stage: "sanity_check" for a quick correctness run,
-    "main" for the full experiment. `run_id` identifies the experiment run
-    defined by the experiment code (one config/run/{run_id}.yaml).
+    `run_stage` selects the stage, in increasing scale: "sanity" for a quick
+    correctness run, "pilot" for a small preliminary one, "full" for the real
+    experiment. `run_id` identifies the experiment run defined by the
+    experiment code (one config/run/{run_id}.yaml). Pass the same stage to
+    `import_run_outputs` to collect a Seyval run's results afterwards.
 
     `backend` selects where the run executes:
     - "github_actions" (default): dispatches a workflow in the experiment
       repository. `runner_label` picks the runner. Track progress with
       `get_workflow_runs` and collect outputs with `fetch_experiment_results`.
       Requires GH_PERSONAL_ACCESS_TOKEN.
-    - "aixs": executes on the AIXS compute platform (GPU without GitHub
-      Actions limits). `compute_type` picks the machine (e.g. "cpu-general",
-      "gpu-a10"). Requires AIXS_API_KEY, and W&B API keys must be registered
-      as env vars on the AIXS side.
+    - "seyval": executes on the Seyval compute platform (GPU without GitHub
+      Actions limits). `compute_id` picks the machine — normally a cluster
+      you registered, "byo:<uuid>" from the Seyval MCP server's
+      `list_computes`; it defaults to SEYVAL_COMPUTE_ID, and without either the
+      run goes to Seyval-managed compute. `compute_type` sets the resource
+      request in both cases (e.g. "cpu-general", "gpu-a10"). Seyval keeps the run's
+      results on its own side, so call `import_run_outputs` once the run
+      finishes — before `fetch_experiment_results`, which reads the
+      repository.
+
+    `required_env_vars` lists the env vars Seyval must have registered before
+    it will start the run, and defaults to `["WANDB_API_KEY"]`. Seyval
+    rejects the run outright when one is missing, so pass `[]` for an
+    experiment that does not use Weights & Biases rather than registering a
+    dummy key.
+
+    `inputs_from_runs`, `time_limit` and `resource_count` apply to "seyval"
+    only. `inputs_from_runs` takes `execution_id`s of earlier completed runs
+    and restores their outputs into this run's working directory at the paths
+    they were written to, so a run can consume what a previous one produced.
+    `time_limit` (e.g. "24:00:00") and `resource_count` request per-run
+    resources from a registered cluster; accepted values are in its
+    `run_profile` from `list_computes`.
 
     Track progress and fetch execution errors with
-    `get_experiment_run_status`. For "aixs" the returned `execution_id` is
+    `get_experiment_run_status`. For "seyval" the returned `execution_id` is
     passed directly; for "github_actions" the workflow-dispatch API returns
     no id, so discover the run id with `get_workflow_runs` first.
     """
-    if backend == "aixs":
-        run_stage = RunStage.SANITY if workflow == "sanity_check" else RunStage.FULL
-        aixs_result = (
-            await DispatchExperimentOnAixsSubgraph(
-                aixs_client=_aixs_client(),
-                run_stage=run_stage,
+    # Both backends record the stage: Seyval in the run's experiment id, GitHub
+    # Actions as run_experiment.yml's `mode` input.
+    stage = RunStage(run_stage)
+
+    if backend == "seyval":
+        # Resolve the client first: it is what loads the stored credentials
+        # into the environment that SEYVAL_COMPUTE_ID is read from.
+        client = _seyval_client()
+        resolved_compute_id = compute_id or os.getenv("SEYVAL_COMPUTE_ID") or None
+        seyval_result = (
+            await DispatchExperimentOnSeyvalSubgraph(
+                seyval_client=client,
+                compute_id=resolved_compute_id,
+                run_stage=stage,
                 compute_type=compute_type,
+                inputs_from_runs=inputs_from_runs,
+                time_limit=time_limit,
+                resource_count=resource_count,
+                required_env_vars=required_env_vars,
             )
             .build_graph()
             .ainvoke(
@@ -860,22 +984,18 @@ async def dispatch_experiment(
             )
         )
         return {
-            "dispatched": aixs_result["dispatched"],
-            "backend": "aixs",
-            "execution_id": aixs_result["aixs_run_id"],
-            "execution_url": aixs_result["aixs_run_url"],
+            "dispatched": seyval_result["dispatched"],
+            "backend": "seyval",
+            "compute_id": resolved_compute_id,
+            "execution_id": seyval_result["seyval_run_id"],
+            "execution_url": seyval_result["seyval_run_url"],
         }
 
-    workflow_file = (
-        "run_sanity_check.yml"
-        if workflow == "sanity_check"
-        else "run_main_experiment.yml"
-    )
     result = (
         await DispatchExperimentOnStaticRunnerSubgraph(
             github_client=_github_client(),
-            workflow_file=workflow_file,
             runner_label=runner_label or ["ubuntu-latest"],
+            run_stage=stage,
         )
         .build_graph()
         .ainvoke(
@@ -895,7 +1015,7 @@ async def dispatch_experiment(
 @mcp.tool()
 async def get_experiment_run_status(
     execution_id: str,
-    backend: Literal["github_actions", "aixs"] = "github_actions",
+    backend: Literal["github_actions", "seyval"] = "github_actions",
     github_owner: str | None = None,
     repository_name: str | None = None,
     log_tail_lines: int = 200,
@@ -903,7 +1023,7 @@ async def get_experiment_run_status(
     """Check one experiment run and fetch its execution logs (non-blocking).
 
     `execution_id` identifies the run on the selected `backend`: the
-    `execution_id` returned by `dispatch_experiment(backend="aixs")`, or a
+    `execution_id` returned by `dispatch_experiment(backend="seyval")`, or a
     `workflow_run_id` from `get_workflow_runs` for "github_actions" (pass
     `github_owner` and `repository_name` in that case).
 
@@ -944,7 +1064,7 @@ async def get_experiment_run_status(
             "stderr_tail": None,
         }
 
-    client = _aixs_client()
+    client = _seyval_client()
     run = await client.aget_run(execution_id)
     status = run.get("status")
 
@@ -1037,6 +1157,87 @@ async def fetch_experiment_results(
     return _dump(result["experimental_results"])
 
 
+# Stages that re-run the experiment and so write the file names the full run
+# owns. A visualization run is additive: it renders figures from an earlier
+# run's outputs rather than producing its own metrics.
+_PROVISIONAL_RUN_STAGES = frozenset({RunStage.SANITY, RunStage.PILOT})
+
+
+@mcp.tool()
+async def import_run_outputs(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    run_id: str,
+    run_stage: Literal["sanity", "pilot", "full", "visualization"] = "full",
+    execution_id: str | None = None,
+    confirm_overwrite: bool = False,
+) -> dict[str, Any]:
+    """Copy a Seyval run's result files into the experiment repository.
+
+    Only needed for `backend="seyval"`: Seyval pulls the repository to run it but
+    never pushes back, so its results and figures stay in Seyval's storage.
+    This commits everything the run wrote under `.research/results/` to
+    `branch_name` at the same paths, after which `fetch_experiment_results`,
+    `analyze_experiment` and `compile_latex` work as they do for
+    "github_actions". A "github_actions" run needs none of this.
+
+    Call it once the run has finished — `get_experiment_run_status` must
+    report a terminal status, since outputs are collected at the end.
+
+    `run_id` and `run_stage` identify which run to import, and are the same
+    values `dispatch_experiment` was called with.
+
+    A repository path holds one run's results regardless of stage, so
+    importing a provisional stage ("sanity" or "pilot") replaces the full
+    run's results at the paths they share, and requires
+    `confirm_overwrite=True`. "full" is therefore the default, and
+    "visualization" needs no confirmation because such a run adds figures
+    derived from an earlier run rather than re-running the experiment.
+
+    Pass `execution_id` (the id `dispatch_experiment` returned) to import one
+    specific run instead — necessary for older runs, which age out of the
+    lookup.
+
+    File contents are downloaded and committed inside airas and are never
+    returned. Requires SEYVAL_API_KEY and GH_PERSONAL_ACCESS_TOKEN.
+    """
+    stage = RunStage(run_stage)
+    if stage in _PROVISIONAL_RUN_STAGES and not confirm_overwrite:
+        raise ValueError(
+            f"A {stage.value} run re-runs the experiment and writes the same "
+            f"file names as the full run of '{run_id}', so importing it would "
+            "replace the full run's results at those paths. Pass "
+            "confirm_overwrite=True to do it anyway."
+        )
+
+    result = (
+        await ImportRunOutputsSubgraph(
+            seyval_client=_seyval_client(),
+            github_client=_github_client(),
+            run_stage=stage,
+            execution_id=execution_id,
+        )
+        .build_graph()
+        .ainvoke(
+            {
+                "github_config": GitHubConfig(
+                    github_owner=github_owner,
+                    repository_name=repository_name,
+                    branch_name=branch_name,
+                ),
+                "run_id": run_id,
+            }
+        )
+    )
+    return {
+        "imported": result["imported"],
+        "execution_id": result["execution_id"],
+        "imported_paths": result["imported_paths"],
+        "total_bytes": result["total_bytes"],
+    }
+
+
 @mcp.tool()
 async def download_workflow_artifacts(
     github_owner: str,
@@ -1113,12 +1314,73 @@ async def analyze_experiment(
 # --- Research history persistence (GitHub) ---
 
 
+def _reject_unknown_history_keys(research_history: dict[str, Any]) -> None:
+    """Refuse a key the model would drop, instead of dropping it.
+
+    ResearchHistory leaves pydantic's default `extra="ignore"` in place, so
+    an undeclared top-level key vanishes during validation and the upload
+    still reports success. A caller who passed eight keys and had six
+    silently discarded learns nothing until a later session restores an
+    empty-looking history.
+
+    The strictness belongs here rather than on the model: the same model
+    parses `.research/research_history.json` back out of the repository,
+    where a file written by hand — which the skills instruct agents to
+    do — must not make the whole restore fail.
+    """
+    if not isinstance(research_history, dict):
+        raise ValueError(
+            "research_history must be a JSON object keyed by field name, not "
+            f"{type(research_history).__name__}."
+        )
+    unknown = sorted(set(research_history) - set(ResearchHistory.model_fields))
+    if not unknown:
+        return
+    raise ValueError(
+        f"research_history has {len(unknown)} key(s) that would be discarded "
+        f"without warning: {', '.join(unknown)}. Accepted fields are "
+        f"{', '.join(ResearchHistory.model_fields)}. Anything that does not "
+        "map onto one of them belongs under `additional_data`, which takes "
+        "an arbitrary dict; call get_input_schema('research_history') for "
+        "the full shape."
+    )
+
+
+class _ResearchHistoryInput(ResearchHistory):
+    """The upload-side view of ResearchHistory: same fields, nothing dropped.
+
+    Typing the tool parameter as this rather than `dict[str, Any]` is what
+    puts the field list into the schema the MCP client already reads from
+    `tools/list` — a plain dict publishes `additionalProperties: true` and
+    no properties at all, which tells the caller nothing. `extra="forbid"`
+    both refuses the keys that used to vanish and shows up in that schema,
+    so the boundary advertises that it is strict.
+
+    ResearchHistory itself stays lenient: it also parses
+    `.research/research_history.json` back out of the repository, where a
+    file written by hand — which the skills instruct agents to do — must
+    not make the whole restore fail.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_dropped_keys(cls, data: Any) -> Any:
+        # pydantic's own "Extra inputs are not permitted" does not mention
+        # additional_data, and a caller who is not told about the escape
+        # hatch just deletes the data instead of moving it.
+        if isinstance(data, dict):
+            _reject_unknown_history_keys(data)
+        return data
+
+
 @mcp.tool()
 async def upload_research_history(
     github_owner: str,
     repository_name: str,
     branch_name: str,
-    research_history: dict[str, Any],
+    research_history: _ResearchHistoryInput,
     commit_message: str | None = None,
 ) -> dict[str, Any]:
     """Save research history (hypothesis, design, results, ...) to the experiment repository.
@@ -1126,6 +1388,12 @@ async def upload_research_history(
     AIRAS persists research state in the GitHub repository, so uploading the
     accumulated history lets you resume work in a later session with
     `download_research_history`. Requires GH_PERSONAL_ACCESS_TOKEN.
+
+    `research_history` takes only the fields in this tool's own schema, and
+    any other top-level key is rejected rather than dropped. Anything the
+    schema has no home for belongs under `additional_data`, a free-form
+    dict. `get_input_schema("research_history")` returns the same shape if
+    you would rather ask for it directly.
     """
     result = (
         await GithubUploadSubgraph(_github_client())
@@ -1137,7 +1405,7 @@ async def upload_research_history(
                     repository_name=repository_name,
                     branch_name=branch_name,
                 ),
-                "research_history": ResearchHistory.model_validate(research_history),
+                "research_history": research_history,
                 "commit_message": commit_message,
             }
         )
@@ -1382,10 +1650,14 @@ async def compile_latex(
     One of the two publication exits after main.tex has been pushed to
     `.research/latex/{template}/` (the other is `open_in_overleaf`; they
     are independent and can both be used).
-    Dispatches the LaTeX compilation workflow for the pushed sources;
-    figure PDFs under `.research/results/` and `.research/diagrams/` are
-    materialized into `images/` at build time. Returns immediately with
-    `paper_url` (when available); track the run with `get_workflow_runs`.
+    Dispatches the LaTeX compilation workflow for the pushed sources.
+    The workflow materializes every PDF under `.research/results/` and
+    `.research/diagrams/` into the template's `images/` with the directory
+    structure preserved, so figures need only be pushed, not pre-staged.
+    Returns as soon as the dispatch is accepted, which is not a
+    compile result — `paper_url` is where the PDF will land if the run
+    succeeds, so track the run with `get_workflow_runs`, and use
+    `verify_latex` to find out whether the document is actually sound.
     `model` (required) is forwarded to the compilation workflow as the
     coding-agent model (`model_name`) — call `get_available_llms` to list
     valid models. Requires GH_PERSONAL_ACCESS_TOKEN.
@@ -1412,6 +1684,82 @@ async def compile_latex(
         "compile_latex_dispatched": result["compile_latex_dispatched"],
         "paper_url": result["paper_url"],
     }
+
+
+@mcp.tool()
+async def verify_latex(
+    github_owner: str = "",
+    repository_name: str = "",
+    branch_name: str = "",
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+    local_path: str | None = None,
+    output_path: str | None = None,
+) -> dict[str, Any]:
+    """Compile the paper locally and report whether it is actually sound.
+
+    Use this before `open_in_overleaf` or `compile_latex` — those produce a
+    link and a dispatch receipt, neither of which tells you the document
+    built. This one builds it and answers the questions that decide whether
+    the paper is publishable: did a PDF come out (`compiled`, `page_count`),
+    do any citations render as `?` (`undefined_citations` — the usual cause
+    is writing main.tex without also writing the generated bibliography to
+    `.research/latex/{template}/references.bib`, whose shipped version is a
+    single placeholder entry), do any `\\ref`s render as `??`
+    (`undefined_references`), and is any figure referenced but absent
+    (`missing_figures`). `ok` is true only when all of those are clean and
+    `errors` — the `!` lines from the log, which is where a missing package
+    or a broken environment shows up — is empty too.
+
+    It compiles exactly the file set `open_in_overleaf` would export, so
+    what is checked is what would be shipped. The toolchain is still the
+    local one — Overleaf builds its own TeX Live image through latexmk — so
+    read the two verdicts differently: `ok=False` is a property of the
+    document and will follow it anywhere, while `ok=True` says this machine
+    built it, not that Overleaf will. A package installed there but not
+    here is the likely way the two disagree.
+
+    Pass `local_path` — the absolute path of your local clone — to check the
+    working tree with no push and no API keys. Otherwise pass
+    `github_owner`/`repository_name`/`branch_name` to check what was pushed
+    (requires GH_PERSONAL_ACCESS_TOKEN).
+
+    Pass `output_path` to keep the PDF this build produced — the build
+    directory is temporary otherwise, and `pdf_path` in the result says
+    where it landed. For a Japanese paper that is the only way to get a PDF
+    at all: `compile_latex` runs pdflatex on GitHub Actions, which cannot
+    typeset CJK.
+
+    Requires a local TeX distribution. A Japanese document is built with
+    lualatex (`texlive-luatex`, `texlive-lang-japanese`); everything else
+    with pdflatex.
+    """
+    refresh_environment()
+
+    if local_path:
+        latex_files = await asyncio.to_thread(
+            collect_latex_project_files_local, local_path, latex_template_name
+        )
+    else:
+        if not (github_owner and repository_name and branch_name):
+            raise ValueError(
+                "Provide local_path, or all of github_owner, repository_name "
+                "and branch_name."
+            )
+        latex_files = await asyncio.to_thread(
+            collect_latex_project_files,
+            GitHubConfig(
+                github_owner=github_owner,
+                repository_name=repository_name,
+                branch_name=branch_name,
+            ),
+            latex_template_name,
+            _github_client(),
+        )
+
+    report = await asyncio.to_thread(
+        verify_latex_build, latex_files, "main.tex", output_path
+    )
+    return report.model_dump()
 
 
 @mcp.tool()

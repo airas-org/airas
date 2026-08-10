@@ -4,9 +4,10 @@ import json
 import logging
 from typing import Any
 
+from airas.core.research_paths import LEGACY_DIAGRAM_DIR, RESULTS_DIR
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import GitHubConfig
-from airas.infra.github_client import GithubClient
+from airas.infra.github_client import GithubClient, GithubClientFatalError
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,18 @@ def _decode_base64_content(content: str) -> str:
     except Exception as e:
         logger.error(f"Failed to decode base64 content: {e}")
         raise
+
+
+def _is_absent(error: Exception) -> bool:
+    """True for "this path does not exist", false for every other failure.
+
+    A results directory that was never written is an ordinary outcome, but a
+    403 from a token without access is not: reporting both as "no results"
+    is how a permission problem turns into a paper with no figures and no
+    complaint. github_client already logs the response, so nothing is
+    re-logged here.
+    """
+    return getattr(error, "status_code", None) == 404
 
 
 async def _fetch_json(
@@ -33,22 +46,44 @@ async def _fetch_json(
             file_path=file_path,
             branch_name=branch_name,
         )
+    except GithubClientFatalError as e:
+        if _is_absent(e):
+            return None
+        raise
+
+    try:
         if resp and "content" in resp:
             content_str = _decode_base64_content(resp["content"])
             return json.loads(content_str)
-    except (json.JSONDecodeError, Exception) as e:
-        logger.error(f"Failed to fetch or parse JSON at {file_path}: {e}")
+    except (json.JSONDecodeError, ValueError) as e:
+        logger.error(f"Failed to parse JSON at {file_path}: {e}")
     return None
 
 
-async def _fetch_file_paths(
+# Figures are collected into the paper's images/ directory with their
+# directory structure preserved (see collect_latex_project_files), so a run
+# that writes chart/loss.pdf is referenced as images/chart/loss.pdf. Listing
+# bare filenames here would make two runs' loss.pdf indistinguishable and
+# would point the paper at images/loss.pdf, which nothing creates.
+MAX_LISTING_DEPTH = 4
+
+# Only PDFs count as figures. Both collectors (`_merge_figure` and the
+# template's compile_latex.yml rsync) copy `*.pdf` and nothing else, so
+# anything else listed here would send the paper after an image that never
+# lands under images/ — and a run writes checkpoints, logs and raw
+# artifacts into its results directory alongside the figures.
+FIGURE_SUFFIX = ".pdf"
+
+
+async def _fetch_figure_paths(
     github_client: GithubClient,
     github_owner: str,
     repository_name: str,
     dir_path: str,
     branch_name: str,
-    exclude_names: set[str] | None = None,
+    _depth: int = 0,
 ) -> list[str]:
+    """List figure PDFs under `dir_path`, recursively, relative to it."""
     try:
         resp = await github_client.aget_repository_content(
             github_owner=github_owner,
@@ -56,16 +91,48 @@ async def _fetch_file_paths(
             file_path=dir_path,
             branch_name=branch_name,
         )
-        if isinstance(resp, list):
-            excludes = exclude_names or set()
-            return [
-                f["name"]
-                for f in resp
-                if f.get("type") == "file" and f.get("name") not in excludes
-            ]
-    except Exception as e:
-        logger.error(f"Failed to list files in {dir_path}: {e}")
-    return []
+    except GithubClientFatalError as e:
+        if _is_absent(e):
+            return []
+        raise
+
+    if not isinstance(resp, list):
+        return []
+
+    files = [
+        entry["name"]
+        for entry in resp
+        if entry.get("type") == "file"
+        and str(entry.get("name", "")).lower().endswith(FIGURE_SUFFIX)
+    ]
+
+    subdirs = [entry["name"] for entry in resp if entry.get("type") == "dir"]
+    if not subdirs:
+        return files
+
+    if _depth >= MAX_LISTING_DEPTH:
+        logger.warning(
+            f"Stopped descending at {dir_path}: depth limit "
+            f"{MAX_LISTING_DEPTH} reached, skipping {len(subdirs)} subdirectories"
+        )
+        return files
+
+    nested = await asyncio.gather(
+        *(
+            _fetch_figure_paths(
+                github_client,
+                github_owner,
+                repository_name,
+                f"{dir_path}/{subdir}",
+                branch_name,
+                _depth=_depth + 1,
+            )
+            for subdir in subdirs
+        )
+    )
+    for subdir, subdir_files in zip(subdirs, nested, strict=True):
+        files.extend(f"{subdir}/{name}" for name in subdir_files)
+    return files
 
 
 async def _process_run_data(
@@ -84,13 +151,12 @@ async def _process_run_data(
         metrics_path,
         github_config.branch_name,
     )
-    files_task = _fetch_file_paths(
+    files_task = _fetch_figure_paths(
         github_client,
         github_config.github_owner,
         github_config.repository_name,
         run_dir,
         github_config.branch_name,
-        exclude_names={"metrics.json"},
     )
 
     metrics, files = await asyncio.gather(metrics_task, files_task)
@@ -100,7 +166,8 @@ async def _process_run_data(
     if files:
         logger.info(f"Retrieved {len(files)} figures for run {run_id}")
 
-    return run_id, metrics, files
+    # Relative to results_dir, which is what the paper references under images/.
+    return run_id, metrics, [f"{run_id}/{name}" for name in files]
 
 
 async def _process_comparison_data(
@@ -118,13 +185,12 @@ async def _process_comparison_data(
         agg_path,
         github_config.branch_name,
     )
-    files_task = _fetch_file_paths(
+    files_task = _fetch_figure_paths(
         github_client,
         github_config.github_owner,
         github_config.repository_name,
         comp_dir,
         github_config.branch_name,
-        exclude_names={"aggregated_metrics.json"},
     )
 
     metrics, files = await asyncio.gather(metrics_task, files_task)
@@ -134,22 +200,39 @@ async def _process_comparison_data(
     if files:
         logger.info(f"Retrieved {len(files)} comparison files")
 
-    return metrics, files
+    return metrics, [f"comparison/{name}" for name in files]
+
+
+def _image_prefix(dir_path: str, results_dir: str) -> str:
+    """The path `dir_path`'s contents take under the paper's images/.
+
+    Directories inside `results_dir` keep the part below it; the legacy
+    diagram directory sits outside and is merged into images/ flat, which is
+    what collect_latex_project_files does with each of these roots.
+    """
+    if dir_path == results_dir:
+        return ""
+    if dir_path.startswith(f"{results_dir}/"):
+        return f"{dir_path[len(results_dir) + 1 :]}/"
+    return ""
 
 
 async def _fetch_diagram_files(
     github_client: GithubClient,
     github_config: GitHubConfig,
-    diagrams_dirs: tuple[str, ...] = (
-        ".research/results/diagram",  # current convention
-        # Legacy location, kept for older repositories; remove in the next
-        # major release (see issue #913).
-        ".research/diagrams",
-    ),
+    results_dir: str = RESULTS_DIR,
+    diagrams_dirs: tuple[str, ...] | None = None,
 ) -> list[str]:
+    # Derived from results_dir rather than the module constant, so a caller
+    # that relocates the results directory does not leave the diagram lookup
+    # pointing at the default one. The legacy directory sits outside
+    # results_dir by definition and stays fixed.
+    if diagrams_dirs is None:
+        diagrams_dirs = (f"{results_dir}/diagram", LEGACY_DIAGRAM_DIR)
+
     per_dir = await asyncio.gather(
         *(
-            _fetch_file_paths(
+            _fetch_figure_paths(
                 github_client,
                 github_config.github_owner,
                 github_config.repository_name,
@@ -159,7 +242,11 @@ async def _fetch_diagram_files(
             for diagrams_dir in diagrams_dirs
         )
     )
-    files = [f for dir_files in per_dir for f in dir_files]
+    files = [
+        f"{_image_prefix(diagrams_dir, results_dir)}{name}"
+        for diagrams_dir, dir_files in zip(diagrams_dirs, per_dir, strict=True)
+        for name in dir_files
+    ]
     if files:
         logger.info(
             f"Retrieved {len(files)} diagram files from {', '.join(diagrams_dirs)}"
@@ -171,7 +258,7 @@ async def fetch_results(
     github_client: GithubClient,
     github_config: GitHubConfig,
     run_ids: list[str],
-    results_dir: str = ".research/results",
+    results_dir: str = RESULTS_DIR,
 ) -> ExperimentalResults:
     if not run_ids:
         raise ValueError("run_ids must not be empty")
@@ -183,7 +270,7 @@ async def fetch_results(
         for run_id in run_ids
     ]
     comp_task = _process_comparison_data(github_client, github_config, results_dir)
-    diagrams_task = _fetch_diagram_files(github_client, github_config)
+    diagrams_task = _fetch_diagram_files(github_client, github_config, results_dir)
 
     run_results_list, (comp_metrics, comp_files), diagram_files = await asyncio.gather(
         asyncio.gather(*tasks), comp_task, diagrams_task

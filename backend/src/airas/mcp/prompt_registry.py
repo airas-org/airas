@@ -11,6 +11,7 @@ Each generation step in AIRAS can run in one of two modes:
   top of them, so the two modes cannot drift apart.
 
 Every step returns a single fully rendered ``prompt``, an
+``input_json_schema`` describing the shape of ``inputs`` it accepts, an
 ``output_json_schema`` describing exactly the data format to produce, and a
 ``flow`` note on how the output is used next. Steps that loop internally on
 the backend (hypothesis refinement, paper refinement) are intentionally
@@ -19,9 +20,10 @@ instead of replaying the backend's iteration loop.
 """
 
 import json
-from typing import Any
+from typing import Any, Optional
 
 from jinja2 import Environment
+from pydantic import BaseModel
 
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory
@@ -31,6 +33,7 @@ from airas.core.types.experimental_design import (
 )
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.paper import PaperContent
+from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
 from airas.resources.datasets.language.prompt_engineering import (
@@ -63,7 +66,11 @@ from airas.usecases.generators.generate_queries_subgraph.prompt.generate_queries
 from airas.usecases.publication.generate_latex_subgraph.prompts.convert_to_latex_prompt import (
     convert_to_latex_prompt,
 )
-from airas.usecases.writers.write_subgraph.nodes.generate_note import generate_note
+from airas.usecases.writers.write_subgraph.nodes.generate_note import (
+    generate_note,
+    map_studies_to_bibtex,
+    unmatched_citation_titles,
+)
 from airas.usecases.writers.write_subgraph.prompts.section_tips_prompt import (
     section_tips_prompt,
 )
@@ -79,16 +86,62 @@ GENERATION_STEPS = (
 )
 
 
+# The shape of `inputs` for each step. These both validate the call and are
+# published as `input_json_schema`, so a host can see what a step wants
+# before calling it rather than discovering it from a validation error.
+# Host mode is expected to assemble some of these by hand — a
+# research_study_list built from search_papers rows, for instance — and
+# there is no other place that shape is written down.
+
+
+class _ResearchQueriesInputs(BaseModel):
+    research_topic: str
+    num_queries: int = 2
+
+
+class _HypothesisInputs(BaseModel):
+    research_topic: str
+    research_study_list: list[ResearchStudy]
+
+
+class _ExperimentalDesignInputs(BaseModel):
+    research_hypothesis: ResearchHypothesis
+    compute_environment: Optional[ComputeEnvironment] = None
+    num_models_to_use: int = 2
+    num_datasets_to_use: int = 2
+    num_comparative_methods: int = 2
+
+
+class _ExperimentAnalysisInputs(BaseModel):
+    research_hypothesis: ResearchHypothesis
+    experimental_design: ExperimentalDesign
+    experiment_code: ExperimentCode
+    experimental_results: ExperimentalResults
+
+
+class _PaperWritingInputs(BaseModel):
+    research_hypothesis: ResearchHypothesis
+    experiment_history: ExperimentHistory
+    experiment_code: ExperimentCode
+    research_study_list: list[ResearchStudy]
+    references_bib: str
+
+
+class _LatexConversionInputs(BaseModel):
+    paper_content: PaperContent
+    figures_dir: str = "images"
+
+
 def _render(template: str, data: dict[str, Any]) -> str:
     return Environment().from_string(template).render(data)
 
 
-def _research_queries(inputs: dict[str, Any]) -> dict[str, Any]:
+def _research_queries(inputs: _ResearchQueriesInputs) -> dict[str, Any]:
     prompt = _render(
         generate_queries_prompt,
         {
-            "research_topic": inputs["research_topic"],
-            "n_queries": inputs.get("num_queries", 2),
+            "research_topic": inputs.research_topic,
+            "n_queries": inputs.num_queries,
         },
     )
     return {
@@ -101,14 +154,13 @@ def _research_queries(inputs: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _hypothesis(inputs: dict[str, Any]) -> dict[str, Any]:
+def _hypothesis(inputs: _HypothesisInputs) -> dict[str, Any]:
     prompt = _render(
         generate_simple_hypothesis_prompt,
         {
-            "research_topic": inputs["research_topic"],
+            "research_topic": inputs.research_topic,
             "research_study_list": [
-                ResearchStudy.to_formatted_json(ResearchStudy.model_validate(study))
-                for study in inputs["research_study_list"]
+                study.to_formatted_json() for study in inputs.research_study_list
             ],
         },
     )
@@ -123,24 +175,19 @@ def _hypothesis(inputs: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _experimental_design(inputs: dict[str, Any]) -> dict[str, Any]:
-    compute_environment = ComputeEnvironment.model_validate(
-        inputs.get("compute_environment") or {}
-    )
+def _experimental_design(inputs: _ExperimentalDesignInputs) -> dict[str, Any]:
     prompt = _render(
         generate_experimental_design_prompt,
         {
-            "research_hypothesis": ResearchHypothesis.model_validate(
-                inputs["research_hypothesis"]
-            ),
-            "compute_environment": compute_environment,
+            "research_hypothesis": inputs.research_hypothesis,
+            "compute_environment": inputs.compute_environment or ComputeEnvironment(),
             "model_list": json.dumps(LLM_API_MODELS, indent=4, ensure_ascii=False),
             "dataset_list": json.dumps(
                 PROMPT_ENGINEERING_DATASETS, indent=4, ensure_ascii=False
             ),
-            "num_models_to_use": inputs.get("num_models_to_use", 2),
-            "num_datasets_to_use": inputs.get("num_datasets_to_use", 2),
-            "num_comparative_methods": inputs.get("num_comparative_methods", 2),
+            "num_models_to_use": inputs.num_models_to_use,
+            "num_datasets_to_use": inputs.num_datasets_to_use,
+            "num_comparative_methods": inputs.num_comparative_methods,
         },
     )
     return {
@@ -154,20 +201,14 @@ def _experimental_design(inputs: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _experiment_analysis(inputs: dict[str, Any]) -> dict[str, Any]:
+def _experiment_analysis(inputs: _ExperimentAnalysisInputs) -> dict[str, Any]:
     prompt = _render(
         analyze_experiment_prompt,
         {
-            "research_hypothesis": ResearchHypothesis.model_validate(
-                inputs["research_hypothesis"]
-            ),
-            "experimental_design": ExperimentalDesign.model_validate(
-                inputs["experimental_design"]
-            ),
-            "experiment_code": ExperimentCode.model_validate(inputs["experiment_code"]),
-            "experimental_results": ExperimentalResults.model_validate(
-                inputs["experimental_results"]
-            ),
+            "research_hypothesis": inputs.research_hypothesis,
+            "experimental_design": inputs.experimental_design,
+            "experiment_code": inputs.experiment_code,
+            "experimental_results": inputs.experimental_results,
         },
     )
     return {
@@ -180,23 +221,22 @@ def _experiment_analysis(inputs: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _paper_writing(inputs: dict[str, Any]) -> dict[str, Any]:
+def _paper_writing(inputs: _PaperWritingInputs) -> dict[str, Any]:
+    # Built once and handed to both readers: the note renders it, and the
+    # warning below reports what it could not resolve.
+    mapped_studies = map_studies_to_bibtex(
+        inputs.research_study_list, inputs.references_bib
+    )
     note = generate_note(
-        research_hypothesis=ResearchHypothesis.model_validate(
-            inputs["research_hypothesis"]
-        ),
-        experiment_history=ExperimentHistory.model_validate(
-            inputs["experiment_history"]
-        ),
-        experiment_code=ExperimentCode.model_validate(inputs["experiment_code"]),
-        research_study_list=[
-            ResearchStudy.model_validate(study)
-            for study in inputs["research_study_list"]
-        ],
-        references_bib=inputs["references_bib"],
+        research_hypothesis=inputs.research_hypothesis,
+        experiment_history=inputs.experiment_history,
+        experiment_code=inputs.experiment_code,
+        research_study_list=inputs.research_study_list,
+        references_bib=inputs.references_bib,
+        mapped_studies=mapped_studies,
     )
     prompt = _render(write_prompt, {"note": note, "tips_dict": section_tips_prompt})
-    return {
+    result: dict[str, Any] = {
         "prompt": prompt,
         "output_json_schema": PaperContent.model_json_schema(),
         "flow": (
@@ -205,14 +245,28 @@ def _paper_writing(inputs: dict[str, Any]) -> dict[str, Any]:
             "as paper_content."
         ),
     }
+    # The prompt tells the writer not to cite these, and says so nowhere the
+    # caller can see. Unattended, that finishes a paper with the citations
+    # quietly missing.
+    unmatched = unmatched_citation_titles(mapped_studies)
+    if unmatched:
+        result["warnings"] = [
+            f"{len(unmatched)} of {len(inputs.research_study_list)} studies have "
+            "no entry in references_bib, so the prompt marks them 'do not cite' "
+            "and they will be missing from the paper: "
+            + "; ".join(unmatched)
+            + ". Titles are matched by title, so pass generate_bibfile's output "
+            "verbatim rather than a shortened version."
+        ]
+    return result
 
 
-def _latex_conversion(inputs: dict[str, Any]) -> dict[str, Any]:
-    paper_content = PaperContent.model_validate(inputs["paper_content"])
+def _latex_conversion(inputs: _LatexConversionInputs) -> dict[str, Any]:
+    paper_content = inputs.paper_content
     prompt = _render(
         convert_to_latex_prompt,
         {
-            "figures_dir": inputs.get("figures_dir", "images"),
+            "figures_dir": inputs.figures_dir,
             "sections": [
                 {"name": field, "content": getattr(paper_content, field)}
                 for field in PaperContent.model_fields.keys()
@@ -232,24 +286,65 @@ def _latex_conversion(inputs: dict[str, Any]) -> dict[str, Any]:
             "<< background >>, << method >>, << experimental_setup >>, "
             "<< results >>, << conclusion >> — replace each marker with the "
             "corresponding section and save the result as "
-            ".research/latex/{template}/main.tex, then push it with git."
+            ".research/latex/{template}/main.tex. 3) Write the bibliography "
+            "from generate_bibfile to "
+            ".research/latex/{template}/references.bib, overwriting the "
+            "placeholder the template ships — without this every \\cite "
+            "renders as '?'. 4) Check the result with verify_latex before "
+            "publishing, then push both files with git."
         ),
     }
 
 
-_STEP_BUILDERS = {
-    "research_queries": _research_queries,
-    "hypothesis": _hypothesis,
-    "experimental_design": _experimental_design,
-    "experiment_analysis": _experiment_analysis,
-    "paper_writing": _paper_writing,
-    "latex_conversion": _latex_conversion,
+_STEP_BUILDERS: dict[str, tuple[type[BaseModel], Any]] = {
+    "research_queries": (_ResearchQueriesInputs, _research_queries),
+    "hypothesis": (_HypothesisInputs, _hypothesis),
+    "experimental_design": (_ExperimentalDesignInputs, _experimental_design),
+    "experiment_analysis": (_ExperimentAnalysisInputs, _experiment_analysis),
+    "paper_writing": (_PaperWritingInputs, _paper_writing),
+    "latex_conversion": (_LatexConversionInputs, _latex_conversion),
 }
 
 
-def build_generation_prompt(step: str, inputs: dict[str, Any]) -> dict[str, Any]:
+# Not a generation step, but the same problem: `upload_research_history`
+# takes a dict whose accepted shape was written down nowhere, and pydantic's
+# default `extra="ignore"` discarded every key that missed it. Publishing it
+# here keeps one place to ask "what does this tool want".
+_EXTRA_INPUT_SCHEMAS: dict[str, type[BaseModel]] = {
+    "research_history": ResearchHistory,
+}
+
+_KNOWN_SCHEMAS = (*GENERATION_STEPS, *_EXTRA_INPUT_SCHEMAS)
+
+
+def get_input_json_schema(step: str) -> dict[str, Any]:
+    """The JSON Schema of the `inputs` a step expects."""
+    if model := _EXTRA_INPUT_SCHEMAS.get(step):
+        return model.model_json_schema()
+    if step not in _STEP_BUILDERS:
+        # Lists the non-step schemas too, because this is the one place they
+        # can be asked for. The generation path below must not: offering
+        # research_history as an "available step" would send the caller
+        # straight into a second error.
+        raise ValueError(
+            f"No input schema for '{step}'. Available: {', '.join(_KNOWN_SCHEMAS)}"
+        )
+    return _STEP_BUILDERS[step][0].model_json_schema()
+
+
+def _require_known_step(step: str) -> None:
     if step not in _STEP_BUILDERS:
         raise ValueError(
             f"Unknown step '{step}'. Available: {', '.join(GENERATION_STEPS)}"
         )
-    return {"step": step, **_STEP_BUILDERS[step](inputs)}
+
+
+def build_generation_prompt(step: str, inputs: dict[str, Any]) -> dict[str, Any]:
+    _require_known_step(step)
+    input_model, builder = _STEP_BUILDERS[step]
+    validated = input_model.model_validate(inputs)
+    return {
+        "step": step,
+        "input_json_schema": input_model.model_json_schema(),
+        **builder(validated),
+    }

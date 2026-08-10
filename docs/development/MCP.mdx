@@ -29,10 +29,66 @@ chmod 600 ~/.airas/credentials.json
 
 | Key | Required | Purpose |
 | --- | --- | --- |
-| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` | At least one | LLM calls (query generation, paper extraction, hypothesis generation, paper writing) |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `VERCEL_AI_GATEWAY_API_KEY` / `RIKYU_API_KEY` | At least one | LLM calls (query generation, paper extraction, hypothesis generation, paper writing) |
 | `GH_PERSONAL_ACCESS_TOKEN` | For repository / experiment / paper-reproduction / publication tools | GitHub API access (`repo` + `workflow` scopes) |
 
 If a tool is called before its credential is configured, it returns an error pointing at this file.
+
+### Seyval compute platform
+
+`dispatch_experiment(backend="seyval")` and `import_run_outputs` run against Seyval, which takes its own key:
+
+```json
+{
+  "SEYVAL_API_KEY": "seyval_pat_...",
+  "SEYVAL_COMPUTE_ID": "byo:<uuid>"
+}
+```
+
+`SEYVAL_COMPUTE_ID` is optional and names the default cluster; without it, runs go to Seyval-managed compute. `SEYVAL_BASE_URL` overrides the API host.
+
+Seyval was previously called AIXS. If you configured it under the old names, rename `AIXS_API_KEY` / `AIXS_BASE_URL` / `AIXS_COMPUTE_ID` to `SEYVAL_*`, reissue the key so it is a `seyval_pat_` one, and pass `backend="seyval"` instead of `backend="aixs"`. The old names are no longer read.
+
+### OpenAI-compatible endpoints (Rikyu)
+
+RIKEN R-CCS's Rikyu API speaks the OpenAI API, and is reached with one credential:
+
+```json
+{
+  "RIKYU_API_KEY": "..."
+}
+```
+
+Address its models as `rikyu/<model>`, where `<model>` is an ID the endpoint itself reports:
+
+```bash
+curl -H "Authorization: Bearer $RIKYU_API_KEY" \
+  https://api.rikyu.r-ccs.riken.jp/v1/models
+```
+
+The base URL defaults to `https://api.rikyu.r-ccs.riken.jp/v1`; add `RIKYU_API_BASE` to the credentials file by hand to point at a different host. A future OpenAI-compatible endpoint would get its own provider name and key the same way (see the `RIKYU_*` wiring in `backend/src/airas/infra/llm_provider_resolver.py`), so a key always says which host it reaches and which project is billed.
+
+The same key reaches the coding agent. To use the endpoint from a local [opencode](https://opencode.ai), declare it as a custom provider in `~/.config/opencode/opencode.json` (the experiment repository ships the equivalent block in `.opencode/opencode.jsonc`, and its workflows pass the key through from repository secrets):
+
+```json
+{
+  "provider": {
+    "rikyu": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Rikyu (RIKEN R-CCS)",
+      "options": {
+        "baseURL": "https://api.rikyu.r-ccs.riken.jp/v1",
+        "apiKey": "{env:RIKYU_API_KEY}"
+      },
+      "models": {
+        "kimi-k3": { "name": "Kimi K3" }
+      }
+    }
+  }
+}
+```
+
+Register one entry under `models` per model ID you want to select, then run `opencode run --model rikyu/<model>` — the same name the node LLMs use. Coding-agent use requires the endpoint to serve tool calls (on vLLM, a tool-call parser must be enabled); a model that only handles plain completions still works for node LLM calls.
 
 ### 2. Register the server (Claude Code)
 
@@ -76,7 +132,7 @@ Or add it to your project's `.mcp.json`:
 | Tool | Description |
 | --- | --- |
 | `prepare_repository` | Create and initialize an experiment repository |
-| `dispatch_experiment` | Start a sanity-check or main experiment run (async) on GitHub Actions or the AIXS compute platform (`backend` parameter) |
+| `dispatch_experiment` | Start a sanity-check or main experiment run (async) on GitHub Actions or the Seyval compute platform (`backend` parameter) |
 | `get_workflow_runs` | Check the status of recent workflow runs (non-blocking) |
 | `get_experiment_run_status` | Check one run on any backend and fetch its stdout/stderr tails for error diagnosis |
 | `fetch_experiment_results` | Fetch experiment results |
@@ -118,7 +174,7 @@ A typical paper-reproduction flow: `prepare_repository` (once, to create a runne
 airas-template) → `set_github_actions_secrets` → `dispatch_paper_reproduction_generate` (returns
 `repro_id`; every later reproduction tool requires it) → (poll `get_workflow_runs`) → `dispatch_paper_reproduction_run` → (poll) → `fetch_paper_reproduction_results` → (optionally) `dispatch_parameter_tuning_run` (poll) → `fetch_parameter_tuning_results`. Each reproduction lives in its own `.reproduction/<repro_id>/` directory, so one branch can hold multiple reproductions.
 
-A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs` for GitHub Actions, or `get_experiment_run_status` for AIXS) → `fetch_experiment_results` → `analyze_experiment` → **create figures and diagrams yourself** (see below) → `generate_bibfile` → `generate_paper` → `generate_latex` → **write the returned LaTeX to `.research/latex/{template}/main.tex` in your clone and push it with git** → **either or both of** `compile_latex` (build the PDF on GitHub Actions) / `open_in_overleaf` (hand the project to the user for editing; with `local_path`, no push needed) → `upload_research_history`.
+A typical flow: `generate_research_queries` → `search_papers` → `retrieve_papers` → `generate_hypothesis` → `generate_experimental_design` → `prepare_repository` → **write the experiment code yourself** (see below) → `dispatch_experiment` → (poll `get_workflow_runs` for GitHub Actions, or `get_experiment_run_status` for Seyval) → `fetch_experiment_results` → `analyze_experiment` → **create figures and diagrams yourself** (see below) → `generate_bibfile` → `generate_paper` → `generate_latex` → **write the returned LaTeX to `.research/latex/{template}/main.tex` in your clone and push it with git** → **either or both of** `compile_latex` (build the PDF on GitHub Actions) / `open_in_overleaf` (hand the project to the user for editing; with `local_path`, no push needed) → `upload_research_history`.
 
 ### Writing the experiment code
 
@@ -144,7 +200,7 @@ Result figures and method diagrams are also created by the MCP host itself rathe
 
 As with code generation, the autonomous research workflows still run visualization and diagram generation on GitHub Actions; those paths are not exposed as MCP tools.
 
-Long-running steps return immediately instead of blocking. Experiments run on GitHub Actions or on AIXS depending on `dispatch_experiment`'s `backend` — track them with `get_workflow_runs` or `get_experiment_run_status` respectively. LaTeX builds run on GitHub Actions; track them with `get_workflow_runs`.
+Long-running steps return immediately instead of blocking. Experiments run on GitHub Actions or on Seyval depending on `dispatch_experiment`'s `backend` — track them with `get_workflow_runs` or `get_experiment_run_status` respectively. LaTeX builds run on GitHub Actions; track them with `get_workflow_runs`.
 
 ## Development
 

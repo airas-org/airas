@@ -37,6 +37,6 @@ RAG_RETRIEVAL_LIBRARIES: dict[str, dict[str, str | None]] = {
         "official_docs": "https://qdrant.tech/documentation",
         "github": "https://github.com/qdrant/qdrant",
         "llms_txt": "https://qdrant.tech/llms.txt",
-        "llms_full_txt": "https://qdrant.tech/llms-full.txt",
+        "llms_full_txt": None,
     },
 }

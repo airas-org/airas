@@ -39,6 +39,8 @@ class PrepareRepositoryInputState(TypedDict):
 class PrepareRepositoryOutputState(ExecutionTimeState):
     is_repository_ready: bool
     is_branch_ready: bool
+    html_url: str
+    clone_url: str
 
 
 class PrepareRepositoryState(PrepareRepositoryInputState, PrepareRepositoryOutputState):
@@ -144,14 +146,21 @@ class PrepareRepositorySubgraph:
         return {"is_branch_created": is_branch_created}
 
     @record_execution_time
-    def _finalize_state(self, state: PrepareRepositoryState) -> dict[str, bool]:
+    def _finalize_state(self, state: PrepareRepositoryState) -> dict[str, bool | str]:
         is_repository_ready = state.get("is_repository_from_template", False)
         is_branch_ready = state.get("is_branch_already_exists", False) or state.get(
             "is_branch_created", False
         )
+        github_config = state["github_config"]
+        repository = f"{github_config.github_owner}/{github_config.repository_name}"
         return {
             "is_repository_ready": is_repository_ready,
             "is_branch_ready": is_branch_ready,
+            # Returned so the caller does not have to reconstruct them: the
+            # next step in every flow is to clone this repository, and until
+            # now nothing told the caller where it is.
+            "html_url": f"https://github.com/{repository}",
+            "clone_url": f"https://github.com/{repository}.git",
         }
 
     def build_graph(self):

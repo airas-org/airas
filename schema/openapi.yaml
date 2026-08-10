@@ -2826,7 +2826,9 @@ components:
             type: array
           - type: 'null'
           title: Result Figures
-          description: Result figure filenames (e.g. plot.pdf)
+          description: Result figure paths relative to the results directory, which
+            is also their path under the paper's images/ (e.g. run-1/plot.pdf is referenced
+            as images/run-1/plot.pdf)
         diagram_figures:
           anyOf:
           - items:
@@ -2834,7 +2836,8 @@ components:
             type: array
           - type: 'null'
           title: Diagram Figures
-          description: Method diagram filenames (e.g. architecture.pdf)
+          description: Method diagram paths, relative in the same way as result_figures
+            (e.g. diagram/architecture.pdf)
         metrics_data:
           anyOf:
           - additionalProperties: true
@@ -2917,6 +2920,11 @@ components:
           - type: string
           - type: 'null'
           title: Pdf Url
+        max_chars:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Max Chars
       type: object
       title: FetchPaperFulltextRequestBody
     FetchPaperFulltextResponseBody:
@@ -2936,6 +2944,12 @@ components:
           - type: string
           - type: 'null'
           title: Resolved From
+        total_chars:
+          type: integer
+          title: Total Chars
+        truncated:
+          type: boolean
+          title: Truncated
         execution_time:
           additionalProperties:
             items:
@@ -2948,6 +2962,8 @@ components:
       - text
       - status
       - resolved_from
+      - total_chars
+      - truncated
       - execution_time
       title: FetchPaperFulltextResponseBody
     FetchPaperReproductionResultsLLMMapping:

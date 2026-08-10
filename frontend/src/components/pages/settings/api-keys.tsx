@@ -33,6 +33,8 @@ const CATEGORIES: { key: string; names: string[] }[] = [
       "ANTHROPIC_API_KEY",
       "GEMINI_API_KEY",
       "OPENROUTER_API_KEY",
+      "VERCEL_AI_GATEWAY_API_KEY",
+      "RIKYU_API_KEY",
       "AWS_BEARER_TOKEN_BEDROCK",
     ],
   },
@@ -42,7 +44,7 @@ const CATEGORIES: { key: string; names: string[] }[] = [
   },
   {
     key: "compute",
-    names: ["AIXS_API_KEY", "AIXS_BASE_URL"],
+    names: ["SEYVAL_API_KEY", "SEYVAL_BASE_URL"],
   },
   {
     key: "integrations",
