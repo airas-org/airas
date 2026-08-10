@@ -270,7 +270,10 @@ class TestKeepingThePdf:
     def test_a_flawed_paper_still_yields_its_pdf(self, tmp_path):
         """Seeing the '?' in place is faster than reading about it."""
         report = verify_latex_build(
-            {"main.tex": _document("Cited \\cite{never_added}."), "references.bib": BIB},
+            {
+                "main.tex": _document("Cited \\cite{never_added}."),
+                "references.bib": BIB,
+            },
             output_path=tmp_path / "paper.pdf",
         )
 

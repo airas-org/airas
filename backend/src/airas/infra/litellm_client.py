@@ -141,6 +141,10 @@ class LiteLLMClient:
         web_search: bool = False,
     ) -> str:
         litellm_kwargs = params.copy() if params else {}
+        # provider_type is a frontend-only discriminator (which params fields to render for
+        # the selected provider); it is not a real litellm/provider completion kwarg. Most
+        # providers silently ignore it, but OpenAI's API rejects unknown top-level parameters.
+        litellm_kwargs.pop("provider_type", None)
         # setdefault so an explicit per-call timeout in `params` still wins.
         litellm_kwargs.setdefault("timeout", resolve_llm_timeout())
         messages = [{"role": "user", "content": message}]
@@ -229,6 +233,10 @@ class LiteLLMClient:
             )
 
         litellm_kwargs = params.copy() if params else {}
+        # provider_type is a frontend-only discriminator (which params fields to render for
+        # the selected provider); it is not a real litellm/provider completion kwarg. Most
+        # providers silently ignore it, but OpenAI's API rejects unknown top-level parameters.
+        litellm_kwargs.pop("provider_type", None)
         # setdefault so an explicit per-call timeout in `params` still wins.
         litellm_kwargs.setdefault("timeout", resolve_llm_timeout())
         messages = [{"role": "user", "content": message}]

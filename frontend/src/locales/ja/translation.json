@@ -813,7 +813,62 @@
   },
   "reproduction": {
     "title": "再現実装",
-    "comingSoon": "近日公開予定です"
+    "description": "論文の図表を再現するコードを生成・実行し、結果を検証します。",
+    "form": {
+      "ownerNotSet": "GitHubオーナーが設定されていません。設定 > APIキー で GITHUB_OWNER を設定してください。",
+      "repositoryName": "リポジトリ名",
+      "branchName": "ブランチ名",
+      "paperUrl": "論文URL",
+      "instruction": "指示（任意）",
+      "instructionHelp": "再現対象の図表や再現方針を指定します。",
+      "instructionPlaceholder": "例: Figure 2を再現してください",
+      "advanced": "詳細設定",
+      "repoUrl": "参照リポジトリURL（任意）",
+      "repoUrlHelp": "論文の公式実装など、参考にするリポジトリを指定できます。",
+      "githubActionsAgent": "コーディングエージェント",
+      "reproId": "再現ID",
+      "generateModel": "コード生成モデル",
+      "resultsModel": "検証モデル"
+    },
+    "steps": {
+      "configure": "1. 設定",
+      "generate": "2. コード生成",
+      "generateHelp": "論文を読み取り、再現コードを生成するワークフローをGitHub Actionsで実行します。完了まで数十分かかることがあります。",
+      "run": "3. 再現実行",
+      "runHelp": "生成されたコードを実行します。コード生成の成功後に実行してください。完了すると結果を自動で取得します。",
+      "results": "4. 結果",
+      "tuning": "5. パラメータチューニング（任意）",
+      "tuningHelp": "再現完了後に、ハイパーパラメータのチューニングを実行できます。"
+    },
+    "actions": {
+      "startGenerate": "コード生成を開始",
+      "startRun": "実行を開始",
+      "fetchResults": "結果を取得",
+      "startTuning": "チューニングを開始",
+      "fetchTuningResults": "チューニング結果を取得"
+    },
+    "status": {
+      "idle": "未実行",
+      "dispatching": "起動中",
+      "running": "実行中",
+      "succeeded": "成功",
+      "failed": "失敗"
+    },
+    "results": {
+      "finalStatus": "最終ステータス",
+      "validation": "検証結果",
+      "parameterCheck": "パラメータ比較結果",
+      "result": "実行結果",
+      "reproMd": "再現レポート",
+      "reproImage": "再現図表",
+      "tuningFigure": "チューニング図"
+    },
+    "errors": {
+      "dispatchFailed": "ワークフローの起動に失敗しました。",
+      "workflowFailed": "ワークフローが失敗しました（{{conclusion}}）。",
+      "resultsFailed": "結果の取得に失敗しました。",
+      "missingReproId": "先にコード生成を実行してください（再現IDがありません）。"
+    }
   },
   "common": {
     "loading": "読み込み中...",
