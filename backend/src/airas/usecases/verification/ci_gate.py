@@ -20,10 +20,13 @@ since an unverifiable paper and an unverified paper must not ship.
 from __future__ import annotations
 
 import asyncio
+import atexit
 import json
 import logging
 from pathlib import Path
 from typing import Any, Callable, cast, get_args
+
+import httpx
 
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.infra.seyval_client import SeyvalClient
@@ -37,6 +40,35 @@ from airas.usecases.verification.paper_verification import paper_values_full_rep
 logger = logging.getLogger(__name__)
 
 REPORT_FILENAME = "verification-report.json"
+
+_seyval_client: SeyvalClient | None = None
+
+
+def _close_seyval_client() -> None:
+    # atexit runs after every event loop is gone, so a fresh one is fine;
+    # never let cleanup turn a finished gate run into a failure.
+    if _seyval_client is not None:
+        try:
+            asyncio.run(_seyval_client.aclose())
+        except Exception:  # pragma: no cover - best-effort cleanup
+            pass
+
+
+def _default_seyval_client() -> SeyvalClient:
+    """A process-lifetime Seyval client for the CLI gate.
+
+    SeyvalClient requires its HTTP session by injection; the MCP server
+    supplies its own, and this is the CLI's. Cached because the factory
+    is called per template and the sessions are reusable; closed at
+    process exit so the connection pool does not leak.
+    """
+    global _seyval_client
+    if _seyval_client is None:
+        _seyval_client = SeyvalClient(
+            async_session=httpx.AsyncClient(timeout=60.0, follow_redirects=True)
+        )
+        atexit.register(_close_seyval_client)
+    return _seyval_client
 
 
 def detect_templates(local_repo_path: str) -> list[str]:
@@ -145,7 +177,7 @@ async def run_paper_gate(
     check_provenance: bool = True,
     require_paper_values: bool = True,
     require_provenance: bool = True,
-    seyval_client_factory: Callable[[], SeyvalClient] = SeyvalClient,
+    seyval_client_factory: Callable[[], SeyvalClient] = _default_seyval_client,
 ) -> dict[str, Any]:
     """Gate every written template; write PDFs and the report to `output_dir`.
 

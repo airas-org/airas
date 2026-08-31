@@ -22,6 +22,11 @@ _EXCLUDED_FILES = {"template.tex", "template.pdf"}
 # major release (see issue #913).
 _FIGURE_SOURCE_DIRS = (f"{RESULTS_DIR}/", f"{LEGACY_DIAGRAM_DIR}/")
 
+# PDF for run-generated and diagram figures; PNG because verified charts
+# are rendered as png (vl-convert's PDF output is not byte-deterministic,
+# so the chart pipeline cannot use it).
+_FIGURE_SUFFIXES = (".pdf", ".png")
+
 # Overleaf drives the build with latexmk and defaults it to pdfLaTeX, which
 # cannot typeset CJK — a Japanese paper would arrive there and come out with
 # its text missing. latexmk reads this file, so shipping it means the export
@@ -66,7 +71,7 @@ def _is_unsafe_relative_path(relative_path: str) -> bool:
 def _merge_figure(
     latex_files: dict[str, bytes], repo_path: str, content: bytes
 ) -> None:
-    if not repo_path.lower().endswith(".pdf"):
+    if not repo_path.lower().endswith(_FIGURE_SUFFIXES):
         return
     for source_dir in _FIGURE_SOURCE_DIRS:
         if repo_path.startswith(source_dir):
@@ -110,8 +115,8 @@ def collect_latex_project_files(
                 latex_files[relative_path] = archive.read(info)
             elif repo_path.startswith(
                 _FIGURE_SOURCE_DIRS
-            ) and repo_path.lower().endswith(".pdf"):
-                # Only figure PDFs are read: these directories can also hold
+            ) and repo_path.lower().endswith(_FIGURE_SUFFIXES):
+                # Only figure files are read: these directories can also hold
                 # large experiment artifacts that must not be loaded here.
                 if _is_unsafe_relative_path(repo_path):
                     logger.warning(
@@ -158,7 +163,14 @@ def collect_latex_project_files_local(
         figure_root = root / source_dir.rstrip("/")
         if not figure_root.is_dir():
             continue
-        for path in sorted(figure_root.rglob("*.pdf")):
+        # Filter before sorting: these directories can hold many large
+        # experiment artifacts that are not figures.
+        figure_paths = (
+            path
+            for path in figure_root.rglob("*")
+            if path.suffix.lower() in _FIGURE_SUFFIXES
+        )
+        for path in sorted(figure_paths):
             if not _is_safe_local_file(path, figure_root):
                 continue
             repo_path = source_dir + path.relative_to(figure_root).as_posix()
