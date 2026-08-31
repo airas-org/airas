@@ -51,6 +51,10 @@ from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.llm_provider import LLMProvider
 from airas.core.types.paper import PaperContent
 from airas.core.types.paper_search import PAPER_SEARCH_SOURCES
+from airas.core.types.paper_values import (
+    PaperValuesVerificationReport,
+    ValueDeclaration,
+)
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
@@ -153,6 +157,19 @@ from airas.usecases.publication.open_in_overleaf_subgraph.nodes.collect_latex_pr
     collect_latex_project_files,
     collect_latex_project_files_local,
 )
+from airas.usecases.publication.paper_values.compute import (
+    compute_paper_values as compute_paper_values_node,
+)
+from airas.usecases.publication.paper_values.compute import load_metrics_data
+from airas.usecases.publication.paper_values.latex import (
+    VALUES_JSON_FILENAME,
+    VALUES_TEX_FILENAME,
+    render_values_tex,
+)
+from airas.usecases.publication.paper_values.verify import (
+    merge_paper_values_report,
+    paper_values_configured,
+)
 from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.fetch_paper_fulltext_subgraph import (
     FetchPaperFulltextSubgraph,
 )
@@ -172,6 +189,7 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_tit
 from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph import (
     SearchPapersSubgraph,
 )
+from airas.usecases.verification.paper_verification import paper_values_full_report
 from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
     GenerateBibfileSubgraph,
 )
@@ -1199,6 +1217,13 @@ async def import_run_outputs(
     specific run instead — necessary for older runs, which age out of the
     lookup.
 
+    The same commit records, in `.research/results/.provenance.json`, which
+    Seyval run produced each results directory; `verify_paper_values` pins
+    its provenance cross-check to that declaration, so results imported any
+    other way (or edited afterwards) fail verification. The returned
+    `import_commit_sha` identifies the commit holding exactly the imported
+    bytes — keep it with the run's records for auditing.
+
     File contents are downloaded and committed inside airas and are never
     returned. Requires SEYVAL_API_KEY and GH_PERSONAL_ACCESS_TOKEN.
     """
@@ -1235,6 +1260,7 @@ async def import_run_outputs(
         "execution_id": result["execution_id"],
         "imported_paths": result["imported_paths"],
         "total_bytes": result["total_bytes"],
+        "import_commit_sha": result["import_commit_sha"],
     }
 
 
@@ -1694,6 +1720,7 @@ async def verify_latex(
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
     local_path: str | None = None,
     output_path: str | None = None,
+    check_provenance: bool = True,
 ) -> dict[str, Any]:
     """Compile the paper locally and report whether it is actually sound.
 
@@ -1732,10 +1759,33 @@ async def verify_latex(
     Requires a local TeX distribution. A Japanese document is built with
     lualatex (`texlive-luatex`, `texlive-lang-japanese`); everything else
     with pdflatex.
+
+    When checking a local clone of a paper that uses the value-integrity
+    system (a `values.json` written by `compute_paper_values` exists), the
+    numbers are verified too: every stated value is recomputed from the
+    run outputs, `values.tex` is diffed against a regeneration, every
+    `\\airasval` key must be defined, and (unless `check_provenance=False`)
+    the local metrics files are cross-checked against the execution
+    platform's stored run outputs (currently Seyval) — each referenced
+    results directory must be byte-identical to what a completed run of a
+    commit in this repository's history actually produced. The full
+    report lands under `paper_values` (`paper_values_configured` says
+    whether the system is in use; its `provenance.status` is
+    "unavailable" when the platform could not be consulted, which does
+    not fail the build but is surfaced). On failure `ok` is false and no
+    PDF is written to `output_path` — so a PDF this tool hands out states
+    verified, provenance-backed numbers.
     """
     refresh_environment()
 
+    paper_values_report = None
     if local_path:
+        paper_values_report = await _paper_values_full_report(
+            local_path, latex_template_name, check_provenance
+        )
+        if paper_values_configured(paper_values_report) and not paper_values_report.ok:
+            # A PDF handed out by this tool must imply verified numbers.
+            output_path = None
         latex_files = await asyncio.to_thread(
             collect_latex_project_files_local, local_path, latex_template_name
         )
@@ -1758,6 +1808,127 @@ async def verify_latex(
 
     report = await asyncio.to_thread(
         verify_latex_build, latex_files, "main.tex", output_path
+    )
+    result: dict[str, Any] = report.model_dump()
+    if paper_values_report is not None:
+        result = merge_paper_values_report(result, paper_values_report)
+    return result
+
+
+async def _paper_values_full_report(
+    local_path: str,
+    latex_template_name: LATEX_TEMPLATE_NAME,
+    check_provenance: bool,
+) -> PaperValuesVerificationReport:
+    """The shared verification composition, with this server's Seyval client.
+
+    `airas verify-paper` (the CI gate) runs the same composition, so a
+    paper judged here and a paper judged in CI are judged identically.
+    """
+    return await paper_values_full_report(
+        local_path, latex_template_name, check_provenance, _seyval_client
+    )
+
+
+@mcp.tool()
+async def compute_paper_values(
+    local_path: str,
+    declarations: list[dict[str, Any]],
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+) -> dict[str, Any]:
+    """Turn declared metric expressions into the paper's numbers, deterministically.
+
+    This is the only sanctioned way experimental numbers enter the paper.
+    Declare *which* metrics you need and *how* they combine; the tool reads
+    the actual run outputs (`.research/results/<run_id>/metrics.json` and
+    `comparison/aggregated_metrics.json` in the local clone) and computes
+    every value itself. Numbers cannot be passed in, so a value that was
+    never measured cannot become a macro.
+
+    Each declaration is `{"key", "op", "refs", "round"}`: `key` names the
+    value (`^[a-z][a-z0-9_]*$`); `op` is one of `value` (the single ref
+    as-is), `mean` / `std` (over all refs), `diff` (refs[0] - refs[1]), or
+    `pct_improve` ((refs[0] - refs[1]) / |refs[1]| * 100); `refs` are
+    `"run_id.path.to.metric"` into that run's metrics.json; `round` is the
+    optional number of decimal places for display.
+
+    Writes `values.json` (the audit record) and `values.tex` (the macro
+    table) into `.research/latex/{template}/`. Then `\\input{values.tex}`
+    in main.tex's preamble and write every experimental number as
+    `\\airasval{key}` — never as a literal. A legitimate number that no
+    declaration can produce (e.g. a value quoted from a cited paper) must
+    be wrapped as `\\unverified{...}` so it is surfaced for review. Before
+    publishing, run `verify_paper_values`: it recomputes everything from
+    the run outputs and fails on any drift, including manual edits to the
+    generated files.
+    """
+    parsed = [ValueDeclaration.model_validate(d) for d in declarations]
+
+    def _run() -> dict[str, Any]:
+        metrics_data = load_metrics_data(local_path)
+        paper_values = compute_paper_values_node(parsed, metrics_data)
+        latex_dir = (
+            Path(local_path).expanduser().resolve()
+            / ".research"
+            / "latex"
+            / latex_template_name
+        )
+        latex_dir.mkdir(parents=True, exist_ok=True)
+        values_json_path = latex_dir / VALUES_JSON_FILENAME
+        values_tex_path = latex_dir / VALUES_TEX_FILENAME
+        values_json_path.write_text(
+            paper_values.model_dump_json(indent=2) + "\n", encoding="utf-8"
+        )
+        values_tex_path.write_text(render_values_tex(paper_values), encoding="utf-8")
+        return {
+            "values": {v.key: v.display for v in paper_values.values},
+            "values_json_path": str(values_json_path),
+            "values_tex_path": str(values_tex_path),
+            "usage": (
+                "\\input{values.tex} in the preamble, then \\airasval{<key>} "
+                "wherever the paper states the number"
+            ),
+        }
+
+    return await asyncio.to_thread(_run)
+
+
+@mcp.tool()
+async def verify_paper_values(
+    local_path: str,
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+    check_provenance: bool = True,
+) -> dict[str, Any]:
+    """Check that every number the paper states is the number that was measured.
+
+    Three deterministic checks decide `ok`: every value in `values.json`
+    is recomputed from the run outputs under `.research/results/` (a
+    tampered record surfaces as a mismatch), `values.tex` is regenerated
+    and diffed byte-for-byte (a manual edit to the macro table surfaces),
+    and every `\\airasval` key main.tex references must be defined.
+    Unless `check_provenance=False`, the local metrics files are also
+    cross-checked against the execution platform's stored run outputs
+    (currently Seyval): each referenced results directory must be
+    byte-identical to what the run *declared* for it in
+    `.research/results/.provenance.json` (written by `import_run_outputs`)
+    actually produced, that run must be completed, and its commit must be
+    an ancestor of the local HEAD — so a rewritten local metrics.json
+    fails even though the recomputation is self-consistent, and quietly
+    swapping to a different run of the same experiment surfaces as a
+    mismatch. Each check lists the other completed runs of the same
+    commit (`sibling_run_ids`); review them — repeated executions mean
+    the reported run was a choice. `provenance.status` "unavailable" (no
+    credentials, unregistered repository, network) is surfaced without
+    failing the local checks.
+
+    `unverified` lists every `\\unverified{...}` the author marked —
+    review input, not a failure. Run this after any step that may edit
+    main.tex (including compile agents), and treat the list as mandatory
+    review items before publishing.
+    """
+    refresh_environment()
+    report = await _paper_values_full_report(
+        local_path, latex_template_name, check_provenance
     )
     return report.model_dump()
 

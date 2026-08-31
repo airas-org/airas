@@ -31,6 +31,9 @@ FIGURE = ".research/results/run-1/figure.pdf"
 METRICS = ".research/results/run-1/metrics.json"
 
 
+SEYVAL_RUN_COMMIT = "a" * 40
+
+
 class FakeSeyvalClient:
     """Stands in for SeyvalClient; records what was downloaded."""
 
@@ -51,6 +54,13 @@ class FakeSeyvalClient:
 
     async def alist_runs(self, repository_id: str) -> list:
         return self._runs
+
+    async def aget_run(self, run_id: str) -> dict:
+        return {
+            "run_id": run_id,
+            "status": "completed",
+            "commit_hash": SEYVAL_RUN_COMMIT,
+        }
 
 
 def _output(path: str, size_bytes: int = 10) -> dict:
@@ -92,6 +102,8 @@ def test_importable_paths(path: str):
         "..",
         ".research/results/",  # normpath strips the trailing slash
         r".research\results\x.png",  # backslash separators
+        # the import writes the declaration; a run must not supply its own
+        ".research/results/.provenance.json",
     ],
 )
 def test_rejected_paths(path: str):
@@ -222,6 +234,9 @@ def _github_client_capturing(blobs: list[dict]) -> GithubClient:
                     "commit": {"sha": "c" * 40, "commit": {"tree": {"sha": "t" * 40}}}
                 },
             )
+        if request.method == "GET" and "/contents/" in path:
+            # No provenance manifest on the branch yet.
+            return httpx.Response(404, json={"message": "Not Found"})
         if path.endswith("/git/blobs"):
             blobs.append(json.loads(request.content))
             return httpx.Response(201, json={"sha": f"blob{len(blobs)}"})
@@ -263,12 +278,22 @@ async def test_subgraph_commits_downloaded_outputs_as_binary():
     assert result["execution_id"] == "seyval-run-uuid"
     assert result["imported_paths"] == sorted([METRICS, FIGURE])
     assert result["total_bytes"] > 0
+    assert result["import_commit_sha"] == "d" * 40
 
-    # Downloaded bytes reach GitHub base64-encoded, byte-for-byte.
-    assert len(blobs) == 2
-    assert all(blob["encoding"] == "base64" for blob in blobs)
-    committed = {base64.b64decode(blob["content"]) for blob in blobs}
+    # Downloaded bytes reach GitHub base64-encoded, byte-for-byte; the
+    # provenance manifest rides along as one extra text blob.
+    binary_blobs = [b for b in blobs if b["encoding"] == "base64"]
+    assert len(binary_blobs) == 2
+    committed = {base64.b64decode(blob["content"]) for blob in binary_blobs}
     assert f"content-of:https://s3.example/{FIGURE}?sig=abc".encode() in committed
+
+    text_blobs = [b for b in blobs if b["encoding"] == "utf-8"]
+    assert len(text_blobs) == 1
+    manifest = json.loads(text_blobs[0]["content"])
+    assert manifest["dirs"]["run-1"] == {
+        "execution_id": "seyval-run-uuid",
+        "commit_hash": SEYVAL_RUN_COMMIT,
+    }
 
 
 async def test_subgraph_uses_explicit_execution_id_without_lookup():

@@ -1289,11 +1289,12 @@ class GithubClient(BaseHTTPClient):
         branch_name: str,
         files: dict[str, str | bytes],  # path -> content
         commit_message: str,
-    ) -> bool:
+    ) -> str:
         """Commit multiple files in a single commit using Git Data API.
 
         `str` content is sent as UTF-8 text; `bytes` content is base64-encoded,
-        so text and binary files can share one commit.
+        so text and binary files can share one commit. Returns the SHA of the
+        created commit.
         """
         try:
             # Get current branch info
@@ -1348,9 +1349,13 @@ class GithubClient(BaseHTTPClient):
             )
 
             # Update branch reference
-            return await self._aupdate_ref(
+            if not await self._aupdate_ref(
                 github_owner, repository_name, f"heads/{branch_name}", commit_sha
-            )
+            ):
+                raise GithubClientFatalError(
+                    f"Failed to update ref heads/{branch_name} to {commit_sha}"
+                )
+            return commit_sha
 
         except Exception as e:
             logger.error(f"Failed to commit multiple files: {e}")

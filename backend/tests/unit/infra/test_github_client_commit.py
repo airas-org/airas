@@ -122,7 +122,7 @@ def _tree_paths(log: RequestLog) -> dict[str, str]:
 
 
 async def test_acommit_text_files_use_utf8(async_client: GithubClient, log: RequestLog):
-    ok = await async_client.acommit_multiple_files(
+    sha = await async_client.acommit_multiple_files(
         OWNER,
         REPO,
         BRANCH,
@@ -130,7 +130,7 @@ async def test_acommit_text_files_use_utf8(async_client: GithubClient, log: Requ
         commit_message="Add text files",
     )
 
-    assert ok is True
+    assert sha == NEW_COMMIT_SHA
     assert len(log.blobs) == 2
     assert all(blob["encoding"] == "utf-8" for blob in log.blobs)
     # Raw string, not base64.
@@ -209,11 +209,11 @@ async def test_acommit_mixed_files_in_single_commit(
         ".research/results/run-1/notes.md": "# Notes\n",
     }
 
-    ok = await async_client.acommit_multiple_files(
+    sha = await async_client.acommit_multiple_files(
         OWNER, REPO, BRANCH, files=files, commit_message="Import run outputs"
     )
 
-    assert ok is True
+    assert sha == NEW_COMMIT_SHA
     # One commit, one tree, one ref update — regardless of file count.
     assert len(log.blobs) == 3
     assert len(log.trees) == 1

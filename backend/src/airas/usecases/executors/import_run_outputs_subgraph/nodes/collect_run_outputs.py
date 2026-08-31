@@ -3,6 +3,7 @@ import logging
 import posixpath
 
 from airas.core.research_paths import RESULTS_DIR
+from airas.core.types.run_provenance import PROVENANCE_MANIFEST_PATH
 from airas.infra.seyval_client import SeyvalClient
 
 logger = logging.getLogger(__name__)
@@ -28,10 +29,13 @@ def _is_importable(path: str) -> bool:
     Output paths are produced by the experiment code, which is untrusted:
     only plain relative paths that stay inside the results directory are
     accepted, so a run cannot write over anything else in the repository.
+    The provenance manifest is excluded for the same reason — it is
+    written by the import itself, and a run must not be able to supply
+    its own declaration.
     """
     if not path or path.startswith("/") or "\\" in path:
         return False
-    if not path.startswith(f"{RESULTS_DIR}/"):
+    if not path.startswith(f"{RESULTS_DIR}/") or path == PROVENANCE_MANIFEST_PATH:
         return False
     # normpath collapses any "..", so a path that escapes changes shape.
     return posixpath.normpath(path) == path
