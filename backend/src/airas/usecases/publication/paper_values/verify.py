@@ -9,10 +9,15 @@ from pydantic import ValidationError
 
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.paper_values import (
+    PaperTables,
     PaperValues,
     PaperValuesVerificationReport,
     ProvenanceCheckResult,
     ValueDeclaration,
+)
+from airas.usecases.publication.paper_values.charts import (
+    chart_result_dirs,
+    verify_charts,
 )
 from airas.usecases.publication.paper_values.compute import (
     compute_paper_values,
@@ -23,6 +28,13 @@ from airas.usecases.publication.paper_values.latex import (
     VALUES_JSON_FILENAME,
     VALUES_TEX_FILENAME,
     render_values_tex,
+)
+from airas.usecases.publication.paper_values.tables import (
+    TABLES_DIR_NAME,
+    TABLES_JSON_FILENAME,
+    render_table_tex,
+    table_result_dirs,
+    table_tex_relpath,
 )
 
 _UNVERIFIED_RE = re.compile(r"\\unverified\{([^{}]*)\}")
@@ -67,16 +79,66 @@ def _scan_main_tex(main_tex: str) -> tuple[list[str], list[str]]:
     return unverified, used_keys
 
 
+def _verify_tables(latex_dir: Path, metrics_data: dict[str, Any]) -> list[str]:
+    """Regenerate every declared table and reject undeclared table files.
+
+    The unregistered-file check matters as much as the diff: without it a
+    hand-written tables/<name>.tex could be \\input alongside the
+    generated ones and carry any numbers at all.
+    """
+    problems: list[str] = []
+    tables_json_path = latex_dir / TABLES_JSON_FILENAME
+    registered: set[str] = set()
+    if tables_json_path.is_file():
+        try:
+            tables = PaperTables.model_validate_json(
+                tables_json_path.read_text(encoding="utf-8")
+            )
+        except ValidationError as e:
+            return [f"{TABLES_JSON_FILENAME}: {e}"]
+        for spec in tables.tables:
+            registered.add(f"{spec.key}.tex")
+            relpath = table_tex_relpath(spec.key)
+            table_path = latex_dir / relpath
+            if not table_path.is_file():
+                problems.append(
+                    f"{relpath} is missing (compute_paper_tables writes it)"
+                )
+                continue
+            try:
+                expected = render_table_tex(spec, metrics_data)
+            except ValueError as e:
+                problems.append(f"{relpath}: {e}")
+                continue
+            if table_path.read_text(encoding="utf-8") != expected:
+                problems.append(
+                    f"{relpath} differs from its regeneration (manual edit?)"
+                )
+    tables_dir = latex_dir / TABLES_DIR_NAME
+    if tables_dir.is_dir():
+        for table_path in sorted(tables_dir.glob("*.tex")):
+            if table_path.name not in registered:
+                problems.append(
+                    f"{TABLES_DIR_NAME}/{table_path.name} is not declared in "
+                    f"{TABLES_JSON_FILENAME} — table files here must come "
+                    "from compute_paper_tables"
+                )
+    return problems
+
+
 def verify_paper_values(
     local_repo_path: str,
     latex_template_name: LATEX_TEMPLATE_NAME,
 ) -> PaperValuesVerificationReport:
     """Recompute every stated value from the run outputs and compare.
 
-    Three checks: values.json equals a recomputation from
-    .research/results/ (so a tampered record surfaces), values.tex is
-    byte-identical to a regeneration (so manual edits to the macro table
-    surface), and every \\airasval key main.tex references is defined.
+    Checks: values.json equals a recomputation from .research/results/
+    (so a tampered record surfaces), values.tex is byte-identical to a
+    regeneration (so manual edits to the macro table surface), every
+    \\airasval key main.tex references is defined, every declared table
+    under tables/ matches its regeneration from tables.json (and no
+    undeclared table file exists there), and every chart under
+    .research/results/chart/ matches a re-render of its declared spec.
     \\unverified contents are collected as review input. The provenance
     cross-check (a ProvenanceVerifier implementation) is a separate async
     step layered on by the callers via apply_provenance_result.
@@ -145,6 +207,8 @@ def verify_paper_values(
                             f"{VALUES_TEX_FILENAME} differs from its "
                             "regeneration (manual edit?)"
                         )
+                mismatches.extend(_verify_tables(latex_dir, metrics_data))
+                mismatches.extend(verify_charts(str(root), metrics_data))
 
     return PaperValuesVerificationReport(
         ok=(
@@ -152,6 +216,7 @@ def verify_paper_values(
             and values_match
             and values_tex_match
             and not undefined_keys
+            and not mismatches
         ),
         values_match=values_match,
         values_tex_match=values_tex_match,
@@ -166,22 +231,38 @@ def referenced_result_dirs(
     local_repo_path: str,
     latex_template_name: LATEX_TEMPLATE_NAME,
 ) -> set[str]:
-    """The results directories the stored values.json draws values from."""
+    """The results directories the paper draws data from.
+
+    Values, tables, and charts all count: a run whose numbers only appear
+    in a table or a chart still needs its metrics provenance-checked.
+    """
     root = Path(local_repo_path).expanduser().resolve()
-    values_json_path = (
-        root / ".research" / "latex" / latex_template_name / VALUES_JSON_FILENAME
-    )
+    latex_dir = root / ".research" / "latex" / latex_template_name
+    try:
+        metrics_data = load_metrics_data(str(root))
+    except ValueError:
+        return set()
+
+    dirs: set[str] = set()
     try:
         stored = PaperValues.model_validate_json(
-            values_json_path.read_text(encoding="utf-8")
+            (latex_dir / VALUES_JSON_FILENAME).read_text(encoding="utf-8")
         )
-        metrics_data = load_metrics_data(str(root))
+        declarations = [
+            ValueDeclaration.model_validate(v.model_dump()) for v in stored.values
+        ]
+        dirs |= used_result_dirs(declarations, metrics_data)
     except (OSError, ValidationError, ValueError):
-        return set()
-    declarations = [
-        ValueDeclaration.model_validate(v.model_dump()) for v in stored.values
-    ]
-    return used_result_dirs(declarations, metrics_data)
+        pass
+    try:
+        tables = PaperTables.model_validate_json(
+            (latex_dir / TABLES_JSON_FILENAME).read_text(encoding="utf-8")
+        )
+        dirs |= table_result_dirs(tables)
+    except (OSError, ValidationError, ValueError):
+        pass
+    dirs |= chart_result_dirs(str(root), metrics_data)
+    return dirs
 
 
 def apply_provenance_result(
