@@ -225,3 +225,28 @@ def test_chart_result_dirs_come_from_sidecars(tmp_path: Path) -> None:
 
 def test_verify_charts_ignores_repo_without_charts(tmp_path: Path) -> None:
     assert verify_charts(str(tmp_path), METRICS_DATA) == []
+
+
+def test_verify_tables_rejects_undeclared_table_in_subdirectory(
+    tmp_path: Path,
+) -> None:
+    # \input reaches any depth, so nesting must not evade the check.
+    _write_tables(tmp_path)
+    nested = tmp_path / "tables" / "extra"
+    nested.mkdir()
+    (nested / "handmade.tex").write_text(r"Ours & 0.999 \\")
+    problems = _verify_tables(tmp_path, METRICS_DATA)
+    assert any("extra/handmade.tex" in p and "not declared" in p for p in problems)
+
+
+def test_render_chart_bytes_rejects_unknown_format() -> None:
+    with pytest.raises(ValueError, match="unsupported chart format"):
+        render_chart_bytes({}, "gif")
+
+
+def test_verify_charts_fails_on_tampered_sidecar_format(tmp_path: Path) -> None:
+    chart_path = _write_chart(tmp_path)
+    sidecar = chart_path.with_name(chart_path.name + ".chartspec.json")
+    sidecar.write_text(sidecar.read_text().replace('"svg"', '"gif"'))
+    problems = verify_charts(str(tmp_path), METRICS_DATA)
+    assert any("could not be re-rendered" in p for p in problems)

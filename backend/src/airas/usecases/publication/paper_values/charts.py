@@ -104,7 +104,13 @@ def render_chart_bytes(resolved_spec: dict[str, Any], suffix: str) -> bytes:
     if suffix == "svg":
         svg: str = vlc.vegalite_to_svg(resolved_spec)
         return svg.encode("utf-8")
-    return vlc.vegalite_to_png(resolved_spec)
+    if suffix == "png":
+        return vlc.vegalite_to_png(resolved_spec)
+    # A verifier passes the sidecar's recorded format here, so an
+    # unexpected value must fail rather than silently render as PNG.
+    raise ValueError(
+        f"unsupported chart format {suffix!r} (expected 'pdf', 'svg', or 'png')"
+    )
 
 
 def renderer_version() -> str:

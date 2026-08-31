@@ -116,10 +116,13 @@ def _verify_tables(latex_dir: Path, metrics_data: dict[str, Any]) -> list[str]:
                 )
     tables_dir = latex_dir / TABLES_DIR_NAME
     if tables_dir.is_dir():
-        for table_path in sorted(tables_dir.glob("*.tex")):
-            if table_path.name not in registered:
+        # Recursive: \input reaches any depth, so a hand-written table in
+        # a subdirectory must not slip past the declaration check.
+        for table_path in sorted(tables_dir.rglob("*.tex")):
+            relative = table_path.relative_to(tables_dir).as_posix()
+            if relative not in registered:
                 problems.append(
-                    f"{TABLES_DIR_NAME}/{table_path.name} is not declared in "
+                    f"{TABLES_DIR_NAME}/{relative} is not declared in "
                     f"{TABLES_JSON_FILENAME} — table files here must come "
                     "from compute_paper_tables"
                 )
