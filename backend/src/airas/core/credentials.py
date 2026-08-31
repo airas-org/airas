@@ -93,6 +93,8 @@ CREDENTIAL_SPECS: tuple[CredentialSpec, ...] = (
     CredentialSpec("GEMINI_API_KEY"),
     CredentialSpec("OPENROUTER_API_KEY"),
     CredentialSpec("AWS_BEARER_TOKEN_BEDROCK"),
+    CredentialSpec("VERCEL_AI_GATEWAY_API_KEY"),
+    CredentialSpec("RIKYU_API_KEY"),
     # Optional: raise rate limits for the paper-search sources.
     CredentialSpec("SEMANTIC_SCHOLAR_API_KEY"),
     CredentialSpec("OPENALEX_API_KEY"),
@@ -100,9 +102,11 @@ CREDENTIAL_SPECS: tuple[CredentialSpec, ...] = (
     CredentialSpec("LANGFUSE_SECRET_KEY"),
     CredentialSpec("LANGFUSE_PUBLIC_KEY"),
     CredentialSpec("LANGFUSE_BASE_URL", is_secret=False),
-    # Optional: run experiments on the AIXS compute platform.
-    CredentialSpec("AIXS_API_KEY"),
-    CredentialSpec("AIXS_BASE_URL", is_secret=False),
+    # Optional: run experiments on the Seyval compute platform.
+    CredentialSpec("SEYVAL_API_KEY"),
+    CredentialSpec("SEYVAL_BASE_URL", is_secret=False),
+    # Default cluster for dispatch_experiment(backend="seyval"), as "byo:<uuid>".
+    CredentialSpec("SEYVAL_COMPUTE_ID", is_secret=False),
 )
 
 KNOWN_CREDENTIAL_NAMES = frozenset(spec.name for spec in CREDENTIAL_SPECS)

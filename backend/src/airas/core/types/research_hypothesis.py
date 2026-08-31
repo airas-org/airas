@@ -3,16 +3,33 @@ from __future__ import annotations
 import json
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ResearchHypothesis(BaseModel):
-    # TODO: Consider making some fields optional (e.g. experimental_code).
     open_problems: str
     method: str
     experimental_setup: str
-    primary_metric: str
-    experimental_code: str
+    primary_metric: str = Field(
+        description=(
+            "One standard, machine-extractable metric name. The GAP between "
+            "the proposal and its baselines is computed from this one."
+        )
+    )
+    supporting_metrics: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Further metric names reported alongside the primary one, for "
+            "research whose claim needs more than a single number. Reported "
+            "separately; never aggregated into primary_metric."
+        ),
+    )
+    # A sketch written before the repository, the data, or the code template
+    # have been seen, kept only to convey the idea. The real implementation
+    # replaces it, and the paper-writing step reads this, so an unfaithful
+    # sketch surfaces later as a methods section that describes code nobody
+    # ran. Empty is better than wrong.
+    experimental_code: str = ""
     expected_result: str
     expected_conclusion: str
 
@@ -22,6 +39,7 @@ class ResearchHypothesis(BaseModel):
             "Methods": self.method,
             "Experimental Setup": self.experimental_setup,
             "Primary Metric": self.primary_metric,
+            "Supporting Metrics": self.supporting_metrics,
             "Experimental Code": self.experimental_code,
             "Expected Result": self.expected_result,
             "Expected Conclusion": self.expected_conclusion,

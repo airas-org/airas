@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
+from airas.core.llm_config import require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.e2e import Status, StepType
 from airas.core.types.experiment_code import ExperimentCode
@@ -27,7 +28,7 @@ from airas.core.types.runner import ExperimentRunnerConfig
 from airas.core.types.wandb import WandbConfig
 from airas.core.utils import to_dict_deep
 from airas.infra.github_client import GithubClient
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.autonomous_research.e2e_research_service_protocol import (
     E2EResearchServiceProtocol,
 )
@@ -119,7 +120,7 @@ class HypothesisDrivenResearch:
     def __init__(
         self,
         github_client: GithubClient,
-        langchain_client: LangChainClient,
+        litellm_client: LiteLLMClient,
         e2e_service: E2EResearchServiceProtocol,
         compute_environment: ComputeEnvironment,
         runner_config: ExperimentRunnerConfig,
@@ -136,7 +137,7 @@ class HypothesisDrivenResearch:
         llm_mapping: HypothesisDrivenResearchLLMMapping | None = None,
     ):
         self.github_client = github_client
-        self.langchain_client = langchain_client
+        self.litellm_client = litellm_client
         self.e2e_service = e2e_service
         self.compute_environment = compute_environment
         self.runner_config = runner_config
@@ -150,7 +151,7 @@ class HypothesisDrivenResearch:
         self.paper_content_refinement_iterations = paper_content_refinement_iterations
         self.latex_template_name = latex_template_name
         self.github_actions_agent = github_actions_agent
-        self.llm_mapping = llm_mapping or HypothesisDrivenResearchLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     def _create_record(self, state: HypothesisDrivenResearchState) -> dict[str, Any]:
@@ -210,7 +211,7 @@ class HypothesisDrivenResearch:
         logger.info("=== Experimental Design ===")
         result = (
             await GenerateExperimentalDesignSubgraph(
-                langchain_client=self.langchain_client,
+                litellm_client=self.litellm_client,
                 compute_environment=self.compute_environment,
                 num_models_to_use=self.num_experiment_models,
                 llm_mapping=self.llm_mapping.generate_experimental_design,
@@ -236,7 +237,7 @@ class HypothesisDrivenResearch:
         result = (
             await ExperimentCycleGraph(
                 github_client=self.github_client,
-                langchain_client=self.langchain_client,
+                litellm_client=self.litellm_client,
                 runner_config=self.runner_config,
                 wandb_config=self.wandb_config,
                 compute_environment=self.compute_environment,
@@ -338,7 +339,7 @@ class HypothesisDrivenResearch:
         logger.info("=== Paper Writing ===")
         result = (
             await WriteSubgraph(
-                langchain_client=self.langchain_client,
+                litellm_client=self.litellm_client,
                 paper_content_refinement_iterations=self.paper_content_refinement_iterations,
                 llm_mapping=self.llm_mapping.write,
             )
@@ -367,7 +368,7 @@ class HypothesisDrivenResearch:
         result = (
             await LaTeXGraph(
                 github_client=self.github_client,
-                langchain_client=self.langchain_client,
+                litellm_client=self.litellm_client,
                 latex_template_name=self.latex_template_name,
                 github_actions_agent=self.github_actions_agent,
                 llm_mapping=self.llm_mapping.latex,

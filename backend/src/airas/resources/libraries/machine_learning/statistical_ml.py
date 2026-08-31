@@ -1,6 +1,7 @@
-# Statistical Ml (machine_learning): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# machine_learning / statistical_ml documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 STATISTICAL_ML_LIBRARIES: dict[str, dict[str, str | None]] = {
     "scikit-learn": {
         "description": "Classical ML algorithms, model selection, and metrics",

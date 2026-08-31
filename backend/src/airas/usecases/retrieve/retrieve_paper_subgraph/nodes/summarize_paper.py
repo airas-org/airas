@@ -6,7 +6,7 @@ from jinja2 import Environment, Template
 from pydantic import BaseModel
 
 from airas.core.llm_config import NodeLLMConfig
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class PaperSummary(BaseModel):
 async def _summarize_single_text(
     paper_text: str,
     rendered_template: Template,
-    llm_client: LangChainClient,
+    llm_client: LiteLLMClient,
     llm_config: NodeLLMConfig,
     paper_idx: int,
 ) -> PaperSummary:
@@ -39,7 +39,7 @@ async def _summarize_single_text(
     )
 
     try:
-        output = await llm_client.structured_outputs(
+        output = await llm_client.structured_output(
             message=messages,
             data_model=PaperSummary,
             llm_name=llm_config.llm_name,
@@ -62,7 +62,7 @@ async def _summarize_single_text(
 
 async def summarize_paper(
     llm_config: NodeLLMConfig,
-    llm_client: LangChainClient,
+    llm_client: LiteLLMClient,
     prompt_template: str,
     arxiv_full_text_list: list[str],
 ) -> list[PaperSummary]:

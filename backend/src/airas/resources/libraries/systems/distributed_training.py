@@ -1,6 +1,7 @@
-# Distributed Training (systems): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# systems / distributed_training documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 DISTRIBUTED_TRAINING_LIBRARIES: dict[str, dict[str, str | None]] = {
     "deepspeed": {
         "description": "Distributed training/inference with ZeRO memory optimization",

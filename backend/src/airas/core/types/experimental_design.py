@@ -5,16 +5,35 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field, HttpUrl
 
 ModelSubfield = Literal[
-    "transformer_decoder_based_models",
-    "image_models",
-    "multi_modal_models",
-    "llm_api_models",
+    # language
+    "text_generation",
+    "text_understanding",
+    "sequence_to_sequence",
+    "code_generation",
+    "text_embedding",
+    "reranking",
+    "hosted_api",
+    # vision
+    "image_recognition",
+    "image_generation",
+    # multimodal / audio / time_series / science
+    "vision_language",
+    "speech",
+    "forecasting",
+    "protein",
 ]
 
 DatasetSubfield = Literal[
-    "language_model_fine_tuning_datasets",
-    "image_datasets",
-    "prompt_engineering_datasets",
+    # language
+    "instruction_tuning",
+    "reasoning_evaluation",
+    "nlp_tasks",
+    "prompt_engineering",
+    "code_evaluation",
+    # vision / audio / multimodal
+    "image_recognition",
+    "speech",
+    "vision_language",
 ]
 
 DataModalities = Literal[
@@ -81,6 +100,12 @@ class DatasetConfig(BaseModel):
 
 class ComputeEnvironment(BaseModel):
     os: str | None = None
+    # CPU architecture, as `uname -m` reports it (e.g. "x86_64", "aarch64").
+    # This decides whether a dependency has a wheel at all, so an experiment
+    # designed without it can resolve locally and have nothing to install on
+    # the target. Worth stating even when the rest of the environment is not
+    # known.
+    arch: str | None = None
     cpu_cores: int | None = None
     ram_gb: int | None = None
     gpu_type: str | None = None

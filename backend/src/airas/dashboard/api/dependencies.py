@@ -10,10 +10,6 @@ from fastapi import Depends, HTTPException, status
 from airas.container import Container
 from airas.core.credentials import refresh_environment
 from airas.infra.github_client import GithubClient
-from airas.infra.langchain_client import (
-    PROVIDER_REQUIRED_ENV_VARS as LANGCHAIN_REQUIRED_ENV_VARS,
-)
-from airas.infra.langchain_client import LangChainClient
 from airas.infra.litellm_client import (
     PROVIDER_REQUIRED_ENV_VARS as LITELLM_REQUIRED_ENV_VARS,
 )
@@ -31,7 +27,14 @@ from airas.infra.llm_provider_resolver import (
 
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
-_PROVIDER_ENV_VARS = ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY")
+# Every env var any known provider needs. Derived from the provider table so
+# adding a provider there is enough — a hand-maintained list silently hid
+# providers whose keys were never read (their models resolved to no API key).
+_PROVIDER_ENV_VARS: tuple[str, ...] = tuple(
+    dict.fromkeys(
+        name for names in LITELLM_REQUIRED_ENV_VARS.values() for name in names
+    )
+)
 
 _NO_LLM_PROVIDERS = HTTPException(
     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -83,24 +86,6 @@ def _create_key_fn(keys: dict[str, str]) -> Callable[[str], str | None]:
         return keys.get(env_var)
 
     return _resolve
-
-
-@inject
-def get_langchain_client(
-    langchain_client_factory: Annotated[
-        Callable[..., LangChainClient],
-        Depends(Provider[Container.langchain_client]),
-    ],
-) -> LangChainClient:
-    """Create a LangChainClient via Container with env-provided API keys."""
-    keys = _resolve_env_keys()
-    available = detect_available_providers(LANGCHAIN_REQUIRED_ENV_VARS, keys)
-    if not available:
-        raise _NO_LLM_PROVIDERS
-    return langchain_client_factory(
-        get_api_key=_create_key_fn(keys),
-        available_providers=available,
-    )
 
 
 @inject

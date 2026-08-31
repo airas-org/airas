@@ -7,10 +7,19 @@ export type RetrieveModelsSubgraphRequestBody = {
 };
 export namespace RetrieveModelsSubgraphRequestBody {
     export enum model_subfield {
-        TRANSFORMER_DECODER_BASED_MODELS = 'transformer_decoder_based_models',
-        IMAGE_MODELS = 'image_models',
-        MULTI_MODAL_MODELS = 'multi_modal_models',
-        LLM_API_MODELS = 'llm_api_models',
+        TEXT_GENERATION = 'text_generation',
+        TEXT_UNDERSTANDING = 'text_understanding',
+        SEQUENCE_TO_SEQUENCE = 'sequence_to_sequence',
+        CODE_GENERATION = 'code_generation',
+        TEXT_EMBEDDING = 'text_embedding',
+        RERANKING = 'reranking',
+        HOSTED_API = 'hosted_api',
+        IMAGE_RECOGNITION = 'image_recognition',
+        IMAGE_GENERATION = 'image_generation',
+        VISION_LANGUAGE = 'vision_language',
+        SPEECH = 'speech',
+        FORECASTING = 'forecasting',
+        PROTEIN = 'protein',
     }
 }
 

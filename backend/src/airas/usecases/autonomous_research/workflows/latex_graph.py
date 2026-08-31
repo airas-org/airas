@@ -6,12 +6,13 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import time_node
+from airas.core.llm_config import require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.paper import PaperContent
 from airas.infra.github_client import GithubClient
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.github.poll_github_actions_subgraph.poll_github_actions_subgraph import (
     PollGithubActionsSubgraph,
 )
@@ -36,8 +37,8 @@ _LATEX_COMPILATION_RECURSION_LIMIT = 10000
 
 
 class LaTeXGraphLLMMapping(BaseModel):
-    generate_latex: GenerateLatexLLMMapping = GenerateLatexLLMMapping()
-    compile_latex: CompileLatexLLMMapping = CompileLatexLLMMapping()
+    generate_latex: GenerateLatexLLMMapping
+    compile_latex: CompileLatexLLMMapping
 
 
 class LaTeXGraphInputState(TypedDict):
@@ -61,23 +62,23 @@ class LaTeXGraph:
     def __init__(
         self,
         github_client: GithubClient,
-        langchain_client: LangChainClient,
+        litellm_client: LiteLLMClient,
         latex_template_name: LATEX_TEMPLATE_NAME,
         github_actions_agent: GitHubActionsAgent,
         llm_mapping: LaTeXGraphLLMMapping | None = None,
     ):
         self.github_client = github_client
-        self.langchain_client = langchain_client
+        self.litellm_client = litellm_client
         self.latex_template_name = latex_template_name
         self.github_actions_agent = github_actions_agent
-        self.llm_mapping = llm_mapping or LaTeXGraphLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _generate_latex(self, state: LaTeXGraphState) -> dict[str, str]:
         logger.info("=== Generate LaTeX ===")
         result = (
             await GenerateLatexSubgraph(
-                langchain_client=self.langchain_client,
+                litellm_client=self.litellm_client,
                 github_client=self.github_client,
                 latex_template_name=self.latex_template_name,
                 llm_mapping=self.llm_mapping.generate_latex,

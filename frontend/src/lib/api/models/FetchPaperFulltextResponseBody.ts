@@ -6,6 +6,8 @@ export type FetchPaperFulltextResponseBody = {
     text: string;
     status: FetchPaperFulltextResponseBody.status;
     resolved_from: (string | null);
+    total_chars: number;
+    truncated: boolean;
     execution_time: Record<string, Array<number>>;
 };
 export namespace FetchPaperFulltextResponseBody {

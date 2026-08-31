@@ -44,6 +44,8 @@ class SetGithubActionsSecretsSubgraph:
             "GEMINI_API_KEY",
             "ANTHROPIC_API_KEY",
             "OPENROUTER_API_KEY",
+            "VERCEL_AI_GATEWAY_API_KEY",
+            "RIKYU_API_KEY",
             "AWS_BEARER_TOKEN_BEDROCK",
             "WANDB_API_KEY",
             "HF_TOKEN",
@@ -53,6 +55,9 @@ class SetGithubActionsSecretsSubgraph:
             "GH_PERSONAL_ACCESS_TOKEN",
             "AWS_ACCESS_KEY_ID",
             "AWS_SECRET_ACCESS_KEY",
+            # The paper gate (verify_paper.yml) reads Seyval's per-run
+            # storage for the provenance cross-check.
+            "SEYVAL_API_KEY",
         ]
         self.github_client = github_client
 

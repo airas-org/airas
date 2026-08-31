@@ -4,6 +4,6 @@
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
 export type GenerateLatexLLMMapping = {
-    convert_to_latex?: NodeLLMConfig;
+    convert_to_latex: NodeLLMConfig;
 };
 

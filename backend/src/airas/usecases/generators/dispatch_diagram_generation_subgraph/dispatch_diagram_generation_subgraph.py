@@ -5,8 +5,9 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
+from airas.core.research_paths import DIAGRAM_DIR
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.infra.github_client import GithubClient
 from airas.usecases.github.nodes.dispatch_workflow import dispatch_workflow
@@ -18,9 +19,7 @@ record_execution_time = lambda f: time_node("dispatch_diagram_generation_subgrap
 
 
 class DispatchDiagramGenerationLLMMapping(BaseModel):
-    dispatch_diagram_generation: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "dispatch_diagram_generation"
-    ]
+    dispatch_diagram_generation: NodeLLMConfig
 
 
 class DispatchDiagramGenerationSubgraphInputState(TypedDict):
@@ -53,7 +52,7 @@ class DispatchDiagramGenerationSubgraph:
         self.workflow_file = workflow_file
         self.diagram_description = diagram_description
         self.prompt_path = prompt_path
-        self.llm_mapping = llm_mapping or DispatchDiagramGenerationLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _dispatch_diagram_generation(
@@ -71,8 +70,8 @@ class DispatchDiagramGenerationSubgraph:
             "github_actions_agent": github_actions_agent,
             "model_name": self.llm_mapping.dispatch_diagram_generation.llm_name,
             # Align with the local-agent convention: method diagrams live
-            # under .research/results/diagram/ (collected into images/).
-            "output_dir": ".research/results/diagram",
+            # under DIAGRAM_DIR (collected into images/).
+            "output_dir": DIAGRAM_DIR,
         }
 
         if self.diagram_description is not None:

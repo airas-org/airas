@@ -1,6 +1,7 @@
-# Statistical Analysis (statistics): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# statistics / statistical_analysis documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 STATISTICAL_ANALYSIS_LIBRARIES: dict[str, dict[str, str | None]] = {
     "scipy": {
         "description": "Scientific computing (optimization, stats, signal processing)",

@@ -6,6 +6,9 @@
 - `airas mcp`: run the MCP server explicitly.
 - `airas dashboard`: serve the web dashboard (FastAPI API + bundled
   frontend) on localhost.
+- `airas verify-paper`: the CI gate — verify a paper's values and
+  provenance in an experiment repository checkout and build its PDF,
+  exiting non-zero if the paper must not ship.
 """
 
 import argparse
@@ -35,6 +38,51 @@ def _run_dashboard(host: str, port: int, open_browser: bool) -> None:
     uvicorn.run("airas.dashboard.api.main:app", host=host, port=port)
 
 
+def _run_verify_paper(args: "argparse.Namespace") -> None:
+    import asyncio
+    import sys
+
+    from airas.usecases.verification.ci_gate import (
+        REPORT_FILENAME,
+        detect_templates,
+        run_paper_gate,
+    )
+
+    templates = args.template or detect_templates(args.local_path)
+    if not templates:
+        print(
+            "No paper found: no known template under .research/latex/ has a main.tex",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+    summary = asyncio.run(
+        run_paper_gate(
+            local_repo_path=args.local_path,
+            templates=templates,
+            output_dir=args.output_dir,
+            check_provenance=not args.no_provenance,
+            require_paper_values=not args.no_require_paper_values,
+            require_provenance=not (
+                args.no_provenance or args.allow_unavailable_provenance
+            ),
+        )
+    )
+
+    for result in summary["templates"]:
+        status = "PASS" if result["ok"] else "FAIL"
+        print(f"[{status}] {result['template']}")
+        for failure in result["failures"]:
+            print(f"  - {failure}")
+        for claim in result["unverified"]:
+            print(f"  ! \\unverified for human review: {claim}")
+        if result["pdf"]:
+            print(f"  pdf: {result['pdf']}")
+    print(f"Full report: {args.output_dir}/{REPORT_FILENAME}")
+
+    sys.exit(0 if summary["ok"] else 1)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="airas",
@@ -58,10 +106,56 @@ def main() -> None:
         help="Do not open the dashboard in a browser",
     )
 
+    verify = subparsers.add_parser(
+        "verify-paper",
+        help=(
+            "Verify a paper's values and provenance in an experiment "
+            "repository and build its PDF (the CI gate)"
+        ),
+    )
+    verify.add_argument(
+        "--local-path",
+        default=".",
+        help="Experiment repository checkout to verify (default: .)",
+    )
+    verify.add_argument(
+        "--template",
+        action="append",
+        help=(
+            "LaTeX template to verify (repeatable); default: every known "
+            "template under .research/latex/ that has a main.tex"
+        ),
+    )
+    verify.add_argument(
+        "--output-dir",
+        default="paper-artifact",
+        help="Where the PDFs and verification-report.json go",
+    )
+    verify.add_argument(
+        "--no-provenance",
+        action="store_true",
+        help="Skip the Seyval provenance cross-check entirely",
+    )
+    verify.add_argument(
+        "--allow-unavailable-provenance",
+        action="store_true",
+        help=(
+            "Do not fail when the provenance check cannot reach Seyval "
+            "(a real mismatch still fails); CI should not pass this"
+        ),
+    )
+    verify.add_argument(
+        "--no-require-paper-values",
+        action="store_true",
+        help="Allow a paper that does not use the declared-values system",
+    )
+
     args = parser.parse_args()
 
     if args.command == "dashboard":
         _run_dashboard(args.host, args.port, open_browser=not args.no_browser)
+    elif args.command == "verify-paper":
+        _run_verify_paper(args)
     else:
         # No subcommand (or `mcp`): stdio MCP server, the historical default.
         _run_mcp()

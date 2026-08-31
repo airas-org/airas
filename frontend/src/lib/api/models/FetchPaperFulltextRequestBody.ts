@@ -6,5 +6,6 @@ export type FetchPaperFulltextRequestBody = {
     arxiv_id?: (string | null);
     doi?: (string | null);
     pdf_url?: (string | null);
+    max_chars?: (number | null);
 };
 

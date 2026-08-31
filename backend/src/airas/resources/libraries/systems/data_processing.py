@@ -1,6 +1,7 @@
-# Data Processing (systems): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# systems / data_processing documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 DATA_PROCESSING_LIBRARIES: dict[str, dict[str, str | None]] = {
     "datatrove": {
         "description": "Large-scale text data processing and deduplication pipelines",

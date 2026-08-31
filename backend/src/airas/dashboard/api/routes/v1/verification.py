@@ -3,7 +3,6 @@ from uuid import UUID
 
 from dependency_injector.wiring import Closing, Provide, inject
 from fastapi import APIRouter, Depends, HTTPException
-from langfuse import observe
 
 from airas.container import Container
 from airas.core.types.github import GitHubConfig
@@ -28,7 +27,6 @@ from airas.dashboard.api.schemas.verification import (
     VerificationSessionUpdateRequest,
 )
 from airas.infra.github_client import GithubClient
-from airas.infra.langfuse_client import LangfuseClient
 from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.assisted_research.generate_experiment_code_subgraph.generate_experiment_code_subgraph import (
     GenerateExperimentCodeSubgraph,
@@ -161,27 +159,20 @@ def delete_session(
 
 @router.post("/propose-policies", response_model=ProposePoliciesResponseBody)
 @inject
-@observe(capture_input=False)
 async def propose_policies(
     request: ProposePoliciesRequestBody,
     litellm_client: Annotated[LiteLLMClient, Depends(get_litellm_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
     verification_service: Annotated[
         VerificationService,
         Depends(Closing[Provide[Container.verification_service]]),
     ],
 ) -> ProposePoliciesResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = await (
         ProposeVerificationPolicySubgraph(
             litellm_client=litellm_client, llm_mapping=request.llm_mapping
         )
         .build_graph()
-        .ainvoke({"user_query": request.user_query}, config=config)
+        .ainvoke({"user_query": request.user_query})
     )
 
     if not result.get("feasible", True):
@@ -222,21 +213,14 @@ async def propose_policies(
 
 @router.post("/generate-method", response_model=GenerateMethodResponseBody)
 @inject
-@observe(capture_input=False)
 async def generate_method(
     request: GenerateMethodRequestBody,
     litellm_client: Annotated[LiteLLMClient, Depends(get_litellm_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
     verification_service: Annotated[
         VerificationService,
         Depends(Closing[Provide[Container.verification_service]]),
     ],
 ) -> GenerateMethodResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     result = await (
         GenerateVerificationMethodSubgraph(
             litellm_client=litellm_client, llm_mapping=request.llm_mapping
@@ -249,7 +233,6 @@ async def generate_method(
                 "selected_policy_what_to_verify": request.selected_policy.what_to_verify,
                 "selected_policy_method": request.selected_policy.method,
             },
-            config=config,
         )
     )
 
@@ -277,21 +260,14 @@ async def generate_method(
     "/generate-experiment-code", response_model=GenerateExperimentCodeResponseBody
 )
 @inject
-@observe(capture_input=False)
 async def generate_experiment_code(
     request: GenerateExperimentCodeRequestBody,
     github_client: Annotated[GithubClient, Depends(get_github_client)],
-    langfuse_client: Annotated[
-        LangfuseClient, Depends(Provide[Container.langfuse_client])
-    ],
     verification_service: Annotated[
         VerificationService,
         Depends(Closing[Provide[Container.verification_service]]),
     ],
 ) -> GenerateExperimentCodeResponseBody:
-    handler = langfuse_client.create_handler()
-    config = {"callbacks": [handler]} if handler else {}
-
     github_config = GitHubConfig(
         github_owner=request.github_owner,
         repository_name=request.repository_name,
@@ -314,7 +290,6 @@ async def generate_experiment_code(
                 "github_config": github_config,
                 "github_actions_agent": request.github_actions_agent,
             },
-            config=config,
         )
     )
 
@@ -349,8 +324,6 @@ async def generate_experiment_code(
     "/experiment-code-status/{github_owner}/{repository_name}/{workflow_run_id}",
     response_model=ExperimentCodeStatusResponseBody,
 )
-@inject
-@observe()
 async def get_experiment_code_status(
     github_owner: str,
     repository_name: str,

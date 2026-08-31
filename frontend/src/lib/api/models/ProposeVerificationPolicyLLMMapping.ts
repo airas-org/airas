@@ -4,6 +4,6 @@
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
 export type ProposeVerificationPolicyLLMMapping = {
-    propose_verification_policy?: NodeLLMConfig;
+    propose_verification_policy: NodeLLMConfig;
 };
 

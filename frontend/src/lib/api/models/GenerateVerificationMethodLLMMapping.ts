@@ -4,6 +4,6 @@
 /* eslint-disable */
 import type { NodeLLMConfig } from './NodeLLMConfig';
 export type GenerateVerificationMethodLLMMapping = {
-    generate_verification_method?: NodeLLMConfig;
+    generate_verification_method: NodeLLMConfig;
 };
 

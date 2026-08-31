@@ -1,6 +1,7 @@
-# Mechanistic (interpretability): documentation endpoints served via the
-# get_library_docs MCP tool. Verify every URL (curl) before adding
-# an entry; the weekly link-check workflow guards against rot.
+# interpretability / mechanistic documentation endpoints (shared domain>category
+# taxonomy across resources/{libraries,models,datasets}). Verify
+# every URL (curl) before adding an entry; the weekly link-check
+# workflow guards against rot.
 MECHANISTIC_LIBRARIES: dict[str, dict[str, str | None]] = {
     "transformerlens": {
         "description": "Mechanistic interpretability of GPT-style models (activation caching and patching)",

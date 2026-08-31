@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
@@ -21,9 +21,7 @@ record_execution_time = lambda f: time_node("dispatch_code_generation_subgraph")
 
 
 class DispatchCodeGenerationLLMMapping(BaseModel):
-    dispatch_code_generation: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "dispatch_code_generation"
-    ]
+    dispatch_code_generation: NodeLLMConfig
 
 
 class DispatchCodeGenerationSubgraphInputState(TypedDict):
@@ -58,7 +56,7 @@ class DispatchCodeGenerationSubgraph:
         self.github_client = github_client
         self.workflow_file = workflow_file
         self.prompt_path = prompt_path
-        self.llm_mapping = llm_mapping or DispatchCodeGenerationLLMMapping()
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _dispatch_code_generation(

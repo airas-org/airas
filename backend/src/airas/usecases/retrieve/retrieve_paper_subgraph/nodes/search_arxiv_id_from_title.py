@@ -6,7 +6,7 @@ import re
 from jinja2 import Environment
 
 from airas.core.llm_config import NodeLLMConfig
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ def _extract_json_from_response(response: str) -> dict:
 
 async def search_arxiv_id_from_title(
     llm_config: NodeLLMConfig,
-    llm_client: LangChainClient,
+    llm_client: LiteLLMClient,
     prompt_template: str,
     paper_titles: list[str],
     conference_preference: str | None = None,

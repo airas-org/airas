@@ -5,14 +5,14 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.llm_config import DEFAULT_NODE_LLM_CONFIG, NodeLLMConfig
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.experiment_history import (
     ExperimentCycleDecision,
     ExperimentHistory,
 )
 from airas.core.types.research_hypothesis import ResearchHypothesis
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.analyzers.decide_experiment_cycle_subgraph.nodes.decide_experiment_cycle import (
     decide_experiment_cycle,
 )
@@ -24,9 +24,7 @@ record_execution_time = lambda f: time_node("decide_experiment_cycle_subgraph")(
 
 
 class DecideExperimentCycleLLMMapping(BaseModel):
-    decide_experiment_cycle: NodeLLMConfig = DEFAULT_NODE_LLM_CONFIG[
-        "decide_experiment_cycle"
-    ]
+    decide_experiment_cycle: NodeLLMConfig
 
 
 class DecideExperimentCycleSubgraphInputState(TypedDict):
@@ -48,11 +46,11 @@ class DecideExperimentCycleSubgraphState(
 class DecideExperimentCycleSubgraph:
     def __init__(
         self,
-        langchain_client: LangChainClient,
+        litellm_client: LiteLLMClient,
         llm_mapping: DecideExperimentCycleLLMMapping | None = None,
     ):
-        self.langchain_client = langchain_client
-        self.llm_mapping = llm_mapping or DecideExperimentCycleLLMMapping()
+        self.litellm_client = litellm_client
+        self.llm_mapping = require_llm_mapping(llm_mapping)
 
     @record_execution_time
     async def _decide_experiment_cycle(
@@ -60,7 +58,7 @@ class DecideExperimentCycleSubgraph:
     ) -> dict[str, ExperimentCycleDecision]:
         decision = await decide_experiment_cycle(
             llm_config=self.llm_mapping.decide_experiment_cycle,
-            llm_client=self.langchain_client,
+            llm_client=self.litellm_client,
             research_hypothesis=state["research_hypothesis"],
             experiment_history=state["experiment_history"],
         )

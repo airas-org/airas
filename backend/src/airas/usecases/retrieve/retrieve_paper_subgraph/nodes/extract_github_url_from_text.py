@@ -8,7 +8,7 @@ from pydantic import BaseModel, field_validator
 
 from airas.core.llm_config import NodeLLMConfig
 from airas.infra.github_client import GithubClient
-from airas.infra.langchain_client import LangChainClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.retrieve.retrieve_paper_subgraph.nodes.summarize_paper import (
     PaperSummary,
 )
@@ -67,7 +67,7 @@ async def _select_github_url(
     paper_summary: PaperSummary | None,
     candidates: list[str],
     prompt_template: Template,
-    llm_client: LangChainClient,
+    llm_client: LiteLLMClient,
     llm_config: NodeLLMConfig,
 ) -> str:
     messages = prompt_template.render(
@@ -76,7 +76,7 @@ async def _select_github_url(
             "extract_github_url_list": candidates,
         }
     )
-    output = await llm_client.structured_outputs(
+    output = await llm_client.structured_output(
         message=messages,
         data_model=LLMOutput,
         llm_name=llm_config.llm_name,
@@ -104,7 +104,7 @@ async def extract_github_url_from_text(
     prompt_template: str,
     arxiv_full_text_list: list[str],
     paper_summary_list: list[PaperSummary],
-    llm_client: LangChainClient,
+    llm_client: LiteLLMClient,
     github_client: GithubClient,
 ) -> list[str]:
     template = Environment().from_string(prompt_template)
