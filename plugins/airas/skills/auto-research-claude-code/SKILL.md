@@ -227,13 +227,15 @@ rewrite, since no claim, number or citation should change on the way.
 ## Figure conventions
 
 - Result charts: build a Vega-Lite spec and `render_chart` it (pass the
-  clone as `local_path`) to `.research/results/chart/<name>.pdf`. Data
-  numbers must be metric references (`"metric:run_1.accuracy"`), never
-  literals — the tool resolves them from `.research/results/` itself, so
-  a plotted point cannot be invented. Commit the chart **and** its
-  `.chartspec.json` sidecar; `verify_paper_values` re-renders every
-  chart from its sidecar and fails on any difference or missing sidecar.
-  Rendering is fully local; no API keys.
+  clone as `local_path`) to `.research/results/chart/<name>.png` (PNG,
+  not PDF — PDF chart output is refused because it cannot be verified
+  against a re-render). Data numbers must be metric references
+  (`"metric:run_1.accuracy"`), never literals — the tool resolves them
+  from `.research/results/` itself, so a plotted point cannot be
+  invented. Commit the chart **and** its `.chartspec.json` sidecar;
+  `verify_paper_values` re-renders every chart from its sidecar and
+  fails on any difference or missing sidecar. Rendering is fully local;
+  no API keys.
 - Method diagrams: write text notation (mermaid / graphviz / d2 / …) and
   `render_diagram` it to `.research/results/diagram/<name>.pdf`. Uses
   https://kroki.io by default; `KROKI_BASE_URL` switches to self-hosted.

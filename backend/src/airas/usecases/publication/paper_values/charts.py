@@ -25,7 +25,15 @@ import vl_convert as vlc
 METRIC_REF_PREFIX = "metric:"
 CHART_DIR = ".research/results/chart"
 CHART_SPEC_SUFFIX = ".chartspec.json"
+# Every chart-like file under CHART_DIR is scanned (a smuggled PDF must
+# not escape), but only svg and png can actually be verified: vl-convert's
+# PDF writer emits hash-ordered dictionaries, so PDF bytes differ across
+# processes even for identical input and can never match a re-render.
 CHART_SUFFIXES = (".pdf", ".svg", ".png")
+VERIFIABLE_CHART_FORMATS = ("svg", "png")
+# Fixed render scale for png charts: part of the deterministic contract,
+# and high enough for print.
+PNG_SCALE = 3.0
 
 
 def substitute_chart_refs(
@@ -99,18 +107,20 @@ def substitute_chart_refs(
 
 def render_chart_bytes(resolved_spec: dict[str, Any], suffix: str) -> bytes:
     """Render a resolved spec with vl-convert (deterministic per version)."""
-    if suffix == "pdf":
-        return vlc.vegalite_to_pdf(resolved_spec)
     if suffix == "svg":
         svg: str = vlc.vegalite_to_svg(resolved_spec)
         return svg.encode("utf-8")
     if suffix == "png":
-        return vlc.vegalite_to_png(resolved_spec)
+        return vlc.vegalite_to_png(resolved_spec, scale=PNG_SCALE)
+    if suffix == "pdf":
+        raise ValueError(
+            "pdf charts cannot be verified: vl-convert's PDF output is not "
+            "byte-deterministic across processes, so a re-render never "
+            "matches. Render the chart as png (LaTeX includes it directly)."
+        )
     # A verifier passes the sidecar's recorded format here, so an
     # unexpected value must fail rather than silently render as PNG.
-    raise ValueError(
-        f"unsupported chart format {suffix!r} (expected 'pdf', 'svg', or 'png')"
-    )
+    raise ValueError(f"unsupported chart format {suffix!r} (expected 'svg' or 'png')")
 
 
 def renderer_version() -> str:
