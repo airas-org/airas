@@ -1521,16 +1521,25 @@ async def render_chart(
     chart equivalent: a number that no run produced does not belong in a
     result figure.
 
-    Save charts as PDF under `.research/results/chart/` in the clone,
-    then commit and push — the LaTeX build collects every `*.pdf` under
-    `.research/results/`. The unresolved spec is written next to the
-    chart as `<file>.chartspec.json`; `verify_paper_values` re-resolves
-    and re-renders it and byte-compares, so keep the sidecar committed
-    with the chart. `output_path` must end with .pdf, .svg, or .png.
-    Rendering runs in-process (vl-convert); no data leaves the machine
-    and no API keys are required.
+    Save charts as **PNG** under `.research/results/chart/` in the clone,
+    then commit and push — the LaTeX build collects figure PDFs and PNGs
+    under `.research/results/`. PDF chart output is refused: vl-convert's
+    PDF bytes are not deterministic across processes, so a PDF chart
+    could never be verified against a re-render. The unresolved spec is
+    written next to the chart as `<file>.chartspec.json`;
+    `verify_paper_values` re-resolves and re-renders it and
+    byte-compares, so keep the sidecar committed with the chart.
+    `output_path` must end with .png or .svg. Rendering runs in-process
+    (vl-convert); no data leaves the machine and no API keys are
+    required.
     """
     path, suffix = _resolve_render_output(output_path)
+    if suffix == "pdf":
+        raise ValueError(
+            "output_path must end with .png or .svg: pdf charts cannot be "
+            "verified (vl-convert's PDF bytes are not deterministic across "
+            "processes), and LaTeX includes png directly"
+        )
 
     def _render() -> bytes:
         metrics_data = load_metrics_data(local_path)

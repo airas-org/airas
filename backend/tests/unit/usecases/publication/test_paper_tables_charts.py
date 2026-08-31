@@ -275,3 +275,20 @@ def test_chart_result_dirs_sees_nested_sidecars(tmp_path: Path) -> None:
     write_chart_sidecar(chart_path, CHART_SPEC, "svg")
     assert chart_result_dirs(str(tmp_path), METRICS_DATA) == {"run_1", "run_2"}
     assert verify_charts(str(tmp_path), METRICS_DATA) == []
+
+
+def test_render_chart_bytes_refuses_pdf() -> None:
+    # vl-convert's PDF writer emits hash-ordered dictionaries, so PDF
+    # bytes cannot be verified against a re-render.
+    with pytest.raises(ValueError, match="pdf charts cannot be verified"):
+        render_chart_bytes({}, "pdf")
+
+
+def test_png_charts_render_and_verify(tmp_path: Path) -> None:
+    chart_dir = tmp_path / CHART_DIR
+    chart_dir.mkdir(parents=True)
+    resolved, _ = substitute_chart_refs(CHART_SPEC, METRICS_DATA)
+    chart_path = chart_dir / "accuracy.png"
+    chart_path.write_bytes(render_chart_bytes(resolved, "png"))
+    write_chart_sidecar(chart_path, CHART_SPEC, "png")
+    assert verify_charts(str(tmp_path), METRICS_DATA) == []
