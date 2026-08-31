@@ -163,9 +163,14 @@ def collect_latex_project_files_local(
         figure_root = root / source_dir.rstrip("/")
         if not figure_root.is_dir():
             continue
-        for path in sorted(figure_root.rglob("*")):
-            if path.suffix.lower() not in _FIGURE_SUFFIXES:
-                continue
+        # Filter before sorting: these directories can hold many large
+        # experiment artifacts that are not figures.
+        figure_paths = (
+            path
+            for path in figure_root.rglob("*")
+            if path.suffix.lower() in _FIGURE_SUFFIXES
+        )
+        for path in sorted(figure_paths):
             if not _is_safe_local_file(path, figure_root):
                 continue
             repo_path = source_dir + path.relative_to(figure_root).as_posix()

@@ -1534,6 +1534,12 @@ async def render_chart(
     required.
     """
     path, suffix = _resolve_render_output(output_path)
+    if suffix == "pdf":
+        raise ValueError(
+            "output_path must end with .png or .svg: pdf charts cannot be "
+            "verified (vl-convert's PDF bytes are not deterministic across "
+            "processes), and LaTeX includes png directly"
+        )
 
     def _render() -> bytes:
         metrics_data = load_metrics_data(local_path)

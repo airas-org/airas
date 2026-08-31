@@ -20,6 +20,7 @@ since an unverifiable paper and an unverified paper must not ship.
 from __future__ import annotations
 
 import asyncio
+import atexit
 import json
 import logging
 from pathlib import Path
@@ -43,18 +44,30 @@ REPORT_FILENAME = "verification-report.json"
 _seyval_client: SeyvalClient | None = None
 
 
+def _close_seyval_client() -> None:
+    # atexit runs after every event loop is gone, so a fresh one is fine;
+    # never let cleanup turn a finished gate run into a failure.
+    if _seyval_client is not None:
+        try:
+            asyncio.run(_seyval_client.aclose())
+        except Exception:  # pragma: no cover - best-effort cleanup
+            pass
+
+
 def _default_seyval_client() -> SeyvalClient:
     """A process-lifetime Seyval client for the CLI gate.
 
     SeyvalClient requires its HTTP session by injection; the MCP server
     supplies its own, and this is the CLI's. Cached because the factory
-    is called per template and the sessions are reusable.
+    is called per template and the sessions are reusable; closed at
+    process exit so the connection pool does not leak.
     """
     global _seyval_client
     if _seyval_client is None:
         _seyval_client = SeyvalClient(
             async_session=httpx.AsyncClient(timeout=60.0, follow_redirects=True)
         )
+        atexit.register(_close_seyval_client)
     return _seyval_client
 
 
