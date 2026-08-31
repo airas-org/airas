@@ -55,6 +55,9 @@ class SetGithubActionsSecretsSubgraph:
             "GH_PERSONAL_ACCESS_TOKEN",
             "AWS_ACCESS_KEY_ID",
             "AWS_SECRET_ACCESS_KEY",
+            # The paper gate (verify_paper.yml) reads Seyval's per-run
+            # storage for the provenance cross-check.
+            "SEYVAL_API_KEY",
         ]
         self.github_client = github_client
 

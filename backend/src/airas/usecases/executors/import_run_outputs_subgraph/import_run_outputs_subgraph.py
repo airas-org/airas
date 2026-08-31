@@ -1,6 +1,7 @@
 import logging
 
 from langgraph.graph import END, START, StateGraph
+from pydantic import ValidationError
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
@@ -8,7 +9,12 @@ from airas.core.logging_utils import setup_logging
 from airas.core.research_paths import RESULTS_DIR
 from airas.core.types.experiment_history import RunStage
 from airas.core.types.github import GitHubConfig
-from airas.infra.github_client import GithubClient
+from airas.core.types.run_provenance import (
+    PROVENANCE_MANIFEST_PATH,
+    ResultsDirProvenance,
+    RunProvenanceManifest,
+)
+from airas.infra.github_client import GithubClient, GithubClientFatalError
 from airas.infra.seyval_client import SeyvalClient
 from airas.usecases.executors.import_run_outputs_subgraph.nodes.collect_run_outputs import (
     collect_run_outputs,
@@ -35,6 +41,7 @@ class ImportRunOutputsSubgraphOutputState(ExecutionTimeState):
     execution_id: str
     imported_paths: list[str]
     total_bytes: int
+    import_commit_sha: str
 
 
 class ImportRunOutputsSubgraphState(
@@ -43,6 +50,7 @@ class ImportRunOutputsSubgraphState(
     total=False,
 ):
     outputs: dict[str, bytes]
+    seyval_commit_hash: str | None
 
 
 class ImportRunOutputsSubgraph:
@@ -52,7 +60,10 @@ class ImportRunOutputsSubgraph:
     captured from the run's working directory into Seyval's own storage. This
     subgraph closes that loop by downloading the files under the results
     directory and committing them at the same paths, which is where
-    `fetch_experiment_results` and the LaTeX build already look.
+    `fetch_experiment_results` and the LaTeX build already look. The same
+    commit carries the provenance manifest declaring which run produced
+    each directory, which is what the paper-value verification pins its
+    Seyval cross-check to.
 
     The bytes never leave this process — see `collect_run_outputs` for why
     that matters.
@@ -88,22 +99,80 @@ class ImportRunOutputsSubgraph:
     @record_execution_time
     async def _collect_run_outputs(
         self, state: ImportRunOutputsSubgraphState
-    ) -> dict[str, dict[str, bytes]]:
-        outputs = await collect_run_outputs(self.seyval_client, state["execution_id"])
-        return {"outputs": outputs}
+    ) -> dict[str, dict[str, bytes] | str | None]:
+        execution_id = state["execution_id"]
+        outputs = await collect_run_outputs(self.seyval_client, execution_id)
+
+        # The commit the run executed, for the provenance declaration. Its
+        # authoritative copy lives in Seyval and verification re-fetches it
+        # from there, so this is best-effort reader convenience — a failed
+        # metadata fetch must not fail an import whose outputs downloaded.
+        commit_hash: str | None = None
+        try:
+            run = await self.seyval_client.aget_run(execution_id)
+            commit_hash = run.get("commit_hash")
+        except Exception as e:
+            logger.warning(
+                f"Could not fetch run metadata for {execution_id}; the "
+                f"manifest will omit its commit hash: {e}"
+            )
+        return {"outputs": outputs, "seyval_commit_hash": commit_hash}
+
+    async def _load_manifest(
+        self, github_config: GitHubConfig
+    ) -> RunProvenanceManifest:
+        """The provenance manifest currently on the branch, or a fresh one."""
+        try:
+            raw = await self.github_client.aget_repository_content(
+                github_owner=github_config.github_owner,
+                repository_name=github_config.repository_name,
+                file_path=PROVENANCE_MANIFEST_PATH,
+                branch_name=github_config.branch_name,
+                as_="bytes",
+            )
+        except GithubClientFatalError as e:
+            if e.status_code == 404:
+                return RunProvenanceManifest()
+            raise
+        try:
+            assert isinstance(raw, bytes)
+            return RunProvenanceManifest.model_validate_json(raw)
+        except (ValidationError, ValueError):
+            logger.warning(
+                f"Existing {PROVENANCE_MANIFEST_PATH} is unreadable; rebuilding "
+                "it for the directories this import covers"
+            )
+            return RunProvenanceManifest()
 
     @record_execution_time
     async def _commit_outputs(
         self, state: ImportRunOutputsSubgraphState
-    ) -> dict[str, bool | list[str] | int]:
+    ) -> dict[str, bool | list[str] | int | str]:
         outputs = state["outputs"]
         github_config = state["github_config"]
         execution_id = state["execution_id"]
 
+        # Declare, in the same commit as the data, which run produced each
+        # results directory. Verification pins its byte-comparison to the
+        # declared run, so with several completed runs of one experiment
+        # only this one backs the paper.
+        manifest = await self._load_manifest(github_config)
+        prefix = f"{RESULTS_DIR}/"
+        for path in outputs:
+            relative = path.removeprefix(prefix)
+            if "/" not in relative:
+                continue  # a file directly under RESULTS_DIR has no directory
+            dir_name = relative.split("/", 1)[0]
+            manifest.dirs[dir_name] = ResultsDirProvenance(
+                execution_id=execution_id,
+                commit_hash=state.get("seyval_commit_hash"),
+            )
+
         # One commit for the whole batch, so the repository is never left
         # holding half a run's results.
         files: dict[str, str | bytes] = dict(outputs)
-        imported = await self.github_client.acommit_multiple_files(
+        files[PROVENANCE_MANIFEST_PATH] = manifest.model_dump_json(indent=2) + "\n"
+        import_commit_sha = await self.github_client.acommit_multiple_files(
             github_owner=github_config.github_owner,
             repository_name=github_config.repository_name,
             branch_name=github_config.branch_name,
@@ -118,12 +187,14 @@ class ImportRunOutputsSubgraph:
         total_bytes = sum(len(content) for content in outputs.values())
         logger.info(
             f"Imported {len(paths)} files ({total_bytes} bytes) into "
-            f"{RESULTS_DIR}/ on branch '{github_config.branch_name}'"
+            f"{RESULTS_DIR}/ on branch '{github_config.branch_name}' "
+            f"as commit {import_commit_sha[:12]}"
         )
         return {
-            "imported": imported,
+            "imported": bool(import_commit_sha),
             "imported_paths": paths,
             "total_bytes": total_bytes,
+            "import_commit_sha": import_commit_sha,
         }
 
     def build_graph(self):

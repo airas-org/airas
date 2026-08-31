@@ -146,14 +146,29 @@ rewrite, since no claim, number or citation should change on the way.
    are scoped per environment and workspace — and note that omitting
    `compute_id` sends the run to Seyval-managed compute rather than a BYO
    cluster. Results stay on Seyval's side, so `import_run_outputs` has to
-   run before `fetch_experiment_results`, which reads the repository. If
+   run before `fetch_experiment_results`, which reads the repository. The
+   import also writes `.research/results/.provenance.json`, declaring
+   which Seyval run each results directory came from — the verification
+   step later checks the local files against exactly that run, so if you
+   re-ran an experiment, import the run the paper should report and note
+   the others exist. Record the returned `import_commit_sha` (e.g. in your
+   notes to the user); it names the commit holding exactly the imported
+   bytes. If
    the experiment does not use Weights & Biases, pass `required_env_vars=[]`
    rather than registering a dummy `WANDB_API_KEY`.
 6. **Analyze**: `fetch_experiment_results`, then author the analysis via
    `get_generation_prompt("experiment_analysis", ...)` (pass the code
    from your clone as `{"files": {"<path>": "<content>"}}`).
 7. **Figures** (see conventions below).
-8. **Write the paper**: `generate_bibfile` (no key needed) → author via
+8. **Declare the paper's numbers**: before writing any prose, call
+   `compute_paper_values` (no key needed) with the clone's `local_path`
+   and a declaration per value the paper will state — e.g.
+   `{"key": "acc_gain", "op": "pct_improve", "refs":
+   ["run-2.accuracy", "run-1.accuracy"], "round": 1}`. The tool reads
+   `.research/results/` itself (numbers cannot be passed in) and writes
+   `values.json` + `values.tex` into `.research/latex/{template}/`. This
+   is the only sanctioned way experimental numbers enter the paper.
+9. **Write the paper**: `generate_bibfile` (no key needed) → author via
    `get_generation_prompt("paper_writing", ...)` → convert via
    `get_generation_prompt("latex_conversion", ...)`, embed into
    `template.tex` as its flow describes, and save **two** files in the
@@ -162,13 +177,33 @@ rewrite, since no claim, number or citation should change on the way.
    `.research/latex/{template}/references.bib`. The template ships a
    `references.bib` containing one placeholder entry, so skipping the
    second file makes every `\cite` render as `?`. Push both with git.
-9. **Verify before publishing**: `verify_latex` (pass `local_path` to check
-   the working tree with no push and no keys). It compiles the paper and
-   reports `ok`, `page_count`, `undefined_citations`, `undefined_references`
-   and `missing_figures`. Do not treat the paper as finished while `ok` is
-   false — a `?` citation and an absent figure both still produce a PDF, so
-   nothing else in the pipeline will notice them.
-10. **Publish**: use `open_in_overleaf` — it returns a link that creates an
+   Add `\input{values.tex}` to main.tex's preamble and write every
+   experimental number as `\airasval{key}` — never as a literal. If you
+   need a value you did not declare, extend the declarations and re-run
+   `compute_paper_values` rather than typing the number. A legitimate
+   number no declaration can produce (e.g. a value quoted from a cited
+   paper) must be wrapped as `\unverified{...}` — it is surfaced for
+   review.
+10. **Verify before publishing**: `verify_latex` (pass `local_path` to check
+    the working tree with no push and no keys). It compiles the paper and
+    reports `ok`, `page_count`, `undefined_citations`,
+    `undefined_references` and `missing_figures`. When `values.json`
+    exists it also verifies the numbers — recomputes every value from the
+    run outputs, diffs `values.tex` against a regeneration, requires every
+    `\airasval` key to be defined, and cross-checks the local metrics
+    files against the run declared in `.research/results/.provenance.json`
+    — they must be byte-identical to what that specific completed run
+    produced, and its commit must be an ancestor of HEAD (report under
+    `paper_values`; a value failure sets `ok` false and suppresses the
+    PDF). Do not treat the paper as finished while `ok` is false — a
+    `?` citation and an absent figure both still produce a PDF, so nothing
+    else in the pipeline will notice them. If
+    `paper_values.provenance.status` is `"unavailable"`, say so to the
+    user rather than presenting the numbers as provenance-backed. If a
+    check lists `sibling_run_ids`, the same code was executed more than
+    once — tell the user which run the paper reports and that repeats
+    exist, so the selection is reviewable.
+11. **Publish**: use `open_in_overleaf` — it returns a link that creates an
     editable Overleaf project (pass `local_path` to export the local
     working tree without pushing; no GitHub token needed for that variant).
     Overleaf is an **export**, not a loop: nothing reads a project back, and
@@ -178,7 +213,7 @@ rewrite, since no claim, number or citation should change on the way.
     which key-free setups do not have; only suggest it if the user has set
     that secret. It materializes the figures itself at build time, so they
     only need to have been pushed.
-11. **Persist**: `upload_research_history` saves the state;
+12. **Persist**: `upload_research_history` saves the state;
     `download_research_history` restores it in a later session.
 
 ## Figure conventions
