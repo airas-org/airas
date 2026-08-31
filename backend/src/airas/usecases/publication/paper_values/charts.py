@@ -146,10 +146,15 @@ def verify_charts(local_repo_path: str, metrics_data: dict[str, Any]) -> list[st
         return []
 
     problems: list[str] = []
-    for chart_path in sorted(chart_dir.iterdir()):
+    # Recursive: the LaTeX export collects PDFs from any depth under
+    # .research/results/, so a chart hidden in a subdirectory must not
+    # escape the sidecar requirement.
+    for chart_path in sorted(chart_dir.rglob("*")):
+        if not chart_path.is_file():
+            continue
         if chart_path.suffix.lower() not in CHART_SUFFIXES:
             continue
-        relative = f"{CHART_DIR}/{chart_path.name}"
+        relative = f"{CHART_DIR}/{chart_path.relative_to(chart_dir).as_posix()}"
         sidecar_path = chart_path.with_name(chart_path.name + CHART_SPEC_SUFFIX)
         if not sidecar_path.is_file():
             problems.append(
@@ -190,7 +195,7 @@ def chart_result_dirs(local_repo_path: str, metrics_data: dict[str, Any]) -> set
     if not chart_dir.is_dir():
         return set()
     dirs: set[str] = set()
-    for sidecar_path in sorted(chart_dir.glob(f"*{CHART_SPEC_SUFFIX}")):
+    for sidecar_path in sorted(chart_dir.rglob(f"*{CHART_SPEC_SUFFIX}")):
         try:
             sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
             _, refs = substitute_chart_refs(sidecar["spec"], metrics_data)

@@ -250,3 +250,28 @@ def test_verify_charts_fails_on_tampered_sidecar_format(tmp_path: Path) -> None:
     sidecar.write_text(sidecar.read_text().replace('"svg"', '"gif"'))
     problems = verify_charts(str(tmp_path), METRICS_DATA)
     assert any("could not be re-rendered" in p for p in problems)
+
+
+def test_verify_charts_rejects_unregistered_chart_in_subdirectory(
+    tmp_path: Path,
+) -> None:
+    # The LaTeX export collects PDFs recursively, so nesting must not
+    # evade the sidecar requirement.
+    nested = tmp_path / CHART_DIR / "extra"
+    nested.mkdir(parents=True)
+    (nested / "smuggled.pdf").write_bytes(b"%PDF-1.4 fake")
+    problems = verify_charts(str(tmp_path), METRICS_DATA)
+    assert any(
+        "extra/smuggled.pdf" in p and "no declared source" in p for p in problems
+    )
+
+
+def test_chart_result_dirs_sees_nested_sidecars(tmp_path: Path) -> None:
+    nested_root = tmp_path / CHART_DIR / "extra"
+    nested_root.mkdir(parents=True)
+    resolved, _ = substitute_chart_refs(CHART_SPEC, METRICS_DATA)
+    chart_path = nested_root / "accuracy.svg"
+    chart_path.write_bytes(render_chart_bytes(resolved, "svg"))
+    write_chart_sidecar(chart_path, CHART_SPEC, "svg")
+    assert chart_result_dirs(str(tmp_path), METRICS_DATA) == {"run_1", "run_2"}
+    assert verify_charts(str(tmp_path), METRICS_DATA) == []
