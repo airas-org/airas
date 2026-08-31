@@ -5,9 +5,17 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   update-release-draft:
     runs-on: ubuntu-latest
+    permissions:
+      # Creating/updating the draft release needs write; the repository
+      # default token is read-only, which is what made drafting fail.
+      contents: write
+      pull-requests: read
     steps:
       - uses: actions/checkout@v7
 
