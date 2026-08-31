@@ -53,6 +53,7 @@ from airas.core.types.paper import PaperContent
 from airas.core.types.paper_search import PAPER_SEARCH_SOURCES
 from airas.core.types.paper_values import (
     PaperValuesVerificationReport,
+    TableSpec,
     ValueDeclaration,
 )
 from airas.core.types.research_history import ResearchHistory
@@ -157,6 +158,12 @@ from airas.usecases.publication.open_in_overleaf_subgraph.nodes.collect_latex_pr
     collect_latex_project_files,
     collect_latex_project_files_local,
 )
+from airas.usecases.publication.paper_values.charts import (
+    CHART_DIR,
+    render_chart_bytes,
+    substitute_chart_refs,
+    write_chart_sidecar,
+)
 from airas.usecases.publication.paper_values.compute import (
     compute_paper_values as compute_paper_values_node,
 )
@@ -165,6 +172,13 @@ from airas.usecases.publication.paper_values.latex import (
     VALUES_JSON_FILENAME,
     VALUES_TEX_FILENAME,
     render_values_tex,
+)
+from airas.usecases.publication.paper_values.tables import (
+    TABLES_DIR_NAME,
+    TABLES_JSON_FILENAME,
+)
+from airas.usecases.publication.paper_values.tables import (
+    compute_paper_tables as compute_paper_tables_node,
 )
 from airas.usecases.publication.paper_values.verify import (
     merge_paper_values_report,
@@ -1493,29 +1507,49 @@ def _png_to_pdf(png: bytes) -> bytes:
 async def render_chart(
     vega_lite_spec: dict[str, Any],
     output_path: str,
+    local_path: str,
 ) -> dict[str, Any]:
-    """Render a Vega-Lite spec to a chart file, entirely locally.
+    """Render a result chart whose data points come from measured metrics.
 
-    Use this for publication-quality result figures: build a Vega-Lite JSON
-    spec from the experiment results (inline the data under `data.values`).
-    When rendering into a local clone of the experiment repository, save
-    the chart as a PDF under `.research/results/chart/`, then commit and
-    push — the LaTeX build collects every `*.pdf` under
-    `.research/results/`. `output_path` must end with .pdf, .svg, or .png.
-    Rendering runs in-process (vl-convert); no data leaves the machine and
-    no API keys are required.
+    Use this for publication-quality result figures. The Vega-Lite spec
+    must not contain literal numbers in its data: write every numeric
+    datum as `"metric:<run_id>.<path>"` (e.g. `"metric:run_1.accuracy"`),
+    and the tool resolves it against `.research/results/` in `local_path`
+    itself — so a plotted point cannot be a number no run measured.
+    Categorical fields (method names, dataset labels) stay plain strings;
+    `calculate`/`expr` transforms are rejected. `\\unverified` has no
+    chart equivalent: a number that no run produced does not belong in a
+    result figure.
+
+    Save charts as PDF under `.research/results/chart/` in the clone,
+    then commit and push — the LaTeX build collects every `*.pdf` under
+    `.research/results/`. The unresolved spec is written next to the
+    chart as `<file>.chartspec.json`; `verify_paper_values` re-resolves
+    and re-renders it and byte-compares, so keep the sidecar committed
+    with the chart. `output_path` must end with .pdf, .svg, or .png.
+    Rendering runs in-process (vl-convert); no data leaves the machine
+    and no API keys are required.
     """
     path, suffix = _resolve_render_output(output_path)
-    if suffix == "pdf":
-        data = await asyncio.to_thread(vlc.vegalite_to_pdf, vega_lite_spec)
-    elif suffix == "svg":
-        svg = await asyncio.to_thread(vlc.vegalite_to_svg, vega_lite_spec)
-        data = svg.encode("utf-8")
-    else:
-        data = await asyncio.to_thread(vlc.vegalite_to_png, vega_lite_spec)
+
+    def _render() -> bytes:
+        metrics_data = load_metrics_data(local_path)
+        resolved, _ = substitute_chart_refs(vega_lite_spec, metrics_data)
+        return render_chart_bytes(resolved, suffix)
+
+    data = await asyncio.to_thread(_render)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
-    return {"output_path": str(path), "bytes_written": len(data)}
+    sidecar_path = write_chart_sidecar(path, vega_lite_spec, suffix)
+    return {
+        "output_path": str(path),
+        "bytes_written": len(data),
+        "chart_spec_path": str(sidecar_path),
+        "note": (
+            f"commit both files; charts under {CHART_DIR}/ are verified "
+            "against a re-render of the sidecar spec"
+        ),
+    }
 
 
 @mcp.tool()
@@ -1894,6 +1928,64 @@ async def compute_paper_values(
 
 
 @mcp.tool()
+async def compute_paper_tables(
+    local_path: str,
+    tables: list[dict[str, Any]],
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+) -> dict[str, Any]:
+    """Render the paper's results tables deterministically from run outputs.
+
+    This is the only sanctioned way a results table enters the paper —
+    never write a tabular of experimental numbers by hand. Declare the
+    layout; the tool reads the metrics itself and renders
+    `tables/<key>.tex`, so the cell at (row, column) is always
+    `<row.run_id>.<column.ref_path>` and a method's label cannot be
+    paired with another run's number.
+
+    Each table is `{"key", "caption", "label"?, "columns", "rows"}`:
+    `columns` are `{"header", "ref_path", "round"?}` (ref_path is the
+    metric path inside each row's metrics.json, e.g. "accuracy" or
+    "loss.final"); `rows` are `{"run_id", "label"}` (run_id is the
+    results directory, label the text the paper shows, e.g. "Ours").
+
+    Writes `tables.json` (the audit record) and `tables/<key>.tex` into
+    `.research/latex/{template}/`. Then `\\input{tables/<key>.tex}` where
+    the table belongs. `verify_paper_values` regenerates every declared
+    table and fails on any difference — and on any `tables/*.tex` that
+    tables.json does not declare.
+    """
+    specs = [TableSpec.model_validate(t) for t in tables]
+
+    def _run() -> dict[str, Any]:
+        metrics_data = load_metrics_data(local_path)
+        paper_tables, rendered = compute_paper_tables_node(specs, metrics_data)
+        latex_dir = (
+            Path(local_path).expanduser().resolve()
+            / ".research"
+            / "latex"
+            / latex_template_name
+        )
+        tables_dir = latex_dir / TABLES_DIR_NAME
+        tables_dir.mkdir(parents=True, exist_ok=True)
+        tables_json_path = latex_dir / TABLES_JSON_FILENAME
+        tables_json_path.write_text(
+            paper_tables.model_dump_json(indent=2) + "\n", encoding="utf-8"
+        )
+        written: dict[str, str] = {}
+        for key, tex in rendered.items():
+            table_path = tables_dir / f"{key}.tex"
+            table_path.write_text(tex, encoding="utf-8")
+            written[key] = str(table_path)
+        return {
+            "tables": written,
+            "tables_json_path": str(tables_json_path),
+            "usage": ("\\input{tables/<key>.tex} where each table belongs in main.tex"),
+        }
+
+    return await asyncio.to_thread(_run)
+
+
+@mcp.tool()
 async def verify_paper_values(
     local_path: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
@@ -1901,11 +1993,15 @@ async def verify_paper_values(
 ) -> dict[str, Any]:
     """Check that every number the paper states is the number that was measured.
 
-    Three deterministic checks decide `ok`: every value in `values.json`
-    is recomputed from the run outputs under `.research/results/` (a
-    tampered record surfaces as a mismatch), `values.tex` is regenerated
-    and diffed byte-for-byte (a manual edit to the macro table surfaces),
-    and every `\\airasval` key main.tex references must be defined.
+    The deterministic checks that decide `ok`: every value in
+    `values.json` is recomputed from the run outputs under
+    `.research/results/` (a tampered record surfaces as a mismatch),
+    `values.tex` is regenerated and diffed byte-for-byte (a manual edit
+    to the macro table surfaces), every `\\airasval` key main.tex
+    references must be defined, every table under `tables/` must match a
+    regeneration from `tables.json` (undeclared table files fail), and
+    every chart under `.research/results/chart/` must match a re-render
+    of its `.chartspec.json` sidecar (a chart without a sidecar fails).
     Unless `check_provenance=False`, the local metrics files are also
     cross-checked against the execution platform's stored run outputs
     (currently Seyval): each referenced results directory must be

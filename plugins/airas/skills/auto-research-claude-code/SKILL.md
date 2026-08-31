@@ -168,6 +168,14 @@ rewrite, since no claim, number or citation should change on the way.
    `.research/results/` itself (numbers cannot be passed in) and writes
    `values.json` + `values.tex` into `.research/latex/{template}/`. This
    is the only sanctioned way experimental numbers enter the paper.
+   Results tables likewise: never hand-write a tabular of experimental
+   numbers — declare each table to `compute_paper_tables`
+   (`{"key", "caption", "columns": [{"header", "ref_path", "round"?}],
+   "rows": [{"run_id", "label"}]}`) and `\input{tables/<key>.tex}` where
+   it belongs. Cells are always `<row.run_id>.<column.ref_path>`, so a
+   method's label cannot be paired with another run's number, and
+   verification regenerates every declared table (and rejects
+   undeclared `tables/*.tex`).
 9. **Write the paper**: `generate_bibfile` (no key needed) → author via
    `get_generation_prompt("paper_writing", ...)` → convert via
    `get_generation_prompt("latex_conversion", ...)`, embed into
@@ -218,9 +226,14 @@ rewrite, since no claim, number or citation should change on the way.
 
 ## Figure conventions
 
-- Result charts: build a Vega-Lite spec (data inline under `data.values`)
-  and `render_chart` it to `.research/results/chart/<name>.pdf` in the
-  clone. Rendering is fully local; no API keys.
+- Result charts: build a Vega-Lite spec and `render_chart` it (pass the
+  clone as `local_path`) to `.research/results/chart/<name>.pdf`. Data
+  numbers must be metric references (`"metric:run_1.accuracy"`), never
+  literals — the tool resolves them from `.research/results/` itself, so
+  a plotted point cannot be invented. Commit the chart **and** its
+  `.chartspec.json` sidecar; `verify_paper_values` re-renders every
+  chart from its sidecar and fails on any difference or missing sidecar.
+  Rendering is fully local; no API keys.
 - Method diagrams: write text notation (mermaid / graphviz / d2 / …) and
   `render_diagram` it to `.research/results/diagram/<name>.pdf`. Uses
   https://kroki.io by default; `KROKI_BASE_URL` switches to self-hosted.

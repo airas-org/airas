@@ -56,6 +56,57 @@ class PaperValues(BaseModel):
     values: list[ComputedValue] = Field(default_factory=list)
 
 
+class TableColumnSpec(BaseModel):
+    """One column of a results table: a heading and where its numbers live."""
+
+    header: str = Field(description="Column heading (LaTeX allowed)")
+    ref_path: str = Field(
+        description=(
+            "Metric path inside each row's metrics.json, e.g. 'accuracy' "
+            "or 'loss.final' — resolved per row as '<run_id>.<ref_path>'"
+        )
+    )
+    round: Optional[int] = Field(
+        default=None,
+        ge=0,
+        le=10,
+        description="Decimal places for display; omitted = shortest form",
+    )
+
+
+class TableRowSpec(BaseModel):
+    """One row of a results table: a run and the label the paper shows."""
+
+    run_id: str = Field(description="Results directory the row's numbers come from")
+    label: str = Field(description="Row heading, e.g. 'Ours' (LaTeX allowed)")
+
+
+class TableSpec(BaseModel):
+    """A results table declared as (rows x columns) over measured metrics.
+
+    The spec names which runs and metrics appear where; the numbers are
+    always read from the run outputs and rendered by deterministic code,
+    so a cell cannot hold a number its row's run did not produce.
+    """
+
+    key: str = Field(
+        pattern=KEY_PATTERN,
+        description="Table name; rendered to tables/<key>.tex",
+    )
+    caption: str = Field(description="Table caption (LaTeX allowed)")
+    label: Optional[str] = Field(
+        default=None, description="\\label value; defaults to tab:<key>"
+    )
+    columns: list[TableColumnSpec] = Field(min_length=1)
+    rows: list[TableRowSpec] = Field(min_length=1)
+
+
+class PaperTables(BaseModel):
+    """The declared results tables — the audit record behind tables/*.tex."""
+
+    tables: list[TableSpec] = Field(default_factory=list)
+
+
 class ProvenanceDirCheck(BaseModel):
     """One results directory checked against an execution platform's storage."""
 
