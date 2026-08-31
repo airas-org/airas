@@ -27,7 +27,29 @@ from airas.usecases.publication.paper_values.latex import (
 
 _UNVERIFIED_RE = re.compile(r"\\unverified\{([^{}]*)\}")
 _AIRASVAL_RE = re.compile(r"\\airasval\{([^{}]*)\}")
-_COMMENT_RE = re.compile(r"(?<!\\)%.*")
+
+
+def _strip_comment(line: str) -> str:
+    """Drop a TeX comment, honouring backslash escapes.
+
+    A % starts a comment unless escaped by an odd number of preceding
+    backslashes: \\% is a literal percent sign, but \\\\% is a line
+    break followed by a comment. A lookbehind for one backslash gets
+    the second case wrong, so the parity is counted explicitly.
+    """
+    search_from = 0
+    while True:
+        at = line.find("%", search_from)
+        if at == -1:
+            return line
+        backslashes = 0
+        before = at - 1
+        while before >= 0 and line[before] == "\\":
+            backslashes += 1
+            before -= 1
+        if backslashes % 2 == 0:
+            return line[:at]
+        search_from = at + 1
 
 
 def _scan_main_tex(main_tex: str) -> tuple[list[str], list[str]]:
@@ -35,7 +57,7 @@ def _scan_main_tex(main_tex: str) -> tuple[list[str], list[str]]:
     unverified: list[str] = []
     used_keys: list[str] = []
     for raw_line in main_tex.splitlines():
-        line = _COMMENT_RE.sub("", raw_line)
+        line = _strip_comment(raw_line)
         unverified.extend(m.group(1) for m in _UNVERIFIED_RE.finditer(line))
         used_keys.extend(
             m.group(1)

@@ -24,8 +24,15 @@ COMPLETED_STATUS = "completed"
 
 
 def _normalize_git_url(url: str) -> str:
+    """Reduce the equivalent spellings of a repository URL to one form.
+
+    An origin remote may be scp-like (git@host:org/repo.git) or a real
+    ssh:// URL (ssh://git@host/org/repo.git); Seyval registers https.
+    """
     url = url.strip().removesuffix(".git")
-    match = re.match(r"git@([^:]+):(.+)$", url)
+    match = re.match(r"git@([^:]+):(.+)$", url) or re.match(
+        r"ssh://(?:[^@/]+@)?([^/:]+)(?::\d+)?/(.+)$", url
+    )
     if match:
         url = f"https://{match.group(1)}/{match.group(2)}"
     return url.lower().rstrip("/")
@@ -148,8 +155,14 @@ class SeyvalProvenanceVerifier:
         except Exception as e:
             return _unavailable(f"could not list Seyval runs: {e}")
 
+        # Several directories usually declare the same run (each run dir
+        # plus comparison/), so its outputs listing is fetched once. The
+        # dirs are checked sequentially: their count is small, and the
+        # bulk of the wall clock is the per-run download, deduplicated by
+        # this cache rather than by concurrency.
+        outputs_cache: dict[str, dict[str, Any]] = {}
         checks = [
-            await self._check_dir(root, dir_name, manifest, listed_runs)
+            await self._check_dir(root, dir_name, manifest, listed_runs, outputs_cache)
             for dir_name in sorted(used_dirs)
         ]
 
@@ -170,6 +183,7 @@ class SeyvalProvenanceVerifier:
         dir_name: str,
         manifest: RunProvenanceManifest,
         listed_runs: list[dict[str, Any]],
+        outputs_cache: dict[str, dict[str, Any]],
     ) -> ProvenanceDirCheck:
         def fail(detail: str, **fields: Any) -> ProvenanceDirCheck:
             return ProvenanceDirCheck(
@@ -207,10 +221,13 @@ class SeyvalProvenanceVerifier:
                 run_id=execution_id,
             )
 
-        try:
-            listing = await self.seyval_client.aget_run_outputs(execution_id)
-        except Exception as e:
-            return fail(f"could not list run outputs: {e}", run_id=execution_id)
+        listing = outputs_cache.get(execution_id)
+        if listing is None:
+            try:
+                listing = await self.seyval_client.aget_run_outputs(execution_id)
+            except Exception as e:
+                return fail(f"could not list run outputs: {e}", run_id=execution_id)
+            outputs_cache[execution_id] = listing
         entry = next(
             (
                 item

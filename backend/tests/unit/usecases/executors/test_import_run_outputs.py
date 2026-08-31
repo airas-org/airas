@@ -313,3 +313,32 @@ async def test_subgraph_uses_explicit_execution_id_without_lookup():
     )
 
     assert result["execution_id"] == "explicit-run-uuid"
+
+
+async def test_subgraph_imports_even_when_run_metadata_fetch_fails():
+    """The commit hash in the manifest is reader convenience, not a gate."""
+    seyval_client = FakeSeyvalClient(
+        outputs={"outputs": [_output(METRICS)], "truncated": False},
+        runs=[_run("run_1_full", "seyval-run-uuid")],
+    )
+
+    async def broken_aget_run(run_id: str) -> dict:
+        raise RuntimeError("seyval metadata endpoint down")
+
+    seyval_client.aget_run = broken_aget_run
+    blobs: list[dict] = []
+
+    result = await (
+        ImportRunOutputsSubgraph(
+            seyval_client=seyval_client,
+            github_client=_github_client_capturing(blobs),
+            run_stage=RunStage.FULL,
+        )
+        .build_graph()
+        .ainvoke({"github_config": GITHUB_CONFIG, "run_id": "run-1"})
+    )
+
+    assert result["imported"] is True
+    manifest = json.loads(next(b for b in blobs if b["encoding"] == "utf-8")["content"])
+    assert manifest["dirs"]["run-1"]["execution_id"] == "seyval-run-uuid"
+    assert manifest["dirs"]["run-1"]["commit_hash"] is None

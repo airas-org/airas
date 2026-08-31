@@ -177,3 +177,26 @@ def test_merge_passes_through_when_not_configured(tmp_path: Path) -> None:
     merged = merge_paper_values_report({"ok": True}, report)
     assert merged["ok"] is True
     assert merged["paper_values_configured"] is False
+
+
+def test_comment_stripping_honours_backslash_parity() -> None:
+    from airas.usecases.publication.paper_values.verify import _strip_comment
+
+    # \% is a literal percent: the line continues past it.
+    assert _strip_comment(r"a \% literal % comment") == r"a \% literal "
+    # \\% is a line break followed by a comment: strip from the %.
+    assert _strip_comment(r"break \\% comment") == "break \\\\"
+    # \\\% is a line break then a literal percent: no comment here.
+    assert _strip_comment(r"keep \\\% text") == r"keep \\\% text"
+    assert _strip_comment("no comment at all") == "no comment at all"
+
+
+def test_scan_ignores_macros_commented_out_after_linebreak() -> None:
+    from airas.usecases.publication.paper_values.verify import _scan_main_tex
+
+    unverified, used_keys = _scan_main_tex(
+        "line \\\\% \\airasval{ghost} \\unverified{ghost claim}\n"
+        "real \\airasval{acc} and \\% \\unverified{kept}"
+    )
+    assert used_keys == ["acc"]
+    assert unverified == ["kept"]

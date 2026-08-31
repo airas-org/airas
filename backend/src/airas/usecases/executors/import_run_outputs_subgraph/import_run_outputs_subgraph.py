@@ -104,10 +104,19 @@ class ImportRunOutputsSubgraph:
         outputs = await collect_run_outputs(self.seyval_client, execution_id)
 
         # The commit the run executed, for the provenance declaration. Its
-        # authoritative copy lives in Seyval; recording it here is a
-        # convenience for readers, not something verification trusts.
-        run = await self.seyval_client.aget_run(execution_id)
-        return {"outputs": outputs, "seyval_commit_hash": run.get("commit_hash")}
+        # authoritative copy lives in Seyval and verification re-fetches it
+        # from there, so this is best-effort reader convenience — a failed
+        # metadata fetch must not fail an import whose outputs downloaded.
+        commit_hash: str | None = None
+        try:
+            run = await self.seyval_client.aget_run(execution_id)
+            commit_hash = run.get("commit_hash")
+        except Exception as e:
+            logger.warning(
+                f"Could not fetch run metadata for {execution_id}; the "
+                f"manifest will omit its commit hash: {e}"
+            )
+        return {"outputs": outputs, "seyval_commit_hash": commit_hash}
 
     async def _load_manifest(
         self, github_config: GitHubConfig

@@ -234,3 +234,13 @@ async def test_mismatch_fails_verification_report(tmp_path: Path) -> None:
     assert report.ok is False
     assert report.provenance is not None
     assert report.provenance.source == "seyval"
+
+
+def test_git_url_normalization_covers_common_origin_forms() -> None:
+    from airas.usecases.verification.seyval_provenance import _normalize_git_url
+
+    expected = "https://github.com/test-org/test-repo"
+    assert _normalize_git_url("https://github.com/Test-Org/Test-Repo.git") == expected
+    assert _normalize_git_url("git@github.com:test-org/test-repo.git") == expected
+    assert _normalize_git_url("ssh://git@github.com/test-org/test-repo.git") == expected
+    assert _normalize_git_url("ssh://git@github.com:22/test-org/test-repo") == expected
