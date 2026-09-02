@@ -1,16 +1,13 @@
-"""Paths the experiment repository is expected to use.
-
-These are a contract, not a preference: the experiment code writes results
-where airas-template's CLI contract says to, and the LaTeX build and the
-Overleaf export collect figures from the same places. Changing a value here
-without changing the template breaks that handshake, so keep them defined
-once.
-"""
-
 # Where an experiment run writes its results, relative to the repository
 # root (and, during a run, to the working directory). Passed to the entry
 # point as `results_dir=`.
 RESULTS_DIR = ".research/results"
+
+# The paper's canonical record: preregistered declarations plus the
+# machine-computed results layer. One per repository, shared by every
+# LaTeX template.
+RECORD_FILENAME = "record.json"
+RECORD_PATH = f".research/{RECORD_FILENAME}"
 
 # Method diagrams, by the current convention.
 DIAGRAM_DIR = f"{RESULTS_DIR}/diagram"

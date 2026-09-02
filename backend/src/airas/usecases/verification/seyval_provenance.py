@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import logging
-import re
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +10,11 @@ from airas.core.types.paper_values import ProvenanceCheckResult, ProvenanceDirCh
 from airas.core.types.run_provenance import (
     PROVENANCE_MANIFEST_PATH,
     RunProvenanceManifest,
+)
+from airas.infra.local_git import (
+    commit_is_ancestor,
+    normalize_git_url,
+    remote_origin_url,
 )
 from airas.infra.seyval_client import SeyvalClient
 from airas.usecases.publication.paper_values.provenance import metrics_repo_path
@@ -23,62 +26,7 @@ SOURCE = "seyval"
 COMPLETED_STATUS = "completed"
 
 
-def _normalize_git_url(url: str) -> str:
-    """Reduce the equivalent spellings of a repository URL to one form.
-
-    An origin remote may be scp-like (git@host:org/repo.git) or a real
-    ssh:// URL (ssh://git@host/org/repo.git); Seyval registers https.
-    """
-    url = url.strip().removesuffix(".git")
-    match = re.match(r"git@([^:]+):(.+)$", url) or re.match(
-        r"ssh://(?:[^@/]+@)?([^/:]+)(?::\d+)?/(.+)$", url
-    )
-    if match:
-        url = f"https://{match.group(1)}/{match.group(2)}"
-    return url.lower().rstrip("/")
-
-
-def _local_remote_url(repo_root: Path) -> str | None:
-    try:
-        result = subprocess.run(
-            ["git", "-C", str(repo_root), "remote", "get-url", "origin"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-
-    return result.stdout.strip() if result.returncode == 0 else None
-
-
-def _commit_is_ancestor(repo_root: Path, commit_hash: str) -> bool:
-    """Whether `commit_hash` is an ancestor of the local clone's HEAD.
-
-    Ancestry, not mere existence: a commit on some unrelated local branch
-    would "exist" in the clone, but only an ancestor of HEAD is code this
-    branch actually carries.
-    """
-    try:
-        result = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(repo_root),
-                "merge-base",
-                "--is-ancestor",
-                commit_hash,
-                "HEAD",
-            ],
-            capture_output=True,
-            timeout=30,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return False
-    return result.returncode == 0
-
-
-def _load_manifest(root: Path) -> RunProvenanceManifest | None:
+def load_provenance_manifest(root: Path) -> RunProvenanceManifest | None:
     manifest_path = root / PROVENANCE_MANIFEST_PATH
     if not manifest_path.is_file():
         return None
@@ -104,7 +52,7 @@ class SeyvalProvenanceVerifier:
     ) -> ProvenanceCheckResult:
         root = Path(local_repo_path).expanduser().resolve()
 
-        manifest = _load_manifest(root)
+        manifest = load_provenance_manifest(root)
         if manifest is None:
             # Without a declaration there is nothing to pin the data to —
             # however the files got here, their provenance is unknown.
@@ -126,12 +74,12 @@ class SeyvalProvenanceVerifier:
                 detail=f"missing or unreadable {PROVENANCE_MANIFEST_PATH}",
             )
 
-        remote_url = _local_remote_url(root)
+        remote_url = remote_origin_url(root)
         if not remote_url:
             return _unavailable(
                 "local clone has no 'origin' remote to match against Seyval"
             )
-        normalized = _normalize_git_url(remote_url)
+        normalized = normalize_git_url(remote_url)
 
         try:
             repositories = await self.seyval_client.alist_repositories()
@@ -141,7 +89,7 @@ class SeyvalProvenanceVerifier:
         repo_ids = [
             r["id"]
             for r in repositories
-            if _normalize_git_url(str(r.get("git_url", ""))) == normalized
+            if normalize_git_url(str(r.get("git_url", ""))) == normalized
         ]
         if not repo_ids:
             return _unavailable(f"no Seyval repository registered for {normalized}")
@@ -220,6 +168,22 @@ class SeyvalProvenanceVerifier:
                 f"(status: {run.get('status')})",
                 run_id=execution_id,
             )
+        # The claim-order check derives from the manifest's commit_hash, so a
+        # manifest pointing at a later commit (one that already contains a
+        # post-hoc claim) must not survive this cross-check.
+        seyval_commit = str(run.get("commit_hash") or "")
+        if (
+            declared.commit_hash
+            and seyval_commit
+            and declared.commit_hash != seyval_commit
+        ):
+            return fail(
+                f"{PROVENANCE_MANIFEST_PATH} declares commit "
+                f"{declared.commit_hash[:12]} for run {execution_id}, but "
+                f"Seyval recorded {seyval_commit[:12]}",
+                run_id=execution_id,
+                commit_hash=seyval_commit,
+            )
 
         listing = outputs_cache.get(execution_id)
         if listing is None:
@@ -246,7 +210,7 @@ class SeyvalProvenanceVerifier:
         except Exception as e:
             return fail(f"could not download stored output: {e}", run_id=execution_id)
 
-        commit_hash = str(run.get("commit_hash") or "")
+        commit_hash = seyval_commit
         sibling_run_ids = [
             str(r.get("run_id", ""))
             for r in listed_runs
@@ -265,7 +229,7 @@ class SeyvalProvenanceVerifier:
                 sibling_run_ids=sibling_run_ids,
             )
 
-        commit_ok = bool(commit_hash) and _commit_is_ancestor(root, commit_hash)
+        commit_ok = bool(commit_hash) and commit_is_ancestor(root, commit_hash)
         return ProvenanceDirCheck(
             dir=dir_name,
             run_id=execution_id,

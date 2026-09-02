@@ -11,13 +11,6 @@ KEY_PATTERN = r"^[a-z][a-z0-9_]*$"
 
 
 class ValueDeclaration(BaseModel):
-    """A paper value declared as an expression over measured metrics.
-
-    The declaration names *which* metrics are used and *how* they combine;
-    the numbers themselves are always read from the run outputs and
-    computed by deterministic code, never taken from the caller.
-    """
-
     key: str = Field(
         pattern=KEY_PATTERN,
         description="Name the paper uses as \\airasval{key}",
@@ -43,6 +36,13 @@ class ValueDeclaration(BaseModel):
         le=10,
         description="Decimal places for display; omitted = shortest form",
     )
+    supersedes: Optional[str] = Field(
+        default=None,
+        description=(
+            "Key of an earlier declaration this one replaces; the old entry "
+            "stays in the record (append-only) but is no longer realized"
+        ),
+    )
 
 
 class ComputedValue(ValueDeclaration):
@@ -50,15 +50,7 @@ class ComputedValue(ValueDeclaration):
     display: str = Field(description="Exactly what \\airasval{key} prints")
 
 
-class PaperValues(BaseModel):
-    """The machine-computed numbers a paper is allowed to state."""
-
-    values: list[ComputedValue] = Field(default_factory=list)
-
-
 class TableColumnSpec(BaseModel):
-    """One column of a results table: a heading and where its numbers live."""
-
     header: str = Field(description="Column heading (LaTeX allowed)")
     ref_path: str = Field(
         description=(
@@ -75,20 +67,11 @@ class TableColumnSpec(BaseModel):
 
 
 class TableRowSpec(BaseModel):
-    """One row of a results table: a run and the label the paper shows."""
-
     run_id: str = Field(description="Results directory the row's numbers come from")
     label: str = Field(description="Row heading, e.g. 'Ours' (LaTeX allowed)")
 
 
 class TableSpec(BaseModel):
-    """A results table declared as (rows x columns) over measured metrics.
-
-    The spec names which runs and metrics appear where; the numbers are
-    always read from the run outputs and rendered by deterministic code,
-    so a cell cannot hold a number its row's run did not produce.
-    """
-
     key: str = Field(
         pattern=KEY_PATTERN,
         description="Table name; rendered to tables/<key>.tex",
@@ -99,17 +82,39 @@ class TableSpec(BaseModel):
     )
     columns: list[TableColumnSpec] = Field(min_length=1)
     rows: list[TableRowSpec] = Field(min_length=1)
+    supersedes: Optional[str] = Field(
+        default=None,
+        description="Key of an earlier table spec this one replaces",
+    )
 
 
-class PaperTables(BaseModel):
-    """The declared results tables — the audit record behind tables/*.tex."""
+class ClaimRunCheck(BaseModel):
+    run_id: str
+    results_present: bool = False
+    run_commit: Optional[str] = None
+    commit_in_history: Optional[bool] = None
+    declared_at_run_commit: Optional[bool] = Field(
+        default=None,
+        description=(
+            "The identical claim and run declarations already existed in "
+            "record.json at the commit the run executed — the order proof"
+        ),
+    )
+    detail: str = ""
 
-    tables: list[TableSpec] = Field(default_factory=list)
+
+class ClaimStatus(BaseModel):
+    id: str
+    verified: bool = Field(
+        description=(
+            "Every run of the claim has results with a provenance commit in "
+            "this branch's history, and the declarations predate that commit"
+        )
+    )
+    checks: list[ClaimRunCheck] = Field(default_factory=list)
 
 
 class ProvenanceDirCheck(BaseModel):
-    """One results directory checked against an execution platform's storage."""
-
     dir: str = Field(description="Directory name under .research/results/")
     run_id: Optional[str] = Field(
         default=None,
@@ -157,23 +162,21 @@ class ProvenanceCheckResult(BaseModel):
 
 
 class PaperValuesVerificationReport(BaseModel):
-    """What the deterministic value checks found.
-
-    `ok` covers only the machine-checkable part: the stored values match a
-    recomputation from the run outputs, values.tex is byte-identical to a
-    regeneration, every referenced key is defined, and — when a
-    provenance cross-check ran — no mismatch against the execution
-    platform's stored run outputs. `unverified` is review input, not a
-    failure.
-    """
-
     ok: bool = Field(
         description=(
-            "True only if all required files exist, values.json matches a "
+            "True only if all required files exist, record.json matches a "
             "recomputation from the run outputs, values.tex matches a "
-            "regeneration byte-for-byte, and the provenance cross-check "
+            "regeneration byte-for-byte, the record's declaration section "
+            "was only ever appended to, and the provenance cross-check "
             "(if performed) found no mismatch"
         )
+    )
+    stage: Literal["prereg", "results"] = Field(
+        default="results",
+        description=(
+            "prereg: no run outputs exist yet, so only the declarations and "
+            "the compile are checked; results: full value verification"
+        ),
     )
     values_match: bool = Field(
         description="Stored values equal a recomputation from the run outputs"
@@ -186,8 +189,45 @@ class PaperValuesVerificationReport(BaseModel):
     undefined_keys: list[str] = Field(
         default_factory=list,
         description=(
-            "\\airasval keys main.tex references that values.json does not "
-            "define — these would render as ??airasval:key?? in the PDF"
+            "\\airasval keys main.tex references that record.json does not "
+            "declare — these would render as ??airasval:key?? in the PDF"
+        ),
+    )
+    append_only: Literal["ok", "violated", "unavailable"] = Field(
+        default="unavailable",
+        description=(
+            "Whether every committed revision of record.json only appended "
+            "to the declaration section; unavailable = no usable git history"
+        ),
+    )
+    append_only_problems: list[str] = Field(default_factory=list)
+    record_commits: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Commits that shaped record.json, oldest first — the first is "
+            "the freeze commit"
+        ),
+    )
+    claims: list[ClaimStatus] = Field(
+        default_factory=list,
+        description="Per-claim verification recomputed from git and provenance",
+    )
+    claim_status_match: bool = Field(
+        default=True,
+        description="Stored verified flags equal the recomputation",
+    )
+    undeclared_result_dirs: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Results directories no declared run accounts for — results "
+            "must not exist without a prior declaration"
+        ),
+    )
+    unverified_claims: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Active claim ids not (yet) verified — review input, allowed "
+            "at publish but surfaced"
         ),
     )
     unverified: list[str] = Field(
