@@ -1,176 +1,97 @@
 ---
 name: auto-research
-description: Run an end-to-end automated research project with the AIRAS MCP tools, using backend LLM API keys for the generation steps (hypothesis, experimental design, analysis, paper writing). Use when the user wants to start or continue automated research with AIRAS and LLM provider API keys (OPENAI_API_KEY etc.) are configured in ~/.airas/credentials.json. If no LLM provider key is available, or the backend generation tools are configured but failing (timeouts, retrieval returning empty studies), use the auto-research-claude-code skill instead.
+description: End-to-end automated research with the AIRAS integrity flow — the paper is preregistered (claims, criteria and expected results frozen in git) before any experiment runs, and every reported number is realized and verified from run outputs afterwards. This skill holds only the ordering and the rules that span steps; each step's contract lives in its own skill. Use when the user wants to run an AIRAS research project start to finish, or asks where in the flow they are or what comes next.
 ---
 
-# AIRAS automated research (backend-LLM mode)
+# AIRAS research orchestrator
 
-You drive the research; AIRAS provides retrieval, curated generation steps
-(run on its backend LLM), and execution infrastructure as MCP tools
-(server name: `airas`).
-
-## Prerequisites
-
-- Credentials live in `~/.airas/credentials.json`, re-read on every tool
-  call. The easiest editor is the dashboard: run `open_dashboard` and open
-  its API Keys page.
-- This mode requires an LLM provider key (e.g. `OPENAI_API_KEY`) for the
-  generation tools, and `GH_PERSONAL_ACCESS_TOKEN` for
-  repository/experiment tools.
-
-## Write in Japanese
-
-The people reviewing this work will not always have the domain knowledge
-to judge a claim — about protein-ligand scoring, say — on sight. A
-plausible-sounding mistake is only catchable if they can read it
-comfortably, so **every artifact a human is meant to check should be
-Japanese**: the hypothesis, the experimental design, the analysis report,
-and the paper itself, through to the PDF. The backend generation prompts
-are written to produce English, so in this mode that means editing what
-comes back — or switching to `auto-research-claude-code`, where you author
-the artifacts yourself and the language is simply yours to choose.
-
-Two things stay English because they are identifiers rather than prose:
-`primary_metric` / `supporting_metrics`, which are parsed downstream to
-compute the GAP, and BibTeX citation keys.
-
-A Japanese paper needs LuaTeX — pdflatex raises `LaTeX Error: Unicode
-character` for every Japanese character and leaves the text out of the
-PDF. `verify_latex` picks the engine from the document, so nothing has to
-be configured, but the preamble is yours to write. Start `main.tex` with:
-
-```latex
-\documentclass[11pt]{article}
-\usepackage{luatexja-fontspec}
-\setmainjfont{IPAexMincho}
-\setsansjfont{IPAexGothic}
-```
-
-If `verify_latex` reports that lualatex is missing, install it:
-`apt-get install texlive-luatex texlive-lang-japanese`.
-
-The bundled templates (`iclr2024`, `mdpi`, `agents4science_2025`) are
-English conference styles with no CJK support, so a Japanese paper does
-not use them — write your own preamble as above and keep the structure
-(title, abstract, numbered sections, figures, bibliography). Translate to
-English only when the user asks; treat that as a rendering rather than a
-rewrite, since no claim, number or citation should change on the way.
+This file owns the **order** and the **invariants**; nothing else.
+Each step's how-to lives in its own skill — invoke it on entering the
+step and follow it over anything more generic. The steps themselves
+are deliberately independent: they state what repository state they
+need and what they leave behind, and only this file says which comes
+after which.
 
 ## Flow
 
-1. **Discover**: `generate_research_queries` → `search_papers` →
-   `retrieve_papers` (structured study data). `retrieve_papers` resolves
-   each title through an LLM web search, so check what came back: a study
-   whose `full_text` is empty and whose `llm_extracted_info` fields all read
-   `[Unavailable]` means resolution failed, and feeding it onward produces a
-   hypothesis with nothing behind it. When that happens, use
-   `fetch_paper_fulltext` with the identifiers `search_papers` gave you and
-   assemble the studies yourself.
-2. **Hypothesize & design**: `generate_hypothesis` →
-   `generate_experimental_design` (pass `compute_environment` so the design
-   fits the hardware — include `arch`, which decides whether a dependency
-   has an installable wheel at all; `retrieve_models` / `retrieve_datasets`
-   list curated candidates).
-3. **Set up the experiment repository**: `prepare_repository` — it returns
-   `clone_url` — then clone it locally with git. Push the hypothesis and
-   experimental design to `.research/research_history.json` with
-   `upload_research_history` before generating any code: the repository's
-   own code-generation workflows read the research context from that file,
-   and it ships empty.
-4. **Write the experiment code yourself** in the clone. Read its
-   `AGENTS.md` first — it is the contract the runners hold you to: which
-   files you may touch, the exact CLI invocations, what each of `sanity` /
-   `pilot` / `full` must scale to, the machine-parsed
-   `SANITY_VALIDATION: PASS` / `PILOT_VALIDATION` verdict lines, the
-   run-id naming rule, the W&B namespaces, and what `src/evaluate.py` must
-   write. The shape it fixes:
+Run these skills in order:
 
-   ```
-   uv run python -u -m src.main run={run_id} results_dir=.research/results mode={mode}
-   ```
+- `setup-repository` — experiment repo created and cloned
+- `discover-papers` — literature into a study list
+- `hypothesize-and-design` — falsifiable hypothesis; run ids and
+  metrics settled; research context committed
+- `preregister-paper` — the full paper written and committed **before
+  any experiment**; this commit is the freeze point
+- `write-experiment-code` — code to the AGENTS.md and airas-eval
+  contracts, environment fixed by lockfile + Dockerfile
+- `run-experiments` — execute on the platform, bring results back
+  with provenance
+- `analyze-results` — analysis and verifiable figures
+- `publish-paper` — numbers realized from declarations, compile +
+  recompute + provenance checks until green locally, then push: CI
+  re-runs the verification and its artifact — the paper of record —
+  is handed to the user, state persisted
 
-   The template ships `src/*.py` empty and a `pyproject.toml` that is a
-   single comment, so `uv sync` does not work until you write a real one.
-   For library-specific guidance (fine-tuning
-   frameworks, distributed training, inference), `get_library_docs` returns
-   each library's official docs and `llms.txt` endpoints — fetch those for
-   current API usage instead of relying on memory. (The AI-Research-SKILLs
-   library, which the template's code-generation workflows install on their
-   runners, can also be installed locally:
-   `npx @orchestra-research/ai-research-skills`.) Run
-   `mode=sanity` locally until it prints `SANITY_VALIDATION: PASS`, then
-   commit and push.
+Execution platform references live in `_shared/references/` per
+platform.
 
-   Two things a local sanity run cannot tell you. It cannot catch an
-   architecture mismatch: if the target is arm64 and you are on x86, a
-   dependency can resolve locally and have no wheel for the target —
-   `--dry-run` resolving is not proof it installs. And the image is built
-   from a *regenerated* Dockerfile, not yours verbatim: instructions whose
-   purpose is legible survive, unexplained ones may be dropped, and
-   undeclared dependencies get invented unpinned. Comment *why* each
-   Dockerfile instruction is needed, pin dependencies in `pyproject.toml`,
-   and commit `uv.lock`.
-5. **Run experiments**: `dispatch_experiment` (async;
-   `backend="github_actions"` or `"seyval"` with a `compute_type`). Poll
-   `get_workflow_runs` (GitHub Actions) or `get_experiment_run_status`
-   (either backend; returns stdout/stderr tails for debugging). Fix code
-   locally and re-dispatch as needed. On Seyval, resolve the target with
-   `list_computes` rather than reusing an id from an earlier session — ids
-   are scoped per environment and workspace — and note that omitting
-   `compute_id` sends the run to Seyval-managed compute rather than a BYO
-   cluster. Results stay on Seyval's side, so `import_run_outputs` has to
-   run before `fetch_experiment_results`, which reads the repository. If
-   the experiment does not use Weights & Biases, pass `required_env_vars=[]`
-   rather than registering a dummy `WANDB_API_KEY`.
-6. **Analyze**: `fetch_experiment_results` → `analyze_experiment`
-   (pass the experiment code from your clone as
-   `{"files": {"<path>": "<content>"}}`).
-7. **Figures** (see conventions below).
-8. **Write the paper**: `generate_bibfile` → `generate_paper` →
-   `generate_latex`. Save **two** files in the clone: the returned LaTeX as
-   `.research/latex/{template}/main.tex`, and the bibliography from
-   `generate_bibfile` as `.research/latex/{template}/references.bib`. The
-   template ships a `references.bib` containing one placeholder entry, so
-   skipping the second file makes every `\cite` render as `?`. Push both
-   with git.
-9. **Verify before publishing**: `verify_latex` (pass `local_path` to check
-   the working tree without pushing). It compiles the paper and reports
-   `ok`, `page_count`, `undefined_citations`, `undefined_references` and
-   `missing_figures`. Do not treat the paper as finished while `ok` is
-   false — a `?` citation and an absent figure both still produce a PDF.
-10. **Publish (two independent exits, use either or both)**:
-    `compile_latex` builds the PDF on GitHub Actions — it materializes the
-    pushed figures itself, and its return value is a dispatch receipt
-    rather than a build result. `open_in_overleaf` returns a link that creates an editable
-    Overleaf project (pass `local_path` to export the local working tree
-    without pushing); it is an export, not a loop — nothing reads a project
-    back, and each click creates a new one.
-11. **Persist**: `upload_research_history` saves the state;
-    `download_research_history` restores it in a later session.
+## Settle once, up front
 
-## Figure conventions
+Operational choices otherwise surface one tool default at a time,
+mid-flow. Ask the user for them together before starting the flow and
+carry the answers through the session:
 
-- Result charts: build a Vega-Lite spec (data inline under `data.values`)
-  and `render_chart` it to `.research/results/chart/<name>.pdf` in the
-  clone. Rendering is fully local; no API keys.
-- Method diagrams: write text notation (mermaid / graphviz / d2 / …) and
-  `render_diagram` it to `.research/results/diagram/<name>.pdf`. Uses
-  https://kroki.io by default; `KROKI_BASE_URL` switches to self-hosted.
-- Commit and push. `compile_latex` and `open_in_overleaf` collect every PDF
-  under `.research/results/` into the paper's `images/` with the directory
-  structure preserved, and `fetch_experiment_results` reports figures by the
-  same relative path. Reference them in LaTeX as `images/<path>` — use the
-  path you were given rather than the bare filename, since two runs can each
-  produce `accuracy.pdf` and only the full path resolves.
+- repository visibility — `prepare_repository` defaults to **private**
+- execution platform; for Seyval, managed vs **BYO** compute and, when
+  several exist, which workspace
+- compute target (GPU and architecture) — the experimental design and
+  the dependency lockfile depend on it
 
-## Notes
+## Invariants across steps
 
-- Long-running tools return immediately; never block waiting. Poll between
-  other work.
-- Most repository writes go through your local clone and git; the exception is `upload_research_history`, which commits `.research/research_history.json` via an MCP tool. There are no general-purpose file-upload tools.
-- Several tools report a problem instead of raising it, and those are the
-  ones that quietly produce a worthless paper. Check them rather than
-  assuming success: `search_papers` returns `search_errors` per source;
-  `retrieve_papers` returns `[Unavailable]` fields on failure;
-  `fetch_paper_fulltext` returns `status` and `truncated`; `verify_latex`
-  returns `ok`.
+These are the orchestrator's own rules; no step may relax them.
+
+- **Nothing is dispatched before the freeze commit exists.**
+  `run-experiments` must not start until `preregister-paper` has
+  committed. Carry the freeze commit sha through the session and
+  report it to the user; verification argues from runs being
+  descendants of it.
+- **Runs descend from the freeze commit.** Fixes are committed on top
+  of it, never instead of it — no amending or rebasing away the
+  prereg commit.
+- **Claims are append-only once evidence exists.** Before any
+  experiment has run, revising the hypothesis and re-preregistering
+  is fine — the freeze point moves with it. After runs exist, a claim
+  that fails is reported as a negative result, not deleted or
+  reworded into something the data supports; new findings enter as
+  new, explicitly exploratory claims (a fresh confirmation run can
+  promote them).
+- **No experimental number is ever typed.** Numbers reach the paper
+  only through declared values and tables; anything else is
+  `\unverified{...}` and said to the user.
+- **State handoff is the repository.** Everything a later step needs
+  must be committed, not held in conversation — a fresh session must
+  be able to resume from the clone alone.
+
+## Resuming mid-flow
+
+Read the clone to find where a repository stands: a preregistered
+main.tex with stub Results/Discussion and no
+`.research/results/` means `write-experiment-code` (or, with `src/`
+already written, `run-experiments`) is next; results with a
+provenance manifest but placeholder values means `analyze-results`
+then `publish-paper`; a `values.tex` with real numbers means
+`publish-paper` (its local stage if not yet green, its CI stage
+otherwise). When in doubt, ask the user what has already happened
+rather than re-running a step.
+
+## Running unattended
+
+- Long-running tools return immediately; never block waiting — poll
+  between other work.
+- When a step fails, go back only as far as the failure requires: a
+  failed run means fixing code and re-running, not re-deriving the
+  hypothesis. Re-run a step only when its *inputs* changed.
+- Stop and ask the user when the research direction is genuinely
+  underdetermined, or when a step has failed the same way twice —
+  a third identical attempt rarely differs.
