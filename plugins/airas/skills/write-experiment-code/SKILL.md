@@ -18,7 +18,10 @@ it to; swapping the producer changes nothing else.
    touch, the exact CLI
    (`uv run python -u -m src.main run={run_id} results_dir=... mode={mode}`),
    sanity/pilot/full semantics, verdict lines, run-id naming.
-   Library docs via `get_library_docs`.
+   Run ids and output metric paths must match `.research/record.json`
+   exactly: verification rejects results directories no declared run
+   accounts for, and a declared value whose metric the code never
+   emits can never be realized. Library docs via `get_library_docs`.
 2. **The outputs must feed airas-eval.** First declare the eval plan:
    write `.research/evaluation.json` with the task types the
    experimental design calls for — the template ships

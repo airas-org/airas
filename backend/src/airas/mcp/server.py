@@ -1,21 +1,3 @@
-"""AIRAS MCP server (stdio).
-
-Exposes AIRAS research subgraphs as MCP tools for use from MCP clients
-such as Claude Code and Claude Desktop.
-
-Credentials are read from ~/.airas/credentials.json (see credentials.py):
-- LLM providers: OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY /
-  OPENROUTER_API_KEY / VERCEL_AI_GATEWAY_API_KEY / RIKYU_API_KEY
-  (at least one)
-- GitHub (repository/experiment tools): GH_PERSONAL_ACCESS_TOKEN
-
-The file is re-read on every tool call, so keys can be added or rotated
-without restarting the server.
-
-Run locally:
-    uvx --from "airas[mcp]" airas-mcp
-"""
-
 import asyncio
 import logging
 import os
@@ -37,6 +19,7 @@ from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
 # LLM mapping classes + helper for building per-node model selection from a
 # single externally-supplied model name (no in-code default model exists).
 from airas.core.llm_config import uniform_llm_mapping
+from airas.core.research_paths import RECORD_PATH
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory, RunStage
 from airas.core.types.experimental_design import (
@@ -50,6 +33,15 @@ from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.llm_provider import LLMProvider
 from airas.core.types.paper import PaperContent
+from airas.core.types.paper_record import (
+    ChartDeclaration,
+    ClaimDeclaration,
+    LinkBase,
+    PaperRecord,
+    PreregSection,
+    RenderedChart,
+    RunDeclaration,
+)
 from airas.core.types.paper_search import PAPER_SEARCH_SOURCES
 from airas.core.types.paper_values import (
     PaperValuesVerificationReport,
@@ -82,6 +74,12 @@ from airas.infra.llm_provider_resolver import (
     RIKYU_BASE_URL_ENV,
     RIKYU_DEFAULT_BASE_URL,
     detect_available_providers,
+)
+from airas.infra.local_git import (
+    commit_paths,
+    current_branch,
+    normalize_git_url,
+    remote_origin_url,
 )
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
@@ -161,24 +159,28 @@ from airas.usecases.publication.open_in_overleaf_subgraph.nodes.collect_latex_pr
 from airas.usecases.publication.paper_values.charts import (
     CHART_DIR,
     render_chart_bytes,
+    renderer_version,
     substitute_chart_refs,
-    write_chart_sidecar,
 )
 from airas.usecases.publication.paper_values.compute import (
     compute_paper_values as compute_paper_values_node,
 )
 from airas.usecases.publication.paper_values.compute import load_metrics_data
 from airas.usecases.publication.paper_values.latex import (
-    VALUES_JSON_FILENAME,
     VALUES_TEX_FILENAME,
     render_values_tex,
 )
-from airas.usecases.publication.paper_values.tables import (
-    TABLES_DIR_NAME,
-    TABLES_JSON_FILENAME,
+from airas.usecases.publication.paper_values.record import (
+    active,
+    collect_run_results,
+    load_record,
+    prereg_consistency_problems,
+    record_path,
+    save_record,
 )
 from airas.usecases.publication.paper_values.tables import (
-    compute_paper_tables as compute_paper_tables_node,
+    TABLES_DIR_NAME,
+    render_table_tex,
 )
 from airas.usecases.publication.paper_values.verify import (
     merge_paper_values_report,
@@ -204,6 +206,8 @@ from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph impor
     SearchPapersSubgraph,
 )
 from airas.usecases.verification.paper_verification import paper_values_full_report
+from airas.usecases.verification.record_history import compute_claim_status
+from airas.usecases.verification.seyval_provenance import load_provenance_manifest
 from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
     GenerateBibfileSubgraph,
 )
@@ -1521,17 +1525,20 @@ async def render_chart(
     chart equivalent: a number that no run produced does not belong in a
     result figure.
 
-    Save charts as **PNG** under `.research/results/chart/` in the clone,
-    then commit and push — the LaTeX build collects figure PDFs and PNGs
-    under `.research/results/`. PDF chart output is refused: vl-convert's
-    PDF bytes are not deterministic across processes, so a PDF chart
-    could never be verified against a re-render. The unresolved spec is
-    written next to the chart as `<file>.chartspec.json`;
-    `verify_paper_values` re-resolves and re-renders it and
-    byte-compares, so keep the sidecar committed with the chart.
-    `output_path` must end with .png or .svg. Rendering runs in-process
-    (vl-convert); no data leaves the machine and no API keys are
-    required.
+    Save charts as **PNG** under `.research/results/chart/` in the clone
+    (`output_path` must lie under that directory and end with .png or
+    .svg), then commit and push — the LaTeX build collects figure PDFs
+    and PNGs under `.research/results/`. PDF chart output is refused:
+    vl-convert's PDF bytes are not deterministic across processes, so a
+    PDF chart could never be verified against a re-render. The unresolved
+    spec is appended to `.research/record.json` as the chart's
+    declaration, and the chart and record.json are committed together in
+    the same step (`commit` in the result); `verify_paper_values`
+    re-resolves, re-renders and byte-compares. A path that already has a
+    different declared spec is refused — render to a new path, or
+    supersede the old declaration via `append_to_record`.
+    Rendering runs in-process (vl-convert); no data leaves the machine
+    and no API keys are required.
     """
     path, suffix = _resolve_render_output(output_path)
     if suffix == "pdf":
@@ -1540,25 +1547,63 @@ async def render_chart(
             "verified (vl-convert's PDF bytes are not deterministic across "
             "processes), and LaTeX includes png directly"
         )
+    chart_root = Path(local_path).expanduser().resolve() / CHART_DIR
+    try:
+        relative = path.relative_to(chart_root).as_posix()
+    except ValueError:
+        raise ValueError(
+            f"output_path must be under {CHART_DIR}/ in the clone — that is "
+            "the only place verified charts are collected from"
+        ) from None
 
-    def _render() -> bytes:
+    def _run() -> dict[str, Any]:
+        record = load_record(local_path)
         metrics_data = load_metrics_data(local_path)
         resolved, _ = substitute_chart_refs(vega_lite_spec, metrics_data)
-        return render_chart_bytes(resolved, suffix)
+        data = render_chart_bytes(resolved, suffix)
 
-    data = await asyncio.to_thread(_render)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(data)
-    sidecar_path = write_chart_sidecar(path, vega_lite_spec, suffix)
-    return {
-        "output_path": str(path),
-        "bytes_written": len(data),
-        "chart_spec_path": str(sidecar_path),
-        "note": (
-            f"commit both files; charts under {CHART_DIR}/ are verified "
-            "against a re-render of the sidecar spec"
-        ),
-    }
+        declared = next(
+            (c for c in active(record.prereg.charts, "path") if c.path == relative),
+            None,
+        )
+        if declared and (declared.spec != vega_lite_spec or declared.format != suffix):
+            raise ValueError(
+                f"{relative} already has a different declared spec; render to "
+                "a new path, or append a superseding declaration via "
+                "append_to_record"
+            )
+        if declared is None:
+            record.prereg.charts.append(
+                ChartDeclaration(
+                    path=relative,
+                    format=suffix,
+                    spec=vega_lite_spec,
+                )
+            )
+        record.results.charts = [
+            c for c in record.results.charts if c.path != relative
+        ] + [RenderedChart(path=relative, renderer=renderer_version())]
+        save_record(local_path, record)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        commit = _commit_record_paths(
+            local_path,
+            [RECORD_PATH, f"{CHART_DIR}/{relative}"],
+            f"record: declare and render chart {relative}",
+        )
+        return {
+            "output_path": str(path),
+            "bytes_written": len(data),
+            "record_path": str(record_path(local_path)),
+            "commit": commit,
+            "note": (
+                f"chart and record.json committed together; charts under "
+                f"{CHART_DIR}/ are verified against a re-render of their "
+                "declared spec"
+            ),
+        }
+
+    return await asyncio.to_thread(_run)
 
 
 @mcp.tool()
@@ -1803,15 +1848,12 @@ async def verify_latex(
     lualatex (`texlive-luatex`, `texlive-lang-japanese`); everything else
     with pdflatex.
 
-    When checking a local clone of a paper that uses the value-integrity
-    system (a `values.json` written by `compute_paper_values` exists), the
-    numbers are verified too: every stated value is recomputed from the
-    run outputs, `values.tex` is diffed against a regeneration, every
-    `\\airasval` key must be defined, and (unless `check_provenance=False`)
-    the local metrics files are cross-checked against the execution
-    platform's stored run outputs (currently Seyval) — each referenced
-    results directory must be byte-identical to what a completed run of a
-    commit in this repository's history actually produced. The full
+    When checking a local clone of a paper that uses the canonical-record
+    system (a `.research/record.json` created by `preregister_record`
+    exists), the record is verified too — the same checks as
+    `verify_paper_values`: declarations, append-only history, value/
+    table/chart recomputation, claim flags, and (unless
+    `check_provenance=False`) the Seyval provenance cross-check. The full
     report lands under `paper_values` (`paper_values_configured` says
     whether the system is in use; its `provenance.status` is
     "unavailable" when the platform could not be consulted, which does
@@ -1873,63 +1915,116 @@ async def _paper_values_full_report(
     )
 
 
+def _parse_prereg_entries(
+    runs: list[dict[str, Any]] | None,
+    claims: list[dict[str, Any]] | None,
+    values: list[dict[str, Any]] | None,
+    tables: list[dict[str, Any]] | None,
+    charts: list[dict[str, Any]] | None,
+) -> tuple[
+    list[RunDeclaration],
+    list[ClaimDeclaration],
+    list[ValueDeclaration],
+    list[TableSpec],
+    list[ChartDeclaration],
+]:
+    return (
+        [RunDeclaration.model_validate(r) for r in runs or []],
+        [ClaimDeclaration.model_validate(c) for c in claims or []],
+        [ValueDeclaration.model_validate(v) for v in values or []],
+        [TableSpec.model_validate(t) for t in tables or []],
+        [ChartDeclaration.model_validate(c) for c in charts or []],
+    )
+
+
+def _commit_record_paths(local_path: str, paths: list[str], message: str) -> str:
+    commit = commit_paths(Path(local_path).expanduser().resolve(), paths, message)
+    if commit is None:
+        raise ValueError(
+            "files were written but git commit failed — the record must live "
+            "in a git clone with a commit identity configured"
+        )
+    return commit
+
+
 @mcp.tool()
-async def compute_paper_values(
+async def preregister_record(
     local_path: str,
-    declarations: list[dict[str, Any]],
-    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+    hypothesis: str,
+    design: str,
+    runs: list[dict[str, Any]],
+    claims: list[dict[str, Any]] | None = None,
+    values: list[dict[str, Any]] | None = None,
+    tables: list[dict[str, Any]] | None = None,
+    notes: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Turn declared metric expressions into the paper's numbers, deterministically.
+    """Create the paper's canonical record before any experiment has run.
 
-    This is the only sanctioned way experimental numbers enter the paper.
-    Declare *which* metrics you need and *how* they combine; the tool reads
-    the actual run outputs (`.research/results/<run_id>/metrics.json` and
-    `comparison/aggregated_metrics.json` in the local clone) and computes
-    every value itself. Numbers cannot be passed in, so a value that was
-    never measured cannot become a macro.
+    Writes `.research/record.json` — the single machine-readable record the
+    whole verification system keys on: the hypothesis and experimental
+    design in prose, the planned runs, the numbered claims, and the value
+    and table declarations the paper will realize later — and commits it
+    in the same step (`freeze_commit` in the result). That commit is the
+    freeze point: from then on the declaration section is append-only
+    (`verify_paper_values` walks the git history and fails on any edit),
+    and a claim can only ever be verified by a run whose commit already
+    contained it. To revise a frozen entry, append a new one whose
+    `supersedes` names the old id — the old entry stays untouched.
 
-    Each declaration is `{"key", "op", "refs", "round"}`: `key` names the
-    value (`^[a-z][a-z0-9_]*$`); `op` is one of `value` (the single ref
-    as-is), `mean` / `std` (over all refs), `diff` (refs[0] - refs[1]), or
-    `pct_improve` ((refs[0] - refs[1]) / |refs[1]| * 100); `refs` are
-    `"run_id.path.to.metric"` into that run's metrics.json; `round` is the
-    optional number of decimal places for display.
+    `runs` are `{"run_id", "description"?}` — one per planned results
+    directory; results for an undeclared run_id fail verification, so
+    declare before executing. `claims` are `{"id", "statement",
+    "criterion", "predicted_interval", "run_ids", "value_keys"?}`: id is
+    `c1`, `c2`, ...; statement one assertive sentence; criterion the
+    prose falsification line; predicted_interval a range (never a point)
+    with its source; run_ids the declared runs that test it. `values` and
+    `tables` use the same shapes `update_and_verify_record` realizes
+    (`{"key", "op", "refs", "round"?}` and
+    `{"key", "caption", "label"?, "columns", "rows"}`). Charts are
+    declared later by `render_chart`.
 
-    Writes `values.json` (the audit record) and `values.tex` (the macro
-    table) into `.research/latex/{template}/`. Then `\\input{values.tex}`
-    in main.tex's preamble and write every experimental number as
-    `\\airasval{key}` — never as a literal. A legitimate number that no
-    declaration can produce (e.g. a value quoted from a cited paper) must
-    be wrapped as `\\unverified{...}` so it is surfaced for review. Before
-    publishing, run `verify_paper_values`: it recomputes everything from
-    the run outputs and fails on any drift, including manual edits to the
-    generated files.
+    Fails if record.json already exists (use `append_to_record`), or if the
+    clone cannot commit (the record must live in a git repository). After
+    this: put every future experimental number in main.tex as
+    `\\airasval{key}`, compile, commit main.tex and push — tell the user
+    the freeze commit sha; it is the preregistration record.
     """
-    parsed = [ValueDeclaration.model_validate(d) for d in declarations]
+    parsed_runs, parsed_claims, parsed_values, parsed_tables, _ = _parse_prereg_entries(
+        runs, claims, values, tables, None
+    )
 
     def _run() -> dict[str, Any]:
-        metrics_data = load_metrics_data(local_path)
-        paper_values = compute_paper_values_node(parsed, metrics_data)
-        latex_dir = (
-            Path(local_path).expanduser().resolve()
-            / ".research"
-            / "latex"
-            / latex_template_name
+        path = record_path(local_path)
+        if path.is_file():
+            raise ValueError(
+                f"{path} already exists — the record is append-only; add "
+                "declarations with append_to_record"
+            )
+
+        prereg = PreregSection(
+            hypothesis=hypothesis,
+            design=design,
+            runs=parsed_runs,
+            claims=parsed_claims,
+            values=parsed_values,
+            tables=parsed_tables,
+            notes=notes or [],
         )
-        latex_dir.mkdir(parents=True, exist_ok=True)
-        values_json_path = latex_dir / VALUES_JSON_FILENAME
-        values_tex_path = latex_dir / VALUES_TEX_FILENAME
-        values_json_path.write_text(
-            paper_values.model_dump_json(indent=2) + "\n", encoding="utf-8"
+        problems = prereg_consistency_problems(prereg)
+        if problems:
+            raise ValueError("; ".join(problems))
+
+        save_record(local_path, PaperRecord(prereg=prereg))
+        freeze_commit = _commit_record_paths(
+            local_path, [RECORD_PATH], "prereg: declare the research record"
         )
-        values_tex_path.write_text(render_values_tex(paper_values), encoding="utf-8")
         return {
-            "values": {v.key: v.display for v in paper_values.values},
-            "values_json_path": str(values_json_path),
-            "values_tex_path": str(values_tex_path),
-            "usage": (
-                "\\input{values.tex} in the preamble, then \\airasval{<key>} "
-                "wherever the paper states the number"
+            "record_path": str(path),
+            "claims": [c.id for c in parsed_claims],
+            "freeze_commit": freeze_commit,
+            "next": (
+                "this commit is the freeze point runs must descend from — "
+                "write the prereg main.tex, then push"
             ),
         }
 
@@ -1937,61 +2032,189 @@ async def compute_paper_values(
 
 
 @mcp.tool()
-async def compute_paper_tables(
+async def append_to_record(
     local_path: str,
-    tables: list[dict[str, Any]],
-    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+    runs: list[dict[str, Any]] | None = None,
+    claims: list[dict[str, Any]] | None = None,
+    values: list[dict[str, Any]] | None = None,
+    tables: list[dict[str, Any]] | None = None,
+    charts: list[dict[str, Any]] | None = None,
+    notes: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Render the paper's results tables deterministically from run outputs.
+    """Append declarations to the canonical record; existing entries never change.
 
-    This is the only sanctioned way a results table enters the paper —
-    never write a tabular of experimental numbers by hand. Declare the
-    layout; the tool reads the metrics itself and renders
-    `tables/<key>.tex`, so the cell at (row, column) is always
-    `<row.run_id>.<column.ref_path>` and a method's label cannot be
-    paired with another run's number.
+    The record's declaration section is append-only, so this tool can only
+    add: new runs, claims, value/table/chart declarations, or prose notes
+    (entry shapes as in `preregister_record`; a chart is `{"path",
+    "format", "spec"}` with the path relative to `.research/results/chart/`).
+    To revise a frozen entry, append a replacement whose `supersedes`
+    names the old entry's id/key/path — superseded entries stay in the
+    file but are no longer realized or required.
 
-    Each table is `{"key", "caption", "label"?, "columns", "rows"}`:
-    `columns` are `{"header", "ref_path", "round"?}` (ref_path is the
-    metric path inside each row's metrics.json, e.g. "accuracy" or
-    "loss.final"); `rows` are `{"run_id", "label"}` (run_id is the
-    results directory, label the text the paper shows, e.g. "Ours").
-
-    Writes `tables.json` (the audit record) and `tables/<key>.tex` into
-    `.research/latex/{template}/`. Then `\\input{tables/<key>.tex}` where
-    the table belongs. `verify_paper_values` regenerates every declared
-    table and fails on any difference — and on any `tables/*.tex` that
-    tables.json does not declare.
+    Use this for exploratory extensions (declare the run and claim first,
+    then execute — results for an undeclared run fail verification) and
+    for corrections via supersedes. The append is committed in the same
+    step (`commit` in the result); anything a run should count as
+    evidence for must be in that commit's history before the run
+    executes — a claim declared after its run stays unverified forever.
     """
-    specs = [TableSpec.model_validate(t) for t in tables]
+    parsed = _parse_prereg_entries(runs, claims, values, tables, charts)
 
     def _run() -> dict[str, Any]:
-        metrics_data = load_metrics_data(local_path)
-        paper_tables, rendered = compute_paper_tables_node(specs, metrics_data)
-        latex_dir = (
-            Path(local_path).expanduser().resolve()
-            / ".research"
-            / "latex"
-            / latex_template_name
+        record = load_record(local_path)
+        prereg = record.prereg
+        for field, entries in zip(
+            ("runs", "claims", "values", "tables", "charts"), parsed, strict=True
+        ):
+            getattr(prereg, field).extend(entries)
+        prereg.notes.extend(notes or [])
+        problems = prereg_consistency_problems(prereg)
+        if problems:
+            raise ValueError("; ".join(problems))
+        save_record(local_path, record)
+        commit = _commit_record_paths(
+            local_path, [RECORD_PATH], "record: append declarations"
         )
-        tables_dir = latex_dir / TABLES_DIR_NAME
-        tables_dir.mkdir(parents=True, exist_ok=True)
-        tables_json_path = latex_dir / TABLES_JSON_FILENAME
-        tables_json_path.write_text(
-            paper_tables.model_dump_json(indent=2) + "\n", encoding="utf-8"
-        )
-        written: dict[str, str] = {}
-        for key, tex in rendered.items():
-            table_path = tables_dir / f"{key}.tex"
-            table_path.write_text(tex, encoding="utf-8")
-            written[key] = str(table_path)
         return {
-            "tables": written,
-            "tables_json_path": str(tables_json_path),
-            "usage": ("\\input{tables/<key>.tex} where each table belongs in main.tex"),
+            "record_path": str(record_path(local_path)),
+            "appended": {
+                "runs": len(parsed[0]),
+                "claims": len(parsed[1]),
+                "values": len(parsed[2]),
+                "tables": len(parsed[3]),
+                "charts": len(parsed[4]),
+                "notes": len(notes or []),
+            },
+            "commit": commit,
+            "next": (
+                "the appended declarations are committed — any run they "
+                "should count for must execute this commit or a descendant"
+            ),
         }
 
     return await asyncio.to_thread(_run)
+
+
+@mcp.tool()
+async def update_and_verify_record(
+    local_path: str,
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+    check_provenance: bool = True,
+) -> dict[str, Any]:
+    """Realize the record from run outputs and verify it, in one step.
+
+    This is the only sanctioned way experimental numbers enter the paper.
+    The declarations live in `.research/record.json` (written at
+    preregistration by `preregister_record`, extended by
+    `append_to_record`); this tool reads the actual run outputs
+    (`.research/results/<run_id>/metrics.json` and
+    `comparison/aggregated_metrics.json` in the local clone) and computes
+    every declared value and table itself. Numbers cannot be passed in,
+    so a value that was never measured cannot become a macro or a cell.
+
+    It writes into record.json's results section everything a reviewer
+    needs to judge the record standalone: each run's measured metrics
+    verbatim with its execution id and commit, the computed values, and
+    each claim's verification — a claim is verified only when every run
+    it names has results whose provenance commit is an ancestor of HEAD
+    and already contained the identical declarations, so declaring after
+    the fact can never verify a claim. It renders `values.tex` and
+    `tables/<key>.tex` into `.research/latex/{template}/`; when the
+    clone has an `origin` remote, every value macro is a hyperlink to
+    record.json on that remote.
+
+    Writing, committing and verifying are one step on purpose: the
+    written files are committed immediately (`commit` in the result), then
+    the full verification runs against that committed state (recomputation
+    of values, tables, charts and claim flags, append-only history,
+    undeclared results directories, and — unless `check_provenance=False`
+    — the Seyval provenance cross-check) and comes back as `verification`
+    in the result. A `verified: true` in the record is therefore bound to
+    a commit sha the moment it exists, paper or no paper; the CI gate
+    later re-runs the same checks where the agent cannot interfere.
+
+    Then `\\input{values.tex}` in main.tex's preamble,
+    `\\input{tables/<key>.tex}` where each table belongs, and every
+    experimental number as `\\airasval{key}` — never a literal. A
+    legitimate number no declaration can produce (e.g. a value quoted
+    from a cited paper) must be wrapped as `\\unverified{...}` so it is
+    surfaced for review. Commit record.json together with the rendered
+    files.
+    """
+    refresh_environment()
+
+    def _run() -> dict[str, Any]:
+        record = load_record(local_path)
+        metrics_data = load_metrics_data(local_path)
+        root = Path(local_path).expanduser().resolve()
+        computed = compute_paper_values_node(
+            active(record.prereg.values, "key"), metrics_data
+        )
+        manifest = load_provenance_manifest(root)
+        record.results.runs = collect_run_results(metrics_data, manifest)
+        record.results.values = computed
+        record.results.claim_status = compute_claim_status(
+            root, record, manifest, set(metrics_data)
+        )
+        remote = remote_origin_url(root)
+        branch = current_branch(root)
+        record.results.link_base = (
+            LinkBase(repo_url=normalize_git_url(remote), ref=branch)
+            if remote and branch
+            else None
+        )
+        save_record(local_path, record)
+
+        latex_dir = root / ".research" / "latex" / latex_template_name
+        latex_dir.mkdir(parents=True, exist_ok=True)
+        values_tex_path = latex_dir / VALUES_TEX_FILENAME
+        values_tex_path.write_text(
+            render_values_tex(computed, record.results.link_base), encoding="utf-8"
+        )
+        tables: dict[str, str] = {}
+        table_specs = active(record.prereg.tables, "key")
+        if table_specs:
+            tables_dir = latex_dir / TABLES_DIR_NAME
+            tables_dir.mkdir(parents=True, exist_ok=True)
+            for spec in table_specs:
+                table_path = tables_dir / f"{spec.key}.tex"
+                table_path.write_text(
+                    render_table_tex(spec, metrics_data), encoding="utf-8"
+                )
+                tables[spec.key] = str(table_path)
+        commit_targets = [
+            RECORD_PATH,
+            f".research/latex/{latex_template_name}/{VALUES_TEX_FILENAME}",
+        ]
+        # tables/ exists only once a table has been declared, and git add is
+        # fatal on a pathspec that matches nothing.
+        if tables:
+            commit_targets.append(
+                f".research/latex/{latex_template_name}/{TABLES_DIR_NAME}"
+            )
+        commit = _commit_record_paths(
+            local_path, commit_targets, "record: realize results and verify"
+        )
+        return {
+            "values": {v.key: v.display for v in computed},
+            "claims": {s.id: s.verified for s in record.results.claim_status},
+            "tables": tables,
+            "record_path": str(record_path(local_path)),
+            "values_tex_path": str(values_tex_path),
+            "commit": commit,
+        }
+
+    result = await asyncio.to_thread(_run)
+    report = await _paper_values_full_report(
+        local_path, latex_template_name, check_provenance
+    )
+    result["verification"] = report.model_dump()
+    result["usage"] = (
+        "\\input{values.tex} in the preamble, \\input{tables/<key>.tex} where "
+        "each table belongs, then \\airasval{<key>} wherever the paper states "
+        "a number; the realized files are already committed — push when ready"
+    )
+    return result
 
 
 @mcp.tool()
@@ -2000,31 +2223,38 @@ async def verify_paper_values(
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
     check_provenance: bool = True,
 ) -> dict[str, Any]:
-    """Check that every number the paper states is the number that was measured.
+    """Check that everything the paper states is what was declared and measured.
 
-    The deterministic checks that decide `ok`: every value in
-    `values.json` is recomputed from the run outputs under
-    `.research/results/` (a tampered record surfaces as a mismatch),
-    `values.tex` is regenerated and diffed byte-for-byte (a manual edit
-    to the macro table surfaces), every `\\airasval` key main.tex
-    references must be defined, every table under `tables/` must match a
-    regeneration from `tables.json` (undeclared table files fail), and
-    every chart under `.research/results/chart/` must match a re-render
-    of its `.chartspec.json` sidecar (a chart without a sidecar fails).
+    Verifies the canonical record `.research/record.json` end to end. At
+    the prereg stage (no run outputs yet) it checks the declarations'
+    internal consistency, that nothing realized exists prematurely, and
+    the append-only history. Once results exist, the deterministic checks
+    that decide `ok`: every declared value is recomputed from the run
+    outputs under `.research/results/` and compared to the record's
+    stored results (a tampered record surfaces as a mismatch),
+    `values.tex` is regenerated and diffed byte-for-byte, every
+    `\\airasval` key main.tex references must be declared, every table
+    under `tables/` and every chart under `.research/results/chart/`
+    must match a regeneration of its declaration (undeclared files fail),
+    every results directory must belong to a declared run
+    (`undeclared_result_dirs`), the record's git history must be pure
+    appends to the declaration section (`append_only`), and each claim's
+    stored verified flag must equal its recomputation: verified means
+    every run the claim names has results whose provenance commit is an
+    ancestor of HEAD and already contained the identical declarations.
+    Unverified claims do not fail the check — they are listed in
+    `unverified_claims` for honest reporting.
+
     Unless `check_provenance=False`, the local metrics files are also
     cross-checked against the execution platform's stored run outputs
     (currently Seyval): each referenced results directory must be
     byte-identical to what the run *declared* for it in
     `.research/results/.provenance.json` (written by `import_run_outputs`)
     actually produced, that run must be completed, and its commit must be
-    an ancestor of the local HEAD — so a rewritten local metrics.json
-    fails even though the recomputation is self-consistent, and quietly
-    swapping to a different run of the same experiment surfaces as a
-    mismatch. Each check lists the other completed runs of the same
-    commit (`sibling_run_ids`); review them — repeated executions mean
-    the reported run was a choice. `provenance.status` "unavailable" (no
-    credentials, unregistered repository, network) is surfaced without
-    failing the local checks.
+    an ancestor of the local HEAD. Each check lists the other completed
+    runs of the same commit (`sibling_run_ids`); review them — repeated
+    executions mean the reported run was a choice. `provenance.status`
+    "unavailable" is surfaced without failing the local checks.
 
     `unverified` lists every `\\unverified{...}` the author marked —
     review input, not a failure. Run this after any step that may edit

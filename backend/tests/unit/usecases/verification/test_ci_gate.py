@@ -8,11 +8,19 @@ def _merged(
     ok: bool = True,
     configured: bool = True,
     provenance: dict[str, Any] | None = None,
+    stage: str = "results",
+    append_only: str = "ok",
 ) -> dict[str, Any]:
     return {
         "ok": ok,
         "paper_values_configured": configured,
-        "paper_values": {"provenance": provenance, "unverified": []},
+        "paper_values": {
+            "provenance": provenance,
+            "unverified": [],
+            "unverified_claims": [],
+            "stage": stage,
+            "append_only": append_only,
+        },
     }
 
 
@@ -51,10 +59,9 @@ def test_fails_on_not_ok() -> None:
     assert any("ok=false" in f for f in gate_failures(merged, True, True))
 
 
-def test_fails_when_paper_values_not_configured() -> None:
+def test_fails_when_record_not_configured() -> None:
     merged = _merged(configured=False)
-    merged["paper_values"] = {"provenance": None, "unverified": []}
-    assert any("values.json" in f for f in gate_failures(merged, True, True))
+    assert any("record.json" in f for f in gate_failures(merged, True, True))
     # ... unless the caller opted out.
     assert gate_failures(merged, False, True) == []
 
@@ -73,9 +80,25 @@ def test_missing_provenance_check_fails_the_gate() -> None:
 
 
 def test_provenance_not_required_for_unconfigured_paper() -> None:
-    # No values.json -> there is nothing to cross-check; the missing
+    # No record.json -> there is nothing to cross-check; the missing
     # configuration itself is the (single) failure.
     merged = _merged(configured=False, provenance=None)
     failures = gate_failures(merged, True, True)
     assert len(failures) == 1
-    assert "values.json" in failures[0]
+    assert "record.json" in failures[0]
+
+
+def test_prereg_stage_needs_no_provenance() -> None:
+    # Before any run exists there is nothing to cross-check: a frozen
+    # prereg paper can be gate-green.
+    merged = _merged(provenance=None, stage="prereg")
+    assert gate_failures(merged, True, True) == []
+
+
+def test_unavailable_history_fails_the_gate() -> None:
+    merged = _merged(
+        provenance={"status": "verified", "detail": ""}, append_only="unavailable"
+    )
+    failures = gate_failures(merged, True, True)
+    assert any("append-only history" in f for f in failures)
+    assert gate_failures(merged, True, True, require_history=False) == []

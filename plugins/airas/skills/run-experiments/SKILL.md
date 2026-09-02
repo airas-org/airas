@@ -6,7 +6,12 @@ description: Execute committed experiment code on the chosen compute platform (G
 # Run the experiments
 
 Needs a clone with committed experiment code that passes local sanity
-(built to the `AGENTS.md` contract, `uv.lock` committed).
+(built to the `AGENTS.md` contract, `uv.lock` committed). Every run you
+dispatch must already be declared in `.research/record.json` **in a
+commit the run will execute** — results for an undeclared run_id fail
+verification, and a claim is only ever verified by a run whose commit
+already contained it. Declare late additions with `append_to_record`
+(it commits the append itself) and push before dispatching.
 
 1. **Resolve the platform.** It should already be settled — the code
    was written against its architecture and environment constraints.

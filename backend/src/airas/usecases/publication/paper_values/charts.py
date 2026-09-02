@@ -1,36 +1,19 @@
-"""Charts whose data points can only come from measured metrics.
-
-A publication chart's Vega-Lite spec must not carry literal numbers in
-its data: every numeric datum is written as a reference string
-("metric:<run_id>.<path>") and resolved against the run outputs by this
-module. The unresolved spec is stored next to the rendered file as a
-sidecar (<file>.chartspec.json); verification re-resolves and re-renders
-it and byte-compares — vl-convert is deterministic for a fixed version —
-so both an edited data point and a wholesale replacement of the rendered
-file surface as a mismatch, and a chart file with no sidecar is treated
-as unregistered.
-
-What stays free-form (axis titles, legends, colors) shapes presentation,
-not the numbers, and is review's job — the same split as table captions.
-"""
-
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 
 import vl_convert as vlc
 
+from airas.core.types.paper_record import PaperRecord
+
 METRIC_REF_PREFIX = "metric:"
 CHART_DIR = ".research/results/chart"
-CHART_SPEC_SUFFIX = ".chartspec.json"
 # Every chart-like file under CHART_DIR is scanned (a smuggled PDF must
 # not escape), but only svg and png can actually be verified: vl-convert's
 # PDF writer emits hash-ordered dictionaries, so PDF bytes differ across
 # processes even for identical input and can never match a re-render.
 CHART_SUFFIXES = (".pdf", ".svg", ".png")
-VERIFIABLE_CHART_FORMATS = ("svg", "png")
 # Fixed render scale for png charts: part of the deterministic contract,
 # and high enough for print.
 PNG_SCALE = 3.0
@@ -84,7 +67,7 @@ def substitute_chart_refs(
                         f"'{forbidden}' is not allowed in a chart spec: an "
                         "expression can turn measured points into invented "
                         "ones. Derive the value in the experiment code or "
-                        "declare it via compute_paper_values instead."
+                        "declare it via update_and_verify_record instead."
                     )
             return {
                 key: (
@@ -106,7 +89,6 @@ def substitute_chart_refs(
 
 
 def render_chart_bytes(resolved_spec: dict[str, Any], suffix: str) -> bytes:
-    """Render a resolved spec with vl-convert (deterministic per version)."""
     if suffix == "svg":
         svg: str = vlc.vegalite_to_svg(resolved_spec)
         return svg.encode("utf-8")
@@ -118,8 +100,6 @@ def render_chart_bytes(resolved_spec: dict[str, Any], suffix: str) -> bytes:
             "byte-deterministic across processes, so a re-render never "
             "matches. Render the chart as png (LaTeX includes it directly)."
         )
-    # A verifier passes the sidecar's recorded format here, so an
-    # unexpected value must fail rather than silently render as PNG.
     raise ValueError(f"unsupported chart format {suffix!r} (expected 'svg' or 'png')")
 
 
@@ -128,60 +108,52 @@ def renderer_version() -> str:
     return f"vl-convert-python {version}"
 
 
-def write_chart_sidecar(chart_path: Path, spec: Any, suffix: str) -> Path:
-    sidecar_path = chart_path.with_name(chart_path.name + CHART_SPEC_SUFFIX)
-    sidecar_path.write_text(
-        json.dumps(
-            {"spec": spec, "format": suffix, "renderer": renderer_version()},
-            indent=2,
-            ensure_ascii=False,
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-    return sidecar_path
+def verify_charts(
+    record: PaperRecord, local_repo_path: str, metrics_data: dict[str, Any]
+) -> list[str]:
+    """Re-render every declared chart; reject undeclared chart files."""
+    from airas.usecases.publication.paper_values.record import active
 
-
-def verify_charts(local_repo_path: str, metrics_data: dict[str, Any]) -> list[str]:
-    """Re-render every registered chart and report what does not hold up.
-
-    Returned strings are mismatch descriptions (empty = all charts check
-    out). A chart file without a sidecar is unregistered — its data has
-    no declared source — and a sidecar whose re-render differs from the
-    committed bytes means the data, the spec, or the file was changed
-    after rendering.
-    """
     chart_dir = Path(local_repo_path).expanduser().resolve() / CHART_DIR
-    if not chart_dir.is_dir():
-        return []
+    declared = {c.path: c for c in active(record.prereg.charts, "path")}
+    renderers = {c.path: c.renderer for c in record.results.charts}
 
     problems: list[str] = []
-    # Recursive: the LaTeX export collects PDFs from any depth under
-    # .research/results/, so a chart hidden in a subdirectory must not
-    # escape the sidecar requirement.
-    for chart_path in sorted(chart_dir.rglob("*")):
+    if chart_dir.is_dir():
+        # Recursive: the LaTeX export collects figures from any depth under
+        # .research/results/, so a chart hidden in a subdirectory must not
+        # escape the declaration requirement.
+        for chart_path in sorted(chart_dir.rglob("*")):
+            if not chart_path.is_file():
+                continue
+            if chart_path.suffix.lower() not in CHART_SUFFIXES:
+                continue
+            relative = chart_path.relative_to(chart_dir).as_posix()
+            if relative not in declared:
+                problems.append(
+                    f"{CHART_DIR}/{relative} is not declared in record.json — "
+                    "its data has no declared source (render_chart declares "
+                    "and renders in one step)"
+                )
+
+    for relative, declaration in declared.items():
+        chart_path = chart_dir / relative
         if not chart_path.is_file():
-            continue
-        if chart_path.suffix.lower() not in CHART_SUFFIXES:
-            continue
-        relative = f"{CHART_DIR}/{chart_path.relative_to(chart_dir).as_posix()}"
-        sidecar_path = chart_path.with_name(chart_path.name + CHART_SPEC_SUFFIX)
-        if not sidecar_path.is_file():
             problems.append(
-                f"{relative}: no {CHART_SPEC_SUFFIX} sidecar — the chart is "
-                "not registered with render_chart, so its data has no "
-                "declared source"
+                f"{CHART_DIR}/{relative} is declared but missing "
+                "(render_chart writes it)"
             )
             continue
         try:
-            sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
-            resolved, _ = substitute_chart_refs(sidecar["spec"], metrics_data)
-            expected = render_chart_bytes(resolved, sidecar["format"])
+            resolved, _ = substitute_chart_refs(declaration.spec, metrics_data)
+            expected = render_chart_bytes(resolved, declaration.format)
         except Exception as e:
-            problems.append(f"{relative}: sidecar could not be re-rendered: {e}")
+            problems.append(
+                f"{CHART_DIR}/{relative}: spec could not be re-rendered: {e}"
+            )
             continue
         if chart_path.read_bytes() != expected:
-            recorded = sidecar.get("renderer", "unknown renderer")
+            recorded = renderers.get(relative, "unknown renderer")
             hint = (
                 ""
                 if recorded == renderer_version()
@@ -192,23 +164,20 @@ def verify_charts(local_repo_path: str, metrics_data: dict[str, Any]) -> list[st
                 )
             )
             problems.append(
-                f"{relative}: file differs from a re-render of its declared spec{hint}"
+                f"{CHART_DIR}/{relative}: file differs from a re-render of "
+                f"its declared spec{hint}"
             )
     return problems
 
 
-def chart_result_dirs(local_repo_path: str, metrics_data: dict[str, Any]) -> set[str]:
-    """Every results directory the registered charts draw data from."""
+def chart_result_dirs(record: PaperRecord, metrics_data: dict[str, Any]) -> set[str]:
     from airas.usecases.publication.paper_values.compute import match_run_id
+    from airas.usecases.publication.paper_values.record import active
 
-    chart_dir = Path(local_repo_path).expanduser().resolve() / CHART_DIR
-    if not chart_dir.is_dir():
-        return set()
     dirs: set[str] = set()
-    for sidecar_path in sorted(chart_dir.rglob(f"*{CHART_SPEC_SUFFIX}")):
+    for declaration in active(record.prereg.charts, "path"):
         try:
-            sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
-            _, refs = substitute_chart_refs(sidecar["spec"], metrics_data)
+            _, refs = substitute_chart_refs(declaration.spec, metrics_data)
         except Exception:
             continue  # verify_charts reports the breakage itself
         for ref in refs:
