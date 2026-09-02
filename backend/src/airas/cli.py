@@ -66,6 +66,7 @@ def _run_verify_paper(args: "argparse.Namespace") -> None:
             require_provenance=not (
                 args.no_provenance or args.allow_unavailable_provenance
             ),
+            require_history=not args.allow_unavailable_history,
         )
     )
 
@@ -76,6 +77,8 @@ def _run_verify_paper(args: "argparse.Namespace") -> None:
             print(f"  - {failure}")
         for claim in result["unverified"]:
             print(f"  ! \\unverified for human review: {claim}")
+        for claim_id in result["unverified_claims"]:
+            print(f"  ! unverified claim: {claim_id} (no verified run backs it yet)")
         if result["pdf"]:
             print(f"  pdf: {result['pdf']}")
     print(f"Full report: {args.output_dir}/{REPORT_FILENAME}")
@@ -147,7 +150,15 @@ def main() -> None:
     verify.add_argument(
         "--no-require-paper-values",
         action="store_true",
-        help="Allow a paper that does not use the declared-values system",
+        help="Allow a paper that does not use the canonical-record system",
+    )
+    verify.add_argument(
+        "--allow-unavailable-history",
+        action="store_true",
+        help=(
+            "Do not fail when record.json's append-only git history cannot "
+            "be checked (shallow clone); CI should not pass this"
+        ),
     )
 
     args = parser.parse_args()

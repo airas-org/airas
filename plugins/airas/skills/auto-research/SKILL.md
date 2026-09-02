@@ -59,13 +59,15 @@ These are the orchestrator's own rules; no step may relax them.
 - **Runs descend from the freeze commit.** Fixes are committed on top
   of it, never instead of it — no amending or rebasing away the
   prereg commit.
-- **Claims are append-only once evidence exists.** Before any
-  experiment has run, revising the hypothesis and re-preregistering
-  is fine — the freeze point moves with it. After runs exist, a claim
-  that fails is reported as a negative result, not deleted or
-  reworded into something the data supports; new findings enter as
-  new, explicitly exploratory claims (a fresh confirmation run can
-  promote them).
+- **The record is append-only from the moment it is committed.**
+  `.research/record.json` holds the declarations; committed entries
+  are never edited — revision is a superseding append
+  (`append_to_record` with `supersedes`), and the verifier walks the
+  git history to enforce it. A claim that fails is reported as a
+  negative result, not deleted or reworded into something the data
+  supports; new findings enter as new, explicitly exploratory claims
+  declared and committed *before* their confirmation run — a claim
+  only ever verifies against a run whose commit already contained it.
 - **No experimental number is ever typed.** Numbers reach the paper
   only through declared values and tables; anything else is
   `\unverified{...}` and said to the user.
@@ -73,10 +75,41 @@ These are the orchestrator's own rules; no step may relax them.
   must be committed, not held in conversation — a fresh session must
   be able to resume from the clone alone.
 
+## The integrity model — why the gate holds
+
+Two rules generate every check; reason from them when a situation the
+steps don't cover comes up.
+
+1. The agent authors only *declarations* (append-only, revision =
+   supersedes) and prose. Every number, result and verified flag in
+   record.json is machine-derived.
+2. Anything machine-derived must equal its re-derivation at
+   verification time. Nothing is trusted for *who* wrote or committed
+   it — content is judged, authorship is not.
+
+`verified` is therefore never set, only derived: the claim's runs have
+results ∧ each run's commit is an ancestor of HEAD ∧ that commit
+already contained the identical declarations. A hand-set flag simply
+differs from its re-derivation and fails.
+
+Trust domains: local runs of the checks (including the one inside
+`update_and_verify_record`) are fast feedback with **zero evidentiary
+value** — the local toolchain is in the agent's hands. The judgement
+is the CI run on the pushed history, anchored by two stores the agent
+cannot write: Seyval's run records (execution id, commit hash, output
+bytes) and git's content-addressed history. Consequences: rewriting a
+committed declaration turns the branch permanently red (the history
+walk sees every version); forged numbers, metrics or flags fail
+recomputation or the Seyval byte-comparison; rewriting history after
+a run detaches the run's commit from HEAD and voids the results
+themselves. Before any run exists, redoing the record is legitimate —
+nothing is anchored yet, so nothing can be hidden.
+
 ## Resuming mid-flow
 
-Read the clone to find where a repository stands: a preregistered
-main.tex with stub Results/Discussion and no
+Read the clone to find where a repository stands: a
+`.research/record.json` and preregistered main.tex with stub
+Results/Discussion and no
 `.research/results/` means `write-experiment-code` (or, with `src/`
 already written, `run-experiments`) is next; results with a
 provenance manifest but placeholder values means `analyze-results`

@@ -28,4 +28,6 @@ Needs a `research_study_list` (prior work to build on).
 
 **Output**: hypothesis + experimental design, written to
 `.research/research_history.json` in the experiment repository when one
-exists (state belongs in the clone, not the conversation).
+exists (state belongs in the clone, not the conversation). This is the
+working draft: `preregister-paper` freezes it into the canonical
+`.research/record.json`, after which revision is append-only.

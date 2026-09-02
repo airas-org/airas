@@ -5,25 +5,18 @@ import statistics
 from pathlib import Path
 from typing import Any
 
+from airas.core.research_paths import RESULTS_DIR
 from airas.core.types.paper_values import (
     ComputedValue,
-    PaperValues,
     ValueDeclaration,
 )
 
-RESULTS_DIR = ".research/results"
 METRICS_FILENAME = "metrics.json"
 COMPARISON_KEY = "comparison"
 COMPARISON_METRICS_FILENAME = "aggregated_metrics.json"
 
 
 def load_metrics_data(local_repo_path: str) -> dict[str, Any]:
-    """Read every run's metrics from a local clone's working tree.
-
-    Returns the same shape as ExperimentalResults.metrics_data: one entry
-    per run directory under .research/results/ that has a metrics.json,
-    plus 'comparison' for comparison/aggregated_metrics.json.
-    """
     root = Path(local_repo_path).expanduser().resolve()
     results_dir = root / ".research" / "results"
     if not results_dir.is_dir():
@@ -49,7 +42,6 @@ def load_metrics_data(local_repo_path: str) -> dict[str, Any]:
 
 
 def match_run_id(metrics_data: dict[str, Any], ref: str) -> str | None:
-    """The results-directory key a ref addresses (longest prefix match)."""
     return max(
         (k for k in metrics_data if ref == k or ref.startswith(k + ".")),
         key=len,
@@ -60,7 +52,6 @@ def match_run_id(metrics_data: dict[str, Any], ref: str) -> str | None:
 def used_result_dirs(
     declarations: list[ValueDeclaration], metrics_data: dict[str, Any]
 ) -> set[str]:
-    """Every results directory the declarations draw values from."""
     dirs: set[str] = set()
     for declaration in declarations:
         for ref in declaration.refs:
@@ -71,7 +62,6 @@ def used_result_dirs(
 
 
 def resolve_ref(metrics_data: dict[str, Any], ref: str) -> float:
-    """Resolve 'run_id.path.to.metric' to a number in the metrics data."""
     run_id = match_run_id(metrics_data, ref)
     if run_id is None:
         available = ", ".join(sorted(metrics_data))
@@ -127,7 +117,7 @@ def format_display(value: float, round_digits: int | None) -> str:
 
 def compute_paper_values(
     declarations: list[ValueDeclaration], metrics_data: dict[str, Any]
-) -> PaperValues:
+) -> list[ComputedValue]:
     seen: set[str] = set()
     computed: list[ComputedValue] = []
 
@@ -144,4 +134,4 @@ def compute_paper_values(
                 display=format_display(value, declaration.round),
             )
         )
-    return PaperValues(values=computed)
+    return computed

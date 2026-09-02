@@ -36,9 +36,10 @@ Needs imported results under `.research/results/` in a clone.
    `.research/results/chart/<name>.png` — PNG, not PDF. Data numbers
    must be metric references (`"metric:run_1.accuracy"`), never
    literals: the tool resolves them from `.research/results/` itself,
-   so a plotted point cannot be invented. Commit the chart **and** its
-   `.chartspec.json` sidecar; verification re-renders every chart from
-   its sidecar and fails on differences or missing sidecars.
+   so a plotted point cannot be invented. The tool appends the chart's
+   spec to `.research/record.json` as its declaration and commits both
+   in the same step — verification re-renders every chart from its
+   declared spec and fails on differences or undeclared chart files.
 5. **Method diagrams**: write text notation (mermaid / graphviz / d2)
    and `render_diagram` to `.research/results/diagram/<name>.pdf`.
 6. Commit and push. Reference figures in LaTeX as `images/<path>` with

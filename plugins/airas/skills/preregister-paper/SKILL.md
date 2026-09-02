@@ -33,17 +33,18 @@ changes *when* the paper is written and how Results are stated.
 
 ## Steps
 
-1. **Pick value keys now.** For every experimental number the paper
-   will state, decide its key and derivation up front, e.g.
-   `improvement_pct = pct_improve(proposed.accuracy, baseline.accuracy)`.
-   Refs address the planned run ids — the same ids the experiment code
-   will be held to. Record the full list in a comment block at the top
-   of main.tex:
-
-   ```latex
-   % airas prereg declarations (compute_paper_values will realize these):
-   %   improvement_pct = pct_improve(proposed.accuracy, baseline.accuracy) round 1
-   ```
+1. **Create the canonical record with `preregister_record`.** This
+   writes `.research/record.json` — the machine-readable original the
+   whole verification system keys on. Pass the hypothesis and design
+   prose, every planned run (`runs`; results for an undeclared run_id
+   fail verification later), the numbered claims (`claims`: id `c1`...,
+   statement, prose criterion, predicted interval, the run_ids that
+   test it), and for every experimental number the paper will state its
+   value declaration up front, e.g.
+   `{"key": "improvement_pct", "op": "pct_improve", "refs":
+   ["proposed.accuracy", "baseline.accuracy"], "round": 1}` — refs
+   address the planned run ids, the same ids the experiment code will
+   be held to. Table specs can be declared here too.
 
 2. **Write `.research/latex/{template}/main.tex` in two parts.**
    The *frozen part* — title, abstract, introduction, related work,
@@ -55,7 +56,9 @@ changes *when* the paper is written and how Results are stated.
    find.
 
    The **hypothesis and predictions section is a numbered list of
-   claims** (C1, C2, ...). Each claim is one assertive sentence plus,
+   claims** (C1, C2, ... — the same ids as in record.json, which is the
+   canonical form; the paper prose is its human rendering). Each claim
+   is one assertive sentence plus,
    in prose: the criterion (the threshold on a declared value key that
    counts as support — below it the claim is refuted) and the
    **predicted interval** — a range, never a point ("we predict an
@@ -68,7 +71,7 @@ changes *when* the paper is written and how Results are stated.
    never a literal, not even an expected one presented as measured.
 
 3. **Make it compile without values.tex.** The tool-generated
-   `values.tex` cannot exist yet (compute_paper_values needs run
+   `values.tex` cannot exist yet (update_and_verify_record needs run
    metrics), so the preamble must provide the same fallback it would:
 
    ```latex
@@ -82,7 +85,7 @@ changes *when* the paper is written and how Results are stated.
    macro body with `#1` inside another macro's argument does not
    compile.)
 
-   Once experiments run and `compute_paper_values` writes `values.tex`,
+   Once experiments run and `update_and_verify_record` writes `values.tex`,
    the same main.tex picks up the real numbers with no edit.
 
 4. **Compile until green — this is a freeze condition, not a
@@ -90,28 +93,34 @@ changes *when* the paper is written and how Results are stated.
    until `ok`; any `\airasval` rendering as `??airasval:key??` is the
    correct prereg state, not an error. A paper that does not
    compile must not be frozen: post-experiment "fixes to make it
-   compile" open an editing channel where narrative changes can hide,
-   and the compiled prereg PDF is what a human reviews at freeze time
-   (are the criteria reasonable? are the intervals narrow enough to
-   miss? are the claims falsifiable?). Keep
-   the PDF — it is the preregistration record a reader compares the
-   final paper against.
+   compile" open an editing channel where narrative changes can hide.
+   The local build is only the fast feedback loop — the local
+   toolchain is in the agent's hands, so its PDF proves nothing. The
+   **official prereg PDF is the CI artifact**: the freeze push triggers
+   `verify_paper.yml`, which re-verifies the record and rebuilds where
+   the agent cannot interfere, and that artifact is what a human
+   reviews at freeze time (are the criteria reasonable? are the
+   intervals narrow enough to miss? are the claims falsifiable?) and
+   what a reader compares the final paper against.
 
-5. **Commit and push.** This is the freeze point. Say so in the commit
-   message (e.g. `prereg: declare paper before experiments`). Tell the
-   user the commit sha — later verification argues from runs being
+5. **Commit main.tex and push.** `preregister_record` already committed
+   record.json and returned the `freeze_commit` sha — that commit is the
+   freeze point. Commit the prereg main.tex on top, push, and tell the
+   user the freeze sha — later verification argues from runs being
    descendants of it.
 
-   The freeze binds declarations to *results*, not to the calendar:
-   **until an experiment has run, revising the hypothesis and
-   re-preregistering is legitimate science, not a violation** — run
-   this skill again and the freeze point simply moves (the old
-   version stays in history for transparency). What the freeze
-   forbids is only claiming a run as support for a declaration that
-   did not yet exist when that run executed. Once results exist, the
-   legitimate diff to main.tex is what the results force (values
-   realized, negative results discussed) — a compiling freeze keeps
-   that diff small enough to review.
+   **Once committed, the record's declarations are immutable**: the
+   verifier walks record.json's git history and any edit to an existing
+   entry (or to the hypothesis/design prose) fails verification. The
+   legitimate revision path is `append_to_record` — append a new entry
+   whose `supersedes` names the old id; the old entry stays in the
+   file, visibly, and is no longer realized. A claim becomes
+   **verified** only when its runs executed a commit that already
+   contained the identical claim, so a declaration added after the run
+   stays unverified forever — that is the whole point. Once results
+   exist, the legitimate diff to main.tex is what the results force
+   (values realized, negative results discussed) — a compiling freeze
+   keeps that diff small enough to review.
 
 ## After the experiments
 
@@ -122,9 +131,11 @@ Do not edit the claims to fit the results. The honest paths are:
 - A criterion that fails is a **negative result**: keep the claim,
   report that it did not hold, and discuss why. A value that meets the
   criterion but misses the interval is reported as such, not hidden.
-- A new finding is a **new claim**, added after the fact and presented
-  as exploratory unless a fresh confirmation run (dispatched after the
-  addition) supports it.
-- Realize the declarations from step 1 verbatim with
-  `compute_paper_values`; if you need a number you did not declare,
-  extend the declarations — never type it.
+- A new finding is a **new claim**, appended via `append_to_record` and
+  presented as exploratory unless a fresh confirmation run (dispatched
+  after the append is committed) supports it — only then can its
+  verified flag ever go true.
+- Realize the record's declarations with `update_and_verify_record` (it
+  reads record.json itself and verifies what it wrote in the same
+  step); if you need a number you did not declare, append the
+  declaration with `append_to_record` — never type it.

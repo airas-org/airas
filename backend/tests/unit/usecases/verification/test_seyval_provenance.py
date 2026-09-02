@@ -7,7 +7,7 @@ from airas.core.types.run_provenance import PROVENANCE_MANIFEST_PATH
 from airas.infra.seyval_client import SeyvalClient
 from airas.usecases.publication.paper_values.verify import (
     apply_provenance_result,
-    verify_paper_values,
+    verify_paper_record,
 )
 from airas.usecases.verification.seyval_provenance import SeyvalProvenanceVerifier
 
@@ -101,6 +101,33 @@ async def test_verified_when_declared_run_backs_the_bytes(tmp_path: Path) -> Non
     assert result.checks[0].run_id == DECLARED_RUN
     assert result.checks[0].commit_in_history is True
     assert result.checks[0].sibling_run_ids == []
+
+
+async def test_mismatch_when_manifest_commit_disagrees_with_seyval(
+    tmp_path: Path,
+) -> None:
+    # A manifest pointing at a later commit could make a post-hoc claim look
+    # declared-before-run; the cross-check against Seyval's record kills it.
+    _, metrics_bytes, commit_hash = _make_repo(tmp_path, declared_run=None)
+    (tmp_path / PROVENANCE_MANIFEST_PATH).write_text(
+        json.dumps(
+            {
+                "dirs": {
+                    "run-1": {
+                        "execution_id": DECLARED_RUN,
+                        "commit_hash": "beefbeef" * 5,
+                    }
+                }
+            }
+        )
+    )
+    fake = FakeSeyvalClient(
+        runs=[_completed(DECLARED_RUN, commit_hash)],
+        stored={DECLARED_RUN: metrics_bytes},
+    )
+    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    assert result.status == "mismatch"
+    assert any("Seyval recorded" in c.detail for c in result.checks)
 
 
 async def test_mismatch_when_local_metrics_tampered(tmp_path: Path) -> None:
@@ -228,7 +255,7 @@ async def test_mismatch_fails_verification_report(tmp_path: Path) -> None:
     )
     provenance = await _verifier(fake).verify(str(tmp_path), {"run-1"})
 
-    report = verify_paper_values(str(tmp_path), "mdpi")  # missing files anyway
+    report = verify_paper_record(str(tmp_path), "mdpi")  # missing files anyway
     report.ok = True  # isolate the provenance effect
     report = apply_provenance_result(report, provenance)
     assert report.ok is False
@@ -237,7 +264,7 @@ async def test_mismatch_fails_verification_report(tmp_path: Path) -> None:
 
 
 def test_git_url_normalization_covers_common_origin_forms() -> None:
-    from airas.usecases.verification.seyval_provenance import _normalize_git_url
+    from airas.infra.local_git import normalize_git_url as _normalize_git_url
 
     expected = "https://github.com/test-org/test-repo"
     assert _normalize_git_url("https://github.com/Test-Org/Test-Repo.git") == expected
