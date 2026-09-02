@@ -2182,14 +2182,18 @@ async def update_and_verify_record(
                     render_table_tex(spec, metrics_data), encoding="utf-8"
                 )
                 tables[spec.key] = str(table_path)
+        commit_targets = [
+            RECORD_PATH,
+            f".research/latex/{latex_template_name}/{VALUES_TEX_FILENAME}",
+        ]
+        # tables/ exists only once a table has been declared, and git add is
+        # fatal on a pathspec that matches nothing.
+        if tables:
+            commit_targets.append(
+                f".research/latex/{latex_template_name}/{TABLES_DIR_NAME}"
+            )
         commit = _commit_record_paths(
-            local_path,
-            [
-                RECORD_PATH,
-                f".research/latex/{latex_template_name}/{VALUES_TEX_FILENAME}",
-                f".research/latex/{latex_template_name}/{TABLES_DIR_NAME}",
-            ],
-            "record: realize results and verify",
+            local_path, commit_targets, "record: realize results and verify"
         )
         return {
             "values": {v.key: v.display for v in computed},

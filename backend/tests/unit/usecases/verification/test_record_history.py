@@ -98,6 +98,11 @@ def test_commit_paths_commits_only_the_given_paths(tmp_path: Path) -> None:
     assert commit_paths(tmp_path, [RECORD_PATH], "noop") == sha
     # Not a git repo: degrades to None.
     assert commit_paths(tmp_path / "nowhere", [RECORD_PATH], "x") is None
+    # A pathspec matching nothing is fatal to git add, so callers must only
+    # pass paths they actually wrote.
+    (tmp_path / "touched.txt").write_text("changed")
+    assert commit_paths(tmp_path, ["touched.txt", "never/written"], "x") is None
+    assert "touched.txt" in _git(tmp_path, "status", "--porcelain")
 
 
 def test_claim_declared_before_run_is_verified(tmp_path: Path) -> None:
