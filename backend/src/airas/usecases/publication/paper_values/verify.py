@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import math
 import re
+from math import isclose
 from pathlib import Path
 from typing import Any, Literal
 
@@ -9,22 +9,22 @@ from pydantic import ValidationError
 
 from airas.core.research_paths import RECORD_FILENAME, RECORD_PATH
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
-from airas.core.types.paper_record import PaperRecord
 from airas.core.types.paper_values import (
     ClaimStatus,
-    ComputedValue,
     PaperValuesVerificationReport,
     ProvenanceCheckResult,
     TableSpec,
 )
+from airas.core.types.research_record import ResearchRecord
 from airas.usecases.publication.paper_values.charts import (
     chart_result_dirs,
     verify_charts,
 )
 from airas.usecases.publication.paper_values.compute import (
     COMPARISON_KEY,
-    compute_paper_values,
+    compute_claim_values,
     load_metrics_data,
+    resolve_paper_values,
     used_result_dirs,
 )
 from airas.usecases.publication.paper_values.latex import (
@@ -33,9 +33,12 @@ from airas.usecases.publication.paper_values.latex import (
 )
 from airas.usecases.publication.paper_values.record import (
     active,
-    collect_run_results,
     load_record,
-    prereg_consistency_problems,
+    orphan_runs,
+    override_problems,
+    record_consistency_problems,
+    ref_run_id,
+    run_index,
 )
 from airas.usecases.publication.paper_values.tables import (
     TABLES_DIR_NAME,
@@ -98,9 +101,7 @@ def _verify_tables(
         relpath = table_tex_relpath(spec.key)
         table_path = latex_dir / relpath
         if not table_path.is_file():
-            problems.append(
-                f"{relpath} is missing (update_and_verify_record writes it)"
-            )
+            problems.append(f"{relpath} is missing (update_record writes it)")
             continue
         try:
             expected = render_table_tex(spec, metrics_data)
@@ -117,31 +118,38 @@ def _verify_tables(
                 problems.append(
                     f"{TABLES_DIR_NAME}/{relative} is not declared in "
                     f"{RECORD_FILENAME} — table files here must come from "
-                    "update_and_verify_record"
+                    "update_record"
                 )
     return problems
 
 
-def _compare_values(
-    stored: list[ComputedValue], recomputed: list[ComputedValue]
+def claim_evaluation_drift(
+    record: ResearchRecord, claims: list[ClaimStatus]
 ) -> list[str]:
-    if [v.key for v in stored] != [v.key for v in recomputed]:
-        return [
-            "realized values do not cover the active declarations "
-            "(run update_and_verify_record again)"
-        ]
-    mismatches = []
-    for old, new in zip(stored, recomputed, strict=True):
-        if not math.isclose(old.value, new.value, rel_tol=1e-9, abs_tol=1e-12):
-            mismatches.append(
-                f"{old.key}: stored {old.value} != recomputed {new.value}"
-            )
-        elif old.display != new.display:
-            mismatches.append(
-                f"{old.key}: stored display '{old.display}' != "
-                f"recomputed '{new.display}'"
-            )
-    return mismatches
+    """Claim ids whose stored evaluation disagrees with the recomputation.
+
+    The value is compared, not only the two verdicts: a metric can be edited
+    in a way that moves the number the paper prints while leaving the
+    criterion satisfied and the order proof intact, and comparing verdicts
+    alone would call that record consistent.
+    """
+    stored = {
+        c.id: c.evaluations[-1]
+        for c in active(record.hypothesis.claims, "id")
+        if c.evaluations
+    }
+    return [
+        s.id
+        for s in claims
+        if s.id not in stored
+        or stored[s.id].verified != s.verified
+        or stored[s.id].criterion_met != s.criterion_met
+        or stored[s.id].display != (s.display or "")
+        or (
+            s.value is not None
+            and not isclose(stored[s.id].value, s.value, rel_tol=1e-9)
+        )
+    ]
 
 
 def verify_paper_record(
@@ -161,11 +169,11 @@ def verify_paper_record(
             main_tex_path.read_text(encoding="utf-8")
         )
 
-    record: PaperRecord | None = None
+    record: ResearchRecord | None = None
     mismatches: list[str] = []
     if record_file.is_file():
         try:
-            record = PaperRecord.model_validate_json(
+            record = ResearchRecord.model_validate_json(
                 record_file.read_text(encoding="utf-8")
             )
         except ValidationError as e:
@@ -192,8 +200,13 @@ def verify_paper_record(
     claim_status_match = True
     undeclared_result_dirs: list[str] = []
 
+    orphans: list[str] = []
+    refuted: list[str] = []
+
     if record is not None:
-        mismatches.extend(prereg_consistency_problems(record.prereg))
+        mismatches.extend(record_consistency_problems(record))
+        mismatches.extend(override_problems(record))
+        orphans = orphan_runs(record)
         append_only, append_only_problems, record_commits = record_append_only_status(
             root, record
         )
@@ -204,13 +217,13 @@ def verify_paper_record(
             # numbers in the PDF.
             values_match = True
             values_tex_match = True
-            if (
-                record.results.values
-                or record.results.claim_status
-                or record.results.runs
-            ):
+            realized = [c.id for c in record.hypothesis.claims if c.evaluations] + [
+                run.run_id for run in run_index(record).values() if run.executions
+            ]
+            if realized:
                 mismatches.append(
-                    "record.json holds realized results but no run outputs exist"
+                    "record.json holds realized results but no run outputs "
+                    f"exist ({', '.join(sorted(set(realized)))})"
                 )
             if values_tex_path.is_file():
                 mismatches.append(
@@ -221,21 +234,24 @@ def verify_paper_record(
             claims = compute_claim_status(root, record, None, set())
         else:
             assert metrics_data is not None
-            active_values = active(record.prereg.values, "key")
-            defined = {v.key for v in active_values}
-            undefined_keys = [k for k in used_keys if k not in defined]
             try:
-                recomputed = compute_paper_values(active_values, metrics_data)
+                claim_values = compute_claim_values(record, metrics_data)
             except ValueError as e:
                 mismatches.append(str(e))
+                claim_values = {}
             else:
-                value_mismatches = _compare_values(record.results.values, recomputed)
-                mismatches.extend(value_mismatches)
-                values_match = not value_mismatches
+                paper_values, undefined_keys = resolve_paper_values(
+                    record, metrics_data, used_keys
+                )
+                values_match = True
                 if values_tex_path.is_file():
                     values_tex_match = values_tex_path.read_text(
                         encoding="utf-8"
-                    ) == render_values_tex(recomputed, record.results.link_base)
+                    ) == render_values_tex(
+                        paper_values,
+                        record.link_base,
+                        record_commits[-1] if record_commits else None,
+                    )
                     if not values_tex_match:
                         mismatches.append(
                             f"{VALUES_TEX_FILENAME} differs from its "
@@ -243,34 +259,30 @@ def verify_paper_record(
                         )
                 mismatches.extend(
                     _verify_tables(
-                        latex_dir, active(record.prereg.tables, "key"), metrics_data
+                        latex_dir, active(record.tables, "key"), metrics_data
                     )
                 )
                 mismatches.extend(verify_charts(record, str(root), metrics_data))
 
-            declared_runs = {r.run_id for r in record.prereg.runs}
+            declared_runs = set(run_index(record))
             undeclared_result_dirs = sorted(
                 d
                 for d in metrics_data
                 if d != COMPARISON_KEY and d not in declared_runs
             )
             manifest = load_provenance_manifest(root)
-            expected_runs = collect_run_results(metrics_data, manifest)
-            if [r.model_dump() for r in record.results.runs] != [
-                r.model_dump() for r in expected_runs
-            ]:
+            claims = compute_claim_status(
+                root, record, manifest, set(metrics_data), claim_values
+            )
+
+            drifted = claim_evaluation_drift(record, claims)
+            claim_status_match = not drifted
+            if drifted:
                 mismatches.append(
-                    "embedded run results differ from .research/results/ "
-                    "(run update_and_verify_record again)"
+                    "stored claim evaluations differ from their recomputation "
+                    f"({', '.join(drifted)}) — run update_record again"
                 )
-            claims = compute_claim_status(root, record, manifest, set(metrics_data))
-            stored_flags = {s.id: s.verified for s in record.results.claim_status}
-            claim_status_match = stored_flags == {s.id: s.verified for s in claims}
-            if not claim_status_match:
-                mismatches.append(
-                    "stored claim verification flags differ from their "
-                    "recomputation (run update_and_verify_record again)"
-                )
+            refuted = [s.id for s in claims if s.criterion_met is False]
 
     return PaperValuesVerificationReport(
         ok=(
@@ -295,6 +307,8 @@ def verify_paper_record(
         claims=claims,
         claim_status_match=claim_status_match,
         undeclared_result_dirs=undeclared_result_dirs,
+        refuted_claims=refuted,
+        orphan_runs=orphans,
         unverified_claims=[s.id for s in claims if not s.verified],
         unverified=unverified,
     )
@@ -308,14 +322,14 @@ def referenced_result_dirs(local_repo_path: str) -> set[str]:
     except (ValidationError, ValueError):
         return set()
 
-    dirs = used_result_dirs(active(record.prereg.values, "key"), metrics_data)
-    dirs |= table_result_dirs(active(record.prereg.tables, "key"), metrics_data)
+    dirs = used_result_dirs(record, metrics_data)
+    dirs |= table_result_dirs(active(record.tables, "key"), metrics_data)
     dirs |= chart_result_dirs(record, metrics_data)
     dirs |= {
         run_id
-        for claim in active(record.prereg.claims, "id")
-        for run_id in claim.run_ids
-        if run_id in metrics_data
+        for claim in active(record.hypothesis.claims, "id")
+        for ref in claim.target.refs
+        if (run_id := ref_run_id(ref)) in metrics_data
     }
     return dirs
 

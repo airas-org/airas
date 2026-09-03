@@ -22,7 +22,7 @@ Run these skills in order:
   metrics settled; research context committed
 - `preregister-paper` — the full paper written and committed **before
   any experiment**; this commit is the freeze point
-- `write-experiment-code` — code to the AGENTS.md and airas-eval
+- `write-experiment-code` — code to the execution and airas-eval
   contracts, environment fixed by lockfile + Dockerfile
 - `run-experiments` — execute on the platform, bring results back
   with provenance
@@ -59,18 +59,27 @@ These are the orchestrator's own rules; no step may relax them.
 - **Runs descend from the freeze commit.** Fixes are committed on top
   of it, never instead of it — no amending or rebasing away the
   prereg commit.
-- **The record is append-only from the moment it is committed.**
-  `.research/record.json` holds the declarations; committed entries
-  are never edited — revision is a superseding append
-  (`append_to_record` with `supersedes`), and the verifier walks the
-  git history to enforce it. A claim that fails is reported as a
-  negative result, not deleted or reworded into something the data
-  supports; new findings enter as new, explicitly exploratory claims
-  declared and committed *before* their confirmation run — a claim
-  only ever verifies against a run whose commit already contained it.
+- **The record only ever grows.** `.research/record.json` holds the
+  hypothesis, its designs, their runs and the claims. Every committed
+  revision must *contain* the one before it whole, so a reworded claim,
+  a loosened criterion, a reordered list and a dropped execution all
+  fail the same check. Revision is an append with the **same id** (the
+  later entry is the live one, the earlier stays readable); retirement
+  is an append with `"withdrawn": true`. Re-running an experiment
+  appends an execution rather than replacing one, so "we ran it three
+  times" stays in the record and which execution the paper reports is
+  itself recorded. A claim that fails is reported as a negative result,
+  not deleted or reworded into something the data supports; new
+  findings enter as new, explicitly exploratory claims declared and
+  committed *before* their confirmation run — a claim only ever
+  verifies against a run whose commit already contained it.
 - **No experimental number is ever typed.** Numbers reach the paper
-  only through declared values and tables; anything else is
-  `\unverified{...}` and said to the user.
+  only as `\airasval{...}` — a claim's target, a run's metric, or a
+  parameter the run actually executed with — and through declared
+  tables and charts; anything else is `\unverified{...}` and said to
+  the user. This covers the experimental setup too, not just results:
+  a stated batch size the run never used is the same defect as a
+  fabricated accuracy.
 - **State handoff is the repository.** Everything a later step needs
   must be committed, not held in conversation — a fresh session must
   be able to resume from the clone alone.
@@ -80,9 +89,9 @@ These are the orchestrator's own rules; no step may relax them.
 Two rules generate every check; reason from them when a situation the
 steps don't cover comes up.
 
-1. The agent authors only *declarations* (append-only, revision =
-   supersedes) and prose. Every number, result and verified flag in
-   record.json is machine-derived.
+1. The agent authors only *declarations* (append-only, revision = a
+   later entry with the same id) and prose. Every number, result and
+   verified flag in record.json is machine-derived.
 2. Anything machine-derived must equal its re-derivation at
    verification time. Nothing is trusted for *who* wrote or committed
    it — content is judged, authorship is not.
@@ -92,17 +101,35 @@ results ∧ each run's commit is an ancestor of HEAD ∧ that commit
 already contained the identical declarations. A hand-set flag simply
 differs from its re-derivation and fails.
 
-Trust domains: local runs of the checks (including the one inside
-`update_and_verify_record`) are fast feedback with **zero evidentiary
-value** — the local toolchain is in the agent's hands. The judgement
-is the CI run on the pushed history, anchored by two stores the agent
-cannot write: Seyval's run records (execution id, commit hash, output
-bytes) and git's content-addressed history. Consequences: rewriting a
-committed declaration turns the branch permanently red (the history
-walk sees every version); forged numbers, metrics or flags fail
-recomputation or the Seyval byte-comparison; rewriting history after
-a run detaches the run's commit from HEAD and voids the results
-themselves. Before any run exists, redoing the record is legitimate —
+**`verified` is not `criterion_met`.** The first says the claim was
+properly preregistered and tested; the second says the measured value
+fell inside the frozen criterion. They are recorded separately because
+a refuted claim is verified and unmet — that is a result, not a
+failure of the record. Reading a column of `verified: true` as "the
+hypothesis held" is the misreading the second field exists to
+prevent.
+
+Trust domains: local runs of the checks have **zero evidentiary
+value** — the local toolchain is in the agent's hands, and whatever a
+local check reports the agent can push anyway, so it is advice and not
+a gate. `update_record` therefore writes and commits without judging.
+The judgement is the CI run on the pushed history, anchored by two
+stores the agent cannot write: Seyval's run records (execution id,
+commit hash, output bytes) and git's content-addressed history. What
+makes that judgement binding rather than informative is branch
+protection, set up by `prepare_repository`: the record gate is a
+required check on the protected branch, enforced on admins too, so a
+commit whose check is red cannot land at all. Work is pushed to a
+staging ref for the gate to run on, then fast-forwarded onto the
+protected branch, which lands the exact sha CI judged.
+
+Consequences: rewriting a committed declaration turns the branch
+permanently red (the history walk sees every version); forged numbers,
+metrics or flags fail recomputation or the Seyval byte-comparison;
+rewriting history after a run detaches the run's commit from HEAD and
+voids the results themselves — which is why force pushes, deletions
+and squash/rebase merges are all disabled rather than merely
+discouraged. Before any run exists, redoing the record is legitimate —
 nothing is anchored yet, so nothing can be hidden.
 
 ## Resuming mid-flow

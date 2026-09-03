@@ -10,17 +10,18 @@ from typing import Any
 
 import pytest
 
-from airas.core.types.paper_record import (
-    ChartDeclaration,
-    PaperRecord,
-    PreregSection,
-    RenderedChart,
-    RunDeclaration,
-)
 from airas.core.types.paper_values import (
     TableColumnSpec,
     TableRowSpec,
     TableSpec,
+)
+from airas.core.types.research_record import (
+    ChartDeclaration,
+    DesignDeclaration,
+    Hypothesis,
+    RenderedChart,
+    ResearchRecord,
+    RunDeclaration,
 )
 from airas.usecases.publication.paper_values.charts import (
     CHART_DIR,
@@ -160,18 +161,27 @@ CHART_SPEC: dict[str, Any] = {
 }
 
 
-def _chart_record(*charts: ChartDeclaration) -> PaperRecord:
-    record = PaperRecord(
-        prereg=PreregSection(
-            hypothesis="h",
-            design="d",
-            runs=[RunDeclaration(run_id="run_1"), RunDeclaration(run_id="run_2")],
-            charts=list(charts),
-        )
+def _chart_record(*charts: ChartDeclaration) -> ResearchRecord:
+    record = ResearchRecord(
+        hypothesis=Hypothesis(
+            statement="h",
+            designs=[
+                DesignDeclaration(
+                    id="d1",
+                    summary="d",
+                    runs=[
+                        RunDeclaration(run_id="run_1"),
+                        RunDeclaration(run_id="run_2"),
+                    ],
+                )
+            ],
+        ),
+        charts=list(charts),
     )
-    record.results.charts = [
-        RenderedChart(path=c.path, renderer=renderer_version()) for c in charts
-    ]
+    # A render is appended to the declaration it belongs to, so the renderer
+    # that produced a chart stays attached to that chart.
+    for chart in record.charts:
+        chart.renders.append(RenderedChart(renderer=renderer_version()))
     return record
 
 
@@ -207,7 +217,7 @@ def test_chart_sizes_outside_data_are_allowed() -> None:
 
 def _write_chart(
     root: Path, relative: str = "accuracy.svg"
-) -> tuple[Path, PaperRecord]:
+) -> tuple[Path, ResearchRecord]:
     chart_path = root / CHART_DIR / relative
     chart_path.parent.mkdir(parents=True, exist_ok=True)
     resolved, _ = substitute_chart_refs(CHART_SPEC, METRICS_DATA)
@@ -243,7 +253,7 @@ def test_verify_charts_detects_redirected_declaration(tmp_path: Path) -> None:
             ]
         },
     }
-    record.prereg.charts[0].spec = tampered_spec
+    record.charts[0].spec = tampered_spec
     assert verify_charts(record, str(tmp_path), METRICS_DATA) != []
 
 

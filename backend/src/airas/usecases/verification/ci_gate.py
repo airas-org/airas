@@ -17,6 +17,7 @@ from airas.usecases.publication.open_in_overleaf_subgraph.nodes.collect_latex_pr
 )
 from airas.usecases.publication.paper_values.verify import merge_paper_values_report
 from airas.usecases.verification.paper_verification import paper_values_full_report
+from airas.usecases.verification.record_gate import record_full_report
 
 logger = logging.getLogger(__name__)
 
@@ -179,6 +180,61 @@ async def run_paper_gate(
 
     summary = {"ok": all(r["ok"] for r in results), "templates": results}
     (out / REPORT_FILENAME).write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False, default=str) + "\n",
+        encoding="utf-8",
+    )
+    return summary
+
+
+RECORD_REPORT_FILENAME = "record-verification-report.json"
+
+
+async def run_record_gate(
+    local_repo_path: str,
+    output_dir: str,
+    check_provenance: bool = True,
+    require_provenance: bool = True,
+    require_history: bool = True,
+    seyval_client_factory: Callable[[], SeyvalClient] = _default_seyval_client,
+) -> dict[str, Any]:
+    """The check that guards the protected branch.
+
+    Everything the paper gate does except the parts that need a paper, so it
+    can be required on every commit — including the ones that build the
+    experiment code and import run outputs, which is exactly the window in
+    which an unguarded branch would matter most.
+
+    A repository with no record.json passes: there is nothing to
+    contradict yet. `require_provenance` still applies once runs exist, so
+    the pass does not quietly widen into "results without provenance are
+    fine".
+    """
+    out = Path(output_dir).expanduser().resolve()
+    out.mkdir(parents=True, exist_ok=True)
+
+    report = await record_full_report(
+        local_repo_path, check_provenance, seyval_client_factory
+    )
+    merged = merge_paper_values_report({"ok": report.ok}, report)
+    failures = gate_failures(
+        merged,
+        require_paper_values=False,
+        # Turning the check off is a decision not to require it. Letting the
+        # two disagree only produces "the provenance check did not run" on a
+        # run that was told not to run it.
+        require_provenance=require_provenance and check_provenance,
+        require_history=require_history,
+    )
+    summary = {
+        "ok": not failures,
+        "failures": failures,
+        "stage": report.stage,
+        "unverified_claims": report.unverified_claims,
+        "refuted_claims": report.refuted_claims,
+        "orphan_runs": report.orphan_runs,
+        "report": merged,
+    }
+    (out / RECORD_REPORT_FILENAME).write_text(
         json.dumps(summary, indent=2, ensure_ascii=False, default=str) + "\n",
         encoding="utf-8",
     )

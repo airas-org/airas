@@ -1075,6 +1075,94 @@ class GithubClient(BaseHTTPClient):
                 self._raise_for_status(response, path)
                 return False
 
+    async def aupdate_branch_protection(
+        self,
+        github_owner: str,
+        repository_name: str,
+        branch_name: str,
+        required_check_names: list[str],
+        enforce_admins: bool = True,
+    ) -> bool:
+        # https://docs.github.com/en/rest/branches/branch-protection#update-branch-protection
+        # Every top-level key is required by the endpoint even when null.
+        path = (
+            f"/repos/{github_owner}/{repository_name}/branches/{branch_name}/protection"
+        )
+        payload: dict[str, Any] = {
+            # strict: the branch must be current with the base before it can
+            # land, so the checks that passed were run against this tree and
+            # not an older one.
+            "required_status_checks": {
+                "strict": True,
+                "contexts": required_check_names,
+            },
+            # Without this the person who set the rule is exactly the person
+            # it does not apply to, which is the opposite of a guarantee.
+            "enforce_admins": enforce_admins,
+            # Not required: a green check on the commit is the gate, and a
+            # review requirement would only add a human step that answers a
+            # different question.
+            "required_pull_request_reviews": None,
+            "restrictions": None,
+            # The record's evidence is its git history. A force push or a
+            # branch deletion rewrites or discards exactly that.
+            "allow_force_pushes": False,
+            "allow_deletions": False,
+        }
+
+        response = await self.aput(path=path, json=payload)
+        match response.status_code:
+            case 200:
+                logger.info(f"Branch protection updated (200): {branch_name}")
+                return True
+            case 403:
+                logger.error(f"Admin rights are required to protect (403): {path}")
+                raise GithubClientFatalError(
+                    "branch protection requires admin rights on the repository "
+                    f"(403): {path}"
+                )
+            case 404:
+                logger.error(f"Repository or branch not found (404): {path}")
+                raise GithubClientFatalError(f"Not found (404): {path}")
+            case _:
+                self._raise_for_status(response, path)
+                return False
+
+    async def aupdate_repository_merge_settings(
+        self,
+        github_owner: str,
+        repository_name: str,
+        allow_merge_commit: bool = True,
+        allow_squash_merge: bool = False,
+        allow_rebase_merge: bool = False,
+    ) -> bool:
+        # https://docs.github.com/en/rest/repos/repos#update-a-repository
+        # Squash and rebase rewrite commits, which detaches every recorded
+        # run from the branch: verification asks whether the run's commit is
+        # an ancestor of HEAD, and after a rewrite it is not. A merge commit
+        # keeps the original commits in the ancestry, so it is the only
+        # merge method the record survives.
+        path = f"/repos/{github_owner}/{repository_name}"
+        payload = {
+            "allow_merge_commit": allow_merge_commit,
+            "allow_squash_merge": allow_squash_merge,
+            "allow_rebase_merge": allow_rebase_merge,
+        }
+
+        response = await self.apatch(path=path, json=payload)
+        match response.status_code:
+            case 200:
+                logger.info("Repository merge settings updated (200).")
+                return True
+            case 403:
+                logger.error(f"Admin rights are required (403): {path}")
+                raise GithubClientFatalError(
+                    f"updating merge settings requires admin rights (403): {path}"
+                )
+            case _:
+                self._raise_for_status(response, path)
+                return False
+
     # --------------------------------------------------
     # Async GitHub Actions Methods
     # --------------------------------------------------
