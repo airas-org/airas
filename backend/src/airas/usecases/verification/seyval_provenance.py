@@ -244,11 +244,32 @@ class SeyvalProvenanceVerifier:
         # would leave the record's inputs hash pointing at a file anyone
         # could have written.
         dir_root = root / RESULTS_DIR / dir_name
+        # Seyval reports POSIX paths; compare on the same form regardless of
+        # the host's separator.
         local_paths = sorted(
-            str(path.relative_to(root))
+            path.relative_to(root).as_posix()
             for path in dir_root.rglob("*")
             if path.is_file()
         )
+        # Both directions. A file the run produced that is missing locally is
+        # as much a divergence as one the run never produced: deleting the
+        # evaluator's report, say, would erase its `skipped` verdicts and
+        # leave the record's evaluation field an honest-looking None.
+        prefix = f"{RESULTS_DIR}/{dir_name}/"
+        missing_locally = sorted(
+            path
+            for path in stored
+            if path.startswith(prefix) and not (root / path).is_file()
+        )
+        if missing_locally:
+            return fail(
+                f"the declared run {execution_id} produced "
+                f"{', '.join(missing_locally)} but the local directory does "
+                "not hold it (deleted after import?)",
+                run_id=execution_id,
+                commit_hash=commit_hash or None,
+                parameters_match=parameters_match,
+            )
         files_checked: list[str] = []
         for local_repo_path in local_paths:
             entry = stored.get(local_repo_path)

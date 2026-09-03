@@ -116,8 +116,9 @@ class ProvenanceDirCheck(BaseModel):
     matched: bool = Field(
         description=(
             "The declared, completed run holds byte-identical copies of every "
-            "file in this directory, its recorded dispatch parameters match "
-            "the manifest, and its commit is an ancestor of HEAD"
+            "file in this directory and produced no file the directory lacks, "
+            "its dispatch parameters match the manifest where Seyval reported "
+            "them (see parameters_match), and its commit is an ancestor of HEAD"
         )
     )
     files_checked: list[str] = Field(

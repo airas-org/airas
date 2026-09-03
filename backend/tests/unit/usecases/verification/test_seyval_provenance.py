@@ -379,3 +379,21 @@ async def test_cached_parameters_that_match_are_reported_as_such(
     result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
     assert result.status == "verified", result.checks[0].detail
     assert result.checks[0].parameters_match is True
+
+
+async def test_a_file_the_run_produced_but_the_directory_lacks_is_a_mismatch(
+    tmp_path: Path,
+) -> None:
+    """Deleting the evaluator's report after import would erase its
+    `skipped` verdicts and leave the record's evaluation an honest-looking
+    None. The comparison runs in both directions."""
+    _, metrics_bytes, commit_hash = _make_repo(tmp_path)
+    fake = FakeSeyvalClient(
+        runs=[_completed(DECLARED_RUN, commit_hash)],
+        stored={DECLARED_RUN: metrics_bytes},
+        extra_outputs={".research/results/run-1/evaluation/task.json": b"{}"},
+    )
+    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    assert result.status == "mismatch"
+    assert "evaluation/task.json" in result.checks[0].detail
+    assert "does not hold it" in result.checks[0].detail

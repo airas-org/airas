@@ -16,7 +16,10 @@ from airas.core.types.paper_values import (
     TableSpec,
 )
 from airas.core.types.research_record import ResearchRecord
-from airas.core.types.run_provenance import RunProvenanceManifest
+from airas.core.types.run_provenance import (
+    PROVENANCE_MANIFEST_PATH,
+    RunProvenanceManifest,
+)
 from airas.usecases.publication.paper_values.charts import (
     chart_result_dirs,
     verify_charts,
@@ -180,8 +183,8 @@ def execution_problems(
                 )
         elif execution.execution_id or execution.commit:
             problems.append(
-                f"run '{rid}': the record names an execution but the manifest "
-                "declares none for this directory"
+                f"run '{rid}': the record names an execution but no readable "
+                f"{PROVENANCE_MANIFEST_PATH} entry declares one for this directory"
             )
 
         if rid in metrics_data and execution.metrics != metrics_data[rid]:
