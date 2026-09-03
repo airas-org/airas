@@ -54,9 +54,12 @@ class FakeSeyvalClient:
         self,
         runs: list[dict[str, Any]],
         stored: dict[str, bytes],
+        extra_outputs: dict[str, bytes] | None = None,
     ) -> None:
         self.runs = runs
         self.stored = stored  # run_id -> bytes of run-1's metrics.json
+        # repo path -> bytes, for the other files a run produced
+        self.extra_outputs = extra_outputs or {}
 
     async def alist_repositories(self) -> list[dict[str, Any]]:
         return [{"id": "repo-1", "git_url": GIT_URL + ".git"}]
@@ -66,16 +69,22 @@ class FakeSeyvalClient:
         return self.runs
 
     async def aget_run_outputs(self, run_id: str) -> dict[str, Any]:
-        return {
-            "outputs": [
-                {
-                    "path": ".research/results/run-1/metrics.json",
-                    "download_url": f"https://example.test/{run_id}",
-                }
-            ]
-        }
+        outputs = [
+            {
+                "path": ".research/results/run-1/metrics.json",
+                "download_url": f"https://example.test/{run_id}",
+            }
+        ]
+        outputs += [
+            {"path": path, "download_url": f"https://example.test/extra/{path}"}
+            for path in self.extra_outputs
+        ]
+        return {"outputs": outputs}
 
     async def adownload(self, url: str) -> bytes:
+        marker = "https://example.test/extra/"
+        if url.startswith(marker):
+            return self.extra_outputs[url[len(marker) :]]
         return self.stored[url.rsplit("/", 1)[-1]]
 
 
@@ -271,3 +280,161 @@ def test_git_url_normalization_covers_common_origin_forms() -> None:
     assert _normalize_git_url("git@github.com:test-org/test-repo.git") == expected
     assert _normalize_git_url("ssh://git@github.com/test-org/test-repo.git") == expected
     assert _normalize_git_url("ssh://git@github.com:22/test-org/test-repo") == expected
+
+
+# ------------------------------------------ every file, and the parameters
+
+
+def _write_manifest(tmp_path: Path, **dir_fields: Any) -> None:
+    from airas.core.types.run_provenance import (
+        PROVENANCE_MANIFEST_PATH,
+        ResultsDirProvenance,
+        RunProvenanceManifest,
+    )
+
+    manifest = RunProvenanceManifest(dirs={"run-1": ResultsDirProvenance(**dir_fields)})
+    (tmp_path / PROVENANCE_MANIFEST_PATH).write_text(
+        manifest.model_dump_json(indent=2) + "\n"
+    )
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-q", "-m", "manifest")
+
+
+async def test_every_file_in_the_directory_is_compared(tmp_path: Path) -> None:
+    """Not only metrics.json: the inputs the metrics derive from too."""
+    _, metrics_bytes, commit_hash = _make_repo(tmp_path)
+    inputs = tmp_path / ".research" / "results" / "run-1" / "eval_inputs"
+    inputs.mkdir()
+    inputs_path = ".research/results/run-1/eval_inputs/task.json"
+    (inputs / "task.json").write_bytes(b'{"predicted_labels": [1, 0]}')
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-q", "-m", "inputs")
+
+    fake = FakeSeyvalClient(
+        runs=[_completed(DECLARED_RUN, commit_hash)],
+        stored={DECLARED_RUN: metrics_bytes},
+        extra_outputs={inputs_path: b'{"predicted_labels": [1, 0]}'},
+    )
+    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    assert result.status == "verified", result.checks[0].detail
+    assert result.checks[0].files_checked == [
+        inputs_path,
+        ".research/results/run-1/metrics.json",
+    ]
+
+    # The metrics are untouched; only the inputs were edited.
+    (inputs / "task.json").write_bytes(b'{"predicted_labels": [0, 0]}')
+    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    assert result.status == "mismatch"
+    assert inputs_path in result.checks[0].detail
+
+
+async def test_a_file_the_run_never_produced_is_a_mismatch(tmp_path: Path) -> None:
+    _, metrics_bytes, commit_hash = _make_repo(tmp_path)
+    (tmp_path / ".research" / "results" / "run-1" / "planted.json").write_text("{}")
+    fake = FakeSeyvalClient(
+        runs=[_completed(DECLARED_RUN, commit_hash)],
+        stored={DECLARED_RUN: metrics_bytes},
+    )
+    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    assert result.status == "mismatch"
+    assert "produced no such file" in result.checks[0].detail
+
+
+async def test_cached_parameters_must_match_the_dispatch(tmp_path: Path) -> None:
+    """The manifest caches the dispatch so the record can be realized
+    offline. A cache that says `full` while Seyval says `pilot` would confirm
+    a declaration the run never satisfied."""
+    _, metrics_bytes, commit_hash = _make_repo(tmp_path)
+    _write_manifest(
+        tmp_path,
+        execution_id=DECLARED_RUN,
+        commit_hash=commit_hash,
+        overrides={"mode": "full"},
+    )
+    run = _completed(DECLARED_RUN, commit_hash)
+    run["command_args"] = ["python", "-m", "src.main", "mode=pilot"]
+    fake = FakeSeyvalClient(runs=[run], stored={DECLARED_RUN: metrics_bytes})
+
+    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    assert result.status == "mismatch"
+    assert result.checks[0].parameters_match is False
+    assert "differ from what Seyval recorded" in result.checks[0].detail
+
+
+async def test_cached_parameters_that_match_are_reported_as_such(
+    tmp_path: Path,
+) -> None:
+    _, metrics_bytes, commit_hash = _make_repo(tmp_path)
+    _write_manifest(
+        tmp_path,
+        execution_id=DECLARED_RUN,
+        commit_hash=commit_hash,
+        overrides={"mode": "full"},
+    )
+    run = _completed(DECLARED_RUN, commit_hash)
+    run["command_args"] = ["python", "-m", "src.main", "mode=full"]
+    fake = FakeSeyvalClient(runs=[run], stored={DECLARED_RUN: metrics_bytes})
+
+    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    assert result.status == "verified", result.checks[0].detail
+    assert result.checks[0].parameters_match is True
+
+
+async def test_a_file_the_run_produced_but_the_directory_lacks_is_a_mismatch(
+    tmp_path: Path,
+) -> None:
+    """Deleting the evaluator's report after import would erase its
+    `skipped` verdicts and leave the record's evaluation an honest-looking
+    None. The comparison runs in both directions."""
+    _, metrics_bytes, commit_hash = _make_repo(tmp_path)
+    fake = FakeSeyvalClient(
+        runs=[_completed(DECLARED_RUN, commit_hash)],
+        stored={DECLARED_RUN: metrics_bytes},
+        extra_outputs={".research/results/run-1/evaluation/task.json": b"{}"},
+    )
+    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    assert result.status == "mismatch"
+    assert "evaluation/task.json" in result.checks[0].detail
+    assert "does not hold it" in result.checks[0].detail
+
+
+async def test_a_dispatch_with_no_overrides_contradicts_a_cache_that_claims_some(
+    tmp_path: Path,
+) -> None:
+    """Seyval reported the argv, and it carried no overrides. A manifest
+    that caches `mode=full` anyway is a cache that was edited — "reported
+    empty" is a report, not an absence."""
+    _, metrics_bytes, commit_hash = _make_repo(tmp_path)
+    _write_manifest(
+        tmp_path,
+        execution_id=DECLARED_RUN,
+        commit_hash=commit_hash,
+        overrides={"mode": "full"},
+    )
+    run = _completed(DECLARED_RUN, commit_hash)
+    run["command_args"] = ["python", "-m", "src.main"]  # no key=value at all
+    fake = FakeSeyvalClient(runs=[run], stored={DECLARED_RUN: metrics_bytes})
+
+    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    assert result.status == "mismatch"
+    assert result.checks[0].parameters_match is False
+
+
+async def test_an_unreported_dispatch_is_not_compared(tmp_path: Path) -> None:
+    """No command_args in the run record at all: the platform did not say,
+    so the cache is neither confirmed nor contradicted."""
+    _, metrics_bytes, commit_hash = _make_repo(tmp_path)
+    _write_manifest(
+        tmp_path,
+        execution_id=DECLARED_RUN,
+        commit_hash=commit_hash,
+        overrides={"mode": "full"},
+    )
+    fake = FakeSeyvalClient(
+        runs=[_completed(DECLARED_RUN, commit_hash)],
+        stored={DECLARED_RUN: metrics_bytes},
+    )
+    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    assert result.status == "verified", result.checks[0].detail
+    assert result.checks[0].parameters_match is None

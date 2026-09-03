@@ -42,7 +42,7 @@ list_computes             → 実行先の compute_id と run_profile を確認
 register_repository       → pull_repository → get_analysis（未解析なら start_analysis）
 start_run                 → 返る run_id を控える（step 5 で必須）
 get_run                   → 終了まで追う
-import_run_outputs        → execution_id に上の run_id を渡す
+import_run_outputs        → execution_id に上の run_id、branch_name に staging ref(verify)を渡す
 fetch_experiment_results  → リポジトリを読む
 ```
 
@@ -210,6 +210,20 @@ W&B を使う場合、**entity 名は当てずっぽうだと通らない。** `
 `start_run` が返した `run_id` を必ず渡す。** 省略すると AIRAS は自分が dispatch した
 ときの命名規則で run を探しに行き、直接起動した run は見つからず
 "No completed Seyval run found" で落ちる。`run_stage` は実行した mode と揃える。
+
+**`branch_name` には staging ref(`verify`)を渡す。`main` ではない。** このツールは
+GitHub API で remote のブランチに直接 commit する。`main` は保護されていて、
+新しい SHA には required check がまだ付いていないので、`main` を指定すると
+`Required status check "Verify the record" is expected` で弾かれる。`verify` に
+commit したら手元へ取り込む:
+
+```
+git pull --ff-only origin verify
+```
+
+手元に未 push のコミットがあると fast-forward できないので、取り込みの前に
+`git push origin main:verify` で揃えておく。以後の `update_record` はこの
+ローカル clone を読む。
 
 **BYO Slurm では outputs はジョブ終了後に SSH で回収される。** 実行中に空でも
 異常ではない。

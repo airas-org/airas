@@ -17,7 +17,12 @@ from airas.infra.local_git import (
     remote_origin_url,
 )
 from airas.infra.seyval_client import SeyvalClient
+from airas.usecases.publication.paper_values.compute import RESULTS_DIR
 from airas.usecases.publication.paper_values.provenance import metrics_repo_path
+from airas.usecases.verification.run_parameters import (
+    parse_overrides,
+    parse_parameters,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -150,8 +155,6 @@ class SeyvalProvenanceVerifier:
         if not local_file.is_file():
             return fail(f"local file missing: {repo_path}", run_id=execution_id)
 
-        local_bytes = local_file.read_bytes()
-
         run = next(
             (r for r in listed_runs if str(r.get("run_id", "")) == execution_id),
             None,
@@ -185,6 +188,37 @@ class SeyvalProvenanceVerifier:
                 commit_hash=seyval_commit,
             )
 
+        # The manifest caches what the dispatch was given so the record can
+        # be realized offline; the cache must equal the platform's record,
+        # or a declared `mode=full` could be "confirmed" by a cache that says
+        # so while Seyval says `pilot`.
+        # "Reported" is decided by the field being present, not by the parsed
+        # result being non-empty: a dispatch with no overrides is a report
+        # of "none", and a cache that claims some must then be wrong.
+        # Absent fields mean the platform did not say, and are not compared.
+        reports_overrides = run.get("command_args") is not None
+        reports_parameters = (
+            run.get("resolved_parameters") is not None
+            or run.get("parameters") is not None
+        )
+        parameters_match: bool | None = None
+        if reports_overrides or reports_parameters:
+            parameters_match = (
+                not reports_overrides
+                or dict(declared.overrides) == parse_overrides(run.get("command_args"))
+            ) and (
+                not reports_parameters
+                or dict(declared.parameters) == parse_parameters(run)
+            )
+            if not parameters_match:
+                return fail(
+                    f"{PROVENANCE_MANIFEST_PATH} caches dispatch parameters for "
+                    f"run {execution_id} that differ from what Seyval recorded",
+                    run_id=execution_id,
+                    commit_hash=seyval_commit or None,
+                    parameters_match=False,
+                )
+
         listing = outputs_cache.get(execution_id)
         if listing is None:
             try:
@@ -192,23 +226,16 @@ class SeyvalProvenanceVerifier:
             except Exception as e:
                 return fail(f"could not list run outputs: {e}", run_id=execution_id)
             outputs_cache[execution_id] = listing
-        entry = next(
-            (
-                item
-                for item in listing.get("outputs") or []
-                if item.get("path") == repo_path
-            ),
-            None,
-        )
-        if entry is None:
+        stored = {
+            str(item.get("path")): item
+            for item in listing.get("outputs") or []
+            if item.get("path")
+        }
+        if repo_path not in stored:
             return fail(
                 f"declared run {execution_id} did not produce {repo_path}",
                 run_id=execution_id,
             )
-        try:
-            remote_bytes = await self.seyval_client.adownload(entry["download_url"])
-        except Exception as e:
-            return fail(f"could not download stored output: {e}", run_id=execution_id)
 
         commit_hash = seyval_commit
         sibling_run_ids = [
@@ -220,14 +247,70 @@ class SeyvalProvenanceVerifier:
             and str(r.get("commit_hash") or "") == commit_hash
         ]
 
-        if remote_bytes != local_bytes:
+        # Every file under the directory, not only the metrics: the inputs
+        # the metrics were derived from and the evaluator's report are what
+        # make the metrics re-derivable, so an unanchored copy of either
+        # would leave the record's inputs hash pointing at a file anyone
+        # could have written.
+        dir_root = root / RESULTS_DIR / dir_name
+        # Seyval reports POSIX paths; compare on the same form regardless of
+        # the host's separator.
+        local_paths = sorted(
+            path.relative_to(root).as_posix()
+            for path in dir_root.rglob("*")
+            if path.is_file()
+        )
+        # Both directions. A file the run produced that is missing locally is
+        # as much a divergence as one the run never produced: deleting the
+        # evaluator's report, say, would erase its `skipped` verdicts and
+        # leave the record's evaluation field an honest-looking None.
+        prefix = f"{RESULTS_DIR}/{dir_name}/"
+        missing_locally = sorted(
+            path
+            for path in stored
+            if path.startswith(prefix) and not (root / path).is_file()
+        )
+        if missing_locally:
             return fail(
-                f"local {repo_path} differs from the bytes the declared "
-                f"run {execution_id} actually produced",
+                f"the declared run {execution_id} produced "
+                f"{', '.join(missing_locally)} but the local directory does "
+                "not hold it (deleted after import?)",
                 run_id=execution_id,
                 commit_hash=commit_hash or None,
-                sibling_run_ids=sibling_run_ids,
+                parameters_match=parameters_match,
             )
+        files_checked: list[str] = []
+        for local_repo_path in local_paths:
+            entry = stored.get(local_repo_path)
+            if entry is None:
+                return fail(
+                    f"local {local_repo_path} exists but the declared run "
+                    f"{execution_id} produced no such file",
+                    run_id=execution_id,
+                    commit_hash=commit_hash or None,
+                    files_checked=files_checked,
+                    parameters_match=parameters_match,
+                )
+            try:
+                remote_bytes = await self.seyval_client.adownload(entry["download_url"])
+            except Exception as e:
+                return fail(
+                    f"could not download stored output {local_repo_path}: {e}",
+                    run_id=execution_id,
+                    files_checked=files_checked,
+                    parameters_match=parameters_match,
+                )
+            if remote_bytes != (root / local_repo_path).read_bytes():
+                return fail(
+                    f"local {local_repo_path} differs from the bytes the "
+                    f"declared run {execution_id} actually produced",
+                    run_id=execution_id,
+                    commit_hash=commit_hash or None,
+                    sibling_run_ids=sibling_run_ids,
+                    files_checked=files_checked,
+                    parameters_match=parameters_match,
+                )
+            files_checked.append(local_repo_path)
 
         commit_ok = bool(commit_hash) and commit_is_ancestor(root, commit_hash)
         return ProvenanceDirCheck(
@@ -237,8 +320,11 @@ class SeyvalProvenanceVerifier:
             commit_in_history=commit_ok,
             matched=commit_ok,
             sibling_run_ids=sibling_run_ids,
+            files_checked=files_checked,
+            parameters_match=parameters_match,
             detail=(
-                "byte-identical to the declared run's stored output"
+                f"{len(files_checked)} file(s) byte-identical to the declared "
+                "run's stored outputs"
                 if commit_ok
                 else (
                     f"bytes match run {execution_id}, but its commit "
