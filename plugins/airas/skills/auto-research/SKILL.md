@@ -59,23 +59,21 @@ These are the orchestrator's own rules; no step may relax them.
 - **Runs descend from the freeze commit.** Fixes are committed on top
   of it, never instead of it — no amending or rebasing away the
   prereg commit.
-- **The record only ever grows.** `.research/record.json` holds the
-  hypothesis, its designs, their runs and the claims. Every committed
+- **The record only ever grows.** `.research/record.json` is a tree:
+  hypotheses → claims → designs → runs → results. Every committed
   revision must *contain* the one before it whole, so a reworded claim,
-  a loosened criterion, a reordered list and a dropped execution all
+  a changed run condition, a reordered list and a dropped result all
   fail the same check. Revision is an append with the **same id** (the
   later entry is the live one, the earlier stays readable); retirement
   is an append with `"withdrawn": true`. Re-running an experiment
-  appends an execution rather than replacing one, so "we ran it three
-  times" stays in the record and which execution the paper reports is
-  itself recorded. A claim that fails is reported as a negative result,
+  appends a result rather than replacing one, so "we ran it three
+  times" stays in the record. A claim that fails is reported as a negative result,
   not deleted or reworded into something the data supports; new
   findings enter as new, explicitly exploratory claims declared and
-  committed *before* their confirmation run — a claim only ever
-  verifies against a run whose commit already contained it.
+  committed *before* their confirmation run — declare before you run — the record cannot yet tell the two apart.
 - **No experimental number is ever typed.** Numbers reach the paper
-  only as `\airasval{...}` — a claim's target, a run's metric, or a
-  parameter the run actually executed with — and through declared
+  only as `\airasval{...}` — a run's metric, or a condition the run
+  was declared with — and through declared
   tables and charts; anything else is `\unverified{...}` and said to
   the user. This covers the experimental setup too, not just results:
   a stated batch size the run never used is the same defect as a
@@ -96,18 +94,17 @@ steps don't cover comes up.
    verification time. Nothing is trusted for *who* wrote or committed
    it — content is judged, authorship is not.
 
-`verified` is therefore never set, only derived: the claim's runs have
-results ∧ each run's commit is an ancestor of HEAD ∧ that commit
-already contained the identical declarations. A hand-set flag simply
-differs from its re-derivation and fails.
+`verified` is therefore never set by hand, only derived: every run
+under the claim has results. It goes from false to true once and never
+back; a stored true the results no longer bear out fails verification.
 
-**`verified` is not `criterion_met`.** The first says the claim was
-properly preregistered and tested; the second says the measured value
-fell inside the frozen criterion. They are recorded separately because
-a refuted claim is verified and unmet — that is a result, not a
-failure of the record. Reading a column of `verified: true` as "the
-hypothesis held" is the misreading the second field exists to
-prevent.
+**`verified` says the data is in, not that the claim held.** Whether a
+claim's condition was met, and whether the claim was declared before
+its runs executed, are not modelled in the record yet (TODO) — the
+criterion and predicted interval live in the paper's prose, and the
+order discipline is the agent's. A claim that was tested and missed its
+criterion is a negative result, reported as such; reading a column of
+`verified: true` as "the hypothesis held" is the misreading to avoid.
 
 Trust domains: local runs of the checks have **zero evidentiary
 value** — the local toolchain is in the agent's hands, and whatever a

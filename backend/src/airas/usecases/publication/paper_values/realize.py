@@ -16,15 +16,13 @@ from typing import Any
 from airas.core.research_paths import RESULTS_DIR
 from airas.core.types.paper_values import ClaimStatus
 from airas.core.types.research_record import (
-    ClaimEvaluation,
     EvalReport,
-    Execution,
     InputRef,
     ResearchRecord,
+    RunResult,
 )
 from airas.core.types.run_provenance import RunProvenanceManifest
-from airas.usecases.publication.paper_values.compute import compute_claim_values
-from airas.usecases.publication.paper_values.record import active, run_index
+from airas.usecases.publication.paper_values.record import claim_index, run_index
 from airas.usecases.verification.record_history import compute_claim_status
 
 EVAL_INPUTS_DIRNAME = "eval_inputs"
@@ -91,54 +89,43 @@ def realize_record(
     metrics_data: dict[str, Any],
     manifest: RunProvenanceManifest | None,
 ) -> tuple[list[ClaimStatus], int]:
-    """Append what the runs produced, and evaluate every claim against it.
+    """Append what the runs produced, and mark the claims all of whose runs have results.
 
-    Executions are appended rather than replaced: running the same
-    configuration again adds an entry and the earlier numbers stay, so "we
-    ran it three times" is in the record and which execution a number came
-    from is recorded with it.
+    Results are appended rather than replaced: running the same configuration
+    again adds an entry and the earlier one stays, so "we ran it three times"
+    is in the record. Only a run the manifest declares an execution for is
+    recorded — a result entry is the platform's fact, and without the
+    manifest there is no platform fact to copy.
 
-    Returns the recomputed claim statuses and how many executions were added.
+    `verified` is set to true, once, when every run under a claim has
+    results. It is never set back: a later disagreement is a verification
+    failure to report, not a value to overwrite.
+
+    Returns the recomputed claim statuses and how many results were added.
     """
     appended = 0
     for run in run_index(record).values():
         if run.run_id not in metrics_data:
             continue
         declared = manifest.dirs.get(run.run_id) if manifest else None
-        execution = Execution(
-            execution_id=declared.execution_id if declared else None,
-            commit=declared.commit_hash if declared else None,
-            # Both from the platform's record of the dispatch, which the
-            # experiment code cannot write — unlike the metrics below.
-            overrides=dict(declared.overrides) if declared else {},
-            parameters=dict(declared.parameters) if declared else {},
-            inputs=eval_inputs_ref(root, run.run_id),
-            evaluation=eval_report(root, run.run_id),
+        if declared is None:
+            continue
+        result = RunResult(
+            id=declared.execution_id,
+            commit=declared.commit_hash,
+            eval_inputs=eval_inputs_ref(root, run.run_id),
+            eval_report=eval_report(root, run.run_id),
             metrics=metrics_data[run.run_id],
         )
-        latest = run.executions[-1] if run.executions else None
-        if latest is None or latest.model_dump() != execution.model_dump():
-            run.executions.append(execution)
+        latest = run.results[-1] if run.results else None
+        if latest is None or latest.model_dump() != result.model_dump():
+            run.results.append(result)
             appended += 1
 
-    claim_values = compute_claim_values(record, metrics_data)
-    statuses = compute_claim_status(
-        root, record, manifest, set(metrics_data), claim_values
-    )
-
-    claims_by_id = {c.id: c for c in active(record.hypothesis.claims, "id")}
+    statuses = compute_claim_status(record, set(metrics_data))
+    claims = claim_index(record)
     for status in statuses:
-        claim = claims_by_id.get(status.id)
-        if claim is None or status.value is None:
-            continue
-        claim.evaluations.append(
-            ClaimEvaluation(
-                used_executions=status.used_executions,
-                value=status.value,
-                display=status.display or "",
-                verified=status.verified,
-                criterion_met=bool(status.criterion_met),
-                detail="; ".join(c.detail for c in status.checks if c.detail),
-            )
-        )
+        claim = claims.get(status.id)
+        if claim is not None and status.verified:
+            claim.verified = True
     return statuses, appended

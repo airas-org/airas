@@ -2,20 +2,27 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Sequence, TypeVar
+from typing import Any, Iterator, Sequence, TypeVar
 
 from pydantic import BaseModel
 
 from airas.core.research_paths import RECORD_PATH
+from airas.core.types.paper_values import TableSpec
 from airas.core.types.research_record import (
-    RECORD_SCHEMA_VERSION,
+    ChartDeclaration,
+    ClaimDeclaration,
     DesignDeclaration,
-    Execution,
+    Hypothesis,
     ResearchRecord,
     RunDeclaration,
+    RunResult,
 )
 
 T = TypeVar("T", bound=BaseModel)
+
+# Layouts this airas no longer reads. Named so the failure says what the
+# file is rather than that it is corrupt.
+LEGACY_TOP_LEVEL_KEYS = ("prereg", "hypothesis", "schema_version")
 
 
 def record_path(local_repo_path: str) -> Path:
@@ -30,28 +37,32 @@ def load_record(local_repo_path: str) -> ResearchRecord:
             "(preregister_record creates it)"
         )
     raw = path.read_text(encoding="utf-8")
-    # A v1 record is structurally different (prereg/results rather than a
-    # hypothesis tree). Say so plainly instead of failing with a validation
-    # error that reads like the record is corrupt.
     try:
         loaded = json.loads(raw)
     except json.JSONDecodeError as e:
         raise ValueError(f"{RECORD_PATH} is not valid JSON: {e}") from e
-    version = loaded.get("schema_version") if isinstance(loaded, dict) else None
-    if version is not None and version < RECORD_SCHEMA_VERSION:
-        raise ValueError(
-            f"{RECORD_PATH} is schema_version {version}, this airas reads "
-            f"{RECORD_SCHEMA_VERSION}. The v{version} layout (prereg/results "
-            "with a values registry) has no automatic migration yet — pin an "
-            f"airas that reads v{version}, or start a new record."
-        )
+    if isinstance(loaded, dict) and "hypotheses" not in loaded:
+        found = [k for k in LEGACY_TOP_LEVEL_KEYS if k in loaded]
+        if found:
+            raise ValueError(
+                f"{RECORD_PATH} uses an earlier layout ({', '.join(found)}); "
+                "this airas reads the hypotheses[] tree. There is no automatic "
+                "migration — containment forbids one — so pin an older airas "
+                "or start a new record."
+            )
     return ResearchRecord.model_validate_json(raw)
 
 
 def save_record(local_repo_path: str, record: ResearchRecord) -> Path:
     path = record_path(local_repo_path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(record.model_dump_json(indent=2) + "\n", encoding="utf-8")
+    # Defaults are omitted from the file (a run with no results yet, an
+    # unset `withdrawn`) so the tree reads as what was declared. Containment
+    # compares model dumps, not file text, so omission changes nothing there.
+    path.write_text(
+        record.model_dump_json(indent=2, exclude_defaults=True) + "\n",
+        encoding="utf-8",
+    )
     return path
 
 
@@ -60,17 +71,29 @@ def save_record(local_repo_path: str, record: ResearchRecord) -> Path:
 #
 # A newer record must contain its predecessor whole. Objects gain keys but
 # never lose or change one; arrays are appended to, so the old array is a
-# prefix of the new one. Rewriting a hypothesis, editing a frozen criterion,
+# prefix of the new one. Rewriting a hypothesis, editing a frozen declaration,
 # dropping an execution and reordering a list all fail the same way, so the
 # check does not have to enumerate what may change.
 #
-# This is why lists are held in append order rather than sorted: sorting
-# would let a new entry land in the middle and break the prefix.
+# The single exception is `verified`, which is a fact the procedure sets
+# from false to true once. That transition is permitted; the reverse is not.
 # --------------------------------------------------------------------------
+
+MONOTONE_KEY = "verified"
+# Compared as a whole rather than key by key: a run's declared conditions
+# are one declaration, and adding a condition later is as much a change as
+# altering one. Letting `params` gain keys would let an empty declaration be
+# filled in after the run.
+LEAF_KEYS = frozenset({"params"})
 
 
 def containment_violations(older: Any, newer: Any, path: str = "") -> list[str]:
     here = path or "(root)"
+
+    if isinstance(older, dict) and path.rsplit(".", 1)[-1] in LEAF_KEYS:
+        if older != newer:
+            return [f"{here}: changed ({older!r} -> {newer!r})"]
+        return []
 
     if isinstance(older, dict):
         if not isinstance(newer, dict):
@@ -80,9 +103,10 @@ def containment_violations(older: Any, newer: Any, path: str = "") -> list[str]:
             if key not in newer:
                 problems.append(f"{here}.{key}: removed")
                 continue
-            problems += containment_violations(
-                old_value, newer[key], f"{path}.{key}" if path else key
-            )
+            child = f"{path}.{key}" if path else key
+            if key == MONOTONE_KEY and old_value is False and newer[key] is True:
+                continue
+            problems += containment_violations(old_value, newer[key], child)
         return problems
 
     if isinstance(older, list):
@@ -106,8 +130,8 @@ def record_append_violations(older: ResearchRecord, newer: ResearchRecord) -> li
 
 
 # --------------------------------------------------------------------------
-# Effective entries: with append order guaranteed, position carries what
-# `supersedes` used to say — the last entry for an id is the live one, and
+# Effective entries: with append order guaranteed, position carries what a
+# `supersedes` field would — the last entry for an id is the live one, and
 # `withdrawn` retires one without a replacement.
 # --------------------------------------------------------------------------
 
@@ -119,26 +143,53 @@ def active(entries: Sequence[T], id_attr: str) -> list[T]:
     return [e for e in latest.values() if not getattr(e, "withdrawn", False)]
 
 
-def all_runs(record: ResearchRecord) -> list[tuple[DesignDeclaration, RunDeclaration]]:
+def all_hypotheses(record: ResearchRecord) -> list[Hypothesis]:
+    return active(record.hypotheses, "id")
+
+
+def all_claims(record: ResearchRecord) -> Iterator[tuple[Hypothesis, ClaimDeclaration]]:
+    for hypothesis in all_hypotheses(record):
+        for claim in active(hypothesis.claims, "id"):
+            yield hypothesis, claim
+
+
+def claim_runs(
+    claim: ClaimDeclaration,
+) -> list[tuple[DesignDeclaration, RunDeclaration]]:
     return [
         (design, run)
-        for design in active(record.hypothesis.designs, "id")
+        for design in active(claim.designs, "id")
         for run in active(design.runs, "run_id")
     ]
 
 
+def all_runs(
+    record: ResearchRecord,
+) -> Iterator[tuple[Hypothesis, ClaimDeclaration, DesignDeclaration, RunDeclaration]]:
+    for hypothesis, claim in all_claims(record):
+        for design, run in claim_runs(claim):
+            yield hypothesis, claim, design, run
+
+
 def run_index(record: ResearchRecord) -> dict[str, RunDeclaration]:
-    return {run.run_id: run for _, run in all_runs(record)}
+    return {run.run_id: run for _, _, _, run in all_runs(record)}
 
 
-def selected_execution(run: RunDeclaration) -> Execution | None:
-    """The execution a realization reports for this run.
+def claim_index(record: ResearchRecord) -> dict[str, ClaimDeclaration]:
+    return {claim.id: claim for _, claim in all_claims(record)}
 
-    The last one, so re-running appends without rewriting history; which one
-    was actually used is recorded per evaluation, so the paper's number stays
-    traceable to a single execution even when several exist.
-    """
-    return run.executions[-1] if run.executions else None
+
+def all_tables(record: ResearchRecord) -> list[TableSpec]:
+    return [t for h in all_hypotheses(record) for t in active(h.tables, "key")]
+
+
+def all_charts(record: ResearchRecord) -> list[ChartDeclaration]:
+    return [c for h in all_hypotheses(record) for c in active(h.charts, "path")]
+
+
+def selected_result(run: RunDeclaration) -> RunResult | None:
+    """The result a realization reports for this run: the last one."""
+    return run.results[-1] if run.results else None
 
 
 # --------------------------------------------------------------------------
@@ -146,50 +197,36 @@ def selected_execution(run: RunDeclaration) -> Execution | None:
 # --------------------------------------------------------------------------
 
 
-def ref_run_id(ref: str) -> str:
-    return ref.split(".", 1)[0]
-
-
 def record_consistency_problems(record: ResearchRecord) -> list[str]:
     problems: list[str] = []
 
-    design_ids = [d.id for d in record.hypothesis.designs]
-    for duplicate in sorted({i for i in design_ids if design_ids.count(i) > 1}):
-        problems.append(f"designs: duplicate id '{duplicate}'")
-
+    # Repeated ids at any level are revisions, not errors: the later entry
+    # is the live one and containment keeps the earlier one readable. Run
+    # ids are the exception — they address a results directory and must be
+    # unique across the whole record.
     seen_runs: dict[str, str] = {}
-    for design in record.hypothesis.designs:
-        for run in design.runs:
-            if run.run_id in seen_runs and seen_runs[run.run_id] != design.id:
-                problems.append(
-                    f"run '{run.run_id}' is declared in both "
-                    f"'{seen_runs[run.run_id]}' and '{design.id}' — run ids "
-                    "address a results directory and must be repo-unique"
-                )
-            seen_runs.setdefault(run.run_id, design.id)
+    for hypothesis in record.hypotheses:
+        for claim in hypothesis.claims:
+            for design in claim.designs:
+                for run in design.runs:
+                    owner = f"{hypothesis.id}/{claim.id}/{design.id}"
+                    if run.run_id in seen_runs and seen_runs[run.run_id] != owner:
+                        problems.append(
+                            f"run '{run.run_id}' is declared under both "
+                            f"'{seen_runs[run.run_id]}' and '{owner}' — run ids "
+                            "address a results directory and must be repo-unique"
+                        )
+                    seen_runs.setdefault(run.run_id, owner)
 
-    # Repeated claim ids are not an error: a later entry is the revision of
-    # an earlier one, and containment keeps the earlier version readable.
-    declared = set(run_index(record))
-    referenced: set[str] = set()
-    for claim in active(record.hypothesis.claims, "id"):
-        for ref in claim.target.refs:
-            run_id = ref_run_id(ref)
-            referenced.add(run_id)
-            if run_id not in declared and run_id != "comparison":
-                problems.append(
-                    f"claim {claim.id}: target references run '{run_id}', "
-                    "which no design declares"
-                )
-        if claim.target.op in ("diff", "pct_improve") and len(claim.target.refs) != 2:
+    for _, claim in all_claims(record):
+        if not claim_runs(claim):
             problems.append(
-                f"claim {claim.id}: op '{claim.target.op}' takes exactly 2 refs, "
-                f"got {len(claim.target.refs)}"
+                f"claim {claim.id}: declares no run — a claim with no "
+                "experiment cannot be verified"
             )
-        if claim.criterion.min is None and claim.criterion.max is None:
-            problems.append(f"claim {claim.id}: criterion is unbounded")
 
-    for spec in active(record.tables, "key"):
+    declared = set(run_index(record))
+    for spec in all_tables(record):
         for row in spec.rows:
             if row.run_id not in declared and row.run_id != "comparison":
                 problems.append(
@@ -197,62 +234,3 @@ def record_consistency_problems(record: ResearchRecord) -> list[str]:
                     "which no design declares"
                 )
     return problems
-
-
-def override_problems(record: ResearchRecord) -> list[str]:
-    """Did each run execute with the parameters it declared?
-
-    The commit fixes the config files but not the dispatch, so a run declared
-    as `mode=full` can be executed as `mode=pilot` with the tree untouched —
-    a fifth of the planned scale, reported as if it were the whole thing.
-    Comparing the declaration against what the platform recorded is the only
-    place that shows up.
-
-    Both sides come from outside the experiment code: the declaration was
-    frozen in a commit, and the parameters are the platform's record of the
-    dispatch. A run's own report of its configuration is deliberately not
-    consulted — it can say anything, so agreeing with it proves nothing.
-
-    A declared parameter the platform never mentions is reported only when
-    the platform gave a complete parameter set. With overrides alone the
-    absence is ambiguous: the run may have taken the value from a default
-    the dispatch never had to restate.
-    """
-    problems: list[str] = []
-    for run in run_index(record).values():
-        execution = selected_execution(run)
-        if execution is None or not run.overrides:
-            continue
-        resolved = execution.parameters or execution.overrides
-        complete = bool(execution.parameters)
-        for key, declared in run.overrides.items():
-            if key not in resolved:
-                if complete:
-                    problems.append(
-                        f"run '{run.run_id}': declared '{key}={declared}' but "
-                        "the execution resolved no such parameter"
-                    )
-                continue
-            if str(resolved[key]) != str(declared):
-                problems.append(
-                    f"run '{run.run_id}': declared '{key}={declared}' but "
-                    f"executed '{key}={resolved[key]}'"
-                )
-    return problems
-
-
-def orphan_runs(record: ResearchRecord) -> list[str]:
-    """Declared runs no active claim references.
-
-    Not an error — supporting numbers quoted in prose are legitimate — but
-    listed, because an experiment nobody declared a reason for is where
-    undeclared exploration would otherwise sit unnoticed.
-    """
-    referenced = {
-        ref_run_id(ref)
-        for claim in active(record.hypothesis.claims, "id")
-        for ref in claim.target.refs
-    }
-    for spec in active(record.tables, "key"):
-        referenced |= {row.run_id for row in spec.rows}
-    return sorted(set(run_index(record)) - referenced)

@@ -105,10 +105,6 @@ def _run_verify_record(args: "argparse.Namespace") -> None:
             print(f"  ! \\unverified for human review: {claim}")
     for claim_id in summary["unverified_claims"]:
         print(f"  ! unverified claim: {claim_id} (no verified run backs it yet)")
-    for claim_id in summary["refuted_claims"]:
-        # Not a failure: a claim that was properly tested and missed its
-        # criterion is a result. Printed so a green run still says so.
-        print(f"  · refuted claim: {claim_id} (tested, criterion not met)")
     print(f"Full report: {args.output_dir}/{RECORD_REPORT_FILENAME}")
 
     sys.exit(0 if summary["ok"] else 1)

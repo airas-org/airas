@@ -16,10 +16,11 @@ local stage.
 1. **Realize the record from the run outputs.** The declarations live
    in `.research/record.json` (created at preregistration);
    `update_record` reads them and `.research/results/`
-   itself — numbers cannot be passed in — appends to record.json each
-   run's execution (its platform id, commit, the parameters the platform
-   reports it resolved, inputs hash and measured metrics) and each
-   claim's evaluation, renders `values.tex` and
+   itself — numbers cannot be passed in — appends to each run a
+   result (the platform's execution id and commit, the hash of the
+   evaluation inputs, the evaluator's report, and the metrics file
+   verbatim), marks each claim all of whose runs have results as
+   `verified`, renders `values.tex` and
    `tables/<key>.tex` into `.research/latex/{template}/` (each
    `\airasval` prints as a hyperlink pinned to the commit that wrote the
    record; table cells are always `<row.run_id>.<column.ref_path>`, so
@@ -29,21 +30,21 @@ local stage.
    pushed commit. This is the only sanctioned way an experimental
    number enters the paper; never hand-write a tabular of experimental
    numbers. Honor the `preregister-paper` contract: the
-   record is append-only, and a failed criterion is reported as a
-   negative result, not rewritten.
+   record is append-only, and a claim that missed its criterion is
+   reported as a negative result, not rewritten.
 
-   `\airasval` addresses one of three things, all writable before any
+   `\airasval` addresses one of two things, both writable before any
    run exists:
 
    | Form | Prints |
    | --- | --- |
-   | `<claim_id>.value` | the claim's target, for a derived number |
-   | `<run_id>.<metric.path>` | a metric of a declared run, read directly |
-   | `<run_id>.params.<path>` | a parameter that run actually executed with |
+   | `<run_id>.<metric.path>` | a metric of a declared run, read from its metrics file |
+   | `<run_id>.params.<key>` | a condition the run was declared with |
 
-   The `params` form comes from the platform's record of the dispatch,
-   not from anything the run wrote, so citing a batch size cites what
-   ran rather than what the code claimed it was doing. Need an undeclared value? Append the
+   The `params` form reads the declaration; the gate checks that
+   declaration against what the platform recorded for the dispatch, so
+   citing a batch size cites a condition the run was held to. Derived
+   numbers (a claim's target) are not modelled yet. Need an undeclared value? Append the
    declaration with `append_to_record` and re-run — never type the
    number. A number no declaration can produce (e.g. quoted from a
    cited paper) must be wrapped as `\unverified{...}`.
@@ -71,16 +72,13 @@ local stage.
    presenting the numbers as provenance-backed; `sibling_run_ids` —
    the same code ran more than once, name the run the paper reports;
    `\unverified{...}` occurrences — surface them for human review;
-   `unverified_claims` — claims whose declared runs never executed (or
-   executed a commit that lacked the declaration) may still be
-   published, but say so honestly in the paper and to the user;
-   `refuted_claims` — **claims that were properly tested and missed
-   their criterion.** These are negative results and are reported as
-   such: `verified: true` says the claim was preregistered and tested,
-   not that it held, so a run of five verified claims can contain two
-   refutations. Never read the verified flags alone as support for the
-   hypothesis, and never reword a claim to fit what the data did.
-   `orphan_runs` — declared runs no claim references.
+   `unverified_claims` — claims some of whose declared runs have no
+   results may still be published, but say so honestly in the paper and
+   to the user. `verified: true` says the claim's data is in, not that
+   it held: a claim that was tested and missed the criterion stated in
+   the paper is a **negative result**, reported as such. Never read the
+   verified flags alone as support for the hypothesis, and never reword
+   a claim to fit what the data did.
 
 Even if the user only asked whether the numbers hold up, the answer
 comes from CI: the realized files are already committed by

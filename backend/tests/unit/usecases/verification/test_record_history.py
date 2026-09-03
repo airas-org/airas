@@ -1,25 +1,25 @@
-"""Order and append-only guarantees, against real git repositories.
+"""Append-only guarantees against real git repositories, and `verified`.
 
-The scenarios mirror the integrity contract: a claim declared before its run
-verifies; a claim declared after the run's results never does; a rewritten
-claim both violates containment and loses its verification. `verified` and
-`criterion_met` are checked separately, because a properly preregistered
-claim that missed its threshold is a negative result, not a broken record.
+Containment is checked over the record's git history: a rewritten claim,
+a changed run condition, a verified flag going back to false all violate
+it. `verified` itself is simple for now — every run under the claim has
+results — and the order proof (was the claim declared before its runs
+executed) is not modelled yet.
 """
 
 import json
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from airas.core.research_paths import RECORD_PATH
 from airas.core.types.research_record import (
-    Bound,
     ClaimDeclaration,
     DesignDeclaration,
     Hypothesis,
     ResearchRecord,
     RunDeclaration,
-    Target,
 )
 from airas.core.types.run_provenance import (
     PROVENANCE_MANIFEST_PATH,
@@ -30,7 +30,6 @@ from airas.infra.local_git import commit_paths
 from airas.usecases.publication.paper_values.record import load_record, save_record
 from airas.usecases.verification.record_history import (
     compute_claim_status,
-    design_rollup,
     record_append_only_status,
 )
 
@@ -54,30 +53,21 @@ def _commit_all(tmp_path: Path, message: str) -> str:
     return _git(tmp_path, "rev-parse", "HEAD")
 
 
-def _claim(claim_id: str = "c1", floor: float = 0.0) -> ClaimDeclaration:
+def _claim(claim_id: str = "c1", run_id: str = "proposed") -> ClaimDeclaration:
     return ClaimDeclaration(
         id=claim_id,
         statement="Proposed beats baseline.",
-        target=Target(op="value", refs=["proposed.accuracy"]),
-        criterion=Bound(min=floor),
-        predicted_interval=Bound(min=0.8, max=0.95),
-        rationale="0.8-0.95, from the pilot",
+        designs=[DesignDeclaration(id="d1", runs=[RunDeclaration(run_id=run_id)])],
     )
 
 
-def _record(*claims: ClaimDeclaration, run_ids: tuple[str, ...] = ("proposed",)):
+def _record(*claims: ClaimDeclaration) -> ResearchRecord:
     return ResearchRecord(
-        hypothesis=Hypothesis(
-            statement="Proposed beats baseline.",
-            claims=list(claims),
-            designs=[
-                DesignDeclaration(
-                    id="d1",
-                    summary="Head-to-head.",
-                    runs=[RunDeclaration(run_id=r) for r in run_ids],
-                )
-            ],
-        )
+        hypotheses=[
+            Hypothesis(
+                id="h1", statement="Proposed beats baseline.", claims=list(claims)
+            )
+        ]
     )
 
 
@@ -98,11 +88,12 @@ def _write_results(tmp_path: Path, run_commit: str) -> RunProvenanceManifest:
     return manifest
 
 
-def _status(tmp_path: Path, record, manifest, value: float | None = None):
-    values: dict[str, tuple[float, str, dict[str, str]]] | None = (
-        {"c1": (value, f"{value}", {})} if value is not None else None
-    )
-    return compute_claim_status(tmp_path, record, manifest, {"proposed"}, values)
+def _status(record: ResearchRecord, present: set[str] | None = None):
+    return compute_claim_status(record, {"proposed"} if present is None else present)
+
+
+def _c1(record: ResearchRecord) -> ClaimDeclaration:
+    return record.hypotheses[0].claims[0]
 
 
 # --------------------------------------------------------------- committing
@@ -127,158 +118,105 @@ def test_commit_paths_commits_only_the_given_paths(tmp_path: Path) -> None:
     assert "touched.txt" in _git(tmp_path, "status", "--porcelain")
 
 
-# ---------------------------------------------------------- the order proof
+# ------------------------------------------------- verified and containment
 
 
-def test_claim_declared_before_run_is_verified(tmp_path: Path) -> None:
+def test_a_claim_whose_runs_all_have_results_is_verified(tmp_path: Path) -> None:
     _init_repo(tmp_path)
     save_record(str(tmp_path), _record(_claim()))
     freeze = _commit_all(tmp_path, "prereg")
-    manifest = _write_results(tmp_path, freeze)  # the run executed the freeze commit
+    _write_results(tmp_path, freeze)
     _commit_all(tmp_path, "results")
 
     record = load_record(str(tmp_path))
-    statuses = _status(tmp_path, record, manifest)
-    assert [s.verified for s in statuses] == [True]
+    assert [s.verified for s in _status(record)] == [True]
     assert record_append_only_status(tmp_path, record)[0] == "ok"
 
 
-def test_claim_appended_after_results_stays_unverified(tmp_path: Path) -> None:
+def test_a_claim_missing_any_result_is_not_verified() -> None:
+    record = _record(_claim())
+    assert _status(record, present=set())[0].verified is False
+    status = _status(record, present=set())[0]
+    assert status.checks[0].results_present is False
+
+
+def test_a_claim_with_two_runs_needs_both(tmp_path: Path) -> None:
+    claim = _claim()
+    claim.designs[0].runs.append(RunDeclaration(run_id="baseline"))
+    record = _record(claim)
+    assert _status(record, present={"proposed"})[0].verified is False
+    assert _status(record, present={"proposed", "baseline"})[0].verified is True
+
+
+def test_appending_a_claim_after_results_is_allowed(tmp_path: Path) -> None:
+    """Containment permits it; whether it counts as preregistered is TODO."""
     _init_repo(tmp_path)
     save_record(str(tmp_path), _record())
     freeze = _commit_all(tmp_path, "prereg without the claim")
-    manifest = _write_results(tmp_path, freeze)
+    _write_results(tmp_path, freeze)
     _commit_all(tmp_path, "results")
 
     record = load_record(str(tmp_path))
-    record.hypothesis.claims.append(_claim())  # post-hoc claim
+    record.hypotheses[0].claims.append(_claim())
     save_record(str(tmp_path), record)
-    _commit_all(tmp_path, "sneak the claim in afterwards")
-
-    statuses = _status(tmp_path, record, manifest)
-    assert statuses[0].verified is False
-    assert statuses[0].checks[0].declared_at_run_commit is False
-    # Appending is legitimate — history is still append-only.
+    _commit_all(tmp_path, "claim added afterwards")
     assert record_append_only_status(tmp_path, record)[0] == "ok"
 
 
-def test_rewritten_claim_violates_containment_and_loses_verification(
-    tmp_path: Path,
-) -> None:
+def test_a_reworded_claim_violates_containment(tmp_path: Path) -> None:
     _init_repo(tmp_path)
     save_record(str(tmp_path), _record(_claim()))
-    freeze = _commit_all(tmp_path, "prereg")
-    manifest = _write_results(tmp_path, freeze)
-    _commit_all(tmp_path, "results")
+    _commit_all(tmp_path, "prereg")
 
     record = load_record(str(tmp_path))
-    record.hypothesis.claims[0].criterion = Bound(min=-5.0)  # weakened to fit
+    _c1(record).statement = "Proposed is competitive with baseline."  # softened
     save_record(str(tmp_path), record)
 
     status, problems, _ = record_append_only_status(tmp_path, record)
     assert status == "violated"
-    assert any("criterion.min" in p for p in problems)
-    assert _status(tmp_path, record, manifest)[0].verified is False
+    assert any("statement" in p for p in problems)
 
 
-def test_rewritten_run_declaration_loses_verification(tmp_path: Path) -> None:
-    """The run's declared conditions are frozen alongside the claim."""
+def test_changed_run_conditions_violate_containment(tmp_path: Path) -> None:
     _init_repo(tmp_path)
     save_record(str(tmp_path), _record(_claim()))
-    freeze = _commit_all(tmp_path, "prereg")
-    manifest = _write_results(tmp_path, freeze)
-    _commit_all(tmp_path, "results")
+    _commit_all(tmp_path, "prereg")
 
     record = load_record(str(tmp_path))
-    record.hypothesis.designs[0].runs[0].overrides = {"mode": "pilot"}
-    statuses = _status(tmp_path, record, manifest)
-    assert statuses[0].verified is False
-    assert "did not exist at the run commit" in (statuses[0].checks[0].detail or "")
+    _c1(record).designs[0].runs[0].params = {"mode": "pilot"}
+    status, problems, _ = record_append_only_status(tmp_path, record)
+    assert status == "violated"
+    assert any("params" in p for p in problems)
 
 
 def test_legitimate_append_keeps_earlier_claims_verified(tmp_path: Path) -> None:
     _init_repo(tmp_path)
     save_record(str(tmp_path), _record(_claim()))
     freeze = _commit_all(tmp_path, "prereg")
-    manifest = _write_results(tmp_path, freeze)
+    _write_results(tmp_path, freeze)
     _commit_all(tmp_path, "results")
 
     record = load_record(str(tmp_path))
-    record.hypothesis.designs[0].runs.append(RunDeclaration(run_id="ablation"))
-    record.hypothesis.claims.append(
-        ClaimDeclaration(
-            id="c2",
-            statement="The ablation holds.",
-            target=Target(op="value", refs=["ablation.accuracy"]),
-            criterion=Bound(min=0.0),
-            predicted_interval=Bound(min=0.1, max=0.2),
-            rationale="0.1-0.2, from the pilot",
-        )
-    )
+    record.hypotheses[0].claims.append(_claim("c2", run_id="ablation"))
     save_record(str(tmp_path), record)
     _commit_all(tmp_path, "append exploratory claim")
 
     assert record_append_only_status(tmp_path, record)[0] == "ok"
-    statuses = {s.id: s.verified for s in _status(tmp_path, record, manifest)}
-    assert statuses == {"c1": True, "c2": False}
+    assert {s.id: s.verified for s in _status(record)} == {"c1": True, "c2": False}
 
 
-def test_run_commit_outside_history_is_not_verified(tmp_path: Path) -> None:
+def test_verified_true_then_false_is_a_violation(tmp_path: Path) -> None:
     _init_repo(tmp_path)
-    save_record(str(tmp_path), _record(_claim()))
-    _commit_all(tmp_path, "prereg")
-    manifest = _write_results(tmp_path, "deadbeef" * 5)
-    _commit_all(tmp_path, "results with foreign commit")
+    record = _record(_claim())
+    _c1(record).verified = True
+    save_record(str(tmp_path), record)
+    _commit_all(tmp_path, "verified")
 
     record = load_record(str(tmp_path))
-    statuses = _status(tmp_path, record, manifest)
-    assert statuses[0].verified is False
-    assert statuses[0].checks[0].commit_in_history is False
-
-
-# ----------------------------------------- verified is not the same as met
-
-
-def test_a_verified_claim_can_miss_its_criterion(tmp_path: Path) -> None:
-    """A negative result: preregistered and executed properly, threshold missed."""
-    _init_repo(tmp_path)
-    save_record(str(tmp_path), _record(_claim(floor=0.95)))
-    freeze = _commit_all(tmp_path, "prereg")
-    manifest = _write_results(tmp_path, freeze)
-    _commit_all(tmp_path, "results")
-
-    record = load_record(str(tmp_path))
-    status = _status(tmp_path, record, manifest, value=0.9)[0]
-    assert status.verified is True
-    assert status.criterion_met is False
-
-
-def test_an_unverified_claim_that_met_its_criterion_is_still_unverified(
-    tmp_path: Path,
-) -> None:
-    """Hitting the number does not substitute for having declared it first."""
-    _init_repo(tmp_path)
-    save_record(str(tmp_path), _record())
-    freeze = _commit_all(tmp_path, "prereg without the claim")
-    manifest = _write_results(tmp_path, freeze)
-    _commit_all(tmp_path, "results")
-
-    record = load_record(str(tmp_path))
-    record.hypothesis.claims.append(_claim())
-    status = _status(tmp_path, record, manifest, value=0.9)[0]
-    assert status.criterion_met is True
-    assert status.verified is False
-
-
-def test_criterion_is_unknown_until_a_value_exists(tmp_path: Path) -> None:
-    _init_repo(tmp_path)
-    save_record(str(tmp_path), _record(_claim()))
-    freeze = _commit_all(tmp_path, "prereg")
-    manifest = _write_results(tmp_path, freeze)
-    _commit_all(tmp_path, "results")
-
-    record = load_record(str(tmp_path))
-    assert _status(tmp_path, record, manifest)[0].criterion_met is None
+    _c1(record).verified = False
+    status, problems, _ = record_append_only_status(tmp_path, record)
+    assert status == "violated"
+    assert any("verified" in p for p in problems)
 
 
 # ------------------------------------------------------------- degradation
@@ -289,7 +227,6 @@ def test_no_git_repo_reports_unavailable(tmp_path: Path) -> None:
     record = load_record(str(tmp_path))
     status, _, _ = record_append_only_status(tmp_path, record)
     assert status == "unavailable"
-    assert _status(tmp_path, record, None)[0].verified is False
 
 
 def test_shallow_clone_reports_unavailable(tmp_path: Path) -> None:
@@ -298,7 +235,7 @@ def test_shallow_clone_reports_unavailable(tmp_path: Path) -> None:
     _init_repo(origin)
     save_record(str(origin), _record(_claim()))
     _commit_all(origin, "prereg")
-    save_record(str(origin), _record(_claim(), _claim("c2")))
+    save_record(str(origin), _record(_claim(), _claim("c2", run_id="ablation")))
     _commit_all(origin, "append")
 
     clone = tmp_path / "clone"
@@ -326,22 +263,19 @@ def test_unparseable_committed_record_is_a_violation(tmp_path: Path) -> None:
     assert any("not a valid record" in p for p in problems)
 
 
-def test_a_v1_record_is_rejected_with_an_explanation(tmp_path: Path) -> None:
-    """The old prereg/results layout has no automatic migration."""
+@pytest.mark.parametrize(
+    "legacy",
+    [
+        {"schema_version": 1, "prereg": {}},
+        {"schema_version": 2, "hypothesis": {"statement": "H"}},
+    ],
+)
+def test_an_earlier_layout_is_rejected_with_an_explanation(
+    tmp_path: Path, legacy: dict
+) -> None:
+    """There is no migration: containment forbids one."""
     path = tmp_path / RECORD_PATH
     path.parent.mkdir(parents=True)
-    path.write_text(json.dumps({"schema_version": 1, "prereg": {}}))
-    try:
+    path.write_text(json.dumps(legacy))
+    with pytest.raises(ValueError, match="earlier layout"):
         load_record(str(tmp_path))
-    except ValueError as e:
-        assert "schema_version 1" in str(e)
-    else:
-        raise AssertionError("a v1 record should not load")
-
-
-# ---------------------------------------------------------------- rollup
-
-
-def test_design_rollup_counts_executed_runs(tmp_path: Path) -> None:
-    record = _record(_claim(), run_ids=("proposed", "baseline"))
-    assert design_rollup(record) == {"d1": {"runs": 2, "executed": 0}}
