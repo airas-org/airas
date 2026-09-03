@@ -10,17 +10,17 @@ from typing import Any
 
 import pytest
 
-from airas.core.types.paper_record import (
-    ChartDeclaration,
-    PaperRecord,
-    PreregSection,
-    RenderedChart,
-    RunDeclaration,
-)
 from airas.core.types.paper_values import (
     TableColumnSpec,
     TableRowSpec,
     TableSpec,
+)
+from airas.core.types.research_record import (
+    ChartDeclaration,
+    PreregSection,
+    RenderedChart,
+    ResearchRecord,
+    RunDeclaration,
 )
 from airas.usecases.publication.paper_values.charts import (
     CHART_DIR,
@@ -160,8 +160,8 @@ CHART_SPEC: dict[str, Any] = {
 }
 
 
-def _chart_record(*charts: ChartDeclaration) -> PaperRecord:
-    record = PaperRecord(
+def _chart_record(*charts: ChartDeclaration) -> ResearchRecord:
+    record = ResearchRecord(
         prereg=PreregSection(
             hypothesis="h",
             design="d",
@@ -207,7 +207,7 @@ def test_chart_sizes_outside_data_are_allowed() -> None:
 
 def _write_chart(
     root: Path, relative: str = "accuracy.svg"
-) -> tuple[Path, PaperRecord]:
+) -> tuple[Path, ResearchRecord]:
     chart_path = root / CHART_DIR / relative
     chart_path.parent.mkdir(parents=True, exist_ok=True)
     resolved, _ = substitute_chart_refs(CHART_SPEC, METRICS_DATA)

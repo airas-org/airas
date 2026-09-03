@@ -1,12 +1,12 @@
 import pytest
 from pydantic import ValidationError
 
-from airas.core.types.paper_record import (
+from airas.core.types.paper_values import ValueDeclaration
+from airas.core.types.research_record import (
     ClaimDeclaration,
     PreregSection,
     RunDeclaration,
 )
-from airas.core.types.paper_values import ValueDeclaration
 from airas.usecases.publication.paper_values.record import (
     active,
     prereg_append_violations,

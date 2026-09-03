@@ -4,50 +4,18 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-VALUE_OP = Literal["value", "mean", "std", "diff", "pct_improve"]
-
 # Keys become LaTeX \csname parts and JSON keys; keep them boring.
 KEY_PATTERN = r"^[a-z][a-z0-9_]*$"
 
 
-class ValueDeclaration(BaseModel):
-    key: str = Field(
-        pattern=KEY_PATTERN,
-        description="Name the paper uses as \\airasval{key}",
-    )
-    op: VALUE_OP = Field(
-        default="value",
-        description=(
-            "value: the single ref as-is; mean/std: over all refs; "
-            "diff: refs[0] - refs[1]; "
-            "pct_improve: (refs[0] - refs[1]) / |refs[1]| * 100"
-        ),
-    )
-    refs: list[str] = Field(
-        min_length=1,
-        description=(
-            "Metric references 'run_id.path.to.metric' into that run's "
-            "metrics.json ('comparison.…' addresses aggregated metrics)"
-        ),
-    )
-    round: Optional[int] = Field(
-        default=None,
-        ge=0,
-        le=10,
-        description="Decimal places for display; omitted = shortest form",
-    )
-    supersedes: Optional[str] = Field(
-        default=None,
-        description=(
-            "Key of an earlier declaration this one replaces; the old entry "
-            "stays in the record (append-only) but is no longer realized"
-        ),
-    )
+class PaperValue(BaseModel):
+    """One number the paper prints, addressed exactly as main.tex writes it."""
 
-
-class ComputedValue(ValueDeclaration):
-    value: float = Field(description="The computed value, unrounded")
-    display: str = Field(description="Exactly what \\airasval{key} prints")
+    ref: str = Field(description="What \\airasval{...} contains")
+    display: str = Field(description="Exactly what it prints")
+    derivation: str = Field(
+        default="", description="Human-readable note of where the number came from"
+    )
 
 
 class TableColumnSpec(BaseModel):
@@ -82,9 +50,9 @@ class TableSpec(BaseModel):
     )
     columns: list[TableColumnSpec] = Field(min_length=1)
     rows: list[TableRowSpec] = Field(min_length=1)
-    supersedes: Optional[str] = Field(
-        default=None,
-        description="Key of an earlier table spec this one replaces",
+    withdrawn: bool = Field(
+        default=False,
+        description="Retired; a later entry with the same key supersedes it",
     )
 
 
@@ -110,6 +78,22 @@ class ClaimStatus(BaseModel):
             "Every run of the claim has results with a provenance commit in "
             "this branch's history, and the declarations predate that commit"
         )
+    )
+    criterion_met: Optional[bool] = Field(
+        default=None,
+        description=(
+            "Whether the measured value fell inside the frozen criterion. "
+            "Deliberately separate from `verified`, which says only that the "
+            "claim was properly preregistered and tested — a refuted claim is "
+            "verified and criterion_met=False"
+        ),
+    )
+    value: Optional[float] = Field(
+        default=None, description="The measured target value, unrounded"
+    )
+    display: Optional[str] = Field(default=None, description="Rendered form")
+    used_executions: dict[str, str] = Field(
+        default_factory=dict, description="run_id -> execution_id that supplied it"
     )
     checks: list[ClaimRunCheck] = Field(default_factory=list)
 
@@ -221,6 +205,21 @@ class PaperValuesVerificationReport(BaseModel):
         description=(
             "Results directories no declared run accounts for — results "
             "must not exist without a prior declaration"
+        ),
+    )
+    refuted_claims: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Claims that were properly tested but whose criterion was not "
+            "met — negative results, reported as such rather than hidden"
+        ),
+    )
+    orphan_runs: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Declared runs no active claim references — legitimate for "
+            "supporting numbers, surfaced so undeclared exploration cannot "
+            "hide among them"
         ),
     )
     unverified_claims: list[str] = Field(

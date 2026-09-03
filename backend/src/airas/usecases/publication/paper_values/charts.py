@@ -5,7 +5,7 @@ from typing import Any
 
 import vl_convert as vlc
 
-from airas.core.types.paper_record import PaperRecord
+from airas.core.types.research_record import ResearchRecord
 
 METRIC_REF_PREFIX = "metric:"
 CHART_DIR = ".research/results/chart"
@@ -109,14 +109,14 @@ def renderer_version() -> str:
 
 
 def verify_charts(
-    record: PaperRecord, local_repo_path: str, metrics_data: dict[str, Any]
+    record: ResearchRecord, local_repo_path: str, metrics_data: dict[str, Any]
 ) -> list[str]:
     """Re-render every declared chart; reject undeclared chart files."""
     from airas.usecases.publication.paper_values.record import active
 
     chart_dir = Path(local_repo_path).expanduser().resolve() / CHART_DIR
-    declared = {c.path: c for c in active(record.prereg.charts, "path")}
-    renderers = {c.path: c.renderer for c in record.results.charts}
+    declared = {c.path: c for c in active(record.charts, "path")}
+    renderers = {c.path: c.renders[-1].renderer for c in record.charts if c.renders}
 
     problems: list[str] = []
     if chart_dir.is_dir():
@@ -170,12 +170,12 @@ def verify_charts(
     return problems
 
 
-def chart_result_dirs(record: PaperRecord, metrics_data: dict[str, Any]) -> set[str]:
+def chart_result_dirs(record: ResearchRecord, metrics_data: dict[str, Any]) -> set[str]:
     from airas.usecases.publication.paper_values.compute import match_run_id
     from airas.usecases.publication.paper_values.record import active
 
     dirs: set[str] = set()
-    for declaration in active(record.prereg.charts, "path"):
+    for declaration in active(record.charts, "path"):
         try:
             _, refs = substitute_chart_refs(declaration.spec, metrics_data)
         except Exception:

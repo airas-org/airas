@@ -20,6 +20,17 @@ class ResultsDirProvenance(BaseModel):
         default=None,
         description="Commit that run executed, as recorded by Seyval",
     )
+    overrides: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Parameters the dispatch applied on top of the commit, parsed "
+            "from the argv Seyval recorded. The commit fixes the config "
+            "files but not the dispatch, so this is the only place a "
+            "`mode=pilot` run of a design declared as `mode=full` shows up — "
+            "and unlike the run's own output it is Seyval's record, which "
+            "the experiment code cannot write"
+        ),
+    )
 
 
 class RunProvenanceManifest(BaseModel):

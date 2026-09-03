@@ -3,14 +3,14 @@ from pathlib import Path
 
 import pytest
 
-from airas.core.types.paper_record import (
+from airas.core.types.paper_values import ValueDeclaration
+from airas.core.types.research_record import (
     ClaimDeclaration,
     LinkBase,
-    PaperRecord,
     PreregSection,
+    ResearchRecord,
     RunDeclaration,
 )
-from airas.core.types.paper_values import ValueDeclaration
 from airas.usecases.publication.paper_values.compute import (
     compute_paper_values,
     load_metrics_data,
@@ -95,7 +95,7 @@ def _make_repo(tmp_path: Path) -> Path:
 
 def _generate(tmp_path: Path) -> Path:
     latex_dir = _make_repo(tmp_path)
-    record = PaperRecord(prereg=_prereg())
+    record = ResearchRecord(prereg=_prereg())
     metrics_data = load_metrics_data(str(tmp_path))
     computed = compute_paper_values(active(record.prereg.values, "key"), metrics_data)
     record.results.runs = collect_run_results(metrics_data, None)
@@ -257,7 +257,7 @@ def test_verify_prereg_stage_passes_without_results(tmp_path: Path) -> None:
     latex_dir = tmp_path / ".research" / "latex" / TEMPLATE
     latex_dir.mkdir(parents=True)
     (latex_dir / "main.tex").write_text(MAIN_TEX)
-    save_record(str(tmp_path), PaperRecord(prereg=_prereg()))
+    save_record(str(tmp_path), ResearchRecord(prereg=_prereg()))
     report = verify_paper_record(str(tmp_path), TEMPLATE)
     assert report.stage == "prereg"
     assert report.ok
@@ -270,7 +270,7 @@ def test_verify_prereg_stage_rejects_leftover_values_tex(tmp_path: Path) -> None
     latex_dir.mkdir(parents=True)
     (latex_dir / "main.tex").write_text(MAIN_TEX)
     (latex_dir / "values.tex").write_text("stale realized numbers")
-    save_record(str(tmp_path), PaperRecord(prereg=_prereg()))
+    save_record(str(tmp_path), ResearchRecord(prereg=_prereg()))
     report = verify_paper_record(str(tmp_path), TEMPLATE)
     assert not report.ok
     assert any("no run outputs exist" in m for m in report.mismatches)

@@ -3,8 +3,8 @@ from __future__ import annotations
 import re
 
 from airas.core.research_paths import RECORD_PATH
-from airas.core.types.paper_record import LinkBase
-from airas.core.types.paper_values import ComputedValue
+from airas.core.types.paper_values import PaperValue
+from airas.core.types.research_record import LinkBase
 
 VALUES_TEX_FILENAME = "values.tex"
 
@@ -24,7 +24,7 @@ def record_blob_url(link_base: LinkBase) -> str | None:
     return url if _URL_SAFE.match(url) else None
 
 
-def render_values_tex(values: list[ComputedValue], link_base: LinkBase | None) -> str:
+def render_values_tex(values: list[PaperValue], link_base: LinkBase | None) -> str:
     url = record_blob_url(link_base) if link_base else None
     lines = [
         _HEADER,
@@ -43,12 +43,10 @@ def render_values_tex(values: list[ComputedValue], link_base: LinkBase | None) -
         ),
     ]
     for value in values:
-        derivation = f"{value.op}({', '.join(value.refs)})"
-        if value.round is not None:
-            derivation += f" round {value.round}"
-        lines.append(f"% {value.key} = {derivation}")
+        if value.derivation:
+            lines.append(f"% {value.ref} = {value.derivation}")
         lines.append(
-            rf"\expandafter\def\csname airasval@{value.key}\endcsname"
+            rf"\expandafter\def\csname airasval@{value.ref}\endcsname"
             rf"{{\airasrecordlink{{{value.display}}}}}"
         )
     lines.append(r"\makeatother")

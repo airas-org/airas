@@ -10,10 +10,10 @@ import subprocess
 from pathlib import Path
 
 from airas.core.research_paths import RECORD_PATH
-from airas.core.types.paper_record import (
+from airas.core.types.research_record import (
     ClaimDeclaration,
-    PaperRecord,
     PreregSection,
+    ResearchRecord,
     RunDeclaration,
 )
 from airas.core.types.run_provenance import (
@@ -58,8 +58,8 @@ def _claim(claim_id: str = "c1", criterion: str = "gain > 0") -> ClaimDeclaratio
     )
 
 
-def _record(*claims: ClaimDeclaration) -> PaperRecord:
-    return PaperRecord(
+def _record(*claims: ClaimDeclaration) -> ResearchRecord:
+    return ResearchRecord(
         prereg=PreregSection(
             hypothesis="H.",
             design="D.",

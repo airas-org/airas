@@ -9,10 +9,11 @@ description: Create an AIRAS experiment repository from the template and clone i
    the flow (`is_private` defaults to true); returns `clone_url`;
    clone it locally with git. Requires `GH_PERSONAL_ACCESS_TOKEN`
    (`~/.airas/credentials.json`, editable via `open_dashboard`).
-2. Read the repository's `AGENTS.md` — it is the contract the runners
-   hold you to (run-id naming, CLI shape, sanity/pilot/full
-   semantics), and everything written into this repository later is
-   held to it.
+2. Look over the clone: the `.github/` workflows, `Makefile` and empty
+   `src/` stubs are what the experiment code will be held to. The
+   contract itself — run-id naming, CLI shape, sanity/pilot/full
+   semantics, the files you may touch — is stated in
+   `write-experiment-code`, not in the repository.
 3. The repository is the home of all research state. Artifacts
    produced from here on (hypothesis, design, declarations, results)
    are committed here as they are made — `.research/research_history.json`

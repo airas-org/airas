@@ -35,16 +35,46 @@ changes *when* the paper is written and how Results are stated.
 
 1. **Create the canonical record with `preregister_record`.** This
    writes `.research/record.json` — the machine-readable original the
-   whole verification system keys on. Pass the hypothesis and design
-   prose, every planned run (`runs`; results for an undeclared run_id
-   fail verification later), the numbered claims (`claims`: id `c1`...,
-   statement, prose criterion, predicted interval, the run_ids that
-   test it), and for every experimental number the paper will state its
-   value declaration up front, e.g.
-   `{"key": "improvement_pct", "op": "pct_improve", "refs":
-   ["proposed.accuracy", "baseline.accuracy"], "round": 1}` — refs
-   address the planned run ids, the same ids the experiment code will
-   be held to. Table specs can be declared here too.
+   whole verification system keys on. The record is a tree: one
+   hypothesis, the `designs` that test it, and the `runs` each design
+   will execute.
+
+   ```
+   designs: [{"id": "d1", "summary": "...", "runs": [
+       {"run_id": "proposed-...", "description": "...",
+        "overrides": {"mode": "full"}}]}]
+   ```
+
+   `run_id` names the results directory the run will produce and must be
+   unique across the record — results for an undeclared run_id fail
+   verification. `overrides` declares only what the commit *cannot* fix:
+   the parameters the dispatch will apply. Everything else (batch size,
+   seeds, dataset) already lives in the repository's config files, which
+   the commit freezes, so declaring it again would only create a second
+   copy to keep in step. Declaring the overrides is what makes "we said
+   full and ran pilot" detectable later.
+
+   `claims` decompose the hypothesis into falsifiable units and sit
+   beside the designs, because a claim may compare runs from more than
+   one design:
+
+   ```
+   {"id": "c1", "statement": "one assertive sentence",
+    "target": {"op": "diff", "abs": true, "round": 3,
+               "refs": ["run-a.spearman_rho", "run-b.spearman_rho"]},
+    "criterion": {"max": 0.10},
+    "predicted_interval": {"min": 0.0, "max": 0.05},
+    "rationale": "where the prediction comes from"}
+   ```
+
+   `target` is the frozen recipe for the number the claim is judged on;
+   its `refs` address *declared run ids*, never executions, which do not
+   exist yet. **`criterion` is always a plain range.** A criterion that
+   compares against another measured number (`|a| <= |b| + 0.05`) is
+   expressed by folding the comparison into the target —
+   `diff(|a|, |b|)` with `{"max": 0.05}` — so the bound stays a
+   constant and every claim is judged the same way. Table specs can be
+   declared here too.
 
 2. **Write `.research/latex/{template}/main.tex` in two parts.**
    The *frozen part* — title, abstract, introduction, related work,
@@ -97,7 +127,7 @@ changes *when* the paper is written and how Results are stated.
    The local build is only the fast feedback loop — the local
    toolchain is in the agent's hands, so its PDF proves nothing. The
    **official prereg PDF is the CI artifact**: the freeze push triggers
-   `verify_paper.yml`, which re-verifies the record and rebuilds where
+   `verify_and_publish_paper.yml`, which re-verifies the record and rebuilds where
    the agent cannot interfere, and that artifact is what a human
    reviews at freeze time (are the criteria reasonable? are the
    intervals narrow enough to miss? are the claims falsifiable?) and
@@ -109,12 +139,14 @@ changes *when* the paper is written and how Results are stated.
    user the freeze sha — later verification argues from runs being
    descendants of it.
 
-   **Once committed, the record's declarations are immutable**: the
-   verifier walks record.json's git history and any edit to an existing
-   entry (or to the hypothesis/design prose) fails verification. The
-   legitimate revision path is `append_to_record` — append a new entry
-   whose `supersedes` names the old id; the old entry stays in the
-   file, visibly, and is no longer realized. A claim becomes
+   **Once committed, the record only ever grows**: every later revision
+   must *contain* the committed one whole, so the verifier fails on a
+   reworded claim, a loosened criterion, a reordered list or a dropped
+   execution alike — it does not have to enumerate what may change. The
+   legitimate revision path is `append_to_record`: append an entry with
+   the **same id**, and the later one becomes the live version while the
+   earlier stays readable in place. To retire an entry with no
+   replacement, append it again with `"withdrawn": true`. A claim becomes
    **verified** only when its runs executed a commit that already
    contained the identical claim, so a declaration added after the run
    stays unverified forever — that is the whole point. Once results

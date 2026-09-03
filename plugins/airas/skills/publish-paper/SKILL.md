@@ -16,12 +16,12 @@ local stage.
 1. **Realize the record from the run outputs.** The declarations live
    in `.research/record.json` (created at preregistration);
    `update_and_verify_record` reads them and `.research/results/`
-   itself — numbers cannot be passed in — writes into record.json each
-   run's measured metrics with its execution trail, the computed
-   values, and the per-claim verified flags, renders `values.tex` and
+   itself — numbers cannot be passed in — appends to record.json each
+   run's execution (its platform id, commit, resolved configuration,
+   inputs hash and measured metrics) and each claim's evaluation, renders `values.tex` and
    `tables/<key>.tex` into `.research/latex/{template}/` (each
-   `\airasval` prints as a hyperlink to record.json on the repository's
-   origin; table cells are always `<row.run_id>.<column.ref_path>`, so
+   `\airasval` prints as a hyperlink pinned to the commit that wrote the
+   record; table cells are always `<row.run_id>.<column.ref_path>`, so
    a label cannot be paired with another run's number), and **then
    verifies everything it wrote in the same step**, returning the
    verification report — a `verified: true` in the record is backed the
@@ -57,7 +57,14 @@ local stage.
    `\unverified{...}` occurrences — surface them for human review;
    `unverified_claims` — claims whose declared runs never executed (or
    executed a commit that lacked the declaration) may still be
-   published, but say so honestly in the paper and to the user.
+   published, but say so honestly in the paper and to the user;
+   `refuted_claims` — **claims that were properly tested and missed
+   their criterion.** These are negative results and are reported as
+   such: `verified: true` says the claim was preregistered and tested,
+   not that it held, so a run of five verified claims can contain two
+   refutations. Never read the verified flags alone as support for the
+   hypothesis, and never reword a claim to fit what the data did.
+   `orphan_runs` — declared runs no claim references.
 
 If the user only asked whether the numbers hold up, stop here — the
 realized files are already committed by `update_and_verify_record`;
