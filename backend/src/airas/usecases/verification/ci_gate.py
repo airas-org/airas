@@ -199,41 +199,73 @@ async def run_record_gate(
 ) -> dict[str, Any]:
     """The check that guards the protected branch.
 
-    Everything the paper gate does except the parts that need a paper, so it
-    can be required on every commit — including the ones that build the
-    experiment code and import run outputs, which is exactly the window in
-    which an unguarded branch would matter most.
+    Everything the paper gate does except the compile, so it can be required
+    on every commit — including the ones that build the experiment code and
+    import run outputs, which is exactly the window in which an unguarded
+    branch would matter most. No LaTeX is installed for it.
 
-    A repository with no record.json passes: there is nothing to
-    contradict yet. `require_provenance` still applies once runs exist, so
-    the pass does not quietly widen into "results without provenance are
-    fine".
+    A repository with no record.json passes: there is nothing to contradict
+    yet. A repository with a paper is held to more — its numbers must match
+    the record, and it must *have* a record, since a paper without one has
+    no verifiable number in it. `require_provenance` applies once runs
+    exist, so the early pass does not quietly widen into "results without
+    provenance are fine".
     """
     out = Path(output_dir).expanduser().resolve()
     out.mkdir(parents=True, exist_ok=True)
+    # Turning the check off is a decision not to require it. Letting the two
+    # disagree only produces "the provenance check did not run" on a run
+    # that was told not to run it.
+    require_provenance = require_provenance and check_provenance
 
-    report = await record_full_report(
-        local_repo_path, check_provenance, seyval_client_factory
-    )
-    merged = merge_paper_values_report({"ok": report.ok}, report)
-    failures = gate_failures(
-        merged,
-        require_paper_values=False,
-        # Turning the check off is a decision not to require it. Letting the
-        # two disagree only produces "the provenance check did not run" on a
-        # run that was told not to run it.
-        require_provenance=require_provenance and check_provenance,
-        require_history=require_history,
-    )
-    summary = {
-        "ok": not failures,
-        "failures": failures,
-        "stage": report.stage,
-        "unverified_claims": report.unverified_claims,
-        "refuted_claims": report.refuted_claims,
-        "orphan_runs": report.orphan_runs,
-        "report": merged,
+    templates = detect_templates(local_repo_path)
+    # No paper: one pass over the record alone.
+    targets: list[str | None] = list(templates) or [None]
+    results: list[dict[str, Any]] = []
+    for template in targets:
+        report = await record_full_report(
+            local_repo_path,
+            check_provenance,
+            seyval_client_factory,
+            cast(LATEX_TEMPLATE_NAME, template) if template else None,
+        )
+        merged = merge_paper_values_report({"ok": report.ok}, report)
+        failures = gate_failures(
+            merged,
+            # A paper without a record has no verifiable number in it.
+            require_paper_values=template is not None,
+            require_provenance=require_provenance,
+            require_history=require_history,
+        )
+        results.append(
+            {
+                "template": template,
+                "ok": not failures,
+                "failures": failures,
+                "stage": report.stage,
+                "unverified_claims": report.unverified_claims,
+                "refuted_claims": report.refuted_claims,
+                "orphan_runs": report.orphan_runs,
+                "unverified": report.unverified,
+                "report": merged,
+            }
+        )
+
+    summary: dict[str, Any] = {
+        "ok": all(r["ok"] for r in results),
+        "papers": templates,
+        "results": results,
     }
+    # Flattened for a reader who wants the verdict without walking results.
+    summary["failures"] = [
+        (f"{r['template']}: {f}" if r["template"] else f)
+        for r in results
+        for f in r["failures"]
+    ]
+    summary["stage"] = results[0]["stage"]
+    summary["unverified_claims"] = results[0]["unverified_claims"]
+    summary["refuted_claims"] = results[0]["refuted_claims"]
+    summary["orphan_runs"] = results[0]["orphan_runs"]
     (out / RECORD_REPORT_FILENAME).write_text(
         json.dumps(summary, indent=2, ensure_ascii=False, default=str) + "\n",
         encoding="utf-8",

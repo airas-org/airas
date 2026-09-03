@@ -60,7 +60,7 @@ def recorder(monkeypatch: pytest.MonkeyPatch) -> _Recorder:
 
 
 async def test_setup_configures_secrets_and_protection(recorder: _Recorder) -> None:
-    result = await server.prepare_repository.fn("o", "r")
+    result = await server.prepare_repository("o", "r")
 
     assert result["secrets_set"] is True
     assert result["branch_protected"] is True
@@ -76,7 +76,7 @@ async def test_setup_configures_secrets_and_protection(recorder: _Recorder) -> N
 async def test_the_protected_branch_can_differ_from_the_working_branch(
     recorder: _Recorder,
 ) -> None:
-    await server.prepare_repository.fn(
+    await server.prepare_repository(
         "o", "r", branch_name="research", protected_branch="main"
     )
     assert recorder.secrets == [("o", "r", "research")]
@@ -90,7 +90,7 @@ async def test_failed_protection_is_reported_but_does_not_lose_the_repository(
         raise RuntimeError("403 admin rights required")
 
     monkeypatch.setattr(server, "_apply_branch_protection", _boom)
-    result = await server.prepare_repository.fn("o", "r")
+    result = await server.prepare_repository("o", "r")
 
     # The repository was created; throwing that away would help nobody.
     assert result["is_repository_ready"] is True
@@ -111,7 +111,7 @@ async def test_failed_secrets_warn_that_the_check_will_look_green(
         raise RuntimeError("no token")
 
     monkeypatch.setattr(server, "_apply_secrets", _boom)
-    result = await server.prepare_repository.fn("o", "r")
+    result = await server.prepare_repository("o", "r")
 
     assert result["secrets_set"] is False
     assert any("skipped rather than fail" in w for w in result["warnings"])
@@ -120,7 +120,7 @@ async def test_failed_secrets_warn_that_the_check_will_look_green(
 
 
 async def test_configure_ci_can_be_declined(recorder: _Recorder) -> None:
-    result = await server.prepare_repository.fn("o", "r", configure_ci=False)
+    result = await server.prepare_repository("o", "r", configure_ci=False)
 
     assert result["secrets_set"] is False
     assert result["branch_protected"] is False
@@ -131,10 +131,10 @@ async def test_configure_ci_can_be_declined(recorder: _Recorder) -> None:
 
 async def test_standalone_tools_reach_the_same_code(recorder: _Recorder) -> None:
     """The repair path and the setup path must not drift apart."""
-    assert (await server.set_github_actions_secrets.fn("o", "r"))["secrets_set"]
+    assert (await server.set_github_actions_secrets("o", "r"))["secrets_set"]
     assert recorder.secrets == [("o", "r", "main")]
 
-    protect = await server.protect_branch.fn("o", "r")
+    protect = await server.protect_branch("o", "r")
     assert protect["branch_protected"] is True
     assert protect["required_checks"] == [server.RECORD_GATE_CHECK_NAME]
     assert recorder.protection[0][3] == [server.RECORD_GATE_CHECK_NAME]
