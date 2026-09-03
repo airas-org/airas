@@ -67,7 +67,7 @@ def substitute_chart_refs(
                         f"'{forbidden}' is not allowed in a chart spec: an "
                         "expression can turn measured points into invented "
                         "ones. Derive the value in the experiment code or "
-                        "declare it via update_and_verify_record instead."
+                        "declare it via update_record instead."
                     )
             return {
                 key: (

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from airas.core.research_paths import RESULTS_DIR
+from airas.core.types.paper_values import PaperValue
 from airas.core.types.research_record import (
     ClaimDeclaration,
     ResearchRecord,
@@ -185,12 +186,14 @@ def resolve_paper_ref(
     preregistered paper be written in full:
 
       <claim_id>.value          the claim's target, for derived numbers
-      <run_id>.config.<path>    a parameter the run actually executed with
+      <run_id>.params.<path>    a parameter the run actually executed with
       <run_id>.<metric path>    a metric of a declared run, read directly
 
-    The config form is what puts the experimental setup under the same
-    guarantee as the results: without it a paper can state a batch size the
-    run never used and nothing objects.
+    The params form puts the experimental setup under the same guarantee as
+    the results: without it a paper can state a batch size the run never
+    used and nothing objects. It reads the platform's record of the
+    dispatch, so citing a parameter cites what ran, not what the code said
+    it was doing.
     """
     head, _, tail = ref.partition(".")
 
@@ -201,17 +204,20 @@ def resolve_paper_ref(
         return format_display(value, claim.target.round)
 
     runs = run_index(record)
-    if head in runs and tail.startswith("config."):
+    if head in runs and tail.startswith("params."):
         execution = selected_execution(runs[head])
         if execution is None:
             raise ValueError(f"'{ref}': run '{head}' has no execution")
+        resolved = execution.parameters or execution.overrides
         try:
-            node = _walk_any(execution.config, tail[len("config.") :])
+            node = _walk_any(resolved, tail[len("params.") :])
         except (KeyError, IndexError, ValueError, TypeError):
-            raise ValueError(f"'{ref}': not in the executed configuration") from None
+            raise ValueError(
+                f"'{ref}': the platform did not report this parameter for run '{head}'"
+            ) from None
         if isinstance(node, bool) or isinstance(node, (dict, list)):
             raise ValueError(f"'{ref}' is not a scalar: {node!r}")
-        # Config values are legitimately strings ("cifar10", "jacob_cov"), so
+        # Parameters are legitimately strings ("cifar10", "jacob_cov"), so
         # only numbers get rounded; anything else prints as written.
         return (
             format_display(float(node), None)
@@ -220,3 +226,32 @@ def resolve_paper_ref(
         )
 
     return format_display(resolve_ref(metrics_data, ref), None)
+
+
+def resolve_paper_values(
+    record: ResearchRecord, metrics_data: dict[str, Any], used_keys: list[str]
+) -> tuple[list[PaperValue], list[str]]:
+    """Every \\airasval the paper uses, in the order it uses them.
+
+    Shared by the tool that writes values.tex and the check that regenerates
+    it: two builders would have to agree byte-for-byte forever, and the first
+    time they disagreed the regeneration check would fail on a paper nobody
+    had touched.
+    """
+    values: list[PaperValue] = []
+    undefined: list[str] = []
+    claims = {c.id: c for c in active(record.hypothesis.claims, "id")}
+    for ref in dict.fromkeys(used_keys):
+        try:
+            display = resolve_paper_ref(record, metrics_data, ref)
+        except ValueError:
+            undefined.append(ref)
+            continue
+        claim = claims.get(ref.partition(".")[0])
+        derivation = (
+            f"{claim.target.op}({', '.join(claim.target.refs)})"
+            if claim and ref.endswith(".value")
+            else ref
+        )
+        values.append(PaperValue(ref=ref, display=display, derivation=derivation))
+    return values, undefined

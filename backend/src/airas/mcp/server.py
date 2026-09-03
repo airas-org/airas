@@ -1,6 +1,4 @@
 import asyncio
-import hashlib
-import json
 import logging
 import os
 import webbrowser
@@ -21,7 +19,7 @@ from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
 # LLM mapping classes + helper for building per-node model selection from a
 # single externally-supplied model name (no in-code default model exists).
 from airas.core.llm_config import uniform_llm_mapping
-from airas.core.research_paths import RECORD_PATH, RESULTS_DIR
+from airas.core.research_paths import RECORD_PATH
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory, RunStage
 from airas.core.types.experimental_design import (
@@ -37,7 +35,6 @@ from airas.core.types.llm_provider import LLMProvider
 from airas.core.types.paper import PaperContent
 from airas.core.types.paper_search import PAPER_SEARCH_SOURCES
 from airas.core.types.paper_values import (
-    PaperValue,
     PaperValuesVerificationReport,
     TableSpec,
 )
@@ -46,12 +43,8 @@ from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_record import (
     ChartDeclaration,
     ClaimDeclaration,
-    ClaimEvaluation,
     DesignDeclaration,
-    EvalReport,
-    Execution,
     Hypothesis,
-    InputRef,
     LinkBase,
     RenderedChart,
     ResearchRecord,
@@ -148,6 +141,9 @@ from airas.usecases.github.github_upload_subgraph import GithubUploadSubgraph
 from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,
 )
+from airas.usecases.github.set_github_actions_secrets_subgraph.set_github_actions_secrets_subgraph import (
+    SetGithubActionsSecretsSubgraph,
+)
 from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
     CompileLatexLLMMapping,
     CompileLatexSubgraph,
@@ -168,21 +164,20 @@ from airas.usecases.publication.paper_values.charts import (
     substitute_chart_refs,
 )
 from airas.usecases.publication.paper_values.compute import (
-    compute_claim_values,
     load_metrics_data,
-    resolve_paper_ref,
+    resolve_paper_values,
 )
 from airas.usecases.publication.paper_values.latex import (
     VALUES_TEX_FILENAME,
     render_values_tex,
 )
+from airas.usecases.publication.paper_values.realize import realize_record
 from airas.usecases.publication.paper_values.record import (
     active,
     load_record,
     orphan_runs,
     record_consistency_problems,
     record_path,
-    run_index,
     save_record,
 )
 from airas.usecases.publication.paper_values.tables import (
@@ -214,7 +209,6 @@ from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph impor
     SearchPapersSubgraph,
 )
 from airas.usecases.verification.paper_verification import paper_values_full_report
-from airas.usecases.verification.record_history import compute_claim_status
 from airas.usecases.verification.seyval_provenance import load_provenance_manifest
 from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
     GenerateBibfileSubgraph,
@@ -907,14 +901,33 @@ async def prepare_repository(
     repository_name: str,
     branch_name: str = "main",
     is_private: bool = True,
+    protected_branch: str = "main",
+    configure_ci: bool = True,
 ) -> dict[str, Any]:
-    """Create and initialize a GitHub repository for running experiments.
+    """Create a GitHub repository for running experiments, ready to enforce.
 
     Sets up the repository (from the AIRAS experiment template) and the
     working branch. Run this once before `dispatch_code_generation`.
     Returns `html_url` and `clone_url` alongside the readiness flags, so the
     next step — cloning it locally — needs nothing reconstructed by hand.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
+
+    `configure_ci` also provisions the Actions secrets and protects
+    `protected_branch`, because both are the kind of setup whose absence is
+    invisible: without `SEYVAL_API_KEY` the provenance cross-check degrades
+    to a skip rather than a failure, and without branch protection every
+    guarantee in the record rests on the agent choosing to respect a red
+    CI run. A step that has to be remembered to be safe is a step that will
+    eventually be forgotten, so it happens here rather than being left to a
+    later call. Pass `configure_ci=False` only when the token lacks admin
+    rights and you intend to configure the repository some other way.
+
+    Neither failure aborts the creation — the repository exists either way,
+    and losing that result would help nobody — but each is reported in
+    `warnings` and in its own flag. **A repository whose `branch_protected`
+    is false is not enforcing anything**; say so rather than proceeding as
+    though it were.
+
+    Requires GH_PERSONAL_ACCESS_TOKEN, with admin rights for `configure_ci`.
     """
     config = GitHubConfig(
         github_owner=github_owner,
@@ -929,11 +942,178 @@ async def prepare_repository(
         .build_graph()
         .ainvoke({"github_config": config})
     )
+
+    warnings: list[str] = []
+    secrets_set = False
+    branch_protected = False
+    merge_settings_updated = False
+    if configure_ci:
+        try:
+            secrets_set = await _apply_secrets(
+                github_owner, repository_name, branch_name
+            )
+        except Exception as e:
+            warnings.append(
+                f"Actions secrets were not set ({e}). The provenance "
+                "cross-check will be skipped rather than fail, so CI will "
+                "look green without ever having run it — fix this before "
+                "dispatching experiments (set_github_actions_secrets)."
+            )
+        try:
+            branch_protected, merge_settings_updated = await _apply_branch_protection(
+                github_owner,
+                repository_name,
+                protected_branch,
+                [RECORD_GATE_CHECK_NAME],
+            )
+        except Exception as e:
+            warnings.append(
+                f"'{protected_branch}' was not protected ({e}). Nothing "
+                "prevents a red or unchecked commit from landing on it, so "
+                "the record's guarantees are advisory in this repository "
+                "until it is fixed (protect_branch)."
+            )
+
     return {
         "is_repository_ready": result["is_repository_ready"],
         "is_branch_ready": result["is_branch_ready"],
         "html_url": result["html_url"],
         "clone_url": result["clone_url"],
+        "secrets_set": secrets_set,
+        "branch_protected": branch_protected,
+        "merge_settings_updated": merge_settings_updated,
+        "protected_branch": protected_branch if branch_protected else None,
+        "warnings": warnings,
+    }
+
+
+@mcp.tool()
+async def set_github_actions_secrets(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str = "main",
+    secret_names: list[str] | None = None,
+) -> dict[str, Any]:
+    """Copy locally configured API keys into the repository's Actions secrets.
+
+    Run this once, right after `prepare_repository`. CI is the only place a
+    paper is judged, and the gate re-fetches each run's stored outputs from
+    the compute platform to byte-compare them against what the repository
+    holds. Without `SEYVAL_API_KEY` present in the repository that
+    comparison cannot run, so the strongest check in the system degrades to
+    a skip on any repository nobody remembered to provision — and it
+    degrades quietly, which is why this is a setup step rather than
+    something to reach for once CI complains.
+
+    Reads the values from this machine's environment and writes them
+    encrypted; no value appears in the result. `secret_names` defaults to
+    every key airas knows about, and a name with no local value is skipped
+    rather than failing. Requires GH_PERSONAL_ACCESS_TOKEN with admin rights
+    on the repository.
+    """
+    return {
+        "secrets_set": await _apply_secrets(
+            github_owner, repository_name, branch_name, secret_names
+        )
+    }
+
+
+RECORD_GATE_CHECK_NAME = "Verify the record"
+
+
+async def _apply_secrets(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    secret_names: list[str] | None = None,
+) -> bool:
+    config = GitHubConfig(
+        github_owner=github_owner,
+        repository_name=repository_name,
+        branch_name=branch_name,
+    )
+    result = (
+        await SetGithubActionsSecretsSubgraph(
+            github_client=_github_client(),
+            secret_names=secret_names,
+        )
+        .build_graph()
+        .ainvoke({"github_config": config})
+    )
+    return bool(result["secrets_set"])
+
+
+async def _apply_branch_protection(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    required_check_names: list[str],
+) -> tuple[bool, bool]:
+    client = _github_client()
+    protected = await client.aupdate_branch_protection(
+        github_owner=github_owner,
+        repository_name=repository_name,
+        branch_name=branch_name,
+        required_check_names=required_check_names,
+        enforce_admins=True,
+    )
+    merge_settings = await client.aupdate_repository_merge_settings(
+        github_owner=github_owner,
+        repository_name=repository_name,
+    )
+    return protected, merge_settings
+
+
+@mcp.tool()
+async def protect_branch(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str = "main",
+    required_check_names: list[str] | None = None,
+) -> dict[str, Any]:
+    """Make the record's guarantees enforceable instead of advisory.
+
+    Run this once, after `set_github_actions_secrets`. Everything else in
+    the system derives its authority from this call: a local check can be
+    ignored and a red CI run can be pushed past, so until the branch is
+    protected the record's integrity rests on the agent choosing to respect
+    it. Afterwards it rests on GitHub refusing the push.
+
+    Sets three things on `branch_name`:
+
+    - the record gate as a **required status check**, so a commit whose
+      check is missing or red cannot land, by push or by merge;
+    - `enforce_admins`, because the default exempts exactly the person who
+      configured the rule — usually the repository's own owner, and so the
+      one whose work most needs to be held to it;
+    - no force pushes and no deletions, because the record's evidence *is*
+      its git history: a rewrite does not fail verification, it removes
+      what verification reads.
+
+    It also disables squash and rebase merging repository-wide. Both rewrite
+    commits, and verification asks whether each run's recorded commit is an
+    ancestor of HEAD — after a rewrite it is not, so every claim in the
+    repository silently becomes unverified at the moment of the merge. A
+    merge commit keeps the original commits in the ancestry; a
+    fast-forward push of the already-checked commit keeps the very sha CI
+    judged.
+
+    Requires GH_PERSONAL_ACCESS_TOKEN with admin rights on the repository.
+    """
+    contexts = required_check_names or [RECORD_GATE_CHECK_NAME]
+    protected, merge_settings = await _apply_branch_protection(
+        github_owner, repository_name, branch_name, contexts
+    )
+    return {
+        "branch_protected": protected,
+        "merge_settings_updated": merge_settings,
+        "branch": branch_name,
+        "required_checks": contexts,
+        "usage": (
+            "work on a branch; when the record gate is green on that commit, "
+            "fast-forward it onto the protected branch — the sha CI judged "
+            "is then the sha that landed"
+        ),
     }
 
 
@@ -1942,83 +2122,6 @@ def _parse_declarations(
     )
 
 
-EVAL_INPUTS_DIRNAME = "eval_inputs"
-EVALUATION_DIRNAME = "evaluation"
-CONFIG_FILENAME = "config.json"
-
-
-def _eval_inputs_ref(root: Path, run_id: str) -> InputRef | None:
-    """Hash the raw predictions an execution produced.
-
-    These are the re-derivation anchor: the metrics can be recomputed from
-    them by the pinned evaluation layer, so the record pins the input and not
-    only the conclusion drawn from it.
-    """
-    inputs_dir = root / RESULTS_DIR / run_id / EVAL_INPUTS_DIRNAME
-    if not inputs_dir.is_dir():
-        return None
-    for path in sorted(inputs_dir.glob("*.json")):
-        return InputRef(
-            path=str(path.relative_to(root)),
-            sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
-        )
-    return None
-
-
-def _eval_report(root: Path, run_id: str) -> EvalReport | None:
-    """Carry the evaluation layer's verdict into the record.
-
-    `skipped` comes along because a metric that could not be computed is a
-    result too, and the suite signature with the resolved versions is what
-    makes the numbers reproducible as (inputs, evaluator) -> metrics.
-    """
-    eval_dir = root / RESULTS_DIR / run_id / EVALUATION_DIRNAME
-    if not eval_dir.is_dir():
-        return None
-    for path in sorted(eval_dir.glob("*.json")):
-        try:
-            payload = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return None
-        provenance = payload.get("provenance") or {}
-        return EvalReport(
-            task_type=payload.get("task_type", path.stem),
-            task_signature=provenance.get("task_signature"),
-            inputs_sha256=provenance.get("inputs_sha256"),
-            versions={k: str(v) for k, v in (provenance.get("versions") or {}).items()},
-            metrics={
-                k: float(v)
-                for k, v in (payload.get("metrics") or {}).items()
-                if isinstance(v, (int, float)) and not isinstance(v, bool)
-            },
-            skipped=payload.get("skipped") or {},
-        )
-    return None
-
-
-def _executed_config(root: Path, run_id: str) -> dict[str, Any]:
-    """The configuration the run reports having resolved.
-
-    Read from the results directory rather than Hydra's `.logs/` output,
-    because only `.research/results/` is importable — output paths come from
-    the experiment code and are untrusted, so anything written elsewhere
-    never reaches the clone and would leave this silently empty.
-
-    This is the run's own account of itself and is self-reported like its
-    metrics. It becomes checkable by reconstructing the expectation from the
-    two things the experiment code cannot write: the config files the commit
-    fixes, and the overrides Seyval recorded.
-    """
-    config_file = root / RESULTS_DIR / run_id / CONFIG_FILENAME
-    if not config_file.is_file():
-        return {}
-    try:
-        loaded = json.loads(config_file.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {}
-    return loaded if isinstance(loaded, dict) else {}
-
-
 def _commit_record_paths(local_path: str, paths: list[str], message: str) -> str:
     commit = commit_paths(Path(local_path).expanduser().resolve(), paths, message)
     if commit is None:
@@ -2186,12 +2289,11 @@ async def append_to_record(
 
 
 @mcp.tool()
-async def update_and_verify_record(
+async def update_record(
     local_path: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-    check_provenance: bool = True,
 ) -> dict[str, Any]:
-    """Realize the record from run outputs and verify it, in one step.
+    """Realize the record from the run outputs and commit it.
 
     This is the only sanctioned way experimental numbers enter the paper.
     The declarations live in `.research/record.json` (written at
@@ -2213,15 +2315,13 @@ async def update_and_verify_record(
     clone has an `origin` remote, every value macro is a hyperlink to
     record.json on that remote.
 
-    Writing, committing and verifying are one step on purpose: the
-    written files are committed immediately (`commit` in the result), then
-    the full verification runs against that committed state (recomputation
-    of values, tables, charts and claim flags, append-only history,
-    undeclared results directories, and — unless `check_provenance=False`
-    — the Seyval provenance cross-check) and comes back as `verification`
-    in the result. A `verified: true` in the record is therefore bound to
-    a commit sha the moment it exists, paper or no paper; the CI gate
-    later re-runs the same checks where the agent cannot interfere.
+    This tool does not judge the result, and deliberately so. Whatever it
+    reported locally, the agent could push regardless, so a local verdict
+    was advice rather than a gate — and running the identical checks twice
+    made the advisory pass look like a second, independent opinion. The
+    verdict comes from CI, on the pushed commit, where the agent cannot
+    intervene: push the branch, read the run, and merge into the protected
+    branch only when it is green.
 
     Then `\\input{values.tex}` in main.tex's preamble,
     `\\input{tables/<key>.tex}` where each table belongs, and every
@@ -2243,50 +2343,13 @@ async def update_and_verify_record(
         # running the same configuration again adds an entry and the earlier
         # numbers stay, which is what makes the record a lab notebook as well
         # as a verification input.
-        appended = 0
-        for run in run_index(record).values():
-            if run.run_id not in metrics_data:
-                continue
-            declared = manifest.dirs.get(run.run_id) if manifest else None
-            execution = Execution(
-                execution_id=declared.execution_id if declared else None,
-                commit=declared.commit_hash if declared else None,
-                overrides=dict(declared.overrides) if declared else {},
-                config=_executed_config(root, run.run_id),
-                inputs=_eval_inputs_ref(root, run.run_id),
-                evaluation=_eval_report(root, run.run_id),
-                metrics=metrics_data[run.run_id],
-            )
-            latest = run.executions[-1] if run.executions else None
-            if latest is None or latest.model_dump() != execution.model_dump():
-                run.executions.append(execution)
-                appended += 1
-
-        claim_values = compute_claim_values(record, metrics_data)
-        statuses = compute_claim_status(
-            root, record, manifest, set(metrics_data), claim_values
-        )
+        statuses, appended = realize_record(root, record, metrics_data, manifest)
 
         remote = remote_origin_url(root)
         record.link_base = (
             LinkBase(repo_url=normalize_git_url(remote)) if remote else None
         )
 
-        claims_by_id = {c.id: c for c in active(record.hypothesis.claims, "id")}
-        for status in statuses:
-            claim = claims_by_id.get(status.id)
-            if claim is None or status.value is None:
-                continue
-            claim.evaluations.append(
-                ClaimEvaluation(
-                    used_executions=status.used_executions,
-                    value=status.value,
-                    display=status.display or "",
-                    verified=status.verified,
-                    criterion_met=bool(status.criterion_met),
-                    detail="; ".join(c.detail for c in status.checks if c.detail),
-                )
-            )
         save_record(local_path, record)
         # Two commits on purpose: the link in values.tex must name the commit
         # that holds the record it links into, and that sha does not exist
@@ -2305,13 +2368,7 @@ async def update_and_verify_record(
             if main_tex.is_file()
             else []
         )
-        paper_values: list[PaperValue] = []
-        for ref in dict.fromkeys(used_keys):
-            try:
-                display = resolve_paper_ref(record, metrics_data, ref)
-            except ValueError:
-                continue  # verify_paper_record reports it as an undefined key
-            paper_values.append(PaperValue(ref=ref, display=display, derivation=ref))
+        paper_values, _ = resolve_paper_values(record, metrics_data, used_keys)
 
         values_tex_path = latex_dir / VALUES_TEX_FILENAME
         values_tex_path.write_text(
@@ -2360,14 +2417,11 @@ async def update_and_verify_record(
         }
 
     result = await asyncio.to_thread(_run)
-    report = await _paper_values_full_report(
-        local_path, latex_template_name, check_provenance
-    )
-    result["verification"] = report.model_dump()
     result["usage"] = (
         "\\input{values.tex} in the preamble, \\input{tables/<key>.tex} where "
         "each table belongs, then \\airasval{<key>} wherever the paper states "
-        "a number; the realized files are already committed — push when ready"
+        "a number; the realized files are already committed — push the branch "
+        "and let CI decide whether it may reach the protected branch"
     )
     return result
 

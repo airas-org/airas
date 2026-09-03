@@ -101,7 +101,7 @@ changes *when* the paper is written and how Results are stated.
    never a literal, not even an expected one presented as measured.
 
 3. **Make it compile without values.tex.** The tool-generated
-   `values.tex` cannot exist yet (update_and_verify_record needs run
+   `values.tex` cannot exist yet (update_record needs run
    metrics), so the preamble must provide the same fallback it would:
 
    ```latex
@@ -115,7 +115,7 @@ changes *when* the paper is written and how Results are stated.
    macro body with `#1` inside another macro's argument does not
    compile.)
 
-   Once experiments run and `update_and_verify_record` writes `values.tex`,
+   Once experiments run and `update_record` writes `values.tex`,
    the same main.tex picks up the real numbers with no edit.
 
 4. **Compile until green — this is a freeze condition, not a
@@ -167,7 +167,8 @@ Do not edit the claims to fit the results. The honest paths are:
   presented as exploratory unless a fresh confirmation run (dispatched
   after the append is committed) supports it — only then can its
   verified flag ever go true.
-- Realize the record's declarations with `update_and_verify_record` (it
-  reads record.json itself and verifies what it wrote in the same
-  step); if you need a number you did not declare, append the
-  declaration with `append_to_record` — never type it.
+- Realize the record's declarations with `update_record` (it reads
+  record.json and the run outputs itself, and commits what it wrote;
+  the verdict on it comes from CI, not from the tool); if you need a
+  number you did not declare, append the declaration with
+  `append_to_record` — never type it.

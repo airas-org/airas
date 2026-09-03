@@ -17,7 +17,8 @@ from airas.core.types.paper_values import (
 )
 from airas.core.types.research_record import (
     ChartDeclaration,
-    PreregSection,
+    DesignDeclaration,
+    Hypothesis,
     RenderedChart,
     ResearchRecord,
     RunDeclaration,
@@ -162,16 +163,25 @@ CHART_SPEC: dict[str, Any] = {
 
 def _chart_record(*charts: ChartDeclaration) -> ResearchRecord:
     record = ResearchRecord(
-        prereg=PreregSection(
-            hypothesis="h",
-            design="d",
-            runs=[RunDeclaration(run_id="run_1"), RunDeclaration(run_id="run_2")],
-            charts=list(charts),
-        )
+        hypothesis=Hypothesis(
+            statement="h",
+            designs=[
+                DesignDeclaration(
+                    id="d1",
+                    summary="d",
+                    runs=[
+                        RunDeclaration(run_id="run_1"),
+                        RunDeclaration(run_id="run_2"),
+                    ],
+                )
+            ],
+        ),
+        charts=list(charts),
     )
-    record.results.charts = [
-        RenderedChart(path=c.path, renderer=renderer_version()) for c in charts
-    ]
+    # A render is appended to the declaration it belongs to, so the renderer
+    # that produced a chart stays attached to that chart.
+    for chart in record.charts:
+        chart.renders.append(RenderedChart(renderer=renderer_version()))
     return record
 
 
@@ -243,7 +253,7 @@ def test_verify_charts_detects_redirected_declaration(tmp_path: Path) -> None:
             ]
         },
     }
-    record.prereg.charts[0].spec = tampered_spec
+    record.charts[0].spec = tampered_spec
     assert verify_charts(record, str(tmp_path), METRICS_DATA) != []
 
 

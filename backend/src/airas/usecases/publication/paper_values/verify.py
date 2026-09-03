@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from math import isclose
 from pathlib import Path
 from typing import Any, Literal
 
@@ -10,7 +11,6 @@ from airas.core.research_paths import RECORD_FILENAME, RECORD_PATH
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.paper_values import (
     ClaimStatus,
-    PaperValue,
     PaperValuesVerificationReport,
     ProvenanceCheckResult,
     TableSpec,
@@ -24,7 +24,7 @@ from airas.usecases.publication.paper_values.compute import (
     COMPARISON_KEY,
     compute_claim_values,
     load_metrics_data,
-    resolve_paper_ref,
+    resolve_paper_values,
     used_result_dirs,
 )
 from airas.usecases.publication.paper_values.latex import (
@@ -101,9 +101,7 @@ def _verify_tables(
         relpath = table_tex_relpath(spec.key)
         table_path = latex_dir / relpath
         if not table_path.is_file():
-            problems.append(
-                f"{relpath} is missing (update_and_verify_record writes it)"
-            )
+            problems.append(f"{relpath} is missing (update_record writes it)")
             continue
         try:
             expected = render_table_tex(spec, metrics_data)
@@ -120,37 +118,38 @@ def _verify_tables(
                 problems.append(
                     f"{TABLES_DIR_NAME}/{relative} is not declared in "
                     f"{RECORD_FILENAME} — table files here must come from "
-                    "update_and_verify_record"
+                    "update_record"
                 )
     return problems
 
 
-def _paper_values(
-    record: ResearchRecord, metrics_data: dict[str, Any], used_keys: list[str]
-) -> tuple[list[PaperValue], list[str]]:
-    """Resolve every \\airasval{...} main.tex uses, in the order it uses them.
+def claim_evaluation_drift(
+    record: ResearchRecord, claims: list[ClaimStatus]
+) -> list[str]:
+    """Claim ids whose stored evaluation disagrees with the recomputation.
 
-    Refs address either a claim's target (`<claim_id>.value`) or a declared
-    run's metric (`<run_id>.<path>`) — both writable before any run exists,
-    which is what lets the preregistered paper be written in full.
+    The value is compared, not only the two verdicts: a metric can be edited
+    in a way that moves the number the paper prints while leaving the
+    criterion satisfied and the order proof intact, and comparing verdicts
+    alone would call that record consistent.
     """
-    values: list[PaperValue] = []
-    undefined: list[str] = []
-    claims = {c.id: c for c in active(record.hypothesis.claims, "id")}
-    for ref in dict.fromkeys(used_keys):
-        try:
-            display = resolve_paper_ref(record, metrics_data, ref)
-        except ValueError:
-            undefined.append(ref)
-            continue
-        claim = claims.get(ref.partition(".")[0])
-        derivation = (
-            f"{claim.target.op}({', '.join(claim.target.refs)})"
-            if claim and ref.endswith(".value")
-            else ref
+    stored = {
+        c.id: c.evaluations[-1]
+        for c in active(record.hypothesis.claims, "id")
+        if c.evaluations
+    }
+    return [
+        s.id
+        for s in claims
+        if s.id not in stored
+        or stored[s.id].verified != s.verified
+        or stored[s.id].criterion_met != s.criterion_met
+        or stored[s.id].display != (s.display or "")
+        or (
+            s.value is not None
+            and not isclose(stored[s.id].value, s.value, rel_tol=1e-9)
         )
-        values.append(PaperValue(ref=ref, display=display, derivation=derivation))
-    return values, undefined
+    ]
 
 
 def verify_paper_record(
@@ -241,7 +240,7 @@ def verify_paper_record(
                 mismatches.append(str(e))
                 claim_values = {}
             else:
-                paper_values, undefined_keys = _paper_values(
+                paper_values, undefined_keys = resolve_paper_values(
                     record, metrics_data, used_keys
                 )
                 values_match = True
@@ -276,25 +275,12 @@ def verify_paper_record(
                 root, record, manifest, set(metrics_data), claim_values
             )
 
-            # The stored evaluation of each claim must equal its
-            # recomputation — both the order proof and the criterion.
-            stored = {
-                c.id: c.evaluations[-1]
-                for c in active(record.hypothesis.claims, "id")
-                if c.evaluations
-            }
-            drifted = [
-                s.id
-                for s in claims
-                if s.id not in stored
-                or stored[s.id].verified != s.verified
-                or stored[s.id].criterion_met != s.criterion_met
-            ]
+            drifted = claim_evaluation_drift(record, claims)
             claim_status_match = not drifted
             if drifted:
                 mismatches.append(
                     "stored claim evaluations differ from their recomputation "
-                    f"({', '.join(drifted)}) — run update_and_verify_record again"
+                    f"({', '.join(drifted)}) — run update_record again"
                 )
             refuted = [s.id for s in claims if s.criterion_met is False]
 

@@ -33,7 +33,11 @@ def load_record(local_repo_path: str) -> ResearchRecord:
     # A v1 record is structurally different (prereg/results rather than a
     # hypothesis tree). Say so plainly instead of failing with a validation
     # error that reads like the record is corrupt.
-    version = json.loads(raw).get("schema_version")
+    try:
+        loaded = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"{RECORD_PATH} is not valid JSON: {e}") from e
+    version = loaded.get("schema_version") if isinstance(loaded, dict) else None
     if version is not None and version < RECORD_SCHEMA_VERSION:
         raise ValueError(
             f"{RECORD_PATH} is schema_version {version}, this airas reads "
@@ -196,33 +200,43 @@ def record_consistency_problems(record: ResearchRecord) -> list[str]:
 
 
 def override_problems(record: ResearchRecord) -> list[str]:
-    """Did each run execute with the overrides it declared?
+    """Did each run execute with the parameters it declared?
 
     The commit fixes the config files but not the dispatch, so a run declared
     as `mode=full` can be executed as `mode=pilot` with the tree untouched —
     a fifth of the planned scale, reported as if it were the whole thing.
-    Comparing the declaration against what the execution resolved is the only
+    Comparing the declaration against what the platform recorded is the only
     place that shows up.
+
+    Both sides come from outside the experiment code: the declaration was
+    frozen in a commit, and the parameters are the platform's record of the
+    dispatch. A run's own report of its configuration is deliberately not
+    consulted — it can say anything, so agreeing with it proves nothing.
+
+    A declared parameter the platform never mentions is reported only when
+    the platform gave a complete parameter set. With overrides alone the
+    absence is ambiguous: the run may have taken the value from a default
+    the dispatch never had to restate.
     """
     problems: list[str] = []
     for run in run_index(record).values():
         execution = selected_execution(run)
         if execution is None or not run.overrides:
             continue
+        resolved = execution.parameters or execution.overrides
+        complete = bool(execution.parameters)
         for key, declared in run.overrides.items():
-            # execution.overrides comes from the manifest, i.e. from the argv
-            # Seyval recorded — the experiment code cannot write it, so a
-            # mismatch here is a real divergence between plan and dispatch.
-            actual = execution.overrides.get(key, execution.config.get(key))
-            if actual is None:
-                problems.append(
-                    f"run '{run.run_id}': declared override '{key}={declared}' "
-                    "is absent from the execution"
-                )
-            elif str(actual) != str(declared):
+            if key not in resolved:
+                if complete:
+                    problems.append(
+                        f"run '{run.run_id}': declared '{key}={declared}' but "
+                        "the execution resolved no such parameter"
+                    )
+                continue
+            if str(resolved[key]) != str(declared):
                 problems.append(
                     f"run '{run.run_id}': declared '{key}={declared}' but "
-                    f"executed '{key}={actual}'"
+                    f"executed '{key}={resolved[key]}'"
                 )
     return problems
 

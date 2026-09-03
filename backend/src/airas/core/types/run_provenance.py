@@ -31,6 +31,16 @@ class ResultsDirProvenance(BaseModel):
             "the experiment code cannot write"
         ),
     )
+    parameters: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Every parameter the run resolved, as reported by Seyval. "
+            "Strictly better than `overrides`, which carries only the "
+            "explicit deltas and so cannot distinguish a parameter left at "
+            "its default from one the platform never reported. Empty when "
+            "the platform does not supply it"
+        ),
+    )
 
 
 class RunProvenanceManifest(BaseModel):

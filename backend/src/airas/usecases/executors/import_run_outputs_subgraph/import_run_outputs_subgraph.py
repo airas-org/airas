@@ -50,6 +50,28 @@ def _parse_overrides(command_args: Any) -> dict[str, str]:
     return overrides
 
 
+def _parse_parameters(run: Any) -> dict[str, str]:
+    """Every parameter the run resolved, as Seyval reports it.
+
+    Strictly better than the argv-derived overrides: those carry only what
+    the dispatch restated, so a parameter left at its default is
+    indistinguishable from one that was never reported. Absent until the
+    platform supplies it, in which case callers fall back to the overrides
+    and treat a missing key as unknown rather than as a default.
+    """
+    reported = run.get("resolved_parameters") or run.get("parameters")
+    if isinstance(reported, dict):
+        return {str(k): str(v) for k, v in reported.items()}
+    # The list form the run schema uses: [{"name": ..., "value": ...}, ...]
+    if isinstance(reported, list):
+        return {
+            str(entry["name"]): str(entry.get("value"))
+            for entry in reported
+            if isinstance(entry, dict) and entry.get("name")
+        }
+    return {}
+
+
 class ImportRunOutputsSubgraphInputState(TypedDict):
     github_config: GitHubConfig
     run_id: str
@@ -70,6 +92,7 @@ class ImportRunOutputsSubgraphState(
 ):
     outputs: dict[str, bytes]
     seyval_overrides: dict[str, str]
+    seyval_parameters: dict[str, str]
     seyval_commit_hash: str | None
 
 
@@ -129,19 +152,22 @@ class ImportRunOutputsSubgraph:
         # metadata fetch must not fail an import whose outputs downloaded.
         commit_hash: str | None = None
         overrides: dict[str, str] = {}
+        parameters: dict[str, str] = {}
         try:
             run = await self.seyval_client.aget_run(execution_id)
             commit_hash = run.get("commit_hash")
             overrides = _parse_overrides(run.get("command_args"))
+            parameters = _parse_parameters(run)
         except Exception as e:
             logger.warning(
                 f"Could not fetch run metadata for {execution_id}; the "
-                f"manifest will omit its commit hash and overrides: {e}"
+                f"manifest will omit its commit hash and parameters: {e}"
             )
         return {
             "outputs": outputs,
             "seyval_commit_hash": commit_hash,
             "seyval_overrides": overrides,
+            "seyval_parameters": parameters,
         }
 
     async def _load_manifest(
@@ -193,6 +219,7 @@ class ImportRunOutputsSubgraph:
                 execution_id=execution_id,
                 commit_hash=state.get("seyval_commit_hash"),
                 overrides=state.get("seyval_overrides") or {},
+                parameters=state.get("seyval_parameters") or {},
             )
 
         # One commit for the whole batch, so the repository is never left

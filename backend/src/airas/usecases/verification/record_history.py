@@ -15,6 +15,7 @@ from airas.infra.local_git import (
     file_bytes_at_commit,
     is_shallow,
 )
+from airas.usecases.publication.paper_values.compute import COMPARISON_KEY
 from airas.usecases.publication.paper_values.record import (
     active,
     record_append_violations,
@@ -132,15 +133,27 @@ def compute_claim_status(
             # Only the declaration is compared: executions are appended after
             # the run, so requiring the whole run entry to match would make
             # every claim unverifiable the moment its results arrived.
-            check.declared_at_run_commit = bool(
+            claim_predates_run = bool(
                 past_claim
                 and past_claim.model_dump(exclude={"evaluations"})
                 == claim.model_dump(exclude={"evaluations"})
-                and past_run
-                and current_run
-                and past_run.model_dump(exclude={"executions"})
-                == current_run.model_dump(exclude={"executions"})
             )
+            if run_id == COMPARISON_KEY:
+                # The comparison directory is derived from the other runs by
+                # the aggregation step, so no run declares it and there is no
+                # run entry to match. Requiring one would leave every claim
+                # that cites an aggregate permanently unverified. The part
+                # that carries the guarantee — the claim already existed at
+                # the commit the run executed — is still checked.
+                check.declared_at_run_commit = claim_predates_run
+            else:
+                check.declared_at_run_commit = bool(
+                    claim_predates_run
+                    and past_run
+                    and current_run
+                    and past_run.model_dump(exclude={"executions"})
+                    == current_run.model_dump(exclude={"executions"})
+                )
             if not check.declared_at_run_commit:
                 check.detail = (
                     "record.json is unreadable at the run commit"

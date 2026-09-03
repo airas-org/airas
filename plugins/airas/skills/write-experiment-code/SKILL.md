@@ -64,17 +64,22 @@ it to; swapping the producer changes nothing else.
    own gate before dispatching anything expensive — nothing downstream
    parses it for you.
 
-2. **Write the four files verification reads.** Per run, under
+2. **Write the three files verification reads.** Per run, under
    `{results_dir}/{run_id}/`:
 
    | File | Written by | Why it is required |
    | --- | --- | --- |
    | `eval_inputs/<task>.json` | `src/main.py` | the raw predictions; what the metrics can be re-derived from |
-   | `config.json` | `src/main.py` | `OmegaConf.to_container(cfg, resolve=True)` — the conditions the run actually executed under |
    | `evaluation/<task>.json` | `make evaluate` | airas-eval's verdict, its versions and `skipped` |
    | `metrics.json` | `src/evaluate.py` | copied from the airas-eval report; the file the record is checked against |
 
-   All four go **under `.research/results/`**: that is the only tree the
+   Do **not** write out the resolved configuration. The record takes the
+   parameters a run executed with from the platform's record of the
+   dispatch, never from a file the run wrote: code reporting its own
+   settings can report anything, so agreeing with it would prove only that
+   the code was willing to claim it.
+
+   All three go **under `.research/results/`**: that is the only tree the
    executor collects back, so anything written beside the Hydra logs or in a
    scratch directory never reaches the repository, and the check that would
    have used it silently passes on an empty value.

@@ -122,17 +122,6 @@ class RunDeclaration(BaseModel):
 
 
 class Execution(BaseModel):
-    """One actual run on the compute platform. Facts; never rewritten.
-
-    Running the same configuration again appends another execution rather
-    than replacing this one, so "we ran it three times" stays in the record.
-
-    The commit alone does not determine what ran: the executor can override
-    parameters at dispatch (`mode=full` turns 200 architectures into 1000
-    without touching a tracked file), so the resolved configuration is
-    recorded here rather than inferred from the tree.
-    """
-
     execution_id: Optional[str] = Field(
         default=None, description="Platform run id this data came from"
     )
@@ -141,9 +130,14 @@ class Execution(BaseModel):
         default_factory=dict,
         description="Parameters the dispatch overrode on top of the commit",
     )
-    config: dict[str, Any] = Field(
+    parameters: dict[str, Any] = Field(
         default_factory=dict,
-        description="Resolved configuration the run actually used",
+        description=(
+            "Every parameter the run actually resolved, as the platform "
+            "recorded it. Empty when the platform reported only the "
+            "dispatch's overrides, which is why absence here means "
+            "'unknown' rather than 'default'"
+        ),
     )
     inputs: Optional[InputRef] = None
     evaluation: Optional[EvalReport] = None
@@ -190,13 +184,4 @@ class ChartDeclaration(BaseModel):
 
 
 class LinkBase(BaseModel):
-    """Where a value macro links to.
-
-    Only the remote is stored. The ref is resolved at render and verification
-    time as the commit that last wrote record.json, which pins the link to the
-    record as it stood when the number was produced — storing it here instead
-    would be circular, since the sha is not known until the write is
-    committed.
-    """
-
     repo_url: str = Field(description="Normalized https URL of the origin remote")

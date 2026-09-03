@@ -109,17 +109,27 @@ failure of the record. Reading a column of `verified: true` as "the
 hypothesis held" is the misreading the second field exists to
 prevent.
 
-Trust domains: local runs of the checks (including the one inside
-`update_and_verify_record`) are fast feedback with **zero evidentiary
-value** — the local toolchain is in the agent's hands. The judgement
-is the CI run on the pushed history, anchored by two stores the agent
-cannot write: Seyval's run records (execution id, commit hash, output
-bytes) and git's content-addressed history. Consequences: rewriting a
-committed declaration turns the branch permanently red (the history
-walk sees every version); forged numbers, metrics or flags fail
-recomputation or the Seyval byte-comparison; rewriting history after
-a run detaches the run's commit from HEAD and voids the results
-themselves. Before any run exists, redoing the record is legitimate —
+Trust domains: local runs of the checks have **zero evidentiary
+value** — the local toolchain is in the agent's hands, and whatever a
+local check reports the agent can push anyway, so it is advice and not
+a gate. `update_record` therefore writes and commits without judging.
+The judgement is the CI run on the pushed history, anchored by two
+stores the agent cannot write: Seyval's run records (execution id,
+commit hash, output bytes) and git's content-addressed history. What
+makes that judgement binding rather than informative is branch
+protection, set up by `prepare_repository`: the record gate is a
+required check on the protected branch, enforced on admins too, so a
+commit whose check is red cannot land at all. Work is pushed to a
+staging ref for the gate to run on, then fast-forwarded onto the
+protected branch, which lands the exact sha CI judged.
+
+Consequences: rewriting a committed declaration turns the branch
+permanently red (the history walk sees every version); forged numbers,
+metrics or flags fail recomputation or the Seyval byte-comparison;
+rewriting history after a run detaches the run's commit from HEAD and
+voids the results themselves — which is why force pushes, deletions
+and squash/rebase merges are all disabled rather than merely
+discouraged. Before any run exists, redoing the record is legitimate —
 nothing is anchored yet, so nothing can be hidden.
 
 ## Resuming mid-flow
