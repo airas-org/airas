@@ -43,9 +43,7 @@ from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_record import (
     ChartDeclaration,
     ClaimDeclaration,
-    DesignDeclaration,
     Hypothesis,
-    LinkBase,
     RenderedChart,
     ResearchRecord,
 )
@@ -174,8 +172,8 @@ from airas.usecases.publication.paper_values.latex import (
 from airas.usecases.publication.paper_values.realize import realize_record
 from airas.usecases.publication.paper_values.record import (
     active,
+    all_tables,
     load_record,
-    orphan_runs,
     record_consistency_problems,
     record_path,
     save_record,
@@ -1700,6 +1698,7 @@ async def render_chart(
     vega_lite_spec: dict[str, Any],
     output_path: str,
     local_path: str,
+    hypothesis_id: str,
 ) -> dict[str, Any]:
     """Render a result chart whose data points come from measured metrics.
 
@@ -1719,8 +1718,8 @@ async def render_chart(
     and PNGs under `.research/results/`. PDF chart output is refused:
     vl-convert's PDF bytes are not deterministic across processes, so a
     PDF chart could never be verified against a re-render. The unresolved
-    spec is appended to `.research/record.json` as the chart's
-    declaration, and the chart and record.json are committed together in
+    spec is appended to `.research/record.json`, under the hypothesis
+    named by `hypothesis_id`, as the chart's declaration, and the chart and record.json are committed together in
     the same step (`commit` in the result); `verify_paper_values`
     re-resolves, re-renders and byte-compares. A path that already has a
     different declared spec is refused — render to a new path, or
@@ -1746,12 +1745,13 @@ async def render_chart(
 
     def _run() -> dict[str, Any]:
         record = load_record(local_path)
+        target = _hypothesis(record, hypothesis_id)
         metrics_data = load_metrics_data(local_path)
         resolved, _ = substitute_chart_refs(vega_lite_spec, metrics_data)
         data = render_chart_bytes(resolved, suffix)
 
         declared = next(
-            (c for c in active(record.charts, "path") if c.path == relative),
+            (c for c in active(target.charts, "path") if c.path == relative),
             None,
         )
         if declared and (declared.spec != vega_lite_spec or declared.format != suffix):
@@ -1761,7 +1761,7 @@ async def render_chart(
                 "append_to_record"
             )
         if declared is None:
-            record.charts.append(
+            target.charts.append(
                 ChartDeclaration(
                     path=relative,
                     format=suffix,
@@ -1769,7 +1769,7 @@ async def render_chart(
                 )
             )
         next(
-            c for c in active(record.charts, "path") if c.path == relative
+            c for c in active(target.charts, "path") if c.path == relative
         ).renders.append(RenderedChart(renderer=renderer_version()))
         save_record(local_path, record)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -2103,23 +2103,8 @@ async def _paper_values_full_report(
     )
 
 
-def _parse_declarations(
-    designs: list[dict[str, Any]] | None,
-    claims: list[dict[str, Any]] | None,
-    tables: list[dict[str, Any]] | None,
-    charts: list[dict[str, Any]] | None,
-) -> tuple[
-    list[DesignDeclaration],
-    list[ClaimDeclaration],
-    list[TableSpec],
-    list[ChartDeclaration],
-]:
-    return (
-        [DesignDeclaration.model_validate(d) for d in designs or []],
-        [ClaimDeclaration.model_validate(c) for c in claims or []],
-        [TableSpec.model_validate(t) for t in tables or []],
-        [ChartDeclaration.model_validate(c) for c in charts or []],
-    )
+def _parse_hypotheses(hypotheses: list[dict[str, Any]] | None) -> list[Hypothesis]:
+    return [Hypothesis.model_validate(h) for h in hypotheses or []]
 
 
 def _commit_record_paths(local_path: str, paths: list[str], message: str) -> str:
@@ -2132,59 +2117,61 @@ def _commit_record_paths(local_path: str, paths: list[str], message: str) -> str
     return commit
 
 
+def _hypothesis(record: ResearchRecord, hypothesis_id: str) -> Hypothesis:
+    for hypothesis in record.hypotheses:
+        if hypothesis.id == hypothesis_id:
+            return hypothesis
+    raise ValueError(
+        f"no hypothesis '{hypothesis_id}' in the record "
+        f"(have: {', '.join(h.id for h in record.hypotheses) or 'none'})"
+    )
+
+
 @mcp.tool()
 async def preregister_record(
     local_path: str,
-    hypothesis: str,
-    designs: list[dict[str, Any]],
-    claims: list[dict[str, Any]] | None = None,
-    tables: list[dict[str, Any]] | None = None,
-    notes: list[str] | None = None,
+    hypotheses: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Create the research record before any experiment has run.
 
     Writes `.research/record.json` — the canonical record the whole
     verification system keys on — and commits it in the same step
     (`freeze_commit` in the result). That commit is the freeze point: every
-    later revision must *contain* this one whole, so a criterion cannot be
-    loosened, a claim cannot be reworded and an execution cannot be dropped
-    once it is written.
+    later revision must *contain* this one whole, so a claim cannot be
+    reworded, a run's conditions cannot be changed and a result cannot be
+    dropped once written.
 
-    The record is a tree: one `hypothesis`, the `designs` that test it, and
-    the `runs` each design will execute.
+    The record is a tree, read as "to support this hypothesis, these claims;
+    to verify this claim, these designs; a design is these runs":
 
-      designs: [{"id": "d1", "summary": "...",
-                 "runs": [{"run_id": "proposed-...", "description": "..."}]}]
+      hypotheses: [{
+        "id": "h1", "statement": "the hypothesis, in prose",
+        "claims": [{
+          "id": "c1", "statement": "one assertive sentence",
+          "designs": [{
+            "id": "d1", "summary": "...",
+            "runs": [{"run_id": "proposed-...", "description": "...",
+                      "params": {"mode": "full"}}]
+          }]
+        }],
+        "tables": [...], "charts": [...], "notes": [...]
+      }]
 
     `run_id` names the results directory the run will produce and must be
-    unique across the whole record.
-
-    `claims` decompose the hypothesis into falsifiable units and sit beside
-    the designs, because a claim may compare runs from more than one:
-
-      {"id": "c1", "statement": "one assertive sentence",
-       "target": {"op": "diff", "refs": ["run-a.spearman_rho",
-                                         "run-b.spearman_rho"], "abs": true},
-       "criterion": {"max": 0.10},
-       "predicted_interval": {"min": 0.0, "max": 0.05},
-       "rationale": "where the prediction comes from"}
-
-    `target` is the frozen recipe for the number the claim is judged on. Its
-    `refs` address *declared run ids*, never executions — those do not exist
-    yet, which is exactly what lets the preregistered paper be written in
-    full. `criterion` is always a plain range: fold a comparison against
-    another number into the target (`diff(|a|, |b|)` with `{"max": 0.05}`)
-    instead of referencing it from the bound.
+    unique across the whole record — a run belongs to exactly one claim.
+    `params` are the conditions the run is declared to be dispatched with;
+    the gate checks them against what the platform recorded. What a claim's
+    condition is and whether it was met are not modelled yet (TODO): the
+    record tracks whether each claim's procedure was carried out properly
+    (`verified`), not whether the numbers favoured it.
 
     Fails if record.json already exists (use `append_to_record`), if a claim
-    references a run no design declares, or if the clone cannot commit.
-    After this: write every future experimental number in main.tex as
-    `\\airasval{<claim_id>.value}` or `\\airasval{<run_id>.<metric>}`,
-    compile, commit main.tex and push — tell the user the freeze sha.
+    declares no run, or if the clone cannot commit. After this: write every
+    future experimental number in main.tex as `\\airasval{<run_id>.<metric>}`
+    or `\\airasval{<run_id>.params.<key>}`, compile, commit main.tex and
+    push to the staging ref — tell the user the freeze sha once it lands.
     """
-    parsed_designs, parsed_claims, parsed_tables, _ = _parse_declarations(
-        designs, claims, tables, None
-    )
+    parsed = _parse_hypotheses(hypotheses)
 
     def _run() -> dict[str, Any]:
         path = record_path(local_path)
@@ -2194,15 +2181,7 @@ async def preregister_record(
                 "declarations with append_to_record"
             )
 
-        record = ResearchRecord(
-            hypothesis=Hypothesis(
-                statement=hypothesis,
-                claims=parsed_claims,
-                designs=parsed_designs,
-            ),
-            tables=parsed_tables,
-            notes=notes or [],
-        )
+        record = ResearchRecord(hypotheses=parsed)
         problems = record_consistency_problems(record)
         if problems:
             raise ValueError("; ".join(problems))
@@ -2213,13 +2192,17 @@ async def preregister_record(
         )
         return {
             "record_path": str(path),
-            "claims": [c.id for c in parsed_claims],
-            "designs": {d.id: [r.run_id for r in d.runs] for d in parsed_designs},
-            "orphan_runs": orphan_runs(record),
+            "hypotheses": {
+                h.id: {
+                    c.id: {d.id: [r.run_id for r in d.runs] for d in c.designs}
+                    for c in h.claims
+                }
+                for h in parsed
+            },
             "freeze_commit": freeze_commit,
             "next": (
                 "this commit is the freeze point runs must descend from — "
-                "write the prereg main.tex, then push"
+                "write the prereg main.tex, then push to the staging ref"
             ),
         }
 
@@ -2229,7 +2212,8 @@ async def preregister_record(
 @mcp.tool()
 async def append_to_record(
     local_path: str,
-    designs: list[dict[str, Any]] | None = None,
+    hypotheses: list[dict[str, Any]] | None = None,
+    hypothesis_id: str | None = None,
     claims: list[dict[str, Any]] | None = None,
     tables: list[dict[str, Any]] | None = None,
     charts: list[dict[str, Any]] | None = None,
@@ -2238,30 +2222,51 @@ async def append_to_record(
     """Add declarations to the record; nothing already in it ever changes.
 
     The record only grows: every committed revision must contain the one
-    before it whole, so this tool appends and never edits. Entry shapes are
+    before it whole, so this tool appends and never edits. `hypotheses`
+    appends whole new hypotheses; `claims`, `tables`, `charts` and `notes`
+    append under the hypothesis named by `hypothesis_id`. Entry shapes are
     the ones `preregister_record` documents.
 
     Revising a frozen entry means appending a new one with the *same id* —
-    the later entry is the live one and the earlier stays readable in place,
-    so a revision keeps its own history. To retire an entry with no
+    the later entry is the live one and the earlier stays readable in place.
+    That is also how a design or a run is added to an existing claim: append
+    the claim again, with the extra design. To retire an entry with no
     replacement, append it again with `"withdrawn": true`.
 
-    Use this for exploratory extensions (declare the design, run and claim
+    Use this for exploratory extensions (declare the claim and its runs
     first, then execute — results for an undeclared run fail verification).
     The append is committed in the same step (`commit` in the result);
     anything a run should count as evidence for must be in that commit's
     history before the run executes, so a claim declared after its run stays
     unverified forever.
     """
-    parsed = _parse_declarations(designs, claims, tables, charts)
+    new_hypotheses = _parse_hypotheses(hypotheses)
+    scoped = any(x for x in (claims, tables, charts, notes))
+    if scoped and not hypothesis_id:
+        raise ValueError(
+            "claims, tables, charts and notes append under a hypothesis — "
+            "pass hypothesis_id"
+        )
 
     def _run() -> dict[str, Any]:
         record = load_record(local_path)
-        record.hypothesis.designs.extend(parsed[0])
-        record.hypothesis.claims.extend(parsed[1])
-        record.tables.extend(parsed[2])
-        record.charts.extend(parsed[3])
-        record.notes.extend(notes or [])
+        record.hypotheses.extend(new_hypotheses)
+        counts = {"hypotheses": len(new_hypotheses)}
+        if hypothesis_id:
+            target = _hypothesis(record, hypothesis_id)
+            parsed_claims = [ClaimDeclaration.model_validate(c) for c in claims or []]
+            parsed_tables = [TableSpec.model_validate(t) for t in tables or []]
+            parsed_charts = [ChartDeclaration.model_validate(c) for c in charts or []]
+            target.claims.extend(parsed_claims)
+            target.tables.extend(parsed_tables)
+            target.charts.extend(parsed_charts)
+            target.notes.extend(notes or [])
+            counts.update(
+                claims=len(parsed_claims),
+                tables=len(parsed_tables),
+                charts=len(parsed_charts),
+                notes=len(notes or []),
+            )
         problems = record_consistency_problems(record)
         if problems:
             raise ValueError("; ".join(problems))
@@ -2271,13 +2276,7 @@ async def append_to_record(
         )
         return {
             "record_path": str(record_path(local_path)),
-            "appended": {
-                "designs": len(parsed[0]),
-                "claims": len(parsed[1]),
-                "tables": len(parsed[2]),
-                "charts": len(parsed[3]),
-                "notes": len(notes or []),
-            },
+            "appended": counts,
             "commit": commit,
             "next": (
                 "the appended declarations are committed — any run they "
@@ -2296,40 +2295,39 @@ async def update_record(
     """Realize the record from the run outputs and commit it.
 
     This is the only sanctioned way experimental numbers enter the paper.
-    The declarations live in `.research/record.json` (written at
-    preregistration by `preregister_record`, extended by
-    `append_to_record`); this tool reads the actual run outputs
-    (`.research/results/<run_id>/metrics.json` and
-    `comparison/aggregated_metrics.json` in the local clone) and computes
-    every declared value and table itself. Numbers cannot be passed in,
-    so a value that was never measured cannot become a macro or a cell.
+    The declarations live in `.research/record.json`; this tool reads the
+    actual run outputs in the local clone (`.research/results/<run_id>/` —
+    metrics.json, eval_inputs/, evaluation/) and the provenance manifest
+    `.provenance.json`, and appends to each run a `results[]` entry: the
+    platform's execution id and commit, the hash of the evaluation inputs,
+    the evaluator's report, and the metrics file verbatim. Numbers cannot
+    be passed in, so a value that was never measured cannot enter the
+    record.
 
-    It writes into record.json's results section everything a reviewer
-    needs to judge the record standalone: each run's measured metrics
-    verbatim with its execution id and commit, the computed values, and
-    each claim's verification — a claim is verified only when every run
-    it names has results whose provenance commit is an ancestor of HEAD
-    and already contained the identical declarations, so declaring after
-    the fact can never verify a claim. It renders `values.tex` and
-    `tables/<key>.tex` into `.research/latex/{template}/`; when the
-    clone has an `origin` remote, every value macro is a hyperlink to
-    record.json on that remote.
+    A claim's `verified` is set to true when every run under it has
+    results — the data the claim rests on is in. Whether the claim's
+    condition was met, and whether it was declared before its runs
+    executed, are not modelled yet (TODO).
+
+    It then renders `values.tex` and `tables/<key>.tex` into
+    `.research/latex/{template}/`; when the clone has an `origin` remote,
+    every value macro is a hyperlink to record.json at the commit that
+    wrote it.
 
     This tool does not judge the result, and deliberately so. Whatever it
     reported locally, the agent could push regardless, so a local verdict
     was advice rather than a gate — and running the identical checks twice
     made the advisory pass look like a second, independent opinion. The
     verdict comes from CI, on the pushed commit, where the agent cannot
-    intervene: push the branch, read the run, and merge into the protected
-    branch only when it is green.
+    intervene: push to the staging ref, read the run, and fast-forward the
+    protected branch only when it is green.
 
     Then `\\input{values.tex}` in main.tex's preamble,
     `\\input{tables/<key>.tex}` where each table belongs, and every
     experimental number as `\\airasval{key}` — never a literal. A
     legitimate number no declaration can produce (e.g. a value quoted
     from a cited paper) must be wrapped as `\\unverified{...}` so it is
-    surfaced for review. Commit record.json together with the rendered
-    files.
+    surfaced for review.
     """
     refresh_environment()
 
@@ -2339,16 +2337,11 @@ async def update_record(
         root = Path(local_path).expanduser().resolve()
         manifest = load_provenance_manifest(root)
 
-        # Executions are facts, so they are appended rather than replaced:
+        # Results are facts, so they are appended rather than replaced:
         # running the same configuration again adds an entry and the earlier
         # numbers stay, which is what makes the record a lab notebook as well
         # as a verification input.
         statuses, appended = realize_record(root, record, metrics_data, manifest)
-
-        remote = remote_origin_url(root)
-        record.link_base = (
-            LinkBase(repo_url=normalize_git_url(remote)) if remote else None
-        )
 
         save_record(local_path, record)
         # Two commits on purpose: the link in values.tex must name the commit
@@ -2370,13 +2363,18 @@ async def update_record(
         )
         paper_values, _ = resolve_paper_values(record, metrics_data, used_keys)
 
+        remote = remote_origin_url(root)
         values_tex_path = latex_dir / VALUES_TEX_FILENAME
         values_tex_path.write_text(
-            render_values_tex(paper_values, record.link_base, record_commit),
+            render_values_tex(
+                paper_values,
+                normalize_git_url(remote) if remote else None,
+                record_commit,
+            ),
             encoding="utf-8",
         )
         tables: dict[str, str] = {}
-        table_specs = active(record.tables, "key")
+        table_specs = all_tables(record)
         if table_specs:
             tables_dir = latex_dir / TABLES_DIR_NAME
             tables_dir.mkdir(parents=True, exist_ok=True)
@@ -2400,15 +2398,8 @@ async def update_record(
         )
         return {
             "values": {v.ref: v.display for v in paper_values},
-            "claims": {
-                s.id: {
-                    "verified": s.verified,
-                    "criterion_met": s.criterion_met,
-                    "value": s.display,
-                }
-                for s in statuses
-            },
-            "executions_appended": appended,
+            "claims": {s.id: {"verified": s.verified} for s in statuses},
+            "results_appended": appended,
             "record_commit": record_commit,
             "tables": tables,
             "record_path": str(record_path(local_path)),
@@ -2420,8 +2411,8 @@ async def update_record(
     result["usage"] = (
         "\\input{values.tex} in the preamble, \\input{tables/<key>.tex} where "
         "each table belongs, then \\airasval{<key>} wherever the paper states "
-        "a number; the realized files are already committed — push the branch "
-        "and let CI decide whether it may reach the protected branch"
+        "a number; the realized files are already committed — push to the "
+        "staging ref and let CI decide whether it may reach the protected branch"
     )
     return result
 
@@ -2448,11 +2439,10 @@ async def verify_paper_values(
     every results directory must belong to a declared run
     (`undeclared_result_dirs`), the record's git history must be pure
     appends to the declaration section (`append_only`), and each claim's
-    stored verified flag must equal its recomputation: verified means
-    every run the claim names has results whose provenance commit is an
-    ancestor of HEAD and already contained the identical declarations.
-    Unverified claims do not fail the check — they are listed in
-    `unverified_claims` for honest reporting.
+    stored verified flag must be borne out by the recomputation: verified
+    means every run under the claim has results. Unverified claims do not
+    fail the check — they are listed in `unverified_claims` for honest
+    reporting.
 
     Unless `check_provenance=False`, the local metrics files are also
     cross-checked against the execution platform's stored run outputs

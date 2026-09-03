@@ -4,7 +4,6 @@ import re
 
 from airas.core.research_paths import RECORD_PATH
 from airas.core.types.paper_values import PaperValue
-from airas.core.types.research_record import LinkBase
 
 VALUES_TEX_FILENAME = "values.tex"
 
@@ -19,25 +18,25 @@ _HEADER = (
 _URL_SAFE = re.compile(r"^[A-Za-z0-9:/._~-]+$")
 
 
-def record_blob_url(link_base: LinkBase, ref: str | None) -> str | None:
+def record_blob_url(repo_url: str | None, ref: str | None) -> str | None:
     """Link into the record at a pinned commit.
 
     A branch link would resolve to whatever the record says later — it keeps
     growing — so the link names the commit that last wrote it, which is the
-    state that produced the number being clicked. The sha is passed in
-    rather than stored on LinkBase because it is not known until the write
-    that contains it has been committed.
+    state that produced the number being clicked. Both parts are derived at
+    render time (the origin remote, the commit that wrote the record) rather
+    than stored in the record, which has no reason to know where it lives.
     """
-    if not ref:
+    if not ref or not repo_url:
         return None
-    url = f"{link_base.repo_url}/blob/{ref}/{RECORD_PATH}"
+    url = f"{repo_url}/blob/{ref}/{RECORD_PATH}"
     return url if _URL_SAFE.match(url) else None
 
 
 def render_values_tex(
-    values: list[PaperValue], link_base: LinkBase | None, ref: str | None = None
+    values: list[PaperValue], repo_url: str | None, ref: str | None = None
 ) -> str:
-    url = record_blob_url(link_base, ref) if link_base else None
+    url = record_blob_url(repo_url, ref)
     lines = [
         _HEADER,
         r"\makeatletter",

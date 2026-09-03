@@ -1,7 +1,29 @@
+"""Verification of the record and of the paper that draws on it.
+
+Two checks, on two sources of truth, and every value in the record traces
+to one of them:
+
+  A. What is already recorded is intact — git history. Every committed
+     revision of record.json contains the one before it (containment); the
+     declarations are internally sound; and each claim's declaration
+     already existed, in this exact form, at the commit its runs executed.
+
+  B. What is being appended is bound to the experiment and re-derivable —
+     the platform's record and the files it stored. Each result names the
+     execution the manifest names; its copies (metrics, inputs hash, the
+     evaluator's report) equal the files; the declared run conditions match
+     what the platform recorded; and `verified` is never stored as true
+     where the recomputation finds otherwise.
+
+`check_record` runs both. `verify_paper_record` adds the paper's own checks
+on top (values.tex regeneration, declared tables, every \\airasval key
+declared). The record gate calls `check_record` alone.
+"""
+
 from __future__ import annotations
 
 import re
-from math import isclose
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
@@ -20,6 +42,7 @@ from airas.core.types.run_provenance import (
     PROVENANCE_MANIFEST_PATH,
     RunProvenanceManifest,
 )
+from airas.infra.local_git import normalize_git_url, remote_origin_url
 from airas.usecases.publication.paper_values.charts import (
     chart_result_dirs,
     verify_charts,
@@ -27,7 +50,6 @@ from airas.usecases.publication.paper_values.charts import (
 from airas.usecases.publication.paper_values.compute import (
     COMPARISON_KEY,
     RESULTS_DIR,
-    compute_claim_values,
     load_metrics_data,
     resolve_paper_values,
     used_result_dirs,
@@ -41,14 +63,12 @@ from airas.usecases.publication.paper_values.realize import (
     eval_report,
 )
 from airas.usecases.publication.paper_values.record import (
-    active,
+    all_claims,
+    all_tables,
     load_record,
-    orphan_runs,
-    override_problems,
     record_consistency_problems,
-    ref_run_id,
     run_index,
-    selected_execution,
+    selected_result,
 )
 from airas.usecases.publication.paper_values.tables import (
     TABLES_DIR_NAME,
@@ -57,6 +77,7 @@ from airas.usecases.publication.paper_values.tables import (
     table_tex_relpath,
 )
 from airas.usecases.verification.record_history import (
+    APPEND_ONLY_STATUS,
     compute_claim_status,
     record_append_only_status,
 )
@@ -133,87 +154,117 @@ def _verify_tables(
     return problems
 
 
-def execution_problems(
+# --------------------------------------------------------------------------
+# B: what is being appended
+# --------------------------------------------------------------------------
+
+
+def params_problems(
+    record: ResearchRecord, manifest: RunProvenanceManifest | None
+) -> list[str]:
+    """Did each run execute under the conditions it declared?
+
+    The commit fixes the config files but not the dispatch, so a run
+    declared as `mode=full` can be executed as `mode=pilot` with the tree
+    untouched — a fifth of the planned scale, reported as if it were the
+    whole thing. The manifest carries what the platform recorded for the
+    dispatch (itself checked against the platform by the provenance step);
+    the declaration is compared with that.
+
+    A declared key the platform never mentions is reported only when the
+    platform gave a complete parameter set. With overrides alone the
+    absence is ambiguous: the run may have taken the value from a default
+    the dispatch never had to restate.
+    """
+    problems: list[str] = []
+    for run in run_index(record).values():
+        declared = manifest.dirs.get(run.run_id) if manifest else None
+        if declared is None or not run.params:
+            continue
+        resolved = declared.parameters or declared.overrides
+        complete = bool(declared.parameters)
+        for key, wanted in run.params.items():
+            if key not in resolved:
+                if complete:
+                    problems.append(
+                        f"run '{run.run_id}': declared '{key}={wanted}' but "
+                        "the execution resolved no such parameter"
+                    )
+                continue
+            if str(resolved[key]) != str(wanted):
+                problems.append(
+                    f"run '{run.run_id}': declared '{key}={wanted}' but "
+                    f"executed '{key}={resolved[key]}'"
+                )
+    return problems
+
+
+def result_problems(
     root: Path,
     record: ResearchRecord,
     metrics_data: dict[str, Any],
     manifest: RunProvenanceManifest | None,
 ) -> list[str]:
-    """Is every value the record holds about an execution re-derivable?
+    """Is every value a result entry holds re-derivable from its source?
 
-    An execution entry is a set of copies: of the manifest (which run, which
-    commit, which parameters), of the metrics file, of the inputs' hash, of
-    the evaluator's report. Each copy is compared with what it claims to
-    copy. Without this, an execution appended by hand could carry numbers
-    that no file, no manifest and no platform record ever produced — and
-    pass, because containment allows appends and the claim recomputation
-    reads the files rather than the record.
-
-    The sources themselves are anchored elsewhere: the manifest and the
-    files to Seyval, the commit to git. This check only asks that the
-    record agree with them.
+    A result is a set of copies: of the manifest (which execution, which
+    commit), of the metrics file, of the inputs' hash, of the evaluator's
+    report. Each is compared with what it claims to copy. Without this, a
+    result appended by hand could carry numbers that no file, no manifest
+    and no platform ever produced — and pass, because containment allows
+    appends and the paper reads the files rather than the record.
     """
     problems: list[str] = []
     for run in run_index(record).values():
-        execution = selected_execution(run)
-        if execution is None:
+        result = selected_result(run)
+        if result is None:
             continue
         rid = run.run_id
 
         declared = manifest.dirs.get(rid) if manifest else None
-        if declared is not None:
-            if execution.execution_id != declared.execution_id:
+        if declared is None:
+            problems.append(
+                f"run '{rid}': the record holds a result but no readable "
+                f"{PROVENANCE_MANIFEST_PATH} entry declares an execution for "
+                "this directory"
+            )
+        else:
+            if result.id != declared.execution_id:
                 problems.append(
-                    f"run '{rid}': the record's execution_id "
-                    f"{execution.execution_id!r} is not the manifest's "
-                    f"{declared.execution_id!r}"
+                    f"run '{rid}': the result's id {result.id!r} is not the "
+                    f"manifest's execution {declared.execution_id!r}"
                 )
-            if execution.commit != declared.commit_hash:
+            if result.commit != declared.commit_hash:
                 problems.append(
-                    f"run '{rid}': the record's commit {execution.commit!r} is "
+                    f"run '{rid}': the result's commit {result.commit!r} is "
                     f"not the manifest's {declared.commit_hash!r}"
                 )
-            if dict(execution.overrides) != dict(declared.overrides):
-                problems.append(
-                    f"run '{rid}': the record's overrides differ from the manifest's"
-                )
-            if dict(execution.parameters) != dict(declared.parameters):
-                problems.append(
-                    f"run '{rid}': the record's parameters differ from the manifest's"
-                )
-        elif execution.execution_id or execution.commit:
-            problems.append(
-                f"run '{rid}': the record names an execution but no readable "
-                f"{PROVENANCE_MANIFEST_PATH} entry declares one for this directory"
-            )
 
-        if rid in metrics_data and execution.metrics != metrics_data[rid]:
+        if rid in metrics_data and result.metrics != metrics_data[rid]:
             problems.append(
-                f"run '{rid}': the record's copy of metrics differs from "
+                f"run '{rid}': the result's metrics differ from "
                 f"{RESULTS_DIR}/{rid}/metrics.json"
             )
 
         expected_inputs = eval_inputs_ref(root, rid)
-        stored_inputs = execution.inputs
-        if (stored_inputs is None) != (expected_inputs is None) or (
-            stored_inputs is not None
+        if (result.eval_inputs is None) != (expected_inputs is None) or (
+            result.eval_inputs is not None
             and expected_inputs is not None
-            and stored_inputs.model_dump() != expected_inputs.model_dump()
+            and result.eval_inputs.model_dump() != expected_inputs.model_dump()
         ):
             problems.append(
-                f"run '{rid}': the record's inputs hash does not match the "
-                "eval_inputs file in the results directory"
+                f"run '{rid}': the result's eval_inputs hash does not match "
+                "the eval_inputs file in the results directory"
             )
 
         expected_eval = eval_report(root, rid)
-        stored_eval = execution.evaluation
-        if (stored_eval is None) != (expected_eval is None) or (
-            stored_eval is not None
+        if (result.eval_report is None) != (expected_eval is None) or (
+            result.eval_report is not None
             and expected_eval is not None
-            and stored_eval.model_dump() != expected_eval.model_dump()
+            and result.eval_report.model_dump() != expected_eval.model_dump()
         ):
             problems.append(
-                f"run '{rid}': the record's evaluation differs from the "
+                f"run '{rid}': the result's eval_report differs from the "
                 "evaluator's report in the results directory"
             )
 
@@ -221,47 +272,108 @@ def execution_problems(
         # inputs the record hashed, or the metrics and the inputs describe
         # two different experiments.
         if (
-            stored_eval is not None
-            and stored_inputs is not None
-            and stored_eval.inputs_sha256
-            and stored_eval.inputs_sha256 != stored_inputs.sha256
+            result.eval_report is not None
+            and result.eval_inputs is not None
+            and result.eval_report.inputs_sha256
+            and result.eval_report.inputs_sha256 != result.eval_inputs.sha256
         ):
             problems.append(
                 f"run '{rid}': the evaluator reports inputs "
-                f"{stored_eval.inputs_sha256[:12]} but the record's inputs "
-                f"hash is {stored_inputs.sha256[:12]}"
+                f"{result.eval_report.inputs_sha256[:12]} but the result's "
+                f"eval_inputs hash is {result.eval_inputs.sha256[:12]}"
             )
     return problems
 
 
-def claim_evaluation_drift(
-    record: ResearchRecord, claims: list[ClaimStatus]
-) -> list[str]:
-    """Claim ids whose stored evaluation disagrees with the recomputation.
+def verified_problems(record: ResearchRecord, statuses: list[ClaimStatus]) -> list[str]:
+    """Claims stored as verified that the recomputation finds otherwise.
 
-    The value is compared, not only the two verdicts: a metric can be edited
-    in a way that moves the number the paper prints while leaving the
-    criterion satisfied and the order proof intact, and comparing verdicts
-    alone would call that record consistent.
+    A stored true is a fact the history must still bear out. The reverse —
+    recomputed true, stored false — is not a problem: update_record has
+    simply not run since the procedure completed.
     """
-    stored = {
-        c.id: c.evaluations[-1]
-        for c in active(record.hypothesis.claims, "id")
-        if c.evaluations
-    }
+    recomputed = {s.id: s.verified for s in statuses}
     return [
-        s.id
-        for s in claims
-        if s.id not in stored
-        or stored[s.id].verified != s.verified
-        or stored[s.id].criterion_met != s.criterion_met
-        or stored[s.id].display != (s.display or "")
-        or stored[s.id].used_executions != s.used_executions
-        or (
-            s.value is not None
-            and not isclose(stored[s.id].value, s.value, rel_tol=1e-9)
-        )
+        claim.id
+        for _, claim in all_claims(record)
+        if claim.verified and not recomputed.get(claim.id, False)
     ]
+
+
+# --------------------------------------------------------------------------
+# A + B together: the record's own verdict, shared by both entry points
+# --------------------------------------------------------------------------
+
+
+@dataclass
+class RecordChecks:
+    stage: Literal["prereg", "results"]
+    mismatches: list[str] = field(default_factory=list)
+    append_only: APPEND_ONLY_STATUS = "unavailable"
+    append_only_problems: list[str] = field(default_factory=list)
+    record_commits: list[str] = field(default_factory=list)
+    claims: list[ClaimStatus] = field(default_factory=list)
+    claim_status_match: bool = True
+    undeclared_result_dirs: list[str] = field(default_factory=list)
+
+
+def check_record(
+    root: Path, record: ResearchRecord, metrics_data: dict[str, Any] | None
+) -> RecordChecks:
+    stage: Literal["prereg", "results"] = "results" if metrics_data else "prereg"
+    checks = RecordChecks(stage=stage)
+    manifest = load_provenance_manifest(root)
+
+    # A — what is already recorded
+    checks.mismatches.extend(record_consistency_problems(record))
+    checks.append_only, checks.append_only_problems, checks.record_commits = (
+        record_append_only_status(root, record)
+    )
+
+    if stage == "prereg":
+        # Nothing measured yet, so nothing realized may exist.
+        realized = [run.run_id for run in run_index(record).values() if run.results]
+        realized += [c.id for _, c in all_claims(record) if c.verified]
+        if realized:
+            checks.mismatches.append(
+                "record.json holds results but no run outputs exist "
+                f"({', '.join(sorted(set(realized)))})"
+            )
+        checks.claims = compute_claim_status(record, set())
+        return checks
+
+    assert metrics_data is not None
+    # B — what is being appended
+    checks.mismatches.extend(params_problems(record, manifest))
+    checks.mismatches.extend(result_problems(root, record, metrics_data, manifest))
+    checks.mismatches.extend(verify_charts(record, str(root), metrics_data))
+    declared_runs = set(run_index(record))
+    checks.undeclared_result_dirs = sorted(
+        d for d in metrics_data if d != COMPARISON_KEY and d not in declared_runs
+    )
+    checks.claims = compute_claim_status(record, set(metrics_data))
+    drifted = verified_problems(record, checks.claims)
+    checks.claim_status_match = not drifted
+    if drifted:
+        checks.mismatches.append(
+            "claims stored as verified that the recomputation finds otherwise "
+            f"({', '.join(drifted)})"
+        )
+    return checks
+
+
+def record_ok(checks: RecordChecks) -> bool:
+    return (
+        not checks.mismatches
+        and checks.append_only != "violated"
+        and checks.claim_status_match
+        and not checks.undeclared_result_dirs
+    )
+
+
+# --------------------------------------------------------------------------
+# The paper on top
+# --------------------------------------------------------------------------
 
 
 def verify_paper_record(
@@ -285,10 +397,8 @@ def verify_paper_record(
     mismatches: list[str] = []
     if record_file.is_file():
         try:
-            record = ResearchRecord.model_validate_json(
-                record_file.read_text(encoding="utf-8")
-            )
-        except ValidationError as e:
+            record = load_record(str(root))
+        except (ValidationError, ValueError) as e:
             mismatches.append(f"{RECORD_PATH}: {e}")
 
     try:
@@ -305,102 +415,46 @@ def verify_paper_record(
     undefined_keys: list[str] = []
     values_match = False
     values_tex_match = False
-    append_only: Literal["ok", "violated", "unavailable"] = "unavailable"
-    append_only_problems: list[str] = []
-    record_commits: list[str] = []
-    claims: list[ClaimStatus] = []
-    claim_status_match = True
-    undeclared_result_dirs: list[str] = []
-
-    orphans: list[str] = []
-    refuted: list[str] = []
+    checks = RecordChecks(stage=stage)
 
     if record is not None:
-        mismatches.extend(record_consistency_problems(record))
-        mismatches.extend(override_problems(record))
-        if metrics_data:
-            mismatches.extend(
-                execution_problems(
-                    root, record, metrics_data, load_provenance_manifest(root)
-                )
-            )
-        orphans = orphan_runs(record)
-        append_only, append_only_problems, record_commits = record_append_only_status(
-            root, record
-        )
+        checks = check_record(root, record, metrics_data)
+        mismatches.extend(checks.mismatches)
 
         if stage == "prereg":
-            # Nothing measured yet, so nothing realized may exist: a
-            # values.tex carried over without runs would put unverifiable
+            # A values.tex carried over without runs would put unverifiable
             # numbers in the PDF.
             values_match = True
             values_tex_match = True
-            realized = [c.id for c in record.hypothesis.claims if c.evaluations] + [
-                run.run_id for run in run_index(record).values() if run.executions
-            ]
-            if realized:
-                mismatches.append(
-                    "record.json holds realized results but no run outputs "
-                    f"exist ({', '.join(sorted(set(realized)))})"
-                )
             if values_tex_path.is_file():
                 mismatches.append(
                     f"{VALUES_TEX_FILENAME} exists but no run outputs exist"
                 )
             if (latex_dir / TABLES_DIR_NAME).is_dir():
                 mismatches.append(f"{TABLES_DIR_NAME}/ exists but no run outputs exist")
-            claims = compute_claim_status(root, record, None, set())
         else:
             assert metrics_data is not None
-            try:
-                claim_values = compute_claim_values(record, metrics_data)
-            except ValueError as e:
-                mismatches.append(str(e))
-                claim_values = {}
-            else:
-                paper_values, undefined_keys = resolve_paper_values(
-                    record, metrics_data, used_keys
-                )
-                values_match = True
-                if values_tex_path.is_file():
-                    values_tex_match = values_tex_path.read_text(
-                        encoding="utf-8"
-                    ) == render_values_tex(
-                        paper_values,
-                        record.link_base,
-                        record_commits[-1] if record_commits else None,
-                    )
-                    if not values_tex_match:
-                        mismatches.append(
-                            f"{VALUES_TEX_FILENAME} differs from its "
-                            "regeneration (manual edit?)"
-                        )
-                mismatches.extend(
-                    _verify_tables(
-                        latex_dir, active(record.tables, "key"), metrics_data
-                    )
-                )
-                mismatches.extend(verify_charts(record, str(root), metrics_data))
-
-            declared_runs = set(run_index(record))
-            undeclared_result_dirs = sorted(
-                d
-                for d in metrics_data
-                if d != COMPARISON_KEY and d not in declared_runs
+            paper_values, undefined_keys = resolve_paper_values(
+                record, metrics_data, used_keys
             )
-            manifest = load_provenance_manifest(root)
-            claims = compute_claim_status(
-                root, record, manifest, set(metrics_data), claim_values
-            )
-
-            drifted = claim_evaluation_drift(record, claims)
-            claim_status_match = not drifted
-            if drifted:
-                mismatches.append(
-                    "stored claim evaluations differ from their recomputation "
-                    f"({', '.join(drifted)}) — run update_record again"
+            values_match = True
+            if values_tex_path.is_file():
+                origin = remote_origin_url(root)
+                values_tex_match = values_tex_path.read_text(
+                    encoding="utf-8"
+                ) == render_values_tex(
+                    paper_values,
+                    normalize_git_url(origin) if origin else None,
+                    checks.record_commits[-1] if checks.record_commits else None,
                 )
-            refuted = [s.id for s in claims if s.criterion_met is False]
+                if not values_tex_match:
+                    mismatches.append(
+                        f"{VALUES_TEX_FILENAME} differs from its "
+                        "regeneration (manual edit?)"
+                    )
+            mismatches.extend(
+                _verify_tables(latex_dir, all_tables(record), metrics_data)
+            )
 
     return PaperValuesVerificationReport(
         ok=(
@@ -409,9 +463,9 @@ def verify_paper_record(
             and values_tex_match
             and not undefined_keys
             and not mismatches
-            and append_only != "violated"
-            and claim_status_match
-            and not undeclared_result_dirs
+            and checks.append_only != "violated"
+            and checks.claim_status_match
+            and not checks.undeclared_result_dirs
         ),
         stage=stage,
         values_match=values_match,
@@ -419,21 +473,19 @@ def verify_paper_record(
         mismatches=mismatches,
         missing_files=missing_files,
         undefined_keys=undefined_keys,
-        append_only=append_only,
-        append_only_problems=append_only_problems,
-        record_commits=record_commits,
-        claims=claims,
-        claim_status_match=claim_status_match,
-        undeclared_result_dirs=undeclared_result_dirs,
-        refuted_claims=refuted,
-        orphan_runs=orphans,
-        unverified_claims=[s.id for s in claims if not s.verified],
+        append_only=checks.append_only,
+        append_only_problems=checks.append_only_problems,
+        record_commits=checks.record_commits,
+        claims=checks.claims,
+        claim_status_match=checks.claim_status_match,
+        undeclared_result_dirs=checks.undeclared_result_dirs,
+        unverified_claims=[s.id for s in checks.claims if not s.verified],
         unverified=unverified,
     )
 
 
 def referenced_result_dirs(local_repo_path: str) -> set[str]:
-    """The results directories the paper draws data or claim support from."""
+    """The results directories the record or the paper draws data from."""
     try:
         record = load_record(local_repo_path)
         metrics_data = load_metrics_data(local_repo_path)
@@ -441,35 +493,29 @@ def referenced_result_dirs(local_repo_path: str) -> set[str]:
         return set()
 
     dirs = used_result_dirs(record, metrics_data)
-    dirs |= table_result_dirs(active(record.tables, "key"), metrics_data)
+    dirs |= table_result_dirs(all_tables(record), metrics_data)
     dirs |= chart_result_dirs(record, metrics_data)
-    dirs |= {
-        run_id
-        for claim in active(record.hypothesis.claims, "id")
-        for ref in claim.target.refs
-        if (run_id := ref_run_id(ref)) in metrics_data
-    }
     return dirs
 
 
 def apply_provenance_result(
     report: PaperValuesVerificationReport, provenance: ProvenanceCheckResult
 ) -> PaperValuesVerificationReport:
-    # A mismatch means the local metrics are not backed by any completed
+    # A mismatch means the local outputs are not backed by any completed
     # run in the platform's storage; "unavailable" is surfaced but only
     # fails in CI, which requires the guarantee.
     report.provenance = provenance
     if provenance.status == "mismatch":
         report.ok = False
         report.mismatches.append(
-            f"{provenance.source}: local metrics are not backed by stored "
+            f"{provenance.source}: local outputs are not backed by stored "
             "run outputs — " + (provenance.detail or "see provenance.checks")
         )
     return report
 
 
 def paper_values_configured(report: PaperValuesVerificationReport) -> bool:
-    """Whether the paper opted into the record system (record.json exists)."""
+    """Whether the repository opted into the record system (record.json exists)."""
     return not any(p.endswith(RECORD_FILENAME) for p in report.missing_files)
 
 

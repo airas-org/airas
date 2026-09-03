@@ -35,46 +35,40 @@ changes *when* the paper is written and how Results are stated.
 
 1. **Create the canonical record with `preregister_record`.** This
    writes `.research/record.json` — the machine-readable original the
-   whole verification system keys on. The record is a tree: one
-   hypothesis, the `designs` that test it, and the `runs` each design
-   will execute.
+   whole verification system keys on. The record is a tree, read as
+   "to support this hypothesis, these claims; to verify this claim,
+   these designs; a design is these runs":
 
    ```
-   designs: [{"id": "d1", "summary": "...", "runs": [
-       {"run_id": "proposed-...", "description": "...",
-        "overrides": {"mode": "full"}}]}]
+   hypotheses: [{
+     "id": "h1", "statement": "the hypothesis, in prose",
+     "claims": [{
+       "id": "c1", "statement": "one assertive sentence",
+       "designs": [{
+         "id": "d1", "summary": "...",
+         "runs": [{"run_id": "proposed-...", "description": "...",
+                   "params": {"mode": "full"}}]
+       }]
+     }],
+     "tables": [...], "notes": [...]
+   }]
    ```
 
    `run_id` names the results directory the run will produce and must be
-   unique across the record — results for an undeclared run_id fail
-   verification. `overrides` declares only what the commit *cannot* fix:
-   the parameters the dispatch will apply. Everything else (batch size,
-   seeds, dataset) already lives in the repository's config files, which
-   the commit freezes, so declaring it again would only create a second
-   copy to keep in step. Declaring the overrides is what makes "we said
-   full and ran pilot" detectable later.
+   unique across the record — a run belongs to exactly one claim, and
+   results for an undeclared run_id fail verification. `params` declares
+   only what the commit *cannot* fix: the conditions the dispatch will
+   apply. Everything else (batch size, seeds, dataset) already lives in
+   the repository's config files, which the commit freezes. Declaring
+   the params is what makes "we said full and ran pilot" detectable
+   later — the gate compares them with what the platform recorded.
 
-   `claims` decompose the hypothesis into falsifiable units and sit
-   beside the designs, because a claim may compare runs from more than
-   one design:
-
-   ```
-   {"id": "c1", "statement": "one assertive sentence",
-    "target": {"op": "diff", "abs": true, "round": 3,
-               "refs": ["run-a.spearman_rho", "run-b.spearman_rho"]},
-    "criterion": {"max": 0.10},
-    "predicted_interval": {"min": 0.0, "max": 0.05},
-    "rationale": "where the prediction comes from"}
-   ```
-
-   `target` is the frozen recipe for the number the claim is judged on;
-   its `refs` address *declared run ids*, never executions, which do not
-   exist yet. **`criterion` is always a plain range.** A criterion that
-   compares against another measured number (`|a| <= |b| + 0.05`) is
-   expressed by folding the comparison into the target —
-   `diff(|a|, |b|)` with `{"max": 0.05}` — so the bound stays a
-   constant and every claim is judged the same way. Table specs can be
-   declared here too.
+   What a claim's condition is, whether the numbers met it, and whether
+   the claim was declared before its runs executed are **not modelled in
+   the record yet** (TODO). The record tracks whether every run under
+   each claim has results (`verified`); the criterion and the predicted
+   interval live in the paper's prose for now, frozen by the same
+   commit. A second hypothesis is a second entry in `hypotheses`.
 
 2. **Write `.research/latex/{template}/main.tex` in two parts.**
    The *frozen part* — title, abstract, introduction, related work,
@@ -89,14 +83,16 @@ changes *when* the paper is written and how Results are stated.
    claims** (C1, C2, ... — the same ids as in record.json, which is the
    canonical form; the paper prose is its human rendering). Each claim
    is one assertive sentence plus,
-   in prose: the criterion (the threshold on a declared value key that
+   in prose: the criterion (the threshold on a named run metric that
    counts as support — below it the claim is refuted) and the
    **predicted interval** — a range, never a point ("we predict an
    improvement of 2–4 points"), with where the range comes from (prior
    work, pilot). The criterion is the falsification line, the interval
    is what you expect; an outcome outside the interval in either
    direction must be discussed later. A range too wide to miss is a
-   criterion, not a prediction. Every experimental number is
+   criterion, not a prediction. Until the record models them, the
+   prose *is* their frozen form — the freeze commit fixes it as it does
+   the record. Every experimental number is
    `\airasval{key}` and appears only in the post-experiment part —
    never a literal, not even an expected one presented as measured.
 
@@ -142,15 +138,16 @@ changes *when* the paper is written and how Results are stated.
 
    **Once committed, the record only ever grows**: every later revision
    must *contain* the committed one whole, so the verifier fails on a
-   reworded claim, a loosened criterion, a reordered list or a dropped
-   execution alike — it does not have to enumerate what may change. The
+   reworded claim, a changed run condition, a reordered list or a
+   dropped result alike — it does not have to enumerate what may change. The
    legitimate revision path is `append_to_record`: append an entry with
    the **same id**, and the later one becomes the live version while the
    earlier stays readable in place. To retire an entry with no
    replacement, append it again with `"withdrawn": true`. A claim becomes
-   **verified** only when its runs executed a commit that already
-   contained the identical claim, so a declaration added after the run
-   stays unverified forever — that is the whole point. Once results
+   **verified** when every run under it has results — the data it rests
+   on is in. `verified` does not say the claim held, and (for now) not
+   that it was declared before its runs executed; both are TODO. Once
+   results
    exist, the legitimate diff to main.tex is what the results force
    (values realized, negative results discussed) — a compiling freeze
    keeps that diff small enough to review.
@@ -164,10 +161,11 @@ Do not edit the claims to fit the results. The honest paths are:
 - A criterion that fails is a **negative result**: keep the claim,
   report that it did not hold, and discuss why. A value that meets the
   criterion but misses the interval is reported as such, not hidden.
-- A new finding is a **new claim**, appended via `append_to_record` and
-  presented as exploratory unless a fresh confirmation run (dispatched
-  after the append is committed) supports it — only then can its
-  verified flag ever go true.
+- A new finding is a **new claim** with its own design and runs,
+  appended via `append_to_record` under its hypothesis, and presented
+  as exploratory. Dispatch its confirmation run after the append is
+  committed; the record cannot yet tell a preregistered claim from a
+  post-hoc one, so the discipline is yours.
 - Realize the record's declarations with `update_record` (it reads
   record.json and the run outputs itself, and commits what it wrote;
   the verdict on it comes from CI, not from the tool); if you need a

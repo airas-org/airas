@@ -112,11 +112,12 @@ def verify_charts(
     record: ResearchRecord, local_repo_path: str, metrics_data: dict[str, Any]
 ) -> list[str]:
     """Re-render every declared chart; reject undeclared chart files."""
-    from airas.usecases.publication.paper_values.record import active
+    from airas.usecases.publication.paper_values.record import all_charts
 
     chart_dir = Path(local_repo_path).expanduser().resolve() / CHART_DIR
-    declared = {c.path: c for c in active(record.charts, "path")}
-    renderers = {c.path: c.renders[-1].renderer for c in record.charts if c.renders}
+    charts = all_charts(record)
+    declared = {c.path: c for c in charts}
+    renderers = {c.path: c.renders[-1].renderer for c in charts if c.renders}
 
     problems: list[str] = []
     if chart_dir.is_dir():
@@ -172,10 +173,10 @@ def verify_charts(
 
 def chart_result_dirs(record: ResearchRecord, metrics_data: dict[str, Any]) -> set[str]:
     from airas.usecases.publication.paper_values.compute import match_run_id
-    from airas.usecases.publication.paper_values.record import active
+    from airas.usecases.publication.paper_values.record import all_charts
 
     dirs: set[str] = set()
-    for declaration in active(record.charts, "path"):
+    for declaration in all_charts(record):
         try:
             _, refs = substitute_chart_refs(declaration.spec, metrics_data)
         except Exception:

@@ -244,8 +244,6 @@ async def run_record_gate(
                 "failures": failures,
                 "stage": report.stage,
                 "unverified_claims": report.unverified_claims,
-                "refuted_claims": report.refuted_claims,
-                "orphan_runs": report.orphan_runs,
                 "unverified": report.unverified,
                 "report": merged,
             }
@@ -264,8 +262,6 @@ async def run_record_gate(
     ]
     summary["stage"] = results[0]["stage"]
     summary["unverified_claims"] = results[0]["unverified_claims"]
-    summary["refuted_claims"] = results[0]["refuted_claims"]
-    summary["orphan_runs"] = results[0]["orphan_runs"]
     (out / RECORD_REPORT_FILENAME).write_text(
         json.dumps(summary, indent=2, ensure_ascii=False, default=str) + "\n",
         encoding="utf-8",

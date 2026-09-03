@@ -1,29 +1,29 @@
 """Containment: a newer record must contain its predecessor whole.
 
-One rule replaces the per-field append-only checks the v1 record needed.
-The tests are written against the behaviours that rule is supposed to
-guarantee — a criterion cannot be weakened after results exist, an execution
+One rule replaces the per-field append-only checks an earlier record
+needed. The tests are written against the behaviours that rule is supposed
+to guarantee — a claim cannot be reworded after results exist, a result
 cannot be dropped, a list cannot be reordered — rather than against the
-individual messages, so the rule can be reimplemented without rewriting them.
+individual messages, so the rule can be reimplemented without rewriting
+them. The one sanctioned change, `verified` going from false to true, is
+covered in both directions.
 """
 
 import pytest
 
+from airas.core.types.paper_values import TableColumnSpec, TableRowSpec, TableSpec
 from airas.core.types.research_record import (
-    Bound,
     ClaimDeclaration,
-    ClaimEvaluation,
     DesignDeclaration,
-    Execution,
     Hypothesis,
     ResearchRecord,
     RunDeclaration,
-    Target,
+    RunResult,
 )
 from airas.usecases.publication.paper_values.record import (
     active,
+    all_claims,
     containment_violations,
-    orphan_runs,
     record_append_violations,
     record_consistency_problems,
     run_index,
@@ -32,91 +32,106 @@ from airas.usecases.publication.paper_values.record import (
 
 def _record() -> ResearchRecord:
     return ResearchRecord(
-        hypothesis=Hypothesis(
-            statement="Proposed beats baseline.",
-            claims=[
-                ClaimDeclaration(
-                    id="c1",
-                    statement="Proposed beats baseline on accuracy.",
-                    target=Target(
-                        op="pct_improve",
-                        refs=["proposed.accuracy", "baseline.accuracy"],
-                    ),
-                    criterion=Bound(min=0.0),
-                    predicted_interval=Bound(min=2.0, max=4.0),
-                    rationale="2-4 points, from the pilot",
-                )
-            ],
-            designs=[
-                DesignDeclaration(
-                    id="d1",
-                    summary="Head-to-head on one dataset.",
-                    runs=[
-                        RunDeclaration(run_id="proposed"),
-                        RunDeclaration(run_id="baseline"),
-                    ],
-                )
-            ],
-        )
+        hypotheses=[
+            Hypothesis(
+                id="h1",
+                statement="Proposed beats baseline.",
+                claims=[
+                    ClaimDeclaration(
+                        id="c1",
+                        statement="Proposed beats baseline on accuracy.",
+                        designs=[
+                            DesignDeclaration(
+                                id="d1",
+                                summary="Head-to-head on one dataset.",
+                                runs=[
+                                    RunDeclaration(
+                                        run_id="proposed", params={"mode": "full"}
+                                    ),
+                                    RunDeclaration(run_id="baseline"),
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            )
+        ]
     )
 
 
-def _claim(claim_id: str = "c2") -> ClaimDeclaration:
+def _claim(claim_id: str = "c2", run_id: str = "ablation") -> ClaimDeclaration:
     return ClaimDeclaration(
         id=claim_id,
         statement="The ablation holds.",
-        target=Target(op="value", refs=["ablation.accuracy"]),
-        criterion=Bound(min=0.5),
-        predicted_interval=Bound(min=0.5, max=0.7),
-        rationale="within the pilot's range",
+        designs=[DesignDeclaration(id="d1", runs=[RunDeclaration(run_id=run_id)])],
     )
+
+
+def _c1(record: ResearchRecord) -> ClaimDeclaration:
+    return record.hypotheses[0].claims[0]
 
 
 # ------------------------------------------------------------- what may grow
 
 
-def test_appending_claims_designs_and_notes_is_allowed() -> None:
+def test_appending_claims_hypotheses_and_notes_is_allowed() -> None:
     older, newer = _record(), _record()
-    newer.hypothesis.designs[0].runs.append(RunDeclaration(run_id="ablation"))
-    newer.hypothesis.claims.append(_claim())
-    newer.notes.append("exploratory extension")
+    newer.hypotheses[0].claims.append(_claim())
+    newer.hypotheses[0].notes.append("exploratory extension")
+    newer.hypotheses.append(Hypothesis(id="h2", statement="A second hypothesis."))
     assert record_append_violations(older, newer) == []
 
 
 def test_results_may_be_appended_to_a_frozen_declaration() -> None:
     """The freeze is on the declaration, not on the record file."""
     older, newer = _record(), _record()
-    newer.hypothesis.designs[0].runs[0].executions.append(
-        Execution(execution_id="e1", commit="c" * 40, metrics={"accuracy": 0.9})
+    _c1(newer).designs[0].runs[0].results.append(
+        RunResult(id="e1", commit="c" * 40, metrics={"accuracy": 0.9})
     )
-    newer.hypothesis.claims[0].evaluations.append(
-        ClaimEvaluation(value=3.6, display="3.6", verified=True, criterion_met=True)
-    )
+    assert record_append_violations(older, newer) == []
+
+
+def test_verified_may_go_from_false_to_true() -> None:
+    """The one value the procedure changes after writing it."""
+    older, newer = _record(), _record()
+    _c1(newer).verified = True
     assert record_append_violations(older, newer) == []
 
 
 # -------------------------------------------------------- what may not change
 
 
-def test_weakening_a_criterion_after_the_fact_is_a_violation() -> None:
+def test_verified_may_not_go_back_to_false() -> None:
     older, newer = _record(), _record()
-    newer.hypothesis.claims[0].criterion = Bound(min=-5.0)
+    _c1(older).verified = True
     assert record_append_violations(older, newer) == [
-        "hypothesis.claims[0].criterion.min: changed (0.0 -> -5.0)"
+        "hypotheses[0].claims[0].verified: changed (True -> False)"
     ]
+
+
+def test_rewording_a_claim_after_the_fact_is_a_violation() -> None:
+    older, newer = _record(), _record()
+    _c1(newer).statement = "Proposed is not worse than baseline."
+    assert any("statement" in p for p in record_append_violations(older, newer))
+
+
+def test_changing_a_runs_declared_conditions_is_a_violation() -> None:
+    older, newer = _record(), _record()
+    _c1(newer).designs[0].runs[0].params = {"mode": "pilot"}
+    assert any("params" in p for p in record_append_violations(older, newer))
 
 
 def test_rewriting_the_hypothesis_is_a_violation() -> None:
     older, newer = _record(), _record()
-    newer.hypothesis.statement = "A better-sounding hypothesis."
+    newer.hypotheses[0].statement = "A better-sounding hypothesis."
     assert any("statement" in p for p in record_append_violations(older, newer))
 
 
-def test_dropping_a_recorded_execution_is_a_violation() -> None:
+def test_dropping_a_recorded_result_is_a_violation() -> None:
     """Deleting the run that came out badly is the failure mode this stops."""
     older, newer = _record(), _record()
-    older.hypothesis.designs[0].runs[0].executions.append(
-        Execution(execution_id="e1", metrics={"accuracy": 0.9})
+    _c1(older).designs[0].runs[0].results.append(
+        RunResult(id="e1", metrics={"accuracy": 0.9})
     )
     assert any("removed" in p for p in record_append_violations(older, newer))
 
@@ -124,21 +139,21 @@ def test_dropping_a_recorded_execution_is_a_violation() -> None:
 def test_reordering_a_list_is_a_violation() -> None:
     """Append order is what makes 'last entry wins' safe to rely on."""
     older, newer = _record(), _record()
-    newer.hypothesis.designs[0].runs.reverse()
+    _c1(newer).designs[0].runs.reverse()
     assert record_append_violations(older, newer) != []
 
 
 def test_a_withdrawn_entry_stays_in_the_record() -> None:
     older, newer = _record(), _record()
-    newer.hypothesis.claims[0].withdrawn = True
+    _c1(newer).withdrawn = True
     # Retiring a claim is an edit to the entry, so it is appended instead.
     assert record_append_violations(older, newer) != []
 
     appended = _record()
-    retired = appended.hypothesis.claims[0].model_copy(update={"withdrawn": True})
-    appended.hypothesis.claims.append(retired)
+    retired = _c1(appended).model_copy(update={"withdrawn": True})
+    appended.hypotheses[0].claims.append(retired)
     assert record_append_violations(_record(), appended) == []
-    assert [c.id for c in active(appended.hypothesis.claims, "id")] == []
+    assert [c.id for _, c in all_claims(appended)] == []
 
 
 def test_containment_reports_the_path_to_the_change() -> None:
@@ -156,69 +171,68 @@ def test_containment_allows_new_keys() -> None:
 
 
 def test_the_last_entry_for_an_id_is_the_live_one() -> None:
+    """Adding a design to an existing claim is a revision of the claim."""
     record = _record()
-    revised = record.hypothesis.claims[0].model_copy(
-        update={"criterion": Bound(min=1.0)}
+    revised = _c1(record).model_copy(deep=True)
+    revised.designs.append(
+        DesignDeclaration(id="d2", runs=[RunDeclaration(run_id="ablation")])
     )
-    record.hypothesis.claims.append(revised)
-    live = active(record.hypothesis.claims, "id")
+    record.hypotheses[0].claims.append(revised)
+
+    live = [c for _, c in all_claims(record)]
     assert [c.id for c in live] == ["c1"]
-    assert live[0].criterion.min == 1.0
+    assert [d.id for d in live[0].designs] == ["d1", "d2"]
+    assert set(run_index(record)) == {"proposed", "baseline", "ablation"}
 
 
 # ---------------------------------------------- consistency at freeze time
 
 
-def test_a_claim_referencing_an_undeclared_run_is_caught() -> None:
+def test_a_run_declared_under_two_claims_is_caught() -> None:
+    """Run ids address a results directory, so a run belongs to one claim."""
     record = _record()
-    record.hypothesis.claims[0].target.refs = [
-        "nonexistent.accuracy",
-        "baseline.accuracy",
-    ]
-    assert record_consistency_problems(record) == [
-        "claim c1: target references run 'nonexistent', which no design declares"
-    ]
-
-
-def test_a_run_declared_in_two_designs_is_caught() -> None:
-    """Run ids address a results directory, so they must be repo-unique."""
-    record = _record()
-    record.hypothesis.designs.append(
-        DesignDeclaration(
-            id="d2", summary="Second design.", runs=[RunDeclaration(run_id="proposed")]
-        )
-    )
+    record.hypotheses[0].claims.append(_claim("c2", run_id="proposed"))
     assert any("repo-unique" in p for p in record_consistency_problems(record))
 
 
-def test_duplicate_design_ids_are_caught() -> None:
+def test_a_claim_with_no_run_is_caught() -> None:
+    """A claim with no experiment cannot be verified."""
     record = _record()
-    record.hypothesis.designs.append(
-        DesignDeclaration(id="d1", summary="Same id again.")
+    record.hypotheses[0].claims.append(
+        ClaimDeclaration(id="c2", statement="Untestable as declared.")
     )
-    assert "designs: duplicate id 'd1'" in record_consistency_problems(record)
+    assert any("declares no run" in p for p in record_consistency_problems(record))
 
 
-@pytest.mark.parametrize("op", ["diff", "pct_improve"])
-def test_a_two_ref_op_given_one_ref_is_caught(op: str) -> None:
+def test_a_table_row_on_an_undeclared_run_is_caught() -> None:
     record = _record()
-    record.hypothesis.claims[0].target = Target(op=op, refs=["proposed.accuracy"])
-    assert any("exactly 2 refs" in p for p in record_consistency_problems(record))
-
-
-def test_an_unbounded_criterion_is_caught() -> None:
-    """A criterion with no bound cannot refute anything."""
-    record = _record()
-    record.hypothesis.claims[0].criterion = Bound()
-    assert "claim c1: criterion is unbounded" in record_consistency_problems(record)
+    record.hypotheses[0].tables.append(
+        TableSpec(
+            key="main",
+            caption="Results.",
+            columns=[TableColumnSpec(header="Acc", ref_path="accuracy")],
+            rows=[TableRowSpec(run_id="ghost", label="?")],
+        )
+    )
+    assert any(
+        "which no design declares" in p for p in record_consistency_problems(record)
+    )
 
 
 def test_a_clean_record_has_no_problems() -> None:
     assert record_consistency_problems(_record()) == []
 
 
-def test_runs_no_claim_references_are_listed() -> None:
-    record = _record()
-    record.hypothesis.designs[0].runs.append(RunDeclaration(run_id="scratch"))
-    assert orphan_runs(record) == ["scratch"]
-    assert set(run_index(record)) == {"proposed", "baseline", "scratch"}
+@pytest.mark.parametrize("bad_id", ["claim1", "C1", "c0"])
+def test_ids_follow_their_pattern(bad_id: str) -> None:
+    with pytest.raises(ValueError):
+        ClaimDeclaration(id=bad_id, statement="x")
+
+
+def test_active_keeps_order_and_drops_withdrawn() -> None:
+    runs = [
+        RunDeclaration(run_id="a"),
+        RunDeclaration(run_id="b"),
+        RunDeclaration(run_id="a", withdrawn=True),
+    ]
+    assert [r.run_id for r in active(runs, "run_id")] == ["b"]

@@ -59,15 +59,6 @@ class TableSpec(BaseModel):
 class ClaimRunCheck(BaseModel):
     run_id: str
     results_present: bool = False
-    run_commit: Optional[str] = None
-    commit_in_history: Optional[bool] = None
-    declared_at_run_commit: Optional[bool] = Field(
-        default=None,
-        description=(
-            "The identical claim and run declarations already existed in "
-            "record.json at the commit the run executed — the order proof"
-        ),
-    )
     detail: str = ""
 
 
@@ -75,25 +66,11 @@ class ClaimStatus(BaseModel):
     id: str
     verified: bool = Field(
         description=(
-            "Every run of the claim has results with a provenance commit in "
-            "this branch's history, and the declarations predate that commit"
+            "Every run under the claim has a results directory with metrics: "
+            "the data the claim rests on is in. Whether the claim was declared "
+            "before those runs executed, and whether its condition was met, "
+            "are not modelled yet (TODO)"
         )
-    )
-    criterion_met: Optional[bool] = Field(
-        default=None,
-        description=(
-            "Whether the measured value fell inside the frozen criterion. "
-            "Deliberately separate from `verified`, which says only that the "
-            "claim was properly preregistered and tested — a refuted claim is "
-            "verified and criterion_met=False"
-        ),
-    )
-    value: Optional[float] = Field(
-        default=None, description="The measured target value, unrounded"
-    )
-    display: Optional[str] = Field(default=None, description="Rendered form")
-    used_executions: dict[str, str] = Field(
-        default_factory=dict, description="run_id -> execution_id that supplied it"
     )
     checks: list[ClaimRunCheck] = Field(default_factory=list)
 
@@ -215,28 +192,16 @@ class PaperValuesVerificationReport(BaseModel):
     )
     claim_status_match: bool = Field(
         default=True,
-        description="Stored verified flags equal the recomputation",
+        description=(
+            "No claim stores verified=true that the recomputation finds "
+            "unverified — a stored true is a fact the history must still bear out"
+        ),
     )
     undeclared_result_dirs: list[str] = Field(
         default_factory=list,
         description=(
             "Results directories no declared run accounts for — results "
             "must not exist without a prior declaration"
-        ),
-    )
-    refuted_claims: list[str] = Field(
-        default_factory=list,
-        description=(
-            "Claims that were properly tested but whose criterion was not "
-            "met — negative results, reported as such rather than hidden"
-        ),
-    )
-    orphan_runs: list[str] = Field(
-        default_factory=list,
-        description=(
-            "Declared runs no active claim references — legitimate for "
-            "supporting numbers, surfaced so undeclared exploration cannot "
-            "hide among them"
         ),
     )
     unverified_claims: list[str] = Field(
