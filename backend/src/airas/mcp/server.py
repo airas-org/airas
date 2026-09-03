@@ -33,23 +33,22 @@ from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.llm_provider import LLMProvider
 from airas.core.types.paper import PaperContent
-from airas.core.types.paper_record import (
-    ChartDeclaration,
-    ClaimDeclaration,
-    LinkBase,
-    PaperRecord,
-    PreregSection,
-    RenderedChart,
-    RunDeclaration,
-)
 from airas.core.types.paper_search import PAPER_SEARCH_SOURCES
 from airas.core.types.paper_values import (
     PaperValuesVerificationReport,
     TableSpec,
-    ValueDeclaration,
 )
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.core.types.research_record import (
+    ChartDeclaration,
+    ClaimDeclaration,
+    DesignDeclaration,
+    Hypothesis,
+    LinkBase,
+    RenderedChart,
+    ResearchRecord,
+)
 from airas.core.types.research_study import ResearchStudy
 from airas.dashboard.launcher import (
     dashboard_url,
@@ -77,7 +76,6 @@ from airas.infra.llm_provider_resolver import (
 )
 from airas.infra.local_git import (
     commit_paths,
-    current_branch,
     normalize_git_url,
     remote_origin_url,
 )
@@ -143,6 +141,9 @@ from airas.usecases.github.github_upload_subgraph import GithubUploadSubgraph
 from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,
 )
+from airas.usecases.github.set_github_actions_secrets_subgraph.set_github_actions_secrets_subgraph import (
+    SetGithubActionsSecretsSubgraph,
+)
 from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
     CompileLatexLLMMapping,
     CompileLatexSubgraph,
@@ -163,18 +164,19 @@ from airas.usecases.publication.paper_values.charts import (
     substitute_chart_refs,
 )
 from airas.usecases.publication.paper_values.compute import (
-    compute_paper_values as compute_paper_values_node,
+    load_metrics_data,
+    resolve_paper_values,
 )
-from airas.usecases.publication.paper_values.compute import load_metrics_data
 from airas.usecases.publication.paper_values.latex import (
     VALUES_TEX_FILENAME,
     render_values_tex,
 )
+from airas.usecases.publication.paper_values.realize import realize_record
 from airas.usecases.publication.paper_values.record import (
     active,
-    collect_run_results,
     load_record,
-    prereg_consistency_problems,
+    orphan_runs,
+    record_consistency_problems,
     record_path,
     save_record,
 )
@@ -183,6 +185,7 @@ from airas.usecases.publication.paper_values.tables import (
     render_table_tex,
 )
 from airas.usecases.publication.paper_values.verify import (
+    _scan_main_tex,
     merge_paper_values_report,
     paper_values_configured,
 )
@@ -206,7 +209,6 @@ from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph impor
     SearchPapersSubgraph,
 )
 from airas.usecases.verification.paper_verification import paper_values_full_report
-from airas.usecases.verification.record_history import compute_claim_status
 from airas.usecases.verification.seyval_provenance import load_provenance_manifest
 from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
     GenerateBibfileSubgraph,
@@ -899,14 +901,33 @@ async def prepare_repository(
     repository_name: str,
     branch_name: str = "main",
     is_private: bool = True,
+    protected_branch: str = "main",
+    configure_ci: bool = True,
 ) -> dict[str, Any]:
-    """Create and initialize a GitHub repository for running experiments.
+    """Create a GitHub repository for running experiments, ready to enforce.
 
     Sets up the repository (from the AIRAS experiment template) and the
     working branch. Run this once before `dispatch_code_generation`.
     Returns `html_url` and `clone_url` alongside the readiness flags, so the
     next step — cloning it locally — needs nothing reconstructed by hand.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
+
+    `configure_ci` also provisions the Actions secrets and protects
+    `protected_branch`, because both are the kind of setup whose absence is
+    invisible: without `SEYVAL_API_KEY` the provenance cross-check degrades
+    to a skip rather than a failure, and without branch protection every
+    guarantee in the record rests on the agent choosing to respect a red
+    CI run. A step that has to be remembered to be safe is a step that will
+    eventually be forgotten, so it happens here rather than being left to a
+    later call. Pass `configure_ci=False` only when the token lacks admin
+    rights and you intend to configure the repository some other way.
+
+    Neither failure aborts the creation — the repository exists either way,
+    and losing that result would help nobody — but each is reported in
+    `warnings` and in its own flag. **A repository whose `branch_protected`
+    is false is not enforcing anything**; say so rather than proceeding as
+    though it were.
+
+    Requires GH_PERSONAL_ACCESS_TOKEN, with admin rights for `configure_ci`.
     """
     config = GitHubConfig(
         github_owner=github_owner,
@@ -921,11 +942,178 @@ async def prepare_repository(
         .build_graph()
         .ainvoke({"github_config": config})
     )
+
+    warnings: list[str] = []
+    secrets_set = False
+    branch_protected = False
+    merge_settings_updated = False
+    if configure_ci:
+        try:
+            secrets_set = await _apply_secrets(
+                github_owner, repository_name, branch_name
+            )
+        except Exception as e:
+            warnings.append(
+                f"Actions secrets were not set ({e}). The provenance "
+                "cross-check will be skipped rather than fail, so CI will "
+                "look green without ever having run it — fix this before "
+                "dispatching experiments (set_github_actions_secrets)."
+            )
+        try:
+            branch_protected, merge_settings_updated = await _apply_branch_protection(
+                github_owner,
+                repository_name,
+                protected_branch,
+                [RECORD_GATE_CHECK_NAME],
+            )
+        except Exception as e:
+            warnings.append(
+                f"'{protected_branch}' was not protected ({e}). Nothing "
+                "prevents a red or unchecked commit from landing on it, so "
+                "the record's guarantees are advisory in this repository "
+                "until it is fixed (protect_branch)."
+            )
+
     return {
         "is_repository_ready": result["is_repository_ready"],
         "is_branch_ready": result["is_branch_ready"],
         "html_url": result["html_url"],
         "clone_url": result["clone_url"],
+        "secrets_set": secrets_set,
+        "branch_protected": branch_protected,
+        "merge_settings_updated": merge_settings_updated,
+        "protected_branch": protected_branch if branch_protected else None,
+        "warnings": warnings,
+    }
+
+
+@mcp.tool()
+async def set_github_actions_secrets(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str = "main",
+    secret_names: list[str] | None = None,
+) -> dict[str, Any]:
+    """Copy locally configured API keys into the repository's Actions secrets.
+
+    Run this once, right after `prepare_repository`. CI is the only place a
+    paper is judged, and the gate re-fetches each run's stored outputs from
+    the compute platform to byte-compare them against what the repository
+    holds. Without `SEYVAL_API_KEY` present in the repository that
+    comparison cannot run, so the strongest check in the system degrades to
+    a skip on any repository nobody remembered to provision — and it
+    degrades quietly, which is why this is a setup step rather than
+    something to reach for once CI complains.
+
+    Reads the values from this machine's environment and writes them
+    encrypted; no value appears in the result. `secret_names` defaults to
+    every key airas knows about, and a name with no local value is skipped
+    rather than failing. Requires GH_PERSONAL_ACCESS_TOKEN with admin rights
+    on the repository.
+    """
+    return {
+        "secrets_set": await _apply_secrets(
+            github_owner, repository_name, branch_name, secret_names
+        )
+    }
+
+
+RECORD_GATE_CHECK_NAME = "Verify the record"
+
+
+async def _apply_secrets(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    secret_names: list[str] | None = None,
+) -> bool:
+    config = GitHubConfig(
+        github_owner=github_owner,
+        repository_name=repository_name,
+        branch_name=branch_name,
+    )
+    result = (
+        await SetGithubActionsSecretsSubgraph(
+            github_client=_github_client(),
+            secret_names=secret_names,
+        )
+        .build_graph()
+        .ainvoke({"github_config": config})
+    )
+    return bool(result["secrets_set"])
+
+
+async def _apply_branch_protection(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    required_check_names: list[str],
+) -> tuple[bool, bool]:
+    client = _github_client()
+    protected = await client.aupdate_branch_protection(
+        github_owner=github_owner,
+        repository_name=repository_name,
+        branch_name=branch_name,
+        required_check_names=required_check_names,
+        enforce_admins=True,
+    )
+    merge_settings = await client.aupdate_repository_merge_settings(
+        github_owner=github_owner,
+        repository_name=repository_name,
+    )
+    return protected, merge_settings
+
+
+@mcp.tool()
+async def protect_branch(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str = "main",
+    required_check_names: list[str] | None = None,
+) -> dict[str, Any]:
+    """Make the record's guarantees enforceable instead of advisory.
+
+    Run this once, after `set_github_actions_secrets`. Everything else in
+    the system derives its authority from this call: a local check can be
+    ignored and a red CI run can be pushed past, so until the branch is
+    protected the record's integrity rests on the agent choosing to respect
+    it. Afterwards it rests on GitHub refusing the push.
+
+    Sets three things on `branch_name`:
+
+    - the record gate as a **required status check**, so a commit whose
+      check is missing or red cannot land, by push or by merge;
+    - `enforce_admins`, because the default exempts exactly the person who
+      configured the rule — usually the repository's own owner, and so the
+      one whose work most needs to be held to it;
+    - no force pushes and no deletions, because the record's evidence *is*
+      its git history: a rewrite does not fail verification, it removes
+      what verification reads.
+
+    It also disables squash and rebase merging repository-wide. Both rewrite
+    commits, and verification asks whether each run's recorded commit is an
+    ancestor of HEAD — after a rewrite it is not, so every claim in the
+    repository silently becomes unverified at the moment of the merge. A
+    merge commit keeps the original commits in the ancestry; a
+    fast-forward push of the already-checked commit keeps the very sha CI
+    judged.
+
+    Requires GH_PERSONAL_ACCESS_TOKEN with admin rights on the repository.
+    """
+    contexts = required_check_names or [RECORD_GATE_CHECK_NAME]
+    protected, merge_settings = await _apply_branch_protection(
+        github_owner, repository_name, branch_name, contexts
+    )
+    return {
+        "branch_protected": protected,
+        "merge_settings_updated": merge_settings,
+        "branch": branch_name,
+        "required_checks": contexts,
+        "usage": (
+            "work on a branch; when the record gate is green on that commit, "
+            "fast-forward it onto the protected branch — the sha CI judged "
+            "is then the sha that landed"
+        ),
     }
 
 
@@ -1563,7 +1751,7 @@ async def render_chart(
         data = render_chart_bytes(resolved, suffix)
 
         declared = next(
-            (c for c in active(record.prereg.charts, "path") if c.path == relative),
+            (c for c in active(record.charts, "path") if c.path == relative),
             None,
         )
         if declared and (declared.spec != vega_lite_spec or declared.format != suffix):
@@ -1573,16 +1761,16 @@ async def render_chart(
                 "append_to_record"
             )
         if declared is None:
-            record.prereg.charts.append(
+            record.charts.append(
                 ChartDeclaration(
                     path=relative,
                     format=suffix,
                     spec=vega_lite_spec,
                 )
             )
-        record.results.charts = [
-            c for c in record.results.charts if c.path != relative
-        ] + [RenderedChart(path=relative, renderer=renderer_version())]
+        next(
+            c for c in active(record.charts, "path") if c.path == relative
+        ).renders.append(RenderedChart(renderer=renderer_version()))
         save_record(local_path, record)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
@@ -1915,23 +2103,20 @@ async def _paper_values_full_report(
     )
 
 
-def _parse_prereg_entries(
-    runs: list[dict[str, Any]] | None,
+def _parse_declarations(
+    designs: list[dict[str, Any]] | None,
     claims: list[dict[str, Any]] | None,
-    values: list[dict[str, Any]] | None,
     tables: list[dict[str, Any]] | None,
     charts: list[dict[str, Any]] | None,
 ) -> tuple[
-    list[RunDeclaration],
+    list[DesignDeclaration],
     list[ClaimDeclaration],
-    list[ValueDeclaration],
     list[TableSpec],
     list[ChartDeclaration],
 ]:
     return (
-        [RunDeclaration.model_validate(r) for r in runs or []],
+        [DesignDeclaration.model_validate(d) for d in designs or []],
         [ClaimDeclaration.model_validate(c) for c in claims or []],
-        [ValueDeclaration.model_validate(v) for v in values or []],
         [TableSpec.model_validate(t) for t in tables or []],
         [ChartDeclaration.model_validate(c) for c in charts or []],
     )
@@ -1951,76 +2136,86 @@ def _commit_record_paths(local_path: str, paths: list[str], message: str) -> str
 async def preregister_record(
     local_path: str,
     hypothesis: str,
-    design: str,
-    runs: list[dict[str, Any]],
+    designs: list[dict[str, Any]],
     claims: list[dict[str, Any]] | None = None,
-    values: list[dict[str, Any]] | None = None,
     tables: list[dict[str, Any]] | None = None,
     notes: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Create the paper's canonical record before any experiment has run.
+    """Create the research record before any experiment has run.
 
-    Writes `.research/record.json` — the single machine-readable record the
-    whole verification system keys on: the hypothesis and experimental
-    design in prose, the planned runs, the numbered claims, and the value
-    and table declarations the paper will realize later — and commits it
-    in the same step (`freeze_commit` in the result). That commit is the
-    freeze point: from then on the declaration section is append-only
-    (`verify_paper_values` walks the git history and fails on any edit),
-    and a claim can only ever be verified by a run whose commit already
-    contained it. To revise a frozen entry, append a new one whose
-    `supersedes` names the old id — the old entry stays untouched.
+    Writes `.research/record.json` — the canonical record the whole
+    verification system keys on — and commits it in the same step
+    (`freeze_commit` in the result). That commit is the freeze point: every
+    later revision must *contain* this one whole, so a criterion cannot be
+    loosened, a claim cannot be reworded and an execution cannot be dropped
+    once it is written.
 
-    `runs` are `{"run_id", "description"?}` — one per planned results
-    directory; results for an undeclared run_id fail verification, so
-    declare before executing. `claims` are `{"id", "statement",
-    "criterion", "predicted_interval", "run_ids", "value_keys"?}`: id is
-    `c1`, `c2`, ...; statement one assertive sentence; criterion the
-    prose falsification line; predicted_interval a range (never a point)
-    with its source; run_ids the declared runs that test it. `values` and
-    `tables` use the same shapes `update_and_verify_record` realizes
-    (`{"key", "op", "refs", "round"?}` and
-    `{"key", "caption", "label"?, "columns", "rows"}`). Charts are
-    declared later by `render_chart`.
+    The record is a tree: one `hypothesis`, the `designs` that test it, and
+    the `runs` each design will execute.
 
-    Fails if record.json already exists (use `append_to_record`), or if the
-    clone cannot commit (the record must live in a git repository). After
-    this: put every future experimental number in main.tex as
-    `\\airasval{key}`, compile, commit main.tex and push — tell the user
-    the freeze commit sha; it is the preregistration record.
+      designs: [{"id": "d1", "summary": "...",
+                 "runs": [{"run_id": "proposed-...", "description": "..."}]}]
+
+    `run_id` names the results directory the run will produce and must be
+    unique across the whole record.
+
+    `claims` decompose the hypothesis into falsifiable units and sit beside
+    the designs, because a claim may compare runs from more than one:
+
+      {"id": "c1", "statement": "one assertive sentence",
+       "target": {"op": "diff", "refs": ["run-a.spearman_rho",
+                                         "run-b.spearman_rho"], "abs": true},
+       "criterion": {"max": 0.10},
+       "predicted_interval": {"min": 0.0, "max": 0.05},
+       "rationale": "where the prediction comes from"}
+
+    `target` is the frozen recipe for the number the claim is judged on. Its
+    `refs` address *declared run ids*, never executions — those do not exist
+    yet, which is exactly what lets the preregistered paper be written in
+    full. `criterion` is always a plain range: fold a comparison against
+    another number into the target (`diff(|a|, |b|)` with `{"max": 0.05}`)
+    instead of referencing it from the bound.
+
+    Fails if record.json already exists (use `append_to_record`), if a claim
+    references a run no design declares, or if the clone cannot commit.
+    After this: write every future experimental number in main.tex as
+    `\\airasval{<claim_id>.value}` or `\\airasval{<run_id>.<metric>}`,
+    compile, commit main.tex and push — tell the user the freeze sha.
     """
-    parsed_runs, parsed_claims, parsed_values, parsed_tables, _ = _parse_prereg_entries(
-        runs, claims, values, tables, None
+    parsed_designs, parsed_claims, parsed_tables, _ = _parse_declarations(
+        designs, claims, tables, None
     )
 
     def _run() -> dict[str, Any]:
         path = record_path(local_path)
         if path.is_file():
             raise ValueError(
-                f"{path} already exists — the record is append-only; add "
+                f"{path} already exists — the record only ever grows; add "
                 "declarations with append_to_record"
             )
 
-        prereg = PreregSection(
-            hypothesis=hypothesis,
-            design=design,
-            runs=parsed_runs,
-            claims=parsed_claims,
-            values=parsed_values,
+        record = ResearchRecord(
+            hypothesis=Hypothesis(
+                statement=hypothesis,
+                claims=parsed_claims,
+                designs=parsed_designs,
+            ),
             tables=parsed_tables,
             notes=notes or [],
         )
-        problems = prereg_consistency_problems(prereg)
+        problems = record_consistency_problems(record)
         if problems:
             raise ValueError("; ".join(problems))
 
-        save_record(local_path, PaperRecord(prereg=prereg))
+        save_record(local_path, record)
         freeze_commit = _commit_record_paths(
             local_path, [RECORD_PATH], "prereg: declare the research record"
         )
         return {
             "record_path": str(path),
             "claims": [c.id for c in parsed_claims],
+            "designs": {d.id: [r.run_id for r in d.runs] for d in parsed_designs},
+            "orphan_runs": orphan_runs(record),
             "freeze_commit": freeze_commit,
             "next": (
                 "this commit is the freeze point runs must descend from — "
@@ -2034,41 +2229,40 @@ async def preregister_record(
 @mcp.tool()
 async def append_to_record(
     local_path: str,
-    runs: list[dict[str, Any]] | None = None,
+    designs: list[dict[str, Any]] | None = None,
     claims: list[dict[str, Any]] | None = None,
-    values: list[dict[str, Any]] | None = None,
     tables: list[dict[str, Any]] | None = None,
     charts: list[dict[str, Any]] | None = None,
     notes: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Append declarations to the canonical record; existing entries never change.
+    """Add declarations to the record; nothing already in it ever changes.
 
-    The record's declaration section is append-only, so this tool can only
-    add: new runs, claims, value/table/chart declarations, or prose notes
-    (entry shapes as in `preregister_record`; a chart is `{"path",
-    "format", "spec"}` with the path relative to `.research/results/chart/`).
-    To revise a frozen entry, append a replacement whose `supersedes`
-    names the old entry's id/key/path — superseded entries stay in the
-    file but are no longer realized or required.
+    The record only grows: every committed revision must contain the one
+    before it whole, so this tool appends and never edits. Entry shapes are
+    the ones `preregister_record` documents.
 
-    Use this for exploratory extensions (declare the run and claim first,
-    then execute — results for an undeclared run fail verification) and
-    for corrections via supersedes. The append is committed in the same
-    step (`commit` in the result); anything a run should count as
-    evidence for must be in that commit's history before the run
-    executes — a claim declared after its run stays unverified forever.
+    Revising a frozen entry means appending a new one with the *same id* —
+    the later entry is the live one and the earlier stays readable in place,
+    so a revision keeps its own history. To retire an entry with no
+    replacement, append it again with `"withdrawn": true`.
+
+    Use this for exploratory extensions (declare the design, run and claim
+    first, then execute — results for an undeclared run fail verification).
+    The append is committed in the same step (`commit` in the result);
+    anything a run should count as evidence for must be in that commit's
+    history before the run executes, so a claim declared after its run stays
+    unverified forever.
     """
-    parsed = _parse_prereg_entries(runs, claims, values, tables, charts)
+    parsed = _parse_declarations(designs, claims, tables, charts)
 
     def _run() -> dict[str, Any]:
         record = load_record(local_path)
-        prereg = record.prereg
-        for field, entries in zip(
-            ("runs", "claims", "values", "tables", "charts"), parsed, strict=True
-        ):
-            getattr(prereg, field).extend(entries)
-        prereg.notes.extend(notes or [])
-        problems = prereg_consistency_problems(prereg)
+        record.hypothesis.designs.extend(parsed[0])
+        record.hypothesis.claims.extend(parsed[1])
+        record.tables.extend(parsed[2])
+        record.charts.extend(parsed[3])
+        record.notes.extend(notes or [])
+        problems = record_consistency_problems(record)
         if problems:
             raise ValueError("; ".join(problems))
         save_record(local_path, record)
@@ -2078,11 +2272,10 @@ async def append_to_record(
         return {
             "record_path": str(record_path(local_path)),
             "appended": {
-                "runs": len(parsed[0]),
+                "designs": len(parsed[0]),
                 "claims": len(parsed[1]),
-                "values": len(parsed[2]),
-                "tables": len(parsed[3]),
-                "charts": len(parsed[4]),
+                "tables": len(parsed[2]),
+                "charts": len(parsed[3]),
                 "notes": len(notes or []),
             },
             "commit": commit,
@@ -2096,12 +2289,11 @@ async def append_to_record(
 
 
 @mcp.tool()
-async def update_and_verify_record(
+async def update_record(
     local_path: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-    check_provenance: bool = True,
 ) -> dict[str, Any]:
-    """Realize the record from run outputs and verify it, in one step.
+    """Realize the record from the run outputs and commit it.
 
     This is the only sanctioned way experimental numbers enter the paper.
     The declarations live in `.research/record.json` (written at
@@ -2123,15 +2315,13 @@ async def update_and_verify_record(
     clone has an `origin` remote, every value macro is a hyperlink to
     record.json on that remote.
 
-    Writing, committing and verifying are one step on purpose: the
-    written files are committed immediately (`commit` in the result), then
-    the full verification runs against that committed state (recomputation
-    of values, tables, charts and claim flags, append-only history,
-    undeclared results directories, and — unless `check_provenance=False`
-    — the Seyval provenance cross-check) and comes back as `verification`
-    in the result. A `verified: true` in the record is therefore bound to
-    a commit sha the moment it exists, paper or no paper; the CI gate
-    later re-runs the same checks where the agent cannot interfere.
+    This tool does not judge the result, and deliberately so. Whatever it
+    reported locally, the agent could push regardless, so a local verdict
+    was advice rather than a gate — and running the identical checks twice
+    made the advisory pass look like a second, independent opinion. The
+    verdict comes from CI, on the pushed commit, where the agent cannot
+    intervene: push the branch, read the run, and merge into the protected
+    branch only when it is green.
 
     Then `\\input{values.tex}` in main.tex's preamble,
     `\\input{tables/<key>.tex}` where each table belongs, and every
@@ -2147,32 +2337,46 @@ async def update_and_verify_record(
         record = load_record(local_path)
         metrics_data = load_metrics_data(local_path)
         root = Path(local_path).expanduser().resolve()
-        computed = compute_paper_values_node(
-            active(record.prereg.values, "key"), metrics_data
-        )
         manifest = load_provenance_manifest(root)
-        record.results.runs = collect_run_results(metrics_data, manifest)
-        record.results.values = computed
-        record.results.claim_status = compute_claim_status(
-            root, record, manifest, set(metrics_data)
-        )
+
+        # Executions are facts, so they are appended rather than replaced:
+        # running the same configuration again adds an entry and the earlier
+        # numbers stay, which is what makes the record a lab notebook as well
+        # as a verification input.
+        statuses, appended = realize_record(root, record, metrics_data, manifest)
+
         remote = remote_origin_url(root)
-        branch = current_branch(root)
-        record.results.link_base = (
-            LinkBase(repo_url=normalize_git_url(remote), ref=branch)
-            if remote and branch
-            else None
+        record.link_base = (
+            LinkBase(repo_url=normalize_git_url(remote)) if remote else None
         )
+
         save_record(local_path, record)
+        # Two commits on purpose: the link in values.tex must name the commit
+        # that holds the record it links into, and that sha does not exist
+        # until record.json is committed. record.json is untouched by the
+        # second commit, so "the commit that last wrote record.json" stays a
+        # deterministic answer for the verifier.
+        record_commit = _commit_record_paths(
+            local_path, [RECORD_PATH], "record: realize results"
+        )
 
         latex_dir = root / ".research" / "latex" / latex_template_name
         latex_dir.mkdir(parents=True, exist_ok=True)
+        main_tex = latex_dir / "main.tex"
+        used_keys = (
+            _scan_main_tex(main_tex.read_text(encoding="utf-8"))[1]
+            if main_tex.is_file()
+            else []
+        )
+        paper_values, _ = resolve_paper_values(record, metrics_data, used_keys)
+
         values_tex_path = latex_dir / VALUES_TEX_FILENAME
         values_tex_path.write_text(
-            render_values_tex(computed, record.results.link_base), encoding="utf-8"
+            render_values_tex(paper_values, record.link_base, record_commit),
+            encoding="utf-8",
         )
         tables: dict[str, str] = {}
-        table_specs = active(record.prereg.tables, "key")
+        table_specs = active(record.tables, "key")
         if table_specs:
             tables_dir = latex_dir / TABLES_DIR_NAME
             tables_dir.mkdir(parents=True, exist_ok=True)
@@ -2183,7 +2387,6 @@ async def update_and_verify_record(
                 )
                 tables[spec.key] = str(table_path)
         commit_targets = [
-            RECORD_PATH,
             f".research/latex/{latex_template_name}/{VALUES_TEX_FILENAME}",
         ]
         # tables/ exists only once a table has been declared, and git add is
@@ -2193,11 +2396,20 @@ async def update_and_verify_record(
                 f".research/latex/{latex_template_name}/{TABLES_DIR_NAME}"
             )
         commit = _commit_record_paths(
-            local_path, commit_targets, "record: realize results and verify"
+            local_path, commit_targets, "record: render paper values"
         )
         return {
-            "values": {v.key: v.display for v in computed},
-            "claims": {s.id: s.verified for s in record.results.claim_status},
+            "values": {v.ref: v.display for v in paper_values},
+            "claims": {
+                s.id: {
+                    "verified": s.verified,
+                    "criterion_met": s.criterion_met,
+                    "value": s.display,
+                }
+                for s in statuses
+            },
+            "executions_appended": appended,
+            "record_commit": record_commit,
             "tables": tables,
             "record_path": str(record_path(local_path)),
             "values_tex_path": str(values_tex_path),
@@ -2205,14 +2417,11 @@ async def update_and_verify_record(
         }
 
     result = await asyncio.to_thread(_run)
-    report = await _paper_values_full_report(
-        local_path, latex_template_name, check_provenance
-    )
-    result["verification"] = report.model_dump()
     result["usage"] = (
         "\\input{values.tex} in the preamble, \\input{tables/<key>.tex} where "
         "each table belongs, then \\airasval{<key>} wherever the paper states "
-        "a number; the realized files are already committed — push when ready"
+        "a number; the realized files are already committed — push the branch "
+        "and let CI decide whether it may reach the protected branch"
     )
     return result
 

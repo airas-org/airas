@@ -1,16 +1,3 @@
-"""AIRAS command-line entry point.
-
-- `airas` (no arguments): run the MCP server on stdio. Kept as the default
-  so existing MCP client registrations (`claude mcp add airas -- uvx airas`)
-  keep working.
-- `airas mcp`: run the MCP server explicitly.
-- `airas dashboard`: serve the web dashboard (FastAPI API + bundled
-  frontend) on localhost.
-- `airas verify-paper`: the CI gate — verify a paper's values and
-  provenance in an experiment repository checkout and build its PDF,
-  exiting non-zero if the paper must not ship.
-"""
-
 import argparse
 import threading
 import webbrowser
@@ -82,6 +69,41 @@ def _run_verify_paper(args: "argparse.Namespace") -> None:
         if result["pdf"]:
             print(f"  pdf: {result['pdf']}")
     print(f"Full report: {args.output_dir}/{REPORT_FILENAME}")
+
+    sys.exit(0 if summary["ok"] else 1)
+
+
+def _run_verify_record(args: "argparse.Namespace") -> None:
+    import asyncio
+    import sys
+
+    from airas.usecases.verification.ci_gate import (
+        RECORD_REPORT_FILENAME,
+        run_record_gate,
+    )
+
+    summary = asyncio.run(
+        run_record_gate(
+            local_repo_path=args.local_path,
+            output_dir=args.output_dir,
+            check_provenance=not args.no_provenance,
+            require_provenance=not (
+                args.no_provenance or args.allow_unavailable_provenance
+            ),
+            require_history=not args.allow_unavailable_history,
+        )
+    )
+
+    print(f"[{'PASS' if summary['ok'] else 'FAIL'}] record ({summary['stage']})")
+    for failure in summary["failures"]:
+        print(f"  - {failure}")
+    for claim_id in summary["unverified_claims"]:
+        print(f"  ! unverified claim: {claim_id} (no verified run backs it yet)")
+    for claim_id in summary["refuted_claims"]:
+        # Not a failure: a claim that was properly tested and missed its
+        # criterion is a result. Printed so a green run still says so.
+        print(f"  · refuted claim: {claim_id} (tested, criterion not met)")
+    print(f"Full report: {args.output_dir}/{RECORD_REPORT_FILENAME}")
 
     sys.exit(0 if summary["ok"] else 1)
 
@@ -161,12 +183,54 @@ def main() -> None:
         ),
     )
 
+    record = subparsers.add_parser(
+        "verify-record",
+        help=(
+            "Verify .research/record.json against the run outputs, its own "
+            "git history and the execution platform — no paper required. "
+            "Meant to be the required check on the protected branch"
+        ),
+    )
+    record.add_argument(
+        "--local-path",
+        default=".",
+        help="Experiment repository checkout to verify (default: .)",
+    )
+    record.add_argument(
+        "--output-dir",
+        default="record-artifact",
+        help="Where record-verification-report.json goes",
+    )
+    record.add_argument(
+        "--no-provenance",
+        action="store_true",
+        help="Skip the Seyval provenance cross-check entirely",
+    )
+    record.add_argument(
+        "--allow-unavailable-provenance",
+        action="store_true",
+        help=(
+            "Do not fail when the provenance check cannot reach Seyval "
+            "(a real mismatch still fails); CI should not pass this"
+        ),
+    )
+    record.add_argument(
+        "--allow-unavailable-history",
+        action="store_true",
+        help=(
+            "Do not fail when record.json's append-only git history cannot "
+            "be checked (shallow clone); CI should not pass this"
+        ),
+    )
+
     args = parser.parse_args()
 
     if args.command == "dashboard":
         _run_dashboard(args.host, args.port, open_browser=not args.no_browser)
     elif args.command == "verify-paper":
         _run_verify_paper(args)
+    elif args.command == "verify-record":
+        _run_verify_record(args)
     else:
         # No subcommand (or `mcp`): stdio MCP server, the historical default.
         _run_mcp()

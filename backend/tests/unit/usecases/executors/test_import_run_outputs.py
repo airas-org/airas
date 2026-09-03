@@ -32,6 +32,12 @@ METRICS = ".research/results/run-1/metrics.json"
 
 
 SEYVAL_RUN_COMMIT = "a" * 40
+# What Seyval records for the dispatch: the interpreter and module path
+# followed by the Hydra overrides that were applied at launch.
+SEYVAL_COMMAND_ARGS = ["python", "src/train.py", "mode=full", "+seed=7"]
+# Everything the run resolved, including what it took from the commit's
+# defaults — which the argv above never restates.
+SEYVAL_PARAMETERS = {"mode": "full", "seed": 7, "batch_size": 128}
 
 
 class FakeSeyvalClient:
@@ -60,6 +66,8 @@ class FakeSeyvalClient:
             "run_id": run_id,
             "status": "completed",
             "commit_hash": SEYVAL_RUN_COMMIT,
+            "command_args": SEYVAL_COMMAND_ARGS,
+            "resolved_parameters": SEYVAL_PARAMETERS,
         }
 
 
@@ -293,6 +301,13 @@ async def test_subgraph_commits_downloaded_outputs_as_binary():
     assert manifest["dirs"]["run-1"] == {
         "execution_id": "seyval-run-uuid",
         "commit_hash": SEYVAL_RUN_COMMIT,
+        # Lifted from the recorded argv, which the experiment code cannot
+        # write — this is what makes a declared override checkable against
+        # the parameters the run was actually dispatched with.
+        "overrides": {"mode": "full", "seed": "7"},
+        # The platform's full report, which also covers the parameters the
+        # dispatch left at their defaults.
+        "parameters": {"mode": "full", "seed": "7", "batch_size": "128"},
     }
 
 

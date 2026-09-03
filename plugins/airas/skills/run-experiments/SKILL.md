@@ -6,7 +6,7 @@ description: Execute committed experiment code on the chosen compute platform (G
 # Run the experiments
 
 Needs a clone with committed experiment code that passes local sanity
-(built to the `AGENTS.md` contract, `uv.lock` committed). Every run you
+(built to the `write-experiment-code` contract, `uv.lock` committed). Every run you
 dispatch must already be declared in `.research/record.json` **in a
 commit the run will execute** — results for an undeclared run_id fail
 verification, and a claim is only ever verified by a run whose commit
@@ -32,7 +32,28 @@ already contained it. Declare late additions with `append_to_record`
    ends: the platform's **run identifier** and the **commit hash it
    executed**. Step 3 cannot be done without them.
 
-3. **Bring the results back** under `.research/results/`, committed,
+3. **Make the run produce what verification reads.** The contract CLI
+   (`src.main`) writes only `eval_inputs/` — the raw predictions. The
+   numbers the record is checked against live in `metrics.json`, which
+   the evaluation step writes, and provenance byte-compares *that* file
+   against the platform's stored copy. A run that stops after `src.main`
+   therefore succeeds and still fails verification, with nothing in the
+   error pointing at the cause.
+
+   So a run must carry the chain through to the end:
+
+   ```
+   src.main  &&  make evaluate RUN_ID=<run_id>  &&  src.evaluate
+   ```
+
+   On a platform that gives each run a fresh working directory, a later
+   run cannot see an earlier one's output, so either chain the three in
+   one dispatch or stage the earlier runs into it (Seyval:
+   `inputs_from_runs`). Keep `eval_inputs/` in the results too: it is
+   what the metrics can be re-derived from, and the record anchors it by
+   hash.
+
+4. **Bring the results back** under `.research/results/`, committed,
    with `.research/results/.provenance.json` declaring per results
    directory the `execution_id` and `commit_hash` from step 2.
    `verify_paper_values` pins its provenance cross-check to that file and
@@ -41,5 +62,5 @@ already contained it. Declare late additions with `append_to_record`
    once, declare the run that should be reported and tell the user the
    others exist (the selection is reviewable at verification).
 
-**Output**: committed results under `.research/results/` with their
-provenance manifest.
+**Output**: committed results under `.research/results/` — `eval_inputs/`,
+`metrics.json` and the evaluation report — with their provenance manifest.

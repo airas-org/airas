@@ -46,6 +46,19 @@ import_run_outputs        → execution_id に上の run_id を渡す
 fetch_experiment_results  → リポジトリを読む
 ```
 
+**ランは評価まで走らせること。** 契約 CLI（`src.main`）が書くのは
+`eval_inputs/` だけで、provenance がバイト比較するのは `metrics.json` である。
+`src.main` だけを投げると「実験は全ラン成功、検証だけ失敗」という、原因に
+辿り着きにくい形で落ちる。1 本の run の中で
+
+```
+src.main && make evaluate RUN_ID=<run_id> && src.evaluate
+```
+
+まで通すか、既存ランを `inputs_from_runs` でステージした評価用の run を
+別に立てる。run ごとに作業ディレクトリは新品なので、別々に投げても後続は
+先行の出力を見られない。
+
 最後の 2 つの順序が重要で、`fetch_experiment_results` は**リポジトリしか見ない**。
 Seyval の成果物は Seyval 側に残るので、`import_run_outputs` を挟まないと
 「実験は成功したのに結果が空」になる。
@@ -97,6 +110,12 @@ aarch64 wheel がある）。`gemmi==0.7.1` も cp311/cp312 の aarch64 wheel �
 なお、ソースビルドできる依存なら Dockerfile 側で救える（gcc / g++ / cmake は入る）。
 救えないのは wheel もソース配布も無いケース。
 
+**イメージの配送時間も見積もること。** 既定の PyPI torch は aarch64 でも
+CUDA 一式（`nvidia-*` 15 個 + triton、約 10GB）を引く。初回の Kaniko ビルドと
+ECR への push で数時間かかることがあり、その間 Kaniko のログを読む API は
+無いので進捗は見えない。同一コミットの 2 本目以降はキャッシュから数秒で
+プルされるので、一度払えば済むコストではある。
+
 ## 3. 実行環境を Dockerfile で固定する
 
 AIRAS は**必ず自前の Dockerfile を使う**。`start_run(user_dockerfile_path=
@@ -113,6 +132,13 @@ user 起因のエラーで落ちる。環境の定義がコミットと一緒に
 代償が 1 つある。**持ち込んだ Dockerfile の CMD はそのまま実行される**ので、
 `parameters` による上書きが効かない（解析時の既定と違う値を渡すと 400）。
 run と mode の切り替えは `command_args` で argv を自分で書く。
+
+**`command_args` は executor 側で先に展開される。** `$(...)` や `$var` は
+bash に届く前に置換されるので使えない。`for f in $(find ...)` は展開済みの
+文字列が渡って構文エラーになり、`$rid` は空文字に潰れる。値はリテラルで
+書くこと。
+
+**同時に走らせられる run は 5 本まで**（超えると 429）。
 
 ```python
 command_args=[
