@@ -219,7 +219,10 @@ async def run_record_gate(
     failures = gate_failures(
         merged,
         require_paper_values=False,
-        require_provenance=require_provenance,
+        # Turning the check off is a decision not to require it. Letting the
+        # two disagree only produces "the provenance check did not run" on a
+        # run that was told not to run it.
+        require_provenance=require_provenance and check_provenance,
         require_history=require_history,
     )
     summary = {
