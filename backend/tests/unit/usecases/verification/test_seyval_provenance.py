@@ -397,3 +397,44 @@ async def test_a_file_the_run_produced_but_the_directory_lacks_is_a_mismatch(
     assert result.status == "mismatch"
     assert "evaluation/task.json" in result.checks[0].detail
     assert "does not hold it" in result.checks[0].detail
+
+
+async def test_a_dispatch_with_no_overrides_contradicts_a_cache_that_claims_some(
+    tmp_path: Path,
+) -> None:
+    """Seyval reported the argv, and it carried no overrides. A manifest
+    that caches `mode=full` anyway is a cache that was edited — "reported
+    empty" is a report, not an absence."""
+    _, metrics_bytes, commit_hash = _make_repo(tmp_path)
+    _write_manifest(
+        tmp_path,
+        execution_id=DECLARED_RUN,
+        commit_hash=commit_hash,
+        overrides={"mode": "full"},
+    )
+    run = _completed(DECLARED_RUN, commit_hash)
+    run["command_args"] = ["python", "-m", "src.main"]  # no key=value at all
+    fake = FakeSeyvalClient(runs=[run], stored={DECLARED_RUN: metrics_bytes})
+
+    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    assert result.status == "mismatch"
+    assert result.checks[0].parameters_match is False
+
+
+async def test_an_unreported_dispatch_is_not_compared(tmp_path: Path) -> None:
+    """No command_args in the run record at all: the platform did not say,
+    so the cache is neither confirmed nor contradicted."""
+    _, metrics_bytes, commit_hash = _make_repo(tmp_path)
+    _write_manifest(
+        tmp_path,
+        execution_id=DECLARED_RUN,
+        commit_hash=commit_hash,
+        overrides={"mode": "full"},
+    )
+    fake = FakeSeyvalClient(
+        runs=[_completed(DECLARED_RUN, commit_hash)],
+        stored={DECLARED_RUN: metrics_bytes},
+    )
+    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    assert result.status == "verified", result.checks[0].detail
+    assert result.checks[0].parameters_match is None

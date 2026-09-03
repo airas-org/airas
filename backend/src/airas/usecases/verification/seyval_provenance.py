@@ -192,14 +192,23 @@ class SeyvalProvenanceVerifier:
         # be realized offline; the cache must equal the platform's record,
         # or a declared `mode=full` could be "confirmed" by a cache that says
         # so while Seyval says `pilot`.
+        # "Reported" is decided by the field being present, not by the parsed
+        # result being non-empty: a dispatch with no overrides is a report
+        # of "none", and a cache that claims some must then be wrong.
+        # Absent fields mean the platform did not say, and are not compared.
+        reports_overrides = run.get("command_args") is not None
+        reports_parameters = (
+            run.get("resolved_parameters") is not None
+            or run.get("parameters") is not None
+        )
         parameters_match: bool | None = None
-        seyval_overrides = parse_overrides(run.get("command_args"))
-        seyval_parameters = parse_parameters(run)
-        if seyval_overrides or seyval_parameters:
+        if reports_overrides or reports_parameters:
             parameters_match = (
-                not seyval_overrides or dict(declared.overrides) == seyval_overrides
+                not reports_overrides
+                or dict(declared.overrides) == parse_overrides(run.get("command_args"))
             ) and (
-                not seyval_parameters or dict(declared.parameters) == seyval_parameters
+                not reports_parameters
+                or dict(declared.parameters) == parse_parameters(run)
             )
             if not parameters_match:
                 return fail(
