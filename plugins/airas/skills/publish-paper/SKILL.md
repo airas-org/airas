@@ -90,12 +90,15 @@ shortcut that settles the question.
 ## Official: CI verifies, its artifact is the record
 
 4. **Commit the main.tex edits and push to the staging ref** — not to
-   the protected branch (`git push origin main:verify`). Two jobs
-   run: `verify-record` (the required
-   check: recomputation, containment history, provenance
-   cross-check) and `build-paper`, which needs it and compiles the
-   PDF. Both upload their report even when red, so a failure is
-   readable rather than merely reported.
+   the protected branch (`git push origin main:verify`). The required
+   check, `Verify Record`, runs there. It is the whole integrity
+   verdict: the record's checks (recomputation, containment history,
+   provenance cross-check) **and the paper's numbers** — values.tex
+   against its regeneration, declared tables, every `\airasval` key
+   declared. None of that needs LaTeX, so it is fast, and a
+   hand-edited number is caught here, before the sha can land. The
+   report is uploaded even when red, so a failure is readable rather
+   than merely reported.
 
 5. **Confirm the gate is green** (`get_workflow_runs`), then
    fast-forward the same sha onto the protected branch
@@ -106,10 +109,18 @@ shortcut that settles the question.
    CI judged. (`prepare_repository` disables both merge methods, so
    normally the attempt simply fails — do not work around it.)
 
-   Give the user the commit sha, the workflow-run URL, and the
-   artifact — that trio is the citable, re-checkable result. A red
-   gate is not published: return to the local stage, fix, push to the
-   staging ref again.
+   Landing on the protected branch is what publishes. `Publish
+   Paper` runs there and nowhere else — every sha on that branch has
+   already passed the gate, so all that is left is to compile and
+   upload the PDF with its report. That ordering comes from the
+   branch rule, not from one workflow waiting on another.
+
+   Give the user the commit sha, the `Publish Paper` run URL, and
+   its artifact — that trio is the citable, re-checkable result. A
+   red gate is not published: return to the local stage, fix, push
+   to the staging ref again. A red *publish* on a green gate is a
+   rendering failure (a citation, a figure), not an integrity one;
+   fix it the same way.
 
 6. **Persist**: `upload_research_history`, so a later session can
    restore with `download_research_history`.

@@ -24,6 +24,7 @@ from typing import Any, Callable
 from pydantic import ValidationError
 
 from airas.core.research_paths import RECORD_PATH
+from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.paper_values import (
     ClaimStatus,
     PaperValuesVerificationReport,
@@ -47,6 +48,7 @@ from airas.usecases.publication.paper_values.verify import (
     apply_provenance_result,
     claim_evaluation_drift,
     referenced_result_dirs,
+    verify_paper_record,
 )
 from airas.usecases.verification.record_history import (
     compute_claim_status,
@@ -198,9 +200,23 @@ async def record_full_report(
     local_path: str,
     check_provenance: bool,
     seyval_client_factory: Callable[[], SeyvalClient],
+    latex_template_name: LATEX_TEMPLATE_NAME | None = None,
 ) -> PaperValuesVerificationReport:
-    """`verify_record_only` plus the cross-check against the platform."""
-    report = await asyncio.to_thread(verify_record_only, local_path)
+    """The record's checks, plus the paper's numbers when a paper exists.
+
+    With a template, the paper's value checks — values.tex against its
+    regeneration, declared tables, every `\\airasval` key declared — are
+    included, because "the numbers in the paper are the numbers in the
+    record" is integrity, not rendering, and belongs in the gate that
+    decides what lands. None of it needs LaTeX installed; the compile is
+    the publish step's concern. Then the cross-check against the platform.
+    """
+    if latex_template_name is None:
+        report = await asyncio.to_thread(verify_record_only, local_path)
+    else:
+        report = await asyncio.to_thread(
+            verify_paper_record, local_path, latex_template_name
+        )
     if not check_provenance:
         return report
 

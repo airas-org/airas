@@ -126,9 +126,10 @@ changes *when* the paper is written and how Results are stated.
    compile" open an editing channel where narrative changes can hide.
    The local build is only the fast feedback loop — the local
    toolchain is in the agent's hands, so its PDF proves nothing. The
-   **official prereg PDF is the CI artifact**: the freeze push triggers
-   `verify_and_publish_paper.yml`, which re-verifies the record and rebuilds where
-   the agent cannot interfere, and that artifact is what a human
+   **official prereg PDF is the CI artifact**: once the freeze commit
+   passes `Verify Record` on the staging ref and is fast-forwarded onto
+   the protected branch, `Publish Paper` builds it there, where the
+   agent cannot interfere, and that artifact is what a human
    reviews at freeze time (are the criteria reasonable? are the
    intervals narrow enough to miss? are the claims falsifiable?) and
    what a reader compares the final paper against.

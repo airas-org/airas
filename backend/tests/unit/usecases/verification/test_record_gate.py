@@ -31,10 +31,17 @@ from airas.core.types.run_provenance import (
     ResultsDirProvenance,
     RunProvenanceManifest,
 )
-from airas.usecases.publication.paper_values.compute import load_metrics_data
+from airas.usecases.publication.paper_values.compute import (
+    load_metrics_data,
+    resolve_paper_values,
+)
+from airas.usecases.publication.paper_values.latex import render_values_tex
 from airas.usecases.publication.paper_values.realize import realize_record
 from airas.usecases.publication.paper_values.record import save_record
-from airas.usecases.publication.paper_values.verify import paper_values_configured
+from airas.usecases.publication.paper_values.verify import (
+    _scan_main_tex,
+    paper_values_configured,
+)
 from airas.usecases.verification.ci_gate import (
     RECORD_REPORT_FILENAME,
     run_record_gate,
@@ -396,7 +403,7 @@ async def test_gate_writes_its_report_when_red(tmp_path: Path) -> None:
     assert written["ok"] is False
     assert any(
         "criterion.min" in p
-        for p in written["report"]["paper_values"]["append_only_problems"]
+        for p in written["results"][0]["report"]["paper_values"]["append_only_problems"]
     )
 
 
@@ -453,3 +460,93 @@ async def test_a_shallow_clone_fails_rather_than_passing_quietly(
     )
     assert not summary["ok"]
     assert any("fetch-depth" in f for f in summary["failures"])
+
+
+# ---------------------------------------------- a paper, once one exists
+
+
+MAIN_TEX = "\n".join(
+    [
+        r"\documentclass{article}",
+        r"\input{values.tex}",
+        r"\begin{document}",
+        r"The gain is \airasval{c1.value}.",
+        r"\end{document}",
+        "",
+    ]
+)
+
+
+def _write_paper(repo: Path, record: ResearchRecord) -> Path:
+    latex_dir = repo / ".research" / "latex" / "mdpi"
+    latex_dir.mkdir(parents=True)
+    (latex_dir / "main.tex").write_text(MAIN_TEX)
+    metrics_data = load_metrics_data(str(repo))
+    values, _ = resolve_paper_values(record, metrics_data, _scan_main_tex(MAIN_TEX)[1])
+    (latex_dir / "values.tex").write_text(render_values_tex(values, None))
+    return latex_dir
+
+
+async def test_a_paper_whose_numbers_match_the_record_passes(tmp_path: Path) -> None:
+    repo, record = _realized_repo(tmp_path)
+    _write_paper(repo, record)
+    _commit(repo, "paper")
+
+    summary = await run_record_gate(
+        str(repo), str(repo / "out"), check_provenance=False
+    )
+    assert summary["ok"], summary["failures"]
+    assert summary["papers"] == ["mdpi"]
+
+
+async def test_a_hand_edited_values_tex_is_caught_by_the_gate(tmp_path: Path) -> None:
+    """The paper's numbers are integrity, not rendering.
+
+    Caught here, before the sha can land — not at publish time, when it
+    would already be on the protected branch.
+    """
+    repo, record = _realized_repo(tmp_path)
+    latex_dir = _write_paper(repo, record)
+    _commit(repo, "paper")
+    values_tex = latex_dir / "values.tex"
+    values_tex.write_text(values_tex.read_text().replace("3.6", "9.9"))
+
+    summary = await run_record_gate(
+        str(repo), str(repo / "out"), check_provenance=False
+    )
+    assert not summary["ok"]
+    assert any("values.tex" in f or "ok=false" in f for f in summary["failures"])
+    report = summary["results"][0]["report"]["paper_values"]
+    assert report["values_tex_match"] is False
+
+
+async def test_a_paper_without_a_record_fails(tmp_path: Path) -> None:
+    """A repository may have no record. A paper may not: none of its
+    numbers would be verifiable."""
+    _init(tmp_path)
+    latex_dir = tmp_path / ".research" / "latex" / "mdpi"
+    latex_dir.mkdir(parents=True)
+    (latex_dir / "main.tex").write_text(MAIN_TEX)
+    _commit(tmp_path, "paper with no record")
+
+    summary = await run_record_gate(
+        str(tmp_path), str(tmp_path / "out"), check_provenance=False
+    )
+    assert not summary["ok"]
+    assert any("record.json is missing" in f for f in summary["failures"])
+
+
+async def test_an_undeclared_airasval_key_fails(tmp_path: Path) -> None:
+    repo, record = _realized_repo(tmp_path)
+    latex_dir = _write_paper(repo, record)
+    (latex_dir / "main.tex").write_text(
+        MAIN_TEX.replace(r"\airasval{c1.value}", r"\airasval{c9.value}")
+    )
+    _commit(repo, "paper citing a claim that does not exist")
+
+    summary = await run_record_gate(
+        str(repo), str(repo / "out"), check_provenance=False
+    )
+    assert not summary["ok"]
+    report = summary["results"][0]["report"]["paper_values"]
+    assert report["undefined_keys"] == ["c9.value"]

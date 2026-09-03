@@ -94,9 +94,15 @@ def _run_verify_record(args: "argparse.Namespace") -> None:
         )
     )
 
-    print(f"[{'PASS' if summary['ok'] else 'FAIL'}] record ({summary['stage']})")
+    papers = ", ".join(summary["papers"]) if summary["papers"] else "no paper"
+    print(
+        f"[{'PASS' if summary['ok'] else 'FAIL'}] record ({summary['stage']}; {papers})"
+    )
     for failure in summary["failures"]:
         print(f"  - {failure}")
+    for result in summary["results"]:
+        for claim in result["unverified"]:
+            print(f"  ! \\unverified for human review: {claim}")
     for claim_id in summary["unverified_claims"]:
         print(f"  ! unverified claim: {claim_id} (no verified run backs it yet)")
     for claim_id in summary["refuted_claims"]:
