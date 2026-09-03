@@ -268,20 +268,14 @@ def result_problems(
                 "evaluator's report in the results directory"
             )
 
-        # The evaluator says which inputs it computed from. That must be the
-        # inputs the record hashed, or the metrics and the inputs describe
-        # two different experiments.
-        if (
-            result.eval_report is not None
-            and result.eval_inputs is not None
-            and result.eval_report.inputs_sha256
-            and result.eval_report.inputs_sha256 != result.eval_inputs.sha256
-        ):
-            problems.append(
-                f"run '{rid}': the evaluator reports inputs "
-                f"{result.eval_report.inputs_sha256[:12]} but the result's "
-                f"eval_inputs hash is {result.eval_inputs.sha256[:12]}"
-            )
+        # The evaluator's own `inputs_sha256` is deliberately not compared
+        # with `eval_inputs.sha256`. airas-eval hashes the *parsed* payload
+        # in a canonical JSON form (sorted keys, no whitespace, its own type
+        # coercion), while the record hashes the file's bytes, so the two
+        # digests differ for every honest run. The evaluator's digest is
+        # still carried verbatim — it names what the evaluator scored in the
+        # evaluator's own terms — and the file hash is what the provenance
+        # step holds against the platform's stored bytes.
     return problems
 
 

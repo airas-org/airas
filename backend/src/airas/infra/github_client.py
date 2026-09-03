@@ -1207,12 +1207,15 @@ class GithubClient(BaseHTTPClient):
         github_owner: str,
         repository_name: str,
         branch_name: str | None = None,
-        event: str = "workflow_dispatch",
+        event: str | None = "workflow_dispatch",
         status: str | None = None,
         per_page: int = 100,
     ) -> dict | None:
+        """List workflow runs; `event=None` lists runs from every trigger."""
         path = f"/repos/{github_owner}/{repository_name}/actions/runs"
-        params = {"event": event, "per_page": per_page}
+        params: dict[str, str | int] = {"per_page": per_page}
+        if event:
+            params["event"] = event
         if branch_name:
             params["branch"] = branch_name
         if status:

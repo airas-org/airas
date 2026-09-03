@@ -40,6 +40,9 @@ Needs imported results under `.research/results/` in a clone.
    spec to `.research/record.json` as its declaration and commits both
    in the same step — verification re-renders every chart from its
    declared spec and fails on differences or undeclared chart files.
+   Render charts **before** `update_record`, or re-run `update_record`
+   afterwards: the chart declaration is a new record commit, and
+   `values.tex` must be rendered against the latest one.
 5. **Method diagrams**: write text notation (mermaid / graphviz / d2)
    and `render_diagram` to `.research/results/diagram/<name>.pdf`.
 6. Commit and push. Reference figures in LaTeX as `images/<path>` with
