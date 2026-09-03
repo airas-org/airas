@@ -1324,24 +1324,33 @@ async def get_workflow_runs(
     repository_name: str,
     branch_name: str | None = None,
     limit: int = 5,
+    event: str | None = None,
 ) -> list[dict[str, Any]]:
     """Check the status of recent GitHub Actions runs in the experiment repository (non-blocking).
 
-    Returns the most recent dispatched workflow runs with their status and
-    conclusion. Use this to track runs started by `dispatch_experiment`
-    (backend "github_actions") — poll it between other work instead of
-    waiting. Requires GH_PERSONAL_ACCESS_TOKEN.
+    Returns the most recent workflow runs with their status, conclusion and
+    the commit they ran on, newest first. Runs from every trigger are
+    included, so this is also how the record gate (`Verify Record`, which
+    runs on push) and `Publish Paper` are read: pass `branch_name="verify"`
+    to follow the staging ref, and match `head_sha` against the sha you
+    pushed. Pass `event="workflow_dispatch"` to see only runs started by
+    `dispatch_experiment`. Poll it between other work instead of waiting.
+    Requires GH_PERSONAL_ACCESS_TOKEN.
     """
     response = await _github_client().alist_workflow_runs(
         github_owner=github_owner,
         repository_name=repository_name,
         branch_name=branch_name,
+        event=event,
     )
     runs = (response or {}).get("workflow_runs", [])[:limit]
     return [
         {
             "workflow_run_id": run.get("id"),
             "name": run.get("name"),
+            "event": run.get("event"),
+            "head_branch": run.get("head_branch"),
+            "head_sha": run.get("head_sha"),
             "status": run.get("status"),
             "conclusion": run.get("conclusion"),
             "created_at": run.get("created_at"),

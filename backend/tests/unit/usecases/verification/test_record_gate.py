@@ -316,9 +316,14 @@ def test_an_inputs_hash_that_is_not_the_file_fails(tmp_path: Path) -> None:
     assert any("eval_inputs hash" in m for m in report.mismatches)
 
 
-def test_an_evaluator_report_that_disagrees_with_its_inputs_fails(
+def test_the_evaluators_own_inputs_digest_is_not_held_against_the_file_hash(
     tmp_path: Path,
 ) -> None:
+    """airas-eval hashes the canonical parsed payload, the record the bytes.
+
+    The two digests never agree, even for an honest run, so comparing them
+    would fail every repository. The evaluator's digest is recorded as-is.
+    """
     _init(tmp_path)
     record = _record()
     save_record(str(tmp_path), record)
@@ -343,8 +348,10 @@ def test_an_evaluator_report_that_disagrees_with_its_inputs_fails(
     _commit(tmp_path, "realize")
 
     report = verify_record_only(str(tmp_path))
-    assert not report.ok
-    assert any("evaluator reports inputs" in m for m in report.mismatches)
+    assert report.ok, report.mismatches
+    run = record.hypotheses[0].claims[0].designs[0].runs[0]
+    assert run.results[-1].eval_report is not None
+    assert run.results[-1].eval_report.inputs_sha256 == "f" * 64
 
 
 def test_results_no_run_declares_fail(tmp_path: Path) -> None:

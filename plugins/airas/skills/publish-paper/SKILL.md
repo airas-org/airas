@@ -33,6 +33,15 @@ local stage.
    record is append-only, and a claim that missed its criterion is
    reported as a negative result, not rewritten.
 
+   **Run `update_record` last, after every other change to the
+   record.** The links in `values.tex` pin the commit that last wrote
+   `record.json`, and the gate regenerates `values.tex` from that
+   commit — so a `render_chart` or `append_to_record` made *after*
+   `update_record` leaves `values.tex` pointing at a superseded commit
+   and the gate reports `values.tex differs from its regeneration`.
+   The tool is idempotent (a result already recorded is not appended
+   twice), so re-running it after a late chart or append is the fix.
+
    `\airasval` addresses one of two things, both writable before any
    run exists:
 
@@ -98,7 +107,10 @@ shortcut that settles the question.
    report is uploaded even when red, so a failure is readable rather
    than merely reported.
 
-5. **Confirm the gate is green** (`get_workflow_runs`), then
+5. **Confirm the gate is green** — `get_workflow_runs` with
+   `branch_name="verify"`, reading the run whose `head_sha` is the sha
+   you pushed (an older green run on the same ref proves nothing about
+   the new commit) — then
    fast-forward the same sha onto the protected branch
    (`git push origin main:main`) — **never squash or rebase**. Squash and rebase rewrite commits, and verification asks
    whether each run's recorded commit is an ancestor of HEAD; after a

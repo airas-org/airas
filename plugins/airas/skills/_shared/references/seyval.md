@@ -140,6 +140,15 @@ bash に届く前に置換されるので使えない。`for f in $(find ...)` �
 
 **同時に走らせられる run は 5 本まで**（超えると 429）。
 
+**★ 同じイメージを初めて使う run を同時に複数投げない（2026-09-03 実証）。**
+BYO Slurm ではログインノードで `apptainer pull` が走り、SIF を共有キャッシュに
+作る。同一イメージの初回 pull が並走すると blob を取り合い、負けた側が
+`open .../.apptainer/cache/.../blobs/sha256/...: no such file or directory` で
+`failure_origin: "system"` として落ちる（5 本同時投入で 2 本が 3 秒差で死んだ）。
+新しいコミットの最初の run は 1 本だけ投げ、イメージが pull され終わって
+（`status` が `running` になって）から残りを投げる。落ちた run はイメージが
+キャッシュ済みなので、そのまま再投入すれば通る。
+
 ```python
 command_args=[
     "uv", "run", "--no-sync", "python", "-u", "-m", "src.main",
