@@ -47,6 +47,7 @@ from airas.usecases.publication.paper_values.record import (
 from airas.usecases.publication.paper_values.verify import (
     apply_provenance_result,
     claim_evaluation_drift,
+    execution_problems,
     referenced_result_dirs,
     verify_paper_record,
 )
@@ -127,6 +128,12 @@ def verify_record_only(local_repo_path: str) -> PaperValuesVerificationReport:
 
     mismatches.extend(record_consistency_problems(record))
     mismatches.extend(override_problems(record))
+    if metrics_data:
+        mismatches.extend(
+            execution_problems(
+                root, record, metrics_data, load_provenance_manifest(root)
+            )
+        )
     orphans = orphan_runs(record)
     append_only, append_only_problems, _ = record_append_only_status(root, record)
 

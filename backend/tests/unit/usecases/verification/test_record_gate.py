@@ -550,3 +550,106 @@ async def test_an_undeclared_airasval_key_fails(tmp_path: Path) -> None:
     assert not summary["ok"]
     report = summary["results"][0]["report"]["paper_values"]
     assert report["undefined_keys"] == ["c9.value"]
+
+
+# ------------------------------ the record's copies against their sources
+
+
+def _reload(repo: Path) -> ResearchRecord:
+    from airas.usecases.publication.paper_values.record import load_record
+
+    return load_record(str(repo))
+
+
+def test_a_hand_edited_metrics_copy_in_the_record_fails(tmp_path: Path) -> None:
+    """The file is intact, so recomputation and the byte check both pass.
+
+    Only comparing the record's copy with the file catches this.
+    """
+    repo, record = _realized_repo(tmp_path)
+    record.hypothesis.designs[0].runs[0].executions[-1].metrics = {"accuracy": 0.999}
+    save_record(str(repo), record)
+
+    report = verify_record_only(str(repo))
+    assert not report.ok
+    assert any("copy of metrics differs" in m for m in report.mismatches)
+
+
+def test_an_execution_pointing_at_another_run_fails(tmp_path: Path) -> None:
+    repo, record = _realized_repo(tmp_path)
+    record.hypothesis.designs[0].runs[0].executions[-1].execution_id = "run-zzz"
+    save_record(str(repo), record)
+
+    report = verify_record_only(str(repo))
+    assert not report.ok
+    assert any("execution_id" in m and "manifest" in m for m in report.mismatches)
+
+
+def test_an_inputs_hash_that_is_not_the_file_fails(tmp_path: Path) -> None:
+    _init(tmp_path)
+    record = _record()
+    save_record(str(tmp_path), record)
+    freeze = _commit(tmp_path, "prereg")
+    manifest = _write_results(tmp_path, freeze)
+    inputs_dir = tmp_path / ".research" / "results" / "proposed" / "eval_inputs"
+    inputs_dir.mkdir()
+    (inputs_dir / "task.json").write_text(json.dumps({"predicted_labels": [1, 0]}))
+    _commit(tmp_path, "import")
+    realize_record(tmp_path, record, load_metrics_data(str(tmp_path)), manifest)
+    save_record(str(tmp_path), record)
+    _commit(tmp_path, "realize")
+    assert verify_record_only(str(tmp_path)).ok
+
+    # The record still names the old hash; the file it hashed is gone.
+    (inputs_dir / "task.json").write_text(json.dumps({"predicted_labels": [0, 0]}))
+    report = verify_record_only(str(tmp_path))
+    assert not report.ok
+    assert any("inputs hash" in m for m in report.mismatches)
+
+
+def test_an_evaluation_report_that_disagrees_with_its_inputs_fails(
+    tmp_path: Path,
+) -> None:
+    """airas-eval says which inputs it computed from. The record's inputs
+    hash must be that, or metrics and inputs describe two experiments."""
+    _init(tmp_path)
+    record = _record()
+    save_record(str(tmp_path), record)
+    freeze = _commit(tmp_path, "prereg")
+    manifest = _write_results(tmp_path, freeze)
+    run_dir = tmp_path / ".research" / "results" / "proposed"
+    (run_dir / "eval_inputs").mkdir()
+    (run_dir / "eval_inputs" / "task.json").write_text("{}")
+    (run_dir / "evaluation").mkdir()
+    (run_dir / "evaluation" / "task.json").write_text(
+        json.dumps(
+            {
+                "task_type": "task",
+                "metrics": {"accuracy": 0.902},
+                "provenance": {"inputs_sha256": "f" * 64},
+            }
+        )
+    )
+    _commit(tmp_path, "import")
+    realize_record(tmp_path, record, load_metrics_data(str(tmp_path)), manifest)
+    save_record(str(tmp_path), record)
+    _commit(tmp_path, "realize")
+
+    report = verify_record_only(str(tmp_path))
+    assert not report.ok
+    assert any("evaluator reports inputs" in m for m in report.mismatches)
+
+
+def test_an_evaluation_attributed_to_the_wrong_execution_fails(
+    tmp_path: Path,
+) -> None:
+    repo, record = _realized_repo(tmp_path)
+    record.hypothesis.claims[0].evaluations[-1].used_executions = {
+        "proposed": "run-zzz",
+        "baseline": "run-b",
+    }
+    save_record(str(repo), record)
+
+    report = verify_record_only(str(repo))
+    assert not report.ok
+    assert report.claim_status_match is False

@@ -16,12 +16,14 @@ from airas.core.types.paper_values import (
     TableSpec,
 )
 from airas.core.types.research_record import ResearchRecord
+from airas.core.types.run_provenance import RunProvenanceManifest
 from airas.usecases.publication.paper_values.charts import (
     chart_result_dirs,
     verify_charts,
 )
 from airas.usecases.publication.paper_values.compute import (
     COMPARISON_KEY,
+    RESULTS_DIR,
     compute_claim_values,
     load_metrics_data,
     resolve_paper_values,
@@ -31,6 +33,10 @@ from airas.usecases.publication.paper_values.latex import (
     VALUES_TEX_FILENAME,
     render_values_tex,
 )
+from airas.usecases.publication.paper_values.realize import (
+    eval_inputs_ref,
+    eval_report,
+)
 from airas.usecases.publication.paper_values.record import (
     active,
     load_record,
@@ -39,6 +45,7 @@ from airas.usecases.publication.paper_values.record import (
     record_consistency_problems,
     ref_run_id,
     run_index,
+    selected_execution,
 )
 from airas.usecases.publication.paper_values.tables import (
     TABLES_DIR_NAME,
@@ -123,6 +130,107 @@ def _verify_tables(
     return problems
 
 
+def execution_problems(
+    root: Path,
+    record: ResearchRecord,
+    metrics_data: dict[str, Any],
+    manifest: RunProvenanceManifest | None,
+) -> list[str]:
+    """Is every value the record holds about an execution re-derivable?
+
+    An execution entry is a set of copies: of the manifest (which run, which
+    commit, which parameters), of the metrics file, of the inputs' hash, of
+    the evaluator's report. Each copy is compared with what it claims to
+    copy. Without this, an execution appended by hand could carry numbers
+    that no file, no manifest and no platform record ever produced — and
+    pass, because containment allows appends and the claim recomputation
+    reads the files rather than the record.
+
+    The sources themselves are anchored elsewhere: the manifest and the
+    files to Seyval, the commit to git. This check only asks that the
+    record agree with them.
+    """
+    problems: list[str] = []
+    for run in run_index(record).values():
+        execution = selected_execution(run)
+        if execution is None:
+            continue
+        rid = run.run_id
+
+        declared = manifest.dirs.get(rid) if manifest else None
+        if declared is not None:
+            if execution.execution_id != declared.execution_id:
+                problems.append(
+                    f"run '{rid}': the record's execution_id "
+                    f"{execution.execution_id!r} is not the manifest's "
+                    f"{declared.execution_id!r}"
+                )
+            if execution.commit != declared.commit_hash:
+                problems.append(
+                    f"run '{rid}': the record's commit {execution.commit!r} is "
+                    f"not the manifest's {declared.commit_hash!r}"
+                )
+            if dict(execution.overrides) != dict(declared.overrides):
+                problems.append(
+                    f"run '{rid}': the record's overrides differ from the manifest's"
+                )
+            if dict(execution.parameters) != dict(declared.parameters):
+                problems.append(
+                    f"run '{rid}': the record's parameters differ from the manifest's"
+                )
+        elif execution.execution_id or execution.commit:
+            problems.append(
+                f"run '{rid}': the record names an execution but the manifest "
+                "declares none for this directory"
+            )
+
+        if rid in metrics_data and execution.metrics != metrics_data[rid]:
+            problems.append(
+                f"run '{rid}': the record's copy of metrics differs from "
+                f"{RESULTS_DIR}/{rid}/metrics.json"
+            )
+
+        expected_inputs = eval_inputs_ref(root, rid)
+        stored_inputs = execution.inputs
+        if (stored_inputs is None) != (expected_inputs is None) or (
+            stored_inputs is not None
+            and expected_inputs is not None
+            and stored_inputs.model_dump() != expected_inputs.model_dump()
+        ):
+            problems.append(
+                f"run '{rid}': the record's inputs hash does not match the "
+                "eval_inputs file in the results directory"
+            )
+
+        expected_eval = eval_report(root, rid)
+        stored_eval = execution.evaluation
+        if (stored_eval is None) != (expected_eval is None) or (
+            stored_eval is not None
+            and expected_eval is not None
+            and stored_eval.model_dump() != expected_eval.model_dump()
+        ):
+            problems.append(
+                f"run '{rid}': the record's evaluation differs from the "
+                "evaluator's report in the results directory"
+            )
+
+        # The evaluator says which inputs it computed from. That must be the
+        # inputs the record hashed, or the metrics and the inputs describe
+        # two different experiments.
+        if (
+            stored_eval is not None
+            and stored_inputs is not None
+            and stored_eval.inputs_sha256
+            and stored_eval.inputs_sha256 != stored_inputs.sha256
+        ):
+            problems.append(
+                f"run '{rid}': the evaluator reports inputs "
+                f"{stored_eval.inputs_sha256[:12]} but the record's inputs "
+                f"hash is {stored_inputs.sha256[:12]}"
+            )
+    return problems
+
+
 def claim_evaluation_drift(
     record: ResearchRecord, claims: list[ClaimStatus]
 ) -> list[str]:
@@ -145,6 +253,7 @@ def claim_evaluation_drift(
         or stored[s.id].verified != s.verified
         or stored[s.id].criterion_met != s.criterion_met
         or stored[s.id].display != (s.display or "")
+        or stored[s.id].used_executions != s.used_executions
         or (
             s.value is not None
             and not isclose(stored[s.id].value, s.value, rel_tol=1e-9)
@@ -206,6 +315,12 @@ def verify_paper_record(
     if record is not None:
         mismatches.extend(record_consistency_problems(record))
         mismatches.extend(override_problems(record))
+        if metrics_data:
+            mismatches.extend(
+                execution_problems(
+                    root, record, metrics_data, load_provenance_manifest(root)
+                )
+            )
         orphans = orphan_runs(record)
         append_only, append_only_problems, record_commits = record_append_only_status(
             root, record

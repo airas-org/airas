@@ -15,6 +15,7 @@ from airas.core.types.research_record import (
     Target,
 )
 from airas.core.types.run_provenance import (
+    PROVENANCE_MANIFEST_PATH,
     ResultsDirProvenance,
     RunProvenanceManifest,
 )
@@ -126,7 +127,13 @@ def _generate(tmp_path: Path, mode: str = "full") -> Path:
     latex_dir = _make_repo(tmp_path)
     record = _record()
     metrics_data = load_metrics_data(str(tmp_path))
-    realize_record(tmp_path, record, metrics_data, _manifest(mode))
+    manifest = _manifest(mode)
+    # On disk as import_run_outputs leaves it: verification reads the file,
+    # and an execution the manifest does not declare is a finding.
+    (tmp_path / PROVENANCE_MANIFEST_PATH).write_text(
+        manifest.model_dump_json(indent=2) + "\n"
+    )
+    realize_record(tmp_path, record, metrics_data, manifest)
     save_record(str(tmp_path), record)
 
     (latex_dir / "main.tex").write_text(MAIN_TEX)

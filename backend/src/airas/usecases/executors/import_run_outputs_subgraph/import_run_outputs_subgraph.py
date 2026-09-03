@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 from pydantic import ValidationError
@@ -23,6 +22,10 @@ from airas.usecases.executors.import_run_outputs_subgraph.nodes.collect_run_outp
 from airas.usecases.executors.import_run_outputs_subgraph.nodes.resolve_execution_id import (
     resolve_execution_id,
 )
+from airas.usecases.verification.run_parameters import (
+    parse_overrides,
+    parse_parameters,
+)
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -30,46 +33,6 @@ logger = logging.getLogger(__name__)
 
 def record_execution_time(f):
     return time_node("import_run_outputs_subgraph")(f)  # noqa: E731
-
-
-def _parse_overrides(command_args: Any) -> dict[str, str]:
-    """The dispatch's parameter overrides, from the argv Seyval recorded.
-
-    Only `key=value` tokens are overrides; the rest of the argv is the
-    interpreter and module path. Hydra's `+key=` / `~key=` prefixes are
-    stripped so a declaration can be compared against what ran without
-    knowing which form the dispatch used.
-    """
-    overrides: dict[str, str] = {}
-    for token in command_args or []:
-        text = str(token)
-        key, separator, value = text.partition("=")
-        if not separator or key.startswith("-") or "/" in key:
-            continue
-        overrides[key.strip().lstrip("+~")] = value.strip()
-    return overrides
-
-
-def _parse_parameters(run: Any) -> dict[str, str]:
-    """Every parameter the run resolved, as Seyval reports it.
-
-    Strictly better than the argv-derived overrides: those carry only what
-    the dispatch restated, so a parameter left at its default is
-    indistinguishable from one that was never reported. Absent until the
-    platform supplies it, in which case callers fall back to the overrides
-    and treat a missing key as unknown rather than as a default.
-    """
-    reported = run.get("resolved_parameters") or run.get("parameters")
-    if isinstance(reported, dict):
-        return {str(k): str(v) for k, v in reported.items()}
-    # The list form the run schema uses: [{"name": ..., "value": ...}, ...]
-    if isinstance(reported, list):
-        return {
-            str(entry["name"]): str(entry.get("value"))
-            for entry in reported
-            if isinstance(entry, dict) and entry.get("name")
-        }
-    return {}
 
 
 class ImportRunOutputsSubgraphInputState(TypedDict):
@@ -156,8 +119,8 @@ class ImportRunOutputsSubgraph:
         try:
             run = await self.seyval_client.aget_run(execution_id)
             commit_hash = run.get("commit_hash")
-            overrides = _parse_overrides(run.get("command_args"))
-            parameters = _parse_parameters(run)
+            overrides = parse_overrides(run.get("command_args"))
+            parameters = parse_parameters(run)
         except Exception as e:
             logger.warning(
                 f"Could not fetch run metadata for {execution_id}; the "

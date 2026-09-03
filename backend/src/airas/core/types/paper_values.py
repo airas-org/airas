@@ -115,9 +115,25 @@ class ProvenanceDirCheck(BaseModel):
     )
     matched: bool = Field(
         description=(
-            "The declared, completed run holds byte-identical metrics for "
-            "this directory and its commit is an ancestor of HEAD"
+            "The declared, completed run holds byte-identical copies of every "
+            "file in this directory, its recorded dispatch parameters match "
+            "the manifest, and its commit is an ancestor of HEAD"
         )
+    )
+    files_checked: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Repository-relative paths byte-compared against the run's stored "
+            "outputs — every file under the directory, not only metrics.json, "
+            "so the inputs the metrics derive from are anchored too"
+        ),
+    )
+    parameters_match: Optional[bool] = Field(
+        default=None,
+        description=(
+            "The manifest's cached overrides/parameters equal what Seyval "
+            "recorded for the dispatch; None when Seyval reported none"
+        ),
     )
     sibling_run_ids: list[str] = Field(
         default_factory=list,
