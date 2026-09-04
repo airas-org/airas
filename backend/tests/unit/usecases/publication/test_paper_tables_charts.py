@@ -10,33 +10,34 @@ from typing import Any
 
 import pytest
 
-from airas.core.types.paper_values import (
+from airas.core.types.map_record_to_publication import (
     TableColumnSpec,
     TableRowSpec,
     TableSpec,
 )
 from airas.core.types.research_record import (
     ChartDeclaration,
-    ClaimDeclaration,
-    DesignDeclaration,
     Hypothesis,
     RenderedChart,
     ResearchRecord,
-    RunDeclaration,
+    SeyvalClaim,
+    SeyvalDesign,
+    SeyvalRun,
+    SeyvalVerifier,
+    VerifierKind,
 )
-from airas.usecases.publication.paper_values.charts import (
+from airas.usecases.publication.map_record_to_publication import (
     CHART_DIR,
     chart_result_dirs,
     render_chart_bytes,
+    render_table_tex,
     renderer_version,
     substitute_chart_refs,
-    verify_charts,
-)
-from airas.usecases.publication.paper_values.tables import (
-    render_table_tex,
     table_result_dirs,
 )
-from airas.usecases.publication.paper_values.verify import _verify_tables
+from airas.usecases.publication.verify_paper import _verify_charts, _verify_tables
+
+SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 
 METRICS_DATA = {
     "run_1": {"accuracy": 0.871, "loss": {"final": 0.32}},
@@ -169,16 +170,17 @@ def _chart_record(*charts: ChartDeclaration) -> ResearchRecord:
                 id="h1",
                 statement="h",
                 claims=[
-                    ClaimDeclaration(
+                    SeyvalClaim(
+                        verifier=SEYVAL,
                         id="c1",
                         statement="c",
                         designs=[
-                            DesignDeclaration(
+                            SeyvalDesign(
                                 id="d1",
                                 summary="d",
                                 runs=[
-                                    RunDeclaration(run_id="run_1"),
-                                    RunDeclaration(run_id="run_2"),
+                                    SeyvalRun(run_id="run_1"),
+                                    SeyvalRun(run_id="run_2"),
                                 ],
                             )
                         ],
@@ -240,13 +242,13 @@ def _write_chart(
 
 def test_verify_charts_passes_fresh_render(tmp_path: Path) -> None:
     _, record = _write_chart(tmp_path)
-    assert verify_charts(record, str(tmp_path), METRICS_DATA) == []
+    assert _verify_charts(record, str(tmp_path), METRICS_DATA) == []
 
 
 def test_verify_charts_detects_replaced_file(tmp_path: Path) -> None:
     chart_path, record = _write_chart(tmp_path)
     chart_path.write_bytes(b"<svg>not the rendered chart</svg>")
-    problems = verify_charts(record, str(tmp_path), METRICS_DATA)
+    problems = _verify_charts(record, str(tmp_path), METRICS_DATA)
     assert any("re-render" in p for p in problems)
 
 
@@ -264,14 +266,14 @@ def test_verify_charts_detects_redirected_declaration(tmp_path: Path) -> None:
         },
     }
     record.hypotheses[0].charts[0].spec = tampered_spec
-    assert verify_charts(record, str(tmp_path), METRICS_DATA) != []
+    assert _verify_charts(record, str(tmp_path), METRICS_DATA) != []
 
 
 def test_verify_charts_rejects_undeclared_chart(tmp_path: Path) -> None:
     chart_dir = tmp_path / CHART_DIR
     chart_dir.mkdir(parents=True)
     (chart_dir / "smuggled.pdf").write_bytes(b"%PDF-1.4 fake")
-    problems = verify_charts(_chart_record(), str(tmp_path), METRICS_DATA)
+    problems = _verify_charts(_chart_record(), str(tmp_path), METRICS_DATA)
     assert any("no declared source" in p for p in problems)
 
 
@@ -283,7 +285,7 @@ def test_verify_charts_rejects_undeclared_chart_in_subdirectory(
     nested = tmp_path / CHART_DIR / "extra"
     nested.mkdir(parents=True)
     (nested / "smuggled.pdf").write_bytes(b"%PDF-1.4 fake")
-    problems = verify_charts(_chart_record(), str(tmp_path), METRICS_DATA)
+    problems = _verify_charts(_chart_record(), str(tmp_path), METRICS_DATA)
     assert any(
         "extra/smuggled.pdf" in p and "no declared source" in p for p in problems
     )
@@ -293,7 +295,7 @@ def test_verify_charts_reports_missing_declared_chart(tmp_path: Path) -> None:
     record = _chart_record(
         ChartDeclaration(path="accuracy.svg", format="svg", spec=CHART_SPEC)
     )
-    problems = verify_charts(record, str(tmp_path), METRICS_DATA)
+    problems = _verify_charts(record, str(tmp_path), METRICS_DATA)
     assert any("declared but missing" in p for p in problems)
 
 
@@ -303,12 +305,12 @@ def test_chart_result_dirs_come_from_declarations(tmp_path: Path) -> None:
 
 
 def test_verify_charts_ignores_repo_without_charts(tmp_path: Path) -> None:
-    assert verify_charts(_chart_record(), str(tmp_path), METRICS_DATA) == []
+    assert _verify_charts(_chart_record(), str(tmp_path), METRICS_DATA) == []
 
 
 def test_nested_declared_chart_verifies(tmp_path: Path) -> None:
     _, record = _write_chart(tmp_path, "extra/accuracy.svg")
-    assert verify_charts(record, str(tmp_path), METRICS_DATA) == []
+    assert _verify_charts(record, str(tmp_path), METRICS_DATA) == []
     assert chart_result_dirs(record, METRICS_DATA) == {"run_1", "run_2"}
 
 
@@ -332,4 +334,4 @@ def test_png_charts_render_and_verify(tmp_path: Path) -> None:
     record = _chart_record(
         ChartDeclaration(path="accuracy.png", format="png", spec=CHART_SPEC)
     )
-    assert verify_charts(record, str(tmp_path), METRICS_DATA) == []
+    assert _verify_charts(record, str(tmp_path), METRICS_DATA) == []

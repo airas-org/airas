@@ -10,40 +10,50 @@ recorded (git history); B, what is being appended (the platform's record
 and the files it stored).
 """
 
+import asyncio
 import json
 import subprocess
 from pathlib import Path
+from typing import Any
 
 from airas.core.research_paths import RECORD_PATH
 from airas.core.types.research_record import (
     ClaimDeclaration,
-    DesignDeclaration,
     Hypothesis,
     ResearchRecord,
-    RunDeclaration,
-    RunResult,
+    SeyvalClaim,
+    SeyvalDesign,
+    SeyvalResult,
+    SeyvalRun,
+    SeyvalVerifier,
+    VerifierKind,
 )
 from airas.core.types.run_provenance import (
     PROVENANCE_MANIFEST_PATH,
     ResultsDirProvenance,
     RunProvenanceManifest,
 )
-from airas.usecases.publication.paper_values.compute import (
-    load_metrics_data,
+from airas.usecases.publication.map_record_to_publication import (
+    render_values_tex,
     resolve_paper_values,
 )
-from airas.usecases.publication.paper_values.latex import render_values_tex
-from airas.usecases.publication.paper_values.realize import realize_record
-from airas.usecases.publication.paper_values.record import load_record, save_record
-from airas.usecases.publication.paper_values.verify import (
-    _scan_main_tex,
-    paper_values_configured,
+from airas.usecases.publication.verify_paper import scan_main_tex, verify_paper
+from airas.usecases.recording.update_or_load_record import (
+    load_metrics_data,
+    load_record,
+    save_record,
+    update_record_with_results,
 )
-from airas.usecases.verification.ci_gate import (
-    RECORD_REPORT_FILENAME,
-    run_record_gate,
-)
-from airas.usecases.verification.record_gate import verify_record_only
+from airas.usecases.recording.verify_record import RecordVerification, verify_record
+
+SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
+
+
+def _verify(path: str, **kw: Any) -> RecordVerification:
+    # The record's own checks; CI policy (history, provenance) is opted into per test.
+    kw.setdefault("check_provenance", False)
+    kw.setdefault("require_history", False)
+    return asyncio.run(verify_record(path, **kw))
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -74,18 +84,19 @@ def _record() -> ResearchRecord:
                 id="h1",
                 statement="The proposed method beats the baseline.",
                 claims=[
-                    ClaimDeclaration(
+                    SeyvalClaim(
+                        verifier=SEYVAL,
                         id="c1",
                         statement="Proposed beats baseline on accuracy.",
                         designs=[
-                            DesignDeclaration(
+                            SeyvalDesign(
                                 id="d1",
                                 summary="Head-to-head on one dataset.",
                                 runs=[
-                                    RunDeclaration(
+                                    SeyvalRun(
                                         run_id="proposed", params={"mode": "full"}
                                     ),
-                                    RunDeclaration(run_id="baseline"),
+                                    SeyvalRun(run_id="baseline"),
                                 ],
                             )
                         ],
@@ -136,7 +147,9 @@ def _realized_repo(tmp_path: Path, proposed_mode: str = "full") -> Path:
     manifest = _write_results(tmp_path, freeze, proposed_mode)
     _commit(tmp_path, "import run outputs")
 
-    realize_record(tmp_path, record, load_metrics_data(str(tmp_path)), manifest)
+    update_record_with_results(
+        tmp_path, record, load_metrics_data(str(tmp_path)), manifest
+    )
     save_record(str(tmp_path), record)
     _commit(tmp_path, "realize the record")
     return tmp_path
@@ -148,12 +161,10 @@ def _realized_repo(tmp_path: Path, proposed_mode: str = "full") -> Path:
 def test_a_repository_with_no_record_passes(tmp_path: Path) -> None:
     """A repository that has made no claim is not contradicting one."""
     _init(tmp_path)
-    report = verify_record_only(str(tmp_path))
+    report = _verify(str(tmp_path))
     assert report.ok
     assert report.stage == "prereg"
-    # It must also read as not-opted-in, or the policy layer applies the
-    # record-only rules (history, provenance) to a repository with none.
-    assert paper_values_configured(report) is False
+    assert report.problems == []
 
 
 def test_a_preregistered_record_with_no_runs_passes(tmp_path: Path) -> None:
@@ -161,21 +172,20 @@ def test_a_preregistered_record_with_no_runs_passes(tmp_path: Path) -> None:
     save_record(str(tmp_path), _record())
     _commit(tmp_path, "prereg")
 
-    report = verify_record_only(str(tmp_path))
+    report = _verify(str(tmp_path))
     assert report.ok
     assert report.stage == "prereg"
     # Declared but not yet run: unverified is the correct state, not a
     # failure — every claim starts here.
-    assert report.unverified_claims == ["c1"]
+    assert report.problems == []
 
 
 def test_a_realized_record_passes(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
-    report = verify_record_only(str(repo))
-    assert report.ok, report.mismatches
+    report = _verify(str(repo))
+    assert report.ok, report.problems
     assert report.stage == "results"
-    assert report.append_only == "ok"
-    assert report.unverified_claims == []
+    assert report.problems == []
     assert _c1(load_record(str(repo))).verified is True
 
 
@@ -188,9 +198,9 @@ def test_a_reworded_claim_fails(tmp_path: Path) -> None:
     _c1(record).statement = "Proposed is competitive with baseline."
     save_record(str(repo), record)
 
-    report = verify_record_only(str(repo))
+    report = _verify(str(repo))
     assert not report.ok
-    assert report.append_only == "violated"
+    assert any("statement" in p for p in report.problems)
 
 
 def test_a_dropped_result_fails(tmp_path: Path) -> None:
@@ -200,9 +210,9 @@ def test_a_dropped_result_fails(tmp_path: Path) -> None:
     _c1(record).designs[0].runs[0].results.clear()
     save_record(str(repo), record)
 
-    report = verify_record_only(str(repo))
+    report = _verify(str(repo))
     assert not report.ok
-    assert report.append_only == "violated"
+    assert any("removed" in p for p in report.problems)
 
 
 def test_a_claim_declared_after_its_run_is_allowed_for_now(tmp_path: Path) -> None:
@@ -215,10 +225,11 @@ def test_a_claim_declared_after_its_run_is_allowed_for_now(tmp_path: Path) -> No
     manifest = _write_results(tmp_path, freeze)
     _commit(tmp_path, "import")
     record.hypotheses[0].claims.append(
-        ClaimDeclaration(
+        SeyvalClaim(
+            verifier=SEYVAL,
             id="c2",
             statement="Post-hoc.",
-            designs=[DesignDeclaration(id="d1", runs=[RunDeclaration(run_id="late")])],
+            designs=[SeyvalDesign(id="d1", runs=[SeyvalRun(run_id="late")])],
         )
     )
     (tmp_path / ".research" / "results" / "late").mkdir()
@@ -227,13 +238,14 @@ def test_a_claim_declared_after_its_run_is_allowed_for_now(tmp_path: Path) -> No
         execution_id="run-l", commit_hash=freeze
     )
     (tmp_path / PROVENANCE_MANIFEST_PATH).write_text(manifest.model_dump_json() + "\n")
-    realize_record(tmp_path, record, load_metrics_data(str(tmp_path)), manifest)
+    update_record_with_results(
+        tmp_path, record, load_metrics_data(str(tmp_path)), manifest
+    )
     save_record(str(tmp_path), record)
     _commit(tmp_path, "post-hoc claim with results")
 
-    report = verify_record_only(str(tmp_path))
-    assert report.ok, report.mismatches
-    assert report.unverified_claims == []
+    report = _verify(str(tmp_path))
+    assert report.ok, report.problems
 
 
 def test_verified_stored_true_that_the_results_no_longer_bear_out_fails(
@@ -245,10 +257,9 @@ def test_verified_stored_true_that_the_results_no_longer_bear_out_fails(
     # contradicted by the recomputation.
     (repo / ".research" / "results" / "baseline" / "metrics.json").unlink()
 
-    report = verify_record_only(str(repo))
+    report = _verify(str(repo))
     assert not report.ok
-    assert report.claim_status_match is False
-    assert any("stored as verified" in m for m in report.mismatches)
+    assert any("stored as verified" in m for m in report.problems)
 
 
 # ------------------------------------- B: what is being appended
@@ -260,9 +271,9 @@ def test_a_tampered_metrics_file_fails(tmp_path: Path) -> None:
     (repo / ".research" / "results" / "proposed" / "metrics.json").write_text(
         json.dumps({"accuracy": 0.999})
     )
-    report = verify_record_only(str(repo))
+    report = _verify(str(repo))
     assert not report.ok
-    assert any("metrics differ" in m for m in report.mismatches)
+    assert any("metrics differ" in m for m in report.problems)
 
 
 def test_a_hand_appended_result_fails(tmp_path: Path) -> None:
@@ -270,29 +281,34 @@ def test_a_hand_appended_result_fails(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
     record = load_record(str(repo))
     _c1(record).designs[0].runs[0].results.append(
-        RunResult(id="run-zzz", commit="c" * 40, metrics={"accuracy": 0.999})
+        SeyvalResult(
+            verifier="seyval",
+            id="run-zzz",
+            commit="c" * 40,
+            metrics={"accuracy": 0.999},
+        )
     )
     save_record(str(repo), record)
 
-    report = verify_record_only(str(repo))
+    report = _verify(str(repo))
     assert not report.ok
-    assert any("not the manifest's execution" in m for m in report.mismatches)
+    assert any("not the manifest's execution" in m for m in report.problems)
 
 
 def test_a_result_with_no_manifest_entry_fails(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
     (repo / PROVENANCE_MANIFEST_PATH).unlink()
-    report = verify_record_only(str(repo))
+    report = _verify(str(repo))
     assert not report.ok
-    assert any("no readable" in m for m in report.mismatches)
+    assert any("no readable" in m for m in report.problems)
 
 
 def test_a_run_dispatched_under_other_conditions_fails(tmp_path: Path) -> None:
     """Declared `mode=full`, dispatched `mode=pilot`."""
     repo = _realized_repo(tmp_path, proposed_mode="pilot")
-    report = verify_record_only(str(repo))
+    report = _verify(str(repo))
     assert not report.ok
-    assert any("executed 'mode=pilot'" in m for m in report.mismatches)
+    assert any("executed 'mode=pilot'" in m for m in report.problems)
 
 
 def test_an_inputs_hash_that_is_not_the_file_fails(tmp_path: Path) -> None:
@@ -305,15 +321,17 @@ def test_an_inputs_hash_that_is_not_the_file_fails(tmp_path: Path) -> None:
     inputs_dir.mkdir()
     (inputs_dir / "task.json").write_text(json.dumps({"predicted_labels": [1, 0]}))
     _commit(tmp_path, "import")
-    realize_record(tmp_path, record, load_metrics_data(str(tmp_path)), manifest)
+    update_record_with_results(
+        tmp_path, record, load_metrics_data(str(tmp_path)), manifest
+    )
     save_record(str(tmp_path), record)
     _commit(tmp_path, "realize")
-    assert verify_record_only(str(tmp_path)).ok
+    assert _verify(str(tmp_path)).ok
 
     (inputs_dir / "task.json").write_text(json.dumps({"predicted_labels": [0, 0]}))
-    report = verify_record_only(str(tmp_path))
+    report = _verify(str(tmp_path))
     assert not report.ok
-    assert any("eval_inputs hash" in m for m in report.mismatches)
+    assert any("eval_inputs hash" in m for m in report.problems)
 
 
 def test_the_evaluators_own_inputs_digest_is_not_held_against_the_file_hash(
@@ -343,12 +361,14 @@ def test_the_evaluators_own_inputs_digest_is_not_held_against_the_file_hash(
         )
     )
     _commit(tmp_path, "import")
-    realize_record(tmp_path, record, load_metrics_data(str(tmp_path)), manifest)
+    update_record_with_results(
+        tmp_path, record, load_metrics_data(str(tmp_path)), manifest
+    )
     save_record(str(tmp_path), record)
     _commit(tmp_path, "realize")
 
-    report = verify_record_only(str(tmp_path))
-    assert report.ok, report.mismatches
+    report = _verify(str(tmp_path))
+    assert report.ok, report.problems
     run = record.hypotheses[0].claims[0].designs[0].runs[0]
     assert run.results[-1].eval_report is not None
     assert run.results[-1].eval_report.inputs_sha256 == "f" * 64
@@ -360,112 +380,87 @@ def test_results_no_run_declares_fail(tmp_path: Path) -> None:
     undeclared.mkdir()
     (undeclared / "metrics.json").write_text(json.dumps({"accuracy": 0.99}))
 
-    report = verify_record_only(str(repo))
+    report = _verify(str(repo))
     assert not report.ok
-    assert report.undeclared_result_dirs == ["secret-run"]
+    assert any("secret-run" in m for m in report.problems)
 
 
 def test_results_in_the_record_without_run_outputs_fail(tmp_path: Path) -> None:
     _init(tmp_path)
     record = _record()
     _c1(record).designs[0].runs[0].results.append(
-        RunResult(id="made-up", metrics={"accuracy": 0.99})
+        SeyvalResult(verifier="seyval", id="made-up", metrics={"accuracy": 0.99})
     )
     save_record(str(tmp_path), record)
     _commit(tmp_path, "prereg with invented results")
 
-    report = verify_record_only(str(tmp_path))
+    report = _verify(str(tmp_path))
     assert not report.ok
-    assert any("no run outputs exist" in m for m in report.mismatches)
+    assert any("no run outputs exist" in m for m in report.problems)
 
 
 def test_unparseable_json_fails(tmp_path: Path) -> None:
     _init(tmp_path)
     (tmp_path / RECORD_PATH).parent.mkdir(parents=True)
     (tmp_path / RECORD_PATH).write_text("{not json")
-    report = verify_record_only(str(tmp_path))
+    report = _verify(str(tmp_path))
     assert not report.ok
-    assert any("not valid JSON" in m for m in report.mismatches)
+    assert any("Invalid JSON" in m for m in report.problems)
 
 
-# ------------------------------------------------------------ gate policy
+# ------------------------------------------------------------ CI policy
 
 
 def _no_seyval():
     raise RuntimeError("no Seyval credentials in this environment")
 
 
-async def test_gate_passes_and_writes_its_report(tmp_path: Path) -> None:
+def test_a_realized_record_passes_with_history_required(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
-    out = repo / "record-artifact"
-    summary = await run_record_gate(
-        str(repo), str(out), check_provenance=False, seyval_client_factory=_no_seyval
-    )
-    assert summary["ok"], summary["failures"]
-    assert summary["stage"] == "results"
-    assert json.loads((out / RECORD_REPORT_FILENAME).read_text())["ok"] is True
+    result = _verify(str(repo), require_history=True, seyval_client_factory=_no_seyval)
+    assert result.ok, result.problems
+    assert result.stage == "results"
 
 
-async def test_gate_writes_its_report_when_red(tmp_path: Path) -> None:
+def test_a_reworded_claim_is_reported_as_violated_history(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
     record = load_record(str(repo))
     _c1(record).statement = "softened"
     save_record(str(repo), record)
-    out = repo / "record-artifact"
-
-    summary = await run_record_gate(
-        str(repo), str(out), check_provenance=False, seyval_client_factory=_no_seyval
-    )
-    assert not summary["ok"]
-    written = json.loads((out / RECORD_REPORT_FILENAME).read_text())
-    assert written["ok"] is False
-    assert written["results"][0]["report"]["paper_values"]["append_only"] == "violated"
+    result = _verify(str(repo), require_history=True)
+    assert not result.ok
+    assert any("statement" in p for p in result.problems)
 
 
-async def test_gate_does_not_demand_a_record(tmp_path: Path) -> None:
+def test_a_repository_without_a_record_is_not_demanded_one(tmp_path: Path) -> None:
     _init(tmp_path)
-    summary = await run_record_gate(
-        str(tmp_path),
-        str(tmp_path / "out"),
-        check_provenance=False,
-        seyval_client_factory=_no_seyval,
+    result = _verify(
+        str(tmp_path), require_history=True, seyval_client_factory=_no_seyval
     )
-    assert summary["ok"], summary["failures"]
+    assert result.ok
+    assert result.stage == "prereg"
 
 
-async def test_unreachable_provenance_fails_the_gate(tmp_path: Path) -> None:
+def test_unreachable_provenance_fails_where_required(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
-    summary = await run_record_gate(
-        str(repo),
-        str(repo / "out"),
-        check_provenance=True,
-        seyval_client_factory=_no_seyval,
-    )
-    assert not summary["ok"]
-    assert any("provenance" in f for f in summary["failures"])
+    result = _verify(str(repo), check_provenance=True, seyval_client_factory=_no_seyval)
+    assert not result.ok
+    assert any("provenance" in p for p in result.problems)
 
-    relaxed = await run_record_gate(
+    relaxed = _verify(
         str(repo),
-        str(repo / "out2"),
         check_provenance=True,
         require_provenance=False,
         seyval_client_factory=_no_seyval,
     )
-    assert relaxed["ok"], relaxed["failures"]
+    assert relaxed.ok, relaxed.problems
 
 
-async def test_a_shallow_clone_fails_rather_than_passing_quietly(
-    tmp_path: Path,
-) -> None:
+def test_a_shallow_clone_fails_rather_than_passing_quietly(tmp_path: Path) -> None:
     save_record(str(tmp_path), _record())
-    summary = await run_record_gate(
-        str(tmp_path),
-        str(tmp_path / "out"),
-        check_provenance=False,
-        seyval_client_factory=_no_seyval,
-    )
-    assert not summary["ok"]
-    assert any("fetch-depth" in f for f in summary["failures"])
+    result = _verify(str(tmp_path), require_history=True)
+    assert not result.ok
+    assert any("fetch-depth" in p for p in result.problems)
 
 
 # ---------------------------------------------- a paper, once one exists
@@ -489,52 +484,52 @@ def _write_paper(repo: Path) -> Path:
     (latex_dir / "main.tex").write_text(MAIN_TEX)
     record = load_record(str(repo))
     values, _ = resolve_paper_values(
-        record, load_metrics_data(str(repo)), _scan_main_tex(MAIN_TEX)[1]
+        record, load_metrics_data(str(repo)), scan_main_tex(MAIN_TEX)[1]
     )
     (latex_dir / "values.tex").write_text(render_values_tex(values, None))
     return latex_dir
 
 
-async def test_a_paper_whose_numbers_match_the_record_passes(tmp_path: Path) -> None:
+def _verify_paper(path: str, **kw: Any):
+    kw.setdefault("check_provenance", False)
+    kw.setdefault("require_history", False)
+    return asyncio.run(verify_paper(path, "mdpi", **kw))
+
+
+def test_a_paper_whose_numbers_match_the_record_passes(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
     _write_paper(repo)
     _commit(repo, "paper")
-    summary = await run_record_gate(
-        str(repo), str(repo / "out"), check_provenance=False
-    )
-    assert summary["ok"], summary["failures"]
-    assert summary["papers"] == ["mdpi"]
+    result = _verify_paper(str(repo))
+    assert result.ok, result.record.problems + result.problems
 
 
-async def test_a_hand_edited_values_tex_is_caught_by_the_gate(tmp_path: Path) -> None:
+def test_a_hand_edited_values_tex_is_caught(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
     latex_dir = _write_paper(repo)
     _commit(repo, "paper")
     values_tex = latex_dir / "values.tex"
     values_tex.write_text(values_tex.read_text().replace("0.902", "0.999"))
 
-    summary = await run_record_gate(
-        str(repo), str(repo / "out"), check_provenance=False
-    )
-    assert not summary["ok"]
-    assert summary["results"][0]["report"]["paper_values"]["values_tex_match"] is False
+    result = _verify_paper(str(repo))
+    assert not result.ok
+    assert any("differs from its regeneration" in p for p in result.problems)
 
 
-async def test_a_paper_without_a_record_fails(tmp_path: Path) -> None:
+def test_a_paper_without_a_record_fails(tmp_path: Path) -> None:
     _init(tmp_path)
     latex_dir = tmp_path / ".research" / "latex" / "mdpi"
     latex_dir.mkdir(parents=True)
     (latex_dir / "main.tex").write_text(MAIN_TEX)
     _commit(tmp_path, "paper with no record")
 
-    summary = await run_record_gate(
-        str(tmp_path), str(tmp_path / "out"), check_provenance=False
-    )
-    assert not summary["ok"]
-    assert any("record.json is missing" in f for f in summary["failures"])
+    result = _verify_paper(str(tmp_path))
+    assert not result.ok
+    assert any("record.json is missing" in p for p in result.problems)
+    assert _verify_paper(str(tmp_path), require_record=False).ok
 
 
-async def test_an_undeclared_airasval_key_fails(tmp_path: Path) -> None:
+def test_an_undeclared_airasval_key_fails(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
     latex_dir = _write_paper(repo)
     (latex_dir / "main.tex").write_text(
@@ -542,9 +537,6 @@ async def test_an_undeclared_airasval_key_fails(tmp_path: Path) -> None:
     )
     _commit(repo, "paper citing a run that does not exist")
 
-    summary = await run_record_gate(
-        str(repo), str(repo / "out"), check_provenance=False
-    )
-    assert not summary["ok"]
-    report = summary["results"][0]["report"]["paper_values"]
-    assert report["undefined_keys"] == ["ghost.accuracy"]
+    result = _verify_paper(str(repo))
+    assert not result.ok
+    assert any("ghost.accuracy" in p for p in result.problems)

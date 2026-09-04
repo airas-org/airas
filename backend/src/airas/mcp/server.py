@@ -11,7 +11,7 @@ import httpx
 import vl_convert as vlc
 from mcp.server.fastmcp import FastMCP
 from PIL import Image
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, TypeAdapter, model_validator
 
 from airas.cli import DEFAULT_DASHBOARD_PORT
 from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
@@ -32,12 +32,9 @@ from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.llm_provider import LLMProvider
+from airas.core.types.map_record_to_publication import TableSpec
 from airas.core.types.paper import PaperContent
 from airas.core.types.paper_search import PAPER_SEARCH_SOURCES
-from airas.core.types.paper_values import (
-    PaperValuesVerificationReport,
-    TableSpec,
-)
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_record import (
@@ -46,6 +43,7 @@ from airas.core.types.research_record import (
     Hypothesis,
     RenderedChart,
     ResearchRecord,
+    active,
 )
 from airas.core.types.research_study import ResearchStudy
 from airas.dashboard.launcher import (
@@ -150,43 +148,35 @@ from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph 
     GenerateLatexLLMMapping,
     GenerateLatexSubgraph,
 )
-from airas.usecases.publication.nodes.verify_latex_build import verify_latex_build
-from airas.usecases.publication.open_in_overleaf_subgraph.nodes.collect_latex_project_files import (
-    collect_latex_project_files,
-    collect_latex_project_files_local,
-)
-from airas.usecases.publication.paper_values.charts import (
+from airas.usecases.publication.map_record_to_publication import (
     CHART_DIR,
+    TABLES_DIR_NAME,
+    VALUES_TEX_FILENAME,
     render_chart_bytes,
+    render_table_tex,
+    render_values_tex,
     renderer_version,
+    resolve_paper_values,
     substitute_chart_refs,
 )
-from airas.usecases.publication.paper_values.compute import (
+from airas.usecases.publication.open_in_overleaf_subgraph.nodes.collect_latex_project_files import (
+    collect_latex_project_files,
+)
+from airas.usecases.publication.verify_paper import (
+    PaperVerification,
+    scan_main_tex,
+    verify_latex_build,
+    verify_paper,
+)
+from airas.usecases.recording.update_or_load_record import (
     load_metrics_data,
-    resolve_paper_values,
-)
-from airas.usecases.publication.paper_values.latex import (
-    VALUES_TEX_FILENAME,
-    render_values_tex,
-)
-from airas.usecases.publication.paper_values.realize import realize_record
-from airas.usecases.publication.paper_values.record import (
-    active,
-    all_tables,
+    load_provenance_manifest,
     load_record,
-    record_consistency_problems,
     record_path,
     save_record,
+    update_record_with_results,
 )
-from airas.usecases.publication.paper_values.tables import (
-    TABLES_DIR_NAME,
-    render_table_tex,
-)
-from airas.usecases.publication.paper_values.verify import (
-    _scan_main_tex,
-    merge_paper_values_report,
-    paper_values_configured,
-)
+from airas.usecases.recording.verify_record import _verify_consistency
 from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.fetch_paper_fulltext_subgraph import (
     FetchPaperFulltextSubgraph,
 )
@@ -206,8 +196,6 @@ from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_tit
 from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph import (
     SearchPapersSubgraph,
 )
-from airas.usecases.verification.paper_verification import paper_values_full_report
-from airas.usecases.verification.seyval_provenance import load_provenance_manifest
 from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
     GenerateBibfileSubgraph,
 )
@@ -2050,27 +2038,19 @@ async def verify_latex(
     exists), the record is verified too — the same checks as
     `verify_paper_values`: declarations, append-only history, value/
     table/chart recomputation, claim flags, and (unless
-    `check_provenance=False`) the Seyval provenance cross-check. The full
-    report lands under `paper_values` (`paper_values_configured` says
-    whether the system is in use; its `provenance.status` is
-    "unavailable" when the platform could not be consulted, which does
-    not fail the build but is surfaced). On failure `ok` is false and no
-    PDF is written to `output_path` — so a PDF this tool hands out states
-    verified, provenance-backed numbers.
+    `check_provenance=False`) the Seyval provenance cross-check. The
+    record's verification lands under `record` (every failure is a line
+    in its `problems`) and the build under `build`. On failure `ok`
+    is false and no PDF is written to `output_path` — so a PDF this tool
+    hands out states verified, provenance-backed numbers.
     """
     refresh_environment()
 
-    paper_values_report = None
     if local_path:
-        paper_values_report = await _paper_values_full_report(
-            local_path, latex_template_name, check_provenance
+        verification = await _verify_paper(
+            local_path, latex_template_name, output_path, check_provenance
         )
-        if paper_values_configured(paper_values_report) and not paper_values_report.ok:
-            # A PDF handed out by this tool must imply verified numbers.
-            output_path = None
-        latex_files = await asyncio.to_thread(
-            collect_latex_project_files_local, local_path, latex_template_name
-        )
+        return verification.model_dump()
     else:
         if not (github_owner and repository_name and branch_name):
             raise ValueError(
@@ -2091,25 +2071,31 @@ async def verify_latex(
     report = await asyncio.to_thread(
         verify_latex_build, latex_files, "main.tex", output_path
     )
-    result: dict[str, Any] = report.model_dump()
-    if paper_values_report is not None:
-        result = merge_paper_values_report(result, paper_values_report)
-    return result
+    return report.model_dump()
 
 
-async def _paper_values_full_report(
+async def _verify_paper(
     local_path: str,
     latex_template_name: LATEX_TEMPLATE_NAME,
+    pdf_path: str | None,
     check_provenance: bool,
-) -> PaperValuesVerificationReport:
-    """The shared verification composition, with this server's Seyval client.
-
-    `airas verify-paper` (the CI gate) runs the same composition, so a
-    paper judged here and a paper judged in CI are judged identically.
-    """
-    return await paper_values_full_report(
-        local_path, latex_template_name, check_provenance, _seyval_client
+) -> PaperVerification:
+    # The same verification CI runs, with this server's Seyval client.
+    # Unavailable provenance or history is surfaced here, not failed: only
+    # CI requires the guarantee.
+    return await verify_paper(
+        local_path,
+        latex_template_name,
+        pdf_path=pdf_path,
+        check_provenance=check_provenance,
+        require_record=False,
+        require_provenance=False,
+        require_history=False,
+        seyval_client_factory=_seyval_client,
     )
+
+
+_CLAIM: TypeAdapter[ClaimDeclaration] = TypeAdapter(ClaimDeclaration)
 
 
 def _parse_hypotheses(hypotheses: list[dict[str, Any]] | None) -> list[Hypothesis]:
@@ -2157,6 +2143,7 @@ async def preregister_record(
         "id": "h1", "statement": "the hypothesis, in prose",
         "claims": [{
           "id": "c1", "statement": "one assertive sentence",
+          "verifier": {"kind": "seyval"},
           "designs": [{
             "id": "d1", "summary": "...",
             "runs": [{"run_id": "proposed-...", "description": "...",
@@ -2168,11 +2155,31 @@ async def preregister_record(
 
     `run_id` names the results directory the run will produce and must be
     unique across the whole record — a run belongs to exactly one claim.
-    `params` are the conditions the run is declared to be dispatched with;
-    the gate checks them against what the platform recorded. What a claim's
-    condition is and whether it was met are not modelled yet (TODO): the
-    record tracks whether each claim's procedure was carried out properly
-    (`verified`), not whether the numbers favoured it.
+
+    `verifier` says what verifies the claim and sets its `verified` and
+    `verdict`; one per claim (a claim needing both a proof and an experiment
+    is two claims), and required. The kind decides what `params` declares
+    and what the gate re-derives:
+
+      seyval    (experiment) params = dispatch conditions, e.g. {"mode":
+                "full"}, checked against what the platform recorded. No
+                verdict yet — the claim's condition is not modelled (TODO).
+      lean      (theory) {"kind": "lean", "toolchain": "leanprover/lean4:
+                v4.12.0", "mathlib_rev": "...", "allowed_axioms": [...]};
+                params = {"module": "Airas.Thm1", "decl": "thm1",
+                "statement": "<the type `#check @thm1` prints>"}. The build
+                writes `lean.json` into the run's results directory.
+                Verdict: supported iff the result has no errors (build
+                failed, sorry, statement drift, an axiom outside
+                allowed_axioms); else inconclusive — Lean cannot refute.
+      llm_judge (qualitative) {"kind": "llm_judge", "model": "<dated id>",
+                "rubric": "<repo path>", "temperature": 0, "samples": 5};
+                params = {"evidence": ["<repo paths>"]}. The judgment
+                writes `judgment.json` into the run's results directory.
+                It verifies that the evidence presented supports the
+                claim, not that the evidence is true.
+    The tools that execute lean and llm_judge, and the gate's re-execution
+    of them, are not implemented yet.
 
     Fails if record.json already exists (use `append_to_record`), if a claim
     declares no run, or if the clone cannot commit. After this: write every
@@ -2191,7 +2198,7 @@ async def preregister_record(
             )
 
         record = ResearchRecord(hypotheses=parsed)
-        problems = record_consistency_problems(record)
+        problems = _verify_consistency(record)
         if problems:
             raise ValueError("; ".join(problems))
 
@@ -2239,8 +2246,7 @@ async def append_to_record(
     Revising a frozen entry means appending a new one with the *same id* —
     the later entry is the live one and the earlier stays readable in place.
     That is also how a design or a run is added to an existing claim: append
-    the claim again, with the extra design. To retire an entry with no
-    replacement, append it again with `"withdrawn": true`.
+    the claim again, with the extra design.
 
     Use this for exploratory extensions (declare the claim and its runs
     first, then execute — results for an undeclared run fail verification).
@@ -2263,7 +2269,7 @@ async def append_to_record(
         counts = {"hypotheses": len(new_hypotheses)}
         if hypothesis_id:
             target = _hypothesis(record, hypothesis_id)
-            parsed_claims = [ClaimDeclaration.model_validate(c) for c in claims or []]
+            parsed_claims = [_CLAIM.validate_python(c) for c in claims or []]
             parsed_tables = [TableSpec.model_validate(t) for t in tables or []]
             parsed_charts = [ChartDeclaration.model_validate(c) for c in charts or []]
             target.claims.extend(parsed_claims)
@@ -2276,7 +2282,7 @@ async def append_to_record(
                 charts=len(parsed_charts),
                 notes=len(notes or []),
             )
-        problems = record_consistency_problems(record)
+        problems = _verify_consistency(record)
         if problems:
             raise ValueError("; ".join(problems))
         save_record(local_path, record)
@@ -2313,10 +2319,14 @@ async def update_record(
     be passed in, so a value that was never measured cannot enter the
     record.
 
+    A lean run is read from `lean.json` and an llm_judge run from
+    `judgment.json` in the same results directory.
+
     A claim's `verified` is set to true when every run under it has
-    results — the data the claim rests on is in. Whether the claim's
-    condition was met, and whether it was declared before its runs
-    executed, are not modelled yet (TODO).
+    results — the data the claim rests on is in — and its `verdict` once
+    the verifier concludes (lean and llm_judge; seyval's claim condition
+    is not modelled yet, TODO). Whether the claim was declared before its
+    runs executed is not modelled yet either.
 
     It then renders `values.tex` and `tables/<key>.tex` into
     `.research/latex/{template}/`; when the clone has an `origin` remote,
@@ -2342,7 +2352,11 @@ async def update_record(
 
     def _run() -> dict[str, Any]:
         record = load_record(local_path)
-        metrics_data = load_metrics_data(local_path)
+        try:
+            metrics_data = load_metrics_data(local_path)
+        except ValueError:
+            # A record verified by lean or llm_judge alone has no metrics.
+            metrics_data = {}
         root = Path(local_path).expanduser().resolve()
         manifest = load_provenance_manifest(root)
 
@@ -2350,7 +2364,9 @@ async def update_record(
         # running the same configuration again adds an entry and the earlier
         # numbers stay, which is what makes the record a lab notebook as well
         # as a verification input.
-        statuses, appended = realize_record(root, record, metrics_data, manifest)
+        statuses, appended = update_record_with_results(
+            root, record, metrics_data, manifest
+        )
 
         save_record(local_path, record)
         # Two commits on purpose: the link in values.tex must name the commit
@@ -2366,7 +2382,7 @@ async def update_record(
         latex_dir.mkdir(parents=True, exist_ok=True)
         main_tex = latex_dir / "main.tex"
         used_keys = (
-            _scan_main_tex(main_tex.read_text(encoding="utf-8"))[1]
+            scan_main_tex(main_tex.read_text(encoding="utf-8"))[1]
             if main_tex.is_file()
             else []
         )
@@ -2383,7 +2399,7 @@ async def update_record(
             encoding="utf-8",
         )
         tables: dict[str, str] = {}
-        table_specs = all_tables(record)
+        table_specs = record.active_tables()
         if table_specs:
             tables_dir = latex_dir / TABLES_DIR_NAME
             tables_dir.mkdir(parents=True, exist_ok=True)
@@ -2407,7 +2423,9 @@ async def update_record(
         )
         return {
             "values": {v.ref: v.display for v in paper_values},
-            "claims": {s.id: {"verified": s.verified} for s in statuses},
+            "claims": {
+                s.id: {"verified": s.verified, "verdict": s.verdict} for s in statuses
+            },
             "results_appended": appended,
             "record_commit": record_commit,
             "tables": tables,
@@ -2445,13 +2463,12 @@ async def verify_paper_values(
     `\\airasval` key main.tex references must be declared, every table
     under `tables/` and every chart under `.research/results/chart/`
     must match a regeneration of its declaration (undeclared files fail),
-    every results directory must belong to a declared run
-    (`undeclared_result_dirs`), the record's git history must be pure
-    appends to the declaration section (`append_only`), and each claim's
-    stored verified flag must be borne out by the recomputation: verified
-    means every run under the claim has results. Unverified claims do not
-    fail the check — they are listed in `unverified_claims` for honest
-    reporting.
+    every results directory must belong to a declared run, the record's
+    git history must be pure appends to the declaration section, and each
+    claim's stored verified flag must be borne out by the recomputation:
+    verified means every run under the claim has results. A claim that is
+    merely not yet verified does not fail the check — only a stored flag
+    the recomputation contradicts does.
 
     Unless `check_provenance=False`, the local metrics files are also
     cross-checked against the execution platform's stored run outputs
@@ -2470,10 +2487,10 @@ async def verify_paper_values(
     review items before publishing.
     """
     refresh_environment()
-    report = await _paper_values_full_report(
-        local_path, latex_template_name, check_provenance
+    verification = await _verify_paper(
+        local_path, latex_template_name, None, check_provenance
     )
-    return report.model_dump()
+    return verification.model_dump()
 
 
 @mcp.tool()

@@ -1,6 +1,13 @@
 import argparse
+import asyncio
+import json
+import sys
 import threading
 import webbrowser
+from pathlib import Path
+
+from airas.usecases.publication.verify_paper import detect_templates, verify_paper
+from airas.usecases.recording.verify_record import verify_record
 
 # "AIRAS" on a phone keypad (per ITU-T E.161); a high port to avoid the
 # crowded 8000 range.
@@ -25,16 +32,7 @@ def _run_dashboard(host: str, port: int, open_browser: bool) -> None:
     uvicorn.run("airas.dashboard.api.main:app", host=host, port=port)
 
 
-def _run_verify_paper(args: "argparse.Namespace") -> None:
-    import asyncio
-    import sys
-
-    from airas.usecases.verification.ci_gate import (
-        REPORT_FILENAME,
-        detect_templates,
-        run_paper_gate,
-    )
-
+def _run_verify_paper(args: argparse.Namespace) -> None:
     templates = args.template or detect_templates(args.local_path)
     if not templates:
         print(
@@ -43,49 +41,31 @@ def _run_verify_paper(args: "argparse.Namespace") -> None:
         )
         sys.exit(2)
 
-    summary = asyncio.run(
-        run_paper_gate(
-            local_repo_path=args.local_path,
-            templates=templates,
-            output_dir=args.output_dir,
-            check_provenance=not args.no_provenance,
-            require_paper_values=not args.no_require_paper_values,
-            require_provenance=not (
-                args.no_provenance or args.allow_unavailable_provenance
-            ),
-            require_history=not args.allow_unavailable_history,
+    out = Path(args.output_dir).expanduser().resolve()
+    results = [
+        asyncio.run(
+            verify_paper(
+                args.local_path,
+                template,
+                pdf_path=str(out / f"{template}.pdf"),
+                check_provenance=not args.no_provenance,
+                require_record=not args.no_require_paper_values,
+                require_provenance=not (
+                    args.no_provenance or args.allow_unavailable_provenance
+                ),
+                require_history=not args.allow_unavailable_history,
+            )
         )
-    )
-
-    for result in summary["templates"]:
-        status = "PASS" if result["ok"] else "FAIL"
-        print(f"[{status}] {result['template']}")
-        for failure in result["failures"]:
-            print(f"  - {failure}")
-        for claim in result["unverified"]:
-            print(f"  ! \\unverified for human review: {claim}")
-        for claim_id in result["unverified_claims"]:
-            print(f"  ! unverified claim: {claim_id} (no verified run backs it yet)")
-        if result["pdf"]:
-            print(f"  pdf: {result['pdf']}")
-    print(f"Full report: {args.output_dir}/{REPORT_FILENAME}")
-
-    sys.exit(0 if summary["ok"] else 1)
+        for template in templates
+    ]
+    print(json.dumps([r.model_dump() for r in results], indent=2, ensure_ascii=False))
+    sys.exit(0 if all(r.ok for r in results) else 1)
 
 
-def _run_verify_record(args: "argparse.Namespace") -> None:
-    import asyncio
-    import sys
-
-    from airas.usecases.verification.ci_gate import (
-        RECORD_REPORT_FILENAME,
-        run_record_gate,
-    )
-
-    summary = asyncio.run(
-        run_record_gate(
-            local_repo_path=args.local_path,
-            output_dir=args.output_dir,
+def _run_verify_record(args: argparse.Namespace) -> None:
+    record = asyncio.run(
+        verify_record(
+            args.local_path,
             check_provenance=not args.no_provenance,
             require_provenance=not (
                 args.no_provenance or args.allow_unavailable_provenance
@@ -93,21 +73,8 @@ def _run_verify_record(args: "argparse.Namespace") -> None:
             require_history=not args.allow_unavailable_history,
         )
     )
-
-    papers = ", ".join(summary["papers"]) if summary["papers"] else "no paper"
-    print(
-        f"[{'PASS' if summary['ok'] else 'FAIL'}] record ({summary['stage']}; {papers})"
-    )
-    for failure in summary["failures"]:
-        print(f"  - {failure}")
-    for result in summary["results"]:
-        for claim in result["unverified"]:
-            print(f"  ! \\unverified for human review: {claim}")
-    for claim_id in summary["unverified_claims"]:
-        print(f"  ! unverified claim: {claim_id} (no verified run backs it yet)")
-    print(f"Full report: {args.output_dir}/{RECORD_REPORT_FILENAME}")
-
-    sys.exit(0 if summary["ok"] else 1)
+    print(json.dumps(record.model_dump(), indent=2, ensure_ascii=False))
+    sys.exit(0 if record.ok else 1)
 
 
 def main() -> None:
@@ -156,7 +123,7 @@ def main() -> None:
     verify.add_argument(
         "--output-dir",
         default="paper-artifact",
-        help="Where the PDFs and verification-report.json go",
+        help="Where the built PDFs go",
     )
     verify.add_argument(
         "--no-provenance",
@@ -197,11 +164,6 @@ def main() -> None:
         "--local-path",
         default=".",
         help="Experiment repository checkout to verify (default: .)",
-    )
-    record.add_argument(
-        "--output-dir",
-        default="record-artifact",
-        help="Where record-verification-report.json goes",
     )
     record.add_argument(
         "--no-provenance",

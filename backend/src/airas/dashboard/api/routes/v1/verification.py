@@ -37,7 +37,7 @@ from airas.usecases.assisted_research.generate_verification_method_subgraph.gene
 from airas.usecases.assisted_research.propose_verification_policy_subgraph.propose_verification_policy_subgraph import (
     ProposeVerificationPolicySubgraph,
 )
-from airas.usecases.verification.verification_service import VerificationService
+from airas.usecases.dashboard.verification_session_store import VerificationService
 
 router = APIRouter(prefix="/verification", tags=["verification"])
 

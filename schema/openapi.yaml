@@ -1733,6 +1733,11 @@ components:
           - type: string
           - type: 'null'
           title: Os
+        arch:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Arch
         cpu_cores:
           anyOf:
           - type: integer
@@ -4835,9 +4840,20 @@ components:
         primary_metric:
           type: string
           title: Primary Metric
+          description: One standard, machine-extractable metric name. The GAP between
+            the proposal and its baselines is computed from this one.
+        supporting_metrics:
+          items:
+            type: string
+          type: array
+          title: Supporting Metrics
+          description: Further metric names reported alongside the primary one, for
+            research whose claim needs more than a single number. Reported separately;
+            never aggregated into primary_metric.
         experimental_code:
           type: string
           title: Experimental Code
+          default: ''
         expected_result:
           type: string
           title: Expected Result
@@ -4850,7 +4866,6 @@ components:
       - method
       - experimental_setup
       - primary_metric
-      - experimental_code
       - expected_result
       - expected_conclusion
       title: ResearchHypothesis
@@ -4860,10 +4875,18 @@ components:
           type: string
           title: Title
           description: ''
+        abstract:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Abstract
+          description: The study's abstract. Populated directly from a search result;
+            the only summary available when no full text was retrieved.
         full_text:
           type: string
           title: Full Text
           description: ''
+          default: ''
         references:
           items:
             type: string
@@ -4878,11 +4901,17 @@ components:
       type: object
       required:
       - title
-      - full_text
-      - references
-      - meta_data
-      - llm_extracted_info
       title: ResearchStudy
+      description: 'One prior study, as the generation prompts consume it.
+
+
+        Only `title` is required. The rest default to empty so a study can be
+
+        assembled by hand from a `search_papers` row — which is the documented
+
+        path whenever `retrieve_papers` is unavailable — without inventing a
+
+        full text or a reference list that the caller does not have.'
     RetrieveDatasetsSubgraphRequestBody:
       properties:
         dataset_subfield:
