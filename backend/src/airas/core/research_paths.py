@@ -9,6 +9,12 @@ RESULTS_DIR = ".research/results"
 RECORD_FILENAME = "record.json"
 RECORD_PATH = f".research/{RECORD_FILENAME}"
 
+# What a run writes into its .research/results/<run_id>/ directory, and the
+# reserved directory name for cross-run aggregates.
+METRICS_FILENAME = "metrics.json"
+COMPARISON_KEY = "comparison"
+COMPARISON_METRICS_FILENAME = "aggregated_metrics.json"
+
 # Method diagrams, by the current convention.
 DIAGRAM_DIR = f"{RESULTS_DIR}/diagram"
 

@@ -1,46 +1,50 @@
 """From run outputs to the paper's numbers, and the checks along the way.
 
 The paper's numbers resolve from the files (`<run_id>.<metric>`) and the
-declarations (`<run_id>.params.<key>`); `update_record` appends what the
+declarations (`<run_id>.params.<key>`); `update_record_with_results` appends what the
 runs produced; `verify_paper_record` regenerates values.tex and rejects a
 paper whose numbers drift from either.
 """
 
+import asyncio
 import json
 from pathlib import Path
 
 import pytest
 
-from airas.core.types.paper_values import TableColumnSpec, TableRowSpec, TableSpec
+from airas.core.types.map_record_to_publication import (
+    TableColumnSpec,
+    TableRowSpec,
+    TableSpec,
+)
 from airas.core.types.research_record import (
-    ClaimDeclaration,
-    DesignDeclaration,
     Hypothesis,
     ResearchRecord,
-    RunDeclaration,
+    SeyvalClaim,
+    SeyvalDesign,
+    SeyvalRun,
+    SeyvalVerifier,
+    VerifierKind,
 )
 from airas.core.types.run_provenance import (
     PROVENANCE_MANIFEST_PATH,
     ResultsDirProvenance,
     RunProvenanceManifest,
 )
-from airas.usecases.publication.paper_values.compute import (
-    load_metrics_data,
+from airas.usecases.publication.map_record_to_publication import (
+    record_blob_url,
+    render_values_tex,
     resolve_paper_ref,
     resolve_paper_values,
 )
-from airas.usecases.publication.paper_values.latex import (
-    record_blob_url,
-    render_values_tex,
+from airas.usecases.publication.verify_paper import scan_main_tex, verify_paper
+from airas.usecases.recording.update_or_load_record import (
+    load_metrics_data,
+    save_record,
+    update_record_with_results,
 )
-from airas.usecases.publication.paper_values.realize import realize_record
-from airas.usecases.publication.paper_values.record import save_record
-from airas.usecases.publication.paper_values.verify import (
-    _scan_main_tex,
-    merge_paper_values_report,
-    paper_values_configured,
-    verify_paper_record,
-)
+
+SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 
 TEMPLATE = "mdpi"
 
@@ -68,15 +72,16 @@ def _record() -> ResearchRecord:
                 id="h1",
                 statement="Method X improves accuracy.",
                 claims=[
-                    ClaimDeclaration(
+                    SeyvalClaim(
+                        verifier=SEYVAL,
                         id="c1",
                         statement="X beats the baseline.",
                         designs=[
-                            DesignDeclaration(
+                            SeyvalDesign(
                                 id="d1",
                                 summary="Two runs on the same dataset.",
                                 runs=[
-                                    RunDeclaration(
+                                    SeyvalRun(
                                         run_id="run-1",
                                         params={
                                             "mode": "full",
@@ -84,7 +89,7 @@ def _record() -> ResearchRecord:
                                             "dataset": "cifar10",
                                         },
                                     ),
-                                    RunDeclaration(run_id="run-2"),
+                                    SeyvalRun(run_id="run-2"),
                                 ],
                             )
                         ],
@@ -147,14 +152,14 @@ def _generate(tmp_path: Path, mode: str = "full") -> Path:
     (tmp_path / PROVENANCE_MANIFEST_PATH).write_text(
         manifest.model_dump_json(indent=2) + "\n"
     )
-    realize_record(tmp_path, record, metrics_data, manifest)
+    update_record_with_results(tmp_path, record, metrics_data, manifest)
     save_record(str(tmp_path), record)
 
     (latex_dir / "main.tex").write_text(MAIN_TEX)
-    used_keys = _scan_main_tex(MAIN_TEX)[1]
+    used_keys = scan_main_tex(MAIN_TEX)[1]
     values, _ = resolve_paper_values(record, metrics_data, used_keys)
     (latex_dir / "values.tex").write_text(render_values_tex(values, None))
-    from airas.usecases.publication.paper_values.tables import render_table_tex
+    from airas.usecases.publication.map_record_to_publication import render_table_tex
 
     tables_dir = latex_dir / "tables"
     tables_dir.mkdir()
@@ -212,12 +217,12 @@ def test_results_are_appended_not_replaced(tmp_path: Path) -> None:
     record = _record()
     metrics_data = load_metrics_data(str(tmp_path))
 
-    _, first = realize_record(tmp_path, record, metrics_data, _manifest())
+    _, first = update_record_with_results(tmp_path, record, metrics_data, _manifest())
     assert first == 2
 
     # Re-realizing the same outputs must not grow the record: only a
     # genuinely different result is a new fact.
-    _, again = realize_record(tmp_path, record, metrics_data, _manifest())
+    _, again = update_record_with_results(tmp_path, record, metrics_data, _manifest())
     assert again == 0
 
     # A re-run with different numbers appends rather than overwriting.
@@ -225,7 +230,7 @@ def test_results_are_appended_not_replaced(tmp_path: Path) -> None:
         json.dumps({"accuracy": 0.950})
     )
     metrics_data = load_metrics_data(str(tmp_path))
-    _, rerun = realize_record(tmp_path, record, metrics_data, _manifest())
+    _, rerun = update_record_with_results(tmp_path, record, metrics_data, _manifest())
     assert rerun == 1
 
     run2 = record.hypotheses[0].claims[0].designs[0].runs[1]
@@ -251,7 +256,9 @@ def test_a_result_records_inputs_report_and_metrics(tmp_path: Path) -> None:
         )
     )
     record = _record()
-    realize_record(tmp_path, record, load_metrics_data(str(tmp_path)), _manifest())
+    update_record_with_results(
+        tmp_path, record, load_metrics_data(str(tmp_path)), _manifest()
+    )
 
     result = record.hypotheses[0].claims[0].designs[0].runs[0].results[-1]
     assert result.id == "exec-1"
@@ -271,7 +278,7 @@ def test_a_run_the_manifest_does_not_declare_gets_no_result(tmp_path: Path) -> N
     record = _record()
     manifest = _manifest()
     del manifest.dirs["run-2"]
-    _, appended = realize_record(
+    _, appended = update_record_with_results(
         tmp_path, record, load_metrics_data(str(tmp_path)), manifest
     )
     assert appended == 1
@@ -299,14 +306,17 @@ def test_no_link_without_an_origin_or_a_commit() -> None:
 # ------------------------------------------------------------ verification
 
 
+def _verify(path: str):
+    return asyncio.run(
+        verify_paper(path, TEMPLATE, check_provenance=False, require_history=False)
+    )
+
+
 def test_verify_ok_on_fresh_generation(tmp_path: Path) -> None:
     _generate(tmp_path)
-    report = verify_paper_record(str(tmp_path), TEMPLATE)
-    assert report.ok, report.mismatches
-    assert report.values_tex_match
-    assert report.undefined_keys == []
-    assert report.unverified == ["12345"]
-    assert paper_values_configured(report)
+    result = _verify(str(tmp_path))
+    assert result.ok, result.record.problems + result.problems
+    assert result.unverified == ["12345"]
 
 
 def test_verify_detects_tampered_metrics(tmp_path: Path) -> None:
@@ -314,19 +324,19 @@ def test_verify_detects_tampered_metrics(tmp_path: Path) -> None:
     (tmp_path / ".research" / "results" / "run-2" / "metrics.json").write_text(
         json.dumps({"accuracy": 0.95})
     )
-    report = verify_paper_record(str(tmp_path), TEMPLATE)
-    assert not report.ok
+    result = _verify(str(tmp_path))
+    assert not result.ok
     # The result's copy no longer matches the file, and the table differs.
-    assert any("metrics differ" in m for m in report.mismatches)
+    assert any("metrics differ" in p for p in result.record.problems)
 
 
 def test_verify_detects_edited_values_tex(tmp_path: Path) -> None:
     latex_dir = _generate(tmp_path)
     values_tex = latex_dir / "values.tex"
     values_tex.write_text(values_tex.read_text().replace("0.871", "0.999"))
-    report = verify_paper_record(str(tmp_path), TEMPLATE)
-    assert not report.ok
-    assert report.values_tex_match is False
+    result = _verify(str(tmp_path))
+    assert not result.ok
+    assert any("differs from its regeneration" in p for p in result.problems)
 
 
 def test_verify_flags_undeclared_keys(tmp_path: Path) -> None:
@@ -334,17 +344,17 @@ def test_verify_flags_undeclared_keys(tmp_path: Path) -> None:
     (latex_dir / "main.tex").write_text(
         MAIN_TEX.replace(r"\airasval{run-1.accuracy}", r"\airasval{run-9.accuracy}")
     )
-    report = verify_paper_record(str(tmp_path), TEMPLATE)
-    assert not report.ok
-    assert report.undefined_keys == ["run-9.accuracy"]
+    result = _verify(str(tmp_path))
+    assert not result.ok
+    assert any("run-9.accuracy" in p for p in result.problems)
 
 
 def test_verify_detects_dispatch_under_other_conditions(tmp_path: Path) -> None:
     """Declared mode=full; the platform recorded mode=pilot."""
     _generate(tmp_path, mode="pilot")
-    report = verify_paper_record(str(tmp_path), TEMPLATE)
-    assert not report.ok
-    assert any("executed 'mode=pilot'" in m for m in report.mismatches)
+    result = _verify(str(tmp_path))
+    assert not result.ok
+    assert any("executed 'mode=pilot'" in p for p in result.record.problems)
 
 
 def test_prereg_stage_rejects_leftover_values_tex(tmp_path: Path) -> None:
@@ -353,24 +363,22 @@ def test_prereg_stage_rejects_leftover_values_tex(tmp_path: Path) -> None:
     (latex_dir / "main.tex").write_text(MAIN_TEX)
     (latex_dir / "values.tex").write_text("% stale\n")
     save_record(str(tmp_path), _record())
-    report = verify_paper_record(str(tmp_path), TEMPLATE)
-    assert report.stage == "prereg"
-    assert not report.ok
-    assert any("values.tex exists" in m for m in report.mismatches)
+    result = _verify(str(tmp_path))
+    assert result.record.stage == "prereg"
+    assert not result.ok
+    assert any("values.tex exists" in p for p in result.problems)
 
 
-def test_merge_gates_latex_ok_when_configured(tmp_path: Path) -> None:
-    _generate(tmp_path)
-    report = verify_paper_record(str(tmp_path), TEMPLATE)
-    assert merge_paper_values_report({"ok": True}, report)["ok"] is True
-    report.ok = False
-    assert merge_paper_values_report({"ok": True}, report)["ok"] is False
-
-
-def test_merge_leaves_unconfigured_papers_alone(tmp_path: Path) -> None:
+def test_a_paper_without_a_record_passes_only_when_not_required(tmp_path: Path) -> None:
     latex_dir = tmp_path / ".research" / "latex" / TEMPLATE
     latex_dir.mkdir(parents=True)
     (latex_dir / "main.tex").write_text(MAIN_TEX)
-    report = verify_paper_record(str(tmp_path), TEMPLATE)
-    assert not paper_values_configured(report)
-    assert merge_paper_values_report({"ok": True}, report)["ok"] is True
+    result = _verify(str(tmp_path))
+    assert not result.ok
+    assert any("record.json is missing" in p for p in result.problems)
+    relaxed = asyncio.run(
+        verify_paper(
+            str(tmp_path), TEMPLATE, check_provenance=False, require_record=False
+        )
+    )
+    assert relaxed.ok

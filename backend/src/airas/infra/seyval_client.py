@@ -1,3 +1,5 @@
+import asyncio
+import atexit
 import os
 from logging import getLogger
 from typing import Any
@@ -266,3 +268,67 @@ class SeyvalClient(BaseHTTPClient):
         resp = await self.apost(path=path, timeout=30.0)
         raise_for_status(resp, path=path)
         return self._parser.parse(resp, as_="json")
+
+
+_default_client: SeyvalClient | None = None
+
+
+def default_seyval_client() -> SeyvalClient:
+    """A lazily created process-wide client, closed at interpreter exit."""
+    global _default_client
+    if _default_client is None:
+        _default_client = SeyvalClient(
+            async_session=httpx.AsyncClient(timeout=60.0, follow_redirects=True)
+        )
+        atexit.register(_close_default_client)
+    return _default_client
+
+
+def _close_default_client() -> None:
+    # atexit runs after every event loop is gone, so a fresh one is fine.
+    if _default_client is not None:
+        try:
+            asyncio.run(_default_client.aclose())
+        except Exception:  # pragma: no cover - best-effort cleanup
+            pass
+
+
+# ------------------------------- what a run was dispatched with, per Seyval
+def parse_overrides(command_args: Any) -> dict[str, str]:
+    """The dispatch's parameter overrides, from the argv Seyval recorded.
+
+    Only `key=value` tokens are overrides; the rest of the argv is the
+    interpreter and module path. Hydra's `+key=` / `~key=` prefixes are
+    stripped so a declaration can be compared against what ran without
+    knowing which form the dispatch used.
+    """
+    overrides: dict[str, str] = {}
+    for token in command_args or []:
+        text = str(token)
+        key, separator, value = text.partition("=")
+        if not separator or key.startswith("-") or "/" in key:
+            continue
+        overrides[key.strip().lstrip("+~")] = value.strip()
+    return overrides
+
+
+def parse_parameters(run: Any) -> dict[str, str]:
+    """Every parameter the run resolved, as Seyval reports it.
+
+    Strictly better than the argv-derived overrides: those carry only what
+    the dispatch restated, so a parameter left at its default is
+    indistinguishable from one that was never reported. Absent until the
+    platform supplies it, in which case callers fall back to the overrides
+    and treat a missing key as unknown rather than as a default.
+    """
+    reported = run.get("resolved_parameters") or run.get("parameters")
+    if isinstance(reported, dict):
+        return {str(k): str(v) for k, v in reported.items()}
+    # The list form the run schema uses: [{"name": ..., "value": ...}, ...]
+    if isinstance(reported, list):
+        return {
+            str(entry["name"]): str(entry.get("value"))
+            for entry in reported
+            if isinstance(entry, dict) and entry.get("name")
+        }
+    return {}

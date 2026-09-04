@@ -11,15 +11,16 @@ import json
 import subprocess
 from pathlib import Path
 
-import pytest
-
 from airas.core.research_paths import RECORD_PATH
 from airas.core.types.research_record import (
     ClaimDeclaration,
-    DesignDeclaration,
     Hypothesis,
     ResearchRecord,
-    RunDeclaration,
+    SeyvalClaim,
+    SeyvalDesign,
+    SeyvalRun,
+    SeyvalVerifier,
+    VerifierKind,
 )
 from airas.core.types.run_provenance import (
     PROVENANCE_MANIFEST_PATH,
@@ -27,11 +28,14 @@ from airas.core.types.run_provenance import (
     RunProvenanceManifest,
 )
 from airas.infra.local_git import commit_paths
-from airas.usecases.publication.paper_values.record import load_record, save_record
-from airas.usecases.verification.record_history import (
-    compute_claim_status,
-    record_append_only_status,
+from airas.usecases.recording.update_or_load_record import (
+    compute_claim_statuses,
+    load_record,
+    save_record,
 )
+from airas.usecases.recording.verify_record import _verify_append_only
+
+SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -54,10 +58,11 @@ def _commit_all(tmp_path: Path, message: str) -> str:
 
 
 def _claim(claim_id: str = "c1", run_id: str = "proposed") -> ClaimDeclaration:
-    return ClaimDeclaration(
+    return SeyvalClaim(
+        verifier=SEYVAL,
         id=claim_id,
         statement="Proposed beats baseline.",
-        designs=[DesignDeclaration(id="d1", runs=[RunDeclaration(run_id=run_id)])],
+        designs=[SeyvalDesign(id="d1", runs=[SeyvalRun(run_id=run_id)])],
     )
 
 
@@ -89,7 +94,7 @@ def _write_results(tmp_path: Path, run_commit: str) -> RunProvenanceManifest:
 
 
 def _status(record: ResearchRecord, present: set[str] | None = None):
-    return compute_claim_status(record, {"proposed"} if present is None else present)
+    return compute_claim_statuses(record, {"proposed"} if present is None else present)
 
 
 def _c1(record: ResearchRecord) -> ClaimDeclaration:
@@ -130,19 +135,17 @@ def test_a_claim_whose_runs_all_have_results_is_verified(tmp_path: Path) -> None
 
     record = load_record(str(tmp_path))
     assert [s.verified for s in _status(record)] == [True]
-    assert record_append_only_status(tmp_path, record)[0] == "ok"
+    assert _verify_append_only(tmp_path, record, require_history=True) == []
 
 
 def test_a_claim_missing_any_result_is_not_verified() -> None:
     record = _record(_claim())
     assert _status(record, present=set())[0].verified is False
-    status = _status(record, present=set())[0]
-    assert status.checks[0].results_present is False
 
 
 def test_a_claim_with_two_runs_needs_both(tmp_path: Path) -> None:
     claim = _claim()
-    claim.designs[0].runs.append(RunDeclaration(run_id="baseline"))
+    claim.designs[0].runs.append(SeyvalRun(run_id="baseline"))
     record = _record(claim)
     assert _status(record, present={"proposed"})[0].verified is False
     assert _status(record, present={"proposed", "baseline"})[0].verified is True
@@ -160,7 +163,7 @@ def test_appending_a_claim_after_results_is_allowed(tmp_path: Path) -> None:
     record.hypotheses[0].claims.append(_claim())
     save_record(str(tmp_path), record)
     _commit_all(tmp_path, "claim added afterwards")
-    assert record_append_only_status(tmp_path, record)[0] == "ok"
+    assert _verify_append_only(tmp_path, record, require_history=True) == []
 
 
 def test_a_reworded_claim_violates_containment(tmp_path: Path) -> None:
@@ -172,8 +175,7 @@ def test_a_reworded_claim_violates_containment(tmp_path: Path) -> None:
     _c1(record).statement = "Proposed is competitive with baseline."  # softened
     save_record(str(tmp_path), record)
 
-    status, problems, _ = record_append_only_status(tmp_path, record)
-    assert status == "violated"
+    problems = _verify_append_only(tmp_path, record, require_history=True)
     assert any("statement" in p for p in problems)
 
 
@@ -184,8 +186,7 @@ def test_changed_run_conditions_violate_containment(tmp_path: Path) -> None:
 
     record = load_record(str(tmp_path))
     _c1(record).designs[0].runs[0].params = {"mode": "pilot"}
-    status, problems, _ = record_append_only_status(tmp_path, record)
-    assert status == "violated"
+    problems = _verify_append_only(tmp_path, record, require_history=True)
     assert any("params" in p for p in problems)
 
 
@@ -201,7 +202,7 @@ def test_legitimate_append_keeps_earlier_claims_verified(tmp_path: Path) -> None
     save_record(str(tmp_path), record)
     _commit_all(tmp_path, "append exploratory claim")
 
-    assert record_append_only_status(tmp_path, record)[0] == "ok"
+    assert _verify_append_only(tmp_path, record, require_history=True) == []
     assert {s.id: s.verified for s in _status(record)} == {"c1": True, "c2": False}
 
 
@@ -214,8 +215,7 @@ def test_verified_true_then_false_is_a_violation(tmp_path: Path) -> None:
 
     record = load_record(str(tmp_path))
     _c1(record).verified = False
-    status, problems, _ = record_append_only_status(tmp_path, record)
-    assert status == "violated"
+    problems = _verify_append_only(tmp_path, record, require_history=True)
     assert any("verified" in p for p in problems)
 
 
@@ -225,8 +225,9 @@ def test_verified_true_then_false_is_a_violation(tmp_path: Path) -> None:
 def test_no_git_repo_reports_unavailable(tmp_path: Path) -> None:
     save_record(str(tmp_path), _record(_claim()))
     record = load_record(str(tmp_path))
-    status, _, _ = record_append_only_status(tmp_path, record)
-    assert status == "unavailable"
+    problems = _verify_append_only(tmp_path, record, require_history=True)
+    assert any("could not be checked" in p for p in problems)
+    assert _verify_append_only(tmp_path, record, require_history=False) == []
 
 
 def test_shallow_clone_reports_unavailable(tmp_path: Path) -> None:
@@ -245,8 +246,9 @@ def test_shallow_clone_reports_unavailable(tmp_path: Path) -> None:
         capture_output=True,
     )
     record = load_record(str(clone))
-    status, _, _ = record_append_only_status(clone, record)
-    assert status == "unavailable"
+    problems = _verify_append_only(clone, record, require_history=True)
+    assert any("could not be checked" in p for p in problems)
+    assert _verify_append_only(clone, record, require_history=False) == []
 
 
 def test_unparseable_committed_record_is_a_violation(tmp_path: Path) -> None:
@@ -258,24 +260,5 @@ def test_unparseable_committed_record_is_a_violation(tmp_path: Path) -> None:
     _commit_all(tmp_path, "fixed record")
 
     record = load_record(str(tmp_path))
-    status, problems, _ = record_append_only_status(tmp_path, record)
-    assert status == "violated"
+    problems = _verify_append_only(tmp_path, record, require_history=True)
     assert any("not a valid record" in p for p in problems)
-
-
-@pytest.mark.parametrize(
-    "legacy",
-    [
-        {"schema_version": 1, "prereg": {}},
-        {"schema_version": 2, "hypothesis": {"statement": "H"}},
-    ],
-)
-def test_an_earlier_layout_is_rejected_with_an_explanation(
-    tmp_path: Path, legacy: dict
-) -> None:
-    """There is no migration: containment forbids one."""
-    path = tmp_path / RECORD_PATH
-    path.parent.mkdir(parents=True)
-    path.write_text(json.dumps(legacy))
-    with pytest.raises(ValueError, match="earlier layout"):
-        load_record(str(tmp_path))

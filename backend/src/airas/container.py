@@ -18,11 +18,11 @@ from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.usecases.autonomous_research.in_memory_e2e_research_service import (
     InMemoryE2EResearchService,
 )
+from airas.usecases.dashboard.verification_session_store import VerificationService
 from airas.usecases.feedback.feedback_service import FeedbackService
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
-from airas.usecases.verification.verification_service import VerificationService
 
 T = TypeVar("T")
 

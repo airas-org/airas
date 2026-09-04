@@ -11,23 +11,33 @@ covered in both directions.
 
 import pytest
 
-from airas.core.types.paper_values import TableColumnSpec, TableRowSpec, TableSpec
+from airas.core.types.map_record_to_publication import (
+    TableColumnSpec,
+    TableRowSpec,
+    TableSpec,
+)
 from airas.core.types.research_record import (
     ClaimDeclaration,
-    DesignDeclaration,
     Hypothesis,
     ResearchRecord,
-    RunDeclaration,
-    RunResult,
-)
-from airas.usecases.publication.paper_values.record import (
+    SeyvalClaim,
+    SeyvalDesign,
+    SeyvalResult,
+    SeyvalRun,
+    SeyvalVerifier,
+    VerifierKind,
     active,
-    all_claims,
-    containment_violations,
-    record_append_violations,
-    record_consistency_problems,
-    run_index,
 )
+from airas.usecases.recording.verify_record import (
+    _containment_violations,
+    _verify_consistency,
+)
+
+SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
+
+
+def record_append_violations(older: ResearchRecord, newer: ResearchRecord) -> list[str]:
+    return _containment_violations(older.model_dump(), newer.model_dump())
 
 
 def _record() -> ResearchRecord:
@@ -37,18 +47,19 @@ def _record() -> ResearchRecord:
                 id="h1",
                 statement="Proposed beats baseline.",
                 claims=[
-                    ClaimDeclaration(
+                    SeyvalClaim(
+                        verifier=SEYVAL,
                         id="c1",
                         statement="Proposed beats baseline on accuracy.",
                         designs=[
-                            DesignDeclaration(
+                            SeyvalDesign(
                                 id="d1",
                                 summary="Head-to-head on one dataset.",
                                 runs=[
-                                    RunDeclaration(
+                                    SeyvalRun(
                                         run_id="proposed", params={"mode": "full"}
                                     ),
-                                    RunDeclaration(run_id="baseline"),
+                                    SeyvalRun(run_id="baseline"),
                                 ],
                             )
                         ],
@@ -60,10 +71,11 @@ def _record() -> ResearchRecord:
 
 
 def _claim(claim_id: str = "c2", run_id: str = "ablation") -> ClaimDeclaration:
-    return ClaimDeclaration(
+    return SeyvalClaim(
+        verifier=SEYVAL,
         id=claim_id,
         statement="The ablation holds.",
-        designs=[DesignDeclaration(id="d1", runs=[RunDeclaration(run_id=run_id)])],
+        designs=[SeyvalDesign(id="d1", runs=[SeyvalRun(run_id=run_id)])],
     )
 
 
@@ -86,7 +98,9 @@ def test_results_may_be_appended_to_a_frozen_declaration() -> None:
     """The freeze is on the declaration, not on the record file."""
     older, newer = _record(), _record()
     _c1(newer).designs[0].runs[0].results.append(
-        RunResult(id="e1", commit="c" * 40, metrics={"accuracy": 0.9})
+        SeyvalResult(
+            verifier="seyval", id="e1", commit="c" * 40, metrics={"accuracy": 0.9}
+        )
     )
     assert record_append_violations(older, newer) == []
 
@@ -131,7 +145,7 @@ def test_dropping_a_recorded_result_is_a_violation() -> None:
     """Deleting the run that came out badly is the failure mode this stops."""
     older, newer = _record(), _record()
     _c1(older).designs[0].runs[0].results.append(
-        RunResult(id="e1", metrics={"accuracy": 0.9})
+        SeyvalResult(verifier="seyval", id="e1", metrics={"accuracy": 0.9})
     )
     assert any("removed" in p for p in record_append_violations(older, newer))
 
@@ -143,28 +157,15 @@ def test_reordering_a_list_is_a_violation() -> None:
     assert record_append_violations(older, newer) != []
 
 
-def test_a_withdrawn_entry_stays_in_the_record() -> None:
-    older, newer = _record(), _record()
-    _c1(newer).withdrawn = True
-    # Retiring a claim is an edit to the entry, so it is appended instead.
-    assert record_append_violations(older, newer) != []
-
-    appended = _record()
-    retired = _c1(appended).model_copy(update={"withdrawn": True})
-    appended.hypotheses[0].claims.append(retired)
-    assert record_append_violations(_record(), appended) == []
-    assert [c.id for _, c in all_claims(appended)] == []
-
-
 def test_containment_reports_the_path_to_the_change() -> None:
-    problems = containment_violations(
+    problems = _containment_violations(
         {"a": {"b": [1, 2]}, "keep": 1}, {"a": {"b": [1, 9]}, "keep": 1}
     )
     assert problems == ["a.b[1]: changed (2 -> 9)"]
 
 
 def test_containment_allows_new_keys() -> None:
-    assert containment_violations({"a": 1}, {"a": 1, "b": 2}) == []
+    assert _containment_violations({"a": 1}, {"a": 1, "b": 2}) == []
 
 
 # ---------------------------------------------------------- last entry wins
@@ -174,15 +175,13 @@ def test_the_last_entry_for_an_id_is_the_live_one() -> None:
     """Adding a design to an existing claim is a revision of the claim."""
     record = _record()
     revised = _c1(record).model_copy(deep=True)
-    revised.designs.append(
-        DesignDeclaration(id="d2", runs=[RunDeclaration(run_id="ablation")])
-    )
+    revised.designs.append(SeyvalDesign(id="d2", runs=[SeyvalRun(run_id="ablation")]))
     record.hypotheses[0].claims.append(revised)
 
-    live = [c for _, c in all_claims(record)]
+    live = [c for _, c in record.active_claims()]
     assert [c.id for c in live] == ["c1"]
     assert [d.id for d in live[0].designs] == ["d1", "d2"]
-    assert set(run_index(record)) == {"proposed", "baseline", "ablation"}
+    assert set(record.run_index()) == {"proposed", "baseline", "ablation"}
 
 
 # ---------------------------------------------- consistency at freeze time
@@ -192,16 +191,16 @@ def test_a_run_declared_under_two_claims_is_caught() -> None:
     """Run ids address a results directory, so a run belongs to one claim."""
     record = _record()
     record.hypotheses[0].claims.append(_claim("c2", run_id="proposed"))
-    assert any("repo-unique" in p for p in record_consistency_problems(record))
+    assert any("repo-unique" in p for p in _verify_consistency(record))
 
 
 def test_a_claim_with_no_run_is_caught() -> None:
     """A claim with no experiment cannot be verified."""
     record = _record()
     record.hypotheses[0].claims.append(
-        ClaimDeclaration(id="c2", statement="Untestable as declared.")
+        SeyvalClaim(verifier=SEYVAL, id="c2", statement="Untestable as declared.")
     )
-    assert any("declares no run" in p for p in record_consistency_problems(record))
+    assert any("declares no run" in p for p in _verify_consistency(record))
 
 
 def test_a_table_row_on_an_undeclared_run_is_caught() -> None:
@@ -214,25 +213,26 @@ def test_a_table_row_on_an_undeclared_run_is_caught() -> None:
             rows=[TableRowSpec(run_id="ghost", label="?")],
         )
     )
-    assert any(
-        "which no design declares" in p for p in record_consistency_problems(record)
-    )
+    assert any("which no design declares" in p for p in _verify_consistency(record))
 
 
 def test_a_clean_record_has_no_problems() -> None:
-    assert record_consistency_problems(_record()) == []
+    assert _verify_consistency(_record()) == []
 
 
 @pytest.mark.parametrize("bad_id", ["claim1", "C1", "c0"])
 def test_ids_follow_their_pattern(bad_id: str) -> None:
     with pytest.raises(ValueError):
-        ClaimDeclaration(id=bad_id, statement="x")
+        SeyvalClaim(verifier=SEYVAL, id=bad_id, statement="x")
 
 
-def test_active_keeps_order_and_drops_withdrawn() -> None:
+def test_active_keeps_order_and_takes_the_last_entry_per_id() -> None:
     runs = [
-        RunDeclaration(run_id="a"),
-        RunDeclaration(run_id="b"),
-        RunDeclaration(run_id="a", withdrawn=True),
+        SeyvalRun(run_id="a"),
+        SeyvalRun(run_id="b"),
+        SeyvalRun(run_id="a", description="revised"),
     ]
-    assert [r.run_id for r in active(runs, "run_id")] == ["b"]
+    assert [(r.run_id, r.description) for r in active(runs, "run_id")] == [
+        ("a", "revised"),
+        ("b", ""),
+    ]

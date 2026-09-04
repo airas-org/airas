@@ -1,5 +1,6 @@
 import io
 import logging
+import re
 import zipfile
 from pathlib import Path
 
@@ -7,7 +8,24 @@ from airas.core.research_paths import LEGACY_DIAGRAM_DIR, RESULTS_DIR
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.infra.github_client import GithubClient
-from airas.usecases.publication.nodes.verify_latex_build import select_engine
+
+# pdflatex has no way to typeset CJK: every Japanese character raises
+# `LaTeX Error: Unicode character` and the PDF comes out with the text
+# missing. LuaTeX handles it natively, so the engine follows the document
+# rather than the other way round — a paper drafted in Japanese should not
+# have to be rewritten to be checkable.
+LUALATEX_ENGINE = "lualatex"
+
+PDFLATEX_ENGINE = "pdflatex"
+
+# CJK ideographs, hiragana, katakana, and the fullwidth punctuation that
+# comes with them. Latin text with a stray “ or — stays on pdflatex.
+_CJK = re.compile(r"[぀-ヿ㐀-䶿一-鿿＀-ﾟ]")
+
+
+def select_engine(main_tex: str) -> str:
+    return LUALATEX_ENGINE if _CJK.search(main_tex) else PDFLATEX_ENGINE
+
 
 logger = logging.getLogger(__name__)
 

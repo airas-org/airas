@@ -5,11 +5,8 @@ from typing import Any, cast
 
 from airas.core.types.run_provenance import PROVENANCE_MANIFEST_PATH
 from airas.infra.seyval_client import SeyvalClient
-from airas.usecases.publication.paper_values.verify import (
-    apply_provenance_result,
-    verify_paper_record,
-)
-from airas.usecases.verification.seyval_provenance import SeyvalProvenanceVerifier
+from airas.usecases.recording._seyval_provenance import verify_seyval_provenance
+from airas.usecases.recording.verify_record import _provenance_problems
 
 GIT_URL = "https://github.com/test-org/test-repo"
 METRICS = {"accuracy": 0.871}
@@ -92,8 +89,8 @@ def _completed(run_id: str, commit_hash: str) -> dict[str, Any]:
     return {"run_id": run_id, "status": "completed", "commit_hash": commit_hash}
 
 
-def _verifier(fake: FakeSeyvalClient) -> SeyvalProvenanceVerifier:
-    return SeyvalProvenanceVerifier(cast(SeyvalClient, fake))
+async def _verify(fake: FakeSeyvalClient, path: str, dirs: set[str]):
+    return await verify_seyval_provenance(path, dirs, lambda: cast(SeyvalClient, fake))
 
 
 async def test_verified_when_declared_run_backs_the_bytes(tmp_path: Path) -> None:
@@ -105,7 +102,7 @@ async def test_verified_when_declared_run_backs_the_bytes(tmp_path: Path) -> Non
         ],
         stored={DECLARED_RUN: metrics_bytes},
     )
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "verified"
     assert result.checks[0].run_id == DECLARED_RUN
     assert result.checks[0].commit_in_history is True
@@ -134,7 +131,7 @@ async def test_mismatch_when_manifest_commit_disagrees_with_seyval(
         runs=[_completed(DECLARED_RUN, commit_hash)],
         stored={DECLARED_RUN: metrics_bytes},
     )
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "mismatch"
     assert any("Seyval recorded" in c.detail for c in result.checks)
 
@@ -146,7 +143,7 @@ async def test_mismatch_when_local_metrics_tampered(tmp_path: Path) -> None:
         runs=[_completed(DECLARED_RUN, commit_hash)],
         stored={DECLARED_RUN: metrics_bytes},
     )
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "mismatch"
     assert not result.checks[0].matched
 
@@ -167,7 +164,7 @@ async def test_mismatch_when_another_run_matches_but_declared_does_not(
             "run-C": metrics_bytes,
         },
     )
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "mismatch"
     assert result.checks[0].run_id == DECLARED_RUN
     assert "declared" in result.checks[0].detail
@@ -180,7 +177,7 @@ async def test_mismatch_when_commit_not_ancestor_of_head(tmp_path: Path) -> None
         runs=[_completed(DECLARED_RUN, foreign_commit)],
         stored={DECLARED_RUN: metrics_bytes},
     )
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "mismatch"
     assert result.checks[0].commit_in_history is False
 
@@ -191,7 +188,7 @@ async def test_mismatch_when_manifest_missing(tmp_path: Path) -> None:
         runs=[_completed(DECLARED_RUN, commit_hash)],
         stored={DECLARED_RUN: metrics_bytes},
     )
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "mismatch"
     assert "provenance" in result.checks[0].detail
 
@@ -202,7 +199,7 @@ async def test_mismatch_when_dir_not_declared(tmp_path: Path) -> None:
         runs=[_completed(DECLARED_RUN, commit_hash)],
         stored={DECLARED_RUN: metrics_bytes},
     )
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1", "run-2"})
+    result = await _verify(fake, str(tmp_path), {"run-1", "run-2"})
     by_dir = {c.dir: c for c in result.checks}
     assert result.status == "mismatch"
     assert by_dir["run-1"].matched
@@ -222,7 +219,7 @@ async def test_sibling_completed_runs_of_same_commit_are_listed(
         ],
         stored={DECLARED_RUN: metrics_bytes},
     )
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "verified"
     # Same code executed more than once: the selection must be reviewable.
     assert result.checks[0].sibling_run_ids == ["run-C"]
@@ -235,7 +232,7 @@ async def test_mismatch_when_declared_run_not_in_repository_listing(
     # listing) cannot back the paper — only this repository's runs count.
     _, metrics_bytes, _ = _make_repo(tmp_path)
     fake = FakeSeyvalClient(runs=[], stored={DECLARED_RUN: metrics_bytes})
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "mismatch"
     assert "not among this repository's" in result.checks[0].detail
 
@@ -251,7 +248,7 @@ async def test_unavailable_when_repository_not_registered(tmp_path: Path) -> Non
         return [{"id": "other", "git_url": "https://github.com/other/repo"}]
 
     fake.alist_repositories = no_repos
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "unavailable"
 
 
@@ -262,14 +259,11 @@ async def test_mismatch_fails_verification_report(tmp_path: Path) -> None:
         runs=[_completed(DECLARED_RUN, commit_hash)],
         stored={DECLARED_RUN: metrics_bytes},
     )
-    provenance = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    provenance = await _verify(fake, str(tmp_path), {"run-1"})
 
-    report = verify_paper_record(str(tmp_path), "mdpi")  # missing files anyway
-    report.ok = True  # isolate the provenance effect
-    report = apply_provenance_result(report, provenance)
-    assert report.ok is False
-    assert report.provenance is not None
-    assert report.provenance.source == "seyval"
+    assert provenance.source == "seyval" and provenance.status == "mismatch"
+    problems = _provenance_problems(provenance, required=False)
+    assert problems and "not backed by stored run outputs" in problems[0]
 
 
 def test_git_url_normalization_covers_common_origin_forms() -> None:
@@ -315,7 +309,7 @@ async def test_every_file_in_the_directory_is_compared(tmp_path: Path) -> None:
         stored={DECLARED_RUN: metrics_bytes},
         extra_outputs={inputs_path: b'{"predicted_labels": [1, 0]}'},
     )
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "verified", result.checks[0].detail
     assert result.checks[0].files_checked == [
         inputs_path,
@@ -324,7 +318,7 @@ async def test_every_file_in_the_directory_is_compared(tmp_path: Path) -> None:
 
     # The metrics are untouched; only the inputs were edited.
     (inputs / "task.json").write_bytes(b'{"predicted_labels": [0, 0]}')
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "mismatch"
     assert inputs_path in result.checks[0].detail
 
@@ -336,7 +330,7 @@ async def test_a_file_the_run_never_produced_is_a_mismatch(tmp_path: Path) -> No
         runs=[_completed(DECLARED_RUN, commit_hash)],
         stored={DECLARED_RUN: metrics_bytes},
     )
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "mismatch"
     assert "produced no such file" in result.checks[0].detail
 
@@ -356,7 +350,7 @@ async def test_cached_parameters_must_match_the_dispatch(tmp_path: Path) -> None
     run["command_args"] = ["python", "-m", "src.main", "mode=pilot"]
     fake = FakeSeyvalClient(runs=[run], stored={DECLARED_RUN: metrics_bytes})
 
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "mismatch"
     assert result.checks[0].parameters_match is False
     assert "differ from what Seyval recorded" in result.checks[0].detail
@@ -376,7 +370,7 @@ async def test_cached_parameters_that_match_are_reported_as_such(
     run["command_args"] = ["python", "-m", "src.main", "mode=full"]
     fake = FakeSeyvalClient(runs=[run], stored={DECLARED_RUN: metrics_bytes})
 
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "verified", result.checks[0].detail
     assert result.checks[0].parameters_match is True
 
@@ -393,7 +387,7 @@ async def test_a_file_the_run_produced_but_the_directory_lacks_is_a_mismatch(
         stored={DECLARED_RUN: metrics_bytes},
         extra_outputs={".research/results/run-1/evaluation/task.json": b"{}"},
     )
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "mismatch"
     assert "evaluation/task.json" in result.checks[0].detail
     assert "does not hold it" in result.checks[0].detail
@@ -416,7 +410,7 @@ async def test_a_dispatch_with_no_overrides_contradicts_a_cache_that_claims_some
     run["command_args"] = ["python", "-m", "src.main"]  # no key=value at all
     fake = FakeSeyvalClient(runs=[run], stored={DECLARED_RUN: metrics_bytes})
 
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "mismatch"
     assert result.checks[0].parameters_match is False
 
@@ -435,6 +429,6 @@ async def test_an_unreported_dispatch_is_not_compared(tmp_path: Path) -> None:
         runs=[_completed(DECLARED_RUN, commit_hash)],
         stored={DECLARED_RUN: metrics_bytes},
     )
-    result = await _verifier(fake).verify(str(tmp_path), {"run-1"})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "verified", result.checks[0].detail
     assert result.checks[0].parameters_match is None

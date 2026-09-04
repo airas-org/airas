@@ -4,6 +4,7 @@
 /* eslint-disable */
 export type ComputeEnvironment = {
     os?: (string | null);
+    arch?: (string | null);
     cpu_cores?: (number | null);
     ram_gb?: (number | null);
     gpu_type?: (string | null);
