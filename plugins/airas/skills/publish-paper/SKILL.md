@@ -125,8 +125,19 @@ shortcut that settles the question.
    upload the PDF with its report. That ordering comes from the
    branch rule, not from one workflow waiting on another.
 
+   The workflow then commits the PDF it built, byte for byte, as
+   `.research/latex/{template}/paper.pdf` on the protected branch —
+   through the gate like any other commit (scratch ref, `Verify the
+   record` dispatched on it, fast-forward on green), under the
+   `github-actions[bot]` author. So the paper of record is in the
+   repository, not only in an expiring artifact, and it is never a
+   PDF built on the agent's machine: **do not commit a locally built
+   PDF**, and `git pull --ff-only origin main` before pushing anything
+   further, since main has moved by one commit.
+
    Give the user the commit sha, the `Publish Paper` run URL, and
-   its artifact — that trio is the citable, re-checkable result. A
+   its artifact (the same bytes as the committed `paper.pdf`) — that
+   trio is the citable, re-checkable result. A
    red gate is not published: return to the local stage, fix, push
    to the staging ref again. A red *publish* on a green gate is a
    rendering failure (a citation, a figure), not an integrity one;
