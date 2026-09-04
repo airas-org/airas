@@ -273,3 +273,23 @@ def test_a_judgment_is_read_into_the_record(tmp_path: Path) -> None:
     assert isinstance(result, LlmJudgeResult)
     assert result.warnings == ["votes split {'supported': 2, 'inconclusive': 1}"]
     assert _verify(str(tmp_path)).ok
+
+
+def test_a_lean_only_record_passes_with_provenance_required(tmp_path: Path) -> None:
+    """No metrics files exist, so Seyval provenance cannot apply — requiring
+    it must not fail a record whose runs Seyval never executed."""
+
+    def _no_seyval() -> None:
+        raise RuntimeError("no Seyval credentials in this environment")
+
+    _lean_repo(tmp_path)
+    report = asyncio.run(
+        verify_record(
+            str(tmp_path),
+            check_provenance=True,
+            require_provenance=True,
+            require_history=False,
+            seyval_client_factory=_no_seyval,
+        )
+    )
+    assert report.ok, report.problems

@@ -270,7 +270,9 @@ async def _verify_additions(
             provenance = await verify_seyval_provenance(
                 str(root), scope, seyval_client_factory
             )
-    problems += _provenance_problems(provenance, require_provenance)
+
+    if metrics_data:
+        problems += _provenance_problems(provenance, require_provenance)
     return problems
 
 
