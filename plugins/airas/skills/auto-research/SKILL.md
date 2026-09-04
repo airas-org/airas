@@ -29,8 +29,9 @@ Run these skills in order:
 - `analyze-results` — analysis and verifiable figures
 - `publish-paper` — numbers realized from declarations, compile +
   recompute + provenance checks until green locally, then push: CI
-  re-runs the verification and its artifact — the paper of record —
-  is handed to the user, state persisted
+  re-runs the verification, builds the PDF, commits it back onto the
+  protected branch as `paper.pdf` and uploads it as the artifact — the
+  paper of record — which is handed to the user, state persisted
 
 Execution platform references live in `_shared/references/` per
 platform.
