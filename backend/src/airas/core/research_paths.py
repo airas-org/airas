@@ -15,6 +15,13 @@ METRICS_FILENAME = "metrics.json"
 COMPARISON_KEY = "comparison"
 COMPARISON_METRICS_FILENAME = "aggregated_metrics.json"
 
+# The fork point: what an agent needs to resume the research from a commit.
+# One directory per harness session holding the raw transcript, its neutral
+# rendering and the harness configuration; one JSONL of step boundaries.
+SESSIONS_DIR = ".research/sessions"
+STEPS_PATH = ".research/trace/steps.jsonl"
+DERIVED_FROM_PATH = ".research/derived_from.json"
+
 # Method diagrams, by the current convention.
 DIAGRAM_DIR = f"{RESULTS_DIR}/diagram"
 

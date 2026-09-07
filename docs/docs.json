@@ -19,7 +19,9 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": ["introduction"]
+            "pages": [
+              "introduction"
+            ]
           },
           {
             "group": "Components",
@@ -42,7 +44,8 @@
             "pages": [
               "development/api-key",
               "development/roadmap",
-              "development/MCP"
+              "development/MCP",
+              "development/fork-point"
             ]
           }
         ]
@@ -52,7 +55,9 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": ["ja/introduction"]
+            "pages": [
+              "ja/introduction"
+            ]
           },
           {
             "group": "Components",
@@ -75,7 +80,8 @@
             "pages": [
               "ja/development/local-setup",
               "ja/development/roadmap",
-              "ja/development/MCP"
+              "ja/development/MCP",
+              "ja/development/fork-point"
             ]
           }
         ]

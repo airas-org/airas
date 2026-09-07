@@ -1,0 +1,16 @@
+{
+  "description": "Tell the airas MCP server which Claude Code session is live, so end_step can capture it into the fork point.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_PLUGIN_ROOT=\"${CLAUDE_PLUGIN_ROOT}\" uvx --with 'mcp<2' airas hook session-start --harness claude",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
