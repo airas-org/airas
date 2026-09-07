@@ -5,6 +5,7 @@ not produce. Tables bind (row, column) to run_id.ref_path; charts forbid
 literal data numbers and re-render from the declared spec.
 """
 
+import copy
 from pathlib import Path
 from typing import Any
 
@@ -335,3 +336,70 @@ def test_png_charts_render_and_verify(tmp_path: Path) -> None:
         ChartDeclaration(path="accuracy.png", format="png", spec=CHART_SPEC)
     )
     assert _verify_charts(record, str(tmp_path), METRICS_DATA) == []
+
+
+# ------------------------------------------------ zero-based marks are clipped
+from airas.usecases.publication.map_record_to_publication import (  # noqa: E402
+    clip_zero_based_marks,
+)
+
+
+def _bar(y_scale: dict[str, Any] | None = None, mark: Any = "bar") -> dict[str, Any]:
+    y: dict[str, Any] = {"field": "rho", "type": "quantitative"}
+    if y_scale is not None:
+        y["scale"] = y_scale
+    return {
+        "mark": mark,
+        "data": {"values": [{"c": "a", "rho": "metric:run-a.spearman_rho"}]},
+        "encoding": {"x": {"field": "c", "type": "nominal"}, "y": y},
+    }
+
+
+def test_bar_with_bounded_domain_is_declared_clipped() -> None:
+    out = clip_zero_based_marks(_bar({"domain": [0.5, 0.75]}))
+    assert out["mark"] == {"type": "bar", "clip": True}
+
+
+def test_bar_without_domain_is_left_alone() -> None:
+    spec = _bar()
+    assert clip_zero_based_marks(spec) == spec
+
+
+def test_explicit_clip_is_respected() -> None:
+    out = clip_zero_based_marks(
+        _bar({"domain": [0.5, 1]}, {"type": "bar", "clip": False})
+    )
+    assert out["mark"]["clip"] is False
+
+
+def test_layers_inherit_the_shared_encoding_and_only_bars_change() -> None:
+    spec = {
+        "encoding": {
+            "y": {
+                "field": "rho",
+                "type": "quantitative",
+                "scale": {"domain": [0.5, 0.75]},
+            }
+        },
+        "layer": [
+            {"mark": {"type": "bar", "color": "#4c78a8"}},
+            {"mark": {"type": "text", "dy": -6}},
+        ],
+    }
+    out = clip_zero_based_marks(spec)
+    assert out["layer"][0]["mark"] == {"type": "bar", "color": "#4c78a8", "clip": True}
+    assert out["layer"][1]["mark"] == {"type": "text", "dy": -6}
+
+
+def test_input_spec_is_not_mutated() -> None:
+    spec = _bar({"domain": [0.5, 0.75]})
+    before = copy.deepcopy(spec)
+    clip_zero_based_marks(spec)
+    assert spec == before
+
+
+def test_malformed_encoding_does_not_crash_the_clip_pass() -> None:
+    # render_chart takes the spec from the caller; a non-dict encoding is
+    # Vega-Lite's problem to report, not a TypeError here.
+    spec = {"mark": "bar", "encoding": ["not", "a", "dict"]}
+    assert clip_zero_based_marks(spec) == spec

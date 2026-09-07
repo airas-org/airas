@@ -40,6 +40,12 @@ Needs imported results under `.research/results/` in a clone.
    spec to `.research/record.json` as its declaration and commits both
    in the same step — verification re-renders every chart from its
    declared spec and fails on differences or undeclared chart files.
+   Bars, areas and rects are drawn from zero: when a `scale.domain`
+   excludes zero the tool declares them with `clip: true` (so what is
+   verified is what was drawn), but look at the PNG before citing it —
+   labels, ordering and axis ranges are yours. A chart that needs
+   changing gets a new path, or a superseding declaration via
+   `append_to_record` and a re-render; the old declaration stays.
    Render charts **before** `update_record`, or re-run `update_record`
    afterwards: the chart declaration is a new record commit, and
    `values.tex` must be rendered against the latest one.
