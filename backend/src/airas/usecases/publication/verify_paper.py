@@ -19,7 +19,6 @@ from airas.core.types.paper_verification import PaperVerification
 from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import ResearchRecord
 from airas.infra.local_git import (
-    commits_touching,
     normalize_git_url,
     remote_origin_url,
 )
@@ -29,6 +28,7 @@ from airas.usecases.publication.map_record_to_publication import (
     CHART_SUFFIXES,
     TABLES_DIR_NAME,
     VALUES_TEX_FILENAME,
+    record_link_commit,
     render_chart_bytes,
     render_table_tex,
     render_values_tex,
@@ -541,11 +541,10 @@ def _verify_mapping(
         )
     if values_tex_path.is_file():
         origin = remote_origin_url(root)
-        record_commits = commits_touching(root, RECORD_PATH)  # newest first
         expected = render_values_tex(
             paper_values,
             normalize_git_url(origin) if origin else None,
-            record_commits[0] if record_commits else None,
+            record_link_commit(root),
         )
         if values_tex_path.read_text(encoding="utf-8") != expected:
             problems.append(

@@ -382,3 +382,44 @@ def test_a_paper_without_a_record_passes_only_when_not_required(tmp_path: Path) 
         )
     )
     assert relaxed.ok
+
+
+# -------------------------------------------- the commit values.tex links into
+import subprocess  # noqa: E402
+
+from airas.core.research_paths import RECORD_PATH  # noqa: E402
+from airas.usecases.publication.map_record_to_publication import (  # noqa: E402
+    record_link_commit,
+)
+
+
+def _git(root: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@example.com", *args],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def test_record_link_commit_is_the_last_record_commit_not_head(tmp_path: Path) -> None:
+    _git(tmp_path, "init", "-q")
+    record = tmp_path / RECORD_PATH
+    record.parent.mkdir(parents=True)
+    record.write_text("{}")
+    _git(tmp_path, "add", RECORD_PATH)
+    _git(tmp_path, "commit", "-q", "-m", "record")
+    record_sha = _git(tmp_path, "rev-parse", "HEAD")
+
+    (tmp_path / "main.tex").write_text("paper")
+    _git(tmp_path, "add", "main.tex")
+    _git(tmp_path, "commit", "-q", "-m", "paper edit")
+    assert _git(tmp_path, "rev-parse", "HEAD") != record_sha
+
+    assert record_link_commit(tmp_path) == record_sha
+
+
+def test_record_link_commit_is_none_without_a_record_commit(tmp_path: Path) -> None:
+    _git(tmp_path, "init", "-q")
+    assert record_link_commit(tmp_path) is None

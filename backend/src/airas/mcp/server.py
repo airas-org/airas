@@ -152,6 +152,8 @@ from airas.usecases.publication.map_record_to_publication import (
     CHART_DIR,
     TABLES_DIR_NAME,
     VALUES_TEX_FILENAME,
+    clip_zero_based_marks,
+    record_link_commit,
     render_chart_bytes,
     render_table_tex,
     render_values_tex,
@@ -1741,17 +1743,19 @@ async def render_chart(
         ) from None
 
     def _run() -> dict[str, Any]:
+        # Declared as clipped: bars drawn from zero overrun a bounded axis.
+        spec = clip_zero_based_marks(vega_lite_spec)
         record = load_record(local_path)
         target = _hypothesis(record, hypothesis_id)
         metrics_data = load_metrics_data(local_path)
-        resolved, _ = substitute_chart_refs(vega_lite_spec, metrics_data)
+        resolved, _ = substitute_chart_refs(spec, metrics_data)
         data = render_chart_bytes(resolved, suffix)
 
         declared = next(
             (c for c in active(target.charts, "path") if c.path == relative),
             None,
         )
-        if declared and (declared.spec != vega_lite_spec or declared.format != suffix):
+        if declared and (declared.spec != spec or declared.format != suffix):
             raise ValueError(
                 f"{relative} already has a different declared spec; render to "
                 "a new path, or append a superseding declaration via "
@@ -1762,7 +1766,7 @@ async def render_chart(
                 ChartDeclaration(
                     path=relative,
                     format=suffix,
-                    spec=vega_lite_spec,
+                    spec=spec,
                 )
             )
         next(
@@ -2374,9 +2378,11 @@ async def update_record(
         # until record.json is committed. record.json is untouched by the
         # second commit, so "the commit that last wrote record.json" stays a
         # deterministic answer for the verifier.
-        record_commit = _commit_record_paths(
-            local_path, [RECORD_PATH], "record: realize results"
-        )
+        _commit_record_paths(local_path, [RECORD_PATH], "record: realize results")
+        # commit_paths answers HEAD when record.json did not change (a second
+        # update_record after a paper edit), and HEAD is then not the record's
+        # commit. Ask git the same question the verifier asks.
+        record_commit = record_link_commit(root)
 
         latex_dir = root / ".research" / "latex" / latex_template_name
         latex_dir.mkdir(parents=True, exist_ok=True)
