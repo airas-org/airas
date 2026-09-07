@@ -5,27 +5,27 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, Field
 
 
-# commit と AgentState を「どの step / iteration / run だったか」と一緒に結ぶ、
-# 研究 workflow の trace の 1 行。step の begin と end で 1 行ずつ追記する。
-# .research/trace/steps.jsonl に追記されていく。
+# commit と AgentState を「どの step だったか」と一緒に結ぶ、研究 workflow の
+# trace の 1 行。ハーネスの hook が .research/trace/steps.jsonl に追記する:
+# step はスキルに入ったとき（Claude Code の Skill 呼び出し）、capture はターン
+# 終了ごとの AgentState の取り込みと commit。
 class ResearchTraceEvent(BaseModel):
-    kind: Literal["begin", "end"]
-    step: str
-    iteration: int = Field(ge=1, description="How many times this step has begun")
+    kind: Literal["step", "capture"]
     timestamp: str
+    session_id: str
     head: Optional[str] = Field(default=None, description="HEAD when the event fired")
-    run_ids: list[str] = Field(default_factory=list)
-    reason: Optional[str] = None
-    session_id: Optional[str] = None
+    step: Optional[str] = Field(default=None, description="Skill entered (kind=step)")
+    iteration: Optional[int] = Field(
+        default=None, ge=1, description="How many times this step has begun"
+    )
     agent_state: Optional[str] = Field(
         default=None, description="Repo-relative path of the AgentState written"
     )
     intervention: Optional[dict[str, Any]] = Field(
         default=None,
         description=(
-            "First step after a fork: how this agent differs from the one at "
-            "the fork point (agent side) and what was changed on purpose "
-            "(research side)"
+            "First capture after a fork: how this harness differs from the one "
+            "at the fork point"
         ),
     )
 

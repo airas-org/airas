@@ -30,7 +30,7 @@ _SECRET = re.compile(
 
 
 # ---------------------------------------------------------------- pointer
-# airas hook session-start が書き、end_step が読む live セッションの所在。
+# airas hook session-start が書き、airas hook capture が読む live セッションの所在。
 
 
 def _pointer_path(cwd: str) -> Path:
@@ -66,7 +66,7 @@ def pointer_from_hook(harness: Harness, payload: dict[str, Any]) -> SessionPoint
 
 
 # ---------------------------------------------------------------- capture
-# end_step が使う側。ポインタからトランスクリプトと設定を集め、
+# airas hook capture が使う側。ポインタからトランスクリプトと設定を集め、
 # .research/sessions/<harness>/<session_id>/ に AgentState として書く。
 
 
@@ -214,7 +214,7 @@ def capture_agent_state(
 
 
 # ---------------------------------------------------------------- diff
-# 派生後の最初の begin_step で、fork 点のハーネスと live のハーネスを比べる。
+# 派生後の最初の hook イベントで、fork 点のハーネスと live のハーネスを比べる。
 
 
 def harness_diff(before: HarnessState, after: HarnessState) -> dict[str, Any]:
@@ -419,6 +419,5 @@ def restore_claude_session(local_path: str, state: AgentState) -> tuple[str, Pat
     memory = project / "memory"
     memory.mkdir(exist_ok=True)
     for name, body in state.harness.memory.items():
-        if not (memory / name).exists():
-            (memory / name).write_text(body)
+        (memory / name).write_text(body)
     return new_id, project

@@ -25,8 +25,9 @@ from airas.usecases.recording.agent_state import (
 )
 from airas.usecases.recording.codex_hooks import install_codex_hooks
 from airas.usecases.recording.research_trace import (
-    begin_step,
-    end_step,
+    capture,
+    is_experiment_repository,
+    record_step,
     write_derived_from,
 )
 
@@ -56,6 +57,8 @@ def repo(tmp_path: Path) -> Path:
     _git(repo, "config", "user.email", "t@example.com")
     _git(repo, "config", "user.name", "t")
     (repo / "CLAUDE.md").write_text("tracked instructions\n")
+    (repo / ".research").mkdir()
+    (repo / ".research" / "record.json").write_text("{}")
     _git(repo, "add", ".")
     _git(repo, "commit", "-q", "-m", "init")
     return repo
@@ -153,13 +156,14 @@ def test_hook_pointer_round_trips(homes: dict[str, Path], repo: Path) -> None:
     assert read_pointer(str(repo / "elsewhere")) is None
 
 
-def test_end_step_commits_the_agent_state(homes: dict[str, Path], repo: Path) -> None:
-    write_pointer(_claude_session(homes, repo))
-    begin_step(str(repo), "write-experiment-code", run_ids=["proposed"])
+def test_capture_commits_the_agent_state(homes: dict[str, Path], repo: Path) -> None:
+    pointer = _claude_session(homes, repo)
+    write_pointer(pointer)
+    record_step(str(repo), pointer, "write-experiment-code")
     (repo / "src.py").write_text("print(1)\n")
     before = _git(repo, "rev-parse", "HEAD")
 
-    event, commit = end_step(str(repo), "write-experiment-code")
+    event, commit = capture(str(repo), pointer)
 
     assert commit and commit != before and commit == _git(repo, "rev-parse", "HEAD")
     assert _git(repo, "status", "--porcelain") == ""
@@ -180,23 +184,28 @@ def test_end_step_commits_the_agent_state(homes: dict[str, Path], repo: Path) ->
     assert all((repo / t).is_file() for t in state.session.transcripts)
 
     events = [json.loads(line) for line in (repo / STEPS_PATH).read_text().splitlines()]
-    assert [(e["kind"], e["iteration"]) for e in events] == [("begin", 1), ("end", 1)]
-    assert events[0]["run_ids"] == ["proposed"] and events[0]["head"] == before
+    assert [e["kind"] for e in events] == ["step", "capture"]
+    assert events[0]["step"] == "write-experiment-code" and events[0]["head"] == before
 
 
-def test_repeating_a_step_counts_iterations(homes: dict[str, Path], repo: Path) -> None:
-    begin_step(str(repo), "run-experiments")
-    end_step(str(repo), "run-experiments")
-    event = begin_step(str(repo), "run-experiments", reason="run failed")
-    assert event.iteration == 2 and event.reason == "run failed"
-    assert event.session_id is None  # no hook ran: traced, no agent state
+def test_entering_a_step_again_counts_iterations(
+    homes: dict[str, Path], repo: Path
+) -> None:
+    pointer = _claude_session(homes, repo)
+    record_step(str(repo), pointer, "run-experiments")
+    capture(str(repo), pointer)
+    event = record_step(str(repo), pointer, "run-experiments")
+    assert event.iteration == 2
+
+
+def test_hooks_ignore_clones_without_research(tmp_path: Path) -> None:
+    assert not is_experiment_repository(str(tmp_path))
 
 
 def test_restore_rebinds_the_transcript_to_the_clone(
     homes: dict[str, Path], repo: Path, tmp_path: Path
 ) -> None:
-    write_pointer(_claude_session(homes, repo))
-    end_step(str(repo), "hypothesize-and-design")
+    capture(str(repo), _claude_session(homes, repo))
     clone = tmp_path / "clone"
     _git(repo, "clone", "-q", str(repo), str(clone))
 
@@ -211,8 +220,7 @@ def test_restore_rebinds_the_transcript_to_the_clone(
 
 
 def test_neutral_messages_and_handoff(homes: dict[str, Path], repo: Path) -> None:
-    write_pointer(_claude_session(homes, repo))
-    end_step(str(repo), "discover-papers")
+    capture(str(repo), _claude_session(homes, repo))
     state, _ = load_agent_state(str(repo))
     messages = neutral_messages(str(repo), state)
     assert [m["role"] for m in messages] == ["user", "assistant", "user", "assistant"]
@@ -267,9 +275,9 @@ def test_codex_rollout_reads_as_neutral_messages(
         },
     ]
     rollout.write_text("\n".join(json.dumps(r) for r in rows) + "\n")
-    write_pointer(pointer_from_hook("codex", {"session_id": SESSION, "cwd": str(repo)}))
-
-    end_step(str(repo), "discover-papers")
+    capture(
+        str(repo), pointer_from_hook("codex", {"session_id": SESSION, "cwd": str(repo)})
+    )
     state, _ = load_agent_state(str(repo))
     assert state.harness.kind == "codex" and state.harness.version == "0.153.2"
     assert state.harness.model == "gpt-5.6-sol"
@@ -279,11 +287,10 @@ def test_codex_rollout_reads_as_neutral_messages(
         restore_claude_session(str(repo), state)
 
 
-def test_first_step_after_a_fork_records_the_intervention(
+def test_first_event_after_a_fork_records_the_intervention(
     homes: dict[str, Path], repo: Path, tmp_path: Path
 ) -> None:
-    write_pointer(_claude_session(homes, repo))
-    origin_commit = end_step(str(repo), "preregister-paper")[1]
+    origin_commit = capture(str(repo), _claude_session(homes, repo))[1]
     clone = tmp_path / "fork"
     _git(repo, "clone", "-q", str(repo), str(clone))
     write_derived_from(
@@ -294,16 +301,12 @@ def test_first_step_after_a_fork_records_the_intervention(
     forker = _claude_session(homes, clone).model_copy(
         update={"session_id": "s2", "model": "claude-opus-5"}
     )
-    write_pointer(forker)
 
-    first = begin_step(
-        str(clone), "write-experiment-code", reason="try a smaller model"
-    )
-    second = begin_step(str(clone), "run-experiments")
+    first = record_step(str(clone), forker, "write-experiment-code")
+    second = capture(str(clone), forker)[0]
 
     assert first.intervention == {
-        "agent": {"model": {"from": "claude-fable-5-1", "to": "claude-opus-5"}},
-        "research": "try a smaller model",
+        "model": {"from": "claude-fable-5-1", "to": "claude-opus-5"}
     }
     assert second.intervention is None
 
@@ -316,6 +319,7 @@ def test_install_codex_hooks_is_idempotent(tmp_path: Path) -> None:
     install_codex_hooks(home)
     hooks = json.loads((home / "hooks.json").read_text())
     assert len(hooks["hooks"]["SessionStart"]) == 1
+    assert len(hooks["hooks"]["Stop"]) == 1
     config = (home / "config.toml").read_text()
     assert "codex_hooks = true" in config and 'trust_level = "trusted"' in config
 

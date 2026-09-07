@@ -50,8 +50,8 @@ class SessionState(BaseModel):
 
 
 # MCP サーバーに「今どのセッションから呼ばれているか」を知らせる橋渡し情報。
-# hook がセッション開始時に ~/.airas/sessions/ に書き、end_step がこれを
-# 読んで live session（cwd、transcript の場所など）を特定する。
+# SessionStart hook が ~/.airas/sessions/ に書き、Stop hook の capture が
+# これを読んで live session（cwd、transcript の場所など）を特定する。
 class SessionPointer(BaseModel):
     harness: Harness
     session_id: str

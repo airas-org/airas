@@ -13,12 +13,18 @@ from airas.usecases.recording.agent_state import (
     load_agent_state,
     neutral_messages,
     pointer_from_hook,
+    read_pointer,
     render_handoff,
     restore_claude_session,
     write_pointer,
 )
 from airas.usecases.recording.codex_hooks import install_codex_hooks
-from airas.usecases.recording.research_trace import write_derived_from
+from airas.usecases.recording.research_trace import (
+    capture,
+    is_experiment_repository,
+    record_step,
+    write_derived_from,
+)
 from airas.usecases.recording.verify_record import verify_record
 
 # "AIRAS" on a phone keypad (per ITU-T E.161); a high port to avoid the
@@ -96,7 +102,21 @@ def _run_hook(args: argparse.Namespace) -> None:
 
     payload = json.load(sys.stdin)
     payload.setdefault("plugin_root", os.environ.get("CLAUDE_PLUGIN_ROOT"))
-    write_pointer(pointer_from_hook(args.harness, payload))
+    fresh = pointer_from_hook(args.harness, payload)
+    if args.hook_command == "session-start":
+        write_pointer(fresh)
+        return
+    if not is_experiment_repository(fresh.cwd):
+        return
+    # The pointer from session-start carries model and plugin root; later
+    # events fall back to what they carry themselves.
+    pointer = read_pointer(fresh.cwd) or fresh
+    if args.hook_command == "step":
+        step = (payload.get("tool_input") or {}).get("skill")
+        if step:
+            record_step(fresh.cwd, pointer, step)
+    else:
+        capture(fresh.cwd, pointer)
 
 
 def _run_session(args: argparse.Namespace) -> None:
@@ -108,6 +128,8 @@ def _run_session(args: argparse.Namespace) -> None:
 
     if args.derived_from:
         repository, _, commit = args.derived_from.rpartition("@")
+        if not commit:
+            raise SystemExit("--derived-from must be [REPOSITORY@]COMMIT")
         write_derived_from(
             args.local_path,
             DerivedFromRepository(
@@ -141,11 +163,13 @@ def main() -> None:
         "hook", help="Harness hook entry points (Claude Code / Codex hooks.json)"
     )
     hook_commands = hook.add_subparsers(dest="hook_command", required=True)
-    session_start = hook_commands.add_parser(
-        "session-start",
-        help="SessionStart hook: record the live session for end_step (JSON on stdin)",
-    )
-    session_start.add_argument("--harness", choices=["claude", "codex"], required=True)
+    for name, help_text in (
+        ("session-start", "SessionStart: record where the live session is"),
+        ("step", "PostToolUse(Skill): record the step the agent entered"),
+        ("capture", "Stop: capture the agent state and commit a fork point"),
+    ):
+        sub = hook_commands.add_parser(name, help=f"{help_text} (hook JSON on stdin)")
+        sub.add_argument("--harness", choices=["claude", "codex"], required=True)
     hook_commands.add_parser(
         "install", help="Write ~/.codex/hooks.json and enable Codex hooks"
     )

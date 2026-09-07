@@ -170,8 +170,6 @@ from airas.usecases.publication.verify_paper import (
     verify_latex_build,
     verify_paper,
 )
-from airas.usecases.recording.research_trace import begin_step as trace_begin_step
-from airas.usecases.recording.research_trace import end_step as trace_end_step
 from airas.usecases.recording.update_or_load_record import (
     load_metrics_data,
     load_provenance_manifest,
@@ -2306,66 +2304,6 @@ async def append_to_record(
         }
 
     return await asyncio.to_thread(_run)
-
-
-@mcp.tool()
-async def begin_step(
-    local_path: str,
-    step: str,
-    run_ids: list[str] | None = None,
-    reason: str | None = None,
-) -> dict[str, Any]:
-    """Mark the start of a research step in the trace.
-
-    Call on entering a step skill (`setup-repository`, `discover-papers`,
-    `hypothesize-and-design`, `preregister-paper`, `write-experiment-code`,
-    `run-experiments`, `analyze-results`, `publish-paper`). `run_ids` are
-    the runs this pass works on; `reason` says why the step began again
-    when it is a repeat (a failed run, a gate rejection, an unsupported
-    result). One research is a single line of commits with steps repeated,
-    so the trace records iterations, not branches.
-
-    In a repository forked from a fork point (`.research/derived_from.json`
-    present), the first call also records the intervention: how the live
-    harness differs from the one the fork point was captured with, and the
-    `reason` as what the researcher changed on purpose.
-    """
-    event = await asyncio.to_thread(trace_begin_step, local_path, step, run_ids, reason)
-    return event.model_dump(exclude_defaults=True)
-
-
-@mcp.tool()
-async def end_step(
-    local_path: str,
-    step: str,
-    reason: str | None = None,
-) -> dict[str, Any]:
-    """Close a research step: capture the agent's state and commit a fork point.
-
-    Copies the live harness session (raw transcripts, subagents included)
-    and the harness configuration (model, version, settings, instructions,
-    memory, plugin) into `.research/sessions/<harness>/<session_id>/`, appends
-    the boundary to `.research/trace/steps.jsonl`, and commits the whole
-    working tree. The returned `commit` is the fork point: anyone can clone
-    it and continue from this step with `airas session import`, with the
-    same agent, another model or harness, or another method.
-
-    The live session is known only when the harness's SessionStart hook has
-    run (the airas plugin installs it for Claude Code; `airas hook install
-    codex` for Codex). Without it the step is still traced and committed,
-    with no agent state. Push after this call so the fork point is shared.
-    """
-    event, commit = await asyncio.to_thread(trace_end_step, local_path, step, reason)
-    if commit is None:
-        raise ValueError(
-            "the step was traced but git commit failed — the clone needs a "
-            "commit identity configured"
-        )
-    return {
-        **event.model_dump(exclude_defaults=True),
-        "commit": commit,
-        "next": "push, then `airas session import` restores this fork point elsewhere",
-    }
 
 
 @mcp.tool()

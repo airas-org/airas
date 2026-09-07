@@ -1,10 +1,11 @@
-"""Step boundaries: the research trace and the fork-point commit.
+"""The research trace and the fork-point commit, driven by harness hooks.
 
-`begin_step` records where a step starts; `end_step` captures the agent's
-state into the repository and commits everything, making that commit a
-fork point. The trace is advisory — never part of the record gate.
+SessionStart → session-start: where the live session is (SessionPointer)
+PostToolUse(Skill) → step: which step the agent entered
+Stop → capture: AgentState into the repository, then commit the tree —
+that commit is a fork point.
 
-begin_step が「研究の状態」側を書き、end_step が「エージェントの状態」側を埋めて commit する
+The trace is advisory — never part of the record gate.
 """
 
 from __future__ import annotations
@@ -22,13 +23,18 @@ from airas.usecases.recording.agent_state import (
     harness_diff,
     harness_state,
     load_agent_state,
-    read_pointer,
     transcript_files,
 )
 
 
 def _root(local_path: str) -> Path:
     return Path(local_path).expanduser().resolve()
+
+
+def is_experiment_repository(local_path: str) -> bool:
+    # Hooks fire in every session of the harness; only a clone with a
+    # .research/ directory is a research the trace belongs to.
+    return (_root(local_path) / ".research").is_dir()
 
 
 def _read_trace(local_path: str) -> list[ResearchTraceEvent]:
@@ -66,75 +72,60 @@ def write_derived_from(local_path: str, origin: DerivedFromRepository) -> Path:
 
 
 def _intervention(
-    local_path: str,
-    pointer: SessionPointer | None,
-    trace: list[ResearchTraceEvent],
-    reason: str | None,
+    local_path: str, pointer: SessionPointer, trace: list[ResearchTraceEvent]
 ) -> dict[str, Any] | None:
-    # Only the first step this session takes in a forked repository compares
-    # the live harness with the one the fork point was captured from.
+    # Only this session's first event in a forked repository compares the
+    # live harness with the one the fork point was captured from.
     origin = _read_derived_from(local_path)
-    if origin is None or any(
-        e.session_id == (pointer and pointer.session_id) for e in trace
-    ):
+    if origin is None or any(e.session_id == pointer.session_id for e in trace):
         return None
-    diff: dict[str, Any] = {}
-    if pointer is not None:
-        try:
-            source, _ = load_agent_state(local_path, origin.session_id)
-            diff = harness_diff(
-                source.harness, harness_state(pointer, transcript_files(pointer))
-            )
-        except FileNotFoundError:
-            pass
-    return {"agent": diff, "research": reason}
+    try:
+        source, _ = load_agent_state(local_path, origin.session_id)
+    except FileNotFoundError:
+        return {}
+    return harness_diff(
+        source.harness, harness_state(pointer, transcript_files(pointer))
+    )
 
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def begin_step(
-    local_path: str,
-    step: str,
-    run_ids: list[str] | None = None,
-    reason: str | None = None,
+def record_step(
+    local_path: str, pointer: SessionPointer, step: str
 ) -> ResearchTraceEvent:
     trace = _read_trace(local_path)
-    pointer = read_pointer(local_path)
     event = ResearchTraceEvent(
-        kind="begin",
-        step=step,
-        iteration=sum(1 for e in trace if e.kind == "begin" and e.step == step) + 1,
+        kind="step",
         timestamp=_now(),
+        session_id=pointer.session_id,
         head=head_commit(_root(local_path)),
-        run_ids=run_ids or [],
-        reason=reason,
-        session_id=pointer.session_id if pointer else None,
-        intervention=_intervention(local_path, pointer, trace, reason),
+        step=step,
+        iteration=sum(1 for e in trace if e.kind == "step" and e.step == step) + 1,
+        intervention=_intervention(local_path, pointer, trace),
     )
     _append(local_path, event)
     return event
 
 
-def end_step(
-    local_path: str, step: str, reason: str | None = None
+def capture(
+    local_path: str, pointer: SessionPointer
 ) -> tuple[ResearchTraceEvent, str | None]:
+    """Capture the agent state, record it and commit the whole working
+    tree; returns the event and the fork-point commit (None if nothing
+    changed or the commit failed)."""
     trace = _read_trace(local_path)
-    pointer = read_pointer(local_path)
-    state_path = capture_agent_state(local_path, pointer)[1] if pointer else None
     event = ResearchTraceEvent(
-        kind="end",
-        step=step,
-        iteration=max((e.iteration for e in trace if e.step == step), default=1),
+        kind="capture",
         timestamp=_now(),
+        session_id=pointer.session_id,
         head=head_commit(_root(local_path)),
-        reason=reason,
-        session_id=pointer.session_id if pointer else None,
-        agent_state=state_path,
+        agent_state=capture_agent_state(local_path, pointer)[1],
+        intervention=_intervention(local_path, pointer, trace),
     )
     _append(local_path, event)
     commit = commit_paths(
-        _root(local_path), ["."], f"step: end {step} #{event.iteration}"
+        _root(local_path), ["."], f"capture: session {pointer.session_id[:8]}"
     )
     return event, commit
