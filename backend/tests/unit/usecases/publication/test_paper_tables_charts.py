@@ -396,3 +396,10 @@ def test_input_spec_is_not_mutated() -> None:
     before = copy.deepcopy(spec)
     clip_zero_based_marks(spec)
     assert spec == before
+
+
+def test_malformed_encoding_does_not_crash_the_clip_pass() -> None:
+    # render_chart takes the spec from the caller; a non-dict encoding is
+    # Vega-Lite's problem to report, not a TypeError here.
+    spec = {"mark": "bar", "encoding": ["not", "a", "dict"]}
+    assert clip_zero_based_marks(spec) == spec

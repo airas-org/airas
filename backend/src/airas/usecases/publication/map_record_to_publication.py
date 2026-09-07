@@ -341,7 +341,10 @@ def _has_explicit_domain(encoding: Any) -> bool:
 
 
 def _clip_view(view: dict[str, Any], inherited_encoding: dict[str, Any]) -> None:
-    encoding = {**inherited_encoding, **(view.get("encoding") or {})}
+    view_encoding = view.get("encoding")
+    encoding = dict(inherited_encoding)
+    if isinstance(view_encoding, dict):
+        encoding.update(view_encoding)
     kind = _mark_type(view.get("mark"))
     if kind in _ZERO_BASED_MARKS and _has_explicit_domain(encoding):
         mark = view["mark"]
