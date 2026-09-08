@@ -149,6 +149,12 @@ def _claude_session(homes: dict[str, Path], repo: Path) -> SessionPointer:
     )
 
 
+def test_session_id_must_be_a_plain_name() -> None:
+    for bad in ("../x", "a/b", "..", ""):
+        with pytest.raises(ValueError):
+            pointer_from_hook("claude", {"session_id": bad, "cwd": "/tmp"})
+
+
 def test_hook_pointer_round_trips(homes: dict[str, Path], repo: Path) -> None:
     pointer = _claude_session(homes, repo)
     write_pointer(pointer)

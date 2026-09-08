@@ -10,9 +10,10 @@ and its session (what it saw and did); both are stored under
 
 from __future__ import annotations
 
+import re
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 Harness = Literal["claude", "codex"]
 
@@ -59,3 +60,15 @@ class SessionPointer(BaseModel):
     transcript_path: Optional[str] = None
     model: Optional[str] = None
     plugin_root: Optional[str] = None
+
+    @field_validator("session_id")
+    @classmethod
+    def _one_path_segment(cls, value: str) -> str:
+        # The id names a directory under .research/sessions/; hook input
+        # comes from stdin, so it must not carry separators or "..".
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", value) or value in (
+            ".",
+            "..",
+        ):
+            raise ValueError(f"session_id is not a plain name: {value!r}")
+        return value

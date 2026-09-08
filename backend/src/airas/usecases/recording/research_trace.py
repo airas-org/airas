@@ -113,8 +113,8 @@ def capture(
     local_path: str, pointer: SessionPointer
 ) -> tuple[ResearchTraceEvent, str | None]:
     """Capture the agent state, record it and commit the whole working
-    tree; returns the event and the fork-point commit (None if nothing
-    changed or the commit failed)."""
+    tree; returns the event and the fork-point commit — HEAD if nothing
+    was left to commit, None only if the commit failed."""
     trace = _read_trace(local_path)
     event = ResearchTraceEvent(
         kind="capture",
