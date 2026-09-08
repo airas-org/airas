@@ -82,6 +82,13 @@ These are the orchestrator's own rules; no step may relax them.
 - **State handoff is the repository.** Everything a later step needs
   must be committed, not held in conversation — a fresh session must
   be able to resume from the clone alone.
+- **Every turn ends in a fork point.** The harness's hooks, not the
+  agent, record the trace: entering a step skill is logged, and at the
+  end of every turn this session and harness are captured into
+  `.research/sessions/` and the whole tree is committed. That commit
+  is a fork point anyone can resume from with `airas session import`
+  — same agent, another model or harness, or another method. Push so
+  it is shared; never amend or rebase those commits away.
 
 ## The integrity model — why the gate holds
 
@@ -132,7 +139,10 @@ nothing is anchored yet, so nothing can be hidden.
 
 ## Resuming mid-flow
 
-Read the clone to find where a repository stands: a
+`.research/trace/steps.jsonl` says which step was entered last and how
+many times each has run; `.research/derived_from.json` says this clone was
+forked from another repository's fork point. Otherwise read the clone
+to find where it stands: a
 `.research/record.json` and preregistered main.tex with stub
 Results/Discussion and no
 `.research/results/` means `write-experiment-code` (or, with `src/`

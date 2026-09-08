@@ -1,0 +1,39 @@
+{
+  "description": "Record the research trace and fork points: where the live session is, which step the agent entered, and the agent's state committed at the end of every turn.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx --with 'mcp<2' airas hook session-start --harness claude",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx --with 'mcp<2' airas hook step --harness claude",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx --with 'mcp<2' airas hook capture --harness claude",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

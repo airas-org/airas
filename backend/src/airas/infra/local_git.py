@@ -32,6 +32,14 @@ def remote_origin_url(repo_root: Path) -> str | None:
     return _text(repo_root, "remote", "get-url", "origin")
 
 
+def head_commit(repo_root: Path) -> str | None:
+    return _text(repo_root, "rev-parse", "HEAD")
+
+
+def is_tracked(repo_root: Path, path: Path) -> bool:
+    return bool(_text(repo_root, "ls-files", "--", str(path)))
+
+
 def current_branch(repo_root: Path) -> str | None:
     branch = _text(repo_root, "rev-parse", "--abbrev-ref", "HEAD")
     return None if branch in (None, "HEAD") else branch  # HEAD = detached

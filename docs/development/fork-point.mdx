@@ -1,0 +1,80 @@
+---
+title: "Fork points"
+description: "Resume a research from any step — with the same agent, another model or harness, or another method"
+---
+
+A **fork point** is a commit in the experiment repository that holds, besides
+the research artifacts, the state of the agent that produced them. Anyone on
+the team can clone that commit and continue from the same step: with the same
+agent to measure run-to-run variance, with another model or harness, or with
+the same agent and a different method.
+
+## What a fork point contains
+
+| Path | Content |
+|---|---|
+| `.research/sessions/<harness>/<session_id>/*.jsonl` | The harness's raw transcript, subagents included, copied verbatim |
+| `.research/sessions/<harness>/<session_id>/agent_state.json` | `AgentState`: the harness (kind, version, model, settings and instruction files, memory, plugin version and skills hash) and the session (which transcripts) |
+| `.research/trace/steps.jsonl` | One `ResearchTraceEvent` per hook event: the step entered (and its iteration) or the agent state captured, with HEAD |
+| `.research/derived_from.json` | In a forked repository: the repository, commit and session it came from |
+
+Secrets in settings files are masked before they are copied. Everything else
+is kept as is — fork points are for the team and yourself, not for a public
+repository. Credentials, platform executions and the local environment stay
+outside: bring your own credentials, results are referenced by execution id,
+and `uv.lock` plus the Dockerfile rebuild the environment.
+
+## Recording: the harness's hooks
+
+Nothing is asked of the agent. The harness's hooks record the trace and
+commit the fork points:
+
+| Hook | Command | What it records |
+|---|---|---|
+| `SessionStart` | `airas hook session-start` | Where the live session is (a pointer under `~/.airas/sessions/`) |
+| `PostToolUse` on `Skill` (Claude Code) | `airas hook step` | Which step skill the agent entered, and how many times |
+| `Stop` (end of every turn) | `airas hook capture` | The session and harness into `.research/sessions/`, then a commit of the whole tree |
+
+Hooks only act in a clone that has a `.research/` directory. Every turn
+adds a commit: the transcript grew, and that is the state being kept.
+
+- **Claude Code** — the airas plugin ships `hooks/hooks.json`; nothing to set up.
+- **Codex CLI** — run `airas hook install` once. It writes `~/.codex/hooks.json`
+  (SessionStart and Stop) and enables `features.codex_hooks` in
+  `~/.codex/config.toml`. Codex has no skill event, so its trace holds
+  captures only.
+
+## Restoring: `airas session import`
+
+Clone the fork-point commit, then:
+
+```bash
+airas session import --local-path <clone> --to claude
+# → cd <clone> && claude --resume <new session id>
+```
+
+For Claude Code the raw transcript is rebound to the clone (paths and session
+id rewritten) and placed where `claude --resume` finds it, memory included.
+Add `--model` to that resume to change only the model.
+
+```bash
+airas session import --local-path <clone> --to prompt
+```
+
+For another harness, the session is rendered to
+`.research/sessions/handoff.md` as harness-neutral messages (text, tool calls
+and tool results in full); start the harness in the clone and give it that
+file. `airas session export` prints the same messages as JSON.
+
+## Forking into a new repository
+
+Pass `--derived-from [REPOSITORY@]COMMIT` to `airas session import` in the new
+clone. It writes `.research/derived_from.json`, and the first hook event in that
+repository records the **intervention**: how the live harness differs from
+the one the fork point was captured with (model, version, files, memory,
+plugin).
+Forks of forks chain through their own `derived_from.json`.
+
+Within one research the history is a single line with steps repeated — the
+trace records iterations, not branches. A change of hypothesis is a new
+preregistration and therefore a new repository.

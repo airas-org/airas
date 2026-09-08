@@ -1,0 +1,55 @@
+---
+title: "Fork 点"
+description: "任意の step から研究を再開する — 同じエージェント、別のモデルやハーネス、別の手法で"
+---
+
+**fork 点**とは、研究の成果物に加えて、それを作ったエージェントの状態を含む実験リポジトリの commit です。チームの誰でもその commit を clone して同じ step から続けられます。同じエージェントで揺らぎを測る、別のモデルやハーネスで試す、同じエージェントで別の手法を試す、のいずれも同じ地点から始まります。
+
+## fork 点に含まれるもの
+
+| パス | 内容 |
+|---|---|
+| `.research/sessions/<harness>/<session_id>/*.jsonl` | ハーネスの生トランスクリプト（サブエージェント含む）をそのままコピー |
+| `.research/sessions/<harness>/<session_id>/agent_state.json` | `AgentState`: ハーネス（種別、バージョン、モデル、設定と指示ファイル、メモリ、プラグインのバージョンと skills のハッシュ）とセッション（どのトランスクリプトか） |
+| `.research/trace/steps.jsonl` | hook イベントごとの `ResearchTraceEvent`: 入った step（と反復回数）、または取り込んだ agent state、HEAD |
+| `.research/derived_from.json` | 派生リポジトリで、派生元のリポジトリ・commit・session |
+
+設定ファイル内の資格情報はコピー前に伏せます。それ以外はそのまま残るので、fork 点はチーム内と自分用であり、公開リポジトリ向けではありません。資格情報、プラットフォーム上の実行、ローカル環境はリポジトリの外に残ります。資格情報は各自のものを使い、結果は execution id で参照し、環境は `uv.lock` と Dockerfile から再構築します。
+
+## 記録: ハーネスの hook
+
+エージェントには何も求めません。ハーネスの hook が trace を記録し、fork 点を commit します。
+
+| hook | コマンド | 記録するもの |
+|---|---|---|
+| `SessionStart` | `airas hook session-start` | live セッションの所在（`~/.airas/sessions/` のポインタ） |
+| `PostToolUse` の `Skill`（Claude Code） | `airas hook step` | どの step スキルに入ったか、何回目か |
+| `Stop`（ターン終了ごと） | `airas hook capture` | セッションとハーネスを `.research/sessions/` に取り込み、作業ツリー全体を commit |
+
+hook は `.research/` ディレクトリがある clone でだけ動きます。ターンごとに commit が 1 つ増えます。トランスクリプトが伸びており、それ自体が残したい状態だからです。
+
+- **Claude Code** — airas プラグインに `hooks/hooks.json` が同梱されているので設定不要です。
+- **Codex CLI** — 一度 `airas hook install` を実行します。`~/.codex/hooks.json`（SessionStart と Stop）を書き、`~/.codex/config.toml` の `features.codex_hooks` を有効にします。Codex にはスキルのイベントが無いので、trace には capture だけが残ります。
+
+## 復元: `airas session import`
+
+fork 点の commit を clone してから:
+
+```bash
+airas session import --local-path <clone> --to claude
+# → cd <clone> && claude --resume <新しい session id>
+```
+
+Claude Code では生トランスクリプトを clone に結び直し（パスと session id を書き換え）、`claude --resume` が見つける場所に置きます。メモリも復元されます。モデルだけ変えるなら resume に `--model` を付けます。
+
+```bash
+airas session import --local-path <clone> --to prompt
+```
+
+別ハーネスの場合は、セッションをハーネス非依存の messages として `.research/sessions/handoff.md` に書き出します（テキスト、ツール呼び出し、ツール結果を全文）。clone 内でハーネスを起動し、このファイルを渡してください。`airas session export` は同じ messages を JSON で出力します。
+
+## 新しいリポジトリへの派生
+
+新しい clone で `airas session import` に `--derived-from [REPOSITORY@]COMMIT` を渡します。`.research/derived_from.json` が書かれ、そのリポジトリでの最初の hook イベントが**介入**を記録します。live ハーネスが fork 点のハーネスとどう違うか（モデル、バージョン、ファイル、メモリ、プラグイン）です。派生の派生も各自の `derived_from.json` でチェーンになります。
+
+一つの研究の中では履歴は step を繰り返す一本線で、trace は反復を記録し、ブランチは記録しません。仮説を変えるなら新しい事前登録、つまり新しいリポジトリです。
