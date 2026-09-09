@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import webbrowser
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Literal
@@ -48,12 +47,8 @@ from airas.core.types.research_record import (
 from airas.core.types.research_study import ResearchStudy
 from airas.dashboard.launcher import (
     dashboard_url,
-    has_bundled_ui,
     is_dashboard_running,
     start_dashboard,
-)
-from airas.dashboard.launcher import (
-    stop_dashboard as stop_dashboard_process,
 )
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
@@ -2552,48 +2547,6 @@ def open_in_overleaf(
             "a new editable project there."
         ),
     }
-
-
-@mcp.tool()
-def open_dashboard(
-    port: int = DEFAULT_DASHBOARD_PORT, open_browser: bool = True
-) -> dict[str, Any]:
-    """Launch the AIRAS web dashboard on localhost and return its URL.
-
-    Starts the dashboard server (API + web UI) as a background process,
-    or reuses one that is already running on the port. By default the URL
-    is also opened in the user's browser. The dashboard keeps running
-    after the MCP session ends; stop it with `stop_dashboard`.
-    No API keys required to launch.
-    """
-    # The dashboard process inherits credentials from ~/.airas/credentials.json
-    # via the environment, so its API endpoints can call LLM/GitHub APIs.
-    refresh_environment()
-
-    url = dashboard_url(port)
-    if is_dashboard_running(port):
-        status = "already_running"
-    else:
-        start_dashboard(port)
-        status = "started"
-
-    if open_browser:
-        webbrowser.open(url)
-
-    result: dict[str, Any] = {"status": status, "url": url}
-    if not has_bundled_ui():
-        result["warning"] = (
-            "This installation has no bundled web UI (development checkout?), "
-            "so only the API is served. Install the published package "
-            "(`uvx airas`) for the full dashboard."
-        )
-    return result
-
-
-@mcp.tool()
-def stop_dashboard() -> dict[str, Any]:
-    """Stop the AIRAS web dashboard started by `open_dashboard`."""
-    return stop_dashboard_process()
 
 
 # --- Paper reproduction ---

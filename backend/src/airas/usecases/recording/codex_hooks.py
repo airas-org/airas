@@ -8,6 +8,7 @@ feature is switched on in `~/.codex/config.toml`.
 from __future__ import annotations
 
 import json
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 import tomli
@@ -15,17 +16,30 @@ import tomli_w
 
 from airas.usecases.recording.agent_state import CODEX_HOME
 
-HOOK_COMMANDS = {
-    "SessionStart": "uvx --with 'mcp<2' airas hook session-start --harness codex",
-    "Stop": "uvx --with 'mcp<2' airas hook capture --harness codex",
-}
+
+def _airas_requirement() -> str:
+    """Pin the installed version: `uvx airas` keeps whatever it fetched first,
+    so an unpinned hook would silently stay on an old release. A checkout
+    without distribution metadata falls back to the unpinned name."""
+    try:
+        return f"airas=={version('airas')}"
+    except PackageNotFoundError:
+        return "airas"
+
+
+def hook_commands() -> dict[str, str]:
+    airas = _airas_requirement()
+    return {
+        "SessionStart": f"uvx {airas} hook session-start --harness codex",
+        "Stop": f"uvx {airas} hook capture --harness codex",
+    }
 
 
 def install_codex_hooks(home: Path = CODEX_HOME) -> str:
     home.mkdir(parents=True, exist_ok=True)
     hooks_path = home / "hooks.json"
     hooks = json.loads(hooks_path.read_text()) if hooks_path.is_file() else {}
-    for event, command in HOOK_COMMANDS.items():
+    for event, command in hook_commands().items():
         groups = hooks.setdefault("hooks", {}).setdefault(event, [])
         if not any(
             h.get("command") == command

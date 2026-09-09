@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uvx --with 'mcp<2' airas hook session-start --harness claude",
+            "command": "uvx airas==0.4.0 hook session-start --harness claude",
             "timeout": 60
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uvx --with 'mcp<2' airas hook step --harness claude",
+            "command": "uvx airas==0.4.0 hook step --harness claude",
             "timeout": 60
           }
         ]
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uvx --with 'mcp<2' airas hook capture --harness claude",
+            "command": "uvx airas==0.4.0 hook capture --harness claude",
             "timeout": 120
           }
         ]

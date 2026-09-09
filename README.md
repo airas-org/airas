@@ -7,17 +7,11 @@
   <a href="https://pypi.org/project/airas/">
     <img src="https://img.shields.io/pypi/v/airas" alt="PyPI" />
   </a>
-  <a href="https://airas-org.github.io/airas/">
-    <img src="https://img.shields.io/badge/Documentation-%F0%9F%93%95-blue" alt="Documentation" />
-  </a>
   <a href="https://github.com/airas-org/airas/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License" />
   </a>
   <a href="https://discord.gg/ktumZQP3Tp">
     <img src="https://img.shields.io/badge/Discord-Join%20Us-7289da?logo=discord&logoColor=white" alt="Discord" />
-  </a>
-  <a href="https://x.com/fuyu_quant">
-    <img src="https://img.shields.io/twitter/follow/fuyu_quant?style=social" alt="Twitter Follow" />
   </a>
 </p>
 
@@ -25,7 +19,7 @@ AIRAS is open-source software for automated research. It gives a coding agent (C
 
 AIRAS ships as one PyPI package (`airas`) that provides:
 
-- an **MCP server** with 40+ research tools (paper search, hypothesis and experimental design, experiment execution on GitHub Actions or Seyval, figure rendering, LaTeX, Overleaf, paper reproduction, and the record/verification tools),
+- an **MCP server** with the research tools the flow needs (paper search, hypothesis and experimental design, experiment results, figure rendering, LaTeX, Overleaf, and the record/verification tools),
 - a **Claude Code plugin** that bundles the server with the `auto-research` workflow skills,
 - a small **CLI** (`airas verify-record`, `airas verify-paper`) that the experiment repository's CI uses as the verification gate.
 
@@ -37,20 +31,20 @@ No clone, no Docker. Only [uv](https://docs.astral.sh/uv/) is required; `uvx` fe
 
 ### 1. Install
 
-**Claude Code plugin (recommended).** Installs the MCP server and the research-workflow skills in one step:
+AIRAS is meant to be driven from **Claude Code** through its plugin. The plugin installs the MCP server together with the `auto-research` workflow skills and the hooks that record the agent's state:
 
 ```
 /plugin marketplace add airas-org/airas
 /plugin install airas@airas
 ```
 
-**Claude Code, MCP server only:**
+The MCP server can also be used on its own, without the skills and hooks. In Claude Code:
 
 ```bash
 claude mcp add airas -- uvx airas
 ```
 
-**Other MCP clients.** Add the server to your client's MCP configuration (e.g. `.mcp.json`):
+In any other MCP client, add it to the client's MCP configuration (e.g. `.mcp.json`):
 
 ```json
 {
@@ -63,6 +57,8 @@ claude mcp add airas -- uvx airas
 }
 ```
 
+**Upgrading.** `uvx` keeps the version it fetched the first time, so an existing install does not move to a new release on its own. Run `uv cache clean airas` (or `uvx airas@latest`) once to pick up the latest version.
+
 ### 2. Configure credentials
 
 Credentials live in `~/.airas/credentials.json` and are re-read on every tool call, so you can create or edit the file at any time:
@@ -72,7 +68,7 @@ mkdir -p ~/.airas
 cat > ~/.airas/credentials.json <<'EOF'
 {
   "GH_PERSONAL_ACCESS_TOKEN": "ghp_...",
-  "ANTHROPIC_API_KEY": "sk-ant-..."
+  "SEYVAL_API_KEY": "..."
 }
 EOF
 chmod 600 ~/.airas/credentials.json
@@ -81,8 +77,8 @@ chmod 600 ~/.airas/credentials.json
 | Key | Purpose |
 | --- | --- |
 | `GH_PERSONAL_ACCESS_TOKEN` | Required. Creates and drives the experiment repository (`repo` + `workflow` scopes, admin on the repository). |
-| One of `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `AWS_BEARER_TOKEN_BEDROCK` / `VERCEL_AI_GATEWAY_API_KEY` / `RIKYU_API_KEY` | Backend-LLM generation tools. Optional: the same steps can be authored by the MCP host itself via `get_generation_prompt`. |
-| `SEYVAL_API_KEY` (+ optional `SEYVAL_COMPUTE_ID`) | Run experiments on the Seyval compute platform and enable the provenance cross-check. |
+| `SEYVAL_API_KEY` (+ optional `SEYVAL_COMPUTE_ID`) | Needed to run experiments on the Seyval compute platform and for the provenance cross-check. See [Execution platforms](#execution-platforms-and-llms). |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `AWS_BEARER_TOKEN_BEDROCK` / `VERCEL_AI_GATEWAY_API_KEY` | Not needed for the flow. The agent driving AIRAS authors every generated artifact itself via `get_generation_prompt`. A key is only used when you call the backend-LLM generation tools directly. |
 
 ### 3. Start a research project
 
@@ -105,7 +101,7 @@ It walks through the flow below, asking you to settle the operational choices (r
 | 3 | `hypothesize-and-design` | A falsifiable hypothesis and an experimental design that fixes run ids, metrics, models, datasets, and the compute environment. |
 | 4 | `preregister-paper` | The full paper, written **before any experiment**, as numbered claims with criteria and predicted intervals. Its commit is the freeze point; `.research/record.json` is created here. |
 | 5 | `write-experiment-code` | Experiment code against a fixed execution contract (Hydra entrypoint, `sanity` / `pilot` / `full` modes), environment fixed by lockfile and Dockerfile. Metrics are produced by [airas-eval](https://github.com/airas-org/airas-eval), not by the code itself. |
-| 6 | `run-experiments` | Runs executed on GitHub Actions or Seyval, outputs brought back under `.research/results/` with provenance. |
+| 6 | `run-experiments` | Runs executed on the compute platform, outputs brought back under `.research/results/` with provenance. **Under construction**: see [Execution platforms](#execution-platforms-and-llms). |
 | 7 | `analyze-results` | The analysis and verifiable figures (Vega-Lite charts, text-defined diagrams). |
 | 8 | `publish-paper` | Every stated number realized from the record, compile and verification green locally, then pushed. CI re-runs the verification and commits `paper.pdf` to the protected branch: the paper of record. |
 
@@ -119,9 +115,9 @@ It walks through the flow below, asking you to settle the operational choices (r
 
 ### Execution platforms and LLMs
 
-Experiments run on **GitHub Actions** (the runner repository's own workflows) or on the **Seyval** compute platform (managed or bring-your-own compute); `dispatch_experiment` selects the backend. Long-running steps return immediately and are polled with `get_workflow_runs` / `get_experiment_run_status`.
+**Experiment execution is under construction.** The `run-experiments` skill currently drives the **Seyval** compute platform (bring-your-own Slurm compute) through Seyval's own MCP server, and the MCP tools for **GitHub Actions** execution (`dispatch_experiment`, `get_workflow_runs`, `get_experiment_run_status`) are not yet wired into the flow. Every other step, including the record and verification gate, works independently of the execution backend.
 
-Generation steps are dual-mode. With a provider key they run on the backend LLM (`get_available_llms` lists the models your keys allow). Without one, `get_generation_prompt` hands the MCP host the same curated prompt and output schema so it can author the artifact itself. Supported providers: OpenAI, Anthropic, Google Gemini, OpenRouter, Amazon Bedrock, Vercel AI Gateway, and RIKEN R-CCS's Rikyu.
+Generation steps need no LLM key: `get_generation_prompt` hands the agent the curated prompt and output schema, and the agent authors the artifact itself. The same steps also exist as backend-LLM tools (`generate_hypothesis`, `generate_paper`, ...) for use outside the flow; those need a provider key (`get_available_llms` lists the models your keys allow). Supported providers: OpenAI, Anthropic, Google Gemini, OpenRouter, Amazon Bedrock, and Vercel AI Gateway.
 
 ## Companion repositories
 
@@ -135,14 +131,18 @@ AIRAS relies on three sibling repositories under the `airas-org` organization. E
 
 ## MCP tools
 
-The server exposes tools for every phase; the skills above are thin contracts over them.
+The `auto-research` flow uses the following tools; the skills above are thin contracts over them. The server exposes more, but these are the ones a research project goes through.
 
-- **Discovery and design:** `generate_research_queries`, `search_papers`, `fetch_paper_fulltext`, `retrieve_papers`, `generate_hypothesis`, `generate_experimental_design`, `retrieve_models`, `retrieve_datasets`, `search_huggingface_hub`, `get_library_docs`
-- **Repository and execution:** `prepare_repository`, `set_github_actions_secrets`, `protect_branch`, `dispatch_experiment`, `get_workflow_runs`, `get_experiment_run_status`, `fetch_experiment_results`, `import_run_outputs`, `download_workflow_artifacts`, `analyze_experiment`
-- **Record and verification:** `preregister_record`, `append_to_record`, `update_record`, `verify_paper_values`
-- **Figures and paper:** `render_chart`, `render_diagram`, `generate_bibfile`, `generate_paper`, `generate_latex`, `verify_latex`, `compile_latex`, `open_in_overleaf`
-- **Paper reproduction:** `dispatch_paper_reproduction_generate`, `dispatch_paper_reproduction_run`, `fetch_paper_reproduction_results`, `dispatch_parameter_tuning_run`, `fetch_parameter_tuning_results`
-- **Session and meta:** `upload_research_history`, `download_research_history`, `get_available_llms`, `get_generation_prompt`, `get_input_schema`
+| Step | Tools |
+| --- | --- |
+| `setup-repository` | `prepare_repository`, `set_github_actions_secrets`, `protect_branch`, `upload_research_history` |
+| `discover-papers` | `search_papers`, `fetch_paper_fulltext`, `get_input_schema` |
+| `hypothesize-and-design` | `retrieve_models`, `retrieve_datasets`, `get_generation_prompt` |
+| `preregister-paper` | `preregister_record`, `append_to_record`, `update_record`, `verify_latex` |
+| `write-experiment-code` | `get_library_docs` |
+| `run-experiments` | `fetch_experiment_results`, `import_run_outputs`, `verify_paper_values` (execution itself goes through the Seyval MCP server; see above) |
+| `analyze-results` | `fetch_experiment_results`, `render_chart`, `render_diagram`, `append_to_record`, `update_record` |
+| `publish-paper` | `generate_bibfile`, `verify_latex`, `open_in_overleaf`, `get_workflow_runs`, `download_research_history` |
 
 See the [MCP documentation](docs/development/MCP.mdx) for descriptions, credentials per tool, and configuration options.
 
