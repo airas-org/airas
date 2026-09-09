@@ -1,6 +1,6 @@
 {
   "name": "airas",
-  "description": "Automated research with AIRAS: paper search, hypothesis generation, experiment execution on GitHub Actions/Seyval, figure rendering, and paper writing — bundles the AIRAS MCP server (uvx airas) and research-workflow skills.",
+  "description": "Automated research with AIRAS: paper search, hypothesis and experimental design, preregistered and verifiable papers, figure rendering, and LaTeX — bundles the AIRAS MCP server (uvx airas) with the auto-research workflow skills.",
   "version": "0.4.0",
   "author": {
     "name": "airas-org",

@@ -34,7 +34,7 @@ jobs:
             exit 1
           fi
           for f in plugins/airas/.mcp.json plugins/airas/hooks/hooks.json; do
-            if grep -q 'airas==' "$f" && ! grep -q "airas==${VERSION}\b" "$f"; then
+            if grep -q 'airas==' "$f" && ! grep -Eq "airas==${VERSION}([\"[:space:]]|$)" "$f"; then
               echo "::error::${f} pins a different airas version than tag v${VERSION}"
               exit 1
             fi
