@@ -145,11 +145,13 @@ from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph 
 )
 from airas.usecases.publication.map_record_to_publication import (
     CHART_DIR,
+    CLAIMS_TEX_FILENAME,
     TABLES_DIR_NAME,
     VALUES_TEX_FILENAME,
     clip_zero_based_marks,
     record_link_commit,
     render_chart_bytes,
+    render_claims_tex,
     render_table_tex,
     render_values_tex,
     renderer_version,
@@ -2111,6 +2113,23 @@ def _commit_record_paths(local_path: str, paths: list[str], message: str) -> str
     return commit
 
 
+def _write_claims_tex(local_path: str, template: str, record: ResearchRecord) -> str:
+    """Render claims.tex from the record and whatever metrics exist.
+
+    Returns the repo-relative path, for the commit.
+    """
+    root = Path(local_path).expanduser().resolve()
+    try:
+        metrics_data = load_metrics_data(local_path)
+    except ValueError:
+        metrics_data = {}  # prereg stage: every claim renders as pending
+    relpath = f".research/latex/{template}/{CLAIMS_TEX_FILENAME}"
+    path = root / relpath
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(render_claims_tex(record, metrics_data), encoding="utf-8")
+    return relpath
+
+
 def _hypothesis(record: ResearchRecord, hypothesis_id: str) -> Hypothesis:
     for hypothesis in record.hypotheses:
         if hypothesis.id == hypothesis_id:
@@ -2125,6 +2144,7 @@ def _hypothesis(record: ResearchRecord, hypothesis_id: str) -> Hypothesis:
 async def preregister_record(
     local_path: str,
     hypotheses: list[dict[str, Any]],
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
 ) -> dict[str, Any]:
     """Create the research record before any experiment has run.
 
@@ -2132,17 +2152,24 @@ async def preregister_record(
     verification system keys on — and commits it in the same step
     (`freeze_commit` in the result). That commit is the freeze point: every
     later revision must *contain* this one whole, so a claim cannot be
-    reworded, a run's conditions cannot be changed and a result cannot be
-    dropped once written.
+    reworded, its criterion cannot be moved, a run's conditions cannot be
+    changed and a result cannot be dropped once written.
 
     The record is a tree, read as "to support this hypothesis, these claims;
     to verify this claim, these designs; a design is these runs":
 
       hypotheses: [{
         "id": "h1", "statement": "the hypothesis, in prose",
+        "assumptions": ["what must be granted for the claims together to "
+                        "imply h1, naming the claims concerned", ...],
         "claims": [{
           "id": "c1", "statement": "one assertive sentence",
+          "rationale": "why c1 holding is evidence for h1, and for which part",
           "verifier": {"kind": "seyval"},
+          "criterion": {"metric": "accuracy", "subject": "proposed-...",
+                        "reference": "comparative-1-...", "op": ">=",
+                        "margin": 0.02},
+          "prediction": {"low": 0.02, "high": 0.04, "basis": "pilot run"},
           "designs": [{
             "id": "d1", "summary": "...",
             "runs": [{"run_id": "proposed-...", "description": "...",
@@ -2154,6 +2181,15 @@ async def preregister_record(
 
     `run_id` names the results directory the run will produce and must be
     unique across the whole record — a run belongs to exactly one claim.
+    (Not a bare number: `criterion.reference` reads a number as a constant.)
+
+    The claims are meant to imply the hypothesis together (c1 ∧ … ∧ cn ⇒
+    h1). `rationale` says why each claim is a member of that set; the
+    hypothesis's `assumptions` say what has to be granted for the
+    conjunction to reach h1 — a proxy metric standing for the property,
+    generalisation beyond the datasets run, and the like. Every claim
+    supported leaves exactly the assumptions unverified, so they are what
+    the paper states as such; claims.tex lists them under the claims.
 
     `verifier` says what verifies the claim and sets its `verified` and
     `verdict`; one per claim (a claim needing both a proof and an experiment
@@ -2161,8 +2197,15 @@ async def preregister_record(
     and what the gate re-derives:
 
       seyval    (experiment) params = dispatch conditions, e.g. {"mode":
-                "full"}, checked against what the platform recorded. No
-                verdict yet — the claim's condition is not modelled (TODO).
+                "full"}, checked against what the platform recorded.
+                `criterion` is the falsification line, required:
+                (subject.metric - reference) op margin, where reference is
+                a run under this claim (its same metric) or a constant;
+                exactly at the margin counts as met. `prediction` is the
+                interval the difference is expected to land in, required,
+                a range never a point, with where it comes from. Verdict:
+                supported/refuted by the criterion on the runs' metrics;
+                inconclusive when the metric cannot be resolved.
       lean      (theory) {"kind": "lean", "toolchain": "leanprover/lean4:
                 v4.12.0", "mathlib_rev": "...", "allowed_axioms": [...]};
                 params = {"module": "Airas.Thm1", "decl": "thm1",
@@ -2180,11 +2223,17 @@ async def preregister_record(
     The tools that execute lean and llm_judge, and the gate's re-execution
     of them, are not implemented yet.
 
+    Also renders `claims.tex` — the numbered claim list with each criterion,
+    prediction and (pending) verdict — into `.research/latex/{template}/`
+    and commits it with the record; `\\input{claims.tex}` where the paper
+    lists its claims. The gate regenerates and diffs it at every stage.
+
     Fails if record.json already exists (use `append_to_record`), if a claim
-    declares no run, or if the clone cannot commit. After this: write every
-    future experimental number in main.tex as `\\airasval{<run_id>.<metric>}`
-    or `\\airasval{<run_id>.params.<key>}`, compile, commit main.tex and
-    push to the staging ref — tell the user the freeze sha once it lands.
+    declares no run, if a seyval claim lacks its criterion or prediction, or
+    if the clone cannot commit. After this: write every future experimental
+    number in main.tex as `\\airasval{<run_id>.<metric>}` or
+    `\\airasval{<run_id>.params.<key>}`, compile, commit main.tex and push
+    to the staging ref — tell the user the freeze sha once it lands.
     """
     parsed = _parse_hypotheses(hypotheses)
 
@@ -2202,11 +2251,15 @@ async def preregister_record(
             raise ValueError("; ".join(problems))
 
         save_record(local_path, record)
+        claims_tex = _write_claims_tex(local_path, latex_template_name, record)
         freeze_commit = _commit_record_paths(
-            local_path, [RECORD_PATH], "prereg: declare the research record"
+            local_path,
+            [RECORD_PATH, claims_tex],
+            "prereg: declare the research record",
         )
         return {
             "record_path": str(path),
+            "claims_tex_path": claims_tex,
             "hypotheses": {
                 h.id: {
                     c.id: {d.id: [r.run_id for r in d.runs] for d in c.designs}
@@ -2217,7 +2270,8 @@ async def preregister_record(
             "freeze_commit": freeze_commit,
             "next": (
                 "this commit is the freeze point runs must descend from — "
-                "write the prereg main.tex, then push to the staging ref"
+                "write the prereg main.tex with \\input{claims.tex} where the "
+                "claims are listed, then push to the staging ref"
             ),
         }
 
@@ -2233,6 +2287,7 @@ async def append_to_record(
     tables: list[dict[str, Any]] | None = None,
     charts: list[dict[str, Any]] | None = None,
     notes: list[str] | None = None,
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
 ) -> dict[str, Any]:
     """Add declarations to the record; nothing already in it ever changes.
 
@@ -2252,7 +2307,9 @@ async def append_to_record(
     The append is committed in the same step (`commit` in the result);
     anything a run should count as evidence for must be in that commit's
     history before the run executes, so a claim declared after its run stays
-    unverified forever.
+    unverified forever. A seyval claim appended here needs its criterion and
+    prediction like one preregistered; `claims.tex` is re-rendered and
+    committed alongside.
     """
     new_hypotheses = _parse_hypotheses(hypotheses)
     scoped = any(x for x in (claims, tables, charts, notes))
@@ -2285,11 +2342,13 @@ async def append_to_record(
         if problems:
             raise ValueError("; ".join(problems))
         save_record(local_path, record)
+        claims_tex = _write_claims_tex(local_path, latex_template_name, record)
         commit = _commit_record_paths(
-            local_path, [RECORD_PATH], "record: append declarations"
+            local_path, [RECORD_PATH, claims_tex], "record: append declarations"
         )
         return {
             "record_path": str(record_path(local_path)),
+            "claims_tex_path": claims_tex,
             "appended": counts,
             "commit": commit,
             "next": (
@@ -2323,11 +2382,14 @@ async def update_record(
 
     A claim's `verified` is set to true when every run under it has
     results — the data the claim rests on is in — and its `verdict` once
-    the verifier concludes (lean and llm_judge; seyval's claim condition
-    is not modelled yet, TODO). Whether the claim was declared before its
-    runs executed is not modelled yet either.
+    the verifier concludes: for seyval, the declared criterion applied to
+    the runs' metrics. Both
+    are written once and never back; a re-run that would flip the verdict
+    is reported by the gate as drift, and re-judging means appending the
+    claim again under the same id. Whether the claim was declared before
+    its runs executed is not modelled yet.
 
-    It then renders `values.tex` and `tables/<key>.tex` into
+    It then renders `values.tex`, `tables/<key>.tex` and `claims.tex` into
     `.research/latex/{template}/`; when the clone has an `origin` remote,
     every value macro is a hyperlink to record.json at the commit that
     wrote it.
@@ -2410,8 +2472,10 @@ async def update_record(
                     render_table_tex(spec, metrics_data), encoding="utf-8"
                 )
                 tables[spec.key] = str(table_path)
+        claims_tex = _write_claims_tex(local_path, latex_template_name, record)
         commit_targets = [
             f".research/latex/{latex_template_name}/{VALUES_TEX_FILENAME}",
+            claims_tex,
         ]
         # tables/ exists only once a table has been declared, and git add is
         # fatal on a pathspec that matches nothing.
@@ -2432,15 +2496,17 @@ async def update_record(
             "tables": tables,
             "record_path": str(record_path(local_path)),
             "values_tex_path": str(values_tex_path),
+            "claims_tex_path": claims_tex,
             "commit": commit,
         }
 
     result = await asyncio.to_thread(_run)
     result["usage"] = (
         "\\input{values.tex} in the preamble, \\input{tables/<key>.tex} where "
-        "each table belongs, then \\airasval{<key>} wherever the paper states "
-        "a number; the realized files are already committed — push to the "
-        "staging ref and let CI decide whether it may reach the protected branch"
+        "each table belongs, \\input{claims.tex} where the claims are listed, "
+        "then \\airasval{<key>} wherever the paper states a number; the "
+        "realized files are already committed — push to the staging ref and "
+        "let CI decide whether it may reach the protected branch"
     )
     return result
 
@@ -2460,8 +2526,10 @@ async def verify_paper_values(
     that decide `ok`: every declared value is recomputed from the run
     outputs under `.research/results/` and compared to the record's
     stored results (a tampered record surfaces as a mismatch),
-    `values.tex` is regenerated and diffed byte-for-byte, every
-    `\\airasval` key main.tex references must be declared, every table
+    `values.tex` and `claims.tex` are regenerated and diffed byte-for-byte
+    (`claims.tex` at the prereg stage too), every `\\airasval` key
+    main.tex references must be
+    declared, every table
     under `tables/` and every chart under `.research/results/chart/`
     must match a regeneration of its declaration (undeclared files fail),
     every results directory must belong to a declared run, the record's

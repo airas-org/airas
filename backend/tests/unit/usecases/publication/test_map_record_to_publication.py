@@ -18,7 +18,9 @@ from airas.core.types.map_record_to_publication import (
     TableSpec,
 )
 from airas.core.types.research_record import (
+    Criterion,
     Hypothesis,
+    Prediction,
     ResearchRecord,
     SeyvalClaim,
     SeyvalDesign,
@@ -33,6 +35,7 @@ from airas.core.types.run_provenance import (
 )
 from airas.usecases.publication.map_record_to_publication import (
     record_blob_url,
+    render_claims_tex,
     render_values_tex,
     resolve_paper_ref,
     resolve_paper_values,
@@ -76,6 +79,15 @@ def _record() -> ResearchRecord:
                         verifier=SEYVAL,
                         id="c1",
                         statement="X beats the baseline.",
+                        rationale="Head-to-head on the hypothesis's own metric.",
+                        criterion=Criterion(
+                            metric="accuracy",
+                            subject="run-2",
+                            reference="run-1",
+                            op=">=",
+                            margin=0.02,
+                        ),
+                        prediction=Prediction(low=0.02, high=0.04, basis="pilot"),
                         designs=[
                             SeyvalDesign(
                                 id="d1",
@@ -159,6 +171,7 @@ def _generate(tmp_path: Path, mode: str = "full") -> Path:
     used_keys = scan_main_tex(MAIN_TEX)[1]
     values, _ = resolve_paper_values(record, metrics_data, used_keys)
     (latex_dir / "values.tex").write_text(render_values_tex(values, None))
+    (latex_dir / "claims.tex").write_text(render_claims_tex(record, metrics_data))
     from airas.usecases.publication.map_record_to_publication import render_table_tex
 
     tables_dir = latex_dir / "tables"

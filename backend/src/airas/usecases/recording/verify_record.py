@@ -115,6 +115,20 @@ def _verify_consistency(record: ResearchRecord) -> list[str]:
         if not claim.runs()
     ]
 
+    for _, claim in record.active_claims():
+        if not isinstance(claim, SeyvalClaim):
+            continue
+        own = {run.run_id for _, run in claim.runs()}
+        named = [claim.criterion.subject]
+        if isinstance(claim.criterion.reference, str):
+            named.append(claim.criterion.reference)
+        problems += [
+            f"claim {claim.id}: criterion names run '{rid}', which this claim "
+            "does not declare"
+            for rid in named
+            if rid not in own
+        ]
+
     declared = set(record.run_index())
     problems += [
         f"table {spec.key}: row references run '{row.run_id}', which no design declares"
@@ -256,7 +270,7 @@ async def _verify_additions(
         drifted = _verified_problems(record, compute_claim_statuses(record, present))
         if drifted:
             problems.append(
-                "claims stored as verified that the recomputation finds otherwise "
+                "claims stored as verified, or with a verdict, that the recomputation finds otherwise "
                 f"({', '.join(drifted)})"
             )
         return problems

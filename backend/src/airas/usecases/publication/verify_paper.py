@@ -26,10 +26,12 @@ from airas.infra.seyval_client import SeyvalClient, default_seyval_client
 from airas.usecases.publication.map_record_to_publication import (
     CHART_DIR,
     CHART_SUFFIXES,
+    CLAIMS_TEX_FILENAME,
     TABLES_DIR_NAME,
     VALUES_TEX_FILENAME,
     record_link_commit,
     render_chart_bytes,
+    render_claims_tex,
     render_table_tex,
     render_values_tex,
     renderer_version,
@@ -335,6 +337,21 @@ def scan_main_tex(main_tex: str) -> tuple[list[str], list[str]]:
     return unverified, used_keys
 
 
+def _verify_claims(
+    latex_dir: Path, record: ResearchRecord, metrics_data: dict[str, Any]
+) -> list[str]:
+    # The list in the PDF is the record's, at the prereg stage (pending) as
+    # after results.
+    claims_path = latex_dir / CLAIMS_TEX_FILENAME
+    if not claims_path.is_file():
+        return [f"{CLAIMS_TEX_FILENAME} is missing (preregister_record writes it)"]
+    if claims_path.read_text(encoding="utf-8") != render_claims_tex(
+        record, metrics_data
+    ):
+        return [f"{CLAIMS_TEX_FILENAME} differs from its regeneration (manual edit?)"]
+    return []
+
+
 def _verify_tables(
     latex_dir: Path, specs: list[TableSpec], metrics_data: dict[str, Any]
 ) -> list[str]:
@@ -520,6 +537,11 @@ def _verify_mapping(
     except (ValidationError, ValueError):
         # The record's own verification already reports this.
         return problems, unverified
+    try:
+        metrics_data = load_metrics_data(str(root))
+    except ValueError:
+        metrics_data = {}
+    problems += _verify_claims(latex_dir, record, metrics_data)
     if record_result.stage == "prereg":
         # A values.tex carried over without runs would put unverifiable
         # numbers in the PDF.
@@ -529,10 +551,6 @@ def _verify_mapping(
             problems.append(f"{TABLES_DIR_NAME}/ exists but no run outputs exist")
         return problems, unverified
 
-    try:
-        metrics_data = load_metrics_data(str(root))
-    except ValueError:
-        metrics_data = {}
     paper_values, undefined_keys = resolve_paper_values(record, metrics_data, used_keys)
     if undefined_keys:
         problems.append(

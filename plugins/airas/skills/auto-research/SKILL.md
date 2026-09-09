@@ -106,13 +106,14 @@ steps don't cover comes up.
 under the claim has results. It goes from false to true once and never
 back; a stored true the results no longer bear out fails verification.
 
-**`verified` says the data is in, not that the claim held.** Whether a
-claim's condition was met, and whether the claim was declared before
-its runs executed, are not modelled in the record yet (TODO) — the
-criterion and predicted interval live in the paper's prose, and the
-order discipline is the agent's. A claim that was tested and missed its
-criterion is a negative result, reported as such; reading a column of
-`verified: true` as "the hypothesis held" is the misreading to avoid.
+**`verified` says the data is in, not that the claim held.** Whether
+the claim held is `verdict`, derived from the criterion the claim
+declared (supported / refuted; inconclusive when the metric cannot be
+resolved) and likewise written once. Whether the claim was declared
+before its runs executed is not modelled yet (TODO) — that order
+discipline is the agent's. A refuted claim is a negative result,
+reported as such; reading a column of `verified: true` as "the
+hypothesis held" is the misreading to avoid.
 
 Trust domains: local runs of the checks have **zero evidentiary
 value** — the local toolchain is in the agent's hands, and whatever a

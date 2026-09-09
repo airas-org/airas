@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from enum import StrEnum
 from typing import (
     Annotated,
@@ -7,13 +8,14 @@ from typing import (
     Generic,
     Iterator,
     Literal,
+    Mapping,
     Optional,
     Sequence,
     TypeVar,
     Union,
 )
 
-from pydantic import BaseModel, Discriminator, Field, Tag
+from pydantic import BaseModel, Discriminator, Field, Tag, model_validator
 
 from airas.core.types.map_record_to_publication import TableSpec
 
@@ -95,6 +97,12 @@ VerifierT = TypeVar("VerifierT", SeyvalVerifier, LeanVerifier, LlmJudgeVerifier)
 class ClaimBase(BaseModel, Generic[VerifierT, DesignT]):
     id: str = Field(pattern=CLAIM_ID_PATTERN)
     statement: str = Field(description="One assertive sentence")
+    rationale: str = Field(
+        min_length=1,
+        description="Why this claim holding is evidence for the hypothesis, "
+        "and for which part of it: what makes it a member of the set of "
+        "claims whose conjunction is meant to imply the hypothesis",
+    )
     verifier: VerifierT
     designs: list[DesignT] = Field(default_factory=list)
     verified: bool = Field(
@@ -167,8 +175,87 @@ class SeyvalRun(Run[dict[str, Any], SeyvalResult]):
 SeyvalDesign = Design[SeyvalRun]
 
 
+def walk_metric_path(node: Any, path: str) -> float:
+    """Get a number from nested metrics using a path like 'a.b.0.c'."""
+    for segment in path.split(".") if path else []:
+        try:
+            node = node[int(segment)] if isinstance(node, list) else node[segment]
+        except (KeyError, IndexError, ValueError, TypeError):
+            raise ValueError(f"nothing at '{segment}'") from None
+
+    if isinstance(node, bool) or not isinstance(node, (int, float)):
+        raise ValueError(f"not a number: {node!r}")
+
+    return float(node)
+
+
+CriterionOp = Literal[">=", "<=", ">", "<"]
+
+
+class Criterion(BaseModel):
+    """The falsification line: (subject.metric - reference) op margin.
+
+    `reference` is a run id (its same metric is subtracted) or a constant.
+    A difference exactly at the margin counts as meeting it.
+    """
+
+    metric: str = Field(
+        min_length=1, description="Path inside metrics.json, e.g. 'accuracy'"
+    )
+    subject: str = Field(description="run_id whose metric is judged")
+    reference: Union[str, float] = Field(
+        description="run_id compared against on the same metric, or a constant"
+    )
+    op: CriterionOp
+    margin: float = 0.0
+
+    @model_validator(mode="after")
+    def _subject_is_not_the_reference(self) -> Criterion:
+        if self.subject == self.reference:
+            raise ValueError("criterion compares a run to itself")
+        return self
+
+    def observed(self, metrics_by_run: Mapping[str, Any]) -> float:
+        """The difference the criterion judges; raises when a value is missing."""
+        subject = walk_metric_path(metrics_by_run[self.subject], self.metric)
+        if isinstance(self.reference, str):
+            return subject - walk_metric_path(
+                metrics_by_run[self.reference], self.metric
+            )
+        return subject - self.reference
+
+    def holds(self, difference: float) -> bool:
+        at_margin = math.isclose(difference, self.margin, rel_tol=1e-9, abs_tol=1e-12)
+        if self.op == ">=":
+            return at_margin or difference > self.margin
+        if self.op == "<=":
+            return at_margin or difference < self.margin
+        if self.op == ">":
+            return difference > self.margin and not at_margin
+        return difference < self.margin and not at_margin
+
+
+class Prediction(BaseModel):
+    """Where the difference is expected to land: a range, never a point."""
+
+    low: float
+    high: float
+    basis: str = Field(min_length=1, description="Prior work, pilot, ...")
+
+    @model_validator(mode="after")
+    def _is_a_range(self) -> Prediction:
+        if not self.low < self.high:
+            raise ValueError("prediction must be a range with low < high")
+        return self
+
+
 class SeyvalClaim(ClaimBase[SeyvalVerifier, SeyvalDesign]):
-    pass
+    criterion: Criterion = Field(
+        description="Frozen at declaration; the verdict derives from it"
+    )
+    prediction: Prediction = Field(
+        description="Predicted interval for the criterion's difference"
+    )
 
 
 # --------------------------------------------------------------------- lean
@@ -273,6 +360,13 @@ class ChartDeclaration(BaseModel):
 class Hypothesis(BaseModel):
     id: str = Field(pattern=HYPOTHESIS_ID_PATTERN)
     statement: str = Field(description="The hypothesis itself, in prose")
+    assumptions: list[str] = Field(
+        default_factory=list,
+        description="What must be granted for the claims together to imply "
+        "the hypothesis — the bridge from c1 ∧ … ∧ cn to H, each naming the "
+        "claims it concerns. Every claim supported leaves exactly these "
+        "unverified",
+    )
     claims: list[ClaimDeclaration] = Field(default_factory=list)
     tables: list[TableSpec] = Field(default_factory=list)
     charts: list[ChartDeclaration] = Field(default_factory=list)
