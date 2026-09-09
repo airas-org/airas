@@ -1,7 +1,7 @@
 [project]
 name = "airas"
-version = "0.3.1"
-description = "Add your description here"
+version = "0.4.0"
+description = "Automated research toolkit: an MCP server, a Claude Code plugin, and a CLI that take a research topic through survey, hypothesis, experiments, and a verifiable paper"
 readme = "README.md"
 authors = [
     {name="Toma Tanaka", email="ulti4929@gmail.com"}
@@ -25,7 +25,8 @@ dependencies = [
     "typing-extensions>=4.12.2",
     "pymupdf>=1.25.5",
     "pandas>=2.3.0",
-    "bibtexparser>=1.4.3",
+    # bibtexparser 2.x (2026-09) removed bibtexparser.bibdatabase, which generate_bibfile depends on
+    "bibtexparser>=1.4.3,<2",
     "anthropic>=0.66.0",
     "toml>=0.10.2",
     "pynacl>=1.6.0",
@@ -47,7 +48,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://www.autores.one/english"
-Issues = "https://github.com/auto-res/airas/issues"
+Issues = "https://github.com/airas-org/airas/issues"
 
 [dependency-groups]
 dev = [
@@ -104,9 +105,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/airas"]
-# Built frontend assets (copied in by CI before `uv build`); gitignored,
-# so they must be re-included explicitly.
-artifacts = ["src/airas/dashboard/static/"]
 
 [[tool.uv.index]]
 name = "testpypi"

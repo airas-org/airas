@@ -14,12 +14,12 @@
       "sizes": ["1563x1563"]
     }
   ],
-  "version": "0.2.2",
+  "version": "0.4.0",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "airas",
-      "version": "0.2.2",
+      "version": "0.4.0",
       "transport": {
         "type": "stdio"
       }

@@ -8,6 +8,7 @@ feature is switched on in `~/.codex/config.toml`.
 from __future__ import annotations
 
 import json
+from importlib.metadata import version
 from pathlib import Path
 
 import tomli
@@ -15,9 +16,13 @@ import tomli_w
 
 from airas.usecases.recording.agent_state import CODEX_HOME
 
+# Pin the installed version: `uvx airas` keeps whatever it fetched first, so an
+# unpinned hook would silently stay on an old release.
+_AIRAS = f"airas=={version('airas')}"
+
 HOOK_COMMANDS = {
-    "SessionStart": "uvx --with 'mcp<2' airas hook session-start --harness codex",
-    "Stop": "uvx --with 'mcp<2' airas hook capture --harness codex",
+    "SessionStart": f"uvx {_AIRAS} hook session-start --harness codex",
+    "Stop": f"uvx {_AIRAS} hook capture --harness codex",
 }
 
 

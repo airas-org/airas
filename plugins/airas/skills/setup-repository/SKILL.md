@@ -8,7 +8,7 @@ description: Create an AIRAS experiment repository from the template and clone i
 1. `prepare_repository` — pass the visibility settled at the start of
    the flow (`is_private` defaults to true); returns `clone_url`;
    clone it locally with git. Requires `GH_PERSONAL_ACCESS_TOKEN`
-   (`~/.airas/credentials.json`, editable via `open_dashboard`) with
+   (`~/.airas/credentials.json`) with
    admin rights on the repository.
 
    It also provisions the Actions secrets and protects `main` in the
