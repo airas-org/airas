@@ -44,13 +44,25 @@ async def verify_record(
     check_provenance: bool = True,
     require_provenance: bool = True,
     require_history: bool = True,
+    require_record: bool = True,
     seyval_client_factory: Callable[[], SeyvalClient] = default_seyval_client,
 ) -> RecordVerification:
-    # A repository with no record has made no claim to contradict; requiring
-    # one is the paper's concern (verify_paper), which knows a paper exists.
     root = Path(local_path).expanduser().resolve()
     if not (root / RECORD_PATH).is_file():
-        return RecordVerification(ok=True, stage="prereg")
+        # An AIRAS repository ships record.json (empty at first), so its
+        # absence is not an initial state — it was deleted, taking the
+        # declarations the gate reads with it. The gate requires it;
+        # verify_paper's preview (require_record=False) tolerates a paper that
+        # opts out of the record system.
+        problems = (
+            [
+                "record.json is missing: every AIRAS repository ships one "
+                "(empty at first), so its absence means it was deleted"
+            ]
+            if require_record
+            else []
+        )
+        return RecordVerification(ok=not problems, stage="prereg", problems=problems)
 
     try:
         record = load_record(str(root))

@@ -170,13 +170,12 @@ def _realized_repo(tmp_path: Path, proposed_mode: str = "full") -> Path:
 # --------------------------------------------------- the states that pass
 
 
-def test_a_repository_with_no_record_passes(tmp_path: Path) -> None:
-    """A repository that has made no claim is not contradicting one."""
+def test_a_repository_with_no_record_fails(tmp_path: Path) -> None:
+    """record.json is mandatory: every repository ships one, so its absence is a deletion."""
     _init(tmp_path)
     report = _verify(str(tmp_path))
-    assert report.ok
-    assert report.stage == "prereg"
-    assert report.problems == []
+    assert not report.ok
+    assert any("record.json is missing" in p for p in report.problems)
 
 
 def test_a_preregistered_record_with_no_runs_passes(tmp_path: Path) -> None:
@@ -449,11 +448,10 @@ def test_a_reworded_claim_is_reported_as_violated_history(tmp_path: Path) -> Non
     assert any("statement" in p for p in result.problems)
 
 
-def test_a_repository_without_a_record_is_not_demanded_one(tmp_path: Path) -> None:
+def test_a_missing_record_is_tolerated_when_not_required(tmp_path: Path) -> None:
+    # The escape hatch for a paper that opts out of the record system.
     _init(tmp_path)
-    result = _verify(
-        str(tmp_path), require_history=True, seyval_client_factory=_no_seyval
-    )
+    result = _verify(str(tmp_path), require_record=False)
     assert result.ok
     assert result.stage == "prereg"
 
@@ -632,3 +630,25 @@ def test_a_missing_or_hand_edited_claims_tex_is_caught(tmp_path: Path) -> None:
     claims_tex.unlink()
     result = _verify_paper(str(repo))
     assert any("claims.tex is missing" in p for p in result.problems)
+
+
+def test_an_empty_record_verifies(tmp_path: Path) -> None:
+    # The state every repository ships in: record.json present but empty.
+    (tmp_path / RECORD_PATH).parent.mkdir(parents=True)
+    (tmp_path / RECORD_PATH).write_text("{}")
+    _init(tmp_path)
+
+    result = _verify(str(tmp_path))
+    assert result.ok
+
+
+def test_deleting_the_record_after_declaring_it_fails(tmp_path: Path) -> None:
+    _init(tmp_path)
+    save_record(str(tmp_path), _record())
+    _commit(tmp_path, "preregister")
+    (tmp_path / RECORD_PATH).unlink()
+    _commit(tmp_path, "delete the record")
+
+    result = _verify(str(tmp_path))
+    assert not result.ok
+    assert any("record.json is missing" in p for p in result.problems)

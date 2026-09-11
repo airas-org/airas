@@ -471,6 +471,7 @@ async def verify_paper(
             check_provenance=check_provenance,
             require_provenance=require_provenance,
             require_history=require_history,
+            require_record=require_record,
             seyval_client_factory=seyval_client_factory,
         )
     root = Path(local_path).expanduser().resolve()
