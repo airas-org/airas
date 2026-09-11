@@ -652,3 +652,24 @@ def test_deleting_the_record_after_declaring_it_fails(tmp_path: Path) -> None:
     result = _verify(str(tmp_path))
     assert not result.ok
     assert any("record.json is missing" in p for p in result.problems)
+
+
+def test_a_merge_cannot_hide_a_landed_declaration(tmp_path: Path) -> None:
+    # git merge -s ours makes the protected tip an ancestor while keeping the
+    # rewritten record; git's simplified path walk never listed that tip.
+    _init(tmp_path)
+    save_record(str(tmp_path), ResearchRecord())
+    base = _commit(tmp_path, "initial empty record")
+    save_record(str(tmp_path), _record())
+    _commit(tmp_path, "frozen original claim")
+    _git(tmp_path, "branch", "protected-main")
+    _git(tmp_path, "checkout", "-qb", "side", base)
+    modified = _record()
+    modified.hypotheses[0].claims[0].statement = "CHANGED AFTER FREEZE"
+    save_record(str(tmp_path), modified)
+    _commit(tmp_path, "rewrite claim on side")
+    _git(tmp_path, "merge", "-s", "ours", "--no-edit", "protected-main")
+
+    result = _verify(str(tmp_path))
+    assert not result.ok
+    assert any("statement" in p for p in result.problems)
