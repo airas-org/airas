@@ -949,7 +949,7 @@ async def prepare_repository(
                 github_owner,
                 repository_name,
                 protected_branch,
-                [RECORD_GATE_CHECK_NAME],
+                [RECORD_GATE_CHECK_NAME, PAPER_GATE_CHECK_NAME],
             )
         except Exception as e:
             warnings.append(
@@ -1004,6 +1004,9 @@ async def set_github_actions_secrets(
 
 
 RECORD_GATE_CHECK_NAME = "Verify the record"
+# Values only, no PDF build: the build commits back onto the protected branch,
+# so requiring it would deadlock. It stays in the non-required publish workflow.
+PAPER_GATE_CHECK_NAME = "Verify the paper"
 
 
 async def _apply_secrets(
@@ -1085,7 +1088,7 @@ async def protect_branch(
 
     Requires GH_PERSONAL_ACCESS_TOKEN with admin rights on the repository.
     """
-    contexts = required_check_names or [RECORD_GATE_CHECK_NAME]
+    contexts = required_check_names or [RECORD_GATE_CHECK_NAME, PAPER_GATE_CHECK_NAME]
     protected, merge_settings = await _apply_branch_protection(
         github_owner, repository_name, branch_name, contexts
     )

@@ -486,7 +486,7 @@ async def verify_paper(
         )
     build: LatexBuildReport | None = None
     if pdf_path is not None:
-        build = await asyncio.to_thread(_verify_build, local_path, template, pdf_path)
+        build = await asyncio.to_thread(build_paper, local_path, template, pdf_path)
         if not build.ok:
             problems.append("the LaTeX build failed (see build)")
 
@@ -573,9 +573,11 @@ def _verify_mapping(
     return problems, unverified
 
 
-def _verify_build(
+def build_paper(
     local_path: str, template: LATEX_TEMPLATE_NAME, pdf_path: str
 ) -> LatexBuildReport:
+    # Build only, no value check: the paper gate (verify-paper) already
+    # verified the numbers, so publish just compiles and commits.
     latex_files = collect_latex_project_files_local(local_path, template)
     return verify_latex_build(latex_files, "main.tex", pdf_path)
 

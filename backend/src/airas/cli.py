@@ -8,7 +8,11 @@ import webbrowser
 from pathlib import Path
 
 from airas.core.types.research_trace import DerivedFromRepository
-from airas.usecases.publication.verify_paper import detect_templates, verify_paper
+from airas.usecases.publication.verify_paper import (
+    build_paper,
+    detect_templates,
+    verify_paper,
+)
 from airas.usecases.recording.agent_state import (
     load_agent_state,
     neutral_messages,
@@ -53,19 +57,16 @@ def _run_dashboard(host: str, port: int, open_browser: bool) -> None:
 def _run_verify_paper(args: argparse.Namespace) -> None:
     templates = args.template or detect_templates(args.local_path)
     if not templates:
-        print(
-            "No paper found: no known template under .research/latex/ has a main.tex",
-            file=sys.stderr,
-        )
-        sys.exit(2)
+        # The paper gate runs on every commit; before preregister-paper writes
+        # main.tex there is nothing to verify — a pass.
+        print("No paper yet: nothing to verify.")
+        sys.exit(0)
 
-    out = Path(args.output_dir).expanduser().resolve()
     results = [
         asyncio.run(
             verify_paper(
                 args.local_path,
                 template,
-                pdf_path=str(out / f"{template}.pdf"),
                 check_provenance=not args.no_provenance,
                 require_record=not args.no_require_paper_values,
                 require_provenance=not (
@@ -78,6 +79,21 @@ def _run_verify_paper(args: argparse.Namespace) -> None:
     ]
     print(json.dumps([r.model_dump() for r in results], indent=2, ensure_ascii=False))
     sys.exit(0 if all(r.ok for r in results) else 1)
+
+
+def _run_publish_paper(args: argparse.Namespace) -> None:
+    templates = args.template or detect_templates(args.local_path)
+    if not templates:
+        print("No paper to build: nothing under .research/latex/ has a main.tex")
+        sys.exit(0)
+
+    out = Path(args.output_dir).expanduser().resolve()
+    reports = [
+        build_paper(args.local_path, template, str(out / f"{template}.pdf"))
+        for template in templates
+    ]
+    print(json.dumps([r.model_dump() for r in reports], indent=2, ensure_ascii=False))
+    sys.exit(0 if all(r.ok for r in reports) else 1)
 
 
 def _run_verify_record(args: argparse.Namespace) -> None:
@@ -219,8 +235,8 @@ def main() -> None:
     verify = subparsers.add_parser(
         "verify-paper",
         help=(
-            "Verify a paper's values and provenance in an experiment "
-            "repository and build its PDF (the CI gate)"
+            "Verify a paper's values and provenance against the record — no "
+            "PDF build. Meant to be the required check on the protected branch"
         ),
     )
     verify.add_argument(
@@ -235,11 +251,6 @@ def main() -> None:
             "LaTeX template to verify (repeatable); default: every known "
             "template under .research/latex/ that has a main.tex"
         ),
-    )
-    verify.add_argument(
-        "--output-dir",
-        default="paper-artifact",
-        help="Where the built PDFs go",
     )
     verify.add_argument(
         "--no-provenance",
@@ -303,6 +314,32 @@ def main() -> None:
         ),
     )
 
+    publish = subparsers.add_parser(
+        "publish-paper",
+        help=(
+            "Build the paper's PDF for publishing — the paper gate "
+            "(verify-paper) already verified its values"
+        ),
+    )
+    publish.add_argument(
+        "--local-path",
+        default=".",
+        help="Experiment repository checkout to build (default: .)",
+    )
+    publish.add_argument(
+        "--template",
+        action="append",
+        help=(
+            "LaTeX template to build (repeatable); default: every known "
+            "template under .research/latex/ that has a main.tex"
+        ),
+    )
+    publish.add_argument(
+        "--output-dir",
+        default="paper-artifact",
+        help="Where the built PDFs go",
+    )
+
     args = parser.parse_args()
 
     if args.command == "hook":
@@ -313,6 +350,8 @@ def main() -> None:
         _run_dashboard(args.host, args.port, open_browser=not args.no_browser)
     elif args.command == "verify-paper":
         _run_verify_paper(args)
+    elif args.command == "publish-paper":
+        _run_publish_paper(args)
     elif args.command == "verify-record":
         _run_verify_record(args)
     else:

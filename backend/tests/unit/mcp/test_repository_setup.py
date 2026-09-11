@@ -67,10 +67,17 @@ async def test_setup_configures_secrets_and_protection(recorder: _Recorder) -> N
     assert result["merge_settings_updated"] is True
     assert result["warnings"] == []
     assert recorder.secrets == [("o", "r", "main")]
-    # The required check is the record gate's job name in the template
-    # workflow: a different string would be required forever and never
-    # reported, which blocks the branch instead of guarding it.
-    assert recorder.protection == [("o", "r", "main", [server.RECORD_GATE_CHECK_NAME])]
+    # The required checks are the gates' job names in the template workflows: a
+    # different string would be required forever and never reported, which
+    # blocks the branch instead of guarding it.
+    assert recorder.protection == [
+        (
+            "o",
+            "r",
+            "main",
+            [server.RECORD_GATE_CHECK_NAME, server.PAPER_GATE_CHECK_NAME],
+        )
+    ]
 
 
 async def test_the_protected_branch_can_differ_from_the_working_branch(
@@ -136,5 +143,6 @@ async def test_standalone_tools_reach_the_same_code(recorder: _Recorder) -> None
 
     protect = await server.protect_branch("o", "r")
     assert protect["branch_protected"] is True
-    assert protect["required_checks"] == [server.RECORD_GATE_CHECK_NAME]
-    assert recorder.protection[0][3] == [server.RECORD_GATE_CHECK_NAME]
+    checks = [server.RECORD_GATE_CHECK_NAME, server.PAPER_GATE_CHECK_NAME]
+    assert protect["required_checks"] == checks
+    assert recorder.protection[0][3] == checks
