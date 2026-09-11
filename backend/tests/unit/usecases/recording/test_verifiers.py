@@ -81,6 +81,7 @@ def _lean_claim() -> LeanClaim:
         {
             "id": "c1",
             "statement": "Zero is a right identity.",
+            "rationale": "The identity is the hypothesis's first case.",
             "verifier": {"kind": "lean", "toolchain": "leanprover/lean4:v4.12.0"},
             "designs": [
                 {
@@ -106,6 +107,7 @@ def _judge_claim() -> LlmJudgeClaim:
         {
             "id": "c1",
             "statement": "Participants preferred the new interface.",
+            "rationale": "Preference is the property the hypothesis is about.",
             "verifier": {
                 "kind": "llm_judge",
                 "model": "openai/gpt-x-20260101",

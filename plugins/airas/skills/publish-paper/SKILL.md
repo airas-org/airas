@@ -84,8 +84,9 @@ local stage.
    `unverified_claims` — claims some of whose declared runs have no
    results may still be published, but say so honestly in the paper and
    to the user. `verified: true` says the claim's data is in, not that
-   it held: a claim that was tested and missed the criterion stated in
-   the paper is a **negative result**, reported as such. Never read the
+   it held — `verdict` does, derived from the declared criterion: a
+   claim that was tested and refuted is a **negative result**, reported
+   as such, and `claims.tex` already says so. Never read the
    verified flags alone as support for the hypothesis, and never reword
    a claim to fit what the data did.
 

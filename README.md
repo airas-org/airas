@@ -170,7 +170,7 @@ Lint and type checks are wired through `pre-commit` (`pre-commit install` once p
 
 AIRAS is developed in stages. Reliability comes first: an automated research pipeline is only worth scaling once its outputs can be trusted and reproduced.
 
-**1. Reliability (in progress).** The record now guarantees that every number in the paper traces back to a declared run and its outputs, and CI enforces it. That covers the paper but not everything upstream of it: experiment code that games a benchmark, leaks test data, or deviates from the design still passes the gate. Closing that gap, from the experiment code and evaluation inputs back to the design, is the current focus.
+**1. Reliability (in progress).** The record now guarantees that every number in the paper traces back to a declared run and its outputs, that each claim's verdict is derived from the criterion it declared before running, and CI enforces it. That covers the paper but not everything upstream of it: experiment code that games a benchmark, leaks test data, or deviates from the design still passes the gate. Closing that gap, from the experiment code and evaluation inputs back to the design, is the current focus.
 
 - [x] Preregistration: claims, criteria, and predicted results frozen in git before any experiment runs
 - [x] Append-only research record with numbers realized from run outputs and verified in CI

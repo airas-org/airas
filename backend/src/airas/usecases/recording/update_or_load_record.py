@@ -67,15 +67,11 @@ def save_record(local_repo_path: str, record: ResearchRecord) -> Path:
 
 
 class _ClaimStatus(BaseModel):
-    """A claim's state as recomputed from the run outputs on disk."""
-
     id: str
     # Every run under the claim has its verifier's report in the results
     # directory: the data the claim rests on is in. Whether the claim was
     # declared before those runs executed is not modelled yet (TODO).
     verified: bool
-    # What the verifier concluded once verified; unset for seyval, whose
-    # claim condition is not modelled yet.
     verdict: Verdict | None = None
 
 
@@ -117,7 +113,9 @@ def compute_claim_statuses(
     for _, claim in record.active_claims():
         runs = [run for _, run in claim.runs()]
         verified = bool(runs) and all(run.run_id in present_run_ids for run in runs)
-        results = [r for r in (run.latest_result() for run in runs) if r is not None]
+        results = {
+            run.run_id: r for run in runs if (r := run.latest_result()) is not None
+        }
         statuses.append(
             _ClaimStatus(
                 id=claim.id,
@@ -277,18 +275,29 @@ def _read_json(path: Path) -> Any:
 _SORRY_AXIOM = "sorryAx"
 
 
-def _claim_verdict(claim: ClaimDeclaration, results: list[RunResult]) -> Verdict | None:
-    if any(r.errors for r in results if not isinstance(r, SeyvalResult)):
+def _claim_verdict(
+    claim: ClaimDeclaration, results: dict[str, RunResult]
+) -> Verdict | None:
+    if any(r.errors for r in results.values() if not isinstance(r, SeyvalResult)):
         return "inconclusive"
     if isinstance(claim, LeanClaim):
         # Lean cannot refute: a proof that did not go through shows nothing.
         return "supported"
     if isinstance(claim, LlmJudgeClaim):
-        verdicts = {r.verdict for r in results if isinstance(r, LlmJudgeResult)}
+        verdicts = {
+            r.verdict for r in results.values() if isinstance(r, LlmJudgeResult)
+        }
         if verdicts == {"supported"}:
             return "supported"
         return "refuted" if "refuted" in verdicts else "inconclusive"
-    return None  # seyval's claim condition is not modelled yet
+    metrics = {
+        rid: r.metrics for rid, r in results.items() if isinstance(r, SeyvalResult)
+    }
+    try:
+        difference = claim.criterion.observed(metrics)
+    except (KeyError, ValueError):
+        return "inconclusive"  # the criterion names a value the run did not produce
+    return "supported" if claim.criterion.holds(difference) else "refuted"
 
 
 def _lean_errors(claim: LeanClaim, run: LeanRun, payload: dict[str, Any]) -> list[str]:

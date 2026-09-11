@@ -17,7 +17,12 @@ from pydantic import BaseModel
 
 from airas.core.research_paths import RECORD_PATH
 from airas.core.types.map_record_to_publication import PaperValue, TableSpec
-from airas.core.types.research_record import ResearchRecord, active
+from airas.core.types.research_record import (
+    ResearchRecord,
+    SeyvalClaim,
+    active,
+    walk_metric_path,
+)
 from airas.infra.local_git import commits_touching
 
 # ============================================================================
@@ -35,24 +40,16 @@ def match_run_id(metrics_data: dict[str, Any], ref: str) -> str | None:
     )
 
 
-def _walk(node: Any, remainder: str, ref: str, where: str) -> float:
-    for segment in remainder.split(".") if remainder else []:
-        try:
-            node = node[int(segment)] if isinstance(node, list) else node[segment]
-        except (KeyError, IndexError, ValueError, TypeError):
-            raise ValueError(f"'{ref}': nothing at '{segment}' in {where}") from None
-    if isinstance(node, bool) or not isinstance(node, (int, float)):
-        raise ValueError(f"'{ref}' is not a number: {node!r}")
-    return float(node)
-
-
 def resolve_ref(metrics_data: dict[str, Any], ref: str) -> float:
     """Resolve '<run_id>.<metric path>' against the committed results files."""
     run_id = match_run_id(metrics_data, ref)
     if run_id is None:
         available = ", ".join(sorted(metrics_data))
         raise ValueError(f"'{ref}' matches no run id (available: {available})")
-    return _walk(metrics_data[run_id], ref[len(run_id) + 1 :], ref, f"run '{run_id}'")
+    try:
+        return walk_metric_path(metrics_data[run_id], ref[len(run_id) + 1 :])
+    except ValueError as e:
+        raise ValueError(f"'{ref}': {e} in run '{run_id}'") from None
 
 
 def format_display(value: float, round_digits: int | None) -> str:
@@ -223,6 +220,66 @@ def render_table_tex(spec: TableSpec, metrics_data: dict[str, Any]) -> str:
             cells.append(format_display(value, column.round))
         lines.append(" & ".join(cells) + r" \\")
     lines += [r"\hline", r"\end{tabular}", r"\end{table}"]
+    return "\n".join(lines) + "\n"
+
+
+# ============================================================================
+# 3b. claims.tex
+# Verified: the numbered claim list regenerates byte for byte at both stages,
+# so a criterion, a prediction or a verdict in the PDF is the record's.
+# ============================================================================
+
+CLAIMS_TEX_FILENAME = "claims.tex"
+
+
+def _tt(text: str) -> str:
+    return rf"\texttt{{\detokenize{{{text}}}}}"
+
+
+def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> str:
+    # Deterministic from (record, metrics) alone — no commit link — so the
+    # freeze commit can carry it before any run exists.
+    ops = {">=": r"\geq", "<=": r"\leq", ">": ">", "<": "<"}
+    lines = [_TABLES_TEX_HEADER]
+    for hypothesis in record.active_hypotheses():
+        lines += [
+            rf"\noindent\textbf{{{hypothesis.id.upper()}.}} {hypothesis.statement}",
+            r"\begin{enumerate}",
+        ]
+        for claim in active(hypothesis.claims, "id"):
+            lines.append(rf"\item[\textbf{{{claim.id.upper()}}}] {claim.statement}")
+            lines.append(rf"  \emph{{Rationale:}} {claim.rationale}")
+            if isinstance(claim, SeyvalClaim):
+                c = claim.criterion
+                reference = (
+                    f"{_tt(c.reference)}.{_tt(c.metric)}"
+                    if isinstance(c.reference, str)
+                    else format_display(c.reference, None)
+                )
+                lines.append(
+                    rf"  \emph{{Criterion:}} {_tt(c.subject)}.{_tt(c.metric)} $-$ "
+                    rf"{reference} ${ops[c.op]} {format_display(c.margin, None)}$."
+                )
+                p = claim.prediction
+                lines.append(
+                    rf"  \emph{{Prediction:}} $[{format_display(p.low, None)}, "
+                    rf"{format_display(p.high, None)}]$ ({p.basis})."
+                )
+                try:
+                    observed = format_display(c.observed(metrics_data), None)
+                except (KeyError, ValueError):
+                    observed = "pending"
+                lines.append(rf"  \emph{{Observed:}} {observed}.")
+            lines.append(rf"  \emph{{Verdict:}} {claim.verdict or 'pending'}.")
+        lines.append(r"\end{enumerate}")
+        if hypothesis.assumptions:
+            lines.append(
+                r"\noindent\emph{Assumed, so that the claims together imply "
+                rf"{hypothesis.id.upper()}:}}"
+            )
+            lines.append(r"\begin{itemize}")
+            lines += [rf"\item {a}" for a in hypothesis.assumptions]
+            lines.append(r"\end{itemize}")
     return "\n".join(lines) + "\n"
 
 

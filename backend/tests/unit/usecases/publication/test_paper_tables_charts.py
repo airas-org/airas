@@ -18,7 +18,9 @@ from airas.core.types.map_record_to_publication import (
 )
 from airas.core.types.research_record import (
     ChartDeclaration,
+    Criterion,
     Hypothesis,
+    Prediction,
     RenderedChart,
     ResearchRecord,
     SeyvalClaim,
@@ -175,6 +177,14 @@ def _chart_record(*charts: ChartDeclaration) -> ResearchRecord:
                         verifier=SEYVAL,
                         id="c1",
                         statement="c",
+                        rationale="Head-to-head on the hypothesis's own metric.",
+                        criterion=Criterion(
+                            metric="accuracy",
+                            subject="run_2",
+                            reference="run_1",
+                            op=">=",
+                        ),
+                        prediction=Prediction(low=0.01, high=0.05, basis="pilot"),
                         designs=[
                             SeyvalDesign(
                                 id="d1",

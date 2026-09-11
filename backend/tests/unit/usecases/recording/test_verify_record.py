@@ -19,7 +19,9 @@ from typing import Any
 from airas.core.research_paths import RECORD_PATH
 from airas.core.types.research_record import (
     ClaimDeclaration,
+    Criterion,
     Hypothesis,
+    Prediction,
     ResearchRecord,
     SeyvalClaim,
     SeyvalDesign,
@@ -34,6 +36,7 @@ from airas.core.types.run_provenance import (
     RunProvenanceManifest,
 )
 from airas.usecases.publication.map_record_to_publication import (
+    render_claims_tex,
     render_values_tex,
     resolve_paper_values,
 )
@@ -88,6 +91,15 @@ def _record() -> ResearchRecord:
                         verifier=SEYVAL,
                         id="c1",
                         statement="Proposed beats baseline on accuracy.",
+                        rationale="Head-to-head on the hypothesis's own metric.",
+                        criterion=Criterion(
+                            metric="accuracy",
+                            subject="proposed",
+                            reference="baseline",
+                            op=">=",
+                            margin=0.02,
+                        ),
+                        prediction=Prediction(low=0.02, high=0.04, basis="pilot"),
                         designs=[
                             SeyvalDesign(
                                 id="d1",
@@ -229,6 +241,11 @@ def test_a_claim_declared_after_its_run_is_allowed_for_now(tmp_path: Path) -> No
             verifier=SEYVAL,
             id="c2",
             statement="Post-hoc.",
+            rationale="Head-to-head on the hypothesis's own metric.",
+            criterion=Criterion(
+                metric="accuracy", subject="late", reference=0.5, op=">="
+            ),
+            prediction=Prediction(low=0.1, high=0.3, basis="pilot"),
             designs=[SeyvalDesign(id="d1", runs=[SeyvalRun(run_id="late")])],
         )
     )
@@ -487,6 +504,9 @@ def _write_paper(repo: Path) -> Path:
         record, load_metrics_data(str(repo)), scan_main_tex(MAIN_TEX)[1]
     )
     (latex_dir / "values.tex").write_text(render_values_tex(values, None))
+    (latex_dir / "claims.tex").write_text(
+        render_claims_tex(record, load_metrics_data(str(repo)))
+    )
     return latex_dir
 
 
@@ -540,3 +560,75 @@ def test_an_undeclared_airasval_key_fails(tmp_path: Path) -> None:
     result = _verify_paper(str(repo))
     assert not result.ok
     assert any("ghost.accuracy" in p for p in result.problems)
+
+
+# ------------------------------------------------- the claim's criterion
+
+
+def test_the_criterion_decides_the_verdict(tmp_path: Path) -> None:
+    repo = _realized_repo(tmp_path)
+    claim = _c1(load_record(str(repo)))
+    assert claim.verified and claim.verdict == "supported"  # 0.902 - 0.871 >= 0.02
+    assert _verify(str(repo)).ok
+
+
+def test_a_rerun_that_flips_the_outcome_is_drift_not_a_new_verdict(
+    tmp_path: Path,
+) -> None:
+    repo = _realized_repo(tmp_path)
+    record = load_record(str(repo))
+    (repo / ".research" / "results" / "proposed" / "metrics.json").write_text(
+        json.dumps({"accuracy": 0.875})
+    )
+    manifest = RunProvenanceManifest(
+        dirs={
+            "proposed": ResultsDirProvenance(
+                execution_id="run-a2", commit_hash=_git(repo, "rev-parse", "HEAD")
+            ),
+            "baseline": ResultsDirProvenance(execution_id="run-b"),
+        }
+    )
+    (repo / PROVENANCE_MANIFEST_PATH).write_text(manifest.model_dump_json())
+    statuses, _ = update_record_with_results(
+        repo, record, load_metrics_data(str(repo)), manifest
+    )
+    assert statuses[0].verdict == "refuted"
+    assert _c1(record).verdict == "supported"  # written once, never back
+    save_record(str(repo), record)
+    _commit(repo, "re-run")
+
+    result = _verify(str(repo))
+    assert not result.ok
+    assert any("with a verdict" in p for p in result.problems)
+
+
+def test_a_paper_may_list_its_claims_before_any_run(tmp_path: Path) -> None:
+    _init(tmp_path)
+    record = _record()
+    save_record(str(tmp_path), record)
+    latex_dir = tmp_path / ".research" / "latex" / "mdpi"
+    latex_dir.mkdir(parents=True)
+    (latex_dir / "main.tex").write_text(
+        MAIN_TEX.replace(r"\input{values.tex}", r"\input{claims.tex}")
+    )
+    (latex_dir / "claims.tex").write_text(render_claims_tex(record, {}))
+    _commit(tmp_path, "prereg")
+
+    result = _verify_paper(str(tmp_path))
+    assert result.ok, result.record.problems + result.problems
+    assert result.record.stage == "prereg"
+    assert "pending" in (latex_dir / "claims.tex").read_text()
+
+
+def test_a_missing_or_hand_edited_claims_tex_is_caught(tmp_path: Path) -> None:
+    repo = _realized_repo(tmp_path)
+    latex_dir = _write_paper(repo)
+    _commit(repo, "paper")
+    claims_tex = latex_dir / "claims.tex"
+    claims_tex.write_text(claims_tex.read_text().replace("supported", "refuted"))
+    result = _verify_paper(str(repo))
+    assert any("claims.tex differs" in p for p in result.problems)
+
+    claims_tex.unlink()
+    result = _verify_paper(str(repo))
+    assert any("claims.tex is missing" in p for p in result.problems)

@@ -14,7 +14,9 @@ from pathlib import Path
 from airas.core.research_paths import RECORD_PATH
 from airas.core.types.research_record import (
     ClaimDeclaration,
+    Criterion,
     Hypothesis,
+    Prediction,
     ResearchRecord,
     SeyvalClaim,
     SeyvalDesign,
@@ -62,6 +64,9 @@ def _claim(claim_id: str = "c1", run_id: str = "proposed") -> ClaimDeclaration:
         verifier=SEYVAL,
         id=claim_id,
         statement="Proposed beats baseline.",
+        rationale="Head-to-head on the hypothesis's own metric.",
+        criterion=Criterion(metric="accuracy", subject=run_id, reference=0.5, op=">="),
+        prediction=Prediction(low=0.1, high=0.3, basis="pilot"),
         designs=[SeyvalDesign(id="d1", runs=[SeyvalRun(run_id=run_id)])],
     )
 

@@ -24,7 +24,12 @@ Needs a `research_study_list` (prior work to build on).
    so a design that leaves run naming open is not finished. State the
    expected magnitude of the effect as an interval (a range, not a
    point) and what outcome would refute the hypothesis — a hypothesis
-   without a refutation condition is not testable.
+   without a refutation condition is not testable. These become each
+   claim's `prediction` and `criterion` (a threshold on one named
+   metric, one run against another or a constant) at preregistration.
+   For each claim, say why its holding is evidence for the hypothesis
+   (its `rationale`), and list what the claims together still assume
+   in order to imply the hypothesis (the hypothesis's `assumptions`).
 
 **Output**: hypothesis + experimental design, written to
 `.research/research_history.json` in the experiment repository when one

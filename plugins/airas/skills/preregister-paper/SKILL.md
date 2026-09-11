@@ -42,8 +42,16 @@ changes *when* the paper is written and how Results are stated.
    ```
    hypotheses: [{
      "id": "h1", "statement": "the hypothesis, in prose",
+     "assumptions": ["what must be granted for the claims together to
+                      imply h1, naming the claims concerned", ...],
      "claims": [{
        "id": "c1", "statement": "one assertive sentence",
+       "rationale": "why c1 holding is evidence for h1, and for which part",
+       "verifier": {"kind": "seyval"},
+       "criterion": {"metric": "accuracy", "subject": "proposed-...",
+                     "reference": "comparative-1-...", "op": ">=",
+                     "margin": 0.02},
+       "prediction": {"low": 0.02, "high": 0.04, "basis": "pilot run"},
        "designs": [{
          "id": "d1", "summary": "...",
          "runs": [{"run_id": "proposed-...", "description": "...",
@@ -63,12 +71,32 @@ changes *when* the paper is written and how Results are stated.
    the params is what makes "we said full and ran pilot" detectable
    later — the gate compares them with what the platform recorded.
 
-   What a claim's condition is, whether the numbers met it, and whether
-   the claim was declared before its runs executed are **not modelled in
-   the record yet** (TODO). The record tracks whether every run under
-   each claim has results (`verified`); the criterion and the predicted
-   interval live in the paper's prose for now, frozen by the same
-   commit. A second hypothesis is a second entry in `hypotheses`.
+   `criterion` is the falsification line, required for every seyval
+   claim: `(subject.metric - reference) op margin`, where `reference` is
+   another run under the claim (its same metric) or a constant. The
+   verdict — supported or refuted — is derived from it once the runs are
+   in, and it is frozen with the claim: moving the margin later fails
+   the gate like rewording the statement. `prediction` is the interval
+   the difference is expected to land in, required, a range never a
+   point, with where it comes from. Whether the claim was declared
+   before its runs executed is not modelled yet (TODO). A second
+   hypothesis is a second entry in `hypotheses`.
+
+   The claims are meant to imply the hypothesis together: c1 ∧ … ∧ cn
+   ⇒ h1. `rationale` (required on every claim) says why the claim is a
+   member of that set — which part of the hypothesis it carries and why
+   its holding is evidence for it. `assumptions` (on the hypothesis)
+   say what has to be granted for the conjunction to reach h1: that the
+   metric stands for the property, that the datasets run generalise,
+   that the baseline is representative, and so on, each naming the
+   claims it concerns. These are exactly what every claim being
+   supported still leaves unverified, so state them as assumptions, not
+   as findings; an assumption that can be turned into a measurement is
+   a missing claim.
+
+   The tool also writes `claims.tex` — the numbered claim list with each
+   criterion, prediction and (pending) verdict — next to main.tex and
+   commits it with the record.
 
 2. **Write `.research/latex/{template}/main.tex` in two parts.**
    The *frozen part* — title, abstract, introduction, related work,
@@ -79,20 +107,17 @@ changes *when* the paper is written and how Results are stated.
    so the diff at publish time is confined to a region a reviewer can
    find.
 
-   The **hypothesis and predictions section is a numbered list of
-   claims** (C1, C2, ... — the same ids as in record.json, which is the
-   canonical form; the paper prose is its human rendering). Each claim
-   is one assertive sentence plus,
-   in prose: the criterion (the threshold on a named run metric that
-   counts as support — below it the claim is refuted) and the
-   **predicted interval** — a range, never a point ("we predict an
-   improvement of 2–4 points"), with where the range comes from (prior
-   work, pilot). The criterion is the falsification line, the interval
-   is what you expect; an outcome outside the interval in either
-   direction must be discussed later. A range too wide to miss is a
-   criterion, not a prediction. Until the record models them, the
-   prose *is* their frozen form — the freeze commit fixes it as it does
-   the record. Every experimental number is
+   The **hypothesis and predictions section is the numbered list of
+   claims**: `\input{claims.tex}` where it belongs. The file is rendered
+   from record.json (C1, C2, ... with each claim's rationale, criterion,
+   predicted interval and verdict, then the hypothesis's assumptions),
+   so the list in the PDF is the record's, not a
+   transcription; the gate regenerates and diffs it at every stage.
+   Prose around it may explain why each criterion and interval was
+   chosen. The criterion is the falsification line, the interval is
+   what you expect; an outcome outside the interval in either direction
+   must be discussed later. A range too wide to miss is a criterion,
+   not a prediction. Every experimental number is
    `\airasval{key}` and appears only in the post-experiment part —
    never a literal, not even an expected one presented as measured.
 

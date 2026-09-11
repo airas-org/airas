@@ -18,7 +18,9 @@ from airas.core.types.map_record_to_publication import (
 )
 from airas.core.types.research_record import (
     ClaimDeclaration,
+    Criterion,
     Hypothesis,
+    Prediction,
     ResearchRecord,
     SeyvalClaim,
     SeyvalDesign,
@@ -51,6 +53,15 @@ def _record() -> ResearchRecord:
                         verifier=SEYVAL,
                         id="c1",
                         statement="Proposed beats baseline on accuracy.",
+                        rationale="Head-to-head on the hypothesis's own metric.",
+                        criterion=Criterion(
+                            metric="accuracy",
+                            subject="proposed",
+                            reference="baseline",
+                            op=">=",
+                            margin=0.02,
+                        ),
+                        prediction=Prediction(low=0.02, high=0.04, basis="pilot"),
                         designs=[
                             SeyvalDesign(
                                 id="d1",
@@ -75,6 +86,9 @@ def _claim(claim_id: str = "c2", run_id: str = "ablation") -> ClaimDeclaration:
         verifier=SEYVAL,
         id=claim_id,
         statement="The ablation holds.",
+        rationale="Head-to-head on the hypothesis's own metric.",
+        criterion=Criterion(metric="accuracy", subject=run_id, reference=0.5, op=">="),
+        prediction=Prediction(low=0.1, high=0.3, basis="pilot"),
         designs=[SeyvalDesign(id="d1", runs=[SeyvalRun(run_id=run_id)])],
     )
 
@@ -198,7 +212,14 @@ def test_a_claim_with_no_run_is_caught() -> None:
     """A claim with no experiment cannot be verified."""
     record = _record()
     record.hypotheses[0].claims.append(
-        SeyvalClaim(verifier=SEYVAL, id="c2", statement="Untestable as declared.")
+        SeyvalClaim(
+            verifier=SEYVAL,
+            id="c2",
+            statement="Untestable as declared.",
+            rationale="Head-to-head on the hypothesis's own metric.",
+            criterion=Criterion(metric="accuracy", subject="x", reference=0.5, op=">="),
+            prediction=Prediction(low=0.1, high=0.3, basis="pilot"),
+        )
     )
     assert any("declares no run" in p for p in _verify_consistency(record))
 
@@ -223,7 +244,14 @@ def test_a_clean_record_has_no_problems() -> None:
 @pytest.mark.parametrize("bad_id", ["claim1", "C1", "c0"])
 def test_ids_follow_their_pattern(bad_id: str) -> None:
     with pytest.raises(ValueError):
-        SeyvalClaim(verifier=SEYVAL, id=bad_id, statement="x")
+        SeyvalClaim(
+            verifier=SEYVAL,
+            id=bad_id,
+            statement="x",
+            rationale="Head-to-head on the hypothesis's own metric.",
+            criterion=Criterion(metric="accuracy", subject="x", reference=0.5, op=">="),
+            prediction=Prediction(low=0.1, high=0.3, basis="pilot"),
+        )
 
 
 def test_active_keeps_order_and_takes_the_last_entry_per_id() -> None:
