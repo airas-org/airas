@@ -98,12 +98,13 @@ shortcut that settles the question.
 ## Official: CI verifies, its artifact is the record
 
 4. **Commit the main.tex edits and push to the staging ref** — not to
-   the protected branch (`git push origin main:verify`). The required
-   check, `Verify Record`, runs there. It is the whole integrity
-   verdict: the record's checks (recomputation, containment history,
-   provenance cross-check) **and the paper's numbers** — values.tex
+   the protected branch (`git push origin main:verify`). The two
+   required checks, `Verify the record` and `Verify the paper`, run
+   there. Together they are the whole integrity verdict: the record's
+   checks (recomputation, containment history, provenance cross-check)
+   in one, **and the paper's numbers** in the other — values.tex
    against its regeneration, declared tables, every `\airasval` key
-   declared. None of that needs LaTeX, so it is fast, and a
+   declared. Neither builds LaTeX, so they are fast, and a
    hand-edited number is caught here, before the sha can land. The
    report is uploaded even when red, so a failure is readable rather
    than merely reported.
@@ -128,8 +129,8 @@ shortcut that settles the question.
 
    The workflow then commits the PDF it built, byte for byte, as
    `.research/latex/{template}/paper.pdf` on the protected branch —
-   through the gate like any other commit (scratch ref, `Verify the
-   record` dispatched on it, fast-forward on green), under the
+   through the gate like any other commit (scratch ref, both required
+   checks dispatched on it, fast-forward on green), under the
    `github-actions[bot]` author. So the paper of record is in the
    repository, not only in an expiring artifact, and it is never a
    PDF built on the agent's machine: **do not commit a locally built

@@ -151,10 +151,11 @@ See the [MCP documentation](docs/development/MCP.mdx) for descriptions, credenti
 ```bash
 uvx airas                 # MCP server on stdio (default)
 uvx airas verify-record   # check .research/record.json against run outputs, git history, and the platform
-uvx airas verify-paper    # verify the paper's values and provenance and build its PDF (the CI gate)
+uvx airas verify-paper    # verify the paper's values and provenance against the record — no PDF build (the CI gate)
+uvx airas publish-paper   # build the paper's PDF for publishing (values already verified by the gate)
 ```
 
-`verify-record` and `verify-paper` are what the experiment repository's CI runs as the required check on the protected branch.
+`verify-record` and `verify-paper` are the two required checks the experiment repository's CI runs on the protected branch; `publish-paper` builds the PDF in the separate, non-required publish workflow.
 
 ## Development
 

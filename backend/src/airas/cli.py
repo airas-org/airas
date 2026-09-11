@@ -11,6 +11,7 @@ from airas.core.types.research_trace import DerivedFromRepository
 from airas.usecases.publication.verify_paper import (
     build_paper,
     detect_templates,
+    paper_directories,
     verify_paper,
 )
 from airas.usecases.recording.agent_state import (
@@ -57,8 +58,13 @@ def _run_dashboard(host: str, port: int, open_browser: bool) -> None:
 def _run_verify_paper(args: argparse.Namespace) -> None:
     templates = args.template or detect_templates(args.local_path)
     if not templates:
-        # The paper gate runs on every commit; before preregister-paper writes
-        # main.tex there is nothing to verify — a pass.
+        # A main.tex under a template this version cannot verify must not pass
+        # as "no paper" — the gate would wave through a paper it never read.
+        # Only a repository with no main.tex at all has nothing to verify yet.
+        unknown = paper_directories(args.local_path)
+        if unknown:
+            print(f"Unsupported LaTeX template: {', '.join(unknown)}", file=sys.stderr)
+            sys.exit(1)
         print("No paper yet: nothing to verify.")
         sys.exit(0)
 
@@ -84,6 +90,10 @@ def _run_verify_paper(args: argparse.Namespace) -> None:
 def _run_publish_paper(args: argparse.Namespace) -> None:
     templates = args.template or detect_templates(args.local_path)
     if not templates:
+        unknown = paper_directories(args.local_path)
+        if unknown:
+            print(f"Unsupported LaTeX template: {', '.join(unknown)}", file=sys.stderr)
+            sys.exit(1)
         print("No paper to build: nothing under .research/latex/ has a main.tex")
         sys.exit(0)
 

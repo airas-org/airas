@@ -597,3 +597,12 @@ def detect_templates(local_path: str) -> list[str]:
             continue
         found.append(path.name)
     return found
+
+
+def paper_directories(local_path: str) -> list[str]:
+    # Every directory holding a main.tex, known template or not — so a caller
+    # can tell "no paper yet" from "a paper this version cannot verify".
+    latex_root = Path(local_path).expanduser().resolve() / ".research" / "latex"
+    if not latex_root.is_dir():
+        return []
+    return sorted(p.name for p in latex_root.iterdir() if (p / "main.tex").is_file())

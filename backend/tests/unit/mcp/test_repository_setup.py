@@ -146,3 +146,15 @@ async def test_standalone_tools_reach_the_same_code(recorder: _Recorder) -> None
     checks = [server.RECORD_GATE_CHECK_NAME, server.PAPER_GATE_CHECK_NAME]
     assert protect["required_checks"] == checks
     assert recorder.protection[0][3] == checks
+
+
+async def test_protect_branch_cannot_drop_a_gate(recorder: _Recorder) -> None:
+    """A caller naming only the record gate still gets both: the paper gate
+    is part of the guarantee, not an option."""
+    await server.protect_branch(
+        "o", "r", required_check_names=[server.RECORD_GATE_CHECK_NAME]
+    )
+    assert recorder.protection[0][3] == [
+        server.RECORD_GATE_CHECK_NAME,
+        server.PAPER_GATE_CHECK_NAME,
+    ]
