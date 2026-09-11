@@ -6,7 +6,9 @@ import sys
 import threading
 import webbrowser
 from pathlib import Path
+from typing import get_args
 
+from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.research_trace import DerivedFromRepository
 from airas.usecases.publication.verify_paper import (
     build_paper,
@@ -55,16 +57,22 @@ def _run_dashboard(host: str, port: int, open_browser: bool) -> None:
     uvicorn.run("airas.dashboard.api.main:app", host=host, port=port)
 
 
+def _paper_templates(args: argparse.Namespace) -> list[str]:
+    # A main.tex under a template this version cannot handle must never be
+    # ignored — not as "no paper", and not because a known template sits
+    # beside it: the gate would wave through a paper it never read. Only a
+    # repository with no main.tex at all has nothing to do yet.
+    known = detect_templates(args.local_path)
+    unknown = [d for d in paper_directories(args.local_path) if d not in known]
+    if unknown:
+        print(f"Unsupported LaTeX template: {', '.join(unknown)}", file=sys.stderr)
+        sys.exit(1)
+    return args.template or known
+
+
 def _run_verify_paper(args: argparse.Namespace) -> None:
-    templates = args.template or detect_templates(args.local_path)
+    templates = _paper_templates(args)
     if not templates:
-        # A main.tex under a template this version cannot verify must not pass
-        # as "no paper" — the gate would wave through a paper it never read.
-        # Only a repository with no main.tex at all has nothing to verify yet.
-        unknown = paper_directories(args.local_path)
-        if unknown:
-            print(f"Unsupported LaTeX template: {', '.join(unknown)}", file=sys.stderr)
-            sys.exit(1)
         print("No paper yet: nothing to verify.")
         sys.exit(0)
 
@@ -88,12 +96,8 @@ def _run_verify_paper(args: argparse.Namespace) -> None:
 
 
 def _run_publish_paper(args: argparse.Namespace) -> None:
-    templates = args.template or detect_templates(args.local_path)
+    templates = _paper_templates(args)
     if not templates:
-        unknown = paper_directories(args.local_path)
-        if unknown:
-            print(f"Unsupported LaTeX template: {', '.join(unknown)}", file=sys.stderr)
-            sys.exit(1)
         print("No paper to build: nothing under .research/latex/ has a main.tex")
         sys.exit(0)
 
@@ -257,6 +261,7 @@ def main() -> None:
     verify.add_argument(
         "--template",
         action="append",
+        choices=get_args(LATEX_TEMPLATE_NAME),
         help=(
             "LaTeX template to verify (repeatable); default: every known "
             "template under .research/latex/ that has a main.tex"
@@ -339,6 +344,7 @@ def main() -> None:
     publish.add_argument(
         "--template",
         action="append",
+        choices=get_args(LATEX_TEMPLATE_NAME),
         help=(
             "LaTeX template to build (repeatable); default: every known "
             "template under .research/latex/ that has a main.tex"

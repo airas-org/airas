@@ -673,3 +673,94 @@ def test_a_merge_cannot_hide_a_landed_declaration(tmp_path: Path) -> None:
     result = _verify(str(tmp_path))
     assert not result.ok
     assert any("statement" in p for p in result.problems)
+
+
+def _record_with(claim_ids: list[str]) -> ResearchRecord:
+    # One hypothesis with the given claims, run ids unique across claims.
+    return ResearchRecord(
+        hypotheses=[
+            Hypothesis(
+                id="h1",
+                statement="The proposed method beats the baseline.",
+                claims=[
+                    SeyvalClaim(
+                        verifier=SEYVAL,
+                        id=cid,
+                        statement=f"{cid}: proposed beats baseline.",
+                        rationale="Head-to-head on the hypothesis's own metric.",
+                        criterion=Criterion(
+                            metric="accuracy",
+                            subject=f"{cid}-proposed",
+                            reference=f"{cid}-baseline",
+                            op=">=",
+                            margin=0.02,
+                        ),
+                        prediction=Prediction(low=0.02, high=0.04, basis="pilot"),
+                        designs=[
+                            SeyvalDesign(
+                                id="d1",
+                                summary="Head-to-head on one dataset.",
+                                runs=[
+                                    SeyvalRun(run_id=f"{cid}-proposed"),
+                                    SeyvalRun(run_id=f"{cid}-baseline"),
+                                ],
+                            )
+                        ],
+                    )
+                    for cid in claim_ids
+                ],
+            )
+        ]
+    )
+
+
+def _fork(tmp_path: Path) -> str:
+    """c1 on the base; `trunk` appends c2; `side` branches from the base."""
+    _init(tmp_path)
+    save_record(str(tmp_path), _record_with(["c1"]))
+    base = _commit(tmp_path, "c1")
+    _git(tmp_path, "branch", "trunk")
+    _git(tmp_path, "checkout", "-q", "trunk")
+    save_record(str(tmp_path), _record_with(["c1", "c2"]))
+    _commit(tmp_path, "trunk appends c2")
+    _git(tmp_path, "checkout", "-qb", "side", base)
+    return base
+
+
+def test_merging_main_into_a_branch_that_did_not_touch_the_record_passes(
+    tmp_path: Path,
+) -> None:
+    """The realistic update-merge: main appended a claim, the branch only
+    changed code. The merge equals main's record and extends the branch's."""
+    _fork(tmp_path)
+    (tmp_path / "README.md").write_text("code only\n")
+    _commit(tmp_path, "side: code only")
+    _git(tmp_path, "merge", "--no-edit", "trunk")
+
+    result = _verify(str(tmp_path))
+    assert result.ok, result.problems
+
+
+def test_a_merge_of_two_concurrent_appends_is_an_append_only_conflict(
+    tmp_path: Path,
+) -> None:
+    """Append-only lists grow at the end: every revision keeps the prior one
+    as a prefix (reordering fails too). Two branches that each append a
+    claim cannot both be prefixes of one merge, so the merge fails against
+    one parent. Declarations are serialised — the fast-forward-only flow
+    never produces this — and such a merge must be redone as a linear
+    append."""
+    _fork(tmp_path)
+    save_record(str(tmp_path), _record_with(["c1", "c3"]))
+    _commit(tmp_path, "side appends c3")
+    subprocess.run(  # conflicts on record.json; resolved below as the union
+        ["git", "-C", str(tmp_path), "merge", "--no-commit", "--no-edit", "trunk"],
+        capture_output=True,
+    )
+    save_record(str(tmp_path), _record_with(["c1", "c2", "c3"]))
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-q", "-m", "merge: union of both appends")
+
+    result = _verify(str(tmp_path))
+    assert not result.ok
+    assert any("changed" in p for p in result.problems)

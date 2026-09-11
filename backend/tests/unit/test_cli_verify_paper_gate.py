@@ -81,3 +81,14 @@ def test_the_gate_verifies_without_building(
 
     monkeypatch.setattr(cli, "verify_paper", verified)
     assert _exit_code(cli._run_verify_paper, _verify_args(str(tmp_path))) == 0
+
+
+def test_an_unsupported_template_fails_even_beside_a_known_one(
+    tmp_path: Path,
+) -> None:
+    # A known template must not hide a paper the gate cannot verify.
+    for name in ("mdpi", "homebrew"):
+        (tmp_path / ".research" / "latex" / name).mkdir(parents=True)
+        (tmp_path / ".research" / "latex" / name / "main.tex").write_text("x")
+    assert _exit_code(cli._run_verify_paper, _verify_args(str(tmp_path))) == 1
+    assert _exit_code(cli._run_publish_paper, _publish_args(str(tmp_path))) == 1
